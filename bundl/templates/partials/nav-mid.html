@@ -1,0 +1,15 @@
+<div x-data="{ tab: 'view' }" class="mt-0 px-8">
+    <div class="block">
+        <div class="border-b border-gray-200">
+            <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                <a hx-trigger='click' hx-get="/view/{{path}}" hx-target="#contents" hx-swap='innerHTML' @click="tab = 'view'" href="#" :class="{ 'hover:border-gray-300 hover:text-gray-700': tab != 'view', 'border-indigo-500 text-indigo-600': tab == 'view'}" class="whitespace-nowrap border-b-2 border-transparent px-1 py-4 text-sm font-medium text-gray-500" aria-current="page">Views</a>
+                <a hx-trigger='click' hx-get="/info/{{path}}" hx-target="#contents" hx-swap='innerHTML' @click="tab = 'info'" href="#" :class="{ 'hover:border-gray-300 hover:text-gray-700': tab != 'info', 'border-indigo-500 text-indigo-600': tab == 'info'}" class="whitespace-nowrap border-b-2 border-transparent px-1 py-4 text-sm font-medium text-gray-500">Info</a>
+                <a hx-trigger='click' hx-get="/logs/{{path}}" hx-target="#contents" hx-swap='innerHTML' @click="tab = 'logs'" href="#" :class="{ 'hover:border-gray-300 hover:text-gray-700': tab != 'logs', 'border-indigo-500 text-indigo-600': tab == 'logs'}" class="whitespace-nowrap border-b-2 border-transparent px-1 py-4 text-sm font-medium text-gray-500">Logs</a>
+                <a hx-trigger='click' hx-get="/artifacts/{{path}}" hx-target="#contents" hx-swap='innerHTML' @click="tab = 'artifacts'" href="#" :class="{ 'hover:border-gray-300 hover:text-gray-700': tab != 'artifacts', 'border-indigo-500 text-indigo-600': tab == 'artifacts'}" class="whitespace-nowrap border-b-2 border-transparent px-1 py-4 text-sm font-medium text-gray-500">Artifacts</a>
+            </nav>
+        </div>
+    </div>
+</div>
+<div id="contents" class="mt-2 px-8">
+
+</div>
