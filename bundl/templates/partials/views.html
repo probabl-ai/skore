@@ -3,7 +3,7 @@
 {% endif %}
 
 {% if views | length > 0 %}
-<div class="pt-4" x-data="{ selected: '{{name}}' }">
+<div class="pt-4" x-data="{ selected: '{{first_name}}' }">
     <nav class="-mb-px flex space-x-8" aria-label="Tabs">
         <ol role="list" class="flex items-center space-x-4">
             {% for name, html in views %}

@@ -12,7 +12,10 @@ def fetch_mander(*path):
 def render_views(*path):
     mander = InfoMander(*path)
     view_nav_templ = read_template('partials/views.html')
-    return view_nav_templ.render(views=list(mander['_templates'].items()))
+    return view_nav_templ.render(
+        views=list(mander['_templates'].items()), 
+        first_name=list(mander['_templates'].items())[0][0]
+    )
 
 def render_info(*path):
     mander = InfoMander(*path)
@@ -21,7 +24,10 @@ def render_info(*path):
 def render_logs(*path):
     mander = InfoMander(*path)
     view_nav_templ = read_template('partials/logs.html')
-    return view_nav_templ.render(logs=list(mander['_logs'].items()))
+    return view_nav_templ.render(
+        logs=list(mander['_logs'].items()), 
+        first_name=list(mander['_logs'].items())[0][0]
+    )
 
 def render_artifacts(*path):
     mander = InfoMander(*path)
