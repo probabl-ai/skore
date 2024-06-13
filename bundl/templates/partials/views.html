@@ -1,0 +1,25 @@
+{% if views | length == 0 %}
+<p>This path has no rendered views attached.</p>
+{% endif %}
+
+{% if views | length > 0 %}
+<div class="pt-4" x-data="{ selected: '{{name}}' }">
+    <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+        <ol role="list" class="flex items-center space-x-4">
+            {% for name, html in views %}
+            <li>
+                <button @click="selected = '{{name}}'" type="button" class="rounded bg-white px-2 py-1 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">{{name}}</button>
+            </li>
+            {% endfor %}
+        </ol>
+    </nav>
+    <div class="pt-4">
+        {% for name, html in views %}
+        <div :class="{ 'hidden': selected != '{{name}}' }">
+            {{html}}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+

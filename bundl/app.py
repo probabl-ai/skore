@@ -1,5 +1,6 @@
 from flask import Flask, render_template
 from pathlib import Path
+import json
 from jinja2 import Template
 from .infomander import InfoMander
 
@@ -8,18 +9,24 @@ app = Flask(__name__)
 def fetch_mander(*path):
     InfoMander(*path)
 
-def render_views(name, path):
-    pass
+def render_views(*path):
+    mander = InfoMander(*path)
+    view_nav_templ = read_template('partials/views.html')
+    return view_nav_templ.render(views=list(mander['_templates'].items()))
 
 def render_info(*path):
     mander = InfoMander(*path)
-    return mander.fetch()
+    return '<pre class="text-xs">' + json.dumps({k: str(v) for k, v in mander.fetch().items() if not k.startswith("_")}, indent=2) + '</pre>'
 
-def render_logs():
-    pass
+def render_logs(*path):
+    mander = InfoMander(*path)
+    view_nav_templ = read_template('partials/logs.html')
+    return view_nav_templ.render(logs=list(mander['_logs'].items()))
 
-def render_artifacts():
-    pass
+def render_artifacts(*path):
+    mander = InfoMander(*path)
+    view_nav_templ = read_template('partials/artifacts.html')
+    return view_nav_templ.render(artifacts=list(mander['_artifacts'].items()))
 
 def read_template(path):
     p = Path(__file__).parent / 'templates' / path
@@ -57,12 +64,12 @@ def home(path):
     print(path_parts)
     if path_parts[0] == 'info':
         return render_info(*path_parts[1:])
-    if path_parts[0] == 'views':
-        return 'info fetches!'
+    if path_parts[0] == 'view':
+        return render_views(*path_parts[1:])
     if path_parts[0] == 'logs':
-        return 'info fetches!'
+        return render_logs(*path_parts[1:])
     if path_parts[0] == 'artifacts':
-        return 'info fetches!'
+        return render_artifacts(*path_parts[1:])
     return render_mander(*path.split('/'))
 
 if __name__ == '__main__':

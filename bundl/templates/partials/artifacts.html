@@ -1,0 +1,18 @@
+{% if artifacts | length == 0 %}
+<p>This path has no artifacts attached.</p>
+{% endif %}
+
+{% if artifacts | length > 0 %}
+<div class="pt-4">
+    <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+        <ol role="list" class="flex items-center space-x-4">
+            {% for name, path in artifacts %}
+            <li>
+                <p type="button" class="rounded bg-white px-2 py-1 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">{{name}}:<span class="text-gray-400">{{path}}</span></span></p>
+            </li>
+            {% endfor %}
+        </ol>
+    </nav>
+</div>
+{% endif %}
+
