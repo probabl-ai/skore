@@ -50,3 +50,6 @@ class InfoMander:
                     
     def fetch(self):
         return {k: self.cache[k] for k in self.cache.iterkeys()}
+    
+    def __getitem__(self, key):
+        return self.cache[key]
