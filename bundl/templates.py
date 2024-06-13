@@ -1,3 +1,4 @@
+import markdown
 import pandas as pd 
 import altair as alt
 import json 
@@ -18,7 +19,7 @@ def scatter_chart(datamander, title, data, x, y, **kwargs):
     json_blob = json.loads(c.to_json())
     json_blob['width'] = "container"
     
-    return f'<vegachart style="width: 100%">{json.dumps(json_blob)}</vegachart>'
+    return c.to_html()
 
 
 registry = {
@@ -33,7 +34,7 @@ class TemplateRenderer:
     def clean_value(self, val): 
         return val.replace('/>', '').replace('"', '').replace("'", '')
         
-    def insert_custom_ui(self, datamander, template):
+    def insert_custom_ui(self, template):
         # For each registered element, check if it is there.
         for name, func in registry.items():
             element_of_interest = f'<{name}'
@@ -43,16 +44,10 @@ class TemplateRenderer:
             if substr:
                 elems = [e.split('=') for e in substr.split(' ') if '=' in e]
                 params = {k: self.clean_value(v) for k, v in elems}
-                ui = func(datamander, **params)
+                ui = func(self.datamander, **params)
                 return template.replace(substr, ui)
         return template
 
-    def render(self, datamander, template):
-        imports = """
-        <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
-        <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
-        <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
-        <script src="https://cdn.jsdelivr.net/gh/koaning/justcharts/justcharts.js"></script>
-        """
-        final_template = imports + self.insert_custom_ui(datamander, template)
-        return Template(final_template).render(**datamander.info())
+    def render(self, template):
+        final_template = self.insert_custom_ui(template)
+        return markdown.markdown(Template(final_template).render(**self.datamander.fetch()))

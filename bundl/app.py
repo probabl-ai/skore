@@ -1,5 +1,6 @@
 from flask import Flask, render_template
 from pathlib import Path
+import orjson
 import json
 from jinja2 import Template
 from .infomander import InfoMander
@@ -19,6 +20,7 @@ def render_views(*path):
 
 def render_info(*path):
     mander = InfoMander(*path)
+    print(mander.fetch().keys())
     return '<pre class="text-xs">' + json.dumps({k: str(v) for k, v in mander.fetch().items() if not k.startswith("_")}, indent=2) + '</pre>'
 
 def render_logs(*path):
