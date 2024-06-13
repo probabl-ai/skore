@@ -42,8 +42,8 @@ class InfoMander:
         dump(obj, file_location)
         self._add_to_key('_artifacts', key, {'path': file_location, **metadata})
 
-    def add_template(self, key, template):
-        self._add_to_key('_templates', key, template)
+    def add_view(self, key, html):
+        self._add_to_key('_templates', key, html)
 
     def add_logs(self, key, logs):
         self._add_to_key('_logs', key, logs)

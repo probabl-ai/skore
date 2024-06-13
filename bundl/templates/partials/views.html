@@ -16,7 +16,7 @@
     <div class="pt-4">
         {% for name, html in views %}
         <div :class="{ 'hidden': selected != '{{name}}' }">
-            {{html}}
+            {{html|safe}}
         </div>
         {% endfor %}
     </div>
