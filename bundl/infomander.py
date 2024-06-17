@@ -106,7 +106,7 @@ class InfoMander:
         new_path = self.project_path
         for p in path:
             new_path = new_path / p
-        return InfoMander('local://' + str(new_path))
+        return InfoMander(str(new_path))
 
     def children(self):
         return [InfoMander('/'.join(p.parts[1:])) for p in self.project_path.iterdir() if p.is_dir() and not p.name.startswith('.')]

@@ -12,16 +12,16 @@ app = Flask(__name__)
     
 
 def fetch_mander(*path):
-    return InfoMander('local://' + '/'.join(path))
+    return InfoMander('/'.join(path))
 
 def render_views(*path):
     mander = fetch_mander(*path)
     view_nav_templ = read_template('partials/views.html')
     first_name = None
     if mander[VIEWS_KEY]:
-        first_name = list(mander['_views'].items())[0][0]
+        first_name = list(mander[VIEWS_KEY].items())[0][0]
     return view_nav_templ.render(
-        views=list(mander['_views'].items()), 
+        views=list(mander[VIEWS_KEY].items()), 
         first_name=first_name
     )
 

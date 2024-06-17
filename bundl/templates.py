@@ -5,14 +5,15 @@ import json
 from jinja2 import Template
 
 
-def scatter_chart(datamander, title, data, x, y, **kwargs):
+def scatter_chart(title, x, y, **kwargs):
+    print(x, y)
     # Grab the dataframe that is assumed to be stored in the datamander.
-    dataf = pd.DataFrame(datamander.fetch()[data])
+    dataf = pd.DataFrame({'x': x, 'y': y})
 
     # Render the altair chart internally
     c = alt.Chart(dataf).mark_circle(size=60).encode(
-        x=x,
-        y=y,
+        x='x',
+        y='y',
     ).interactive().properties(title=title)
 
     # Add the container width property
@@ -44,7 +45,12 @@ class TemplateRenderer:
             if substr:
                 elems = [e.split('=') for e in substr.split(' ') if '=' in e]
                 params = {k: self.clean_value(v) for k, v in elems}
-                ui = func(self.datamander, **params)
+                for k, v in params.items():
+                    if v.startswith('@mander'):
+                        print(k, self.datamander.get(v))
+                        params[k] = self.datamander.get(v)
+                print(params)
+                ui = func(**params)
                 return template.replace(substr, ui)
         return template
 
