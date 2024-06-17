@@ -63,10 +63,10 @@ class InfoMander:
         self._add_to_key(ARTIFACTS_KEY, key, {'path': file_location, **metadata})
 
     def add_view(self, key, html):
-        self._add_to_key('_views', key, html)
+        self._add_to_key(VIEWS_KEY, key, html)
 
     def add_template(self, key, template):
-        if key in self.cache['_view'].keys():
+        if key in self.cache[VIEWS_KEY].keys():
             raise ValueError(f'Cannot add template {key} because there is already a view with the same name.')
         self._add_to_key('_templates', key, template)
 
@@ -75,7 +75,7 @@ class InfoMander:
             self.add_view(name, template.render(self))
 
     def add_logs(self, key, logs):
-        self._add_to_key('_logs', key, logs)
+        self._add_to_key(LOGS_KEY, key, logs)
                     
     def fetch(self):
         return {k: self.cache[k] for k in self.cache.iterkeys()}
@@ -86,9 +86,9 @@ class InfoMander:
     @classmethod
     def get_property(cls, mander, dsl_str):
         # Note that we may be dealing with a nested retreival
-        prop_chain = dsl_str.split('.')
+        prop_chain = [e for e in dsl_str.split('.') if e]
         if len(prop_chain) == 1:
-            without_dot = path[0][1:]
+            without_dot = prop_chain[0]
             return mander.cache[without_dot]
         item_of_interest = mander.cache[prop_chain[0]]
         for prop in prop_chain[1:]:
@@ -107,13 +107,13 @@ class InfoMander:
 
     def get(self, dsl_str):
         if '@mander' not in dsl_str:
-            return dsl_str
-        path = dsl_str.split('/')
+            raise ValueError('@mander is needed at the start of dsl string')
+        path = dsl_str.replace('@mander', '').split('/')
         # There is no path to another mander, but we may have a nested property
         if len(path) == 1:
-            return InfoMander.get_property(self, dsl_str)
+            return InfoMander.get_property(self, path[0])
         mander = self.get_child(*path[:-1])
         
-        raise NotImplmented('soon!')
+        raise RuntimeError('soon!')
 
 # 
