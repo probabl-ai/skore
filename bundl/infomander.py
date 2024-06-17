@@ -22,7 +22,7 @@ class InfoMander:
             raise ValueError("Only local:// paths are supported for now.")
         
         # Set local disk paths
-        self.project_path = Path(path.replace('local://', '.datamander'))
+        self.project_path = Path(path.replace('local://', '.datamander/'))
         self.cache = Cache(self.project_path / STATS_KEY)
 
         # For practical reasons the logs and artifacts are stored on disk, not sqlite
