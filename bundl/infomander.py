@@ -11,25 +11,22 @@ LOGS_KEY = 'logs'
 VIEWS_KEY = 'views'
 TEMPLATES_KEY = 'templates'
 ARTIFACTS_KEY = 'artifacts'
-STATS_KEY = '.stats'
+
+STATS_FOLDER = '.stats'
+ARTIFACTS_FOLDER = '.artifacts'
+LOGS_FOLDER = '.logs'
 
 class InfoMander:
     """Represents a dictionary, on disk, with a path-like structure."""
-    def __init__(self, path):
-        # This is a bit of a stub. I assume a local:// prefix to the path when we
-        # are dealing with a local path and we can also replace it with a cloud path later.
-        # This isn't implemented at all though.
-        if not path.startswith("local://"):
-            raise ValueError("Only local:// paths are supported for now.")
-        
+    def __init__(self, path):        
         # Set local disk paths
-        self.project_path = Path(path.replace('local://', '.datamander/'))
-        self.cache = Cache(self.project_path / STATS_KEY)
+        self.project_path = Path('.datamander/' + path)
+        self.cache = Cache(self.project_path / STATS_FOLDER)
 
         # For practical reasons the logs and artifacts are stored on disk, not sqlite
         # We could certainly revisit this later though
-        self.artifact_path = self.project_path / ARTIFACTS_KEY
-        self.log_path = self.project_path / LOGS_KEY
+        self.artifact_path = self.project_path / ARTIFACTS_FOLDER
+        self.log_path = self.project_path / LOGS_FOLDER
 
         # Initialize the internal cache with empty values if need be
         for key in [ARTIFACTS_KEY, TEMPLATES_KEY, VIEWS_KEY, LOGS_KEY]:
@@ -90,13 +87,19 @@ class InfoMander:
         if len(prop_chain) == 1:
             without_dot = prop_chain[0]
             return mander.cache[without_dot]
+        
+        # Handle special case with getting a property from direct children
+        if prop_chain[0].startswith('*'):
+            return [child.get('@mander' + '.'.join(prop_chain[1:])) for child in mander.children()]
+        
+        # At this point we know for sure it's just a nested property in a single mander
         item_of_interest = mander.cache[prop_chain[0]]
         for prop in prop_chain[1:]:
             item_of_interest = item_of_interest[prop]
         return item_of_interest
 
     def dsl_path_exists(self, path):
-        actual_path = path.replace('local://', '.datamander')  
+        actual_path = '.datamander' / path  
         assert Path(actual_path).exists()
     
     def get_child(self, *path):
@@ -105,15 +108,20 @@ class InfoMander:
             new_path = new_path / p
         return InfoMander('local://' + str(new_path))
 
+    def children(self):
+        return [InfoMander('/'.join(p.parts[1:])) for p in self.project_path.iterdir() if p.is_dir() and not p.name.startswith('.')]
+
     def get(self, dsl_str):
         if '@mander' not in dsl_str:
             raise ValueError('@mander is needed at the start of dsl string')
-        path = dsl_str.replace('@mander', '').split('/')
+        path = [p for p in dsl_str.replace('@mander', '').split('/') if p]
         # There is no path to another mander, but we may have a nested property
         if len(path) == 1:
+            if path[0] == '*':
+                return self.children()
             return InfoMander.get_property(self, path[0])
         mander = self.get_child(*path[:-1])
-        
-        raise RuntimeError('soon!')
-
-# 
+        return mander.get_property(mander, path[-1])
+    
+    def __repr__(self):
+        return f'InfoMander({self.project_path})'
