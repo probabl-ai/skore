@@ -3,14 +3,15 @@ from time import time
 from diskcache import Cache
 from joblib import dump
 from pathlib import Path
+from rich.console import Console
 from .templates import TemplateRenderer
 
-
-LOGS_KEY = '_logs'
-VIEWS_KEY = '_views'
+console = Console()
+LOGS_KEY = 'logs'
+VIEWS_KEY = 'views'
 TEMPLATES_KEY = 'templates'
 ARTIFACTS_KEY = 'artifacts'
-STATS_KEY = 'stats'
+STATS_KEY = '.stats'
 
 class InfoMander:
     """Represents a dictionary, on disk, with a path-like structure."""
@@ -85,15 +86,19 @@ class InfoMander:
     @classmethod
     def get_property(cls, mander, dsl_str):
         # Note that we may be dealing with a nested retreival
-        prop_chain = path.split('.')
+        prop_chain = dsl_str.split('.')
         if len(prop_chain) == 1:
             without_dot = path[0][1:]
-            return self.cache[without_dot]
-        item_of_interest = self.cache[prop_chain[0]]
+            return mander.cache[without_dot]
+        item_of_interest = mander.cache[prop_chain[0]]
         for prop in prop_chain[1:]:
             item_of_interest = item_of_interest[prop]
-        return item_of_interest        
+        return item_of_interest
 
+    def dsl_path_exists(self, path):
+        actual_path = path.replace('local://', '.datamander')  
+        assert Path(actual_path).exists()
+    
     def get_child(self, *path):
         new_path = self.project_path
         for p in path:
@@ -111,3 +116,4 @@ class InfoMander:
         
         raise NotImplmented('soon!')
 
+# 
