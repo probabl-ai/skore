@@ -1,31 +1,36 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, Response
 from pathlib import Path
 import orjson
 import json
 from jinja2 import Template
-from .infomander import InfoMander
+from .infomander import InfoMander, VIEWS_KEY
+from rich.console import Console
+
+console = Console()
 
 app = Flask(__name__)
     
 
 def fetch_mander(*path):
-    return InfoMander('.datamander' + '/' + '/'.join(path))
+    return InfoMander('local://' + '/'.join(path))
 
 def render_views(*path):
-    mander = InfoMander(*path)
+    mander = fetch_mander(*path)
     view_nav_templ = read_template('partials/views.html')
+    first_name = None
+    if mander[VIEWS_KEY]:
+        first_name = list(mander['_views'].items())[0][0]
     return view_nav_templ.render(
         views=list(mander['_views'].items()), 
-        first_name=list(mander['_views'].items())[0][0]
+        first_name=first_name
     )
 
 def render_info(*path):
-    mander = InfoMander(*path)
-    print(mander.fetch().keys())
+    mander = fetch_mander(*path)
     return '<pre class="text-xs">' + json.dumps({k: str(v) for k, v in mander.fetch().items() if not k.startswith("_")}, indent=2) + '</pre>'
 
 def render_logs(*path):
-    mander = InfoMander(*path)
+    mander = fetch_mander(*path)
     view_nav_templ = read_template('partials/logs.html')
     return view_nav_templ.render(
         logs=list(mander['_logs'].items()), 
@@ -33,7 +38,7 @@ def render_logs(*path):
     )
 
 def render_artifacts(*path):
-    mander = InfoMander(*path)
+    mander = fetch_mander(*path)
     view_nav_templ = read_template('partials/artifacts.html')
     return view_nav_templ.render(artifacts=list(mander['_artifacts'].items()))
 
@@ -50,7 +55,9 @@ def render_top_nav(*args):
     for arg in args:
         curr_file_path = curr_file_path / arg
     glob = Path(curr_file_path).glob("*")
-    links_out = [str(g).replace('.datamander', '') for g in glob if g.is_dir()]
+    links_out = [str(g).replace('.datamander', '') for g in glob if g.is_dir() and not g.parts[-1].startswith('_')]
+    console.log(f'{links_out=}')
+    console.log(f'{path_pairs=}')
     return nav_temp.render(path_pairs=path_pairs, links_out=links_out)
 
 def render_mid_nav(*args):
@@ -67,10 +74,12 @@ def render_mander(*args):
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def home(path):
+    if 'favicon' in path:
+        return Response('', status=400)
     if len(path) == 0:
         return render_mander(*[])
     path_parts = path.split('/')
-    print(path_parts)
+    console.log(f'{path_parts=}')
     if path_parts[0] == 'info':
         return render_info(*path_parts[1:])
     if path_parts[0] == 'view':
