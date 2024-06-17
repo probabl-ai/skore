@@ -6,16 +6,17 @@ from jinja2 import Template
 from .infomander import InfoMander
 
 app = Flask(__name__)
+    
 
 def fetch_mander(*path):
-    InfoMander(*path)
+    return InfoMander('.datamander' + '/' + '/'.join(path))
 
 def render_views(*path):
     mander = InfoMander(*path)
     view_nav_templ = read_template('partials/views.html')
     return view_nav_templ.render(
-        views=list(mander['_templates'].items()), 
-        first_name=list(mander['_templates'].items())[0][0]
+        views=list(mander['_views'].items()), 
+        first_name=list(mander['_views'].items())[0][0]
     )
 
 def render_info(*path):
