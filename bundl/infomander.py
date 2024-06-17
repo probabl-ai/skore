@@ -8,9 +8,9 @@ from .templates import TemplateRenderer
 
 LOGS_KEY = '_logs'
 VIEWS_KEY = '_views'
-TEMPLATES_KEY = '_templates'
-ARTIFACTS_KEY = '_artifacts'
-STATS_KEY = '_stats'
+TEMPLATES_KEY = 'templates'
+ARTIFACTS_KEY = 'artifacts'
+STATS_KEY = 'stats'
 
 class InfoMander:
     """Represents a dictionary, on disk, with a path-like structure."""
@@ -81,3 +81,33 @@ class InfoMander:
     
     def __getitem__(self, key):
         return self.cache[key]
+
+    @classmethod
+    def get_property(cls, mander, dsl_str):
+        # Note that we may be dealing with a nested retreival
+        prop_chain = path.split('.')
+        if len(prop_chain) == 1:
+            without_dot = path[0][1:]
+            return self.cache[without_dot]
+        item_of_interest = self.cache[prop_chain[0]]
+        for prop in prop_chain[1:]:
+            item_of_interest = item_of_interest[prop]
+        return item_of_interest        
+
+    def get_child(self, *path):
+        new_path = self.project_path
+        for p in path:
+            new_path = new_path / p
+        return InfoMander('local://' + str(new_path))
+
+    def get(self, dsl_str):
+        if '@mander' not in dsl_str:
+            return dsl_str
+        path = dsl_str.split('/')
+        # There is no path to another mander, but we may have a nested property
+        if len(path) == 1:
+            return InfoMander.get_property(self, dsl_str)
+        mander = self.get_child(*path[:-1])
+        
+        raise NotImplmented('soon!')
+
