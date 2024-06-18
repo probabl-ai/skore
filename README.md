@@ -9,16 +9,18 @@ python -m pip install flask diskcache pandas altair
 
 
 ```python
-from bundl.infomander import InfoMander
+from mandr import InfoMander
 
-mander = InfoMander()
+# We use paths to explain where the dictionary is stored
+mander = InfoMander('/org/usecase/train/1')
 mander.add_info(...)
 mander.add_logs(...)
 mander.add_templates(...)
+mander.add_views(...)
 ```
 
 When ready to view, run flask:
 
 ```
-python -m flask --app bundl.app run --reload
+python -m flask --app mandr.app run --reload
 ```

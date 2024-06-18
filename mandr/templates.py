@@ -3,6 +3,11 @@ import pandas as pd
 import altair as alt
 import json 
 from jinja2 import Template
+from sklearn.utils._estimator_html_repr import estimator_html_repr
+
+
+def sklearn_model_repr(pipeline):
+    return estimator_html_repr(pipeline)
 
 
 def scatter_chart(title, x, y, **kwargs):
@@ -23,13 +28,15 @@ def scatter_chart(title, x, y, **kwargs):
 
 
 registry = {
-    'scatter-chart': scatter_chart
+    'scatter-chart': scatter_chart,
+    'sklearn-model-repr': sklearn_model_repr
 }
+
 
 class TemplateRenderer:
     """We do a few things on top of Jinja2 here"""
-    def __init__(self, datamander):
-        self.datamander = datamander
+    def __init__(self, mander):
+        self.mander = mander
     
     def clean_value(self, val): 
         return val.replace('/>', '').replace('"', '').replace("'", '')
