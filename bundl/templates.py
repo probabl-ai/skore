@@ -6,7 +6,6 @@ from jinja2 import Template
 
 
 def scatter_chart(title, x, y, **kwargs):
-    print(x, y)
     # Grab the dataframe that is assumed to be stored in the datamander.
     dataf = pd.DataFrame({'x': x, 'y': y})
 
@@ -47,9 +46,7 @@ class TemplateRenderer:
                 params = {k: self.clean_value(v) for k, v in elems}
                 for k, v in params.items():
                     if v.startswith('@mander'):
-                        print(k, self.datamander.get(v))
                         params[k] = self.datamander.get(v)
-                print(params)
                 ui = func(**params)
                 return template.replace(substr, ui)
         return template
