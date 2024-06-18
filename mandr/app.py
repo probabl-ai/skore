@@ -1,6 +1,5 @@
-from flask import Flask, render_template, Response
+from flask import Flask, Response
 from pathlib import Path
-import orjson
 import json
 from jinja2 import Template
 from .infomander import InfoMander, VIEWS_KEY

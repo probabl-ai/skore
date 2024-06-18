@@ -35,6 +35,10 @@ class InfoMander:
         
         # This will be used for rendering templates into views
         self.renderer = TemplateRenderer(self)
+    
+    def _check_key(self, key):
+        if key in [ARTIFACTS_KEY, TEMPLATES_KEY, VIEWS_KEY, LOGS_KEY]:
+            raise ValueError(f'Cannot overwrite {key} key. This is reserved for internal use.')
         
     def add_info(self, key, value, method='overwrite'):
         if method == 'overwrite':
@@ -53,6 +57,7 @@ class InfoMander:
         self.add_info(top_key, orig)
 
     def add_artifact(self, key, obj, **metadata):
+        self._check_key(key)
         file_location = self.artifact_path / f'{key}.joblib'
         if not file_location.parent.exists():
             file_location.parent.mkdir(parents=True)
@@ -60,9 +65,11 @@ class InfoMander:
         self._add_to_key(ARTIFACTS_KEY, key, {'path': file_location, **metadata})
 
     def add_view(self, key, html):
+        self._check_key(key)
         self._add_to_key(VIEWS_KEY, key, html)
 
     def add_template(self, key, template):
+        self._check_key(key)
         if key in self.cache[VIEWS_KEY].keys():
             raise ValueError(f'Cannot add template {key} because there is already a view with the same name.')
         self._add_to_key('_templates', key, template)
