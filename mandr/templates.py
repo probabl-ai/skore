@@ -53,11 +53,14 @@ class TemplateRenderer:
                 params = {k: self.clean_value(v) for k, v in elems}
                 for k, v in params.items():
                     if v.startswith('@mander'):
-                        params[k] = self.datamander.get(v)
+                        params[k] = self.mander.get(v)
                 ui = func(**params)
                 return template.replace(substr, ui)
         return template
 
     def render(self, template):
         final_template = self.insert_custom_ui(template)
-        return markdown.markdown(Template(final_template).render(**self.datamander.fetch()))
+        print(self.mander)
+        res = markdown.markdown(Template(final_template).render(**self.mander.fetch()))
+        print(res)
+        return res

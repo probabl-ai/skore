@@ -20,6 +20,7 @@ class InfoMander:
     """Represents a dictionary, on disk, with a path-like structure."""
     def __init__(self, path):        
         # Set local disk paths
+        self.path = path
         self.project_path = Path('.datamander/' + path)
         self.cache = Cache(self.project_path / STATS_FOLDER)
 

@@ -3,6 +3,7 @@ from pathlib import Path
 import json
 from jinja2 import Template
 from .infomander import InfoMander, VIEWS_KEY
+from .templates import TemplateRenderer
 from rich.console import Console
 
 console = Console()
@@ -79,8 +80,8 @@ def render_mander(*args):
     return t.render(body=res)
 
 
-@app.route('/', defaults={'path': ''})
-@app.route('/<path:path>')
+@app.route('/', defaults={'path': ''}, methods=['GET', 'POST'])
+@app.route('/<path:path>', methods=['GET', 'POST'])
 def home(path):
     if 'favicon' in path:
         return Response('', status=400)
@@ -96,34 +97,23 @@ def home(path):
         return render_logs(*path_parts[1:])
     if path_parts[0] == 'artifacts':
         return render_artifacts(*path_parts[1:])
+    if path_parts[0] == 'sketchpad':
+        return render_sketchpad(*path_parts[1:])
+    if path_parts[0] == 'render':
+        return render_template(*path_parts[1:])
     return render_mander(*path.split('/'))
 
 
-@app.route('/sketchpad')
-def sketchpad():
-    return read_template('sketchpad.html').render()
+def render_sketchpad(*path):
+    mander = fetch_mander(*path)
+    children = [f'{m.path}' for m in mander.children()]
+    return read_template('sketchpad.html').render(children=sorted(children), mander_path=mander.path)
 
 
-@app.post('/autocomplete')
-def autocomplete():
-    last_path = Path(request.form['path'])
-    if (Path('.datamander') / last_path).exists():
-        entry_path = Path(f'.datamander/{last_path}')
-    else:
-        entry_path = Path(f'.datamander/{last_path.parent}')
-    console.log(f'{entry_path=} {last_path=}')
-    if entry_path.exists() and entry_path.parts[0] == '.datamander' and entry_path.is_dir():
-        paths = entry_path.iterdir()
-    else:
-        paths = Path('.datamander').iterdir()
-    print(request.form)
-    return ''.join(f'<p>{p}</p>' for p in paths if p.is_dir() and not p.parts[-1].startswith('.'))
-
-
-@app.post('/render')
-def render():
-    print(request.form)
-    return 'this is the rendered template/mander combo'
+def render_template(*path):
+    mander = fetch_mander(*path)
+    template_rendered = TemplateRenderer(mander)
+    return template_rendered.render(request.form['template'])
 
 
 if __name__ == '__main__':
