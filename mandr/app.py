@@ -1,4 +1,4 @@
-from flask import Flask, Response
+from flask import Flask, Response, request
 from pathlib import Path
 import json
 from jinja2 import Template
@@ -13,6 +13,7 @@ app = Flask(__name__)
 def fetch_mander(*path):
     return InfoMander('/'.join(path))
 
+
 def render_views(*path):
     mander = fetch_mander(*path)
     view_nav_templ = read_template('partials/views.html')
@@ -24,9 +25,11 @@ def render_views(*path):
         first_name=first_name
     )
 
+
 def render_info(*path):
     mander = fetch_mander(*path)
     return '<pre class="text-xs">' + json.dumps({k: str(v) for k, v in mander.fetch().items() if not k.startswith("_")}, indent=2) + '</pre>'
+
 
 def render_logs(*path):
     mander = fetch_mander(*path)
@@ -36,14 +39,17 @@ def render_logs(*path):
         first_name=list(mander['_logs'].items())[0][0]
     )
 
+
 def render_artifacts(*path):
     mander = fetch_mander(*path)
     view_nav_templ = read_template('partials/artifacts.html')
     return view_nav_templ.render(artifacts=list(mander['_artifacts'].items()))
 
+
 def read_template(path):
     p = Path(__file__).parent / 'templates' / path
     return Template(p.read_text())
+
 
 def render_top_nav(*args):
     nav_temp = read_template('partials/nav-top.html')
@@ -59,9 +65,11 @@ def render_top_nav(*args):
     console.log(f'{path_pairs=}')
     return nav_temp.render(path_pairs=path_pairs, links_out=links_out)
 
+
 def render_mid_nav(*args):
     nav_temp = read_template('partials/nav-mid.html')
     return nav_temp.render(path='/'.join(args))
+
 
 def render_mander(*args):
     p = Path(__file__).parent / 'templates' / 'page.html'
@@ -69,6 +77,7 @@ def render_mander(*args):
     res = render_top_nav(*args)
     res += render_mid_nav(*args)
     return t.render(body=res)
+
 
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
@@ -88,6 +97,34 @@ def home(path):
     if path_parts[0] == 'artifacts':
         return render_artifacts(*path_parts[1:])
     return render_mander(*path.split('/'))
+
+
+@app.route('/sketchpad')
+def sketchpad():
+    return read_template('sketchpad.html').render()
+
+
+@app.post('/autocomplete')
+def autocomplete():
+    last_path = Path(request.form['path'])
+    if (Path('.datamander') / last_path).exists():
+        entry_path = Path(f'.datamander/{last_path}')
+    else:
+        entry_path = Path(f'.datamander/{last_path.parent}')
+    console.log(f'{entry_path=} {last_path=}')
+    if entry_path.exists() and entry_path.parts[0] == '.datamander' and entry_path.is_dir():
+        paths = entry_path.iterdir()
+    else:
+        paths = Path('.datamander').iterdir()
+    print(request.form)
+    return ''.join(f'<p>{p}</p>' for p in paths if p.is_dir() and not p.parts[-1].startswith('.'))
+
+
+@app.post('/render')
+def render():
+    print(request.form)
+    return 'this is the rendered template/mander combo'
+
 
 if __name__ == '__main__':
     app.run(debug=True, reload=True)
