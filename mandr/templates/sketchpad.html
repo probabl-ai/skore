@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        Template Sketchpad
+    </title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="//unpkg.com/alpinejs" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+    <script src="https://cdn.jsdelivr.net/gh/koaning/justcharts/justcharts.js"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.12" integrity="sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2XoQrxeTUQyRjrOnlCoYta87iKBWq3EsdM2" crossorigin="anonymous"></script>
+</head>
+<body>
+    <main>
+        <div class="m-4">
+            <h1 class="text-4xl font-bold">Template Sketchpad</h1> 
+            <small class="text-gray-400">The template can be edited on the right and will be live updated.</small>
+            <div class="flex pt-4">
+                <div class="w-1/2 m-2">
+                    <form name="main" id="template-form">
+                        <p class="text-md font-bold">Mander path</p> 
+                        <input autofocus type="text" name="path" class="w-full h-10 p-2 bg-gray-100 rounded-md font-mono" placeholder="Enter your mander path here." hx-post="/autocomplete" hx-trigger="input changed delay:200ms" hx-target="#search-suggestions">
+                        <br/><br/>
+                        <div id="search-suggestions" class="w-full text-gray-400"></div>
+                        <p class="text-md font-bold">Template</p> 
+                        <textarea name='template' class="w-full h-64 p-2 bg-gray-100 rounded-md font-mono" placeholder="Enter ManderMarkdown text here"></textarea>
+                        </form>
+                    <button class="btn primary" hx-trigger='click' hx-post='/render' hx-include="#template-form" hx-target="#template-out" >Submit</button>
+                </div>
+                <div class="w-1/2 m-2">
+                    <p class="text-md font-bold">Rendered output</p> 
+                    <div class="w-full border-dotted border-2 rounded-md">
+                        <div id="template-out"></div>
+                        <br/><br/>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>
