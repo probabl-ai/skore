@@ -40,7 +40,7 @@ class InfoMander:
     def _check_key(self, key):
         if key in [ARTIFACTS_KEY, TEMPLATES_KEY, VIEWS_KEY, LOGS_KEY]:
             raise ValueError(f'Cannot overwrite {key} key. This is reserved for internal use.')
-        
+               
     def add_info(self, key, value, method='overwrite'):
         if method == 'overwrite':
             self.cache[key] = value
@@ -63,7 +63,7 @@ class InfoMander:
         if not file_location.parent.exists():
             file_location.parent.mkdir(parents=True)
         dump(obj, file_location)
-        self._add_to_key(ARTIFACTS_KEY, key, {'path': file_location, **metadata})
+        self._add_to_key(ARTIFACTS_KEY, key, {'obj': obj, **metadata})
 
     def add_view(self, key, html):
         self._check_key(key)

@@ -28,7 +28,7 @@
                         <p class="text-md font-bold">Template</p> 
                         <textarea name='template' class="w-full h-64 p-2 bg-gray-100 rounded-md font-mono" placeholder="Enter ManderMarkdown text here"></textarea>
                         </form>
-                    <button class="btn primary" hx-trigger='click' hx-post='/render/{{mander_path}}' hx-include="#template-form" hx-target="#template-out" >Submit</button>
+                    <button class="btn primary rounded-md bg-gray-100" hx-trigger='click' hx-post='/render/{{mander_path}}' hx-include="#template-form" hx-target="#template-out" >Submit</button>
                 </div>
                 <div class="w-1/2 m-2">
                     <p class="text-md font-bold">Rendered output</p> 
