@@ -7,7 +7,6 @@ from sklearn.utils._estimator_html_repr import estimator_html_repr
 
 
 def sklearn_model_repr(pipeline):
-    print('pipeline', pipeline)
     return estimator_html_repr(pipeline)
 
 
@@ -32,6 +31,10 @@ registry = {
     'scatter-chart': scatter_chart,
     'sklearn-model-repr': sklearn_model_repr
 }
+charts = {
+    'scatter_chart': scatter_chart,
+    'sklearn_model_repr': sklearn_model_repr
+}
 
 
 class TemplateRenderer:
@@ -46,7 +49,6 @@ class TemplateRenderer:
         # For each registered element, check if it is there.
         for name, func in registry.items():
             element_of_interest = f'<{name}'
-            print('element_of_interest', element_of_interest)
             start = template.find(element_of_interest)
             end = template[start:].find("/>")
             substr = template[start:start + end + 2]
@@ -62,5 +64,5 @@ class TemplateRenderer:
 
     def render(self, template):
         final_template = self.insert_custom_ui(template)
-        res = markdown.markdown(Template(final_template).render(**self.mander.fetch()))
+        res = markdown.markdown(Template(final_template).render(**self.mander.fetch(), mander=self.mander, **charts))
         return res

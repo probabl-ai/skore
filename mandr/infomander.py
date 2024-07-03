@@ -18,10 +18,10 @@ LOGS_FOLDER = '.logs'
 
 class InfoMander:
     """Represents a dictionary, on disk, with a path-like structure."""
-    def __init__(self, path):        
+    def __init__(self, path, root=".datamander"):        
         # Set local disk paths
         self.path = path
-        self.project_path = Path('.datamander/' + path)
+        self.project_path = Path(root) / path
         self.cache = Cache(self.project_path / STATS_FOLDER)
 
         # For practical reasons the logs and artifacts are stored on disk, not sqlite
