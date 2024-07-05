@@ -1,0 +1,7 @@
+seaborn
+pandas
+scikit-learn
+networkx
+IPython
+graphviz
+statsmodels
