@@ -46,7 +46,6 @@ class TemplateRenderer:
         # For each registered element, check if it is there.
         for name, func in registry.items():
             element_of_interest = f'<{name}'
-            print('element_of_interest', element_of_interest)
             start = template.find(element_of_interest)
             end = template[start:].find("/>")
             substr = template[start:start + end + 2]
