@@ -1,3 +1,3 @@
 from .infomander import InfoMander
 
-__all__ = ['InfoMander']
+__all__ = ["InfoMander"]
