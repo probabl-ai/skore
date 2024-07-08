@@ -3,10 +3,11 @@ from pathlib import Path
 
 from flask import Flask, Response, request
 from jinja2 import Template
+from .infomander import InfoMander, VIEWS_KEY, LOGS_KEY, ARTIFACTS_KEY
+from .templates import TemplateRenderer
+
 from rich.console import Console
 
-from .infomander import VIEWS_KEY, InfoMander
-from .templates import TemplateRenderer
 
 console = Console()
 
@@ -44,16 +45,15 @@ def render_logs(*path):
     mander = fetch_mander(*path)
     view_nav_templ = read_template("partials/logs.html")
     return view_nav_templ.render(
-        logs=list(mander["_logs"].items()),
-        first_name=list(mander["_logs"].items())[0][0],
+        logs=list(mander[LOGS_KEY].items()), 
+        first_name=list(mander[LOGS_KEY].items())[0][0]
     )
 
 
 def render_artifacts(*path):
     mander = fetch_mander(*path)
-    view_nav_templ = read_template("partials/artifacts.html")
-    return view_nav_templ.render(artifacts=list(mander["_artifacts"].items()))
-
+    view_nav_templ = read_template('partials/artifacts.html')
+    return view_nav_templ.render(artifacts=list(mander[ARTIFACTS_KEY].items()))
 
 def read_template(path):
     p = Path(__file__).parent / "templates" / path
