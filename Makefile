@@ -3,6 +3,6 @@ pip-compile:
 	pip-compile --extra=test --output-file=requirements-test.txt pyproject.toml
 
 install:
-	python -m pip install -r requirements-test.txt
+	python -m pip install -e . -r requirements.txt -r requirements-test.txt
 	python -m pip install -e .
 	pre-commit install
