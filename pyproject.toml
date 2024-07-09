@@ -20,9 +20,13 @@ dependencies = [
   "srsly",
 ]
 
-
 [project.optional-dependencies]
-test = ["pytest", "pytest-cov", "ruff"]
+test = [
+  "pytest",
+  "pytest-cov",
+  "pre-commit",
+  "ruff"
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["mandr"]
