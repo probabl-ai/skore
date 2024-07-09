@@ -75,7 +75,8 @@ class InfoMander:
         """
         Add a key to a dictionary that is stored in the cache.
         
-        Sometimes we store a dictionary in the cache, this method allows us to add a new key to it.
+        Sometimes we store a dictionary in the cache, this method allows us to add a new
+        key to it.
 
         Parameters
         ----------
