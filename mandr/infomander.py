@@ -1,3 +1,5 @@
+"""Contains the code for the main InfoMander class."""
+
 from pathlib import Path
 from time import time
 
