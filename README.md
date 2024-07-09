@@ -1,5 +1,7 @@
 # mandr
 
+![lint and test](https://github.com/probabl-ai/mandr/actions/workflows/lint-and-test.yml/badge.svg)
+
 Service to send data into, install via
 
 ```
