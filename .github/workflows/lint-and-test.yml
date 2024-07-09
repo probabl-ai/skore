@@ -3,11 +3,7 @@
 
 name: Lint and test
 
-on:
-  push:
-    branches: ["*"]
-  pull_request:
-    branches: ["*"]
+on: [push]
 
 permissions:
   contents: read
