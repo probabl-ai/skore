@@ -106,7 +106,17 @@ def render_mander(*args):
 @app.route("/", defaults={"path": ""}, methods=["GET", "POST"])
 @app.route("/<path:path>", methods=["GET", "POST"])
 def home(path):
-    """Render the main route for the app. This route will render the mander and allow for navigation."""
+    """
+    Render the main route for the app. 
+    
+    This route will render the mander and allows for navigation. Internally this route 
+    can also render all the partials.
+    
+    Parameters
+    ----------
+    path : str
+        The path to render.
+    """
     if "favicon" in path:
         return Response("", status=400)
     if len(path) == 0:
