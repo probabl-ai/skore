@@ -1,3 +1,5 @@
+"""Contains all the logic to render templates and custom UI elements."""
+
 import json
 
 import altair as alt
@@ -8,11 +10,23 @@ from sklearn.utils._estimator_html_repr import estimator_html_repr
 
 
 def sklearn_model_repr(pipeline):
-    print("pipeline", pipeline)
+    """Render a HTML representation of the scikit-learn pipeline."""
     return estimator_html_repr(pipeline)
 
 
 def scatter_chart(title, x, y, **kwargs):
+    """
+    Render a scatter chart using Altair.
+
+    Parameters
+    ----------
+    title : str
+        The title of the chart.
+    x : list
+        The x values.
+    y : list
+        The y values.
+    """
     # Grab the dataframe that is assumed to be stored in the datamander.
     dataf = pd.DataFrame({"x": x, "y": y})
 
@@ -39,19 +53,28 @@ registry = {"scatter-chart": scatter_chart, "sklearn-model-repr": sklearn_model_
 
 
 class TemplateRenderer:
-    """We do a few things on top of Jinja2 here"""
+    """Class that can render templates and custom UI elements."""
 
     def __init__(self, mander):
+        """Initialize the renderer with the mander."""
         self.mander = mander
 
     def clean_value(self, val):
+        """Clean the value by removing quotes and />."""
         return val.replace("/>", "").replace('"', "").replace("'", "")
 
     def insert_custom_ui(self, template):
+        """
+        Insert the custom UI elements into the template.
+
+        Parameters
+        ----------
+        template : str
+            The template to insert the custom UI elements into.
+        """
         # For each registered element, check if it is there.
         for name, func in registry.items():
-            element_of_interest = f'<{name}'
-
+            element_of_interest = f"<{name}"
             start = template.find(element_of_interest)
             end = template[start:].find("/>")
             substr = template[start : start + end + 2]
@@ -66,6 +89,14 @@ class TemplateRenderer:
         return template
 
     def render(self, template):
+        """
+        Render the template with the mander.
+
+        Parameters
+        ----------
+        template : str
+            The template to render.
+        """
         final_template = self.insert_custom_ui(template)
         res = markdown.markdown(Template(final_template).render(**self.mander.fetch()))
         return res

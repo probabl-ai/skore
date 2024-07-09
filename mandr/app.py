@@ -1,13 +1,14 @@
+"""The webapp that can render the InfoMander objects."""
+
 import json
 from pathlib import Path
 
 from flask import Flask, Response, request
 from jinja2 import Template
-from .infomander import InfoMander, VIEWS_KEY, LOGS_KEY, ARTIFACTS_KEY
-from .templates import TemplateRenderer
-
 from rich.console import Console
 
+from .infomander import ARTIFACTS_KEY, LOGS_KEY, VIEWS_KEY, InfoMander
+from .templates import TemplateRenderer
 
 console = Console()
 
@@ -15,10 +16,12 @@ app = Flask(__name__)
 
 
 def fetch_mander(*path):
+    """Give a path as *args and return the mander at the given path."""
     return InfoMander("/".join(path))
 
 
 def render_views(*path):
+    """Render the views attached to the mander for the given path."""
     mander = fetch_mander(*path)
     view_nav_templ = read_template("partials/views.html")
     first_name = None
@@ -30,6 +33,7 @@ def render_views(*path):
 
 
 def render_info(*path):
+    """Render the info attached to the mander for the given path."""
     mander = fetch_mander(*path)
     return (
         '<pre class="text-xs">'
@@ -42,25 +46,30 @@ def render_info(*path):
 
 
 def render_logs(*path):
+    """Render the logs attached to the mander for the given path."""
     mander = fetch_mander(*path)
     view_nav_templ = read_template("partials/logs.html")
     return view_nav_templ.render(
-        logs=list(mander[LOGS_KEY].items()), 
-        first_name=list(mander[LOGS_KEY].items())[0][0]
+        logs=list(mander[LOGS_KEY].items()),
+        first_name=list(mander[LOGS_KEY].items())[0][0],
     )
 
 
 def render_artifacts(*path):
+    """Render the artifacts attached to the mander for the given path."""
     mander = fetch_mander(*path)
-    view_nav_templ = read_template('partials/artifacts.html')
+    view_nav_templ = read_template("partials/artifacts.html")
     return view_nav_templ.render(artifacts=list(mander[ARTIFACTS_KEY].items()))
 
+
 def read_template(path):
+    """Read a template from the templates directory."""
     p = Path(__file__).parent / "templates" / path
     return Template(p.read_text())
 
 
 def render_top_nav(*args):
+    """Render the top navigation bar for the given path, which allows for navigation."""
     nav_temp = read_template("partials/nav-top.html")
     path_pairs = []
     for i, p in enumerate(args):
@@ -80,11 +89,13 @@ def render_top_nav(*args):
 
 
 def render_mid_nav(*args):
+    """Render the content at a given path."""
     nav_temp = read_template("partials/nav-mid.html")
     return nav_temp.render(path="/".join(args))
 
 
 def render_mander(*args):
+    """Render the interface for the mander mander at the given path."""
     p = Path(__file__).parent / "templates" / "page.html"
     t = Template(p.read_text())
     res = render_top_nav(*args)
@@ -95,6 +106,17 @@ def render_mander(*args):
 @app.route("/", defaults={"path": ""}, methods=["GET", "POST"])
 @app.route("/<path:path>", methods=["GET", "POST"])
 def home(path):
+    """
+    Render the main route for the app.
+
+    This route will render the mander and allows for navigation. Internally this route
+    can also render all the partials.
+
+    Parameters
+    ----------
+    path : str
+        The path to render.
+    """
     if "favicon" in path:
         return Response("", status=400)
     if len(path) == 0:
@@ -117,6 +139,7 @@ def home(path):
 
 
 def render_sketchpad(*path):
+    """Render the sketchpad for templates."""
     mander = fetch_mander(*path)
     children = [f"{m.path}" for m in mander.children()]
     return read_template("sketchpad.html").render(
@@ -125,6 +148,7 @@ def render_sketchpad(*path):
 
 
 def render_template(*path):
+    """Render a template. Used for the sketchpad."""
     mander = fetch_mander(*path)
     template_rendered = TemplateRenderer(mander)
     return template_rendered.render(request.form["template"])
