@@ -47,6 +47,18 @@ class InfoMander:
             )
 
     def add_info(self, key, value, method="overwrite"):
+        """
+        Add information to the cache. Can be appended or overwritten.
+
+        Parameters
+        ----------
+        key : str
+            The key to add the information to.
+        value : any
+            The value to add.
+        method : str
+            The method to use. Can be 'overwrite' or 'append'.
+        """
         if method == "overwrite":
             self.cache[key] = value
         if method == "append":
@@ -58,11 +70,41 @@ class InfoMander:
         self.cache["updated_at"] = int(time())
 
     def _add_to_key(self, top_key, key, value):
+        """
+        Add a key to a dictionary that is stored in the cache.
+        
+        Sometimes we store a dictionary in the cache, this method allows us to add a new key to it.
+
+        Parameters
+        ----------
+        top_key : str
+            The key that points to the dictionary in the cache.
+        key : str
+            The key to add to the dictionary.
+        value : any
+            The value to add to the dictionary.
+        """
         orig = self.cache[top_key]
         orig[key] = value
         self.add_info(top_key, orig)
 
     def add_artifact(self, key, obj, **metadata):
+        """
+        Add an artifact to the cache.
+
+        Artifacts are treated differently as normal information objects. The main
+        assumption here is that these may contain machine learning models and it can
+        be a whole lot more practical to store these on disk.
+
+        Parameters
+        ----------
+        key : str
+            The key to store the artifact under.
+        obj : any
+            The object to store.
+        metadata : dict
+            Any metadata to store with the object.
+        """
         self._check_key(key)
         file_location = self.artifact_path / f"{key}.joblib"
         if not file_location.parent.exists():
@@ -71,32 +113,92 @@ class InfoMander:
         self._add_to_key(ARTIFACTS_KEY, key, {"obj": obj, **metadata})
 
     def add_view(self, key, html):
+        """
+        Add a rendered view to the cache.
+
+        Views can be thought of as static dashboards that we render based on the data 
+        that is stored in the mander. This view will become available in the web ui.
+
+        Parameters
+        ----------
+        key : str
+            The key to store the view under.
+        html : str
+            The HTML to store.
+        """
         self._check_key(key)
         self._add_to_key(VIEWS_KEY, key, html)
 
     def add_template(self, key, template):
+        """
+        Add a template to the mander.
+
+        Templates are used to render views. They are stored in the cache and can be 
+        rendered at a later stage.
+
+        Parameters
+        ----------
+        key : str
+            The key to store the template under.
+        template : Template
+            The template to store.
+        """
         self._check_key(key)
-        if key in self.cache[VIEWS_KEY].keys():
+        if key in self.cache[VIEWS_KEY]:
             raise ValueError(
-                f"Cannot add template {key} because there is already a view with the same name."
+                f"Cannot add template {key} because that name is already present."
             )
         self._add_to_key("_templates", key, template)
 
     def render_templates(self):
+        """
+        Render all templates in the cache, which becomes available as views.
+
+        Parameters
+        ----------
+        key : str
+            The key to store the template under.
+        template : Template
+            The template to store.
+        """
         for name, template in self.cache["_templates"].items():
             self.add_view(name, template.render(self))
 
     def add_logs(self, key, logs):
+        """
+        Add logs to the cache.
+
+        Logs are stored seperately in the cache and can be viewed in the web ui.
+
+        Parameters
+        ----------
+        key : str
+            The key to store the logs under.
+        logs : list
+            The logs to store.
+        """
         self._add_to_key(LOGS_KEY, key, logs)
 
     def fetch(self):
+        """Return all information from the cache."""
         return {k: self.cache[k] for k in self.cache.iterkeys()}
 
     def __getitem__(self, key):
+        """Return a specific item from the cache."""
         return self.cache[key]
 
     @classmethod
     def get_property(cls, mander, dsl_str):
+        """
+        Get a property from a mander using the DSL syntax.
+
+        Parameters
+        ----------
+        mander : InfoMander
+            The mander to get the property from.
+        dsl_str : str
+            The DSL string to use.
+        """
         # Note that we may be dealing with a nested retrieval
         prop_chain = [e for e in dsl_str.split(".") if e]
         if len(prop_chain) == 1:
@@ -117,16 +219,35 @@ class InfoMander:
         return item_of_interest
 
     def dsl_path_exists(self, path):
+        """
+        Assert that a DSL path exists in the mander. 
+
+        If the path does not exist, an assertion error will be raised.
+
+        Parameters
+        ----------
+        path : str
+            The path to check for.
+        """
         actual_path = ".datamander" / path
         assert Path(actual_path).exists()
 
     def get_child(self, *path):
+        """
+        Get a child mander from the current mander.
+
+        Parameters
+        ----------
+        path : str
+            The path to the child mander
+        """
         new_path = self.project_path
         for p in path:
             new_path = new_path / p
         return InfoMander(str(new_path))
 
     def children(self):
+        """Return all children of the mander."""
         return [
             InfoMander("/".join(p.parts[1:]))
             for p in self.project_path.iterdir()
@@ -134,6 +255,14 @@ class InfoMander:
         ]
 
     def get(self, dsl_str):
+        """
+        Get a property from the mander using the DSL syntax.
+        
+        Parameters
+        ----------
+        dsl_str : str
+            The DSL string to use.
+        """
         if "@mander" not in dsl_str:
             raise ValueError("@mander is needed at the start of dsl string")
         path = [p for p in dsl_str.replace("@mander", "").split("/") if p]
@@ -146,4 +275,5 @@ class InfoMander:
         return mander.get_property(mander, path[-1])
 
     def __repr__(self):
+        """Return a string representation of the mander."""
         return f"InfoMander({self.project_path})"
