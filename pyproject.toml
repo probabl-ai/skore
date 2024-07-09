@@ -29,7 +29,13 @@ test = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["mandr"]
+packages = ["src/mandr"]
+
+[tool.pip-tools.compile]
+upgrade = true
+
+[tool.pytest.ini_options]
+addopts = ["--import-mode=importlib"]
 
 [tool.ruff]
 src = ["mandr"]
