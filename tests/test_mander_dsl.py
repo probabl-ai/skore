@@ -4,6 +4,6 @@ This is tested here.
 """
 
 
-def test_the_evidence():
+def test_the_obvious():
     """Temporary test to ensure that CI runs it."""
     assert 2 + 2 == 4
