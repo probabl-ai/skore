@@ -74,7 +74,7 @@ class InfoMander:
     def _add_to_key(self, top_key, key, value):
         """
         Add a key to a dictionary that is stored in the cache.
-        
+
         Sometimes we store a dictionary in the cache, this method allows us to add a new
         key to it.
 
@@ -119,7 +119,7 @@ class InfoMander:
         """
         Add a rendered view to the cache.
 
-        Views can be thought of as static dashboards that we render based on the data 
+        Views can be thought of as static dashboards that we render based on the data
         that is stored in the mander. This view will become available in the web ui.
 
         Parameters
@@ -136,7 +136,7 @@ class InfoMander:
         """
         Add a template to the mander.
 
-        Templates are used to render views. They are stored in the cache and can be 
+        Templates are used to render views. They are stored in the cache and can be
         rendered at a later stage.
 
         Parameters
@@ -171,7 +171,7 @@ class InfoMander:
         """
         Add logs to the cache.
 
-        Logs are stored seperately in the cache and can be viewed in the web ui.
+        Logs are stored separately in the cache and can be viewed in the web ui.
 
         Parameters
         ----------
@@ -223,7 +223,7 @@ class InfoMander:
 
     def dsl_path_exists(self, path):
         """
-        Assert that a DSL path exists in the mander. 
+        Assert that a DSL path exists in the mander.
 
         If the path does not exist, an assertion error will be raised.
 
@@ -260,7 +260,7 @@ class InfoMander:
     def get(self, dsl_str):
         """
         Get a property from the mander using the DSL syntax.
-        
+
         Parameters
         ----------
         dsl_str : str
@@ -280,5 +280,3 @@ class InfoMander:
     def __repr__(self):
         """Return a string representation of the mander."""
         return f"InfoMander({self.project_path})"
-
-

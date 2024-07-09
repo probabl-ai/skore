@@ -17,7 +17,7 @@ def sklearn_model_repr(pipeline):
 def scatter_chart(title, x, y, **kwargs):
     """
     Render a scatter chart using Altair.
-    
+
     Parameters
     ----------
     title : str
@@ -66,7 +66,7 @@ class TemplateRenderer:
     def insert_custom_ui(self, template):
         """
         Insert the custom UI elements into the template.
-        
+
         Parameters
         ----------
         template : str
@@ -91,7 +91,7 @@ class TemplateRenderer:
     def render(self, template):
         """
         Render the template with the mander.
-        
+
         Parameters
         ----------
         template : str
@@ -100,5 +100,3 @@ class TemplateRenderer:
         final_template = self.insert_custom_ui(template)
         res = markdown.markdown(Template(final_template).render(**self.mander.fetch()))
         return res
-
-

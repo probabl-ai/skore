@@ -5,11 +5,10 @@ from pathlib import Path
 
 from flask import Flask, Response, request
 from jinja2 import Template
-from .infomander import InfoMander, VIEWS_KEY, LOGS_KEY, ARTIFACTS_KEY
-from .templates import TemplateRenderer
-
 from rich.console import Console
 
+from .infomander import ARTIFACTS_KEY, LOGS_KEY, VIEWS_KEY, InfoMander
+from .templates import TemplateRenderer
 
 console = Console()
 
@@ -51,16 +50,17 @@ def render_logs(*path):
     mander = fetch_mander(*path)
     view_nav_templ = read_template("partials/logs.html")
     return view_nav_templ.render(
-        logs=list(mander[LOGS_KEY].items()), 
-        first_name=list(mander[LOGS_KEY].items())[0][0]
+        logs=list(mander[LOGS_KEY].items()),
+        first_name=list(mander[LOGS_KEY].items())[0][0],
     )
 
 
 def render_artifacts(*path):
     """Render the artifacts attached to the mander for the given path."""
     mander = fetch_mander(*path)
-    view_nav_templ = read_template('partials/artifacts.html')
+    view_nav_templ = read_template("partials/artifacts.html")
     return view_nav_templ.render(artifacts=list(mander[ARTIFACTS_KEY].items()))
+
 
 def read_template(path):
     """Read a template from the templates directory."""
@@ -107,11 +107,11 @@ def render_mander(*args):
 @app.route("/<path:path>", methods=["GET", "POST"])
 def home(path):
     """
-    Render the main route for the app. 
-    
-    This route will render the mander and allows for navigation. Internally this route 
+    Render the main route for the app.
+
+    This route will render the mander and allows for navigation. Internally this route
     can also render all the partials.
-    
+
     Parameters
     ----------
     path : str
@@ -156,5 +156,3 @@ def render_template(*path):
 
 if __name__ == "__main__":
     app.run(debug=True, reload=True)
-
-
