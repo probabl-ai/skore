@@ -280,3 +280,5 @@ class InfoMander:
     def __repr__(self):
         """Return a string representation of the mander."""
         return f"InfoMander({self.project_path})"
+
+

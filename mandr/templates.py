@@ -100,3 +100,5 @@ class TemplateRenderer:
         final_template = self.insert_custom_ui(template)
         res = markdown.markdown(Template(final_template).render(**self.mander.fetch()))
         return res
+
+
