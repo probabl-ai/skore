@@ -1,0 +1,67 @@
+#:schema https://json.schemastore.org/pyproject.json
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mandr"
+description = "..."
+version = "0.1.0"
+dependencies = [
+  "Flask",
+  "altair",
+  "diskcache",
+  "jinja2",
+  "markdown",
+  "pandas",
+  "rich",
+  "scikit-learn",
+  "srsly",
+]
+
+[project.optional-dependencies]
+test = [
+  "pytest",
+  "pytest-cov",
+  "pre-commit",
+  "ruff"
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mandr"]
+
+[tool.pip-tools.compile]
+upgrade = true
+
+[tool.pytest.ini_options]
+addopts = ["--import-mode=importlib"]
+
+[tool.ruff]
+src = ["mandr"]
+
+[tool.ruff.lint]
+select = [
+  # pycodestyle
+  "E",
+  # Pyflakes
+  "F",
+  # pyupgrade
+  "UP",
+  # flake8-bugbear
+  "B",
+  # flake8-simplify
+  "SIM",
+  # flake8-print
+  "T",
+  # isort
+  "I",
+  # pydocstyle
+  "D",
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["D"]
