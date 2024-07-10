@@ -318,3 +318,25 @@ class InfoManderRepository:
 
         # return as relative to `root_path` Path objects
         return sorted([Path(p).relative_to(storage_path) for p in matching_paths])
+
+    @classmethod
+    def get(cls, path: str) -> InfoMander | None:
+        """Get an `InfoMander` by it's path."""
+        mander_path = _get_storage_path() / path
+        sub_folder_names = [
+            f"{p.relative_to(mander_path)}" for p in mander_path.iterdir()
+        ]
+        does_path_contain_mander_folder = any(
+            [
+                STATS_FOLDER in sub_folder_names,
+                ARTIFACTS_FOLDER in sub_folder_names,
+                LOGS_FOLDER in sub_folder_names,
+            ]
+        )
+        if (
+            not mander_path.exists()
+            or not mander_path.is_dir()
+            or not does_path_contain_mander_folder
+        ):
+            return None
+        return InfoMander(path)

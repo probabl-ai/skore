@@ -3,7 +3,7 @@
 import os
 from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -41,7 +41,10 @@ async def list_mandrs(request: Request) -> list[str]:
     return [f"{p}" for p in InfoManderRepository.get_all_paths()]
 
 
-@app.get("/mandrs/{path:path}")
-async def get_mandr(request: Request):
+@app.get("/mandrs/{mander_path:path}")
+async def get_mandr(request: Request, mander_path: str):
     """Return on mandr."""
-    return ""
+    mander = InfoManderRepository.get(path=mander_path)
+    if mander is None:
+        raise HTTPException(status_code=404, detail=f"No mandr found in {mander_path}")
+    return {"path": mander.project_path}
