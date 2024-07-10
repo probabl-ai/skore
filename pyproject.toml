@@ -22,9 +22,10 @@ dependencies = [
 
 [project.optional-dependencies]
 test = [
+  "pre-commit",
   "pytest",
   "pytest-cov",
-  "pre-commit",
+  "pytest-randomly",
   "ruff"
 ]
 
@@ -35,7 +36,14 @@ packages = ["src/mandr"]
 upgrade = true
 
 [tool.pytest.ini_options]
-addopts = ["--import-mode=importlib"]
+addopts = [
+    "--cov=src/",
+    "--cov=tests/",
+    "--cov-branch",
+    "--import-mode=importlib",
+    "--no-header",
+    "--verbosity=2",
+]
 
 [tool.ruff]
 src = ["mandr"]
