@@ -1,3 +1,5 @@
+from operator import attrgetter
+
 import joblib
 import pytest
 from mandr import InfoMander
@@ -163,7 +165,7 @@ class TestInfoMander:
         (tmp_path / "subroot1").mkdir(parents=True)
         (tmp_path / "subroot2").mkdir(parents=True)
 
-        assert mock_mandr.children() == [
+        assert sorted(mock_mandr.children(), key=attrgetter("project_path")) == [
             InfoMander("subroot1", root=tmp_path),
             InfoMander("subroot2", root=tmp_path),
         ]
