@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang=en>
+
+<head>
+  <meta charset=utf-8>
+  <link href="/static/styles/styles.css" rel="stylesheet" />
+
+  <script src="/static/scripts/htmx.min.js"></script>
+
+  <title>{% block title %}{% endblock title %}</title>
+  {% block extra_head %}{% endblock extra_head %}
+</head>
+
+<body>
+  <main>
+    {% block main %}{% endblock main %}
+  </main>
+</body>
+
+</html>

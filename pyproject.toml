@@ -18,15 +18,11 @@ dependencies = [
   "rich",
   "scikit-learn",
   "srsly",
+  "fastapi",
 ]
 
 [project.optional-dependencies]
-test = [
-  "pytest",
-  "pytest-cov",
-  "pre-commit",
-  "ruff"
-]
+test = ["pytest", "pytest-cov", "pre-commit", "ruff"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/mandr"]

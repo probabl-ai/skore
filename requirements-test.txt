@@ -6,6 +6,13 @@
 #
 altair==5.3.0
     # via mandr (pyproject.toml)
+annotated-types==0.7.0
+    # via pydantic
+anyio==4.4.0
+    # via
+    #   httpx
+    #   starlette
+    #   watchfiles
 attrs==23.2.0
     # via
     #   jsonschema
@@ -14,22 +21,52 @@ blinker==1.8.2
     # via flask
 catalogue==2.0.10
     # via srsly
+certifi==2024.7.4
+    # via
+    #   httpcore
+    #   httpx
 cfgv==3.4.0
     # via pre-commit
 click==8.1.7
-    # via flask
+    # via
+    #   flask
+    #   typer
+    #   uvicorn
 coverage[toml]==7.5.4
     # via pytest-cov
 diskcache==5.6.3
     # via mandr (pyproject.toml)
 distlib==0.3.8
     # via virtualenv
+dnspython==2.6.1
+    # via email-validator
+email-validator==2.2.0
+    # via fastapi
+fastapi==0.111.0
+    # via mandr (pyproject.toml)
+fastapi-cli==0.0.4
+    # via fastapi
 filelock==3.15.4
     # via virtualenv
 flask==3.0.3
     # via mandr (pyproject.toml)
-identify==2.5.36
+h11==0.14.0
+    # via
+    #   httpcore
+    #   uvicorn
+httpcore==1.0.5
+    # via httpx
+httptools==0.6.1
+    # via uvicorn
+httpx==0.27.0
+    # via fastapi
+identify==2.6.0
     # via pre-commit
+idna==3.7
+    # via
+    #   anyio
+    #   email-validator
+    #   httpx
 iniconfig==2.0.0
     # via pytest
 itsdangerous==2.2.0
@@ -37,11 +74,12 @@ itsdangerous==2.2.0
 jinja2==3.1.4
     # via
     #   altair
+    #   fastapi
     #   flask
     #   mandr (pyproject.toml)
 joblib==1.4.2
     # via scikit-learn
-jsonschema==4.22.0
+jsonschema==4.23.0
     # via altair
 jsonschema-specifications==2023.12.1
     # via jsonschema
@@ -63,6 +101,8 @@ numpy==2.0.0
     #   pandas
     #   scikit-learn
     #   scipy
+orjson==3.10.6
+    # via fastapi
 packaging==24.1
     # via
     #   altair
@@ -77,6 +117,10 @@ pluggy==1.5.0
     # via pytest
 pre-commit==3.7.1
     # via mandr (pyproject.toml)
+pydantic==2.8.2
+    # via fastapi
+pydantic-core==2.20.1
+    # via pydantic
 pygments==2.18.0
     # via rich
 pytest==8.2.2
@@ -87,37 +131,71 @@ pytest-cov==5.0.0
     # via mandr (pyproject.toml)
 python-dateutil==2.9.0.post0
     # via pandas
+python-dotenv==1.0.1
+    # via uvicorn
+python-multipart==0.0.9
+    # via fastapi
 pytz==2024.1
     # via pandas
 pyyaml==6.0.1
-    # via pre-commit
+    # via
+    #   pre-commit
+    #   uvicorn
 referencing==0.35.1
     # via
     #   jsonschema
     #   jsonschema-specifications
 rich==13.7.1
-    # via mandr (pyproject.toml)
-rpds-py==0.18.1
+    # via
+    #   mandr (pyproject.toml)
+    #   typer
+rpds-py==0.19.0
     # via
     #   jsonschema
     #   referencing
-ruff==0.5.0
+ruff==0.5.1
     # via mandr (pyproject.toml)
 scikit-learn==1.5.1
     # via mandr (pyproject.toml)
 scipy==1.14.0
     # via scikit-learn
+shellingham==1.5.4
+    # via typer
 six==1.16.0
     # via python-dateutil
+sniffio==1.3.1
+    # via
+    #   anyio
+    #   httpx
 srsly==2.4.8
     # via mandr (pyproject.toml)
+starlette==0.37.2
+    # via fastapi
 threadpoolctl==3.5.0
     # via scikit-learn
 toolz==0.12.1
     # via altair
+typer==0.12.3
+    # via fastapi-cli
+typing-extensions==4.12.2
+    # via
+    #   fastapi
+    #   pydantic
+    #   pydantic-core
+    #   typer
 tzdata==2024.1
     # via pandas
+ujson==5.10.0
+    # via fastapi
+uvicorn[standard]==0.30.1
+    # via fastapi
+uvloop==0.19.0
+    # via uvicorn
 virtualenv==20.26.3
     # via pre-commit
+watchfiles==0.22.0
+    # via uvicorn
+websockets==12.0
+    # via uvicorn
 werkzeug==3.0.3
     # via flask
