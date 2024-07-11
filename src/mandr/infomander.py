@@ -1,8 +1,11 @@
 """Contains the code for the main InfoMander class."""
 
-from pathlib import Path
+from json import JSONEncoder
+from pathlib import Path, PurePath
 from time import time
+from typing import Any
 
+import numpy as np
 from diskcache import Cache
 from joblib import dump
 from rich.console import Console
@@ -20,13 +23,18 @@ ARTIFACTS_FOLDER = ".artifacts"
 LOGS_FOLDER = ".logs"
 
 
+def _get_storage_path() -> Path:
+    """Return a path to the local mander storage."""
+    return Path(".datamander")
+
+
 class InfoMander:
     """Represents a dictionary, on disk, with a path-like structure."""
 
     def __init__(self, path):
         # Set local disk paths
         self.path = path
-        self.project_path = Path(".datamander/" + path)
+        self.project_path = _get_storage_path() / path
         self.cache = Cache(self.project_path / STATS_FOLDER)
 
         # For practical reasons the logs and artifacts are stored on disk, not sqlite
@@ -280,3 +288,95 @@ class InfoMander:
     def __repr__(self):
         """Return a string representation of the mander."""
         return f"InfoMander({self.project_path})"
+
+
+class InfoManderRepository:
+    """A repository to manage InfoMander objects."""
+
+    @classmethod
+    def get_all_paths(cls) -> list[Path]:
+        """Return a list of all manders relative path below `root_path`.
+
+        Parameters
+        ----------
+        root_path : str
+            The rooth path in which the function will look for manders.
+
+        Returns
+        -------
+        list[str]
+            A list of mander path.
+        """
+        target_folders = [STATS_FOLDER, ARTIFACTS_FOLDER, LOGS_FOLDER]
+        matching_paths = []
+        storage_path = _get_storage_path()
+
+        # get all matching folder as str
+        # (multiple times if folder contains stats & artifacts for example)
+        for root, folders, _ in storage_path.walk():
+            for folder in folders:
+                root_str = f"{root}"
+                if folder in target_folders and root_str not in matching_paths:
+                    matching_paths.append(root_str)
+
+        # return as relative to `_get_storage_path` Path objects
+        return sorted([Path(p).relative_to(storage_path) for p in matching_paths])
+
+    @classmethod
+    def get(cls, path: str) -> InfoMander | None:
+        """Get an `InfoMander` by it's path.
+
+        Parameters
+        ----------
+        path : str
+            The path in which the function will look for a mander.
+
+        Returns
+        -------
+        Infomander | None
+            The InfoMander or None if nothing is found at this path.
+        """
+        mander_path = _get_storage_path() / path
+        if mander_path.exists():
+            sub_folder_names = [
+                f"{p.relative_to(mander_path)}" for p in mander_path.iterdir()
+            ]
+            does_path_contain_mander_folder = any(
+                [
+                    STATS_FOLDER in sub_folder_names,
+                    ARTIFACTS_FOLDER in sub_folder_names,
+                    LOGS_FOLDER in sub_folder_names,
+                ]
+            )
+            if mander_path.is_dir() or not does_path_contain_mander_folder:
+                return InfoMander(path)
+        return None
+
+
+class JSONInfoManderEncoder(JSONEncoder):
+    """A dedicated to InfoMander JSON encoder.
+
+    usage:
+    ```
+    import json
+
+    json.dumps(mandr, cls=JSONInfoManderEncoder)
+    ```
+    """
+
+    def default(self, o: Any) -> Any:
+        """Try to encode everything that is in an InfoMander.
+
+        Unsupported type are ignored.
+        """
+        if isinstance(o, PurePath):
+            return f"{o.relative_to(_get_storage_path())}"
+
+        if isinstance(o, (np.ndarray, np.generic)):
+            return o.tolist()
+
+        try:
+            encoded_by_default = super().default(o)
+            return encoded_by_default
+        except TypeError:
+            return None
