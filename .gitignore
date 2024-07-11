@@ -160,3 +160,7 @@ cython_debug/
 #.idea/
 .datamander
 .DS_Store
+
+
+# Visual studio code
+.vscode
