@@ -1,8 +1,11 @@
 """Contains the code for the main InfoMander class."""
 
-from pathlib import Path
+from json import JSONEncoder
+from pathlib import Path, PurePath
 from time import time
+from typing import Any
 
+import numpy as np
 from diskcache import Cache
 from joblib import dump
 from rich.console import Console
@@ -316,27 +319,64 @@ class InfoManderRepository:
                 if folder in target_folders and root_str not in matching_paths:
                     matching_paths.append(root_str)
 
-        # return as relative to `root_path` Path objects
+        # return as relative to `_get_storage_path` Path objects
         return sorted([Path(p).relative_to(storage_path) for p in matching_paths])
 
     @classmethod
     def get(cls, path: str) -> InfoMander | None:
-        """Get an `InfoMander` by it's path."""
+        """Get an `InfoMander` by it's path.
+
+        Parameters
+        ----------
+        path : str
+            The path in which the function will look for a mander.
+
+        Returns
+        -------
+        Infomander | None
+            The InfoMander or None if nothing is found at this path.
+        """
         mander_path = _get_storage_path() / path
-        sub_folder_names = [
-            f"{p.relative_to(mander_path)}" for p in mander_path.iterdir()
-        ]
-        does_path_contain_mander_folder = any(
-            [
-                STATS_FOLDER in sub_folder_names,
-                ARTIFACTS_FOLDER in sub_folder_names,
-                LOGS_FOLDER in sub_folder_names,
+        if mander_path.exists():
+            sub_folder_names = [
+                f"{p.relative_to(mander_path)}" for p in mander_path.iterdir()
             ]
-        )
-        if (
-            not mander_path.exists()
-            or not mander_path.is_dir()
-            or not does_path_contain_mander_folder
-        ):
+            does_path_contain_mander_folder = any(
+                [
+                    STATS_FOLDER in sub_folder_names,
+                    ARTIFACTS_FOLDER in sub_folder_names,
+                    LOGS_FOLDER in sub_folder_names,
+                ]
+            )
+            if mander_path.is_dir() or not does_path_contain_mander_folder:
+                return InfoMander(path)
+        return None
+
+
+class JSONInfoManderEncoder(JSONEncoder):
+    """A dedicated to InfoMander JSON encoder.
+
+    usage:
+    ```
+    import json
+
+    json.dumps(mandr, cls=JSONInfoManderEncoder)
+    ```
+    """
+
+    def default(self, o: Any) -> Any:
+        """Try to encode everything that is in an InfoMander.
+
+        Unsupported type are ignored.
+        """
+        if isinstance(o, PurePath):
+            return f"{o.relative_to(_get_storage_path())}"
+
+        if isinstance(o, (np.ndarray, np.generic)):
+            return o.tolist()
+
+        try:
+            encoded_by_default = super().default(o)
+            return encoded_by_default
+        except TypeError:
             return None
-        return InfoMander(path)
