@@ -29,3 +29,6 @@ def test_get_mandr(client: TestClient):
     mander_json = response.json()
     assert mander_path in mander_json.get("path")
     assert response.status_code == 200
+
+    response = client.get("/mandrs/i/do/not/exists")
+    assert response.status_code == 404
