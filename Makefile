@@ -8,4 +8,4 @@ install:
 
 check-wip:
 	pre-commit run --all-files
-	pytest
+    python -m pytest tests
