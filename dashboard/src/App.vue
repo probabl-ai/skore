@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { RouterView } from 'vue-router'
+import { RouterView } from "vue-router";
 </script>
 
 <template>
   <header>
-    <nav>
-    </nav>
+    <nav></nav>
   </header>
 
   <RouterView />
