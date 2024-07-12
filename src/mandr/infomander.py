@@ -5,11 +5,9 @@ from time import time
 
 from diskcache import Cache
 from joblib import dump
-from rich.console import Console
 
 from .templates import TemplateRenderer
 
-console = Console()
 LOGS_KEY = "logs"
 VIEWS_KEY = "views"
 TEMPLATES_KEY = "templates"
