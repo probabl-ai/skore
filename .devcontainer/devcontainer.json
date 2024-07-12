@@ -19,6 +19,22 @@
 			"installJupyterlab": true,
 			"version": "3.12"
 		}
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"samuelcolvin.jinjahtml",
+				"tamasfe.even-better-toml",
+				"ms-toolsai.jupyter",
+				"ms-vsliveshare.vsliveshare",
+				"ms-python.mypy-type-checker",
+				"esbenp.prettier-vscode",
+				"stylelint.vscode-stylelint",
+				"charliermarsh.ruff",
+				"vitest.explorer",
+				"Vue.volar"
+			]
+		}
 	}
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
