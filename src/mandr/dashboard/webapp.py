@@ -1,14 +1,13 @@
 """A FastAPI based webapp to serve a local dashboard."""
 
-import json
 import os
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from mandr.infomander import InfoManderRepository, JSONInfoManderEncoder
+from mandr.infomander import ARTIFACTS_KEY, LOGS_KEY, VIEWS_KEY, InfoManderRepository
 
 _DASHBOARD_PATH = Path(__file__).resolve().parent
 _STATIC_PATH = _DASHBOARD_PATH / "static"
@@ -48,8 +47,11 @@ async def get_mandr(request: Request, mander_path: str):
     mander = InfoManderRepository.get(path=mander_path)
     if mander is None:
         raise HTTPException(status_code=404, detail=f"No mandr found in {mander_path}")
-    serializable_mander = {"path": mander.project_path} | mander.fetch()
-    json_str = json.dumps(serializable_mander, cls=JSONInfoManderEncoder).encode(
-        "utf-8"
-    )
-    return Response(media_type="application/json", content=json_str)
+    serialized_mander = {
+        "path": f"{mander.path}",
+        "views": mander[VIEWS_KEY].items(),
+        "logs": mander[LOGS_KEY].items(),
+        "artifacts": mander[ARTIFACTS_KEY].items(),
+        "info": {k: str(v) for k, v in mander.fetch().items() if not k.startswith("_")},
+    }
+    return serialized_mander

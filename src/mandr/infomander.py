@@ -1,11 +1,8 @@
 """Contains the code for the main InfoMander class."""
 
-from json import JSONEncoder
-from pathlib import Path, PurePath
+from pathlib import Path
 from time import time
-from typing import Any
 
-import numpy as np
 from diskcache import Cache
 from joblib import dump
 from rich.console import Console
@@ -351,32 +348,3 @@ class InfoManderRepository:
             if mander_path.is_dir() or not does_path_contain_mander_folder:
                 return InfoMander(path)
         return None
-
-
-class JSONInfoManderEncoder(JSONEncoder):
-    """A dedicated to InfoMander JSON encoder.
-
-    usage:
-    ```
-    import json
-
-    json.dumps(mandr, cls=JSONInfoManderEncoder)
-    ```
-    """
-
-    def default(self, o: Any) -> Any:
-        """Try to encode everything that is in an InfoMander.
-
-        Unsupported type are ignored.
-        """
-        if isinstance(o, PurePath):
-            return f"{o.relative_to(_get_storage_path())}"
-
-        if isinstance(o, (np.ndarray, np.generic)):
-            return o.tolist()
-
-        try:
-            encoded_by_default = super().default(o)
-            return encoded_by_default
-        except TypeError:
-            return None
