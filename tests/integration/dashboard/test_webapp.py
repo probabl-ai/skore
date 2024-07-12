@@ -14,7 +14,7 @@ def test_get_mandrs(client: TestClient):
         mander = InfoMander(f"probabl-ai/test-mandr/{i}")
         mander.add_info("hey", "ho")
 
-    response = client.get("/mandrs")
+    response = client.get("/api/mandrs")
     mander_paths = response.json()
     assert len(mander_paths) == number_of_manders
     assert response.status_code == 200
@@ -25,10 +25,10 @@ def test_get_mandr(client: TestClient):
     mander = InfoMander(mander_path)
     mander.add_info("hey", "ho let's go")
 
-    response = client.get(f"/mandrs/{mander_path}")
+    response = client.get(f"/api/mandrs/{mander_path}")
     mander_json = response.json()
     assert mander_path in mander_json.get("path")
     assert response.status_code == 200
 
-    response = client.get("/mandrs/i/do/not/exists")
+    response = client.get("/api/mandrs/i/do/not/exists")
     assert response.status_code == 404
