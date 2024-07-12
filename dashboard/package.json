@@ -11,7 +11,7 @@
     "build-only": "vite build",
     "type-check": "vue-tsc --build --force",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
-    "style-lint": "stylelint --fix **/*.{css,vue}",
+    "style-lint": "stylelint --fix src/**/*.{css,vue}",
     "format": "prettier --write src/"
   },
   "dependencies": {
