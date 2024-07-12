@@ -1,0 +1,22 @@
+{% extends "base.html.jinja" %}
+
+{% block title %}{% endblock title %}
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+{% endblock extra_head %}
+
+{% block main %}
+<h1>🚧 in progress dashboard 🚧</h1>
+<article>
+  <button hx-get="/mandrs" hx-target="next code" hx-swap="textContent">get all mandrs</button>
+  <pre><code class="language-json"></code></pre>
+</article>
+
+<script>
+  document.body.addEventListener('htmx:afterSwap', function (e) {
+    delete e.target.dataset.highlighted;
+    hljs.highlightElement(e.target);
+  });
+</script>
+{% endblock main %}
