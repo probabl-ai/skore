@@ -27,7 +27,15 @@ jobs:
       - name: Lint with pre-commit
         run: |
           pre-commit run --all-files
+      - name: Build SPA
+        run: |
+          cd dashboard
+          npm run build
+          cp -a dist/. ../src/mandr/dashboard/static
       - name: Test with pytest
         run: |
-          cd dashboard && npm run build
           pytest --cov
+      - name: Test with vitest
+        run: |
+          cd dashboard
+          npm run test:unit
