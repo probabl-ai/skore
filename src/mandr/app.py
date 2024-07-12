@@ -1,18 +1,17 @@
 """The webapp that can render the InfoMander objects."""
 
 import json
+import logging
 from pathlib import Path
 
 from flask import Flask, Response, request
 from jinja2 import Template
-from rich.console import Console
 
 from .infomander import ARTIFACTS_KEY, LOGS_KEY, VIEWS_KEY, InfoMander
 from .templates import TemplateRenderer
 
-console = Console()
-
 app = Flask(__name__)
+logger = logging.getLogger(__name__)
 
 
 def fetch_mander(*path):
@@ -83,8 +82,8 @@ def render_top_nav(*args):
         for g in glob
         if g.is_dir() and not g.parts[-1].startswith("_")
     ]
-    console.log(f"{links_out=}")
-    console.log(f"{path_pairs=}")
+    logger.debug(f"{links_out=}")
+    logger.debug(f"{path_pairs=}")
     return nav_temp.render(path_pairs=path_pairs, links_out=links_out)
 
 
@@ -122,7 +121,7 @@ def home(path):
     if len(path) == 0:
         return render_mander(*[])
     path_parts = path.split("/")
-    console.log(f"{path_parts=}")
+    logger.debug(f"{path_parts=}")
     if path_parts[0] == "info":
         return render_info(*path_parts[1:])
     if path_parts[0] == "view":
