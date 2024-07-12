@@ -1,6 +1,6 @@
 # Dashboard
 
-This sub directory aims to create a SPA dashboard that helps datascientists in there day to day work.
+This sub directory aims at creating a single page application supporting Mandr.
 
 It should build as a SPA and as a library of web components.
 
