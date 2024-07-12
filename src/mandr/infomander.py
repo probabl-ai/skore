@@ -290,8 +290,8 @@ class InfoMander:
 class InfoManderRepository:
     """A repository to manage InfoMander objects."""
 
-    @classmethod
-    def get_all_paths(cls) -> list[Path]:
+    @staticmethod
+    def get_all_paths() -> list[Path]:
         """Return a list of all manders relative path below `root_path`.
 
         Parameters
@@ -319,8 +319,8 @@ class InfoManderRepository:
         # return as relative to `_get_storage_path` Path objects
         return sorted([Path(p).relative_to(storage_path) for p in matching_paths])
 
-    @classmethod
-    def get(cls, path: str) -> InfoMander | None:
+    @staticmethod
+    def get(path: str) -> InfoMander | None:
         """Get an `InfoMander` by it's path.
 
         Parameters
