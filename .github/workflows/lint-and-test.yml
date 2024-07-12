@@ -23,6 +23,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install pre-commit
           pip install -e . -r requirements.txt -r requirements-test.txt
+          cd dashboard && npm install
       - name: Lint with pre-commit
         run: |
           pre-commit run --all-files
