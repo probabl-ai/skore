@@ -42,5 +42,9 @@ repos:
         language: node
         name: Use prettier to format frontend code.
         entry: bash -c "cd dashboard && npm run format"
+      - id: stylelint
+        language: node
+        name: Use stylelint to lint CSS.
+        entry: bash -c "cd dashboard && npm run style-lint"
 
 exclude: '.*\.min\.js'

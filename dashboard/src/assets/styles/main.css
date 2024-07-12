@@ -1,3 +1,3 @@
-@import "./_reset.css";
-@import "./_variables.css";
-@import "./_typography.css";
+@import url("./_reset.css");
+@import url("./_variables.css");
+@import url("./_typography.css");
