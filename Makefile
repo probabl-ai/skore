@@ -11,6 +11,7 @@ serve-dashboard-api:
 
 build-dashboard-frontend:
 	# build the SPA
+	cd dashboard && npm install
 	cd dashboard && npm run build
 	# empty app static folder except gitignore
 	find src/mandr/dashboard/static -mindepth 1 -maxdepth 1 ! -name ".gitignore" -exec rm -r -- {} +
