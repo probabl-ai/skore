@@ -6,5 +6,5 @@ install:
 	python -m pip install -e . -r requirements.txt -r requirements-test.txt
 	pre-commit install
 
-run-dashboard-api:
+serve-dashboard-api:
 	python -m uvicorn mandr.dashboard.webapp:app --reload --reload-dir src --host 0.0.0.0 --timeout-graceful-shutdown 0
