@@ -23,9 +23,19 @@ jobs:
           python -m pip install --upgrade pip
           pip install pre-commit
           pip install -e . -r requirements.txt -r requirements-test.txt
+          cd frontend && npm install
       - name: Lint with pre-commit
         run: |
           pre-commit run --all-files
+      - name: Build SPA
+        run: |
+          cd frontend
+          npm run build
+          cp -a dist/. ../src/mandr/dashboard/static
       - name: Test with pytest
         run: |
           pytest --cov
+      - name: Test with vitest
+        run: |
+          cd frontend
+          npm run test:unit
