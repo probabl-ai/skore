@@ -1,5 +1,6 @@
 """Contains the code for the main InfoMander class."""
 
+import os
 from pathlib import Path
 from time import time
 
@@ -308,7 +309,7 @@ class InfoManderRepository:
 
         # get all matching folder as str
         # (multiple times if folder contains stats & artifacts for example)
-        for root, folders, _ in storage_path.walk():
+        for root, folders, _ in os.walk(storage_path.resolve()):
             for folder in folders:
                 root_str = f"{root}"
                 if folder in target_folders and root_str not in matching_paths:
