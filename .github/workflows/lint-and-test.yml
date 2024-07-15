@@ -31,7 +31,7 @@ jobs:
         run: |
           cd frontend
           npm run build
-          cp -a dist/. ../src/mandr/frontend/static
+          cp -a dist/. ../src/mandr/dashboard/static
       - name: Test with pytest
         run: |
           pytest --cov
