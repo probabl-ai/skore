@@ -28,6 +28,16 @@ test = [
   "ruff"
 ]
 
+doc = [
+  "seaborn",
+  "pandas",
+  "scikit-learn",
+  "networkx",
+  "IPython",
+  "graphviz",
+  "statsmodels"
+]
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/mandr"]
 

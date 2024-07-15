@@ -1,9 +1,11 @@
+# ruff: noqa
 from collections import Counter
 from itertools import combinations
-from matplotlib import pyplot as plt
-import seaborn as sns
-import pandas as pd
+
 import networkx as nx
+import pandas as pd
+import seaborn as sns
+from matplotlib import pyplot as plt
 
 TARGET_COL = "fraud_flag"
 MAX_ITEMS = 24
@@ -31,7 +33,6 @@ def plot_n_items_per_basket(df, n_most_freq=24):
     )
 
     for item, ax in zip(fraud_items, axes.flatten()):
-
         # Display the distribution as a bar chart.
         sns.barplot(
             df_n_items.query("item == @item and n_item > 1"),
@@ -125,7 +126,6 @@ def plot_nbr_per_item(df, n_most_freq=24):
     )
 
     for item, ax in zip(fraud_items, axes.flatten()):
-
         item_mask = df["item"] == item
         nbrs, totals = [], []
 
@@ -171,9 +171,7 @@ def plot_nbr_per_item(df, n_most_freq=24):
                 .value_counts(normalize=False)
                 .sort_index()
                 .values
-            )[
-                1:
-            ]  # remove nbr = "1"
+            )[1:]  # remove nbr = "1"
             ax.bar_label(container, labels)
 
         ax.yaxis.label.set_visible(False)
@@ -198,7 +196,6 @@ def _melt_dataframe(df, group_col1, group_col2):
 
 
 def plot_price_distribution(df, title=None):
-
     fig, axes = plt.subplots(nrows=2, sharex=True, sharey=True)
     palette = ["blue", "orange"]
 
@@ -232,9 +229,9 @@ def plot_price_distribution(df, title=None):
             label=f"Std Dev: {std:.2f}",
         )
         ax.set_title(f"{TARGET_COL}: {idx}")
-        ax.set_xlim([0, df_["total_price_"].quantile(.99)])
+        ax.set_xlim([0, df_["total_price_"].quantile(0.99)])
         ax.legend()
-    
+
     if title:
         fig.suptitle(title)
 
@@ -258,8 +255,10 @@ def plot_graph(
     node_size_coeff=100_000,
     edge_width_coeff=1000,
     node_color="#210070",
+    figsize=(20, 20),
+    exclude=None,
 ):
-    node_counter, edge_counter = count_nodes_edges(df, column)
+    node_counter, edge_counter = count_nodes_edges(df, column, exclude=exclude)
 
     top_edges = [tuple_ for tuple_, _ in edge_counter.most_common(n=top)]
     left, right = zip(*top_edges)
@@ -267,7 +266,7 @@ def plot_graph(
 
     node_total = node_counter.total()
     edge_total = edge_counter.total()
-    
+
     g = nx.Graph()
     g.add_nodes_from(
         [
@@ -282,15 +281,15 @@ def plot_graph(
             for (left, right), total in edge_counter.items()
             if (left, right) in top_edges
         ]
-    ) 
+    )
 
-    fig, ax = plt.subplots(figsize=(20, 20))
+    fig, ax = plt.subplots(figsize=figsize)
 
     pos = nx.kamada_kawai_layout(g)
-    
+
     node_size = [g.nodes[node]["size"] for node in list(g)]
     width = [g.edges[edge]["width"] for edge in list(g.edges)]
-    
+
     nx.draw_networkx_nodes(
         g,
         pos,
@@ -307,26 +306,25 @@ def plot_graph(
         node_size=node_size,
     )
     label_options = {"ec": "k", "fc": "white", "alpha": 0.7}
-    nx.draw_networkx_labels(g, pos, font_size=9, bbox=label_options);
+    nx.draw_networkx_labels(g, pos, font_size=9, bbox=label_options)
 
 
-def count_nodes_edges(df, column):
+def count_nodes_edges(df, column, exclude=None):
     node_counter, edge_counter = Counter(), Counter()
-    
+
     cols = get_group_cols(column)
     for row in df[cols].values:
-        nodes = [node for node in row if node is not pd.NA]
+        nodes = [node for node in row if node is not pd.NA and node != exclude]
         node_counter.update(nodes)
-        
-        edge_counter.update([
-            tuple(sorted(edge)) for edge in combinations(set(nodes), 2)
-        ])
-    
+
+        edge_counter.update(
+            [tuple(sorted(edge)) for edge in combinations(set(nodes), 2)]
+        )
+
     return node_counter, edge_counter
 
 
 def get_fraud_ratio(df, column):
-
     counter_valid, _ = count_nodes_edges(
         df.loc[df[TARGET_COL] == 0],
         column=column,
@@ -335,23 +333,24 @@ def get_fraud_ratio(df, column):
         df.loc[df[TARGET_COL] == 1],
         column=column,
     )
-    
+
     total_valid = pd.Series(counter_valid, name="total_valid").to_frame()
     total_fraud = pd.Series(counter_fraud, name="total_fraud").to_frame()
     total = total_valid.join(total_fraud).convert_dtypes()
-    total["fraud_ratio"] = (total["total_fraud"] / (total["total_valid"] + total["total_fraud"])).fillna(0)
-    
+    total["fraud_ratio"] = (
+        total["total_fraud"] / (total["total_valid"] + total["total_fraud"])
+    ).fillna(0)
+
     mask = total["fraud_ratio"] > 0
     total = total.loc[mask].sort_values("fraud_ratio", ascending=False)
-    
+
     return total
-    
+
 
 def plot_fraud_ratio(df, column, figsize=None):
-    
     palette = ["blue", "coral"]
     df_total = get_fraud_ratio(df, column)
-    
+
     figsize = figsize or (12, 15)
     fig, ax = plt.subplots(figsize=figsize)
     ax2 = ax.twiny()
@@ -382,17 +381,17 @@ def plot_fraud_ratio(df, column, figsize=None):
         label=f"Average fraud ratio ({avg_fraud:.4f})",
     )
     ax2.legend()
-    
-    ax2.spines['bottom'].set_color(palette[0])
-    ax.tick_params(axis='x', colors=palette[0], labelsize=15)
+
+    ax2.spines["bottom"].set_color(palette[0])
+    ax.tick_params(axis="x", colors=palette[0], labelsize=15)
     ax.xaxis.label.set_color(palette[0])
     ax.xaxis.label.set_size(15)
     ax.bar_label(ax.containers[0])
-    
-    ax2.spines['top'].set_color(palette[1])
-    ax2.tick_params(axis='x', colors=palette[1], labelsize=15)
+
+    ax2.spines["top"].set_color(palette[1])
+    ax2.tick_params(axis="x", colors=palette[1], labelsize=15)
     ax2.xaxis.label.set_color(palette[1])
     ax2.xaxis.label.set_size(15)
-    
+
     ax2.grid()
     plt.tight_layout()
