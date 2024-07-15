@@ -9,8 +9,8 @@
 }
 
 body {
-  font-family: Geist, sans-serif;
   color: var(--text-color);
+  font-family: Geist, sans-serif;
 }
 
 code {
