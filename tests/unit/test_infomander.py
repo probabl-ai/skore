@@ -157,13 +157,19 @@ class TestInfoMander:
         tmp_path /= "root"
 
         (tmp_path).mkdir(parents=True)
-        (tmp_path / ".artifacts").mkdir(parents=True)
         (tmp_path / ".stats").mkdir(parents=True)
+        (tmp_path / ".artifacts").mkdir(parents=True)
 
         assert mock_mandr.children() == []
 
         (tmp_path / "subroot1").mkdir(parents=True)
         (tmp_path / "subroot2").mkdir(parents=True)
+        (tmp_path / "subroot2" / ".stats").mkdir(parents=True)
+        (tmp_path / "subroot2" / ".artifacts").mkdir(parents=True)
+        (tmp_path / "subroot2" / "subsubroot1").mkdir(parents=True)
+        (tmp_path / "subroot2" / "subsubroot2").mkdir(parents=True)
+        (tmp_path / "subroot2" / "subsubroot2" / ".stats").mkdir(parents=True)
+        (tmp_path / "subroot2" / "subsubroot2" / ".artifacts").mkdir(parents=True)
 
         assert sorted(mock_mandr.children(), key=attrgetter("project_path")) == [
             InfoMander("subroot1", root=tmp_path),

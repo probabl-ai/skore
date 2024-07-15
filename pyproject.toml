@@ -18,6 +18,7 @@ dependencies = [
   "rich",
   "scikit-learn",
   "srsly",
+  "fastapi",
 ]
 
 [project.optional-dependencies]

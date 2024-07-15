@@ -1,7 +1,9 @@
 from datetime import UTC, datetime
 
 import pytest
+from fastapi.testclient import TestClient
 from mandr import InfoMander
+from mandr.dashboard.webapp import app
 
 
 @pytest.fixture
@@ -32,3 +34,9 @@ def mock_mandr(monkeypatch, mock_now, tmp_path):
     monkeypatch.setattr("mandr.infomander.datetime", MockDatetime)
 
     return InfoMander("root", root=tmp_path)
+
+
+@pytest.fixture
+def client() -> TestClient:
+    """Build the test client."""
+    return TestClient(app=app)

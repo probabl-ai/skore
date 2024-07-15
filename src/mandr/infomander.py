@@ -9,6 +9,11 @@ from joblib import dump
 from .templates import TemplateRenderer
 
 
+def _get_storage_path() -> Path:
+    """Return a path to the local mander storage."""
+    return Path(".datamander")
+
+
 class InfoMander:
     """Represents a dictionary, on disk, with a path-like structure."""
 
@@ -32,15 +37,17 @@ class InfoMander:
         ARTIFACTS_FOLDER,
     }
 
-    def __init__(
-        self, path: str, /, *, root: Path = (Path(__file__).parent / ".datamander")
-    ):
+    def __init__(self, path: str, /, *, root: Path = None):
         if Path(path).is_absolute():
             raise ValueError("Cant use absolute path")
 
+        if root is None:
+            root = Path(".datamander").resolve()
+
         # Set local disk paths
-        self.root_path = root
-        self.project_path = self.root_path / path
+        self.path = path
+        self.root = root
+        self.project_path = self.root / path
         self.cache = Cache(self.project_path / InfoMander.STATS_FOLDER)
 
         # For practical reasons the artifacts are stored on disk, not sqlite
@@ -249,7 +256,7 @@ class InfoMander:
         path : str
             The path to check for.
         """
-        assert (self.root_path / path).exists()
+        assert (self.root / path).exists()
 
     def get_child(self, *pathsegments: str):
         """
@@ -260,15 +267,12 @@ class InfoMander:
         *pathsegments : str
             The path to the child mander.
         """
-        return InfoMander(Path(*pathsegments), root=self.project_path)
+        return InfoMander(str(Path(*pathsegments)), root=self.project_path)
 
     def children(self):
-        """Return all children of the mander."""
+        """Return all direct children of the mander."""
         return [
-            InfoMander(
-                p.relative_to(self.project_path),
-                root=self.project_path,
-            )
+            InfoMander(str(p.relative_to(self.project_path)), root=self.project_path)
             for p in self.project_path.iterdir()
             if p.is_dir() and (p.stem not in InfoMander.RESERVED_FOLDERS)
         ]
