@@ -1,22 +1,42 @@
-from pathlib import Path
+from datetime import UTC, datetime
 
 import pytest
 from fastapi.testclient import TestClient
+from mandr import InfoMander
 from mandr.dashboard.webapp import app
+
+
+@pytest.fixture
+def mock_now():
+    return datetime.now(tz=UTC)
+
+
+@pytest.fixture
+def mock_nowstr(mock_now):
+    return mock_now.isoformat()
+
+
+@pytest.fixture
+def mock_mandr(monkeypatch, mock_now, tmp_path):
+    class MockCache(dict):
+        def __init__(self, *args, **kwargs):
+            super().__init__()
+
+        def iterkeys(self, *args, **kwargs):
+            yield from self.keys()
+
+    class MockDatetime:
+        @staticmethod
+        def now(*args, **kwargs):
+            return mock_now
+
+    monkeypatch.setattr("mandr.infomander.Cache", MockCache)
+    monkeypatch.setattr("mandr.infomander.datetime", MockDatetime)
+
+    return InfoMander("root", root=tmp_path)
 
 
 @pytest.fixture
 def client() -> TestClient:
     """Build the test client."""
     return TestClient(app=app)
-
-
-@pytest.fixture(autouse=True)
-def create_manders_in_tmp(monkeypatch, tmp_path):
-    """Create all manders in a tmp path for test purposes."""
-
-    def mocked_get_storage_path() -> Path:
-        """Return a path to the local mander storage."""
-        return Path(tmp_path)
-
-    monkeypatch.setattr("mandr.infomander._get_storage_path", mocked_get_storage_path)
