@@ -21,7 +21,7 @@ def test_list_mandrs(client: TestClient, tmp_path):
     InfoMander("root/subroot2/subsubroot1", root=tmp_path).add_info("key", "value")
     InfoMander("root/subroot2/subsubroot2", root=tmp_path).add_info("key", "value")
 
-    response = client.get("/mandrs")
+    response = client.get("/api/mandrs")
 
     assert response.status_code == 200
     assert response.json() == [
@@ -49,7 +49,7 @@ def test_get_mandr(monkeypatch, mock_now, mock_nowstr, client: TestClient, tmp_p
     InfoMander("root/subroot2/subsubroot1", root=tmp_path).add_info("key", None)
     InfoMander("root/subroot2/subsubroot2", root=tmp_path).add_info("key", "value")
 
-    response = client.get("/mandrs/root/subroot2/subsubroot2")
+    response = client.get("/api/mandrs/root/subroot2/subsubroot2")
 
     assert response.status_code == 200
     assert response.json() == {
@@ -63,6 +63,6 @@ def test_get_mandr(monkeypatch, mock_now, mock_nowstr, client: TestClient, tmp_p
         },
     }
 
-    response = client.get("/mandrs/root/subroot2/subroot3")
+    response = client.get("/api/mandrs/root/subroot2/subroot3")
 
     assert response.status_code == 404
