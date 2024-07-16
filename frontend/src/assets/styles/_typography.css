@@ -1,20 +1,20 @@
 @font-face {
-  font-family: "Geist";
+  font-family: Geist;
   src: url("../fonts/GeistVF.woff2") format("woff2");
 }
 
 @font-face {
-  font-family: "GeistMono";
+  font-family: GeistMono;
   src: url("../fonts/GeistMonoVF.woff2") format("woff2");
 }
 
 body {
-  font-family: "Geist";
   color: var(--text-color);
+  font-family: Geist, sans-serif;
 }
 
 code {
-  font-family: "GeistMono";
+  font-family: GeistMono, monospace;
 }
 
 a,
