@@ -11,7 +11,7 @@ check-wip:
 	python -m pytest tests
 
 serve-api:
-	python -m uvicorn mandr.dashboard.webapp:app --reload --reload-dir ./src --host 0.0.0.0 --timeout-graceful-shutdown 0
+	MANDR_ROOT=.datamander MANDR_PATH=probabl-ai python -m uvicorn mandr.dashboard.webapp:app --reload --reload-dir ./src --host 0.0.0.0 --timeout-graceful-shutdown 0
 
 build-frontend:
 	# build the SPA
