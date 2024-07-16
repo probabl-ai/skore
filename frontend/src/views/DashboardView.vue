@@ -1,72 +1,37 @@
 <script setup lang="ts">
-import FileTree, { type FileTreeNode } from "../components/FileTree.vue";
-const records: FileTreeNode[] = [
-  {
-    label: "Punk Rock",
-    children: [
-      {
-        label: "The Clash",
-        children: [
-          { label: "The Clash" },
-          { label: "Give 'Em Enough Rope" },
-          { label: "London Calling" },
-          { label: "Sandinista!" },
-          { label: "Combat Rock" },
-          { label: "Cut the Crap" },
-        ],
-      },
-      {
-        label: "Ramones",
-        children: [
-          { label: "Ramones" },
-          { label: "Leave Home" },
-          { label: "Rocket to Russia" },
-          { label: "Road to Ruin" },
-          { label: "End of the Century" },
-          { label: "Pleasant Dreams" },
-          { label: "Subterranean Jungle" },
-          { label: "Too Tough to Die" },
-          { label: "Animal Boy" },
-          { label: "Halfway to Sanity" },
-          { label: "Brain Drain" },
-          { label: "Mondo Bizarro" },
-          { label: "Acid Eaters" },
-          { label: "¡Adios Amigos!" },
-        ],
-      },
-    ],
-  },
-  {
-    label: "French touch",
-    children: [
-      {
-        label: "Laurent Garnier",
-        children: [
-          { label: "Shot in the Dark" },
-          { label: "Club Traxx EP" },
-          { label: "30" },
-          { label: "Early Works" },
-          { label: "Unreasonable Behaviour" },
-          { label: "The Cloud Making Machine" },
-          { label: "Retrospective" },
-          { label: "Public Outburst" },
-          { label: "Tales of a Kleptomaniac" },
-          { label: "Suivront Mille Ans De Calme" },
-          { label: "Home Box" },
-          { label: "Paris Est à Nous" },
-          { label: "Le Roi Bâtard" },
-          { label: "De Película" },
-          { label: "Entre la Vie et la Mort" },
-          { label: "33 tours et puis s'en vont" },
-        ],
-      },
-    ],
-  },
-];
+import { computed } from "vue";
+import FileTree, { type FileTreeNode } from "@/components/FileTree.vue";
+import { getAllManderPaths } from "@/services/api";
+
+const manderPaths = await getAllManderPaths();
+const pathsAsFileTreeNodes = computed(() => {
+  const tree: FileTreeNode[] = [];
+  for (let p of manderPaths) {
+    const slugs = p.split("/");
+    const rootSlug = slugs[0];
+    let currentNode = tree.find((n) => n.label == rootSlug);
+    if (!currentNode) {
+      currentNode = { label: rootSlug };
+      tree.push(currentNode);
+    }
+    let n = currentNode!;
+    for (let s of slugs.slice(1)) {
+      n.children = n.children || [];
+      let childNode = n.children.find((n) => n.label == s);
+      if (!childNode) {
+        childNode = { label: s };
+        n.children.push(childNode);
+      }
+      n = childNode;
+    }
+  }
+
+  return tree;
+});
 </script>
 
 <template>
-  <main>
-    <FileTree :nodes="records" />
-  </main>
+  <div class="dashboard">
+    <FileTree :nodes="pathsAsFileTreeNodes"></FileTree>
+  </div>
 </template>

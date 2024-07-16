@@ -9,12 +9,12 @@ export interface FileTreeNode {
 <script setup lang="ts">
 import FileTreeItem from "./FileTreeItem.vue";
 
-const props = defineProps<{ nodes: FileTreeNode[] }>();
+defineProps<{ nodes: FileTreeNode[] }>();
 </script>
 
 <template>
   <FileTreeItem
-    v-for="(node, index) in props.nodes"
+    v-for="(node, index) in nodes"
     :key="index"
     :label="node.label"
     :children="node.children"
