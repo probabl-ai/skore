@@ -1,21 +1,12 @@
 """Contains the code for the main InfoMander class."""
 
+from datetime import UTC, datetime
 from pathlib import Path
-from time import time
 
 from diskcache import Cache
 from joblib import dump
 
 from .templates import TemplateRenderer
-
-LOGS_KEY = "logs"
-VIEWS_KEY = "views"
-TEMPLATES_KEY = "templates"
-ARTIFACTS_KEY = "artifacts"
-
-STATS_FOLDER = ".stats"
-ARTIFACTS_FOLDER = ".artifacts"
-LOGS_FOLDER = ".logs"
 
 
 def _get_storage_path() -> Path:
@@ -26,32 +17,59 @@ def _get_storage_path() -> Path:
 class InfoMander:
     """Represents a dictionary, on disk, with a path-like structure."""
 
-    def __init__(self, path):
+    ARTIFACTS_KEY = "artifacts"
+    LOGS_KEY = "logs"
+    TEMPLATES_KEY = "templates"
+    VIEWS_KEY = "views"
+
+    RESERVED_KEYS = {
+        ARTIFACTS_KEY,
+        LOGS_KEY,
+        TEMPLATES_KEY,
+        VIEWS_KEY,
+    }
+
+    STATS_FOLDER = ".stats"
+    ARTIFACTS_FOLDER = ".artifacts"
+
+    RESERVED_FOLDERS = {
+        STATS_FOLDER,
+        ARTIFACTS_FOLDER,
+    }
+
+    def __init__(self, path: str, /, *, root: Path = None):
+        if Path(path).is_absolute():
+            raise ValueError("Cant use absolute path")
+
+        if root is None:
+            root = Path(".datamander").resolve()
+
         # Set local disk paths
         self.path = path
-        self.project_path = _get_storage_path() / path
-        self.cache = Cache(self.project_path / STATS_FOLDER)
+        self.root = root
+        self.project_path = self.root / path
+        self.cache = Cache(self.project_path / InfoMander.STATS_FOLDER)
 
-        # For practical reasons the logs and artifacts are stored on disk, not sqlite
+        # For practical reasons the artifacts are stored on disk, not sqlite
         # We could certainly revisit this later though
-        self.artifact_path = self.project_path / ARTIFACTS_FOLDER
-        self.log_path = self.project_path / LOGS_FOLDER
+        self.artifact_path = self.project_path / InfoMander.ARTIFACTS_FOLDER
 
         # Initialize the internal cache with empty values if need be
-        for key in [ARTIFACTS_KEY, TEMPLATES_KEY, VIEWS_KEY, LOGS_KEY]:
+        for key in InfoMander.RESERVED_KEYS:
             if key not in self.cache:
                 self.cache[key] = {}
 
         # This will be used for rendering templates into views
         self.renderer = TemplateRenderer(self)
 
-    def _check_key(self, key):
-        if key in [ARTIFACTS_KEY, TEMPLATES_KEY, VIEWS_KEY, LOGS_KEY]:
+    @staticmethod
+    def _check_key(key):
+        if key in InfoMander.RESERVED_KEYS:
             raise ValueError(
-                f"Cannot overwrite {key} key. This is reserved for internal use."
+                f"Cannot overwrite '{key}' key. This is reserved for internal use."
             )
 
-    def add_info(self, key, value, method="overwrite"):
+    def add_info(self, key, value, overwrite=True):
         """
         Add information to the cache. Can be appended or overwritten.
 
@@ -61,18 +79,19 @@ class InfoMander:
             The key to add the information to.
         value : any
             The value to add.
-        method : str
-            The method to use. Can be 'overwrite' or 'append'.
+        overwrite : bool, default=True
+            Overwrite value, otherwise append.
         """
-        if method == "overwrite":
+        if overwrite:
             self.cache[key] = value
-        if method == "append":
+        else:
             if not isinstance(value, list):
                 value = [value]
             if key in self.cache:
                 value = value + self.cache[key]
             self.cache[key] = value
-        self.cache["updated_at"] = int(time())
+
+        self.cache["updated_at"] = datetime.now(tz=UTC).isoformat()
 
     def _add_to_key(self, top_key, key, value):
         """
@@ -116,7 +135,7 @@ class InfoMander:
         if not file_location.parent.exists():
             file_location.parent.mkdir(parents=True)
         dump(obj, file_location)
-        self._add_to_key(ARTIFACTS_KEY, key, {"obj": obj, **metadata})
+        self._add_to_key(InfoMander.ARTIFACTS_KEY, key, metadata)
 
     def add_view(self, key, html):
         """
@@ -133,7 +152,7 @@ class InfoMander:
             The HTML to store.
         """
         self._check_key(key)
-        self._add_to_key(VIEWS_KEY, key, html)
+        self._add_to_key(InfoMander.VIEWS_KEY, key, html)
 
     def add_template(self, key, template):
         """
@@ -150,11 +169,13 @@ class InfoMander:
             The template to store.
         """
         self._check_key(key)
-        if key in self.cache[VIEWS_KEY]:
+
+        if key in self.cache[InfoMander.VIEWS_KEY]:
             raise ValueError(
-                f"Cannot add template {key} because that name is already present."
+                f"Unable to add template '{key}': view rendered with this key name."
             )
-        self._add_to_key("_templates", key, template)
+
+        self._add_to_key(InfoMander.TEMPLATES_KEY, key, template)
 
     def render_templates(self):
         """
@@ -167,14 +188,14 @@ class InfoMander:
         template : Template
             The template to store.
         """
-        for name, template in self.cache["_templates"].items():
+        for name, template in self.cache[InfoMander.TEMPLATES_KEY].items():
             self.add_view(name, template.render(self))
 
     def add_logs(self, key, logs):
         """
         Add logs to the cache.
 
-        Logs are stored separately in the cache and can be viewed in the web ui.
+        Logs are stored in the cache and can be viewed in the web ui.
 
         Parameters
         ----------
@@ -183,7 +204,7 @@ class InfoMander:
         logs : list
             The logs to store.
         """
-        self._add_to_key(LOGS_KEY, key, logs)
+        self._add_to_key(InfoMander.LOGS_KEY, key, logs)
 
     def fetch(self):
         """Return all information from the cache."""
@@ -193,8 +214,8 @@ class InfoMander:
         """Return a specific item from the cache."""
         return self.cache[key]
 
-    @classmethod
-    def get_property(cls, mander, dsl_str):
+    @staticmethod
+    def get_property(mander, dsl_str):
         """
         Get a property from a mander using the DSL syntax.
 
@@ -235,29 +256,25 @@ class InfoMander:
         path : str
             The path to check for.
         """
-        actual_path = ".datamander" / path
-        assert Path(actual_path).exists()
+        assert (self.root / path).exists()
 
-    def get_child(self, *path):
+    def get_child(self, *pathsegments: str):
         """
         Get a child mander from the current mander.
 
         Parameters
         ----------
-        path : str
-            The path to the child mander
+        *pathsegments : str
+            The path to the child mander.
         """
-        new_path = self.project_path
-        for p in path:
-            new_path = new_path / p
-        return InfoMander(str(new_path))
+        return InfoMander(str(Path(*pathsegments)), root=self.project_path)
 
     def children(self):
-        """Return all children of the mander."""
+        """Return all direct children of the mander."""
         return [
-            InfoMander("/".join(p.parts[1:]))
+            InfoMander(str(p.relative_to(self.project_path)), root=self.project_path)
             for p in self.project_path.iterdir()
-            if p.is_dir() and not p.name.startswith(".")
+            if p.is_dir() and (p.stem not in InfoMander.RESERVED_FOLDERS)
         ]
 
     def get(self, dsl_str):
@@ -284,65 +301,8 @@ class InfoMander:
         """Return a string representation of the mander."""
         return f"InfoMander({self.project_path})"
 
-
-class InfoManderRepository:
-    """A repository to manage InfoMander objects."""
-
-    @staticmethod
-    def get_all_paths() -> list[Path]:
-        """Return a list of all manders relative path below `root_path`.
-
-        Parameters
-        ----------
-        root_path : str
-            The rooth path in which the function will look for manders.
-
-        Returns
-        -------
-        list[str]
-            A list of mander path.
-        """
-        target_folders = [STATS_FOLDER, ARTIFACTS_FOLDER, LOGS_FOLDER]
-        matching_paths = []
-        storage_path = _get_storage_path()
-
-        # get all matching folder as str
-        # (multiple times if folder contains stats & artifacts for example)
-        for root, folders, _ in storage_path.walk():
-            for folder in folders:
-                root_str = f"{root}"
-                if folder in target_folders and root_str not in matching_paths:
-                    matching_paths.append(root_str)
-
-        # return as relative to `_get_storage_path` Path objects
-        return sorted([Path(p).relative_to(storage_path) for p in matching_paths])
-
-    @staticmethod
-    def get(path: str) -> InfoMander | None:
-        """Get an `InfoMander` by it's path.
-
-        Parameters
-        ----------
-        path : str
-            The path in which the function will look for a mander.
-
-        Returns
-        -------
-        Infomander | None
-            The InfoMander or None if nothing is found at this path.
-        """
-        mander_path = _get_storage_path() / path
-        if mander_path.exists():
-            sub_folder_names = [
-                f"{p.relative_to(mander_path)}" for p in mander_path.iterdir()
-            ]
-            does_path_contain_mander_folder = any(
-                [
-                    STATS_FOLDER in sub_folder_names,
-                    ARTIFACTS_FOLDER in sub_folder_names,
-                    LOGS_FOLDER in sub_folder_names,
-                ]
-            )
-            if mander_path.is_dir() or not does_path_contain_mander_folder:
-                return InfoMander(path)
-        return None
+    def __eq__(self, other):
+        """Return True if both instances have the same project path."""
+        if isinstance(other, InfoMander):
+            return self.project_path == other.project_path
+        return False
