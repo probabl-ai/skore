@@ -12,7 +12,6 @@ def test_index(client: TestClient):
 
 
 def test_list_mandrs(client: TestClient, tmp_path):
-    os.environ["MANDR_PATH"] = "root"
     os.environ["MANDR_ROOT"] = str(tmp_path)
 
     InfoMander("root", root=tmp_path).add_info("key", "value")
