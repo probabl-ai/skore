@@ -1,7 +1,15 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+import { useRoute } from "vue-router";
 import { mountSuspens, mockedFecth, createFetchResponse } from "../test.utils";
 import DashboardView from "@/views/DashboardView.vue";
 import FileTree from "@/components/FileTree.vue";
+
+vi.mock("vue-router", () => ({
+  useRoute: vi.fn(),
+  useRouter: vi.fn(() => ({
+    push: () => {},
+  })),
+}));
 
 describe("DashboardView", () => {
   it("Parse the list of fetched list of mander to an array of FileTreeNode.", async () => {
@@ -16,25 +24,36 @@ describe("DashboardView", () => {
 
     mockedFecth.mockResolvedValue(createFetchResponse(paths));
 
+    (useRoute as any).mockImplementationOnce(() => ({
+      params: {
+        slug: ["a", "b"],
+      },
+    }));
+
     const wrapper = await mountSuspens(DashboardView);
     const fileTree = await wrapper.getComponent(FileTree);
     expect(fileTree.props()).toEqual({
       nodes: [
         {
-          label: "probabl-ai",
+          path: "probabl-ai",
           children: [
             {
-              label: "demo-usecase",
-              children: [{ label: "training", children: [{ label: "0" }] }],
+              path: "probabl-ai/demo-usecase",
+              children: [
+                {
+                  path: "probabl-ai/demo-usecase/training",
+                  children: [{ path: "probabl-ai/demo-usecase/training/0" }],
+                },
+              ],
             },
             {
-              label: "test-mandr",
+              path: "probabl-ai/test-mandr",
               children: [
-                { label: "0" },
-                { label: "1" },
-                { label: "2" },
-                { label: "3" },
-                { label: "4" },
+                { path: "probabl-ai/test-mandr/0" },
+                { path: "probabl-ai/test-mandr/1" },
+                { path: "probabl-ai/test-mandr/2" },
+                { path: "probabl-ai/test-mandr/3" },
+                { path: "probabl-ai/test-mandr/4" },
               ],
             },
           ],

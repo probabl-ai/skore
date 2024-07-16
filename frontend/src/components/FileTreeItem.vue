@@ -1,28 +1,43 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { useRouter } from "vue-router";
 import { type FileTreeNode } from "./FileTree.vue";
 import FolderIcon from "./icons/FolderIcon.vue";
 import ManderIcon from "./icons/ManderIcon.vue";
 
+const router = useRouter();
 const props = defineProps<FileTreeNode>();
 
 const hasChildren = computed(() => props.children?.length);
+const label = computed(() => {
+  const slugs = props.path.split("/");
+  return slugs[slugs.length - 1];
+});
+
+function onClick() {
+  router.push({
+    name: "mander",
+    params: {
+      slug: props.path.split("/"),
+    },
+  });
+}
 </script>
 
 <template>
   <div class="file-tree-item" :style="`--indentation-level: ${indentationLevel};`">
-    <div class="label">
+    <div class="label" @click="onClick">
       <div class="icon">
         <FolderIcon v-if="hasChildren" />
         <ManderIcon v-else />
       </div>
-      <div class="text">{{ props.label }}</div>
+      <div class="text">{{ label }}</div>
     </div>
     <div class="children" v-if="hasChildren">
       <FileTreeItem
         v-for="(child, index) in props.children"
         :key="index"
-        :label="child.label"
+        :path="child.path"
         :children="child.children"
         :indentation-level="(indentationLevel ?? 0) + 1"
       />
@@ -30,7 +45,7 @@ const hasChildren = computed(() => props.children?.length);
   </div>
 </template>
 
-<style>
+<style scoped>
 .file-tree-item {
   margin-left: calc(8px * var(--indentation-level));
 
@@ -45,6 +60,7 @@ const hasChildren = computed(() => props.children?.length);
 
     &:hover {
       background-color: #ddd;
+      font-weight: 500;
     }
 
     & .icon {

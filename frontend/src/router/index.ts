@@ -9,6 +9,11 @@ const router = createRouter({
       name: "home",
       component: DashboardView,
     },
+    {
+      path: "/:slug+",
+      name: "mander",
+      component: DashboardView,
+    },
   ],
 });
 

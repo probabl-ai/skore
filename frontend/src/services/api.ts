@@ -1,3 +1,5 @@
+import { type Mander } from "../models";
+
 const BASE_URL = "http://localhost:8000/api";
 
 function getErrorMessage(error: unknown) {
@@ -9,7 +11,7 @@ function reportError(message: string) {
   console.error(message);
 }
 
-export async function getAllManderPaths(): Promise<string[]> {
+export async function fetchAllManderPaths(): Promise<string[]> {
   try {
     const r = await fetch(`${BASE_URL}/mandrs`);
     const paths = await r.json();
@@ -17,5 +19,16 @@ export async function getAllManderPaths(): Promise<string[]> {
   } catch (error) {
     reportError(getErrorMessage(error));
     return [];
+  }
+}
+
+export async function fetchMander(path: string): Promise<Mander | null> {
+  try {
+    const r = await fetch(`${BASE_URL}/mandrs/${path}`);
+    const m = await r.json();
+    return m as Mander;
+  } catch (error) {
+    reportError(getErrorMessage(error));
+    return null;
   }
 }
