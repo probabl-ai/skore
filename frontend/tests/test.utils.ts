@@ -1,12 +1,12 @@
+import { flushPromises, mount } from "@vue/test-utils";
 import { vi } from "vitest";
-import { mount, flushPromises } from "@vue/test-utils";
-import { type ComponentPublicInstance, defineComponent, Suspense, h } from "vue";
+import { type ComponentPublicInstance, defineComponent, h, Suspense } from "vue";
 
 export const mockedFecth = vi.fn();
 global.fetch = mockedFecth;
 
-export function createFetchResponse(data: object) {
-  return { json: () => new Promise((resolve) => resolve(data)) };
+export function createFetchResponse(data: object, status = 200) {
+  return { json: () => new Promise((resolve) => resolve(data)), status };
 }
 
 export async function mountSuspens(
