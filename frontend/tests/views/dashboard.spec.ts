@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
-import { mountSuspens, mockedFecth, createFetchResponse } from "../test.utils";
-import DashboardView from "@/views/DashboardView.vue";
 import FileTree from "@/components/FileTree.vue";
+import DashboardView from "@/views/DashboardView.vue";
+import { describe, expect, it } from "vitest";
+import { createFetchResponse, mockedFetch, mountSuspense } from "../test.utils";
 
 describe("DashboardView", () => {
   it("Parse the list of fetched list of mander to an array of FileTreeNode.", async () => {
@@ -14,9 +14,9 @@ describe("DashboardView", () => {
       "probabl-ai/test-mandr/4",
     ];
 
-    mockedFecth.mockResolvedValue(createFetchResponse(paths));
+    mockedFetch.mockResolvedValue(createFetchResponse(paths));
 
-    const wrapper = await mountSuspens(DashboardView);
+    const wrapper = await mountSuspense(DashboardView);
     const fileTree = await wrapper.getComponent(FileTree);
     expect(fileTree.props()).toEqual({
       nodes: [

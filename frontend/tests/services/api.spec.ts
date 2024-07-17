@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
 import { getAllManderPaths } from "@/services/api";
+import { describe, expect, it } from "vitest";
 
-import { createFetchResponse, mockedFecth } from "../test.utils";
+import { createFetchResponse, mockedFetch } from "../test.utils";
 
 describe("api", () => {
   it("Can fetch the list of manders from the server.", async () => {
@@ -14,7 +14,7 @@ describe("api", () => {
       "probabl-ai/test-mandr/4",
     ];
 
-    mockedFecth.mockResolvedValue(createFetchResponse(paths));
+    mockedFetch.mockResolvedValue(createFetchResponse(paths));
 
     const r = await getAllManderPaths();
     expect(r).toStrictEqual(paths);
