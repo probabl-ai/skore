@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 
-import { mount } from "@vue/test-utils";
 import FileTree, { type FileTreeNode } from "@/components/FileTree.vue";
+import { mount } from "@vue/test-utils";
 
 function countLeaves(nodes: FileTreeNode[]): number {
   function countInNode(node: FileTreeNode): number {
@@ -9,11 +9,11 @@ function countLeaves(nodes: FileTreeNode[]): number {
       return 1;
     }
 
-    const countInChildren = node.children.map((node) => countInNode(node));
+    const countInChildren = node.children.map(countInNode);
     return countInChildren.reduce((accumulator, leavesCount) => accumulator + leavesCount);
   }
 
-  const allBranches = nodes.map((node) => countInNode(node));
+  const allBranches = nodes.map(countInNode);
   return allBranches.reduce((accumulator, leavesCount) => accumulator + leavesCount);
 }
 

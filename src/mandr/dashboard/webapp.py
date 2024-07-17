@@ -25,8 +25,13 @@ app.add_middleware(
 @app.get("/api/mandrs")
 async def list_mandrs(request: Request) -> list[str]:
     """Send the list of mandrs path below the current working directory."""
-    path = os.environ["MANDR_PATH"]
-    root = Path(os.environ["MANDR_ROOT"])
+    root = Path(os.environ["MANDR_ROOT"]).resolve()
+    directories = list(root.iterdir())
+
+    if len(directories) != 1 or (not directories[0].is_dir()):
+        raise ValueError("'{root}' is not a valid mandr root")
+
+    path = directories[0].stem
     ims = [InfoMander(path, root=root)]
     paths = []
 
@@ -44,7 +49,7 @@ async def list_mandrs(request: Request) -> list[str]:
 @app.get("/api/mandrs/{path:path}")
 async def get_mandr(request: Request, path: str):
     """Return one mandr."""
-    root = Path(os.environ["MANDR_ROOT"])
+    root = Path(os.environ["MANDR_ROOT"]).resolve()
 
     if not (root / path).exists():
         raise HTTPException(status_code=404, detail=f"No mandr found in '{path}'")

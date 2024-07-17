@@ -2,7 +2,7 @@ import FileTree from "@/components/FileTree.vue";
 import DashboardView from "@/views/DashboardView.vue";
 import { describe, expect, it, vi } from "vitest";
 import { useRoute } from "vue-router";
-import { createFetchResponse, mockedFecth, mountSuspens } from "../test.utils";
+import { createFetchResponse, mockedFetch, mountSuspense } from "../test.utils";
 
 vi.mock("vue-router", () => ({
   useRoute: vi.fn(),
@@ -22,7 +22,7 @@ describe("DashboardView", () => {
       "probabl-ai/test-mandr/4",
     ];
 
-    mockedFecth.mockResolvedValue(createFetchResponse(paths));
+    mockedFetch.mockResolvedValue(createFetchResponse(paths));
 
     (useRoute as any).mockImplementationOnce(() => ({
       params: {
@@ -30,8 +30,8 @@ describe("DashboardView", () => {
       },
     }));
 
-    const wrapper = await mountSuspens(DashboardView);
-    const fileTree = await wrapper.getComponent(FileTree);
+    const wrapper = await mountSuspense(DashboardView);
+    const fileTree = wrapper.getComponent(FileTree);
     expect(fileTree.props()).toEqual({
       nodes: [
         {
