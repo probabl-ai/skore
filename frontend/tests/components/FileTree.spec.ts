@@ -9,11 +9,11 @@ function countLeaves(nodes: FileTreeNode[]): number {
       return 1;
     }
 
-    const countInChildren = node.children.map((node) => countInNode(node));
+    const countInChildren = node.children.map(countInNode);
     return countInChildren.reduce((accumulator, leavesCount) => accumulator + leavesCount);
   }
 
-  const allBranches = nodes.map((node) => countInNode(node));
+  const allBranches = nodes.map(countInNode);
   return allBranches.reduce((accumulator, leavesCount) => accumulator + leavesCount);
 }
 

@@ -14,6 +14,7 @@ const pathsAsFileTreeNodes = computed(() => {
       currentNode = { label: rootSlug };
       tree.push(currentNode);
     }
+    // Force the compiler to understand that currentNode can't be undefined at this point
     let n = currentNode!;
     for (let s of slugs.slice(1)) {
       n.children = n.children || [];
