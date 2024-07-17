@@ -25,10 +25,12 @@ export async function fetchAllManderPaths(): Promise<string[]> {
 export async function fetchMander(path: string): Promise<Mander | null> {
   try {
     const r = await fetch(`${BASE_URL}/mandrs/${path}`);
-    const m = await r.json();
-    return m as Mander;
+    if (r.status == 200) {
+      const m = await r.json();
+      return m as Mander;
+    }
   } catch (error) {
     reportError(getErrorMessage(error));
-    return null;
   }
+  return null;
 }

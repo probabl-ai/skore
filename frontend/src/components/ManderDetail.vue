@@ -44,6 +44,7 @@ aside {
   h2 {
     background-color: #f2f1f1;
     color: #7e7e7e;
+    font-weight: 300;
   }
 
   & > div {

@@ -7,7 +7,6 @@ export interface FileTreeNode {
 </script>
 
 <script setup lang="ts">
-import { computed } from "vue";
 import FileTreeItem from "./FileTreeItem.vue";
 
 const props = defineProps<{ nodes: FileTreeNode[] }>();
@@ -18,7 +17,7 @@ defineEmits<{
 
 <template>
   <FileTreeItem
-    v-for="(node, index) in nodes"
+    v-for="(node, index) in props.nodes"
     :key="index"
     :path="node.path"
     :children="node.children"

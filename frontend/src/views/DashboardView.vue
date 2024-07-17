@@ -3,13 +3,13 @@ import { computed, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 
 import FileTree, { type FileTreeNode } from "../components/FileTree.vue";
-import ManderView from "../components/ManderDetail.vue";
+import ManderDetail from "../components/ManderDetail.vue";
 import { type Mander } from "../models";
 import { fetchAllManderPaths, fetchMander } from "../services/api";
 
 const route = useRoute();
 const manderPaths = ref<string[]>([]);
-const mander = ref<Mander>();
+const mander = ref<Mander | null>();
 
 const pathsAsFileTreeNodes = computed(() => {
   const tree: FileTreeNode[] = [];
@@ -37,12 +37,11 @@ const pathsAsFileTreeNodes = computed(() => {
 });
 
 async function fetchManderDetail(path: string | string[]) {
+  console.log(path);
   const p = Array.isArray(path) ? path.join("/") : path;
   const m = await fetchMander(p);
-  if (m) {
-    mander.value = m;
-  }
-  // TODO handle error
+  mander.value = m;
+  console.log(m);
 }
 watch(
   () => route.params.slug,
@@ -60,8 +59,9 @@ await fetchManderDetail(route.params.slug);
     <nav>
       <FileTree :nodes="pathsAsFileTreeNodes" />
     </nav>
-    <article>
-      <ManderView v-if="mander" :mander="mander" />
+    <article :class="{ 'not-found': mander == null }">
+      <ManderDetail v-if="mander" :mander="mander" />
+      <div v-else>mandr not found...</div>
     </article>
   </main>
 </template>
@@ -87,6 +87,15 @@ main {
 
   article {
     flex-grow: 1;
+
+    &.not-found {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #c8c7c7;
+      font-size: x-large;
+      font-weight: 200;
+    }
   }
 }
 </style>
