@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
-import embed from "vega-embed";
-import { type TopLevelSpec } from "vega-lite";
+import embed, { type VisualizationSpec } from "vega-embed";
+import { onMounted, ref } from "vue";
 
-const props = defineProps<{ spec: TopLevelSpec }>();
+const props = defineProps<{ spec: VisualizationSpec }>();
 
 const container = ref<HTMLDivElement>();
 
