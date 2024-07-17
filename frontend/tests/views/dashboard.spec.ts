@@ -1,8 +1,8 @@
-import { describe, it, expect, vi } from "vitest";
-import { useRoute } from "vue-router";
-import { mountSuspens, mockedFecth, createFetchResponse } from "../test.utils";
-import DashboardView from "@/views/DashboardView.vue";
 import FileTree from "@/components/FileTree.vue";
+import DashboardView from "@/views/DashboardView.vue";
+import { describe, expect, it, vi } from "vitest";
+import { useRoute } from "vue-router";
+import { createFetchResponse, mockedFecth, mountSuspens } from "../test.utils";
 
 vi.mock("vue-router", () => ({
   useRoute: vi.fn(),
