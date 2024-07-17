@@ -7,6 +7,7 @@ import Tabs from "../components/TabsWidget.vue";
 import TabsItem from "../components/TabsWidgetItem.vue";
 import VegaWidget from "../components/VegaWidget.vue";
 
+import datatable from "../assets/fixtures/datatable.json";
 import markdownString from "../assets/fixtures/markdown.md?raw";
 import spec from "../assets/fixtures/vega.json";
 </script>
@@ -23,11 +24,8 @@ import spec from "../assets/fixtures/vega.json";
       </TabsItem>
       <TabsItem :value="2">
         <DataFrameWidget
-          :headers="['plip', 'plop']"
-          :values="[
-            [1, 2],
-            [2, 3],
-          ]"
+          :headers="['id', 'first_name', 'last_name', 'email', 'gender', 'ip_address']"
+          :values="datatable"
         />
       </TabsItem>
     </Tabs>
