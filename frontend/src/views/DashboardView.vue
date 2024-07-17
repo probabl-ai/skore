@@ -2,10 +2,10 @@
 import { computed, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 
+import FileTree, { type FileTreeNode } from "../components/FileTree.vue";
+import ManderView from "../components/ManderDetail.vue";
 import { type Mander } from "../models";
 import { fetchAllManderPaths, fetchMander } from "../services/api";
-import FileTree, { type FileTreeNode } from "../components/FileTree.vue";
-import ManderView from "./ManderView.vue";
 
 const route = useRoute();
 const manderPaths = ref<string[]>([]);
@@ -36,19 +36,23 @@ const pathsAsFileTreeNodes = computed(() => {
   return tree;
 });
 
+async function fetchManderDetail(path: string | string[]) {
+  const p = Array.isArray(path) ? path.join("/") : path;
+  const m = await fetchMander(p);
+  if (m) {
+    mander.value = m;
+  }
+  // TODO handle error
+}
 watch(
   () => route.params.slug,
   async (newSlug) => {
-    const path = Array.isArray(newSlug) ? newSlug.join("/") : newSlug;
-    const m = await fetchMander(path);
-    if (m) {
-      mander.value = m;
-    }
-    // TODO handle error
+    await fetchManderDetail(newSlug);
   }
 );
 
 manderPaths.value = await fetchAllManderPaths();
+await fetchManderDetail(route.params.slug);
 </script>
 
 <template>
