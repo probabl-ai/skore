@@ -1,12 +1,25 @@
-<script setup lang="ts"></script>
+<script lang="ts">
+export interface FileTreeNode {
+  label: string;
+  children?: FileTreeNode[];
+  indentationLevel?: number;
+}
+</script>
+
+<script setup lang="ts">
+import FileTreeItem from "./FileTreeItem.vue";
+
+defineProps<{ nodes: FileTreeNode[] }>();
+</script>
 
 <template>
-  <div class="file-tree">
-    <div class="tree-item">1</div>
-    <div class="tree-item">2</div>
-    <div class="tree-item">3</div>
-    <div class="tree-item">4</div>
-  </div>
+  <FileTreeItem
+    v-for="(node, index) in nodes"
+    :key="index"
+    :label="node.label"
+    :children="node.children"
+    :indentation-level="0"
+  />
 </template>
 
 <style>
