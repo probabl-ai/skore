@@ -37,11 +37,9 @@ const pathsAsFileTreeNodes = computed(() => {
 });
 
 async function fetchManderDetail(path: string | string[]) {
-  console.log(path);
   const p = Array.isArray(path) ? path.join("/") : path;
   const m = await fetchMander(p);
   mander.value = m;
-  console.log(m);
 }
 watch(
   () => route.params.slug,
