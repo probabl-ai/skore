@@ -1,4 +1,4 @@
-export interface Mander {
+export interface DataStore {
   path: string;
   views: string[];
   logs: string[];

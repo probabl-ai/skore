@@ -2,18 +2,18 @@
 import { computed, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 
+import DataStoreDetail from "../components/DataStoreDetail.vue";
 import FileTree, { type FileTreeNode } from "../components/FileTree.vue";
-import ManderDetail from "../components/ManderDetail.vue";
-import { type Mander } from "../models";
+import { type DataStore } from "../models";
 import { fetchAllManderUris, fetchMander } from "../services/api";
 
 const route = useRoute();
-const manderPaths = ref<string[]>([]);
-const mander = ref<Mander | null>();
+const dataStoreUris = ref<string[]>([]);
+const dataStore = ref<DataStore | null>();
 
 const pathsAsFileTreeNodes = computed(() => {
   const tree: FileTreeNode[] = [];
-  for (let p of manderPaths.value) {
+  for (let p of dataStoreUris.value) {
     const segments = p.split("/");
     const rootSegment = segments[0];
     let currentNode = tree.find((n) => n.uri == rootSegment);
@@ -36,20 +36,20 @@ const pathsAsFileTreeNodes = computed(() => {
   return tree;
 });
 
-async function fetchManderDetail(path: string | string[]) {
+async function fetchDataStoreDetail(path: string | string[]) {
   const p = Array.isArray(path) ? path.join("/") : path;
   const m = await fetchMander(p);
-  mander.value = m;
+  dataStore.value = m;
 }
 watch(
   () => route.params.segments,
   async (newSegments) => {
-    await fetchManderDetail(newSegments);
+    await fetchDataStoreDetail(newSegments);
   }
 );
 
-manderPaths.value = await fetchAllManderUris();
-await fetchManderDetail(route.params.segments);
+dataStoreUris.value = await fetchAllManderUris();
+await fetchDataStoreDetail(route.params.segments);
 </script>
 
 <template>
@@ -57,8 +57,8 @@ await fetchManderDetail(route.params.segments);
     <nav>
       <FileTree :nodes="pathsAsFileTreeNodes" />
     </nav>
-    <article :class="{ 'not-found': mander == null }">
-      <ManderDetail v-if="mander" :mander="mander" />
+    <article :class="{ 'not-found': dataStore == null }">
+      <DataStoreDetail v-if="dataStore" :dataStore="dataStore" />
       <div v-else>mandr not found...</div>
     </article>
   </main>

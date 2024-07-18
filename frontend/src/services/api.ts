@@ -1,4 +1,4 @@
-import { type Mander } from "../models";
+import { type DataStore } from "../models";
 
 const BASE_URL = "http://localhost:8000/api";
 
@@ -22,12 +22,12 @@ export async function fetchAllManderUris(): Promise<string[]> {
   }
 }
 
-export async function fetchMander(uri: string): Promise<Mander | null> {
+export async function fetchMander(uri: string): Promise<DataStore | null> {
   try {
     const r = await fetch(`${BASE_URL}/mandrs/${uri}`);
     if (r.status == 200) {
       const m = await r.json();
-      return m as Mander;
+      return m as DataStore;
     }
   } catch (error) {
     reportError(getErrorMessage(error));
