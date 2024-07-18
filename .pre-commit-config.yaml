@@ -47,4 +47,4 @@ repos:
         name: Use stylelint to lint CSS.
         entry: bash -c "cd frontend && npm run style-lint"
 
-exclude: '.*\.min\.js'
+exclude: fixtures/
