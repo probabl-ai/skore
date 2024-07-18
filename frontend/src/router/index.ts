@@ -5,13 +5,8 @@ const router = createRouter({
   history: createWebHashHistory(import.meta.env.BASE_URL),
   routes: [
     {
-      path: "/",
-      name: "home",
-      component: DashboardView,
-    },
-    {
-      path: "/:slug+",
-      name: "mander",
+      path: "/:segments*",
+      name: "dashboard",
       component: DashboardView,
     },
   ],

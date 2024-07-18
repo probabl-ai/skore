@@ -5,7 +5,7 @@ import { useRoute } from "vue-router";
 import FileTree, { type FileTreeNode } from "../components/FileTree.vue";
 import ManderDetail from "../components/ManderDetail.vue";
 import { type Mander } from "../models";
-import { fetchAllManderPaths, fetchMander } from "../services/api";
+import { fetchAllManderUris, fetchMander } from "../services/api";
 
 const route = useRoute();
 const manderPaths = ref<string[]>([]);
@@ -14,20 +14,20 @@ const mander = ref<Mander | null>();
 const pathsAsFileTreeNodes = computed(() => {
   const tree: FileTreeNode[] = [];
   for (let p of manderPaths.value) {
-    const slugs = p.split("/");
-    const rootSlug = slugs[0];
-    let currentNode = tree.find((n) => n.path == rootSlug);
+    const segments = p.split("/");
+    const rootSegment = segments[0];
+    let currentNode = tree.find((n) => n.uri == rootSegment);
     if (!currentNode) {
-      currentNode = { path: rootSlug };
+      currentNode = { uri: rootSegment };
       tree.push(currentNode);
     }
     let n = currentNode!;
-    for (let s of slugs.slice(1)) {
+    for (let s of segments.slice(1)) {
       n.children = n.children || [];
-      const path = `${n.path}/${s}`;
-      let childNode = n.children.find((n) => n.path == path);
+      const uri = `${n.uri}/${s}`;
+      let childNode = n.children.find((n) => n.uri == uri);
       if (!childNode) {
-        childNode = { path };
+        childNode = { uri };
         n.children.push(childNode);
       }
       n = childNode;
@@ -42,14 +42,14 @@ async function fetchManderDetail(path: string | string[]) {
   mander.value = m;
 }
 watch(
-  () => route.params.slug,
-  async (newSlug) => {
-    await fetchManderDetail(newSlug);
+  () => route.params.segments,
+  async (newSegments) => {
+    await fetchManderDetail(newSegments);
   }
 );
 
-manderPaths.value = await fetchAllManderPaths();
-await fetchManderDetail(route.params.slug);
+manderPaths.value = await fetchAllManderUris();
+await fetchManderDetail(route.params.segments);
 </script>
 
 <template>

@@ -10,15 +10,15 @@ const props = defineProps<FileTreeNode>();
 
 const hasChildren = computed(() => props.children?.length);
 const label = computed(() => {
-  const slugs = props.path.split("/");
-  return slugs[slugs.length - 1];
+  const segment = props.uri.split("/");
+  return segment[segment.length - 1];
 });
 
 function onClick() {
   router.push({
-    name: "mander",
+    name: "dashboard",
     params: {
-      slug: props.path.split("/"),
+      segments: props.uri.split("/"),
     },
   });
 }
@@ -37,7 +37,7 @@ function onClick() {
       <FileTreeItem
         v-for="(child, index) in props.children"
         :key="index"
-        :path="child.path"
+        :uri="child.uri"
         :children="child.children"
         :indentation-level="(indentationLevel ?? 0) + 1"
       />
