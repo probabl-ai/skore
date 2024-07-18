@@ -1,0 +1,147 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "schema:dashboard:v0",
+    "$defs": {
+        "any": {
+            "type": "object",
+            "properties": {
+                "type": { "const": "any" },
+                "data": true
+            },
+            "required": [ "type", "data" ],
+            "additionalProperties": false
+        },
+        "array": {
+            "type": "object",
+            "properties": {
+                "type": { "const": "array" },
+                "data": { "type": "array" }
+            },
+            "required": [ "type", "data" ],
+            "additionalProperties": false
+        },
+        "boolean": {
+            "type": "object",
+            "properties": {
+                "type": { "const": "boolean" },
+                "data": { "type": "boolean" }
+            },
+            "required": [ "type", "data" ],
+            "additionalProperties": false
+        },
+        "date": {
+            "type": "object",
+            "properties": {
+                "type": { "const": "date" },
+                "data": {
+                    "type": "string",
+                    "format": "date"
+                }
+            },
+            "required": [ "type", "data" ],
+            "additionalProperties": false
+        },
+        "datetime": {
+            "type": "object",
+            "properties": {
+                "type": { "const": "datetime" },
+                "data": {
+                    "type": "string",
+                    "format": "date-time"
+                }
+            },
+            "required": [ "type", "data" ],
+            "additionalProperties": false
+        },
+        "file": {
+            "type": "object",
+            "properties": {
+                "type": { "const": "file" },
+                "data": {
+                    "type": "string",
+                    "format": "uri"
+                },
+                "metadata": true,
+                "internal": true
+            },
+            "required": [ "type", "data", "metadata", "internal" ],
+            "additionalProperties": false
+        },
+        "html": {
+            "type": "object",
+            "properties": {
+                "type": { "const": "html" },
+                "data": {
+                    "type": "string",
+                    "contentMediaType": "text/html"
+                }
+            },
+            "required": [ "type", "data" ],
+            "additionalProperties": false
+        },
+        "integer": {
+            "type": "object",
+            "properties": {
+                "type": { "const": "integer" },
+                "data": { "type": "integer" }
+            },
+            "required": [ "type", "data" ],
+            "additionalProperties": false
+        },
+        "number": {
+            "type": "object",
+            "properties": {
+                "type": { "const": "number" },
+                "data": { "type": "number" }
+            },
+            "required": [ "type", "data" ],
+            "additionalProperties": false
+        },
+        "string": {
+            "type": "object",
+            "properties": {
+                "type": { "const": "string" },
+                "data": { "type": "string" }
+            },
+            "required": [ "type", "data" ],
+            "additionalProperties": false
+        },
+        "vega": {
+            "type": "object",
+            "properties": {
+                "type": { "const": "vega" },
+                "data": { "$ref": "https://vega.github.io/schema/vega-lite/v5.json" }
+            },
+            "required": [ "type", "data" ],
+            "additionalProperties": false
+        }
+    },
+
+    "type": "object",
+    "properties": {
+        "schema": { "const": "schema:dashboard:v0" },
+        "uri": {
+            "type": "string",
+            "format": "uri-reference"
+        },
+        "payload": {
+            "additionalProperties": {
+                "oneOf": [
+                    { "$ref": "#/$defs/any" },
+                    { "$ref": "#/$defs/array" },
+                    { "$ref": "#/$defs/boolean" },
+                    { "$ref": "#/$defs/date" },
+                    { "$ref": "#/$defs/datetime" },
+                    { "$ref": "#/$defs/file" },
+                    { "$ref": "#/$defs/html" },
+                    { "$ref": "#/$defs/integer" },
+                    { "$ref": "#/$defs/number" },
+                    { "$ref": "#/$defs/string" },
+                    { "$ref": "#/$defs/vega" }
+                ]
+            }
+        }
+    },
+    "required": [ "schema", "uri", "payload" ],
+    "additionalProperties": false
+}
