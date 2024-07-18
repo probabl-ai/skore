@@ -2,14 +2,17 @@
 import { computed, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 
-import DataStoreDetail from "../components/DataStoreDetail.vue";
-import FileTree, { type FileTreeNode } from "../components/FileTree.vue";
-import { type DataStore } from "../models";
-import { fetchAllManderUris, fetchMander } from "../services/api";
+import DataStoreCanvas from "@/components/DataStoreCanvas.vue";
+import DataStoreItemList from "@/components/DataStoreItemList.vue";
+import FileTree, { type FileTreeNode } from "@/components/FileTree.vue";
+import { type DataStore } from "@/models";
+import { fetchAllManderUris, fetchMander } from "@/services/api";
+import { useCanvasStore } from "@/stores/canvas";
 
 const route = useRoute();
 const dataStoreUris = ref<string[]>([]);
 const dataStore = ref<DataStore | null>();
+const canvasStore = useCanvasStore();
 
 const pathsAsFileTreeNodes = computed(() => {
   const tree: FileTreeNode[] = [];
@@ -40,6 +43,7 @@ async function fetchDataStoreDetail(path: string | string[]) {
   const p = Array.isArray(path) ? path.join("/") : path;
   const m = await fetchMander(p);
   dataStore.value = m;
+  canvasStore.setDataStore(m);
 }
 watch(
   () => route.params.segments,
@@ -58,8 +62,22 @@ await fetchDataStoreDetail(route.params.segments);
       <FileTree :nodes="pathsAsFileTreeNodes" />
     </nav>
     <article :class="{ 'not-found': dataStore == null }">
-      <DataStoreDetail v-if="dataStore" :dataStore="dataStore" />
+      <div class="item-list" v-if="dataStore">
+        <DataStoreItemList
+          title="Views"
+          icon="icon-plot"
+          :elements="Object.keys(dataStore.views)"
+        />
+        <DataStoreItemList title="Info" icon="icon-text" :elements="Object.keys(dataStore.info)" />
+        <DataStoreItemList title="Logs" icon="icon-gift" :elements="Object.keys(dataStore.logs)" />
+        <DataStoreItemList
+          title="Logs"
+          icon="icon-folder"
+          :elements="Object.keys(dataStore.artifacts)"
+        />
+      </div>
       <div v-else>mandr not found...</div>
+      <DataStoreCanvas />
     </article>
   </main>
 </template>
@@ -84,6 +102,8 @@ main {
   }
 
   article {
+    display: flex;
+    flex-direction: row;
     flex-grow: 1;
 
     &.not-found {
@@ -93,6 +113,14 @@ main {
       color: #c8c7c7;
       font-size: x-large;
       font-weight: 200;
+    }
+
+    & .item-list {
+      display: flex;
+      overflow: scroll;
+      width: 285px;
+      height: 100dvh;
+      flex-direction: column;
     }
   }
 }

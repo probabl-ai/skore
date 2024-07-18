@@ -29,7 +29,7 @@ async def list_mandrs(request: Request) -> list[str]:
     directories = list(root.iterdir())
 
     if len(directories) != 1 or (not directories[0].is_dir()):
-        raise ValueError("'{root}' is not a valid mandr root")
+        raise ValueError(f"'{root}' is not a valid mandr root")
 
     path = directories[0].stem
     ims = [InfoMander(path, root=root)]
