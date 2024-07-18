@@ -26,7 +26,7 @@ describe("DashboardView", () => {
 
     (useRoute as any).mockImplementationOnce(() => ({
       params: {
-        slug: ["a", "b"],
+        segments: ["a", "b"],
       },
     }));
 
@@ -35,25 +35,25 @@ describe("DashboardView", () => {
     expect(fileTree.props()).toEqual({
       nodes: [
         {
-          path: "probabl-ai",
+          uri: "probabl-ai",
           children: [
             {
-              path: "probabl-ai/demo-usecase",
+              uri: "probabl-ai/demo-usecase",
               children: [
                 {
-                  path: "probabl-ai/demo-usecase/training",
-                  children: [{ path: "probabl-ai/demo-usecase/training/0" }],
+                  uri: "probabl-ai/demo-usecase/training",
+                  children: [{ uri: "probabl-ai/demo-usecase/training/0" }],
                 },
               ],
             },
             {
-              path: "probabl-ai/test-mandr",
+              uri: "probabl-ai/test-mandr",
               children: [
-                { path: "probabl-ai/test-mandr/0" },
-                { path: "probabl-ai/test-mandr/1" },
-                { path: "probabl-ai/test-mandr/2" },
-                { path: "probabl-ai/test-mandr/3" },
-                { path: "probabl-ai/test-mandr/4" },
+                { uri: "probabl-ai/test-mandr/0" },
+                { uri: "probabl-ai/test-mandr/1" },
+                { uri: "probabl-ai/test-mandr/2" },
+                { uri: "probabl-ai/test-mandr/3" },
+                { uri: "probabl-ai/test-mandr/4" },
               ],
             },
           ],

@@ -1,4 +1,4 @@
-import { type Mander } from "../models";
+import { type DataStore } from "../models";
 
 const BASE_URL = "http://localhost:8000/api";
 
@@ -11,23 +11,23 @@ function reportError(message: string) {
   console.error(message);
 }
 
-export async function fetchAllManderPaths(): Promise<string[]> {
+export async function fetchAllManderUris(): Promise<string[]> {
   try {
     const r = await fetch(`${BASE_URL}/mandrs`);
-    const paths = await r.json();
-    return paths;
+    const uris = await r.json();
+    return uris;
   } catch (error) {
     reportError(getErrorMessage(error));
     return [];
   }
 }
 
-export async function fetchMander(path: string): Promise<Mander | null> {
+export async function fetchMander(uri: string): Promise<DataStore | null> {
   try {
-    const r = await fetch(`${BASE_URL}/mandrs/${path}`);
+    const r = await fetch(`${BASE_URL}/mandrs/${uri}`);
     if (r.status == 200) {
       const m = await r.json();
-      return m as Mander;
+      return m as DataStore;
     }
   } catch (error) {
     reportError(getErrorMessage(error));

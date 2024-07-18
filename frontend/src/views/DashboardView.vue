@@ -2,32 +2,32 @@
 import { computed, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 
+import DataStoreDetail from "../components/DataStoreDetail.vue";
 import FileTree, { type FileTreeNode } from "../components/FileTree.vue";
-import ManderDetail from "../components/ManderDetail.vue";
-import { type Mander } from "../models";
-import { fetchAllManderPaths, fetchMander } from "../services/api";
+import { type DataStore } from "../models";
+import { fetchAllManderUris, fetchMander } from "../services/api";
 
 const route = useRoute();
-const manderPaths = ref<string[]>([]);
-const mander = ref<Mander | null>();
+const dataStoreUris = ref<string[]>([]);
+const dataStore = ref<DataStore | null>();
 
 const pathsAsFileTreeNodes = computed(() => {
   const tree: FileTreeNode[] = [];
-  for (let p of manderPaths.value) {
-    const slugs = p.split("/");
-    const rootSlug = slugs[0];
-    let currentNode = tree.find((n) => n.path == rootSlug);
+  for (let p of dataStoreUris.value) {
+    const segments = p.split("/");
+    const rootSegment = segments[0];
+    let currentNode = tree.find((n) => n.uri == rootSegment);
     if (!currentNode) {
-      currentNode = { path: rootSlug };
+      currentNode = { uri: rootSegment };
       tree.push(currentNode);
     }
     let n = currentNode!;
-    for (let s of slugs.slice(1)) {
+    for (let s of segments.slice(1)) {
       n.children = n.children || [];
-      const path = `${n.path}/${s}`;
-      let childNode = n.children.find((n) => n.path == path);
+      const uri = `${n.uri}/${s}`;
+      let childNode = n.children.find((n) => n.uri == uri);
       if (!childNode) {
-        childNode = { path };
+        childNode = { uri };
         n.children.push(childNode);
       }
       n = childNode;
@@ -36,20 +36,20 @@ const pathsAsFileTreeNodes = computed(() => {
   return tree;
 });
 
-async function fetchManderDetail(path: string | string[]) {
+async function fetchDataStoreDetail(path: string | string[]) {
   const p = Array.isArray(path) ? path.join("/") : path;
   const m = await fetchMander(p);
-  mander.value = m;
+  dataStore.value = m;
 }
 watch(
-  () => route.params.slug,
-  async (newSlug) => {
-    await fetchManderDetail(newSlug);
+  () => route.params.segments,
+  async (newSegments) => {
+    await fetchDataStoreDetail(newSegments);
   }
 );
 
-manderPaths.value = await fetchAllManderPaths();
-await fetchManderDetail(route.params.slug);
+dataStoreUris.value = await fetchAllManderUris();
+await fetchDataStoreDetail(route.params.segments);
 </script>
 
 <template>
@@ -57,8 +57,8 @@ await fetchManderDetail(route.params.slug);
     <nav>
       <FileTree :nodes="pathsAsFileTreeNodes" />
     </nav>
-    <article :class="{ 'not-found': mander == null }">
-      <ManderDetail v-if="mander" :mander="mander" />
+    <article :class="{ 'not-found': dataStore == null }">
+      <DataStoreDetail v-if="dataStore" :dataStore="dataStore" />
       <div v-else>mandr not found...</div>
     </article>
   </main>
