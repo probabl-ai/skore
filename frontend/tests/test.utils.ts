@@ -5,8 +5,8 @@ import { type ComponentPublicInstance, defineComponent, h, Suspense } from "vue"
 export const mockedFetch = vi.fn();
 global.fetch = mockedFetch;
 
-export function createFetchResponse(data: object) {
-  return { json: () => new Promise((resolve) => resolve(data)) };
+export function createFetchResponse(data: object, status = 200) {
+  return { json: () => new Promise((resolve) => resolve(data)), status };
 }
 
 export async function mountSuspense(

@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 
-import { mount } from "@vue/test-utils";
 import FileTree, { type FileTreeNode } from "@/components/FileTree.vue";
+import { mount } from "@vue/test-utils";
 
 function countLeaves(nodes: FileTreeNode[]): number {
   function countInNode(node: FileTreeNode): number {
@@ -21,62 +21,62 @@ describe("FileTree", () => {
   it("Renders properly.", () => {
     const records: FileTreeNode[] = [
       {
-        label: "Punk Rock",
+        uri: "Punk Rock",
         children: [
           {
-            label: "The Clash",
+            uri: "The Clash",
             children: [
-              { label: "The Clash" },
-              { label: "Give 'Em Enough Rope" },
-              { label: "London Calling" },
-              { label: "Sandinista!" },
-              { label: "Combat Rock" },
-              { label: "Cut the Crap" },
+              { uri: "The Clash" },
+              { uri: "Give 'Em Enough Rope" },
+              { uri: "London Calling" },
+              { uri: "Sandinista!" },
+              { uri: "Combat Rock" },
+              { uri: "Cut the Crap" },
             ],
           },
           {
-            label: "Ramones",
+            uri: "Ramones",
             children: [
-              { label: "Ramones" },
-              { label: "Leave Home" },
-              { label: "Rocket to Russia" },
-              { label: "Road to Ruin" },
-              { label: "End of the Century" },
-              { label: "Pleasant Dreams" },
-              { label: "Subterranean Jungle" },
-              { label: "Too Tough to Die" },
-              { label: "Animal Boy" },
-              { label: "Halfway to Sanity" },
-              { label: "Brain Drain" },
-              { label: "Mondo Bizarro" },
-              { label: "Acid Eaters" },
-              { label: "¡Adios Amigos!" },
+              { uri: "Ramones" },
+              { uri: "Leave Home" },
+              { uri: "Rocket to Russia" },
+              { uri: "Road to Ruin" },
+              { uri: "End of the Century" },
+              { uri: "Pleasant Dreams" },
+              { uri: "Subterranean Jungle" },
+              { uri: "Too Tough to Die" },
+              { uri: "Animal Boy" },
+              { uri: "Halfway to Sanity" },
+              { uri: "Brain Drain" },
+              { uri: "Mondo Bizarro" },
+              { uri: "Acid Eaters" },
+              { uri: "¡Adios Amigos!" },
             ],
           },
         ],
       },
       {
-        label: "French touch",
+        uri: "French touch",
         children: [
           {
-            label: "Laurent Garnier",
+            uri: "Laurent Garnier",
             children: [
-              { label: "Shot in the Dark" },
-              { label: "Club Traxx EP" },
-              { label: "30" },
-              { label: "Early Works" },
-              { label: "Unreasonable Behaviour" },
-              { label: "The Cloud Making Machine" },
-              { label: "Retrospective" },
-              { label: "Public Outburst" },
-              { label: "Tales of a Kleptomaniac" },
-              { label: "Suivront Mille Ans De Calme" },
-              { label: "Home Box" },
-              { label: "Paris Est à Nous" },
-              { label: "Le Roi Bâtard" },
-              { label: "De Película" },
-              { label: "Entre la Vie et la Mort" },
-              { label: "33 tours et puis s'en vont" },
+              { uri: "Shot in the Dark" },
+              { uri: "Club Traxx EP" },
+              { uri: "30" },
+              { uri: "Early Works" },
+              { uri: "Unreasonable Behaviour" },
+              { uri: "The Cloud Making Machine" },
+              { uri: "Retrospective" },
+              { uri: "Public Outburst" },
+              { uri: "Tales of a Kleptomaniac" },
+              { uri: "Suivront Mille Ans De Calme" },
+              { uri: "Home Box" },
+              { uri: "Paris Est à Nous" },
+              { uri: "Le Roi Bâtard" },
+              { uri: "De Película" },
+              { uri: "Entre la Vie et la Mort" },
+              { uri: "33 tours et puis s'en vont" },
             ],
           },
         ],

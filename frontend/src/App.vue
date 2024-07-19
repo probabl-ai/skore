@@ -6,12 +6,26 @@ import LoadingBars from "./components/LoadingBars.vue";
 <template>
   <RouterView v-slot="{ Component }">
     <template v-if="Component">
-      <Suspense>
-        <component :is="Component" />
-        <template #fallback>
-          <LoadingBars />
-        </template>
-      </Suspense>
+      <Transition name="fade">
+        <Suspense>
+          <component :is="Component" />
+          <template #fallback>
+            <div class="loader">
+              <LoadingBars />
+            </div>
+          </template>
+        </Suspense>
+      </Transition>
     </template>
   </RouterView>
 </template>
+
+<style scoped>
+.loader {
+  display: flex;
+  width: 100dvw;
+  height: 100dvh;
+  align-items: center;
+  justify-content: center;
+}
+</style>

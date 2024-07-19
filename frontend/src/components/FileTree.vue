@@ -1,6 +1,6 @@
 <script lang="ts">
 export interface FileTreeNode {
-  label: string;
+  uri: string;
   children?: FileTreeNode[];
   indentationLevel?: number;
 }
@@ -9,20 +9,20 @@ export interface FileTreeNode {
 <script setup lang="ts">
 import FileTreeItem from "./FileTreeItem.vue";
 
-defineProps<{ nodes: FileTreeNode[] }>();
+const props = defineProps<{ nodes: FileTreeNode[] }>();
 </script>
 
 <template>
   <FileTreeItem
-    v-for="(node, index) in nodes"
+    v-for="(node, index) in props.nodes"
     :key="index"
-    :label="node.label"
+    :uri="node.uri"
     :children="node.children"
     :indentation-level="0"
   />
 </template>
 
-<style>
+<style scoped>
 .file-tree {
   padding: 1em;
   background-color: green;
