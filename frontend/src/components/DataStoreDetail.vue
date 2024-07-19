@@ -7,13 +7,25 @@ const props = defineProps<{ dataStore: DataStore }>();
 
 <template>
   <div class="item-list">
-    <DataStoreItemList title="Views" icon="icon-plot" :elements="Object.keys(dataStore.views)" />
-    <DataStoreItemList title="Info" icon="icon-text" :elements="Object.keys(dataStore.info)" />
-    <DataStoreItemList title="Logs" icon="icon-gift" :elements="Object.keys(dataStore.logs)" />
+    <DataStoreItemList
+      title="Views"
+      icon="icon-plot"
+      :elements="Object.keys(props.dataStore.views)"
+    />
+    <DataStoreItemList
+      title="Info"
+      icon="icon-text"
+      :elements="Object.keys(props.dataStore.info)"
+    />
+    <DataStoreItemList
+      title="Logs"
+      icon="icon-gift"
+      :elements="Object.keys(props.dataStore.logs)"
+    />
     <DataStoreItemList
       title="Logs"
       icon="icon-folder"
-      :elements="Object.keys(dataStore.artifacts)"
+      :elements="Object.keys(props.dataStore.artifacts)"
     />
   </div>
 </template>
