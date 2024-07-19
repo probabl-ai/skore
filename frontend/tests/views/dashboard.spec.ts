@@ -1,7 +1,15 @@
 import FileTree from "@/components/FileTree.vue";
 import DashboardView from "@/views/DashboardView.vue";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { useRoute } from "vue-router";
 import { createFetchResponse, mockedFetch, mountSuspense } from "../test.utils";
+
+vi.mock("vue-router", () => ({
+  useRoute: vi.fn(),
+  useRouter: vi.fn(() => ({
+    push: () => {},
+  })),
+}));
 
 describe("DashboardView", () => {
   it("Parse the list of fetched list of mander to an array of FileTreeNode.", async () => {
@@ -16,25 +24,36 @@ describe("DashboardView", () => {
 
     mockedFetch.mockResolvedValue(createFetchResponse(paths));
 
+    (useRoute as any).mockImplementationOnce(() => ({
+      params: {
+        segments: ["a", "b"],
+      },
+    }));
+
     const wrapper = await mountSuspense(DashboardView);
-    const fileTree = await wrapper.getComponent(FileTree);
+    const fileTree = wrapper.getComponent(FileTree);
     expect(fileTree.props()).toEqual({
       nodes: [
         {
-          label: "probabl-ai",
+          uri: "probabl-ai",
           children: [
             {
-              label: "demo-usecase",
-              children: [{ label: "training", children: [{ label: "0" }] }],
+              uri: "probabl-ai/demo-usecase",
+              children: [
+                {
+                  uri: "probabl-ai/demo-usecase/training",
+                  children: [{ uri: "probabl-ai/demo-usecase/training/0" }],
+                },
+              ],
             },
             {
-              label: "test-mandr",
+              uri: "probabl-ai/test-mandr",
               children: [
-                { label: "0" },
-                { label: "1" },
-                { label: "2" },
-                { label: "3" },
-                { label: "4" },
+                { uri: "probabl-ai/test-mandr/0" },
+                { uri: "probabl-ai/test-mandr/1" },
+                { uri: "probabl-ai/test-mandr/2" },
+                { uri: "probabl-ai/test-mandr/3" },
+                { uri: "probabl-ai/test-mandr/4" },
               ],
             },
           ],
