@@ -45,6 +45,7 @@ async function fetchDataStoreDetail(path: string | string[]) {
   dataStore.value = m;
   canvasStore.setDataStore(m);
 }
+
 watch(
   () => route.params.segments,
   async (newSegments) => {
@@ -63,17 +64,13 @@ await fetchDataStoreDetail(route.params.segments);
     </nav>
     <article :class="{ 'not-found': dataStore == null }">
       <div class="item-list" v-if="dataStore">
-        <DataStoreItemList
-          title="Views"
-          icon="icon-plot"
-          :elements="Object.keys(dataStore.views)"
-        />
-        <DataStoreItemList title="Info" icon="icon-text" :elements="Object.keys(dataStore.info)" />
-        <DataStoreItemList title="Logs" icon="icon-gift" :elements="Object.keys(dataStore.logs)" />
+        <DataStoreItemList title="Views" icon="icon-plot" :keys="Object.keys(dataStore.views)" />
+        <DataStoreItemList title="Info" icon="icon-text" :keys="Object.keys(dataStore.info)" />
+        <DataStoreItemList title="Logs" icon="icon-gift" :keys="Object.keys(dataStore.logs)" />
         <DataStoreItemList
           title="Logs"
           icon="icon-folder"
-          :elements="Object.keys(dataStore.artifacts)"
+          :keys="Object.keys(dataStore.artifacts)"
         />
       </div>
       <div v-else>mandr not found...</div>

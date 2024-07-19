@@ -16,5 +16,24 @@ export const useCanvasStore = defineStore("canvas", () => {
     displayedKeys.value = [];
   }
 
-  return { dataStore, displayedKeys, displayKey, setDataStore };
+  function get(key: string) {
+    // (o:>
+    const ds = dataStore.value;
+    if (ds) {
+      if (key in ds.views) {
+        return ds.views[key];
+      }
+      if (key in ds.logs) {
+        return ds.logs[key];
+      }
+      if (key in ds.artifacts) {
+        return ds.artifacts[key];
+      }
+      if (key in ds.info) {
+        return ds.info[key];
+      }
+    }
+  }
+
+  return { displayedKeys, displayKey, setDataStore, get };
 });

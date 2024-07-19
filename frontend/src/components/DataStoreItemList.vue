@@ -1,25 +1,37 @@
 <script setup lang="ts">
 import { useCanvasStore } from "@/stores/canvas";
 
-defineProps<{ icon: string; title: string; elements: string[] }>();
+defineProps<{ icon: string; title: string; keys: string[] }>();
 
 const canvasStore = useCanvasStore();
 
 function onClick(element: string) {
   canvasStore.displayKey(element);
 }
+
+function onItemDrag(event: DragEvent, key: string) {
+  console.log(`onDrag: ${key}`);
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = "copy";
+    event.dataTransfer.effectAllowed = "copy";
+    console.log(`onItemDrag: ${key}`);
+    event.dataTransfer.setData("key", key);
+  }
+}
 </script>
 
 <template>
   <h2><span :class="icon"></span>{{ title }}</h2>
-  <div class="elements">
+  <div class="keys">
     <div
-      v-for="(element, index) in elements"
-      :key="index"
-      class="element"
-      @click="onClick(element)"
+      v-for="key in keys"
+      :key="key"
+      class="key"
+      @click="onClick(key)"
+      draggable="true"
+      @dragstart="onItemDrag($event, key)"
     >
-      {{ element }}
+      {{ key }}
     </div>
   </div>
 </template>
@@ -29,7 +41,7 @@ h2 {
   color: var(--primary-color);
 }
 
-.elements {
+.keys {
   display: flex;
   box-sizing: border-box;
   flex: none;

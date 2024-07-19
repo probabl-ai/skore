@@ -1,27 +1,38 @@
 <script setup lang="ts">
 import { useCanvasStore } from "@/stores/canvas";
-import { computed } from "vue";
 
 const canvasStore = useCanvasStore();
 
-const elements = computed(() => {
-  return canvasStore.displayedKeys;
-});
+function onItemDrop(event: DragEvent) {
+  if (event.dataTransfer) {
+    const key = event.dataTransfer.getData("key");
+    console.log(`onItemDrop: ${key}`);
+    canvasStore.displayKey(key);
+  }
+}
 </script>
 
 <template>
-  <div class="widgets">
-    <div v-for="(element, index) in elements" :key="index" class="canvas-element">
-      {{ element }}
-    </div>
+  <div class="canvas" @drop="onItemDrop($event)" @dragover.prevent>
+    <div
+      v-for="key in canvasStore.displayedKeys"
+      :key="key"
+      class="canvas-element"
+      v-html="canvasStore.get(key)"
+    ></div>
   </div>
 </template>
 
 <style scoped>
-.widgets {
+.canvas {
   display: flex;
   overflow: scroll;
   flex-direction: column;
+  flex-grow: 1;
   padding: 10px;
+
+  & .canvas-element {
+    max-width: 100%;
+  }
 }
 </style>
