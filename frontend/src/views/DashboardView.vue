@@ -4,7 +4,7 @@ import { useRoute } from "vue-router";
 
 import DataStoreCanvas from "@/components/DataStoreCanvas.vue";
 import DataStoreItemList from "@/components/DataStoreItemList.vue";
-import FileTree, { type FileTreeNode } from "@/components/FileTree.vue";
+import FileTree, { transformUrisToTree } from "@/components/FileTree.vue";
 import { type DataStore } from "@/models";
 import { fetchAllManderUris, fetchMander } from "@/services/api";
 import { useCanvasStore } from "@/stores/canvas";
@@ -13,31 +13,7 @@ const route = useRoute();
 const dataStoreUris = ref<string[]>([]);
 const dataStore = ref<DataStore | null>();
 const canvasStore = useCanvasStore();
-
-const pathsAsFileTreeNodes = computed(() => {
-  const tree: FileTreeNode[] = [];
-  for (let p of dataStoreUris.value) {
-    const segments = p.split("/");
-    const rootSegment = segments[0];
-    let currentNode = tree.find((n) => n.uri == rootSegment);
-    if (!currentNode) {
-      currentNode = { uri: rootSegment };
-      tree.push(currentNode);
-    }
-    let n = currentNode!;
-    for (let s of segments.slice(1)) {
-      n.children = n.children || [];
-      const uri = `${n.uri}/${s}`;
-      let childNode = n.children.find((n) => n.uri == uri);
-      if (!childNode) {
-        childNode = { uri };
-        n.children.push(childNode);
-      }
-      n = childNode;
-    }
-  }
-  return tree;
-});
+const fileTree = computed(() => transformUrisToTree(dataStoreUris.value));
 
 async function fetchDataStoreDetail(path: string | string[]) {
   const p = Array.isArray(path) ? path.join("/") : path;
@@ -60,7 +36,7 @@ await fetchDataStoreDetail(route.params.segments);
 <template>
   <main>
     <nav>
-      <FileTree :nodes="pathsAsFileTreeNodes" />
+      <FileTree :nodes="fileTree" />
     </nav>
     <article :class="{ 'not-found': dataStore == null }">
       <div class="item-list" v-if="dataStore">

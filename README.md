@@ -2,13 +2,9 @@
 
 ![lint and test](https://github.com/probabl-ai/mandr/actions/workflows/lint-and-test.yml/badge.svg)
 
-Service to send data into, install via
+A service to send data into.
 
-```
-python -m pip install -e
-python -m pip install flask diskcache pandas altair
-```
-
+## Example
 
 ```python
 from mandr import InfoMander
@@ -21,16 +17,19 @@ mander.add_templates(...)
 mander.add_views(...)
 ```
 
-When ready to view, run flask:
+## Development
 
-```
-python -m flask --app mandr.app run --reload
-```
-
-## Dependencies
-
-When dependencies are changed in `pyproject.toml` the lockfiles should be updated by running [`pip-compile`](https://github.com/jazzband/pip-tools):
+Install dependencies with
 ```sh
-pip-compile --output-file=requirements.txt pyproject.toml
-pip-compile --extra=test --output-file=requirements-test.txt pyproject.toml
+make install
+```
+
+You can run the API server with
+```sh
+make serve-api
+```
+
+When dependencies are changed in `pyproject.toml` the lockfiles should be updated via [`pip-compile`](https://github.com/jazzband/pip-tools):
+```sh
+make pip-compile
 ```
