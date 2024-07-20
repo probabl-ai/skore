@@ -1,21 +1,41 @@
 from datetime import UTC, date, datetime
-from functools import partial
 
 import altair as alt
+import httpx
 import jsonschema
 import mandr.schema.dashboard
 import pandas as pd
 import pytest
+import referencing
 
 
 class TestV0:
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def validator(self):
-        return partial(
-            jsonschema.validate,
+        """
+        Validator with format checking and external schemas pulling.
+
+        Notes
+        -----
+        Check if primitive types conform to well-defined formats.
+            https://python-jsonschema.readthedocs.io/en/latest/validate/#validating-formats
+
+        Automatically retrieve referenced schemas on-the-fly:
+            https://python-jsonschema.readthedocs.io/en/stable/referencing/#automatically-retrieving-resources-over-http
+        """
+
+        def retrieve_via_httpx(uri):
+            response = httpx.get(uri)
+            return referencing.Resource.from_contents(response.json())
+
+        registry = referencing.Registry(retrieve=retrieve_via_httpx)
+        draft202012validator = jsonschema.Draft202012Validator(
             schema=mandr.schema.dashboard.v0,
+            registry=registry,
             format_checker=jsonschema.Draft202012Validator.FORMAT_CHECKER,
         )
+
+        return draft202012validator.validate
 
     def test_schema_with_any(self, validator):
         validator(
@@ -147,7 +167,29 @@ class TestV0:
                 }
             )
 
-    # def test_schema_with_html(self):
+    def test_schema_with_html(self, validator):
+        validator(
+            instance={
+                "schema": "schema:dashboard:v0",
+                "uri": "test",
+                "payload": {
+                    "key": {
+                        "type": "html",
+                        "data": "<!DOCTYPE html><head></head></html>",
+                    }
+                },
+            }
+        )
+
+    def test_schema_with_html_exception(self, validator):
+        with pytest.raises(jsonschema.exceptions.ValidationError):
+            validator(
+                instance={
+                    "schema": "schema:dashboard:v0",
+                    "uri": "test",
+                    "payload": {"key": {"type": "html", "data": "<head></head>"}},
+                }
+            )
 
     def test_schema_with_integer(self, validator):
         validator(
@@ -168,22 +210,22 @@ class TestV0:
                 }
             )
 
-    def test_schema_with_number(self, validator):
+    def test_schema_with_float(self, validator):
         validator(
             instance={
                 "schema": "schema:dashboard:v0",
                 "uri": "test",
-                "payload": {"key": {"type": "number", "data": 1.2}},
+                "payload": {"key": {"type": "float", "data": 1.2}},
             }
         )
 
-    def test_schema_with_number_exception(self, validator):
+    def test_schema_with_float_exception(self, validator):
         with pytest.raises(jsonschema.exceptions.ValidationError):
             validator(
                 instance={
                     "schema": "schema:dashboard:v0",
                     "uri": "test",
-                    "payload": {"key": {"type": "number", "data": "1.2"}},
+                    "payload": {"key": {"type": "float", "data": "1.2"}},
                 }
             )
 

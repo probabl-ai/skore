@@ -1,3 +1,5 @@
+# noqa: D104
+
 import json
 import pathlib
 
