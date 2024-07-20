@@ -36,7 +36,7 @@ dnspython==2.6.1
     # via email-validator
 email-validator==2.2.0
     # via fastapi
-fastapi==0.111.0
+fastapi==0.111.1
     # via mandr (pyproject.toml)
 fastapi-cli==0.0.4
     # via fastapi
@@ -81,14 +81,12 @@ markupsafe==2.1.5
     #   werkzeug
 mdurl==0.1.2
     # via markdown-it-py
-numpy==2.0.0
+numpy==2.0.1
     # via
     #   altair
     #   pandas
     #   scikit-learn
     #   scipy
-orjson==3.10.6
-    # via fastapi
 packaging==24.1
     # via altair
 pandas==2.2.2
@@ -153,9 +151,7 @@ typing-extensions==4.12.2
     #   typer
 tzdata==2024.1
     # via pandas
-ujson==5.10.0
-    # via fastapi
-uvicorn[standard]==0.30.1
+uvicorn[standard]==0.30.3
     # via fastapi
 uvloop==0.19.0
     # via uvicorn
