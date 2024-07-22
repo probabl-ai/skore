@@ -37,235 +37,75 @@ class TestV0:
 
         return draft202012validator.validate
 
-    def test_schema_with_any(self, validator):
-        validator(
-            instance={
-                "schema": "schema:dashboard:v0",
-                "uri": "test",
-                "payload": {"key": {"type": "any", "data": None}},
-            }
-        )
-
-    def test_schema_with_array(self, validator):
-        validator(
-            instance={
-                "schema": "schema:dashboard:v0",
-                "uri": "test",
-                "payload": {"key": {"type": "array", "data": [0, 1, 2]}},
-            }
-        )
-
-    def test_schema_with_array_exception(self, validator):
-        with pytest.raises(jsonschema.exceptions.ValidationError):
-            validator(
-                instance={
-                    "schema": "schema:dashboard:v0",
-                    "uri": "test",
-                    "payload": {"key": {"type": "array", "data": (0, 1, 2)}},
+    @pytest.mark.parametrize(
+        "payload",
+        [
+            {"key": {"type": "any", "data": None}},
+            {"key": {"type": "array", "data": [0, 1, 2]}},
+            {"key": {"type": "boolean", "data": True}},
+            {"key": {"type": "date", "data": date.today().isoformat()}},
+            {"key": {"type": "datetime", "data": datetime.now(tz=UTC).isoformat()}},
+            {
+                "key": {
+                    "type": "file",
+                    "data": "file:///tmp/file.txt",
+                    "metadata": None,
+                    "internal": None,
                 }
-            )
-
-    def test_schema_with_boolean(self, validator):
-        validator(
-            instance={
-                "schema": "schema:dashboard:v0",
-                "uri": "test",
-                "payload": {"key": {"type": "boolean", "data": True}},
-            }
-        )
-
-    def test_schema_with_boolean_exception(self, validator):
-        with pytest.raises(jsonschema.exceptions.ValidationError):
-            validator(
-                instance={
-                    "schema": "schema:dashboard:v0",
-                    "uri": "test",
-                    "payload": {"key": {"type": "boolean", "data": "True"}},
+            },
+            {"key": {"type": "html", "data": "<!DOCTYPE html><head></head></html>"}},
+            {"key": {"type": "integer", "data": 1}},
+            {"key": {"type": "float", "data": 1.2}},
+            {"key": {"type": "string", "data": "True"}},
+            {
+                "key": {
+                    "type": "vega",
+                    "data": (
+                        alt.Chart(pd.DataFrame({"a": ["A"], "b": [28]}))
+                        .mark_bar()
+                        .to_dict()
+                    ),
                 }
-            )
-
-    def test_schema_with_date(self, validator):
+            },
+        ],
+    )
+    def test_payload_validation(self, validator, payload):
         validator(
             instance={
                 "schema": "schema:dashboard:v0",
                 "uri": "test",
-                "payload": {"key": {"type": "date", "data": date.today().isoformat()}},
+                "payload": payload,
             }
         )
 
-    def test_schema_with_date_exception(self, validator):
-        with pytest.raises(jsonschema.exceptions.ValidationError):
-            validator(
-                instance={
-                    "schema": "schema:dashboard:v0",
-                    "uri": "test",
-                    "payload": {
-                        "key": {
-                            "type": "date",
-                            "data": datetime.now(tz=UTC).isoformat(),
-                        }
-                    },
+    @pytest.mark.parametrize(
+        "payload",
+        [
+            {"key": {"type": "array", "data": (0, 1, 2)}},
+            {"key": {"type": "boolean", "data": "True"}},
+            {"key": {"type": "date", "data": datetime.now(tz=UTC).isoformat()}},
+            {"key": {"type": "datetime", "data": date.today().isoformat()}},
+            {
+                "key": {
+                    "type": "file",
+                    "data": "file.txt",
+                    "metadata": None,
+                    "internal": None,
                 }
-            )
-
-    def test_schema_with_datetime(self, validator):
-        validator(
-            instance={
-                "schema": "schema:dashboard:v0",
-                "uri": "test",
-                "payload": {
-                    "key": {
-                        "type": "datetime",
-                        "data": datetime.now(tz=UTC).isoformat(),
-                    }
-                },
-            }
-        )
-
-    def test_schema_with_datetime_exception(self, validator):
+            },
+            {"key": {"type": "html", "data": "<head></head>"}},
+            {"key": {"type": "integer", "data": 1.2}},
+            {"key": {"type": "float", "data": "1.2"}},
+            {"key": {"type": "string", "data": True}},
+            {"key": {"type": "vega", "data": None}},
+        ],
+    )
+    def test_payload_invalidation(self, validator, payload):
         with pytest.raises(jsonschema.exceptions.ValidationError):
             validator(
                 instance={
                     "schema": "schema:dashboard:v0",
                     "uri": "test",
-                    "payload": {
-                        "key": {"type": "datetime", "data": date.today().isoformat()}
-                    },
-                }
-            )
-
-    def test_schema_with_file(self, validator):
-        validator(
-            instance={
-                "schema": "schema:dashboard:v0",
-                "uri": "test",
-                "payload": {
-                    "key": {
-                        "type": "file",
-                        "data": "file:///tmp/file.txt",
-                        "metadata": None,
-                        "internal": None,
-                    }
-                },
-            }
-        )
-
-    def test_schema_with_file_exception(self, validator):
-        with pytest.raises(jsonschema.exceptions.ValidationError):
-            validator(
-                instance={
-                    "schema": "schema:dashboard:v0",
-                    "uri": "test",
-                    "payload": {
-                        "key": {
-                            "type": "file",
-                            "data": "file.txt",
-                            "metadata": None,
-                            "internal": None,
-                        }
-                    },
-                }
-            )
-
-    def test_schema_with_html(self, validator):
-        validator(
-            instance={
-                "schema": "schema:dashboard:v0",
-                "uri": "test",
-                "payload": {
-                    "key": {
-                        "type": "html",
-                        "data": "<!DOCTYPE html><head></head></html>",
-                    }
-                },
-            }
-        )
-
-    def test_schema_with_html_exception(self, validator):
-        with pytest.raises(jsonschema.exceptions.ValidationError):
-            validator(
-                instance={
-                    "schema": "schema:dashboard:v0",
-                    "uri": "test",
-                    "payload": {"key": {"type": "html", "data": "<head></head>"}},
-                }
-            )
-
-    def test_schema_with_integer(self, validator):
-        validator(
-            instance={
-                "schema": "schema:dashboard:v0",
-                "uri": "test",
-                "payload": {"key": {"type": "integer", "data": 1}},
-            }
-        )
-
-    def test_schema_with_integer_exception(self, validator):
-        with pytest.raises(jsonschema.exceptions.ValidationError):
-            validator(
-                instance={
-                    "schema": "schema:dashboard:v0",
-                    "uri": "test",
-                    "payload": {"key": {"type": "integer", "data": 1.2}},
-                }
-            )
-
-    def test_schema_with_float(self, validator):
-        validator(
-            instance={
-                "schema": "schema:dashboard:v0",
-                "uri": "test",
-                "payload": {"key": {"type": "float", "data": 1.2}},
-            }
-        )
-
-    def test_schema_with_float_exception(self, validator):
-        with pytest.raises(jsonschema.exceptions.ValidationError):
-            validator(
-                instance={
-                    "schema": "schema:dashboard:v0",
-                    "uri": "test",
-                    "payload": {"key": {"type": "float", "data": "1.2"}},
-                }
-            )
-
-    def test_schema_with_string(self, validator):
-        validator(
-            instance={
-                "schema": "schema:dashboard:v0",
-                "uri": "test",
-                "payload": {"key": {"type": "string", "data": "True"}},
-            }
-        )
-
-    def test_schema_with_string_exception(self, validator):
-        with pytest.raises(jsonschema.exceptions.ValidationError):
-            validator(
-                instance={
-                    "schema": "schema:dashboard:v0",
-                    "uri": "test",
-                    "payload": {"key": {"type": "string", "data": True}},
-                }
-            )
-
-    def test_schema_with_vega(self, validator):
-        source = pd.DataFrame({"a": ["A"], "b": [28]})
-        chart = alt.Chart(source).mark_bar().encode(x="a", y="b")
-
-        validator(
-            instance={
-                "schema": "schema:dashboard:v0",
-                "uri": "test",
-                "payload": {"key": {"type": "vega", "data": chart.to_dict()}},
-            }
-        )
-
-    def test_schema_with_vega_exception(self, validator):
-        with pytest.raises(jsonschema.exceptions.ValidationError):
-            validator(
-                instance={
-                    "schema": "schema:dashboard:v0",
-                    "uri": "test",
-                    "payload": {"key": {"type": "vega", "data": None}},
+                    "payload": payload,
                 }
             )
