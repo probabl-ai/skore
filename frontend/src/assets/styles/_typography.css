@@ -1,0 +1,27 @@
+@font-face {
+  font-family: Geist;
+  src: url("../fonts/GeistVF.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: GeistMono;
+  src: url("../fonts/GeistMonoVF.woff2") format("woff2");
+}
+
+body {
+  color: var(--text-color);
+  font-family: Geist, sans-serif;
+}
+
+code {
+  font-family: GeistMono, monospace;
+}
+
+a,
+a:visited {
+  color: var(--text-color);
+}
+
+a:hover {
+  text-underline-offset: 0.2em;
+}
