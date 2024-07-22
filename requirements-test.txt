@@ -34,7 +34,7 @@ click==8.1.7
     #   flask
     #   typer
     #   uvicorn
-coverage[toml]==7.6.0
+coverage[toml]==7.5.4
     # via pytest-cov
 diskcache==5.6.3
     # via mandr (pyproject.toml)
@@ -44,7 +44,7 @@ dnspython==2.6.1
     # via email-validator
 email-validator==2.2.0
     # via fastapi
-fastapi==0.111.1
+fastapi==0.111.0
     # via mandr (pyproject.toml)
 fastapi-cli==0.0.4
     # via fastapi
@@ -106,12 +106,14 @@ mdurl==0.1.2
     # via markdown-it-py
 nodeenv==1.9.1
     # via pre-commit
-numpy==2.0.1
+numpy==2.0.0
     # via
     #   altair
     #   pandas
     #   scikit-learn
     #   scipy
+orjson==3.10.6
+    # via fastapi
 packaging==24.1
     # via
     #   altair
@@ -132,7 +134,7 @@ pydantic-core==2.20.1
     # via pydantic
 pygments==2.18.0
     # via rich
-pytest==8.3.1
+pytest==8.2.2
     # via
     #   mandr (pyproject.toml)
     #   pytest-cov
@@ -171,7 +173,7 @@ rpds-py==0.19.0
     # via
     #   jsonschema
     #   referencing
-ruff==0.5.4
+ruff==0.5.1
     # via mandr (pyproject.toml)
 scikit-learn==1.5.1
     # via mandr (pyproject.toml)
@@ -207,9 +209,11 @@ typing-extensions==4.12.2
     #   typer
 tzdata==2024.1
     # via pandas
+ujson==5.10.0
+    # via fastapi
 uri-template==1.3.0
     # via jsonschema
-uvicorn[standard]==0.30.3
+uvicorn[standard]==0.30.1
     # via fastapi
 uvloop==0.19.0
     # via uvicorn
