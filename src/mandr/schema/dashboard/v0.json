@@ -1,0 +1,170 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "schema:dashboard:v0",
+    "$defs": {
+        "any": {
+            "title": "Any",
+            "description": "Any value in JSON format.",
+            "type": "object",
+            "properties": {
+                "type": { "const": "any" },
+                "data": true
+            },
+            "required": [ "type", "data" ],
+            "additionalProperties": false
+        },
+        "array": {
+            "title": "Array",
+            "description": "Array, analogous to the python's list type.",
+            "type": "object",
+            "properties": {
+                "type": { "const": "array" },
+                "data": { "type": "array" }
+            },
+            "required": [ "type", "data" ],
+            "additionalProperties": false
+        },
+        "boolean": {
+            "title": "Boolean",
+            "description": "Boolean, analogous to the python's bool type.",
+            "type": "object",
+            "properties": {
+                "type": { "const": "boolean" },
+                "data": { "type": "boolean" }
+            },
+            "required": [ "type", "data" ],
+            "additionalProperties": false
+        },
+        "date": {
+            "title": "Date",
+            "description": "Date string representation in ISO 8601 format.",
+            "type": "object",
+            "properties": {
+                "type": { "const": "date" },
+                "data": {
+                    "type": "string",
+                    "format": "date"
+                }
+            },
+            "required": [ "type", "data" ],
+            "additionalProperties": false
+        },
+        "datetime": {
+            "title": "Date and time",
+            "description": "Date and time string representation in ISO 8601 format.",
+            "type": "object",
+            "properties": {
+                "type": { "const": "datetime" },
+                "data": {
+                    "type": "string",
+                    "format": "date-time"
+                }
+            },
+            "required": [ "type", "data" ],
+            "additionalProperties": false
+        },
+        "file": {
+            "title": "File",
+            "description": "File path in URI format, with user metadata and internal data",
+            "type": "object",
+            "properties": {
+                "type": { "const": "file" },
+                "data": {
+                    "type": "string",
+                    "format": "uri"
+                },
+                "metadata": true,
+                "internal": true
+            },
+            "required": [ "type", "data", "metadata", "internal" ],
+            "additionalProperties": false
+        },
+        "float": {
+            "title": "Float",
+            "description": "Float, analogous to the python's float type.",
+            "type": "object",
+            "properties": {
+                "type": { "const": "float" },
+                "data": { "type": "number" }
+            },
+            "required": [ "type", "data" ],
+            "additionalProperties": false
+        },
+        "html": {
+            "title": "HTML",
+            "description": "HTML string representation.",
+            "type": "object",
+            "properties": {
+                "type": { "const": "html" },
+                "data": {
+                    "type": "string",
+                    "contentMediaType": "text/html",
+                    "pattern": "^<!DOCTYPE html>(.|\r?\n)*<\/html>$"
+                }
+            },
+            "required": [ "type", "data" ],
+            "additionalProperties": false
+        },
+        "integer": {
+            "title": "Integer",
+            "description": "Integer, analogous to the python's int type",
+            "type": "object",
+            "properties": {
+                "type": { "const": "integer" },
+                "data": { "type": "integer" }
+            },
+            "required": [ "type", "data" ],
+            "additionalProperties": false
+        },
+        "string": {
+            "title": "String",
+            "description": "String, analogous to the python3's str type.",
+            "type": "object",
+            "properties": {
+                "type": { "const": "string" },
+                "data": { "type": "string" }
+            },
+            "required": [ "type", "data" ],
+            "additionalProperties": false
+        },
+        "vega": {
+            "title": "Vega",
+            "description": "Vega chart object in vega's format, result of `vegachart.to_dict()`.",
+            "type": "object",
+            "properties": {
+                "type": { "const": "vega" },
+                "data": { "$ref": "https://vega.github.io/schema/vega-lite/v5.json" }
+            },
+            "required": [ "type", "data" ],
+            "additionalProperties": false
+        }
+    },
+
+    "type": "object",
+    "properties": {
+        "schema": { "const": "schema:dashboard:v0" },
+        "uri": {
+            "type": "string",
+            "format": "uri-reference"
+        },
+        "payload": {
+            "additionalProperties": {
+                "oneOf": [
+                    { "$ref": "#/$defs/any" },
+                    { "$ref": "#/$defs/array" },
+                    { "$ref": "#/$defs/boolean" },
+                    { "$ref": "#/$defs/date" },
+                    { "$ref": "#/$defs/datetime" },
+                    { "$ref": "#/$defs/file" },
+                    { "$ref": "#/$defs/float" },
+                    { "$ref": "#/$defs/html" },
+                    { "$ref": "#/$defs/integer" },
+                    { "$ref": "#/$defs/string" },
+                    { "$ref": "#/$defs/vega" }
+                ]
+            }
+        }
+    },
+    "required": [ "schema", "uri", "payload" ],
+    "additionalProperties": false
+}
