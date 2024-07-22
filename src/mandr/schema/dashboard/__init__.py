@@ -1,4 +1,4 @@
-# noqa: D104
+"""JSON Schema for API versioning between mandr and dashboard."""
 
 import json
 import pathlib
