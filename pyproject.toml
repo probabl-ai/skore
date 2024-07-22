@@ -23,11 +23,12 @@ dependencies = [
 
 [project.optional-dependencies]
 test = [
+  "jsonschema[format]",
   "pre-commit",
   "pytest",
   "pytest-cov",
   "pytest-randomly",
-  "ruff"
+  "ruff",
 ]
 
 [tool.hatch.build.targets.wheel]
