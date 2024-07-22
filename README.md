@@ -33,3 +33,16 @@ When dependencies are changed in `pyproject.toml` the lockfiles should be update
 ```sh
 make pip-compile
 ```
+
+## Documentation
+
+For now, the documentation must be build locally to be accessed.
+
+```sh
+make build-doc
+```
+
+Then, you can access the local build via:
+```sh
+open doc/_build/html/index.html
+```
