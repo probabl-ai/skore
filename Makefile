@@ -1,4 +1,4 @@
-Makefilepip-compile:
+pip-compile:
 	pip-compile --output-file=requirements.txt pyproject.toml
 	pip-compile --extra=test --output-file=requirements-test.txt pyproject.toml
 	pip-compile --extra=doc --output-file=requirements-doc.txt pyproject.toml
