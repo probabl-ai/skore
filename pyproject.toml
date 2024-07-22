@@ -33,9 +33,6 @@ test = [
 [tool.hatch.build.targets.wheel]
 packages = ["src/mandr"]
 
-[tool.pip-tools.compile]
-upgrade = true
-
 [tool.pytest.ini_options]
 addopts = [
     "--cov=src/",
