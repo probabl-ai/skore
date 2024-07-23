@@ -103,6 +103,24 @@ class TestV0:
                 {"type": "integer", "data": 1.2},
                 pytest.raises(ValidationError, match="is not of type 'integer'"),
             ),
+            (
+                {
+                    "type": "markdown",
+                    "data": "# Hello\n## Hi\n\nThis is a markdown string",
+                },
+                does_not_raise(),
+            ),
+            (
+                {
+                    "type": "markdown",
+                    "data": "<p>This is technically valid Markdown</p>",
+                },
+                does_not_raise(),
+            ),
+            (
+                {"type": "markdown", "data": 1},
+                pytest.raises(ValidationError, match="is not of type 'string'"),
+            ),
             ({"type": "number", "data": 1.2}, does_not_raise()),
             (
                 {"type": "number", "data": "1.2"},
