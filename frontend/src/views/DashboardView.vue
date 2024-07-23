@@ -7,7 +7,6 @@ import DataStoreCanvas from "@/components/DataStoreCanvas.vue";
 import DataStoreKeyList from "@/components/DataStoreKeyList.vue";
 import FileTree, { transformUrisToTree } from "@/components/FileTree.vue";
 import SimpleButton from "@/components/SimpleButton.vue";
-
 import { type DataStore } from "@/models";
 import { fetchAllManderUris, fetchMander } from "@/services/api";
 import { useCanvasStore } from "@/stores/canvas";
@@ -17,6 +16,7 @@ const dataStoreUris = ref<string[]>([]);
 const dataStore = ref<DataStore | null>();
 const canvasStore = useCanvasStore();
 const isDropIndicatorVisible = ref(false);
+const editor = ref<HTMLDivElement>();
 const fileTree = computed(() => transformUrisToTree(dataStoreUris.value));
 
 async function fetchDataStoreDetail(path: string | string[]) {
@@ -29,7 +29,7 @@ async function fetchDataStoreDetail(path: string | string[]) {
   canvasStore.setDataStore(m);
 }
 
-function onSaveBoard(event: PointerEvent) {
+function onSaveBoard(/*event: PointerEvent*/) {
   alert("not implemented yet");
 }
 
@@ -38,6 +38,16 @@ function onItemDrop(event: DragEvent) {
   if (event.dataTransfer) {
     const key = event.dataTransfer.getData("key");
     canvasStore.displayKey(key);
+  }
+}
+
+function onDragEnter() {
+  isDropIndicatorVisible.value = true;
+}
+
+function onDragLeave(event: DragEvent) {
+  if (event.target == editor.value) {
+    isDropIndicatorVisible.value = false;
   }
 }
 
@@ -73,11 +83,12 @@ await fetchDataStoreDetail(route.params.segments);
         </div>
       </div>
       <div
+        ref="editor"
         class="editor"
         @drop="onItemDrop"
         @dragover.prevent
-        @dragenter="isDropIndicatorVisible = true"
-        @dragleave="isDropIndicatorVisible = false"
+        @dragenter="onDragEnter"
+        @dragleave="onDragLeave"
       >
         <div class="editor-header">
           <h1>Board</h1>

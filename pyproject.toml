@@ -24,6 +24,7 @@ dependencies = [
 
 [project.optional-dependencies]
 test = [
+  "jsonschema[format]",
   "pre-commit",
   "pytest",
   "pytest-cov",
@@ -36,9 +37,6 @@ tools = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/mandr"]
-
-[tool.pip-tools.compile]
-upgrade = true
 
 [tool.pytest.ini_options]
 addopts = [

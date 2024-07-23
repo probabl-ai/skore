@@ -27,18 +27,6 @@
   text-transform: none;
 }
 
-.icon-grid-layout-large::before {
-  content: "\e905";
-}
-
-.icon-grid-layout-medium::before {
-  content: "\e906";
-}
-
-.icon-grid-layout-small::before {
-  content: "\e907";
-}
-
 .icon-text::before {
   content: "\e900";
 }
@@ -57,4 +45,16 @@
 
 .icon-folder::before {
   content: "\e904";
+}
+
+.icon-grid-layout-large::before {
+  content: "\e905";
+}
+
+.icon-grid-layout-medium::before {
+  content: "\e906";
+}
+
+.icon-grid-layout-small::before {
+  content: "\e907";
 }

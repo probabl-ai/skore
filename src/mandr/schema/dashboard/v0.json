@@ -1,0 +1,223 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "schema:dashboard:v0",
+    "$defs": {
+        "if:any": {
+            "title": "Any",
+            "description": "Any value in JSON format.",
+            "if": { "properties": { "type": { "const": "any" } } },
+            "then": {
+                "type": "object",
+                "properties": {
+                    "type": { "const": "any" },
+                    "data": true
+                },
+                "required": [ "type", "data" ],
+                "additionalProperties": false
+            }
+        },
+        "if:array": {
+            "title": "Array",
+            "description": "Array, analogous to the python's list type.",
+            "if": { "properties": { "type": { "const": "array" } } },
+            "then": {
+                "type": "object",
+                "properties": {
+                    "type": { "const": "array" },
+                    "data": { "type": "array" }
+                },
+                "required": [ "type", "data" ],
+                "additionalProperties": false
+            }
+        },
+        "if:boolean": {
+            "title": "Boolean",
+            "description": "Boolean, analogous to the python's bool type.",
+            "if": { "properties": { "type": { "const": "boolean" } } },
+            "then": {
+                "type": "object",
+                "properties": {
+                    "type": { "const": "boolean" },
+                    "data": { "type": "boolean" }
+                },
+                "required": [ "type", "data" ],
+                "additionalProperties": false
+            }
+        },
+        "if:date": {
+            "title": "Date",
+            "description": "Date string representation in ISO 8601 format.",
+            "if": { "properties": { "type": { "const": "date" } } },
+            "then": {
+                "type": "object",
+                "properties": {
+                    "type": { "const": "date" },
+                    "data": {
+                        "type": "string",
+                        "format": "date"
+                    }
+                },
+                "required": [ "type", "data" ],
+                "additionalProperties": false
+            }
+        },
+        "if:datetime": {
+            "title": "Date and time",
+            "description": "Date and time string representation in ISO 8601 format.",
+            "if": { "properties": { "type": { "const": "datetime" } } },
+            "then": {
+                "type": "object",
+                "properties": {
+                    "type": { "const": "datetime" },
+                    "data": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "required": [ "type", "data" ],
+                "additionalProperties": false
+            }
+        },
+        "if:file": {
+            "title": "File",
+            "description": "File path in URI format, with user metadata and internal data",
+            "if": { "properties": { "type": { "const": "file" } } },
+            "then": {
+                "type": "object",
+                "properties": {
+                    "type": { "const": "file" },
+                    "data": {
+                        "type": "string",
+                        "format": "uri"
+                    },
+                    "metadata": true,
+                    "internal": true
+                },
+                "required": [ "type", "data", "metadata", "internal" ],
+                "additionalProperties": false
+            }
+        },
+        "if:number": {
+            "title": "Number",
+            "description": "Number, analogous to the python's float type.",
+            "if": { "properties": { "type": { "const": "number" } } },
+            "then": {
+                "type": "object",
+                "properties": {
+                    "type": { "const": "number" },
+                    "data": { "type": "number" }
+                },
+                "required": [ "type", "data" ],
+                "additionalProperties": false
+            }
+        },
+        "if:html": {
+            "title": "HTML",
+            "description": "HTML string representation.",
+            "if": { "properties": { "type": { "const": "html" } } },
+            "then": {
+                "type": "object",
+                "properties": {
+                    "type": { "const": "html" },
+                    "data": {
+                        "type": "string",
+                        "contentMediaType": "text/html",
+                        "pattern": "^<!DOCTYPE html>(.|\r?\n)*<\/html>$"
+                    }
+                },
+                "required": [ "type", "data" ],
+                "additionalProperties": false
+            }
+        },
+        "if:integer": {
+            "title": "Integer",
+            "description": "Integer, analogous to the python's int type",
+            "if": { "properties": { "type": { "const": "integer" } } },
+            "then": {
+                "type": "object",
+                "properties": {
+                    "type": { "const": "integer" },
+                    "data": { "type": "integer" }
+                },
+                "required": [ "type", "data" ],
+                "additionalProperties": false
+            }
+        },
+        "if:string": {
+            "title": "String",
+            "description": "String, analogous to the python3's str type.",
+            "if": { "properties": { "type": { "const": "string" } } },
+            "then": {
+                "type": "object",
+                "properties": {
+                    "type": { "const": "string" },
+                    "data": { "type": "string" }
+                },
+                "required": [ "type", "data" ],
+                "additionalProperties": false
+            }
+        },
+        "if:vega": {
+            "title": "Vega",
+            "description": "Vega chart object in vega's format, result of `vegachart.to_dict()`.",
+            "if": { "properties": { "type": { "const": "vega" } } },
+            "then": {
+                "type": "object",
+                "properties": {
+                    "type": { "const": "vega" },
+                    "data": { "$ref": "https://vega.github.io/schema/vega-lite/v5.json" }
+                },
+                "required": [ "type", "data" ],
+                "additionalProperties": false
+            }
+        }
+    },
+
+    "type": "object",
+    "properties": {
+        "schema": { "const": "schema:dashboard:v0" },
+        "uri": {
+            "type": "string",
+            "format": "uri-reference"
+        },
+        "payload": {
+            "additionalProperties": {
+                "allOf": [
+                    {
+                        "properties": {
+                            "type": {
+                                "enum": [
+                                    "any",
+                                    "array",
+                                    "boolean",
+                                    "date",
+                                    "datetime",
+                                    "file",
+                                    "number",
+                                    "html",
+                                    "integer",
+                                    "string",
+                                    "vega"
+                                ]
+                            }
+                        },
+                        "required": ["type"]
+                    },
+                    { "$ref": "#/$defs/if:any" },
+                    { "$ref": "#/$defs/if:array" },
+                    { "$ref": "#/$defs/if:boolean" },
+                    { "$ref": "#/$defs/if:date" },
+                    { "$ref": "#/$defs/if:datetime" },
+                    { "$ref": "#/$defs/if:file" },
+                    { "$ref": "#/$defs/if:number" },
+                    { "$ref": "#/$defs/if:html" },
+                    { "$ref": "#/$defs/if:integer" },
+                    { "$ref": "#/$defs/if:string" },
+                    { "$ref": "#/$defs/if:vega" }
+                ]
+            }
+        }
+    },
+    "required": [ "schema", "uri", "payload" ],
+    "additionalProperties": false
+}
