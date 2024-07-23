@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import FileTree, { type FileTreeNode } from "@/components/FileTree.vue";
+import FileTree, { transformUrisToTree, type FileTreeNode } from "@/components/FileTree.vue";
 import { mount } from "@vue/test-utils";
 
 function countLeaves(nodes: FileTreeNode[]): number {
@@ -92,5 +92,44 @@ describe("FileTree", () => {
     const leavesCount = countLeaves(records);
     const leaves = treeItems.filter((c) => c.findAll(itemSelector).length == 0);
     expect(leaves).toHaveLength(leavesCount);
+  });
+
+  it("Can transform an array of URIs to a tree", () => {
+    const uris = [
+      "probabl-ai/demo-usecase/training/0",
+      "probabl-ai/test-mandr/0",
+      "probabl-ai/test-mandr/1",
+      "probabl-ai/test-mandr/2",
+      "probabl-ai/test-mandr/3",
+      "probabl-ai/test-mandr/4",
+    ];
+
+    const tree = transformUrisToTree(uris);
+    expect(tree).toEqual([
+      {
+        uri: "probabl-ai",
+        children: [
+          {
+            uri: "probabl-ai/demo-usecase",
+            children: [
+              {
+                uri: "probabl-ai/demo-usecase/training",
+                children: [{ uri: "probabl-ai/demo-usecase/training/0" }],
+              },
+            ],
+          },
+          {
+            uri: "probabl-ai/test-mandr",
+            children: [
+              { uri: "probabl-ai/test-mandr/0" },
+              { uri: "probabl-ai/test-mandr/1" },
+              { uri: "probabl-ai/test-mandr/2" },
+              { uri: "probabl-ai/test-mandr/3" },
+              { uri: "probabl-ai/test-mandr/4" },
+            ],
+          },
+        ],
+      },
+    ]);
   });
 });

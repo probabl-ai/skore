@@ -4,6 +4,31 @@ export interface FileTreeNode {
   children?: FileTreeNode[];
   indentationLevel?: number;
 }
+
+export function transformUrisToTree(uris: string[]) {
+  const tree: FileTreeNode[] = [];
+  for (let p of uris) {
+    const segments = p.split("/");
+    const rootSegment = segments[0];
+    let currentNode = tree.find((n) => n.uri == rootSegment);
+    if (!currentNode) {
+      currentNode = { uri: rootSegment };
+      tree.push(currentNode);
+    }
+    let n = currentNode!;
+    for (let s of segments.slice(1)) {
+      n.children = n.children || [];
+      const uri = `${n.uri}/${s}`;
+      let childNode = n.children.find((n) => n.uri == uri);
+      if (!childNode) {
+        childNode = { uri };
+        n.children.push(childNode);
+      }
+      n = childNode;
+    }
+  }
+  return tree;
+}
 </script>
 
 <script setup lang="ts">
