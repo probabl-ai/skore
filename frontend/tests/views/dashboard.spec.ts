@@ -26,6 +26,7 @@ describe("DashboardView", () => {
     }));
 
     const dashboard = await mountSuspense(DashboardView);
+    // i.e. not a `VueError`
     expect(dashboard).toBeInstanceOf(VueWrapper);
 
     const fileTree = await dashboard.findComponent(FileTree);
