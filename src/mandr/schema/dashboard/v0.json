@@ -44,6 +44,20 @@
                 "additionalProperties": false
             }
         },
+        "if:dataframe": {
+            "title": "DataFrame",
+            "description": "DataFrame.",
+            "if": { "properties": { "type": { "const": "dataframe" } } },
+            "then": {
+                "type": "object",
+                "properties": {
+                    "type": { "const": "dataframe" },
+                    "data": { "type": "object" }
+                },
+                "required": [ "type", "data" ],
+                "additionalProperties": false
+            }
+        },
         "if:date": {
             "title": "Date",
             "description": "Date string representation in ISO 8601 format.",
@@ -190,6 +204,7 @@
                                     "any",
                                     "array",
                                     "boolean",
+                                    "dataframe",
                                     "date",
                                     "datetime",
                                     "file",
@@ -206,6 +221,7 @@
                     { "$ref": "#/$defs/if:any" },
                     { "$ref": "#/$defs/if:array" },
                     { "$ref": "#/$defs/if:boolean" },
+                    { "$ref": "#/$defs/if:dataframe" },
                     { "$ref": "#/$defs/if:date" },
                     { "$ref": "#/$defs/if:datetime" },
                     { "$ref": "#/$defs/if:file" },
