@@ -17,7 +17,11 @@ const dataStore = ref<DataStore | null>();
 const canvasStore = useCanvasStore();
 const isDropIndicatorVisible = ref(false);
 const editor = ref<HTMLDivElement>();
+const editorHeader = ref<HTMLElement>();
 const fileTree = computed(() => transformUrisToTree(dataStoreUris.value));
+const editorHeaderHeight = computed(() =>
+  editorHeader.value ? editorHeader.value.clientHeight : 0
+);
 
 async function fetchDataStoreDetail(path: string | string[]) {
   const p = Array.isArray(path) ? path.join("/") : path;
@@ -90,11 +94,20 @@ await fetchDataStoreDetail(route.params.segments);
         @dragenter="onDragEnter"
         @dragleave="onDragLeave"
       >
-        <div class="editor-header">
+        <div class="editor-header" ref="editorHeader">
           <h1>Board</h1>
           <SimpleButton label="Save report settings" @click="onSaveBoard" />
         </div>
         <div class="drop-indicator" :class="{ visible: isDropIndicatorVisible }"></div>
+        <Transition name="fade">
+          <div
+            v-if="!isDropIndicatorVisible && canvasStore.displayedKeys.length === 0"
+            class="placeholder"
+            :style="`--header-height: ${editorHeaderHeight}px`"
+          >
+            No item selected yet, start by dragging one element!
+          </div>
+        </Transition>
         <DataStoreCanvas />
       </div>
     </article>
@@ -158,6 +171,18 @@ main {
       display: flex;
       flex-direction: column;
       flex-grow: 1;
+
+      & .placeholder {
+        height: 100%;
+        padding-top: calc((100vh - var(--header-height)) * 476 / 730);
+        background-image: url("../assets/images/editor-placeholder.png");
+        background-position: 50%;
+        background-repeat: no-repeat;
+        background-size: contain;
+        color: var(--text-color-normal);
+        font-size: var(--text-size-normal);
+        text-align: center;
+      }
 
       & .editor-header {
         display: flex;
