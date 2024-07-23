@@ -3,9 +3,7 @@ export interface DataStore {
   views: string[];
   logs: string[];
   artifacts: {
-    [key: string]: {
-      path: string;
-    };
+    [key: string]: any;
   };
   info: {
     [key: string]: any;
