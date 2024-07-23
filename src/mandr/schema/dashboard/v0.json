@@ -97,6 +97,20 @@
                 "additionalProperties": false
             }
         },
+        "if:markdown": {
+            "title": "Markdown",
+            "description": "Text in markdown format.",
+            "if": { "properties": { "type": { "const": "markdown" } } },
+            "then": {
+                "type": "object",
+                "properties": {
+                    "type": { "const": "markdown" },
+                    "data": { "type": "string" }
+                },
+                "required": [ "type", "data" ],
+                "additionalProperties": false
+            }
+        },
         "if:number": {
             "title": "Number",
             "description": "Number, analogous to the python's float type.",
@@ -193,6 +207,7 @@
                                     "date",
                                     "datetime",
                                     "file",
+                                    "markdown",
                                     "number",
                                     "html",
                                     "integer",
@@ -209,6 +224,7 @@
                     { "$ref": "#/$defs/if:date" },
                     { "$ref": "#/$defs/if:datetime" },
                     { "$ref": "#/$defs/if:file" },
+                    { "$ref": "#/$defs/if:markdown" },
                     { "$ref": "#/$defs/if:number" },
                     { "$ref": "#/$defs/if:html" },
                     { "$ref": "#/$defs/if:integer" },
