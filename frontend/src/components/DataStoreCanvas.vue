@@ -1,38 +1,58 @@
 <script setup lang="ts">
-import { useCanvasStore } from "@/stores/canvas";
+import DataStoreCard from "@/components/DataStoreCard.vue";
+import { useCanvasStore, type KeyLayoutSize } from "@/stores/canvas";
 
 const canvasStore = useCanvasStore();
 
-function onItemDrop(event: DragEvent) {
-  if (event.dataTransfer) {
-    const key = event.dataTransfer.getData("key");
-    console.log(`onItemDrop: ${key}`);
-    canvasStore.displayKey(key);
-  }
+function onLayoutChange(key: string, size: KeyLayoutSize) {
+  canvasStore.setKeyLayoutSize(key, size);
+}
+
+function onCardRemoved(key: string) {
+  canvasStore.hideKey(key);
 }
 </script>
 
 <template>
-  <div class="canvas" @drop="onItemDrop($event)" @dragover.prevent>
-    <div
+  <div class="canvas">
+    <DataStoreCard
       v-for="key in canvasStore.displayedKeys"
       :key="key"
+      :title="key"
+      :class="[canvasStore.layoutSizes[key] || 'large']"
       class="canvas-element"
-      v-html="canvasStore.get(key)"
-    ></div>
+      @layout-changed="onLayoutChange(key, $event)"
+      @card-removed="onCardRemoved(key)"
+    >
+      <div v-html="canvasStore.get(key).toString().substring(0, 100)"></div>
+    </DataStoreCard>
   </div>
 </template>
 
 <style scoped>
 .canvas {
-  display: flex;
+  display: grid;
   overflow: scroll;
-  flex-direction: column;
-  flex-grow: 1;
-  padding: 10px;
+  padding: var(--spacing-gap-normal);
+  background-color: var(--background-color-normal);
+  gap: var(--spacing-gap-normal);
+  grid-template-columns: 1fr 1fr 1fr;
+  transition: grid-column var(--transition-duration) var(--transition-easing);
 
   & .canvas-element {
     max-width: 100%;
+
+    &.small {
+      grid-column: span 1;
+    }
+
+    &.medium {
+      grid-column: span 2;
+    }
+
+    &.large {
+      grid-column: span 3;
+    }
   }
 }
 </style>

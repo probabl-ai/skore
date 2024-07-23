@@ -25,7 +25,7 @@ app.add_middleware(
 @app.get("/api/mandrs")
 async def list_mandrs(request: Request) -> list[str]:
     """Send the list of mandrs path below the current working directory."""
-    root = Path(os.environ["MANDR_ROOT"]).resolve()
+    root = Path(os.environ.get("MANDR_ROOT", ".datamander")).resolve()
     directories = list(root.iterdir())
 
     if len(directories) != 1 or (not directories[0].is_dir()):
@@ -50,6 +50,9 @@ async def list_mandrs(request: Request) -> list[str]:
 async def get_mandr(request: Request, path: str):
     """Return one mandr."""
     root = Path(os.environ["MANDR_ROOT"]).resolve()
+
+    if path == "":
+        raise HTTPException(status_code=404, detail="Empty mandr path is not supported")
 
     if not (root / path).exists():
         raise HTTPException(status_code=404, detail=f"No mandr found in '{path}'")

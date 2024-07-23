@@ -1,4 +1,4 @@
-import { type DataStore } from "../models";
+import { type DataStore } from "@/models";
 
 const BASE_URL = "http://localhost:8000/api";
 

@@ -2,9 +2,12 @@
 import { computed, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 
+import DashboardHeader from "@/components/DashboardHeader.vue";
 import DataStoreCanvas from "@/components/DataStoreCanvas.vue";
-import DataStoreItemList from "@/components/DataStoreItemList.vue";
+import DataStoreKeyList from "@/components/DataStoreKeyList.vue";
 import FileTree, { transformUrisToTree } from "@/components/FileTree.vue";
+import SimpleButton from "@/components/SimpleButton.vue";
+
 import { type DataStore } from "@/models";
 import { fetchAllManderUris, fetchMander } from "@/services/api";
 import { useCanvasStore } from "@/stores/canvas";
@@ -13,13 +16,29 @@ const route = useRoute();
 const dataStoreUris = ref<string[]>([]);
 const dataStore = ref<DataStore | null>();
 const canvasStore = useCanvasStore();
+const isDropIndicatorVisible = ref(false);
 const fileTree = computed(() => transformUrisToTree(dataStoreUris.value));
 
 async function fetchDataStoreDetail(path: string | string[]) {
   const p = Array.isArray(path) ? path.join("/") : path;
+  if (p.length == 0) {
+    return;
+  }
   const m = await fetchMander(p);
   dataStore.value = m;
   canvasStore.setDataStore(m);
+}
+
+function onSaveBoard(event: PointerEvent) {
+  alert("not implemented yet");
+}
+
+function onItemDrop(event: DragEvent) {
+  isDropIndicatorVisible.value = false;
+  if (event.dataTransfer) {
+    const key = event.dataTransfer.getData("key");
+    canvasStore.displayKey(key);
+  }
 }
 
 watch(
@@ -36,22 +55,39 @@ await fetchDataStoreDetail(route.params.segments);
 <template>
   <main>
     <nav>
+      <DashboardHeader title="File Manager" icon="icon-folder" />
       <FileTree :nodes="fileTree" />
     </nav>
-    <article :class="{ 'not-found': dataStore == null }">
-      <div class="item-list" v-if="dataStore">
-        <DataStoreItemList title="Views" icon="icon-plot" :keys="Object.keys(dataStore.views)" />
-        <DataStoreItemList title="Info" icon="icon-text" :keys="Object.keys(dataStore.info)" />
-        <DataStoreItemList title="Logs" icon="icon-gift" :keys="Object.keys(dataStore.logs)" />
-        <DataStoreItemList
-          title="Logs"
-          icon="icon-folder"
-          :keys="Object.keys(dataStore.artifacts)"
-        />
+    <article :class="{ 'not-found': dataStore == null }" v-if="dataStore">
+      <div class="elements">
+        <DashboardHeader title="Elements (added from mandr)" icon="icon-pie-chart" />
+        <div class="key-list">
+          <DataStoreKeyList title="Views" icon="icon-plot" :keys="Object.keys(dataStore.views)" />
+          <DataStoreKeyList title="Info" icon="icon-text" :keys="Object.keys(dataStore.info)" />
+          <DataStoreKeyList title="Logs" icon="icon-folder" :keys="Object.keys(dataStore.logs)" />
+          <DataStoreKeyList
+            title="Artifacts"
+            icon="icon-gift"
+            :keys="Object.keys(dataStore.artifacts)"
+          />
+        </div>
       </div>
-      <div v-else>mandr not found...</div>
-      <DataStoreCanvas />
+      <div
+        class="editor"
+        @drop="onItemDrop"
+        @dragover.prevent
+        @dragenter="isDropIndicatorVisible = true"
+        @dragleave="isDropIndicatorVisible = false"
+      >
+        <div class="editor-header">
+          <h1>Board</h1>
+          <SimpleButton label="Save report settings" @click="onSaveBoard" />
+        </div>
+        <div class="drop-indicator" :class="{ visible: isDropIndicatorVisible }"></div>
+        <DataStoreCanvas />
+      </div>
     </article>
+    <div v-else>mandr not found...</div>
   </main>
 </template>
 
@@ -62,16 +98,20 @@ main {
 
   nav,
   article {
-    overflow: scroll;
     height: 100dvh;
   }
 
   nav {
-    width: 285px;
+    display: flex;
+    width: 240px;
+    flex-direction: column;
     flex-shrink: 0;
-    padding: 10px;
-    border-left: 1px solid #e9e9e9;
-    background-color: #f2f1f1;
+    border-right: solid 1px var(--border-color-normal);
+
+    & .file-tree {
+      overflow: scroll;
+      flex-grow: 1;
+    }
   }
 
   article {
@@ -88,12 +128,56 @@ main {
       font-weight: 200;
     }
 
-    & .item-list {
+    & .elements {
       display: flex;
-      overflow: scroll;
-      width: 285px;
+      width: 240px;
       height: 100dvh;
       flex-direction: column;
+      flex-shrink: 0;
+      border-right: solid 1px var(--border-color-normal);
+
+      & .key-list {
+        overflow: scroll;
+        flex-grow: 1;
+        background-color: var(--background-color-normal);
+      }
+    }
+
+    & .editor {
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+
+      & .editor-header {
+        display: flex;
+        height: 44px;
+        align-items: center;
+        padding: var(--spacing-padding-large);
+        border-right: solid var(--border-width-normal) var(--border-color-normal);
+        border-bottom: solid var(--border-width-normal) var(--border-color-normal);
+        background-color: var(--background-color-elevated);
+
+        & h1 {
+          flex-grow: 1;
+          color: var(--text-color-normal);
+          font-size: var(--text-size-title);
+          font-weight: var(--text-weight-title);
+          text-align: center;
+        }
+      }
+
+      & .drop-indicator {
+        height: 3px;
+        border-radius: 8px;
+        margin: 0 10%;
+        background-color: var(--text-color-title);
+        opacity: 0;
+        transition: opacity var(--transition-duration) var(--transition-easing);
+
+        &.visible {
+          opacity: 1;
+        }
+      }
     }
   }
 }

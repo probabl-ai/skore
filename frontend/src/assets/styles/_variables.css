@@ -1,6 +1,49 @@
+/*
+ We try to follow a naming structure of our variables.
+
+ --component-property-variant-kind-modifier
+*/
+
 :root {
-  --primary-color: #1e22aa;
-  --secondary-color: #f58d2e;
-  --text-color: #292929;
-  --transition: all 0.3s ease-in-out;
+  --color-primary: #f08b30;
+  --color-secondary: #2329ff;
+
+  /* typhography */
+  --text-color-normal: #a2a2a2;
+  --text-color-highlight: #fff;
+  --text-color-title: var(--color-primary);
+  --text-size-normal: 14px;
+  --text-size-highlight: 12px;
+  --text-size-title: 12px;
+  --text-weight-normal: 300;
+  --text-weight-highlight: 400;
+  --text-weight-title: 400;
+
+  /* backgrounds */
+  --background-color-normal: #121212;
+  --background-color-elevated: #222;
+  --background-color-elevated-more: #2f2f2f;
+  --background-color-selected: rgb(191 191 191 / 25%);
+
+  /* buttons */
+  --button-background: var(--color-primary);
+  --button-color: #fff;
+
+  /* spacings */
+  --spacing-padding-large: 24px;
+  --spacing-padding-normal: 16px;
+  --spacing-padding-small: 8px;
+  --spacing-gap-normal: 10px;
+  --spacing-gap-small: 4px;
+
+  /* borders */
+  --border-color-normal: #292a2a;
+  --border-color-elevated: #3f3f3f;
+  --border-width-normal: 1px;
+  --border-width-small: 0.34px;
+  --border-radius: 4px;
+
+  /* misc */
+  --transition-duration: 0.1s;
+  --transition-easing: cubic-bezier(0.1, 0.6, 0.7, 0.2);
 }

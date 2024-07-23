@@ -3,3 +3,8 @@
 @import url("./_typography.css");
 @import url("./_animations.css");
 @import url("./_icons.css");
+
+body {
+  background-color: var(--background-color-normal);
+  color: var(--text-color-normal);
+}

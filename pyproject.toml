@@ -19,6 +19,7 @@ dependencies = [
   "scikit-learn",
   "srsly",
   "fastapi",
+  "matplotlib",
 ]
 
 [project.optional-dependencies]
@@ -27,7 +28,10 @@ test = [
   "pytest",
   "pytest-cov",
   "pytest-randomly",
-  "ruff"
+  "ruff",
+]
+tools = [
+  "pip-tools",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -38,12 +42,12 @@ upgrade = true
 
 [tool.pytest.ini_options]
 addopts = [
-    "--cov=src/",
-    "--cov=tests/",
-    "--cov-branch",
-    "--import-mode=importlib",
-    "--no-header",
-    "--verbosity=2",
+  "--cov=src/",
+  "--cov=tests/",
+  "--cov-branch",
+  "--import-mode=importlib",
+  "--no-header",
+  "--verbosity=2",
 ]
 
 [tool.ruff]
