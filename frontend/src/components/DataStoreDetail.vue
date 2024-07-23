@@ -23,7 +23,7 @@ const props = defineProps<{ dataStore: DataStore }>();
       :elements="Object.keys(props.dataStore.logs)"
     />
     <DataStoreItemList
-      title="Logs"
+      title="Artifacts"
       icon="icon-folder"
       :elements="Object.keys(props.dataStore.artifacts)"
     />
