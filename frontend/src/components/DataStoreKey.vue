@@ -7,7 +7,7 @@ const props = defineProps<{ itemKey: string; metadata: string }>();
 const canvasStore = useCanvasStore();
 const isDraggable = ref(false);
 
-function onClick() {
+function addKey() {
   canvasStore.displayKey(props.itemKey);
 }
 
@@ -21,13 +21,15 @@ function onDragStart(event: DragEvent) {
 <template>
   <div
     class="key"
-    @click="onClick"
     :draggable="isDraggable"
     @dragstart="onDragStart($event)"
     @mouseup="isDraggable = false"
     @mouseleave="isDraggable = false"
   >
-    <div class="handle" @mousedown="isDraggable = true">=</div>
+    <div class="actions">
+      <div class="add" @click="addKey">+</div>
+      <div class="drag" @mousedown="isDraggable = true">=</div>
+    </div>
     <div class="label">
       {{ props.itemKey }}
     </div>
@@ -42,20 +44,29 @@ function onDragStart(event: DragEvent) {
   padding: var(--spacing-padding-small);
   border: var(--border-color-elevated) 1px solid;
   border-radius: var(--border-radius);
-  cursor: pointer;
   opacity: 1;
   transition: opacity var(--transition-duration) var(--transition-easing);
 
   &[draggable="true"] {
+    cursor: grabbing;
     opacity: 0.5;
   }
 
-  & .handle {
+  & .actions {
     position: absolute;
     top: 0;
     right: 5px;
+    display: flex;
     color: var(--text-color-normal);
-    cursor: move;
+    gap: var(--spacing-padding-small);
+
+    & .drag {
+      cursor: grab;
+    }
+
+    & .add {
+      cursor: pointer;
+    }
   }
 
   & .label {
