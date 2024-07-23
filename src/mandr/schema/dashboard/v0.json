@@ -111,6 +111,19 @@
                 "additionalProperties": false
             }
         },
+        "if:numpy_array": {
+            "title": "Numpy array",
+            "if": { "properties": { "type": { "const": "numpy_array" } } },
+            "then": {
+                "type": "object",
+                "properties": {
+                    "type": { "const": "numpy_array" },
+                    "data": { "type": "array" }
+                },
+                "required": [ "type", "data" ],
+                "additionalProperties": false
+            }
+        },
         "if:html": {
             "title": "HTML",
             "description": "HTML string representation.",
@@ -194,6 +207,7 @@
                                     "datetime",
                                     "file",
                                     "number",
+                                    "numpy_array",
                                     "html",
                                     "integer",
                                     "string",
@@ -210,6 +224,7 @@
                     { "$ref": "#/$defs/if:datetime" },
                     { "$ref": "#/$defs/if:file" },
                     { "$ref": "#/$defs/if:number" },
+                    { "$ref": "#/$defs/if:numpy_array" },
                     { "$ref": "#/$defs/if:html" },
                     { "$ref": "#/$defs/if:integer" },
                     { "$ref": "#/$defs/if:string" },

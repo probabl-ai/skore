@@ -4,6 +4,7 @@ from datetime import UTC, date, datetime
 import altair as alt
 import httpx
 import mandr.schema.dashboard
+import numpy as np
 import pandas as pd
 import pytest
 import referencing
@@ -107,6 +108,92 @@ class TestV0:
             (
                 {"type": "number", "data": "1.2"},
                 pytest.raises(ValidationError, match="is not of type 'number'"),
+            ),
+            (
+                {
+                    "type": "numpy_array",
+                    "data": np.array(
+                        [
+                            [
+                                [0.81692721, 0.85217804],
+                                [0.25203716, 0.36722944],
+                            ],
+                            [
+                                [0.0023149, 0.45744273],
+                                [0.78994857, 0.51847654],
+                            ],
+                            [
+                                [0.5639941, 0.65897608],
+                                [0.88187737, 0.99802941],
+                            ],
+                        ]
+                    ).tolist(),
+                },
+                does_not_raise(),
+            ),
+            (
+                {
+                    "type": "numpy_array",
+                    "data": [
+                        [
+                            [0.81692721, 0.85217804],
+                            [0.25203716, 0.36722944],
+                        ],
+                        [
+                            [0.0023149, 0.45744273],
+                            [0.78994857, 0.51847654],
+                        ],
+                        [
+                            [0.5639941, 0.65897608],
+                            [0.88187737, 0.99802941],
+                        ],
+                    ],
+                },
+                does_not_raise(),
+            ),
+            (
+                {
+                    "type": "numpy_array",
+                    # NOTE: This is currently valid!
+                    "data": [
+                        [0.81692721, 0.85217804],
+                        [0.25203716],
+                    ],
+                },
+                does_not_raise(),
+            ),
+            (
+                {
+                    "type": "numpy_array",
+                    # NOTE: This is currently valid!
+                    "data": ["hello"],
+                },
+                does_not_raise(),
+            ),
+            (
+                {"type": "numpy_array", "data": 0.81692721},
+                pytest.raises(ValidationError, match="is not of type 'array'"),
+            ),
+            (
+                {
+                    "type": "numpy_array",
+                    # NOTE: It's not a list, but a tuple
+                    "data": (
+                        [
+                            [0.81692721, 0.85217804],
+                            [0.25203716, 0.36722944],
+                        ],
+                        [
+                            [0.0023149, 0.45744273],
+                            [0.78994857, 0.51847654],
+                        ],
+                        [
+                            [0.5639941, 0.65897608],
+                            [0.88187737, 0.99802941],
+                        ],
+                    ),
+                },
+                pytest.raises(ValidationError, match="is not of type 'array'"),
             ),
             ({"type": "string", "data": "True"}, does_not_raise()),
             (
