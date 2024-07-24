@@ -97,6 +97,34 @@
                 "additionalProperties": false
             }
         },
+        "if:image": {
+            "title": "Image",
+            "description": "Image in Base64 encoding with file type.",
+            "if": { "properties": { "type": { "const": "image" } } },
+            "then": {
+                "type": "object",
+                "properties": {
+                    "type": { "const": "image" },
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "mime-type": {
+                                "enum": [ "image/svg+xml", "image/png", "image/jpeg", "image/webp" ]
+                            },
+                            "data": {
+                                "type": "string",
+                                "pattern": "^([a-z]|[A-Z]|\\d|\\+)*=*$",
+                                "contentEncoding": "base64"
+                            }
+                        },
+                        "required": [ "mime-type", "data" ],
+                        "additionalProperties": false
+                    }
+                },
+                "required": [ "type", "data" ],
+                "additionalProperties": false
+            }
+        },
         "if:markdown": {
             "title": "Markdown",
             "description": "Text in markdown format.",
@@ -207,6 +235,7 @@
                                     "date",
                                     "datetime",
                                     "file",
+                                    "image",
                                     "markdown",
                                     "number",
                                     "html",
@@ -224,6 +253,7 @@
                     { "$ref": "#/$defs/if:date" },
                     { "$ref": "#/$defs/if:datetime" },
                     { "$ref": "#/$defs/if:file" },
+                    { "$ref": "#/$defs/if:image" },
                     { "$ref": "#/$defs/if:markdown" },
                     { "$ref": "#/$defs/if:number" },
                     { "$ref": "#/$defs/if:html" },

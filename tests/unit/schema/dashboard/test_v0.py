@@ -91,6 +91,46 @@ class TestV0:
                 pytest.raises(ValidationError, match="is not a 'uri'"),
             ),
             (
+                {
+                    "type": "image",
+                    "data": {
+                        "mime-type": "image/svg+xml",
+                        "data": (
+                            "PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZ"
+                            "pZXdCb3g9IjAgMCAxMDAgMTAwIj4KICA8Y2lyY2xlIGN4PSI1MCIgY3"
+                            "k9IjUwIiByPSI0OCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwIi8+C"
+                            "iAgPHBhdGggZD0iTTUwLDJhNDgsNDggMCAxIDEgMCw5NmEyNCAyNCAw"
+                            "IDEgMSAwLTQ4YTI0IDI0IDAgMSAwIDAtNDgiLz4KICA8Y2lyY2xlIGN"
+                            "4PSI1MCIgY3k9IjI2IiByPSI2Ii8+CiAgPGNpcmNsZSBjeD0iNTAiIG"
+                            "N5PSI3NCIgcj0iNiIgZmlsbD0iI0ZGRiIvPgo8L3N2Zz4="
+                        ),
+                    },
+                },
+                does_not_raise(),
+            ),
+            (
+                {
+                    "type": "image",
+                    # NOTE: Invalid Base64
+                    "data": {"mime-type": "image/png", "data": "hello.22"},
+                },
+                pytest.raises(ValidationError, match="Failed validating 'pattern'"),
+            ),
+            (
+                {"type": "image", "data": "<!DOCTYPE svg></svg>"},
+                pytest.raises(ValidationError, match="is not of type 'object'"),
+            ),
+            (
+                {
+                    "type": "image",
+                    "data": {
+                        "mime-type": "image/svg",
+                        "data": "<!DOCTYPE svg></svg>",
+                    },
+                },
+                pytest.raises(ValidationError, match="Failed validating 'enum'"),
+            ),
+            (
                 {"type": "html", "data": "<!DOCTYPE html><head></head></html>"},
                 does_not_raise(),
             ),
