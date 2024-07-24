@@ -11,7 +11,9 @@ export const useCanvasStore = defineStore("canvas", () => {
   const layoutSizes = ref<{ [key: string]: KeyLayoutSize }>({});
 
   function displayKey(key: string) {
-    displayedKeys.value.push(key);
+    if (displayedKeys.value.indexOf(key) === -1) {
+      displayedKeys.value.push(key);
+    }
   }
 
   function hideKey(key: string) {
@@ -29,7 +31,7 @@ export const useCanvasStore = defineStore("canvas", () => {
   }
 
   function get(key: string) {
-    // (o:>
+    // Temp function to access a key anywhere in the data store
     const ds = dataStore.value;
     if (ds) {
       if (key in ds.views) {

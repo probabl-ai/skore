@@ -1,14 +1,20 @@
 /*
- We try to follow a naming structure of our variables.
+  We try to follow a naming structure of our variables.
 
- --component-property-variant-kind-modifier
+  `--component-property-variant-kind-modifier`
+
+  - component: the domain where this vairabels is applied (text color, transitions, ...)
+  - property: the CSS properties related to this variable
+  - variant: where this apply, is it an error, a success, an elevation, ... ?
+  - kind: is it small, large, high, higher, ... ?
+  - modifier: is it hover, visited, ... ?
 */
 
 :root {
   --color-primary: #f08b30;
   --color-secondary: #2329ff;
 
-  /* typhography */
+  /* typography */
   --text-color-normal: #a2a2a2;
   --text-color-highlight: #fff;
   --text-color-title: var(--color-primary);

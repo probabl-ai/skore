@@ -8,3 +8,13 @@ body {
   background-color: var(--background-color-normal);
   color: var(--text-color-normal);
 }
+
+.simplebar-scrollbar {
+  &.simplebar-visible::before {
+    opacity: 1;
+  }
+
+  &::before {
+    background-color: var(--color-primary);
+  }
+}
