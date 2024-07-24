@@ -9,11 +9,6 @@ from joblib import dump
 from .templates import TemplateRenderer
 
 
-def _get_storage_path() -> Path:
-    """Return a path to the local mander storage."""
-    return Path(".datamander")
-
-
 class InfoMander:
     """Represents a dictionary, on disk, with a path-like structure."""
 
@@ -37,7 +32,7 @@ class InfoMander:
         ARTIFACTS_FOLDER,
     }
 
-    def __init__(self, path: str, /, *, root: Path = None):
+    def __init__(self, path: str, /, *, root: Path | None = None):
         if Path(path).is_absolute():
             raise ValueError("Cant use absolute path")
 

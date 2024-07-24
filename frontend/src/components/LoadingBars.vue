@@ -1,5 +1,5 @@
 <template>
-  <svg xmlns="http://www.w3.org/2000/svg" width="45" height="45" viewBox="0 0 135 140" fill="#ddd">
+  <svg xmlns="http://www.w3.org/2000/svg" width="45" height="45" viewBox="0 0 135 140">
     <rect y="10" width="15" height="120" rx="6">
       <animate
         attributeName="height"
@@ -92,3 +92,9 @@
     </rect>
   </svg>
 </template>
+
+<style>
+svg {
+  fill: var(--text-color-title);
+}
+</style>
