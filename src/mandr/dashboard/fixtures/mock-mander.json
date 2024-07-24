@@ -20,11 +20,11 @@
     },
     "score": {
       "type": "number",
-      "data": "0.87"
+      "data": 0.87
     },
     "count": {
       "type": "integer",
-      "data": "234567"
+      "data": 234567
     },
     "roc curve": {
       "type": "vega",
