@@ -34,17 +34,21 @@ repos:
         language: node
         name: Use vue-tsc to typecheck frontend code.
         entry: bash -c "cd frontend && npm run type-check"
+        files: ^frontend/
       - id: eslint
         language: node
         name: Use eslint to lint frontend code.
         entry: bash -c "cd frontend && npm run lint"
+        files: ^frontend/
       - id: prettier
         language: node
         name: Use prettier to format frontend code.
         entry: bash -c "cd frontend && npm run format"
+        files: ^frontend/
       - id: stylelint
         language: node
         name: Use stylelint to lint CSS.
         entry: bash -c "cd frontend && npm run style-lint"
+        files: ^frontend/
 
 exclude: fixtures/
