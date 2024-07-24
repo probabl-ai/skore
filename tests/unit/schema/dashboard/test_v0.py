@@ -1,3 +1,4 @@
+import json
 from contextlib import nullcontext as does_not_raise
 from datetime import UTC, date, datetime
 
@@ -58,6 +59,63 @@ class TestV0:
             (
                 {"type": "boolean", "data": "True"},
                 pytest.raises(ValidationError, match="is not of type 'boolean'"),
+            ),
+            (
+                {
+                    "type": "dataframe",
+                    "data": json.loads(
+                        pd.DataFrame(
+                            [[1, 2, 3], [4, 5, 6]],
+                            columns=["column_0", 1, True],
+                        ).to_json(orient="table")
+                    ),
+                },
+                does_not_raise(),
+            ),
+            (
+                {
+                    "type": "dataframe",
+                    "data": {
+                        "schema": {
+                            "fields": [
+                                {"name": "index", "type": "integer"},
+                                {"name": "column_0", "type": "integer"},
+                                {"name": 1, "type": "integer"},
+                                {"name": True, "type": "integer"},
+                            ],
+                            "primaryKey": ["index"],
+                        },
+                        # Note the data is inconsistent with the fields
+                        "data": [
+                            {"hello": 3},
+                            {"goodbye": "hey"},
+                        ],
+                    },
+                },
+                does_not_raise(),
+            ),
+            (
+                {
+                    "type": "dataframe",
+                    "data": json.loads(
+                        pd.DataFrame(
+                            [[1, 2, 3], [4, 5, 6]],
+                            columns=["column_0", 1, True],
+                        ).to_json(orient="split")
+                    ),
+                },
+                does_not_raise(),
+            ),
+            (
+                {
+                    "type": "dataframe",
+                    # to_json outputs a string, not a dict
+                    "data": pd.DataFrame(
+                        [[1, 2, 3], [4, 5, 6]],
+                        columns=["column_0", 1, True],
+                    ).to_json(orient="table"),
+                },
+                pytest.raises(ValidationError, match="is not of type 'object'"),
             ),
             ({"type": "date", "data": date.today().isoformat()}, does_not_raise()),
             (
