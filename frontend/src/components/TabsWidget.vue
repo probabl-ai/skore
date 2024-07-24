@@ -37,7 +37,6 @@ function onTabClick(newTabIndex: number) {
     padding: 10px 20px;
     cursor: pointer;
     font-weight: 300;
-    transition: var(--transition);
 
     &.selected {
       border-bottom: solid 1px black;

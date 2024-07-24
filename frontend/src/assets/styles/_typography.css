@@ -9,19 +9,9 @@
 }
 
 body {
-  color: var(--text-color);
   font-family: Geist, sans-serif;
 }
 
 code {
   font-family: GeistMono, monospace;
-}
-
-a,
-a:visited {
-  color: var(--text-color);
-}
-
-a:hover {
-  text-underline-offset: 0.2em;
 }

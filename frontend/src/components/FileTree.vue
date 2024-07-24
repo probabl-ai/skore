@@ -38,23 +38,21 @@ const props = defineProps<{ nodes: FileTreeNode[] }>();
 </script>
 
 <template>
-  <FileTreeItem
-    v-for="(node, index) in props.nodes"
-    :key="index"
-    :uri="node.uri"
-    :children="node.children"
-    :indentation-level="0"
-  />
+  <div class="file-tree">
+    <FileTreeItem
+      v-for="(node, index) in props.nodes"
+      :key="index"
+      :uri="node.uri"
+      :children="node.children"
+      :indentation-level="0"
+    />
+  </div>
 </template>
 
 <style scoped>
 .file-tree {
-  padding: 1em;
-  background-color: green;
-
-  .tree-item {
-    padding: 1em;
-    background-color: yellow;
-  }
+  padding: var(--spacing-padding-large);
+  border-left: var(--border-size-small) solid var(--border-color-normal);
+  background-color: var(--background-color-normal);
 }
 </style>
