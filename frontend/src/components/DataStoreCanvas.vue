@@ -14,25 +14,22 @@ function onCardRemoved(key: string) {
 </script>
 
 <template>
-  <div class="canvas">
-    <DataStoreCard
-      v-for="key in canvasStore.displayedKeys"
-      :key="key"
-      :title="key"
-      :class="[canvasStore.layoutSizes[key] || 'large']"
-      class="canvas-element"
-      @layout-changed="onLayoutChange(key, $event)"
-      @card-removed="onCardRemoved(key)"
-    >
-      <div v-html="canvasStore.get(key).toString().substring(0, 100)"></div>
-    </DataStoreCard>
-  </div>
+  <DataStoreCard
+    v-for="key in canvasStore.displayedKeys"
+    :key="key"
+    :title="key"
+    :class="[canvasStore.layoutSizes[key] || 'large']"
+    class="canvas-element"
+    @layout-changed="onLayoutChange(key, $event)"
+    @card-removed="onCardRemoved(key)"
+  >
+    <div v-html="canvasStore.get(key).toString().substring(0, 100)"></div>
+  </DataStoreCard>
 </template>
 
 <style scoped>
 .canvas {
   display: grid;
-  overflow: scroll;
   padding: var(--spacing-gap-normal);
   background-color: var(--background-color-normal);
   gap: var(--spacing-gap-normal);

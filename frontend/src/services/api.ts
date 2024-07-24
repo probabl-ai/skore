@@ -1,6 +1,7 @@
 import { type DataStore } from "@/models";
 
-const BASE_URL = "http://localhost:8000/api";
+const { protocol, hostname } = window.location;
+const BASE_URL = `${protocol}//${hostname}:8000/api`;
 
 function getErrorMessage(error: unknown) {
   if (error instanceof Error) return error.message;
@@ -13,6 +14,7 @@ function reportError(message: string) {
 
 export async function fetchAllManderUris(): Promise<string[]> {
   try {
+    console.log(BASE_URL);
     const r = await fetch(`${BASE_URL}/mandrs`);
     const uris = await r.json();
     return uris;

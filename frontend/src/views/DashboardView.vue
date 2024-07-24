@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Simplebar from "simplebar-vue";
 import { computed, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 
@@ -70,12 +71,14 @@ await fetchDataStoreDetail(route.params.segments);
   <main>
     <nav>
       <DashboardHeader title="File Manager" icon="icon-folder" />
-      <FileTree :nodes="fileTree" />
+      <Simplebar class="file-trees">
+        <FileTree :nodes="fileTree" />
+      </Simplebar>
     </nav>
     <article :class="{ 'not-found': dataStore == null }" v-if="dataStore">
       <div class="elements">
         <DashboardHeader title="Elements (added from mandr)" icon="icon-pie-chart" />
-        <div class="key-list">
+        <Simplebar class="key-list">
           <DataStoreKeyList title="Views" icon="icon-plot" :keys="Object.keys(dataStore.views)" />
           <DataStoreKeyList title="Info" icon="icon-text" :keys="Object.keys(dataStore.info)" />
           <DataStoreKeyList title="Logs" icon="icon-folder" :keys="Object.keys(dataStore.logs)" />
@@ -84,8 +87,9 @@ await fetchDataStoreDetail(route.params.segments);
             icon="icon-gift"
             :keys="Object.keys(dataStore.artifacts)"
           />
-        </div>
+        </Simplebar>
       </div>
+
       <div
         ref="editor"
         class="editor"
@@ -107,8 +111,10 @@ await fetchDataStoreDetail(route.params.segments);
           >
             No item selected yet, start by dragging one element!
           </div>
+          <Simplebar class="canvas" v-else>
+            <DataStoreCanvas />
+          </Simplebar>
         </Transition>
-        <DataStoreCanvas />
       </div>
     </article>
     <div v-else>mandr not found...</div>
@@ -132,8 +138,8 @@ main {
     flex-shrink: 0;
     border-right: solid 1px var(--border-color-normal);
 
-    & .file-tree {
-      overflow: scroll;
+    & .file-trees {
+      height: 0;
       flex-grow: 1;
     }
   }
@@ -155,13 +161,12 @@ main {
     & .elements {
       display: flex;
       width: 240px;
-      height: 100dvh;
       flex-direction: column;
       flex-shrink: 0;
       border-right: solid 1px var(--border-color-normal);
 
       & .key-list {
-        overflow: scroll;
+        height: 0;
         flex-grow: 1;
         background-color: var(--background-color-normal);
       }
@@ -169,20 +174,9 @@ main {
 
     & .editor {
       display: flex;
+      max-height: 100vh;
       flex-direction: column;
       flex-grow: 1;
-
-      & .placeholder {
-        height: 100%;
-        padding-top: calc((100vh - var(--header-height)) * 476 / 730);
-        background-image: url("../assets/images/editor-placeholder.png");
-        background-position: 50%;
-        background-repeat: no-repeat;
-        background-size: contain;
-        color: var(--text-color-normal);
-        font-size: var(--text-size-normal);
-        text-align: center;
-      }
 
       & .editor-header {
         display: flex;
@@ -213,6 +207,24 @@ main {
         &.visible {
           opacity: 1;
         }
+      }
+
+      & .placeholder {
+        height: 100%;
+        padding-top: calc((100vh - var(--header-height)) * 476 / 730);
+        background-image: url("../assets/images/editor-placeholder.png");
+        background-position: 50%;
+        background-repeat: no-repeat;
+        background-size: contain;
+        color: var(--text-color-normal);
+        font-size: var(--text-size-normal);
+        text-align: center;
+      }
+
+      & .canvas {
+        height: 0;
+        flex-grow: 1;
+        padding: var(--spacing-padding-large);
       }
     }
   }
