@@ -3,7 +3,7 @@
 import os
 from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -47,9 +47,35 @@ async def list_mandrs(request: Request) -> list[str]:
     return sorted(paths)
 
 
-@app.get("/api/mandrs/{path:path}", response_class=FileResponse)
+@app.get("/api/mandrs/{path:path}")
 async def get_mandr(request: Request, path: str):
-    """Return one mocked mandr."""
+    """Return one mandr."""
+    root = Path(os.environ["MANDR_ROOT"]).resolve()
+
+    if path == "":
+        raise HTTPException(status_code=404, detail="Empty mandr path is not supported")
+
+    if not (root / path).exists():
+        raise HTTPException(status_code=404, detail=f"No mandr found in '{path}'")
+
+    im = InfoMander(path, root=root)
+
+    return {
+        "path": path,
+        "views": im[InfoMander.VIEWS_KEY].items(),
+        "logs": im[InfoMander.LOGS_KEY].items(),
+        "artifacts": im[InfoMander.ARTIFACTS_KEY].items(),
+        "info": {
+            key: str(value)
+            for key, value in im.fetch().items()
+            if key not in InfoMander.RESERVED_KEYS
+        },
+    }
+
+
+@app.get("/api/fake-mandrs/{path:path}", response_class=FileResponse)
+async def get_fake_mandr(request: Request, path: str):
+    """Return a fake mandr."""
     return _DASHBOARD_PATH / "fixtures" / "mock-mander.json"
 
 

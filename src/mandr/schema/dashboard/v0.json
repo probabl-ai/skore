@@ -44,6 +44,20 @@
                 "additionalProperties": false
             }
         },
+        "if:dataframe": {
+            "title": "DataFrame",
+            "description": "DataFrame.",
+            "if": { "properties": { "type": { "const": "dataframe" } } },
+            "then": {
+                "type": "object",
+                "properties": {
+                    "type": { "const": "dataframe" },
+                    "data": { "type": "object" }
+                },
+                "required": [ "type", "data" ],
+                "additionalProperties": false
+            }
+        },
         "if:date": {
             "title": "Date",
             "description": "Date string representation in ISO 8601 format.",
@@ -94,6 +108,48 @@
                     "internal": true
                 },
                 "required": [ "type", "data", "metadata", "internal" ],
+                "additionalProperties": false
+            }
+        },
+        "if:image": {
+            "title": "Image",
+            "description": "Image in Base64 encoding with file type.",
+            "if": { "properties": { "type": { "const": "image" } } },
+            "then": {
+                "type": "object",
+                "properties": {
+                    "type": { "const": "image" },
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "mime-type": {
+                                "enum": [ "image/svg+xml", "image/png", "image/jpeg", "image/webp" ]
+                            },
+                            "data": {
+                                "type": "string",
+                                "pattern": "^([a-z]|[A-Z]|\\d|\\+)*=*$",
+                                "contentEncoding": "base64"
+                            }
+                        },
+                        "required": [ "mime-type", "data" ],
+                        "additionalProperties": false
+                    }
+                },
+                "required": [ "type", "data" ],
+                "additionalProperties": false
+            }
+        },
+        "if:markdown": {
+            "title": "Markdown",
+            "description": "Text in markdown format.",
+            "if": { "properties": { "type": { "const": "markdown" } } },
+            "then": {
+                "type": "object",
+                "properties": {
+                    "type": { "const": "markdown" },
+                    "data": { "type": "string", "contentMediaType": "text/markdown" }
+                },
+                "required": [ "type", "data" ],
                 "additionalProperties": false
             }
         },
@@ -190,9 +246,12 @@
                                     "any",
                                     "array",
                                     "boolean",
+                                    "dataframe",
                                     "date",
                                     "datetime",
                                     "file",
+                                    "image",
+                                    "markdown",
                                     "number",
                                     "html",
                                     "integer",
@@ -206,9 +265,12 @@
                     { "$ref": "#/$defs/if:any" },
                     { "$ref": "#/$defs/if:array" },
                     { "$ref": "#/$defs/if:boolean" },
+                    { "$ref": "#/$defs/if:dataframe" },
                     { "$ref": "#/$defs/if:date" },
                     { "$ref": "#/$defs/if:datetime" },
                     { "$ref": "#/$defs/if:file" },
+                    { "$ref": "#/$defs/if:image" },
+                    { "$ref": "#/$defs/if:markdown" },
                     { "$ref": "#/$defs/if:number" },
                     { "$ref": "#/$defs/if:html" },
                     { "$ref": "#/$defs/if:integer" },

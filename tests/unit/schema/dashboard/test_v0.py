@@ -1,3 +1,4 @@
+import json
 from contextlib import nullcontext as does_not_raise
 from datetime import UTC, date, datetime
 
@@ -59,6 +60,63 @@ class TestV0:
                 {"type": "boolean", "data": "True"},
                 pytest.raises(ValidationError, match="is not of type 'boolean'"),
             ),
+            (
+                {
+                    "type": "dataframe",
+                    "data": json.loads(
+                        pd.DataFrame(
+                            [[1, 2, 3], [4, 5, 6]],
+                            columns=["column_0", 1, True],
+                        ).to_json(orient="table")
+                    ),
+                },
+                does_not_raise(),
+            ),
+            (
+                {
+                    "type": "dataframe",
+                    "data": {
+                        "schema": {
+                            "fields": [
+                                {"name": "index", "type": "integer"},
+                                {"name": "column_0", "type": "integer"},
+                                {"name": 1, "type": "integer"},
+                                {"name": True, "type": "integer"},
+                            ],
+                            "primaryKey": ["index"],
+                        },
+                        # Note the data is inconsistent with the fields
+                        "data": [
+                            {"hello": 3},
+                            {"goodbye": "hey"},
+                        ],
+                    },
+                },
+                does_not_raise(),
+            ),
+            (
+                {
+                    "type": "dataframe",
+                    "data": json.loads(
+                        pd.DataFrame(
+                            [[1, 2, 3], [4, 5, 6]],
+                            columns=["column_0", 1, True],
+                        ).to_json(orient="split")
+                    ),
+                },
+                does_not_raise(),
+            ),
+            (
+                {
+                    "type": "dataframe",
+                    # to_json outputs a string, not a dict
+                    "data": pd.DataFrame(
+                        [[1, 2, 3], [4, 5, 6]],
+                        columns=["column_0", 1, True],
+                    ).to_json(orient="table"),
+                },
+                pytest.raises(ValidationError, match="is not of type 'object'"),
+            ),
             ({"type": "date", "data": date.today().isoformat()}, does_not_raise()),
             (
                 {"type": "date", "data": datetime.now(tz=UTC).isoformat()},
@@ -91,6 +149,46 @@ class TestV0:
                 pytest.raises(ValidationError, match="is not a 'uri'"),
             ),
             (
+                {
+                    "type": "image",
+                    "data": {
+                        "mime-type": "image/svg+xml",
+                        "data": (
+                            "PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZ"
+                            "pZXdCb3g9IjAgMCAxMDAgMTAwIj4KICA8Y2lyY2xlIGN4PSI1MCIgY3"
+                            "k9IjUwIiByPSI0OCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwIi8+C"
+                            "iAgPHBhdGggZD0iTTUwLDJhNDgsNDggMCAxIDEgMCw5NmEyNCAyNCAw"
+                            "IDEgMSAwLTQ4YTI0IDI0IDAgMSAwIDAtNDgiLz4KICA8Y2lyY2xlIGN"
+                            "4PSI1MCIgY3k9IjI2IiByPSI2Ii8+CiAgPGNpcmNsZSBjeD0iNTAiIG"
+                            "N5PSI3NCIgcj0iNiIgZmlsbD0iI0ZGRiIvPgo8L3N2Zz4="
+                        ),
+                    },
+                },
+                does_not_raise(),
+            ),
+            (
+                {
+                    "type": "image",
+                    # NOTE: Invalid Base64
+                    "data": {"mime-type": "image/png", "data": "hello.22"},
+                },
+                pytest.raises(ValidationError, match="Failed validating 'pattern'"),
+            ),
+            (
+                {"type": "image", "data": "<!DOCTYPE svg></svg>"},
+                pytest.raises(ValidationError, match="is not of type 'object'"),
+            ),
+            (
+                {
+                    "type": "image",
+                    "data": {
+                        "mime-type": "image/svg",
+                        "data": "<!DOCTYPE svg></svg>",
+                    },
+                },
+                pytest.raises(ValidationError, match="Failed validating 'enum'"),
+            ),
+            (
                 {"type": "html", "data": "<!DOCTYPE html><head></head></html>"},
                 does_not_raise(),
             ),
@@ -102,6 +200,24 @@ class TestV0:
             (
                 {"type": "integer", "data": 1.2},
                 pytest.raises(ValidationError, match="is not of type 'integer'"),
+            ),
+            (
+                {
+                    "type": "markdown",
+                    "data": "# Hello\n## Hi\n\nThis is a markdown string",
+                },
+                does_not_raise(),
+            ),
+            (
+                {
+                    "type": "markdown",
+                    "data": "<p>This is technically valid Markdown</p>",
+                },
+                does_not_raise(),
+            ),
+            (
+                {"type": "markdown", "data": 1},
+                pytest.raises(ValidationError, match="is not of type 'string'"),
             ),
             ({"type": "number", "data": 1.2}, does_not_raise()),
             (

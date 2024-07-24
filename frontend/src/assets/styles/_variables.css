@@ -3,7 +3,7 @@
 
   `--component-property-variant-kind-modifier`
 
-  - component: the domain where this vairabels is applied (text color, transitions, ...)
+  - component: the domain where this variable is applied (text color, transitions, ...)
   - property: the CSS properties related to this variable
   - variant: where this apply, is it an error, a success, an elevation, ... ?
   - kind: is it small, large, high, higher, ... ?
