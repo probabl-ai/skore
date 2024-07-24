@@ -24,8 +24,8 @@ import spec from "../assets/fixtures/vega.json";
       </TabsItem>
       <TabsItem :value="2">
         <DataFrameWidget
-          :headers="['id', 'first_name', 'last_name', 'email', 'gender', 'ip_address']"
-          :values="datatable"
+          :columns="['id', 'first_name', 'last_name', 'email', 'gender', 'ip_address']"
+          :data="datatable"
         />
       </TabsItem>
     </Tabs>

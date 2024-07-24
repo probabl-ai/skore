@@ -10,7 +10,8 @@ export type ItemType =
   | "file"
   | "html"
   | "markdown"
-  | "vega";
+  | "vega"
+  | "datatable";
 
 export interface IPayloadItem {
   type: ItemType;
@@ -43,11 +44,12 @@ export class DataStore {
       "datetime",
       "html",
       "markdown",
+      "datatable",
     ]);
   }
 
   get(key: string): any {
-    return this.payload[key].data;
+    return this.payload[key];
   }
 
   _getKeysByType(types: ItemType[]) {
