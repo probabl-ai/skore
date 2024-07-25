@@ -1,11 +1,13 @@
 export interface DataStore {
   path: string;
-  views: string[];
-  logs: string[];
+  views: {
+    [key: string]: any;
+  };
+  logs: {
+    [key: string]: any;
+  };
   artifacts: {
-    [key: string]: {
-      path: string;
-    };
+    [key: string]: any;
   };
   info: {
     [key: string]: any;

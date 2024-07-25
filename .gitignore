@@ -162,6 +162,15 @@ cython_debug/
 .datamander
 .DS_Store
 
-
 # Visual studio code
 .vscode
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*

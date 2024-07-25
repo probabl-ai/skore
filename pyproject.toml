@@ -19,15 +19,20 @@ dependencies = [
   "scikit-learn",
   "srsly",
   "fastapi",
+  "matplotlib",
 ]
 
 [project.optional-dependencies]
 test = [
+  "jsonschema[format]",
   "pre-commit",
   "pytest",
   "pytest-cov",
   "pytest-randomly",
-  "ruff"
+  "ruff",
+]
+tools = [
+  "pip-tools",
 ]
 
 doc = [
@@ -39,17 +44,14 @@ doc = [
 [tool.hatch.build.targets.wheel]
 packages = ["src/mandr"]
 
-[tool.pip-tools.compile]
-upgrade = true
-
 [tool.pytest.ini_options]
 addopts = [
-    "--cov=src/",
-    "--cov=tests/",
-    "--cov-branch",
-    "--import-mode=importlib",
-    "--no-header",
-    "--verbosity=2",
+  "--cov=src/",
+  "--cov=tests/",
+  "--cov-branch",
+  "--import-mode=importlib",
+  "--no-header",
+  "--verbosity=2",
 ]
 
 [tool.ruff]

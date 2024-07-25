@@ -1,3 +1,4 @@
+import "simplebar-vue/dist/simplebar.min.css";
 import "./assets/styles/main.css";
 
 import { createPinia } from "pinia";

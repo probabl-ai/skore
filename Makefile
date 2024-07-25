@@ -1,10 +1,11 @@
 pip-compile:
 	pip-compile --output-file=requirements.txt pyproject.toml
 	pip-compile --extra=test --output-file=requirements-test.txt pyproject.toml
+	pip-compile --extra=tools --output-file=requirements-tools.txt pyproject.toml
 	pip-compile --extra=doc --output-file=requirements-doc.txt pyproject.toml
 
 install:
-	python -m pip install -e . -r requirements.txt -r requirements-test.txt
+	python -m pip install -e . -r requirements.txt -r requirements-test.txt -r requirements-tools.txt
 	pre-commit install
 
 check-wip:

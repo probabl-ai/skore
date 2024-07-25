@@ -1,0 +1,60 @@
+@font-face {
+  font-display: block;
+  font-family: icomoon;
+  font-style: normal;
+  font-weight: normal;
+  src: url("../fonts/icomoon.eot?bsrkh");
+  src:
+    url("../fonts/icomoon.eot?bsrkh#iefix") format("embedded-opentype"),
+    url("../fonts/icomoon.ttf?bsrkh") format("truetype"),
+    url("../fonts/icomoon.woff?bsrkh") format("woff"),
+    url("../fonts/icomoon.svg?bsrkh#icomoon") format("svg");
+}
+
+[class^="icon-"],
+[class*=" icon-"] {
+  /* use !important to prevent issues with browser extensions that change fonts */
+  /* stylelint-disable-next-line font-family-no-missing-generic-family-keyword */
+  font-family: icomoon !important;
+
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-style: normal;
+  font-variant: normal;
+  font-weight: normal;
+  line-height: 1;
+  text-transform: none;
+}
+
+.icon-text::before {
+  content: "\e900";
+}
+
+.icon-plot::before {
+  content: "\e901";
+}
+
+.icon-gift::before {
+  content: "\e902";
+}
+
+.icon-pie-chart::before {
+  content: "\e903";
+}
+
+.icon-folder::before {
+  content: "\e904";
+}
+
+.icon-grid-layout-large::before {
+  content: "\e905";
+}
+
+.icon-grid-layout-medium::before {
+  content: "\e906";
+}
+
+.icon-grid-layout-small::before {
+  content: "\e907";
+}
