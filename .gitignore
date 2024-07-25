@@ -69,7 +69,8 @@ instance/
 .scrapy
 
 # Sphinx documentation
-docs/_build/
+doc/_build/
+doc/auto_examples/
 
 # PyBuilder
 .pybuilder/
@@ -161,6 +162,15 @@ cython_debug/
 .datamander
 .DS_Store
 
-
 # Visual studio code
 .vscode
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*

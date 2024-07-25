@@ -2,8 +2,6 @@
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { type FileTreeNode } from "./FileTree.vue";
-import FolderIcon from "./icons/FolderIcon.vue";
-import ManderIcon from "./icons/ManderIcon.vue";
 
 const router = useRouter();
 const props = defineProps<FileTreeNode>();
@@ -12,6 +10,11 @@ const hasChildren = computed(() => props.children?.length);
 const label = computed(() => {
   const segment = props.uri.split("/");
   return segment[segment.length - 1];
+});
+
+const randomColor = computed(() => {
+  const hue = Math.random() * 360;
+  return `background-color: hsl(${hue}deg 97 75);`;
 });
 
 function onClick() {
@@ -26,12 +29,12 @@ function onClick() {
 
 <template>
   <div class="file-tree-item" :style="`--indentation-level: ${indentationLevel};`">
-    <div class="label" @click="onClick">
-      <div class="icon">
-        <FolderIcon v-if="hasChildren" />
-        <ManderIcon v-else />
+    <div class="label">
+      <div v-if="props.indentationLevel == 0" class="top-level-indicator" :style="randomColor" />
+      <div v-else class="child-indicator">L</div>
+      <div class="text" @click="onClick">
+        {{ label }}
       </div>
-      <div class="text">{{ label }}</div>
     </div>
     <div class="children" v-if="hasChildren">
       <FileTreeItem
@@ -39,7 +42,7 @@ function onClick() {
         :key="index"
         :uri="child.uri"
         :children="child.children"
-        :indentation-level="(indentationLevel ?? 0) + 1"
+        :indentation-level="(props.indentationLevel ?? 0) + 1"
       />
     </div>
   </div>
@@ -51,23 +54,36 @@ function onClick() {
 
   .label {
     display: flex;
+    height: 28px;
     flex-direction: row;
     align-items: center;
-    padding: 3px;
-    border-radius: 4px;
+    color: var(--text-color-normal);
     cursor: pointer;
-    transition: var(--transition);
+    font-size: var(--text-size-title);
+    font-weight: var(--text-weight-normal);
+    gap: var(--spacing-gap-small);
 
-    &:hover {
-      background-color: #ddd;
-      font-weight: 500;
+    & .text {
+      padding: 1px 8px;
+      border-radius: 3px;
+      transition:
+        color var(--transition-duration) var(--transition-easing),
+        background-color var(--transition-duration) var(--transition-easing);
     }
 
-    & .icon {
-      display: flex;
-      width: 24px;
-      height: 24px;
-      align-items: center;
+    & .text:hover {
+      background-color: var(--background-color-selected);
+      color: var(--text-color-highlight);
+    }
+
+    & .top-level-indicator {
+      width: 4px;
+      height: 4px;
+      border-radius: 0.5px;
+    }
+
+    & .child-indicator {
+      font-size: 0.8em;
     }
   }
 }
