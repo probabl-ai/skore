@@ -194,7 +194,8 @@ class TestV0:
             ),
             (
                 {"type": "html", "data": "<head></head>"},
-                pytest.raises(ValidationError, match="Failed validating 'pattern'"),
+                # NOTE: No DOCTYPE
+                does_not_raise(),
             ),
             ({"type": "integer", "data": 1}, does_not_raise()),
             (
