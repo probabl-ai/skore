@@ -1,4 +1,4 @@
-import { type DataStore } from "@/models";
+import { DataStore } from "@/models";
 
 const { protocol, hostname } = window.location;
 const BASE_URL = `${protocol}//${hostname}:8000/api`;
@@ -26,10 +26,10 @@ export async function fetchAllManderUris(): Promise<string[]> {
 
 export async function fetchMander(uri: string): Promise<DataStore | null> {
   try {
-    const r = await fetch(`${BASE_URL}/mandrs/${uri}`);
+    const r = await fetch(`${BASE_URL}/fake-mandrs/${uri}`);
     if (r.status == 200) {
       const m = await r.json();
-      return m as DataStore;
+      return new DataStore(m.uri, m.payload);
     }
   } catch (error) {
     reportError(getErrorMessage(error));

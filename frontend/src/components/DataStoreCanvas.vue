@@ -23,7 +23,7 @@ function onCardRemoved(key: string) {
     @layout-changed="onLayoutChange(key, $event)"
     @card-removed="onCardRemoved(key)"
   >
-    <div v-html="canvasStore.get(key).toString().substring(0, 100)"></div>
+    <div v-html="canvasStore.dataStore!.get(key).toString().substring(0, 100)"></div>
   </DataStoreCard>
 </template>
 
