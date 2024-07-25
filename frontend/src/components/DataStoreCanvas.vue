@@ -3,6 +3,7 @@ import { computed } from "vue";
 
 import DataFrameWidget from "@/components/DataFrameWidget.vue";
 import DataStoreCard from "@/components/DataStoreCard.vue";
+import ImageWidget from "@/components/ImageWidget.vue";
 import MarkdownWidget from "@/components/MarkdownWidget.vue";
 import VegaWidget from "@/components/VegaWidget.vue";
 import { useCanvasStore, type KeyLayoutSize } from "@/stores/canvas";
@@ -45,6 +46,12 @@ function onCardRemoved(key: string) {
         v-if="value.type === 'dataframe'"
         :columns="value.data.columns"
         :data="value.data.data"
+      />
+      <ImageWidget
+        v-if="value.type === 'image'"
+        :mime-type="value.data['mime-type']"
+        :base64-src="value.data.data"
+        :alt="key as string"
       />
       <MarkdownWidget
         v-if="
