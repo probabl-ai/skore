@@ -42,7 +42,7 @@ function onCardRemoved(key: string) {
     >
       <VegaWidget v-if="value.type === 'vega'" :spec="value.data" />
       <DataFrameWidget
-        v-if="value.type === 'datatable'"
+        v-if="value.type === 'dataframe'"
         :columns="value.data.columns"
         :data="value.data.data"
       />
