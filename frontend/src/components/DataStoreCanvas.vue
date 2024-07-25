@@ -13,8 +13,7 @@ const items = computed(() => {
   const r: { [key: string]: any } = {};
   if (dataStore) {
     for (const k of canvasStore.displayedKeys) {
-      const item = dataStore.get(k);
-      r[k] = { type: item.type, data: item.data };
+      r[k] = dataStore.get(k);
     }
   }
   return r;
