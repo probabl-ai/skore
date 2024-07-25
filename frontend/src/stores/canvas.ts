@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 
-import { type DataStore } from "@/models";
+import { DataStore } from "@/models";
 
 export type KeyLayoutSize = "small" | "medium" | "large";
 
@@ -30,24 +30,13 @@ export const useCanvasStore = defineStore("canvas", () => {
     layoutSizes.value = {};
   }
 
-  function get(key: string) {
-    // Temp function to access a key anywhere in the data store
-    const ds = dataStore.value;
-    if (ds) {
-      if (key in ds.views) {
-        return ds.views[key];
-      }
-      if (key in ds.logs) {
-        return ds.logs[key];
-      }
-      if (key in ds.artifacts) {
-        return ds.artifacts[key];
-      }
-      if (key in ds.info) {
-        return ds.info[key];
-      }
-    }
-  }
-
-  return { displayedKeys, layoutSizes, displayKey, hideKey, setKeyLayoutSize, setDataStore, get };
+  return {
+    dataStore,
+    displayedKeys,
+    layoutSizes,
+    displayKey,
+    hideKey,
+    setKeyLayoutSize,
+    setDataStore,
+  };
 });

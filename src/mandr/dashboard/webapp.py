@@ -5,6 +5,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from mandr import InfoMander
@@ -70,6 +71,12 @@ async def get_mandr(request: Request, path: str):
             if key not in InfoMander.RESERVED_KEYS
         },
     }
+
+
+@app.get("/api/fake-mandrs/{path:path}", response_class=FileResponse)
+async def get_fake_mandr(request: Request, path: str):
+    """Return a fake mandr."""
+    return _DASHBOARD_PATH / "fixtures" / "mock-mander.json"
 
 
 # as we mount / this line should be after all route declarations
