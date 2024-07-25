@@ -1,12 +1,13 @@
 import { defineStore } from "pinia";
-import { ref } from "vue";
+import { ref, shallowRef } from "vue";
 
 import { DataStore } from "@/models";
 
 export type KeyLayoutSize = "small" | "medium" | "large";
 
 export const useCanvasStore = defineStore("canvas", () => {
-  const dataStore = ref<DataStore | null>();
+  // this object is not deeply reactive as it may be very large
+  const dataStore = shallowRef<DataStore | null>(null);
   const displayedKeys = ref<string[]>([]);
   const layoutSizes = ref<{ [key: string]: KeyLayoutSize }>({});
 

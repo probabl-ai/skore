@@ -107,7 +107,7 @@ await fetchDataStoreDetail(route.params.segments);
           >
             No item selected yet, start by dragging one element!
           </div>
-          <Simplebar class="canvas" v-else>
+          <Simplebar class="canvas-wrapper" v-else>
             <DataStoreCanvas />
           </Simplebar>
         </Transition>
@@ -211,7 +211,7 @@ main {
         text-align: center;
       }
 
-      & .canvas {
+      & .canvas-wrapper {
         height: 0;
         flex-grow: 1;
         padding: var(--spacing-padding-large);

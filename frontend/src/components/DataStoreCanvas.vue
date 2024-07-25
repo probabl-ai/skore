@@ -1,8 +1,23 @@
 <script setup lang="ts">
+import { computed } from "vue";
+
+import DataFrameWidget from "@/components/DataFrameWidget.vue";
 import DataStoreCard from "@/components/DataStoreCard.vue";
+import MarkdownWidget from "@/components/MarkdownWidget.vue";
+import VegaWidget from "@/components/VegaWidget.vue";
 import { useCanvasStore, type KeyLayoutSize } from "@/stores/canvas";
 
 const canvasStore = useCanvasStore();
+const items = computed(() => {
+  const dataStore = canvasStore.dataStore;
+  const r: { [key: string]: any } = {};
+  if (dataStore) {
+    for (const k of canvasStore.displayedKeys) {
+      r[k] = dataStore.get(k);
+    }
+  }
+  return r;
+});
 
 function onLayoutChange(key: string, size: KeyLayoutSize) {
   canvasStore.setKeyLayoutSize(key, size);
@@ -14,17 +29,41 @@ function onCardRemoved(key: string) {
 </script>
 
 <template>
-  <DataStoreCard
-    v-for="key in canvasStore.displayedKeys"
-    :key="key"
-    :title="key"
-    :class="[canvasStore.layoutSizes[key] || 'large']"
-    class="canvas-element"
-    @layout-changed="onLayoutChange(key, $event)"
-    @card-removed="onCardRemoved(key)"
-  >
-    <div v-html="canvasStore.dataStore!.get(key).toString().substring(0, 100)"></div>
-  </DataStoreCard>
+  <div class="canvas">
+    <DataStoreCard
+      v-for="(value, key) in items"
+      :key="key"
+      :title="key as string"
+      :class="[canvasStore.layoutSizes[key] || 'large']"
+      class="canvas-element"
+      @layout-changed="onLayoutChange(key as string, $event)"
+      @card-removed="onCardRemoved(key as string)"
+    >
+      <VegaWidget v-if="value.type === 'vega'" :spec="value.data" />
+      <DataFrameWidget
+        v-if="value.type === 'dataframe'"
+        :columns="value.data.columns"
+        :data="value.data.data"
+      />
+      <MarkdownWidget
+        v-if="
+          [
+            'boolean',
+            'integer',
+            'number',
+            'string',
+            'any',
+            'array',
+            'date',
+            'datetime',
+            'markdown',
+          ].includes(value.type)
+        "
+        :source="value.data"
+      />
+      <div v-if="value.type === 'html'" v-html="value.data"></div>
+    </DataStoreCard>
+  </div>
 </template>
 
 <style scoped>
