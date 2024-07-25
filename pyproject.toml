@@ -35,6 +35,12 @@ tools = [
   "pip-tools",
 ]
 
+doc = [
+  "sphinx",
+  "sphinx-gallery",
+  "matplotlib"
+]
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/mandr"]
 
@@ -50,6 +56,9 @@ addopts = [
 
 [tool.ruff]
 src = ["mandr"]
+exclude = [
+  "doc"
+]
 
 [tool.ruff.lint]
 select = [
@@ -76,3 +85,4 @@ convention = "numpy"
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["D"]
+"examples/*" = ["D"]
