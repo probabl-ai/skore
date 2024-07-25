@@ -169,6 +169,16 @@ class TestV0:
             (
                 {
                     "type": "image",
+                    "data": {
+                        "mime-type": "image/webp",
+                        "data": "lkahsi34982djGGD/=",
+                    },
+                },
+                does_not_raise(),
+            ),
+            (
+                {
+                    "type": "image",
                     # NOTE: Invalid Base64
                     "data": {"mime-type": "image/png", "data": "hello.22"},
                 },

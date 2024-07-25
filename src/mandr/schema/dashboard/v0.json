@@ -127,7 +127,7 @@
                             },
                             "data": {
                                 "type": "string",
-                                "pattern": "^([a-z]|[A-Z]|\\d|\\+)*=*$",
+                                "pattern": "^([a-z]|[A-Z]|\\d|\\+|\/)*=*$",
                                 "contentEncoding": "base64"
                             }
                         },
