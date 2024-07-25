@@ -139,6 +139,8 @@ platformdirs==4.2.2
     # via virtualenv
 pluggy==1.5.0
     # via pytest
+polars==1.2.1
+    # via mandr (pyproject.toml)
 pre-commit==3.7.1
     # via mandr (pyproject.toml)
 pydantic==2.8.2
