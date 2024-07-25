@@ -9,10 +9,13 @@ import { useCanvasStore, type KeyLayoutSize } from "@/stores/canvas";
 
 const canvasStore = useCanvasStore();
 const items = computed(() => {
+  const dataStore = canvasStore.dataStore;
   const r: { [key: string]: any } = {};
-  for (const k of canvasStore.displayedKeys) {
-    const item = canvasStore.dataStore?.get(k);
-    r[k] = { type: item.type, data: JSON.parse(JSON.stringify(item.data)) };
+  if (dataStore) {
+    for (const k of canvasStore.displayedKeys) {
+      const item = dataStore.get(k);
+      r[k] = { type: item.type, data: item.data };
+    }
   }
   return r;
 });
