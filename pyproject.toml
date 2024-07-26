@@ -38,6 +38,7 @@ tools = [
 doc = [
   "sphinx",
   "sphinx-gallery",
+  "pydata_sphinx_theme",
   "seaborn",
   "networkx",
   "IPython",
