@@ -115,6 +115,8 @@ pillow==10.4.0
     # via matplotlib
 pip-tools==7.4.1
     # via mandr (pyproject.toml)
+polars==1.2.1
+    # via mandr (pyproject.toml)
 pydantic==2.8.2
     # via fastapi
 pydantic-core==2.20.1

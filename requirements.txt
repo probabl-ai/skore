@@ -109,6 +109,8 @@ pandas==2.2.2
     #   mandr (pyproject.toml)
 pillow==10.4.0
     # via matplotlib
+polars==1.2.1
+    # via mandr (pyproject.toml)
 pydantic==2.8.2
     # via fastapi
 pydantic-core==2.20.1

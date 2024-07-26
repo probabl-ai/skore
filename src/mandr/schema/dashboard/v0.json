@@ -127,7 +127,7 @@
                             },
                             "data": {
                                 "type": "string",
-                                "pattern": "^([a-z]|[A-Z]|\\d|\\+)*=*$",
+                                "pattern": "^([a-z]|[A-Z]|\\d|\\+|\/)*=*$",
                                 "contentEncoding": "base64"
                             }
                         },
@@ -177,8 +177,7 @@
                     "type": { "const": "html" },
                     "data": {
                         "type": "string",
-                        "contentMediaType": "text/html",
-                        "pattern": "^<!DOCTYPE html>(.|\r?\n)*<\/html>$"
+                        "contentMediaType": "text/html"
                     }
                 },
                 "required": [ "type", "data" ],

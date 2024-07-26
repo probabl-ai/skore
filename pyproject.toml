@@ -15,6 +15,7 @@ dependencies = [
   "jinja2",
   "markdown",
   "pandas",
+  "polars",
   "rich",
   "scikit-learn",
   "srsly",
@@ -46,6 +47,7 @@ packages = ["src/mandr"]
 
 [tool.pytest.ini_options]
 addopts = [
+  "--doctest-modules",
   "--cov=src/",
   "--cov=tests/",
   "--cov-branch",
