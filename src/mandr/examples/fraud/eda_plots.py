@@ -2,6 +2,7 @@
 from collections import Counter
 from itertools import combinations
 
+import graphviz
 import networkx as nx
 import pandas as pd
 import seaborn as sns
@@ -195,8 +196,8 @@ def _melt_dataframe(df, group_col1, group_col2):
     return pd.concat(dfs)
 
 
-def plot_price_distribution(df, title=None):
-    fig, axes = plt.subplots(nrows=2, sharex=True, sharey=True)
+def plot_price_distribution(df, title=None, figsize=None):
+    fig, axes = plt.subplots(nrows=2, sharex=True, sharey=True, figsize=figsize)
     palette = ["blue", "orange"]
 
     for idx, ax in enumerate(axes):
@@ -245,7 +246,7 @@ def plot_multiple_price_dist(df, n_most_freq=10):
         item_mask = df["item"] == item
         df_item = df.loc[item_mask].reset_index()
         df_item["total_price_"] = df_item["cash_price"]
-        plot_price_distribution(df_item, title=item)
+        plot_price_distribution(df_item, title=item, figsize=(4, 4))
 
 
 def plot_graph(
@@ -307,6 +308,7 @@ def plot_graph(
     )
     label_options = {"ec": "k", "fc": "white", "alpha": 0.7}
     nx.draw_networkx_labels(g, pos, font_size=9, bbox=label_options)
+    plt.tight_layout()
 
 
 def count_nodes_edges(df, column, exclude=None):

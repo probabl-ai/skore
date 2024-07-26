@@ -29,6 +29,7 @@ def plot_metric(results, metric_name):
     for container in ax.containers:
         ax.bar_label(container)
     ax.set_title(metric_name)
+    plt.tight_layout()
 
 
 def plot_gains_curve(results):
@@ -99,6 +100,7 @@ def plot_roc_curve(results):
 
         ax.legend()
     ax.legend(loc="center left", bbox_to_anchor=(1, 0.5))
+    plt.tight_layout()
     plt.show()
 
 
@@ -148,6 +150,7 @@ def plot_calibration_curve(results):
             y_test, y_proba, n_bins=10, name=name, ax=ax
         )
     ax.legend(loc="center left", bbox_to_anchor=(1, 0.5))
+    plt.tight_layout()
     plt.show()
 
 
@@ -193,6 +196,7 @@ def plot_permutation_importance(model, X, y, random_state=None, figsize=None):
         vert=False,
     )
     ax.axvline(x=0, color="k", linestyle="--")
+    plt.tight_layout()
 
 
 def plot_confusion_matrix(results, model_names):
