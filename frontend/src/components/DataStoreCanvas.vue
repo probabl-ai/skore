@@ -3,6 +3,7 @@ import { computed } from "vue";
 
 import DataFrameWidget from "@/components/DataFrameWidget.vue";
 import DataStoreCard from "@/components/DataStoreCard.vue";
+import HtmlSnippetWidget from "@/components/HtmlSnippetWidget.vue";
 import MarkdownWidget from "@/components/MarkdownWidget.vue";
 import VegaWidget from "@/components/VegaWidget.vue";
 import { useCanvasStore, type KeyLayoutSize } from "@/stores/canvas";
@@ -61,7 +62,7 @@ function onCardRemoved(key: string) {
         "
         :source="value.data"
       />
-      <div v-if="value.type === 'html'" v-html="value.data"></div>
+      <HtmlSnippetWidget v-if="value.type === 'html'" :src="value.data" />
     </DataStoreCard>
   </div>
 </template>
