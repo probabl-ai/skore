@@ -11,6 +11,17 @@ const props = defineProps<{
 </script>
 
 <template>
-  <VegaWidget :spec="props.roc_curve_spec" />
-  <DataFrameWidget :columns="props.cv_results_table.columns" :data="props.cv_results_table.data" />
+  <div class="content">
+    <VegaWidget :spec="props.roc_curve_spec" />
+    <DataFrameWidget
+      :columns="props.cv_results_table.columns"
+      :data="props.cv_results_table.data"
+    />
+  </div>
 </template>
+
+<style scoped>
+div.content {
+  display: flex;
+}
+</style>
