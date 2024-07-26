@@ -202,7 +202,7 @@ main {
       & .placeholder {
         height: 100%;
         padding-top: calc((100vh - var(--header-height)) * 476 / 730);
-        background-image: url("../assets/images/editor-placeholder.png");
+        background-image: url("../assets/images/editor-placeholder.svg");
         background-position: 50%;
         background-repeat: no-repeat;
         background-size: contain;

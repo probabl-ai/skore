@@ -11,7 +11,8 @@ export type ItemType =
   | "html"
   | "markdown"
   | "vega"
-  | "dataframe";
+  | "dataframe"
+  | "image";
 
 export interface IPayloadItem {
   type: ItemType;
@@ -45,6 +46,7 @@ export class DataStore {
       "html",
       "markdown",
       "dataframe",
+      "image",
     ]);
   }
 
