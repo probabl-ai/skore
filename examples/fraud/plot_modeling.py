@@ -36,7 +36,7 @@ each basket.
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from mandr.examples.fraud.eda_plots import get_group_cols
+from utils_eda import get_group_cols
 
 X = pd.read_csv("X_train.csv", low_memory=False)
 X.pop("ID")
@@ -241,8 +241,8 @@ def get_results(model, X_test, y_test, amount, threshold):
 #
 # These two type of models form our expected performance lower and upper bounds.
 
-from mandr.examples.fraud.oracle import OracleClassifier
 from sklearn.dummy import DummyClassifier
+from utils_oracle import OracleClassifier
 
 dummy_random = DummyClassifier(strategy="stratified").fit(X_train, y_train)
 
@@ -360,7 +360,7 @@ hgbt_search = RandomizedSearchCV(
 # We then evaluate the performance on the test set using our helper function, and
 # display the brier score and the cost gain.
 
-from mandr.examples.fraud.modeling_plots import plot_metric
+from utils_modeling import plot_metric
 
 results["low_effort_hgbt"] = get_results(
     hgbt_search.best_estimator_,
@@ -581,6 +581,9 @@ def row_aggregate_post_target_encoder(X):
 
 
 # %%
+# We use Pipeline, ColumnTransformer and FeatureUnion instead of make_pipeline,
+# make_column_transformer and make_union to set meaningful names.
+
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 
@@ -676,7 +679,7 @@ plot_metric(results, metric_name="cost_gain")
 # Let's now focus on the most important features for our model, using the
 # ``permutation_importance`` function from scikit-learn.
 
-from mandr.examples.fraud.modeling_plots import plot_permutation_importance
+from utils_modeling import plot_permutation_importance
 
 n_subsample = 10_000  # makes the compute cheaper
 
@@ -893,7 +896,7 @@ plot_metric(results, metric_name="cost_gain")
 # limited, although its embedding are more meaningful than MinHash embeddings.
 
 # %%
-from mandr.examples.fraud.modeling_plots import plot_permutation_importance
+from utils_modeling import plot_permutation_importance
 
 n_subsample = 10_000
 
@@ -915,7 +918,7 @@ plot_permutation_importance(
 #
 # We inspect our two last models by first displaying their confusion matrices.
 
-from mandr.examples.fraud.modeling_plots import plot_confusion_matrix
+from utils_modeling import plot_confusion_matrix
 
 plot_confusion_matrix(
     results,
@@ -1030,14 +1033,14 @@ agreeing_prompts.query("nlp_hgbt_tuned == 0 & y_test == 1").head(30)
 # We conclude this example with ROC curves, PR curves and the calibration curves of our
 # models.
 
-from mandr.examples.fraud.modeling_plots import plot_roc_curve
+from utils_modeling import plot_roc_curve
 
 plot_roc_curve(results)
 
 # %%
 # Minhash has the best ROC AUC.
 
-from mandr.examples.fraud.modeling_plots import plot_pr_curve
+from utils_modeling import plot_pr_curve
 
 plot_pr_curve(results)
 
@@ -1045,7 +1048,7 @@ plot_pr_curve(results)
 # MinHash has the best average precision (PR AUC), which is the initial metric of the
 # challenge.
 
-from mandr.examples.fraud.modeling_plots import plot_calibration_curve
+from utils_modeling import plot_calibration_curve
 
 plot_calibration_curve(results)
 

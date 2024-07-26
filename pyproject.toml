@@ -38,14 +38,14 @@ tools = [
 doc = [
   "sphinx",
   "sphinx-gallery",
-  "matplotlib",
   "seaborn",
-  "pandas",
-  "scikit-learn",
   "networkx",
   "IPython",
-  "graphviz",
-  "statsmodels"
+  "statsmodels",
+  "skrub",
+  "inflect",
+  "sentence-transformers",
+  "tqdm",
 ]
 
 [tool.hatch.build.targets.wheel]

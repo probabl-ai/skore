@@ -48,8 +48,8 @@ even more challenging.
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from mandr.examples.fraud.eda_plots import get_group_cols
 from matplotlib import pyplot as plt
+from utils_eda import get_group_cols
 
 X = pd.read_csv("X_train.csv", low_memory=False).convert_dtypes()
 
@@ -90,7 +90,7 @@ X[cols]
 #
 # Last but not least, we can intuite that some of our features are hierarchical:
 #
-# .. image:: ../graphviz.png
+# .. image:: ../_static/graphviz.png
 #   :width: 500
 #
 # Let's check that our IDs are unique:
@@ -322,7 +322,7 @@ for idx, ax in enumerate(axes):
 #
 #       \mathbb{E}[Y] < \mathbb{E}[Y| C_{COMPUTERS} = 2]
 
-from mandr.examples.fraud.eda_plots import plot_n_items_per_basket
+from utils_eda import plot_n_items_per_basket
 
 plot_n_items_per_basket(df, n_most_freq=10)
 
@@ -337,7 +337,7 @@ plot_n_items_per_basket(df, n_most_freq=10)
 # E.g. several pairs of Apple airpods or more than one computer of the same model?
 # We use the same previous graph methodology:
 
-from mandr.examples.fraud.eda_plots import plot_nbr_per_item
+from utils_eda import plot_nbr_per_item
 
 plot_nbr_per_item(df, n_most_freq=10)
 
@@ -373,7 +373,7 @@ df = compute_total_price(df)
 # Then, we can explore the ``total_price_`` distribution of both the non-fraudulent and
 # fraudulent baskets.
 
-from mandr.examples.fraud.eda_plots import plot_price_distribution
+from utils_eda import plot_price_distribution
 
 plot_price_distribution(df)
 
@@ -409,7 +409,7 @@ result.summary().tables[1]
 # most subject to fraud. We aim to find specific categories where the mean difference
 # is higher than the average.
 
-from mandr.examples.fraud.eda_plots import plot_multiple_price_dist
+from utils_eda import plot_multiple_price_dist
 
 plot_multiple_price_dist(df, n_most_freq=10)
 
@@ -450,7 +450,7 @@ df = clean_items(df)
 # result in a finer but more crowded graph (you might have to zoom to see the graph
 # clearly).
 
-from mandr.examples.fraud.eda_plots import plot_graph
+from utils_eda import plot_graph
 
 plot_graph(
     df.loc[df[target_col] == 0],
@@ -556,7 +556,7 @@ plot_graph(
 # - The bottom x-axis represents the absolute number of frauds :math:`n_{item}`, and is
 #   associated with the blue bars.
 
-from mandr.examples.fraud.eda_plots import plot_fraud_ratio
+from utils_eda import plot_fraud_ratio
 
 plot_fraud_ratio(df, "item")
 

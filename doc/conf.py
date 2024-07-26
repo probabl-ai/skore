@@ -32,4 +32,5 @@ html_theme_options = {
 sphinx_gallery_conf = {
     "examples_dirs": "../examples/fraud",  # path to example scripts
     "gallery_dirs": "auto_examples",  # path to gallery generated output
+    "ignore_pattern": "utils_.*",
 }

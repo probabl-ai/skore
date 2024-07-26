@@ -2,7 +2,6 @@
 from collections import Counter
 from itertools import combinations
 
-import graphviz
 import networkx as nx
 import pandas as pd
 import seaborn as sns
