@@ -10,8 +10,6 @@ if TYPE_CHECKING:
 
 
 class Store:
-    __KEY_PREFIX = "#"
-
     def __init__(self, uri: URI, storage: Storage = None):
         self.uri = uri
         self.storage = storage
@@ -23,12 +21,12 @@ class Store:
             and (self.storage == other.storage)
         )
 
-    def insert(self, key, value, *, display_type: DisplayType | None = None):
-        rawkey = key
-        key = f"{Store.__KEY_PREFIX}{key}"
+    def __iter__(self):
+        yield from ((key, item.data) for key, item in self.storage.items(self.uri))
 
+    def insert(self, key, value, *, display_type: DisplayType | None = None):
         if self.storage.contains(self.uri, key):
-            raise KeyError(rawkey)
+            raise KeyError(key)
 
         now = datetime.now(tz=UTC).isoformat()
         item = Item(
@@ -43,20 +41,14 @@ class Store:
         self.storage.setitem(self.uri, key, item)
 
     def read(self, key):
-        rawkey = key
-        key = f"{Store.__KEY_PREFIX}{key}"
-
         if not self.storage.contains(self.uri, key):
-            raise KeyError(rawkey)
+            raise KeyError(key)
 
         return self.storage.getitem(self.uri, key).data
 
     def update(self, key, value, *, display_type: DisplayType | None = None):
-        rawkey = key
-        key = f"{Store.__KEY_PREFIX}{key}"
-
         if not self.storage.contains(self.uri, key):
-            raise KeyError(rawkey)
+            raise KeyError(key)
 
         created_at = self.storage.getitem(self.uri, key).metadata.created_at
         now = datetime.now(tz=UTC).isoformat()
@@ -73,22 +65,7 @@ class Store:
         self.storage.setitem(self.uri, key, item)
 
     def delete(self, key):
-        rawkey = key
-        key = f"{Store.__KEY_PREFIX}{key}"
-
         if not self.storage.contains(self.uri, key):
-            raise KeyError(rawkey)
+            raise KeyError(key)
 
         return self.storage.delitem(self.uri, key)
-
-    def todict(self):
-        return dict(
-            (key[len(Store.__KEY_PREFIX) :], item.data)
-            for key, item in self.storage.items(self.uri)
-        )
-
-    def tolist(self):
-        return list(
-            (key[len(Store.__KEY_PREFIX) :], item.data)
-            for key, item in self.storage.items(self.uri)
-        )

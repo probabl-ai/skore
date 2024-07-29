@@ -17,7 +17,7 @@ class TestStore:
         return NonPersistentStorage(
             content={
                 "root": {
-                    "#key": Item(
+                    "key": Item(
                         data="value",
                         metadata=ItemMetadata(
                             display_type=DisplayType.STRING,
@@ -29,13 +29,22 @@ class TestStore:
             }
         )
 
-    def test_insert(self, monkeypatch, mock_nowstr, storage):
-        store = Store("root", storage=storage)
+    @pytest.fixture
+    def store(self, storage):
+        return Store("root", storage=storage)
+
+    def test_eq(self, store):
+        assert store == store
+
+    def test_iter(self, store):
+        assert list(store) == [("key", "value")]
+
+    def test_insert(self, monkeypatch, mock_nowstr, storage, store):
         store.insert("key2", 2, display_type=DisplayType.INTEGER)
 
         assert storage.content == {
             "root": {
-                "#key": Item(
+                "key": Item(
                     data="value",
                     metadata=ItemMetadata(
                         display_type=DisplayType.STRING,
@@ -43,7 +52,7 @@ class TestStore:
                         updated_at=mock_nowstr,
                     ),
                 ),
-                "#key2": Item(
+                "key2": Item(
                     data=2,
                     metadata=ItemMetadata(
                         display_type=DisplayType.INTEGER,
@@ -54,18 +63,15 @@ class TestStore:
             }
         }
 
-    def test_read(self, storage):
-        store = Store("root", storage=storage)
-
+    def test_read(self, store):
         assert store.read("key") == "value"
 
-    def test_update(self, monkeypatch, mock_nowstr, storage):
-        store = Store("root", storage=storage)
+    def test_update(self, monkeypatch, mock_nowstr, storage, store):
         store.update("key", 2, display_type=DisplayType.INTEGER)
 
         assert storage.content == {
             "root": {
-                "#key": Item(
+                "key": Item(
                     data=2,
                     metadata=ItemMetadata(
                         display_type=DisplayType.INTEGER,
@@ -76,18 +82,7 @@ class TestStore:
             }
         }
 
-    def test_delete(self, monkeypatch, storage):
-        store = Store("root", storage=storage)
+    def test_delete(self, monkeypatch, storage, store):
         store.delete("key")
 
         assert not storage.content["root"]
-
-    def test_todict(self, storage):
-        store = Store("root", storage=storage)
-
-        assert store.todict() == {"key": "value"}
-
-    def test_tolist(self, storage):
-        store = Store("root", storage=storage)
-
-        assert store.tolist() == [("key", "value")]
