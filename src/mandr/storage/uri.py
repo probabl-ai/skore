@@ -15,29 +15,29 @@ class URI:
 
         Examples
         --------
-        >> repr(URI("/", "r", "/", "o", "/", "o", "/", "t"))
+        >> URI("/", "r", "/", "o", "/", "o", "/", "t")
         URI(r,o,o,t)
 
-        >> repr(URI("/r/o", "/o/t"))
+        >> URI("/r/o", "/o/t")
         URI(r,o,o,t)
 
-        >> repr(URI("/r/o/o/t"))
+        >> URI("/r/o/o/t")
         URI(r,o,o,t)
 
-        >> repr(URI("r/o/o/t"))
+        >> URI("r/o/o/t")
         URI(r,o,o,t)
 
-        >> repr(URI("/"))
+        >> URI("/")
         Traceback (most recent call last):
             ...
         ValueError: You must specify non-empty PosixPath-like str.
 
-        >> repr(URI(""))
+        >> URI("")
         Traceback (most recent call last):
             ...
         ValueError: You must specify non-empty PosixPath-like str.
         """
-        segments = tuple(
+        self.__segments = tuple(
             filter(
                 None,
                 itertools.chain.from_iterable(
@@ -46,10 +46,10 @@ class URI:
             )
         )
 
-        if not segments:
-            raise ValueError("You must specify non-empty PosixPath-like str.")
-
-        self.__segments = segments
+        if not self.__segments:
+            raise ValueError(
+                f"Expected a non-empty PosixPath-like string; got {self.__segments}"
+            )
 
     @property
     def segments(self):
