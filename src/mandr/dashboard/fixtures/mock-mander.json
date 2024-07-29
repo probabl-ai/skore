@@ -2723,7 +2723,7 @@
     },
     "custom html": {
       "type": "html",
-      "data": "<div class=container><div id=square></div></div><script>const square = document.getElementById('square');setInterval(() => {square.style.backgroundColor = '#' + (Math.random() * 0xFFFFFF << 0).toString(16);}, 500)</script><style>.container{display:flex;justify-content:center;align-items:center;width:100px;height:100px;padding:5px;background-color:#fff;border:dashed 1px #ccc;height:50px;transition:background-color linear .5s}</style>"
+      "data": "<div class=container><div id=square></div></div><script>const square = document.getElementById('square');setInterval(() => {square.style.backgroundColor = '#' + (Math.random() * 0xFFFFFF << 0).toString(16);}, 500)</script><style>.container{background-color:#fff;border:1px dashed #ccc;justify-content:center;align-items:center;width:100px;height:100px;padding:5px;display:flex}.container>div{width:50px;height:50px;transition:background-color .5s linear}</style>"
     },
     "dataset": {
       "type": "dataframe",
