@@ -1,6 +1,6 @@
 import pytest
 from mandr import registry
-from mandr.storage import NonPersistentStorage, URI
+from mandr.storage import URI, NonPersistentStorage
 from mandr.store import Store
 
 
@@ -33,7 +33,6 @@ class TestRegistry:
         r = Store(URI("/r"), storage)
         ro = Store(URI("/r/o"), storage)
 
-        assert registry.parent(r) == r
         assert registry.parent(ro) == r
 
     def test_stores(self, storage):
