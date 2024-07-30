@@ -1,6 +1,6 @@
 import pytest
 from mandr.item import DisplayType, Item, ItemMetadata
-from mandr.storage import NonPersistentStorage, URI
+from mandr.storage import URI, NonPersistentStorage
 from mandr.store import Store
 
 
@@ -59,13 +59,13 @@ class TestStore:
             ),
         }
 
-        with pytest.raise(KeyError):
-            store.read("key")
+        with pytest.raises(KeyError):
+            store.insert("key2", 2, display_type=DisplayType.INTEGER)
 
     def test_read(self, store):
         assert store.read("key") == "value"
 
-        with pytest.raise(KeyError):
+        with pytest.raises(KeyError):
             store.read("key2")
 
     def test_update(self, monkeypatch, mock_nowstr, storage, store):
@@ -82,7 +82,7 @@ class TestStore:
             ),
         }
 
-        with pytest.raise(KeyError):
+        with pytest.raises(KeyError):
             store.update("key2", 2, display_type=DisplayType.INTEGER)
 
     def test_delete(self, monkeypatch, storage, store):
@@ -90,5 +90,5 @@ class TestStore:
 
         assert not storage.content
 
-        with pytest.raise(KeyError):
+        with pytest.raises(KeyError):
             store.delete("key2")
