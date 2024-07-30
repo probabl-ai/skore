@@ -6,10 +6,12 @@ import DataTable from "datatables.net-vue3";
 
 DataTable.use(DataTablesCore);
 
-const props = defineProps<{
+export interface DataFrameWidgetProps {
   columns: string[];
   data: any[][];
-}>();
+}
+
+const props = defineProps<DataFrameWidgetProps>();
 </script>
 
 <template>

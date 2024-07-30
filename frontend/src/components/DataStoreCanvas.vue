@@ -8,6 +8,7 @@ import ImageWidget from "@/components/ImageWidget.vue";
 import MarkdownWidget from "@/components/MarkdownWidget.vue";
 import VegaWidget from "@/components/VegaWidget.vue";
 import { useCanvasStore, type KeyLayoutSize } from "@/stores/canvas";
+import CrossValidationResultsWidget from "./CrossValidationResultsWidget.vue";
 
 const canvasStore = useCanvasStore();
 const items = computed(() => {
@@ -70,6 +71,11 @@ function onCardRemoved(key: string) {
         :source="value.data"
       />
       <HtmlSnippetWidget v-if="value.type === 'html'" :src="value.data" />
+      <CrossValidationResultsWidget
+        v-if="value.type === 'cv_results'"
+        :roc_curve_spec="value.data.roc_curve_spec"
+        :cv_results_table="value.data.cv_results_table"
+      />
     </DataStoreCard>
   </div>
 </template>
