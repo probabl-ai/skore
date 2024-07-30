@@ -1,6 +1,6 @@
 import pytest
 from mandr.item import DisplayType, Item, ItemMetadata
-from mandr.storage import NonPersistentStorage
+from mandr.storage import NonPersistentStorage, URI
 from mandr.store import Store
 
 
@@ -16,16 +16,14 @@ class TestStore:
 
         return NonPersistentStorage(
             content={
-                "root": {
-                    "key": Item(
-                        data="value",
-                        metadata=ItemMetadata(
-                            display_type=DisplayType.STRING,
-                            created_at=mock_nowstr,
-                            updated_at=mock_nowstr,
-                        ),
-                    )
-                }
+                URI("root/key"): Item(
+                    data="value",
+                    metadata=ItemMetadata(
+                        display_type=DisplayType.STRING,
+                        created_at=mock_nowstr,
+                        updated_at=mock_nowstr,
+                    ),
+                )
             }
         )
 
@@ -43,46 +41,54 @@ class TestStore:
         store.insert("key2", 2, display_type=DisplayType.INTEGER)
 
         assert storage.content == {
-            "root": {
-                "key": Item(
-                    data="value",
-                    metadata=ItemMetadata(
-                        display_type=DisplayType.STRING,
-                        created_at=mock_nowstr,
-                        updated_at=mock_nowstr,
-                    ),
+            URI("root/key"): Item(
+                data="value",
+                metadata=ItemMetadata(
+                    display_type=DisplayType.STRING,
+                    created_at=mock_nowstr,
+                    updated_at=mock_nowstr,
                 ),
-                "key2": Item(
-                    data=2,
-                    metadata=ItemMetadata(
-                        display_type=DisplayType.INTEGER,
-                        created_at=mock_nowstr,
-                        updated_at=mock_nowstr,
-                    ),
+            ),
+            URI("root/key2"): Item(
+                data=2,
+                metadata=ItemMetadata(
+                    display_type=DisplayType.INTEGER,
+                    created_at=mock_nowstr,
+                    updated_at=mock_nowstr,
                 ),
-            }
+            ),
         }
+
+        with pytest.raise(KeyError):
+            store.read("key")
 
     def test_read(self, store):
         assert store.read("key") == "value"
+
+        with pytest.raise(KeyError):
+            store.read("key2")
 
     def test_update(self, monkeypatch, mock_nowstr, storage, store):
         store.update("key", 2, display_type=DisplayType.INTEGER)
 
         assert storage.content == {
-            "root": {
-                "key": Item(
-                    data=2,
-                    metadata=ItemMetadata(
-                        display_type=DisplayType.INTEGER,
-                        created_at=mock_nowstr,
-                        updated_at=mock_nowstr,
-                    ),
+            URI("root/key"): Item(
+                data=2,
+                metadata=ItemMetadata(
+                    display_type=DisplayType.INTEGER,
+                    created_at=mock_nowstr,
+                    updated_at=mock_nowstr,
                 ),
-            }
+            ),
         }
+
+        with pytest.raise(KeyError):
+            store.update("key2", 2, display_type=DisplayType.INTEGER)
 
     def test_delete(self, monkeypatch, storage, store):
         store.delete("key")
 
-        assert not storage.content["root"]
+        assert not storage.content
+
+        with pytest.raise(KeyError):
+            store.delete("key2")

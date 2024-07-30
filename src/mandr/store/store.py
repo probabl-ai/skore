@@ -4,14 +4,15 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from mandr.item import DisplayType, Item, ItemMetadata
+from mandr.storage import URI
 
 if TYPE_CHECKING:
-    from mandr.storage import URI, Storage
+    from mandr.storage import Storage
 
 
 class Store:
-    def __init__(self, uri: URI, storage: Storage = None):
-        self.uri = uri
+    def __init__(self, uri: URI | PosixPath | str, storage: Storage = None):
+        self.uri = URI(uri)
         self.storage = storage
 
     def __eq__(self, other):
@@ -22,10 +23,14 @@ class Store:
         )
 
     def __iter__(self):
-        yield from ((key, item.data) for key, item in self.storage.items(self.uri))
+        for key, item in self.storage.items():
+            if key.parent == self.uri:
+                yield (key.stem, item.data)
 
     def insert(self, key, value, *, display_type: DisplayType | None = None):
-        if self.storage.contains(self.uri, key):
+        key = (self.uri / key)
+
+        if key in self.storage:
             raise KeyError(key)
 
         now = datetime.now(tz=UTC).isoformat()
@@ -38,19 +43,23 @@ class Store:
             ),
         )
 
-        self.storage.setitem(self.uri, key, item)
+        self.storage.setitem(key, item)
 
     def read(self, key):
-        if not self.storage.contains(self.uri, key):
+        key = (self.uri / key)
+
+        if key not in self.storage:
             raise KeyError(key)
 
-        return self.storage.getitem(self.uri, key).data
+        return self.storage.getitem(key).data
 
     def update(self, key, value, *, display_type: DisplayType | None = None):
-        if not self.storage.contains(self.uri, key):
+        key = (self.uri / key)
+
+        if key not in self.storage:
             raise KeyError(key)
 
-        created_at = self.storage.getitem(self.uri, key).metadata.created_at
+        created_at = self.storage.getitem(key).metadata.created_at
         now = datetime.now(tz=UTC).isoformat()
         item = Item(
             data=value,
@@ -61,11 +70,13 @@ class Store:
             ),
         )
 
-        self.storage.delitem(self.uri, key)
-        self.storage.setitem(self.uri, key, item)
+        self.storage.delitem(key)
+        self.storage.setitem(key, item)
 
     def delete(self, key):
-        if not self.storage.contains(self.uri, key):
+        key = (self.uri / key)
+
+        if key not in self.storage:
             raise KeyError(key)
 
-        return self.storage.delitem(self.uri, key)
+        return self.storage.delitem(key)
