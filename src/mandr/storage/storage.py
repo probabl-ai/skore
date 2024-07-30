@@ -12,15 +12,11 @@ if TYPE_CHECKING:
 
 class Storage(ABC):
     @abstractmethod
-    def __iter__(self) -> Generator[URI, None, None]:
+    def __contains__(self, key: URI) -> bool:
         """ """
 
     @abstractmethod
-    def contains(self, uri: URI, key: str) -> bool:
-        """ """
-
-    @abstractmethod
-    def getitem(self, uri: URI, key: str) -> Item:
+    def getitem(self, key: URI) -> Item:
         """
         Raises
         ------
@@ -28,11 +24,11 @@ class Storage(ABC):
         """
 
     @abstractmethod
-    def setitem(self, uri: URI, key: str, item: Item):
+    def setitem(self, key: URI, item: Item):
         """ """
 
     @abstractmethod
-    def delitem(self, uri: URI, key: str):
+    def delitem(self, key: URI):
         """
         Raises
         ------
@@ -40,9 +36,9 @@ class Storage(ABC):
         """
 
     @abstractmethod
-    def keys(self, uri: URI) -> Generator[str, None, None]:
+    def keys(self) -> Generator[URI, None, None]:
         """ """
 
     @abstractmethod
-    def items(self, uri: URI) -> Generator[tuple[str, Item], None, None]:
+    def items(self) -> Generator[tuple[URI, Item], None, None]:
         """ """

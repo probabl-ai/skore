@@ -1,15 +1,14 @@
 import pytest
 
 from mandr.item import DisplayType, Item, ItemMetadata
-from mandr.storage import FileSystem
-from mandr.storage.filesystem import Key
+from mandr.storage import FileSystem, URI
 
 
 class TestFileSystem:
     @pytest.fixture
     def storage(self, mock_nowstr, tmp_path):
         filesystem = FileSystem(directory=tmp_path)
-        filesystem.cache[Key("root", "key")] = Item(
+        filesystem.cache[URI("root/key")] = Item(
             data="value",
             metadata=ItemMetadata(
                 display_type=DisplayType.STRING,
@@ -20,16 +19,13 @@ class TestFileSystem:
 
         return filesystem
 
-    def test_iter(self, storage):
-        assert list(storage) == ["root"]
-
     def test_contains(self, storage):
-        assert storage.contains("root", "key")
-        assert not storage.contains("root", "key1")
-        assert not storage.contains("root1", "key")
+        assert URI("root/key") in storage
+        assert URI("root/key1") not in storage
+        assert URI("root1/key") not in storage
 
     def test_getitem(self, storage, mock_nowstr):
-        assert storage.getitem("root", "key") == Item(
+        assert storage.getitem(URI("root/key")) == Item(
             data="value",
             metadata=ItemMetadata(
                 display_type=DisplayType.STRING,
@@ -39,9 +35,9 @@ class TestFileSystem:
         )
 
         with pytest.raises(KeyError):
-            storage.getitem("root", "key1")
+            storage.getitem(URI("root/key1"))
         with pytest.raises(KeyError):
-            storage.getitem("root1", "key")
+            storage.getitem(URI("root1/key"))
 
     def test_setitem(self, storage, mock_nowstr):
         item0 = Item(
@@ -69,13 +65,13 @@ class TestFileSystem:
             ),
         )
 
-        storage.setitem("root1", "key1", item1)
-        storage.setitem("root2", "key2", item2)
+        storage.setitem(URI("root1/key1"), item1)
+        storage.setitem(URI("root2/key2"), item2)
 
         assert {key: storage.cache[key] for key in storage.cache.iterkeys()} == {
-            Key("root", "key"): item0,
-            Key("root1", "key1"): item1,
-            Key("root2", "key2"): item2,
+            URI("root/key"): item0,
+            URI("root1/key1"): item1,
+            URI("root2/key2"): item2,
         }
 
         item3 = Item(
@@ -87,26 +83,26 @@ class TestFileSystem:
             ),
         )
 
-        storage.setitem("root", "key", item3)
+        storage.setitem(URI("root/key"), item3)
 
         assert {key: storage.cache[key] for key in storage.cache.iterkeys()} == {
-            Key("root", "key"): item3,
-            Key("root1", "key1"): item1,
-            Key("root2", "key2"): item2,
+            URI("root/key"): item3,
+            URI("root1/key1"): item1,
+            URI("root2/key2"): item2,
         }
 
     def test_delitem(self, storage):
-        storage.delitem("root", "key")
+        storage.delitem(URI("root/key"))
 
         assert list(storage.cache.iterkeys()) == []
 
     def test_keys(self, storage):
-        assert list(storage.keys("root")) == ["key"]
+        assert list(storage.keys()) == [URI("root/key")]
 
     def test_items(self, storage, mock_nowstr):
-        assert list(storage.items("root")) == [
+        assert list(storage.items()) == [
             (
-                "key",
+                URI("root/key"),
                 Item(
                     data="value",
                     metadata=ItemMetadata(

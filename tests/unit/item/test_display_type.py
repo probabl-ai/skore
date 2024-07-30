@@ -2,7 +2,7 @@ import datetime
 import pathlib
 
 import pytest
-from mandr.display_type import DisplayType
+from mandr.item import DisplayType
 
 
 @pytest.mark.parametrize(

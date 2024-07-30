@@ -13,12 +13,6 @@ if TYPE_CHECKING:
     from mandr.storage.storage import URI
 
 
-@dataclass(frozen=True)
-class Key:
-    prefix: URI
-    radical: str
-
-
 class FileSystem(Storage):
     """
     Persistent storage over disk.
@@ -27,27 +21,21 @@ class FileSystem(Storage):
     def __init__(self, *, directory: Path | None = None):
         self.cache = Cache(directory)
 
-    def __iter__(self) -> Generator[URI, None, None]:
-        yield from {key.prefix for key in self.cache.iterkeys()}
+    def __contains__(self, key: URI) -> bool:
+        return (key in self.cache)
 
-    def contains(self, uri: URI, key: str) -> bool:
-        return Key(uri, key) in self.cache
+    def getitem(self, key: URI) -> Item:
+        return self.cache[key]
 
-    def getitem(self, uri: URI, key: str, default: Item = None) -> Item:
-        return self.cache[Key(uri, key)]
+    def setitem(self, key: URI, item: Item):
+        self.cache[key] = item
 
-    def setitem(self, uri: URI, key: str, item: Item):
-        self.cache[Key(uri, key)] = item
+    def delitem(self, key: URI):
+        del self.cache[key]
 
-    def delitem(self, uri: URI, key: str):
-        del self.cache[Key(uri, key)]
+    def keys(self) -> Generator[URI, None, None]:
+        yield from self.cache.iterkeys()
 
-    def keys(self, uri: URI) -> Generator[str, None, None]:
+    def items(self) -> Generator[tuple[URI, Item], None, None]:
         for key in self.cache.iterkeys():
-            if uri == key.prefix:
-                yield key.radical
-
-    def items(self, uri: URI) -> Generator[tuple[str, Item], None, None]:
-        for key in self.cache.iterkeys():
-            if uri == key.prefix:
-                yield (key.radical, self.cache[key])
+            yield (key, self.cache[key])

@@ -55,25 +55,28 @@ class URI:
     def segments(self):
         return self.__segments
 
+    @property
+    def parent(self) -> URI:
+        return URI(*self.__segments[:-1]) if len(self.__segments) > 1 else self
+
+    @property
+    def stem(self) -> str:
+        return self.__segments[-1]
+
+    def __truediv__(self, segment: URI | PosixPath | str):
+        return URI(*self.__segments, segment)
+
     def __str__(self) -> str:
-        try:
-            return self.__str
-        except AttributeError:
-            self.__str = f"/{'/'.join(self.segments)}"
-            return self.__str
+        return f"/{'/'.join(self.__segments)}"
 
     def __repr__(self) -> str:
-        try:
-            return self.__repr
-        except AttributeError:
-            self.__repr = f"URI({','.join(self.segments)})"
-            return self.__repr
+        return f"URI({','.join(self.__segments)})"
 
     def __hash__(self) -> int:
-        return hash(str(self))
+        return hash(self.__segments)
 
     def __len__(self) -> int:
-        return len(self.segments)
+        return len(self.__segments)
 
-    def __eq__(self, other) -> bool:
-        return isinstance(other, URI) and (self.segments == other.segments)
+    def __eq__(self, other: Any) -> bool:
+        return isinstance(other, URI) and (self.__segments == other.segments)
