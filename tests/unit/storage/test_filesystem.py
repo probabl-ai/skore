@@ -1,7 +1,6 @@
 import pytest
-
 from mandr.item import DisplayType, Item, ItemMetadata
-from mandr.storage import FileSystem, URI
+from mandr.storage import URI, FileSystem
 
 
 class TestFileSystem:
@@ -23,6 +22,9 @@ class TestFileSystem:
         assert URI("root/key") in storage
         assert URI("root/key1") not in storage
         assert URI("root1/key") not in storage
+
+    def test_iter(self, storage):
+        assert list(storage) == [URI("root/key")]
 
     def test_getitem(self, storage, mock_nowstr):
         assert storage.getitem(URI("root/key")) == Item(

@@ -1,3 +1,5 @@
+"""Item class used to store data."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -12,6 +14,8 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True, frozen=True)
 class ItemMetadata:
+    """ItemMetadata class used to store metadata."""
+
     display_type: DisplayType
     created_at: datetime
     updated_at: datetime
@@ -19,5 +23,7 @@ class ItemMetadata:
 
 @dataclass(kw_only=True, frozen=True)
 class Item:
+    """Item class used to store data and metadata."""
+
     data: Any
     metadata: ItemMetadata

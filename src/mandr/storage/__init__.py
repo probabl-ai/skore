@@ -1,3 +1,5 @@
+"""Interface and implementations of storage."""
+
 from mandr.storage.filesystem import FileSystem
 from mandr.storage.non_persistent_storage import NonPersistentStorage
 from mandr.storage.storage import Storage

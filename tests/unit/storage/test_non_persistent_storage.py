@@ -1,7 +1,6 @@
 import pytest
-
 from mandr.item import DisplayType, Item, ItemMetadata
-from mandr.storage import NonPersistentStorage, URI
+from mandr.storage import URI, NonPersistentStorage
 
 
 class TestNonPersistentStorage:
@@ -24,6 +23,9 @@ class TestNonPersistentStorage:
         assert URI("root/key") in storage
         assert URI("root/key1") not in storage
         assert URI("root1/key") not in storage
+
+    def test_iter(self, storage):
+        assert list(storage) == [URI("root/key")]
 
     def test_getitem(self, storage, mock_nowstr):
         assert storage.getitem(URI("root/key")) == Item(

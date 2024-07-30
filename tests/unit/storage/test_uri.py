@@ -33,6 +33,9 @@ class TestURI:
         assert URI("/r/o/o/t").parent == parent
         assert URI("r/o/o/t").parent == parent
 
+        with pytest.raises(ValueError):
+            parent = URI("/r").parent
+
     def test_stem(self):
         assert URI("/", "r", "/", "o", "/", "o", "/", "t").stem == "t"
         assert URI("/r/o", "/o/t").stem == "t"

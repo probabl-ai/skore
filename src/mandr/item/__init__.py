@@ -1,3 +1,5 @@
+"""Classes used to store data and metadata."""
+
 from mandr.item.display_type import DisplayType
 from mandr.item.item import Item, ItemMetadata
 
