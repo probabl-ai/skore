@@ -11,12 +11,13 @@ import VegaWidget from "@/components/VegaWidget.vue";
 import datatable from "@/assets/fixtures/datatable.json";
 import markdownString from "@/assets/fixtures/markdown.md?raw";
 import spec from "@/assets/fixtures/vega.json";
+import CrossValidationResultsWidget from "@/components/CrossValidationResultsWidget.vue";
 </script>
 
 <template>
   <main>
     <h1>Components library</h1>
-    <Tabs :tab-names="['markdown', 'vega', 'DataFrame', 'Image']">
+    <Tabs :tab-names="['markdown', 'vega', 'DataFrame', 'Image', 'CV Results']">
       <TabsItem :value="0">
         <MarkdownWidget :source="markdownString" />
       </TabsItem>
@@ -64,6 +65,15 @@ import spec from "@/assets/fixtures/vega.json";
             />
           </div>
         </div>
+      </TabsItem>
+      <TabsItem :value="4">
+        <CrossValidationResultsWidget
+          :roc_curve_spec="spec as VisualizationSpec"
+          :cv_results_table="{
+            columns: ['id', 'first_name', 'last_name', 'email', 'gender', 'ip_address'],
+            data: datatable,
+          }"
+        />
       </TabsItem>
     </Tabs>
   </main>
