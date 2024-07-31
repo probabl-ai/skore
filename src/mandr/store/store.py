@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
@@ -30,12 +31,6 @@ class Store:
             and (self.storage == other.storage)
         )
 
-    def __iter__(self) -> Generator[tuple[str, Any], None, None]:
-        """Yield the pairs (key, value)."""
-        for key, item in self.storage.items():
-            if key.parent == self.uri:
-                yield (key.stem, item.data)
-
     def insert(self, key: str, value: Any, *, display_type: DisplayType | None = None):
         """Insert the value for the specified key.
 
@@ -55,9 +50,9 @@ class Store:
         KeyError
             If the store already has the specified key.
         """
-        key = self.uri / key
+        uri = self.uri / key
 
-        if key in self.storage:
+        if uri in self.storage:
             raise KeyError(key)
 
         now = datetime.now(tz=UTC).isoformat()
@@ -70,9 +65,9 @@ class Store:
             ),
         )
 
-        self.storage.setitem(key, item)
+        self.storage.setitem(uri, item)
 
-    def read(self, key: str) -> Any:
+    def read(self, key: str, *, metadata: bool = False) -> Any | tuple[Any, dict]:
         """Return the value for the specified key.
 
         Raises
@@ -80,12 +75,16 @@ class Store:
         KeyError
             If the store doesn't have the specified key.
         """
-        key = self.uri / key
+        try:
+            item = self.storage.getitem(self.uri / key)
+        except KeyError as e:
+            raise KeyError(key) from e
 
-        if key not in self.storage:
-            raise KeyError(key)
-
-        return self.storage.getitem(key).data
+        return (
+            item.data
+            if not metadata
+            else (item.data, dataclasses.asdict(item.metadata))
+        )
 
     def update(self, key: str, value: Any, *, display_type: DisplayType | None = None):
         """Update the value for the specified key.
@@ -102,12 +101,12 @@ class Store:
         KeyError
             If the store doesn't have the specified key.
         """
-        key = self.uri / key
+        uri = self.uri / key
 
-        if key not in self.storage:
+        if uri not in self.storage:
             raise KeyError(key)
 
-        created_at = self.storage.getitem(key).metadata.created_at
+        created_at = self.storage.getitem(uri).metadata.created_at
         now = datetime.now(tz=UTC).isoformat()
         item = Item(
             data=value,
@@ -118,8 +117,8 @@ class Store:
             ),
         )
 
-        self.storage.delitem(key)
-        self.storage.setitem(key, item)
+        self.storage.delitem(uri)
+        self.storage.setitem(uri, item)
 
     def delete(self, key: str):
         """Delete the specified key and its value.
@@ -129,9 +128,27 @@ class Store:
         KeyError
             If the store doesn't have the specified key.
         """
-        key = self.uri / key
+        try:
+            self.storage.delitem(self.uri / key)
+        except KeyError as e:
+            raise KeyError(key) from e
 
-        if key not in self.storage:
-            raise KeyError(key)
+    def __iter__(self) -> Generator[str, None, None]:
+        """Yield the keys."""
+        yield from (key.stem for key in self.storage)
 
-        return self.storage.delitem(key)
+    def keys(self) -> Generator[str, None, None]:
+        """Yield the keys."""
+        yield from self
+
+    def items(
+        self, *, metadata: bool = False
+    ) -> Generator[tuple[str, Any] | tuple[str, Any, dict], None, None]:
+        """Yield the pairs(key, value)."""
+        for key, item in self.storage.items():
+            if key.parent == self.uri:
+                yield (
+                    (key.stem, item.data)
+                    if not metadata
+                    else (key.stem, item.data, dataclasses.asdict(item.metadata))
+                )

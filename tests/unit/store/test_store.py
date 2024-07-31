@@ -34,9 +34,6 @@ class TestStore:
     def test_eq(self, store):
         assert store == store
 
-    def test_iter(self, store):
-        assert list(store) == [("key", "value")]
-
     def test_insert(self, monkeypatch, mock_nowstr, storage, store):
         store.insert("key2", 2, display_type=DisplayType.INTEGER)
 
@@ -92,3 +89,23 @@ class TestStore:
 
         with pytest.raises(KeyError):
             store.delete("key2")
+
+    def test_iter(self, store):
+        assert list(store) == ["key"]
+
+    def test_keys(self, store):
+        assert list(store.keys()) == ["key"]
+
+    def test_items(self, store, mock_nowstr):
+        assert list(store.items()) == [("key", "value")]
+        assert list(store.items(metadata=True)) == [
+            (
+                "key",
+                "value",
+                {
+                    "display_type": DisplayType.STRING,
+                    "created_at": mock_nowstr,
+                    "updated_at": mock_nowstr,
+                },
+            )
+        ]
