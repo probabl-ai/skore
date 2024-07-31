@@ -68,7 +68,7 @@ class Store:
         self.storage.setitem(uri, item)
 
     def read(self, key: str, *, metadata: bool = False) -> Any | tuple[Any, dict]:
-        """Return the value for the specified key.
+        """Return the value for the specified key, optionally with its metadata.
 
         Raises
         ------
@@ -144,7 +144,7 @@ class Store:
     def items(
         self, *, metadata: bool = False
     ) -> Generator[tuple[str, Any] | tuple[str, Any, dict], None, None]:
-        """Yield the pairs(key, value)."""
+        """Yield the pairs(key, value), optionally with the value metadata."""
         for key, item in self.storage.items():
             if key.parent == self.uri:
                 yield (
