@@ -89,3 +89,11 @@ class TestURI:
             == URI("/r/o/o/t")
             == URI("r/o/o/t")
         )
+
+    def test_contains(self):
+        assert URI("/r") in URI("/r/o/o/t")
+        assert URI("/r/o") in URI("/r/o/o/t")
+        assert URI("/r/o/o") in URI("/r/o/o/t")
+        assert URI("/r/o/o/t") in URI("/r/o/o/t")
+        assert URI("/r/o/o/t/s") not in URI("/r/o/o/t")
+        assert URI("/r") not in URI("/root")
