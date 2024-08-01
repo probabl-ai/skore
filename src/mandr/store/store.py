@@ -63,6 +63,31 @@ class Store:
             display_type = DisplayType.infer(value)
 
         match display_type:
+            case DisplayType.CROSS_VALIDATION_RESULTS:
+                import altair as alt
+                import pandas as pd
+
+                cv_results_table = pd.DataFrame(value)
+                test_score_plot = (
+                    alt.Chart(pd.DataFrame(cv_results_table)[["test_score"]])
+                    .mark_bar(size=50)
+                    .encode(
+                        x=alt.X("test_score:Q").title("Test score").scale(zero=True),
+                        y=(
+                            alt.Y("count():Q", axis=alt.Axis(tickMinStep=1)).title(
+                                "Frequency"
+                            )
+                        ),
+                    )
+                    .properties(title="Frequency plot of test score")
+                )
+
+                additional_item_metadata = dict(
+                    computed=dict(
+                        cv_results_table=cv_results_table,
+                        test_score_plot=test_score_plot,
+                    )
+                )
             case _:
                 additional_item_metadata = dict()
 
