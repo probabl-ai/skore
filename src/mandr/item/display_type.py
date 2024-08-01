@@ -23,7 +23,7 @@ class DisplayType(StrEnum):
     ANY = auto()
     ARRAY = auto()
     BOOLEAN = auto()
-    CROSS_VALIDATION_RESULTS = auto()
+    CROSS_VALIDATION_RESULTS = "cv_results"
     DATAFRAME = auto()
     DATE = auto()
     DATETIME = auto()
