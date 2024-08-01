@@ -12,7 +12,6 @@ from enum import StrEnum, auto
 from typing import Any
 
 import altair
-import matplotlib.figure
 import numpy
 import pandas
 import polars
@@ -29,10 +28,8 @@ class DisplayType(StrEnum):
     DATETIME = auto()
     FILE = auto()
     HTML = auto()
-    IMAGE = auto()
     INTEGER = auto()
     MARKDOWN = auto()
-    MATPLOTLIB = auto()
     NUMBER = auto()
     NUMPY_ARRAY = auto()
     STRING = auto()
@@ -72,7 +69,6 @@ class DisplayType(StrEnum):
             datetime.datetime: DisplayType.DATETIME,
             int: DisplayType.INTEGER,
             str: DisplayType.MARKDOWN,
-            matplotlib.figure.Figure: DisplayType.MATPLOTLIB,
             float: DisplayType.NUMBER,
             numpy.ndarray: DisplayType.NUMPY_ARRAY,
             altair.vegalite.v5.api.Chart: DisplayType.VEGA,
