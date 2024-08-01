@@ -21,6 +21,7 @@ dependencies = [
   "srsly",
   "fastapi",
   "matplotlib",
+  "pydantic",
 ]
 
 [project.optional-dependencies]
