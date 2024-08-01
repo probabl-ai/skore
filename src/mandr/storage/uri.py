@@ -110,3 +110,7 @@ class URI:
     def __eq__(self, other: Any) -> bool:
         """Return self == other."""
         return isinstance(other, URI) and (self.__segments == other.segments)
+
+    def __contains__(self, other: URI) -> bool:
+        """Return True if self is relative to other, else False."""
+        return self.__segments[: len(other.segments)] == other.segments

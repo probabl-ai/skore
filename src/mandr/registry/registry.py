@@ -2,31 +2,24 @@
 
 from __future__ import annotations
 
-import operator
-from typing import TYPE_CHECKING, Generator
+from typing import TYPE_CHECKING
 
 from mandr.store import Store
 
 if TYPE_CHECKING:
+    from typing import Generator
+
     from mandr.storage import Storage
 
 
-def children(store: Store, /, recursive: bool = False) -> Generator[Store, None, None]:
-    """Yield `store` children."""
-    compare = operator.ge if recursive else operator.eq
+def children(store: Store) -> Generator[Store, None, None]:
+    """Yield recursively `store` children."""
+    stores = {store.uri}
 
     for uri in store.storage:
-        # Remove from `uri` the `keyname`.
-        uri = uri.parent
-
-        # Check if `uri` is relative to `store.uri`.
-        if uri.segments[: len(store.uri.segments)] == store.uri.segments:
-            # Remove from `uri` the relative part to the `store.uri`
-            relative_segments = uri.segments[len(store.uri.segments) :]
-
-            # If there is remaining segments, its a child.
-            if compare(len(relative_segments), 1):
-                yield Store(uri, store.storage)
+        if ((uri := uri.parent) not in stores) and (store.uri in uri):
+            stores.add(uri)
+            yield Store(uri, store.storage)
 
 
 def parent(store: Store, /) -> Store:
@@ -36,5 +29,9 @@ def parent(store: Store, /) -> Store:
 
 def stores(storage: Storage, /) -> Generator[Store, None, None]:
     """Yield stores saved in `storage`."""
+    stores = set()
+
     for uri in storage:
-        yield Store(uri.parent, storage)
+        if (uri := uri.parent) not in stores:
+            stores.add(uri)
+            yield Store(uri, storage)

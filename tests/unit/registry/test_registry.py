@@ -10,9 +10,13 @@ class TestRegistry:
         return NonPersistentStorage(
             content={
                 URI("/r/key"): True,
+                URI("/r/key2"): True,
                 URI("/r/o/key"): True,
+                URI("/r/o/key2"): True,
                 URI("/r/o/o/key"): True,
+                URI("/r/o/o/key2"): True,
                 URI("/r/o/o/t/key"): True,
+                URI("/r/o/o/t/key2"): True,
             }
         )
 
@@ -21,13 +25,9 @@ class TestRegistry:
         roo = Store(URI("/r/o/o"), storage)
         root = Store(URI("/r/o/o/t"), storage)
 
-        assert list(registry.children(ro, recursive=False)) == [roo]
-        assert list(registry.children(roo, recursive=False)) == [root]
-        assert list(registry.children(root, recursive=False)) == []
-
-        assert list(registry.children(ro, recursive=True)) == [roo, root]
-        assert list(registry.children(roo, recursive=True)) == [root]
-        assert list(registry.children(root, recursive=True)) == []
+        assert list(registry.children(ro)) == [roo, root]
+        assert list(registry.children(roo)) == [root]
+        assert list(registry.children(root)) == []
 
     def test_parent(self, storage):
         r = Store(URI("/r"), storage)
