@@ -16,10 +16,18 @@ const label = computed(() => {
 });
 
 function onClick() {
+  var segments = props.uri.split("/");
+
+  // Take out leading slash to get a valid URL
+  const [head, ...tail] = segments;
+  if (head === "") {
+    segments = tail;
+  }
+
   router.push({
     name: "dashboard",
     params: {
-      segments: props.uri.split("/"),
+      segments: segments,
     },
   });
 }
