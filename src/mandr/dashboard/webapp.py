@@ -3,12 +3,15 @@
 import os
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from mandr import InfoMander
+from mandr import registry
+from mandr.exporter import exporter
+from mandr.storage import FileSystem
+from mandr.store import Store
 
 _DASHBOARD_PATH = Path(__file__).resolve().parent
 _STATIC_PATH = _DASHBOARD_PATH / "static"
@@ -26,51 +29,25 @@ app.add_middleware(
 @app.get("/api/mandrs")
 async def list_mandrs(request: Request) -> list[str]:
     """Send the list of mandrs path below the current working directory."""
-    root = Path(os.environ.get("MANDR_ROOT", ".datamander")).resolve()
-    directories = list(root.iterdir())
-
-    if len(directories) != 1 or (not directories[0].is_dir()):
-        raise ValueError(f"'{root}' is not a valid mandr root")
-
-    path = directories[0].stem
-    ims = [InfoMander(path, root=root)]
-    paths = []
-
-    # Use `ims` as a queue to recursively iterate over children to retrieve path.
-    for im in ims:
-        ims[len(ims) :] = im.children()
-        absolute_path = im.project_path
-        relative_path = absolute_path.relative_to(root)
-
-        paths.append(str(relative_path))
-
-    return sorted(paths)
+    directory = Path(os.environ["MANDR_ROOT"]).resolve()
+    storage = FileSystem(directory=directory)
+    return sorted(str(store.uri) for store in registry.stores(storage))
 
 
 @app.get("/api/mandrs/{path:path}")
 async def get_mandr(request: Request, path: str):
     """Return one mandr."""
-    root = Path(os.environ["MANDR_ROOT"]).resolve()
+    directory = Path(os.environ["MANDR_ROOT"]).resolve()
+    storage = FileSystem(directory=directory)
+    store = Store(path, storage=storage)
 
-    if path == "":
-        raise HTTPException(status_code=404, detail="Empty mandr path is not supported")
+    dto = exporter.StoreDto.from_store(store)
+    dump = dto.model_dump(by_alias=True)
 
-    if not (root / path).exists():
-        raise HTTPException(status_code=404, detail=f"No mandr found in '{path}'")
+    # Exception
+    # FastAPI & pydantic ?
 
-    im = InfoMander(path, root=root)
-
-    return {
-        "path": path,
-        "views": im[InfoMander.VIEWS_KEY].items(),
-        "logs": im[InfoMander.LOGS_KEY].items(),
-        "artifacts": im[InfoMander.ARTIFACTS_KEY].items(),
-        "info": {
-            key: str(value)
-            for key, value in im.fetch().items()
-            if key not in InfoMander.RESERVED_KEYS
-        },
-    }
+    return dump
 
 
 @app.get("/api/fake-mandrs/{path:path}", response_class=FileResponse)
