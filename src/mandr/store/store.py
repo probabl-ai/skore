@@ -58,16 +58,23 @@ class Store:
             raise KeyError(key)
 
         now = datetime.now(tz=UTC).isoformat()
-        display_type = (
-            DisplayType(display_type) if display_type else DisplayType.infer(value)
+
+        if display_type is None:
+            display_type = DisplayType.infer(value)
+
+        match display_type:
+            case _:
+                additional_item_metadata = dict()
+
+        item_metadata = dict(
+            display_type=display_type,
+            created_at=now,
+            updated_at=now,
         )
+
         item = Item(
             data=value,
-            metadata=ItemMetadata(
-                display_type=display_type,
-                created_at=now,
-                updated_at=now,
-            ),
+            metadata=ItemMetadata(**(item_metadata | additional_item_metadata)),
         )
 
         self.storage.setitem(uri, item)
