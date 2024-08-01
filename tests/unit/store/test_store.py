@@ -159,6 +159,7 @@ class TestStore:
                     "display_type": DisplayType.STRING,
                     "created_at": mock_nowstr,
                     "updated_at": mock_nowstr,
+                    "computed": None,
                 },
             )
         ]

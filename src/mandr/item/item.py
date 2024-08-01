@@ -20,6 +20,8 @@ class ItemMetadata:
     created_at: datetime
     updated_at: datetime
 
+    computed: dict | None = None
+
 
 @dataclass(kw_only=True, frozen=True)
 class Item:
