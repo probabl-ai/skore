@@ -52,9 +52,9 @@ from pydantic_core import PydanticSerializationError, ValidationError
             {"display_type": DisplayType.DATAFRAME},
             {
                 "data": {
-                    "column_string": ["a", "b", "c"],
-                    "column_int": [1, 2, 3],
-                    "column_float": [1.1, 2.2, 3.3],
+                    "columns": ["column_string", "column_int", "column_float"],
+                    "data": [["a", 1, 1.1], ["b", 2, 2.2], ["c", 3, 3.3]],
+                    "index": [0, 1, 2],
                 },
                 "type": "dataframe",
             },
@@ -135,7 +135,10 @@ from pydantic_core import PydanticSerializationError, ValidationError
             },
             {
                 "data": {
-                    "cv_results_table": {"data": {}, "type": "dataframe"},
+                    "cv_results_table": {
+                        "data": {"columns": [], "data": [], "index": []},
+                        "type": "dataframe",
+                    },
                     "test_score_plot": {
                         "data": altair.Chart().mark_bar().to_dict(),
                         "type": "vega",

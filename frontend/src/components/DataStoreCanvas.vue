@@ -73,8 +73,8 @@ function onCardRemoved(key: string) {
       <HtmlSnippetWidget v-if="value.type === 'html'" :src="value.data" />
       <CrossValidationResultsWidget
         v-if="value.type === 'cv_results'"
-        :roc_curve_spec="value.data.roc_curve_spec"
-        :cv_results_table="value.data.cv_results_table"
+        :test_score_plot="value.data.test_score_plot.data"
+        :cv_results_table="value.data.cv_results_table.data"
       />
     </DataStoreCard>
   </div>

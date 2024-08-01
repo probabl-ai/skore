@@ -54,7 +54,7 @@ class DataFrame(BaseModel):
 
     @field_serializer("data")
     def serialize_data(self, data: pandas.DataFrame) -> dict:
-        return data.to_dict(orient="list")
+        return data.to_dict(orient="split")
 
 
 class Date(BaseModel):

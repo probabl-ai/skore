@@ -68,7 +68,7 @@ import CrossValidationResultsWidget from "@/components/CrossValidationResultsWid
       </TabsItem>
       <TabsItem :value="4">
         <CrossValidationResultsWidget
-          :roc_curve_spec="spec as VisualizationSpec"
+          :test_score_plot="spec as VisualizationSpec"
           :cv_results_table="{
             columns: ['id', 'first_name', 'last_name', 'email', 'gender', 'ip_address'],
             data: datatable,
