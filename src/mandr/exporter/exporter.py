@@ -35,6 +35,17 @@ class Boolean(BaseModel):
     data: bool
 
 
+class CrossValidationResults(BaseModel):
+    class Data(BaseModel):
+        cv_results_table: DataFrame
+        test_score_plot: Vega
+
+    type: Literal[DisplayType.CROSS_VALIDATION_RESULTS] = (
+        DisplayType.CROSS_VALIDATION_RESULTS
+    )
+    data: Data
+
+
 class DataFrame(BaseModel):
     type: Literal[DisplayType.DATAFRAME] = DisplayType.DATAFRAME
     data: pandas.DataFrame
@@ -102,6 +113,7 @@ ItemDto = Annotated[
         Any,
         Array,
         Boolean,
+        CrossValidationResults,
         DataFrame,
         Date,
         Datetime,
@@ -122,10 +134,15 @@ def create_item_dto(value: Any, metadata: dict) -> ItemDto:
     """Construct an ItemDto."""
     # TypeAdapter is the Pydantic v2 way to build objects made from Unions.
     # See <https://blog.det.life/pydantic-for-experts-discriminated-unions-in-pydantic-v2-2d9ca965b22f>
-    ta = TypeAdapter(ItemDto)
-    # obj = {"type": str(type or DisplayType.infer(value)), "data": value}
-    # return ta.validate_python(obj)
-    return ta.validate_python({"type": metadata["display_type"], "data": value})
+    match metadata["display_type"]:
+        case DisplayType.CROSS_VALIDATION_RESULTS:
+            item_data = metadata["computed"]
+        case _:
+            item_data = value
+
+    return TypeAdapter(ItemDto).validate_python(
+        {"type": metadata["display_type"], "data": item_data}
+    )
 
 
 class StoreDto(BaseModel):
