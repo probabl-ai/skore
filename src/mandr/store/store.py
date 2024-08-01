@@ -64,6 +64,11 @@ class Store:
 
         match display_type:
             case DisplayType.CROSS_VALIDATION_RESULTS:
+                if not isinstance(value, dict) or value.get("test_score") is None:
+                    raise ValueError(
+                        "The input should be of the form output by "
+                        "`sklearn.model_selection.cross_validate`"
+                    )
                 import altair as alt
                 import pandas as pd
 
