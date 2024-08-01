@@ -20,6 +20,15 @@ from mandr.item import DisplayType
         (pathlib.PosixPath("./my_file.txt"), DisplayType.FILE),
         ({"a": 1}, DisplayType.ANY),
         (set([1, 2]), DisplayType.ANY),
+        (
+            {"fit_time": [1], "score_time": [1], "test_score": 1},
+            DisplayType.CROSS_VALIDATION_RESULTS,
+        ),
+        (
+            # Could be DisplayType.CROSS_VALIDATION_RESULTS but missing key "fit_time"
+            {"score_time": [1], "test_score": 1},
+            DisplayType.ANY,
+        ),
     ],
 )
 def test_infer(x, expected):

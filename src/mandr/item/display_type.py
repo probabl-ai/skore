@@ -23,6 +23,7 @@ class DisplayType(StrEnum):
     ANY = auto()
     ARRAY = auto()
     BOOLEAN = auto()
+    CROSS_VALIDATION_RESULTS = auto()
     DATAFRAME = auto()
     DATE = auto()
     DATETIME = auto()
@@ -74,9 +75,12 @@ class DisplayType(StrEnum):
             altair.vegalite.v5.api.Chart: DisplayType.VEGA,
         }
 
-        # `Paths` are `PosixPath` or `WindowsPath` when instantiated
+        # `Paths` can be `PosixPath` or `WindowsPath` when instantiated
         if isinstance(x, pathlib.Path):
             return DisplayType.FILE
+
+        if isinstance(x, dict) and {"fit_time", "score_time", "test_score"} <= set(x):
+            return DisplayType.CROSS_VALIDATION_RESULTS
 
         # Exact match
         return TYPE_TO_DISPLAY_TYPE.get(type(x), DisplayType.ANY)
