@@ -19,8 +19,8 @@ build-frontend:
 	# build the SPA
 	cd frontend && npm install
 	cd frontend && npm run build
-	# empty app static folder except gitignore
-	find src/mandr/dashboard/static -mindepth 1 -maxdepth 1 ! -name ".gitignore" -exec rm -r -- {} +
+	# empty app static folder
+	rm -rf src/mandr/dashboard/static
 	cp -a frontend/dist/. src/mandr/dashboard/static
 	rm -rf frontend/dist
 
