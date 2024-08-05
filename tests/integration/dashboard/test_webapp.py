@@ -45,7 +45,8 @@ def test_get_mandr(monkeypatch, client: TestClient, tmp_path):
     Store("root/subroot1", storage=storage).insert("key", "value")
     Store("root/subroot2", storage=storage).insert("key", "value")
     Store("root/subroot2/subsubroot1", storage=storage).insert("key", "value")
-    Store("root/subroot2/subsubroot2", storage=storage).insert("key", "value")
+    Store("root/subroot2/subsubroot2", storage=storage).insert("key1", "value1")
+    Store("root/subroot2/subsubroot2", storage=storage).insert("key2", "value2")
 
     response = client.get("/api/mandrs/root/subroot2/subsubroot2")
 
@@ -53,8 +54,11 @@ def test_get_mandr(monkeypatch, client: TestClient, tmp_path):
     assert response.json() == {
         "schema": "schema:dashboard:v0",
         "uri": "/root/subroot2/subsubroot2",
-        "payload": {"key": {"type": "markdown", "data": "value"}},
+        "payload": {
+            "key1": {"type": "markdown", "data": "value1"},
+            "key2": {"type": "markdown", "data": "value2"},
+        },
     }
 
-    # response = client.get("/api/mandrs/root/subroot2/subroot3")
-    # assert response.status_code == 404
+    response = client.get("/api/mandrs/root/subroot2/subsubroot3")
+    assert response.status_code == 404
