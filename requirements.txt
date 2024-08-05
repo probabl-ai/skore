@@ -112,7 +112,9 @@ pillow==10.4.0
 polars==1.2.1
     # via mandr (pyproject.toml)
 pydantic==2.8.2
-    # via fastapi
+    # via
+    #   fastapi
+    #   mandr (pyproject.toml)
 pydantic-core==2.20.1
     # via pydantic
 pygments==2.18.0
