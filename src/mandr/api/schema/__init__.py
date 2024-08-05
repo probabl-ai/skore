@@ -1,3 +1,5 @@
+"""Schema to define endpoint requirements in the API."""
+
 import typing
 
 import pydantic
@@ -36,6 +38,14 @@ __all__ = [
 
 
 class Store(pydantic.BaseModel):
+    """Highest schema to transfer key-value pairs from store to dashboard.
+
+    Examples
+    --------
+    >>> Store(uri="/root", payload={"key": {"type": "integer", "data": 0}})
+    Store(...)
+    """
+
     __NAME__ = "schema:dashboard:v0"
 
     model_config = pydantic.ConfigDict(strict=True)
