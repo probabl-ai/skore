@@ -4,6 +4,10 @@ import logging
 
 import rich.logging
 
+from .infomander import InfoMander
+
+__all__ = ["InfoMander"]
+
 
 class Handler(rich.logging.RichHandler):
     """A logging handler that renders output with Rich."""
