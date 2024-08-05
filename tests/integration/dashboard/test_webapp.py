@@ -26,7 +26,6 @@ def test_list_mandrs(client: TestClient, tmp_path):
     response = client.get("/api/mandrs")
 
     assert response.status_code == 200
-    # NOTE: URIs always have a leading '/' in the string representation
     assert response.json() == [
         "/root",
         "/root/subroot1",

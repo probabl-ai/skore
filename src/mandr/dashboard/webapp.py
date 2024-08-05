@@ -11,7 +11,6 @@ from fastapi.staticfiles import StaticFiles
 from mandr import registry
 from mandr.api import schema
 from mandr.storage import URI, FileSystem
-from mandr.store import Store
 
 _DASHBOARD_PATH = Path(__file__).resolve().parent
 _STATIC_PATH = _DASHBOARD_PATH / "static"
@@ -44,22 +43,22 @@ async def get_mandr(request: Request, uri: str):
     storage = FileSystem(directory=directory)
     uri = URI(uri)
 
-    if uri not in (key.parent for key in storage):
-        raise HTTPException(status_code=404, detail=f"No store found in '{uri}'")
+    for store in registry.stores(storage):
+        if uri == store.uri:
+            model = schema.Store(
+                uri=str(uri),
+                payload={
+                    key: {
+                        "type": str(metadata["display_type"]),
+                        "data": value,
+                    }
+                    for key, value, metadata in store.items(metadata=True)
+                },
+            )
 
-    store = Store(uri, storage=storage)
-    model = schema.Store(
-        uri=str(uri),
-        payload={
-            key: {
-                "type": str(metadata["display_type"]),
-                "data": value,
-            }
-            for key, value, metadata in store.items(metadata=True)
-        },
-    )
+            return model.model_dump(by_alias=True)
 
-    return model.model_dump(by_alias=True)
+    raise HTTPException(status_code=404, detail=f"No store found in '{uri}'")
 
 
 @app.get("/api/fake-mandrs/{path:path}", response_class=FileResponse)
