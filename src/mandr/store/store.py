@@ -135,7 +135,7 @@ class Store:
 
     def __iter__(self) -> Generator[str, None, None]:
         """Yield the keys."""
-        yield from (key.stem for key in self.storage)
+        yield from (key.stem for key in self.storage if key.parent == self.uri)
 
     def keys(self) -> Generator[str, None, None]:
         """Yield the keys."""
