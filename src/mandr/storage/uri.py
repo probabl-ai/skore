@@ -23,10 +23,7 @@ class URI:
         ----------
         *segments : URI | PosixPath | str
             URI, PosixPath or PosixPath-like str.
-
-        Notes
-        -----
-        The slashes ("/") can optionally be used to delimit segments in a string.
+            The slashes ("/") can optionally be used to delimit segments in a string.
 
         Examples
         --------
@@ -92,7 +89,23 @@ class URI:
         return URI(*self.__segments, segment)
 
     def __str__(self) -> str:
-        """Return str(self)."""
+        """Return str(self).
+
+        The URI's string representation is equivalent to the string representation of
+        an _absolute_ PosixPath directory. It means that there's a leading "/", and all
+        subsequent segments are delimited by "/".
+
+        Examples
+        --------
+        >>> str(URI("/r/o/o/t"))
+        '/r/o/o/t'
+
+        >>> str(URI("r", "o", "o", "t"))
+        '/r/o/o/t'
+
+        >>> str(URI("r/o/o/t"))
+        '/r/o/o/t'
+        """
         return f"/{'/'.join(self.__segments)}"
 
     def __repr__(self) -> str:
