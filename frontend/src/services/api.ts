@@ -26,7 +26,7 @@ export async function fetchAllManderUris(): Promise<string[]> {
 
 export async function fetchMander(uri: string): Promise<DataStore | null> {
   try {
-    const r = await fetch(`${BASE_URL}/fake-mandrs/${uri}`);
+    const r = await fetch(`${BASE_URL}/mandrs/${uri}`);
     if (r.status == 200) {
       const m = await r.json();
       return new DataStore(m.uri, m.payload);
