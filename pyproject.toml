@@ -89,3 +89,20 @@ convention = "numpy"
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["D"]
 "examples/*" = ["D"]
+
+[tool.typos.default]
+extend-ignore-re = [
+  # Line ignore with trailing `# spellchecker:disable-line`
+  "(?Rm)^.*(#|//)\\s*spellchecker:disable-line$",
+  # Line block with `# spellchecker:<on|off>`
+  "(?s)(#|//)\\s*spellchecker:off.*?\\n\\s*(#|//)\\s*spellchecker:on",
+]
+
+[tool.typos.files]
+extend-exclude = [
+  "*.min.js",
+]
+
+[tool.typos.default.extend-words]
+# acronym for "False Positive Rate"
+fpr = "fpr"
