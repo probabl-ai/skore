@@ -43,7 +43,9 @@ class TestStore:
         assert store == store
 
     def test_insert(self, monkeypatch, mock_nowstr, storage, store):
-        store.insert("key2", 2, display_type=DisplayType.INTEGER)
+        store.insert("key2", 2)
+        store.insert("key3", 3, display_type="integer")
+        store.insert("key4", 4, display_type=DisplayType.INTEGER)
 
         assert storage.content == {
             URI("root1/key1"): Item(
@@ -56,6 +58,22 @@ class TestStore:
             ),
             URI("root1/key2"): Item(
                 data=2,
+                metadata=ItemMetadata(
+                    display_type=DisplayType.INTEGER,
+                    created_at=mock_nowstr,
+                    updated_at=mock_nowstr,
+                ),
+            ),
+            URI("root1/key3"): Item(
+                data=3,
+                metadata=ItemMetadata(
+                    display_type=DisplayType.INTEGER,
+                    created_at=mock_nowstr,
+                    updated_at=mock_nowstr,
+                ),
+            ),
+            URI("root1/key4"): Item(
+                data=4,
                 metadata=ItemMetadata(
                     display_type=DisplayType.INTEGER,
                     created_at=mock_nowstr,
@@ -82,11 +100,13 @@ class TestStore:
             store.read("key2")
 
     def test_update(self, monkeypatch, mock_nowstr, storage, store):
-        store.update("key1", 2, display_type=DisplayType.INTEGER)
+        store.update("key1", 2)
+        store.update("key1", 3, display_type="integer")
+        store.update("key1", 4, display_type=DisplayType.INTEGER)
 
         assert storage.content == {
             URI("root1/key1"): Item(
-                data=2,
+                data=4,
                 metadata=ItemMetadata(
                     display_type=DisplayType.INTEGER,
                     created_at=mock_nowstr,

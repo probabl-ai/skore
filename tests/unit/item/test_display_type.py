@@ -24,3 +24,10 @@ from mandr.item import DisplayType
 )
 def test_infer(x, expected):
     assert DisplayType.infer(x) == expected
+
+
+def test_enum():
+    assert DisplayType("integer") == DisplayType.INTEGER
+
+    with pytest.raises(ValueError, match="invalid' is not a valid DisplayType"):
+        DisplayType("invalid")
