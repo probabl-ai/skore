@@ -1,12 +1,12 @@
-"""Provide the InfoMander class for managing information in a data science project."""
+"""Provide the Store class for managing information in a data science project."""
 
 import logging
 
 import rich.logging
 
-from .infomander import InfoMander
+from mandr.store import Store
 
-__all__ = ["InfoMander"]
+__all__ = ["Store"]
 
 
 class Handler(rich.logging.RichHandler):
