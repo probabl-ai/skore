@@ -1,3 +1,5 @@
+MANDR_ROOT ?= ".datamander"
+
 pip-compile:
 	pip-compile --output-file=requirements.txt pyproject.toml
 	pip-compile --extra=test --output-file=requirements-test.txt pyproject.toml
@@ -13,7 +15,18 @@ check-wip:
 	python -m pytest tests
 
 serve-api:
-	MANDR_ROOT=.datamander python -m uvicorn mandr.dashboard.webapp:app --reload --reload-dir ./src --host 0.0.0.0 --timeout-graceful-shutdown 0
+	MANDR_ROOT=$(MANDR_ROOT) python -m uvicorn \
+		--factory mandr.api:create_api_app \
+		--reload --reload-dir ./src \
+		--host 0.0.0.0 \
+		--timeout-graceful-shutdown 0
+
+serve-dashboard:
+	MANDR_ROOT=$(MANDR_ROOT) python -m uvicorn \
+		--factory mandr.dashboard:create_dashboard_app \
+		--reload --reload-dir ./src \
+		--host 0.0.0.0 \
+		--timeout-graceful-shutdown 0
 
 build-frontend:
 	# build the SPA
