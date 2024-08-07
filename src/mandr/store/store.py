@@ -121,7 +121,7 @@ class Store:
         item = Item(
             data=value,
             metadata=ItemMetadata(
-                display_type=(DisplayType(display_type) or DisplayType.infer(value)),
+                display_type=display_type,
                 created_at=created_at,
                 updated_at=updated_at,
             ),
