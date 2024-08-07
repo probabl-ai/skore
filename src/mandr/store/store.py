@@ -31,14 +31,16 @@ class Store:
             and (self.storage == other.storage)
         )
 
-    def insert(self, key: str, value: Any, *, display_type: DisplayType | None = None):
+    def insert(
+        self, key: str, value: Any, *, display_type: DisplayType | str | None = None
+    ):
         """Insert the value for the specified key.
 
         Parameters
         ----------
         key : str
         value : Any
-        display_type : DisplayType, optional
+        display_type : DisplayType or str, optional
             The type used to display a representation of the value.
 
         Notes
@@ -56,10 +58,13 @@ class Store:
             raise KeyError(key)
 
         now = datetime.now(tz=UTC).isoformat()
+        display_type = (
+            DisplayType(display_type) if display_type else DisplayType.infer(value)
+        )
         item = Item(
             data=value,
             metadata=ItemMetadata(
-                display_type=(display_type or DisplayType.infer(value)),
+                display_type=display_type,
                 created_at=now,
                 updated_at=now,
             ),
@@ -86,14 +91,16 @@ class Store:
             else (item.data, dataclasses.asdict(item.metadata))
         )
 
-    def update(self, key: str, value: Any, *, display_type: DisplayType | None = None):
+    def update(
+        self, key: str, value: Any, *, display_type: DisplayType | str | None = None
+    ):
         """Update the value for the specified key.
 
         Parameters
         ----------
         key : str
         value : Any
-        display_type : DisplayType, optional
+        display_type : DisplayType or str, optional
             The type used to display a representation of the value.
 
         Raises
@@ -107,13 +114,16 @@ class Store:
             raise KeyError(key)
 
         created_at = self.storage.getitem(uri).metadata.created_at
-        now = datetime.now(tz=UTC).isoformat()
+        updated_at = datetime.now(tz=UTC).isoformat()
+        display_type = (
+            DisplayType(display_type) if display_type else DisplayType.infer(value)
+        )
         item = Item(
             data=value,
             metadata=ItemMetadata(
-                display_type=(display_type or DisplayType.infer(value)),
+                display_type=(DisplayType(display_type) or DisplayType.infer(value)),
                 created_at=created_at,
-                updated_at=now,
+                updated_at=updated_at,
             ),
         )
 
