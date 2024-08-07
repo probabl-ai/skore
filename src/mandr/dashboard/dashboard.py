@@ -13,19 +13,20 @@ class Dashboard:
     .. code-block:: python
 
         import contextlib
-        with contextlib.closing(Dashboard()):
+        dashboard = Dashboard()
+        with contextlib.closing(dashboard.open()):
             ...
 
     .. highlight:: python
     .. code-block:: python
 
         dashboard = Dashboard()
+        dashboard.open()
         ...
         dashboard.close()
     """
 
-    def __init__(self, *, port=8000, open_browser=True):
-        """Initialize the dashboard's activity."""
+    def __init__(self, *, port=8000):
         configuration = uvicorn.Config(
             app="mandr.dashboard.app:create_dashboard_app",
             port=port,
@@ -34,15 +35,21 @@ class Dashboard:
             factory=True,
         )
 
+        self.port = port
         self.server = uvicorn.Server(configuration)
         self.thread = threading.Thread(target=self.server.run)
+
+    def open(self, *, open_browser=True):
+        """Open the dashboard's activity."""
         self.thread.start()
 
         while not self.server.started:
             continue
 
         if open_browser:
-            webbrowser.open(f"http://localhost:{port}")
+            webbrowser.open(f"http://localhost:{self.port}")
+
+        return self
 
     def close(self):
         """Close the dashboard's activity."""
