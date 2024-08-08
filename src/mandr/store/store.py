@@ -6,7 +6,6 @@ import dataclasses
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
-from mandr.api import schema
 from mandr.item import DisplayType, Item, ItemMetadata
 from mandr.storage import URI
 
@@ -73,23 +72,19 @@ class Store:
                 import altair as alt
                 import pandas as pd
 
-                cv_results_table = schema.DataFrame(data=pd.DataFrame(value))
-                test_score_plot = schema.Vega(
-                    data=(
-                        alt.Chart(pd.DataFrame(pd.DataFrame(value))[["test_score"]])
-                        .mark_bar(size=50)
-                        .encode(
-                            x=alt.X("test_score:Q")
-                            .title("Test score")
-                            .scale(zero=True),
-                            y=(
-                                alt.Y("count():Q", axis=alt.Axis(tickMinStep=1)).title(
-                                    "Frequency"
-                                )
-                            ),
-                        )
-                        .properties(title="Frequency plot of test score")
+                cv_results_table = pd.DataFrame(value)
+                test_score_plot = (
+                    alt.Chart(pd.DataFrame(pd.DataFrame(value))[["test_score"]])
+                    .mark_bar(size=50)
+                    .encode(
+                        x=alt.X("test_score:Q").title("Test score").scale(zero=True),
+                        y=(
+                            alt.Y("count():Q", axis=alt.Axis(tickMinStep=1)).title(
+                                "Frequency"
+                            )
+                        ),
                     )
+                    .properties(title="Frequency plot of test score")
                 )
 
                 additional_item_metadata = dict(
