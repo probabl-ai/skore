@@ -41,7 +41,6 @@ doc = [
   "pydata_sphinx_theme",
   "seaborn",
   "networkx",
-  "IPython",
   "statsmodels",
   "skrub",
   "inflect",
