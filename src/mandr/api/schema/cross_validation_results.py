@@ -2,9 +2,9 @@
 
 from typing import Literal
 
-# need those for the doctests
-import altair
-import pandas
+# Some packages are necessary for the doctests
+import altair  # noqa: F401
+import pandas  # noqa: F401
 from pydantic import BaseModel
 
 from mandr.api.schema import DataFrame, Vega

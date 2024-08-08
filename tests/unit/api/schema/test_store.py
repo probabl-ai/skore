@@ -205,7 +205,10 @@ class TestStore:
             (
                 {"type": "cv_results", "data": None},
                 ValidationError,
-                "Input should be a valid dictionary or instance of CrossValidationResultsData",
+                (
+                    "Input should be a valid dictionary or instance of "
+                    "CrossValidationResultsData"
+                ),
             ),
         ],
     )

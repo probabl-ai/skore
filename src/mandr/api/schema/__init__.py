@@ -1,5 +1,8 @@
 """Schema to define endpoint requirements in the API."""
 
+# Ignore import order because of CrossValidationResults
+# ruff: noqa: I001
+
 import typing
 
 import pydantic
@@ -8,6 +11,7 @@ import typing_extensions
 from mandr.api.schema.any import Any
 from mandr.api.schema.array import Array
 from mandr.api.schema.boolean import Boolean
+
 from mandr.api.schema.dataframe import DataFrame
 from mandr.api.schema.date import Date
 from mandr.api.schema.datetime import Datetime
