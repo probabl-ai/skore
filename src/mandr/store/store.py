@@ -6,7 +6,7 @@ import dataclasses
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
-from mandr.exporter import exporter
+from mandr.api import schema
 from mandr.item import DisplayType, Item, ItemMetadata
 from mandr.storage import URI
 
@@ -73,8 +73,8 @@ class Store:
                 import altair as alt
                 import pandas as pd
 
-                cv_results_table = exporter.DataFrame(data=pd.DataFrame(value))
-                test_score_plot = exporter.Vega(
+                cv_results_table = schema.DataFrame(data=pd.DataFrame(value))
+                test_score_plot = schema.Vega(
                     data=(
                         alt.Chart(pd.DataFrame(pd.DataFrame(value))[["test_score"]])
                         .mark_bar(size=50)

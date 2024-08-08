@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException
 
 from mandr import registry
 from mandr.api import schema
+from mandr.item import DisplayType
 from mandr.storage import URI, FileSystem
 
 MANDRS_ROUTER = APIRouter(prefix="/mandrs", deprecated=True)
@@ -35,15 +36,22 @@ async def get_store_by_uri(uri: str):
 
     for store in registry.stores(storage):
         if uri == store.uri:
-            model = schema.Store(
-                uri=str(uri),
-                payload={
-                    key: {
+            payload = {}
+            for key, value, metadata in store.items(metadata=True):
+                if metadata["display_type"] == DisplayType.CROSS_VALIDATION_RESULTS:
+                    payload[key] = {
+                        "type": str(metadata["display_type"]),
+                        "data": metadata["computed"],
+                    }
+                else:
+                    payload[key] = {
                         "type": str(metadata["display_type"]),
                         "data": value,
                     }
-                    for key, value, metadata in store.items(metadata=True)
-                },
+
+            model = schema.Store(
+                uri=str(uri),
+                payload=payload,
             )
 
             return model.model_dump(by_alias=True)
