@@ -17,20 +17,20 @@ class CrossValidationResults(BaseModel):
     Examples
     --------
     >>> CrossValidationResults(
-        data=dict(
-            cv_results_table=pandas.DataFrame(),
-            test_score_plot=altair.Chart()
-        )
-    )
+    ...     type="cv_results",
+    ...     data=dict(
+    ...         cv_results_table=DataFrame(data=pandas.DataFrame()),
+    ...         test_score_plot=Vega(data=altair.Chart())
+    ...     )
+    ... )
     CrossValidationResults(...)
 
     >>> CrossValidationResults(
-        type="cv_results",
-        data=dict(
-            cv_results_table=pandas.DataFrame(),
-            test_score_plot=altair.Chart()
-        )
-    )
+    ...     data=dict(
+    ...         cv_results_table=DataFrame(data=pandas.DataFrame()),
+    ...         test_score_plot=Vega(data=altair.Chart())
+    ...     )
+    ... )
     CrossValidationResults(...)
     """
 
