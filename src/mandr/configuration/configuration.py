@@ -20,7 +20,6 @@ Il faudra écrire un README *exhaustif*.
 
 Notes
 -----
-
 Comment récupérer un fichier du package client ?
 
 Sources
@@ -36,16 +35,17 @@ Fortement inspiré de poetry :
 
 import copy
 import pathlib
+
 import tomllib
 
-
 __configuration = None
+__configuration_filepath = None
 __DEFAULT_CONFIGURATION = {
     "storage": {
         "type": "filesystem",
         "filesystem": {
-            "directory": None,
-        }
+            "directory": (pathlib.Path.cwd() / ".mandr"),
+        },
     },
 }
 
@@ -72,12 +72,25 @@ class TOMLFile:
 
 
 def merge(d1: dict, d2: dict):
-    for key in (d1.keys() & d2.keys()):
+    for key in d1.keys() & d2.keys():
         if isinstance(d1[key], dict):
             if isinstance(d2[key], dict):
                 merge(d1[key], d2[key])
         else:
             d1[key] = d2[key]
+
+
+# class Configuration:
+#     def __init__(filepath: Path, configuration):
+#         self.__filepath = filepath
+#         self.__configuration = configuration
+
+
+def configure(filepath: Path, *, reload: bool = False):
+    if not filepath.exists():
+        raise FileNotFoundError
+
+
 
 
 def Configuration(*, reload: bool = False) -> dict:
@@ -101,28 +114,29 @@ def Configuration(*, reload: bool = False) -> dict:
     return copy.deepcopy(__configuration)
 
 
-def foo():
-    ...
+def foo(): ...
+
 
 import inspect
 import pathlib
 
 stack = inspect.stack()
-packages = []
+packages = {}
 
 for frameinfo in stack[1:]:
     filepath = pathlib.Path(frameinfo.filename)
 
     if filepath.exists():
         module = inspect.getmodule(frameinfo.frame)
-        breakpoint()
+        package = module.__name__.split(".", 1)[0]
 
-        package = inspect.getmodule(module.split(".", 1)[0])
+        package.append(package)
 
-        package.append(package.__path__)
+breakpoint()
 
 # module.__path__
-# from pathlib import metadata
+# https://docs.python.org/3/library/importlib.metadata.html
+# from importlib import metadata
 breakpoint()
 
 parent_frameinfo = stack[1]
