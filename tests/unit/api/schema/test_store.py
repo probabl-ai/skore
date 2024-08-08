@@ -36,9 +36,13 @@ class TestStore:
                 {
                     "type": "dataframe",
                     "data": {
-                        "column_string": ["a", "b", "c"],
-                        "column_int": [1, 2, 3],
-                        "column_float": [1.1, 2.2, 3.3],
+                        "columns": [
+                            "column_string",
+                            "column_int",
+                            "column_float",
+                        ],
+                        "data": [["a", 1, 1.1], ["b", 2, 2.2], ["c", 3, 3.3]],
+                        "index": [0, 1, 2],
                     },
                 },
             ),
@@ -92,6 +96,28 @@ class TestStore:
                         .mark_bar()
                         .to_dict()
                     ),
+                },
+            ),
+            (
+                {
+                    "type": "cv_results",
+                    "data": {
+                        "cv_results_table": schema.DataFrame(data=pandas.DataFrame()),
+                        "test_score_plot": schema.Vega(data=altair.Chart().mark_bar()),
+                    },
+                },
+                {
+                    "type": "cv_results",
+                    "data": {
+                        "cv_results_table": {
+                            "data": {"columns": [], "data": [], "index": []},
+                            "type": "dataframe",
+                        },
+                        "test_score_plot": {
+                            "data": altair.Chart().mark_bar().to_dict(),
+                            "type": "vega",
+                        },
+                    },
                 },
             ),
         ],
@@ -175,6 +201,11 @@ class TestStore:
                 {"type": "vega", "data": None},
                 ValidationError,
                 "Input should be an instance of Chart",
+            ),
+            (
+                {"type": "cv_results", "data": None},
+                ValidationError,
+                "Input should be a valid dictionary or instance of CrossValidationResultsData",
             ),
         ],
     )

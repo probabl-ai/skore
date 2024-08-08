@@ -19,10 +19,14 @@ from mandr.api.schema.number import Number
 from mandr.api.schema.string import String
 from mandr.api.schema.vega import Vega
 
+# Must be imported after DataFrame and Vega to prevent a circular import
+from mandr.api.schema.cross_validation_results import CrossValidationResults
+
 __all__ = [
     "Any",
     "Array",
     "Boolean",
+    "CrossValidationResults",
     "DataFrame",
     "Date",
     "Datetime",
@@ -59,6 +63,7 @@ class Store(pydantic.BaseModel):
                 Any,
                 Array,
                 Boolean,
+                CrossValidationResults,
                 DataFrame,
                 Date,
                 Datetime,
