@@ -79,7 +79,7 @@ class DisplayType(StrEnum):
         if isinstance(x, pathlib.Path):
             return DisplayType.FILE
 
-        if isinstance(x, dict) and {"fit_time", "score_time", "test_score"} <= set(x):
+        if isinstance(x, dict) and {"fit_time", "score_time", "test_score"}.issubset(x):
             return DisplayType.CROSS_VALIDATION_RESULTS
 
         # Exact match
