@@ -36,22 +36,20 @@ async def get_store_by_uri(uri: str):
 
     for store in registry.stores(storage):
         if uri == store.uri:
-            payload = {}
-            for key, value, metadata in store.items(metadata=True):
-                if metadata["display_type"] == DisplayType.CROSS_VALIDATION_RESULTS:
-                    payload[key] = {
-                        "type": str(metadata["display_type"]),
-                        "data": metadata["computed"],
-                    }
-                else:
-                    payload[key] = {
-                        "type": str(metadata["display_type"]),
-                        "data": value,
-                    }
-
             model = schema.Store(
                 uri=str(uri),
-                payload=payload,
+                payload={
+                    key: {
+                        "type": str(metadata["display_type"]),
+                        "data": (
+                            metadata["computed"]
+                            if metadata["display_type"]
+                            == DisplayType.CROSS_VALIDATION_RESULTS
+                            else value
+                        ),
+                    }
+                    for key, value, metadata in store.items(metadata=True)
+                },
             )
 
             return model.model_dump(by_alias=True)

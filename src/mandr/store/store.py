@@ -87,24 +87,21 @@ class Store:
                     .properties(title="Frequency plot of test score")
                 )
 
-                additional_item_metadata = dict(
-                    computed=dict(
-                        cv_results_table=cv_results_table,
-                        test_score_plot=test_score_plot,
-                    )
-                )
+                computed = {
+                    "cv_results_table": cv_results_table,
+                    "test_score_plot": test_score_plot,
+                }
             case _:
-                additional_item_metadata = dict()
-
-        item_metadata = dict(
-            display_type=display_type,
-            created_at=now,
-            updated_at=now,
-        )
+                computed = None
 
         item = Item(
             data=value,
-            metadata=ItemMetadata(**(item_metadata | additional_item_metadata)),
+            metadata=ItemMetadata(
+                display_type=display_type,
+                created_at=now,
+                updated_at=now,
+                computed=computed,
+            ),
         )
 
         self.storage.setitem(uri, item)
