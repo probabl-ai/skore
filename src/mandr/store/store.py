@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import dataclasses
+import os
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from mandr.item import DisplayType, Item, ItemMetadata
-from mandr.storage import URI
+from mandr.storage import URI, FileSystem
 
 if TYPE_CHECKING:
     from pathlib import PosixPath
@@ -16,12 +18,34 @@ if TYPE_CHECKING:
     from mandr.storage import Storage
 
 
+class MandrRootException(Exception):
+    """Raise when the MANDR_ROOT variable is set to a relative path."""
+
+
+def _get_storage_path(MANDR_ROOT: str | None) -> Path:
+    """Decide on the `Storage`'s location based on MANDR_ROOT."""
+    if MANDR_ROOT is None:
+        return Path.cwd() / ".datamander"
+
+    if not Path(MANDR_ROOT).is_absolute():
+        raise MandrRootException(
+            "MANDR_ROOT must be set to an absolute path or unset, not set "
+            f"to a relative path; got '{MANDR_ROOT}'."
+        )
+
+    return Path(MANDR_ROOT)
+
+
 class Store:
     """Object used to store pairs of (key, value) by URI over a storage."""
 
     def __init__(self, uri: URI | PosixPath | str, storage: Storage = None):
         self.uri = URI(uri)
-        self.storage = storage
+        if storage is None:
+            directory = _get_storage_path(os.environ.get("MANDR_ROOT"))
+            self.storage = FileSystem(directory=directory)
+        else:
+            self.storage = storage
 
     def __eq__(self, other: Any):
         """Return self == other."""
