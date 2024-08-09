@@ -1,8 +1,5 @@
 """Schema to define endpoint requirements in the API."""
 
-# Ignore import order because of CrossValidationResults
-# ruff: noqa: I001
-
 import typing
 
 import pydantic
@@ -11,7 +8,7 @@ import typing_extensions
 from mandr.api.schema.any import Any
 from mandr.api.schema.array import Array
 from mandr.api.schema.boolean import Boolean
-
+from mandr.api.schema.cross_validation_results import CrossValidationResults
 from mandr.api.schema.dataframe import DataFrame
 from mandr.api.schema.date import Date
 from mandr.api.schema.datetime import Datetime
@@ -22,9 +19,6 @@ from mandr.api.schema.markdown import Markdown
 from mandr.api.schema.number import Number
 from mandr.api.schema.string import String
 from mandr.api.schema.vega import Vega
-
-# Must be imported after DataFrame and Vega to prevent a circular import
-from mandr.api.schema.cross_validation_results import CrossValidationResults
 
 __all__ = [
     "Any",

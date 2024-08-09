@@ -7,7 +7,8 @@ import altair  # noqa: F401
 import pandas  # noqa: F401
 from pydantic import BaseModel
 
-from mandr.api.schema import DataFrame, Vega
+from mandr.api.schema.dataframe import DataFrame
+from mandr.api.schema.vega import Vega
 from mandr.item.display_type import DisplayType
 
 
