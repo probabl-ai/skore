@@ -2,9 +2,6 @@
 
 from typing import Literal
 
-# Some packages are necessary for the doctests
-import altair  # noqa: F401
-import pandas  # noqa: F401
 from pydantic import BaseModel
 
 from mandr.api.schema.dataframe import DataFrame
@@ -17,6 +14,9 @@ class CrossValidationResults(BaseModel):
 
     Examples
     --------
+    >>> import altair
+    >>> import pandas
+
     >>> CrossValidationResults(
     ...     type="cv_results",
     ...     data=dict(
