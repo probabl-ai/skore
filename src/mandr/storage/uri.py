@@ -75,7 +75,7 @@ class URI:
     def parent(self) -> URI:
         """The logical parent of the URI."""
         if len(self.__segments) < 2:
-            raise ValueError(f"{repr(self)} has not parent.")
+            raise ValueError(f"{repr(self)} has no parent.")
 
         return URI(*self.__segments[:-1])
 
