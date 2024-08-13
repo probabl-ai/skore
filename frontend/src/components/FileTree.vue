@@ -8,7 +8,7 @@ export interface FileTreeNode {
 export function transformUrisToTree(uris: string[]) {
   const tree: FileTreeNode[] = [];
   for (let p of uris) {
-    const segments = p.split("/");
+    const segments = p.split("/").filter((s) => s.length > 0);
     const rootSegment = segments[0];
     let currentNode = tree.find((n) => n.uri == rootSegment);
     if (!currentNode) {
