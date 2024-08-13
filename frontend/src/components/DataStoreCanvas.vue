@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
+import CrossValidationResultsWidget from "@/components/CrossValidationResultsWidget.vue";
 import DataFrameWidget from "@/components/DataFrameWidget.vue";
 import DataStoreCard from "@/components/DataStoreCard.vue";
 import HtmlSnippetWidget from "@/components/HtmlSnippetWidget.vue";
@@ -8,7 +9,6 @@ import ImageWidget from "@/components/ImageWidget.vue";
 import MarkdownWidget from "@/components/MarkdownWidget.vue";
 import VegaWidget from "@/components/VegaWidget.vue";
 import { useCanvasStore, type KeyLayoutSize } from "@/stores/canvas";
-import CrossValidationResultsWidget from "./CrossValidationResultsWidget.vue";
 
 const canvasStore = useCanvasStore();
 const items = computed(() => {
@@ -66,6 +66,7 @@ function onCardRemoved(key: string) {
             'date',
             'datetime',
             'markdown',
+            'numpy_array',
           ].includes(value.type)
         "
         :source="value.data"

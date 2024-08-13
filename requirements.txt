@@ -30,6 +30,8 @@ click==8.1.7
     #   flask
     #   typer
     #   uvicorn
+compress-pickle[lz4]==2.1.0
+    # via pydantic-numpy
 contourpy==1.2.1
     # via matplotlib
 cycler==0.12.1
@@ -79,6 +81,8 @@ jsonschema-specifications==2023.12.1
     # via jsonschema
 kiwisolver==1.4.5
     # via matplotlib
+lz4==4.3.3
+    # via compress-pickle
 markdown==3.6
     # via mandr (pyproject.toml)
 markdown-it-py==3.0.0
@@ -97,6 +101,7 @@ numpy==2.0.0
     #   contourpy
     #   matplotlib
     #   pandas
+    #   pydantic-numpy
     #   scikit-learn
     #   scipy
 packaging==24.1
@@ -115,8 +120,11 @@ pydantic==2.8.2
     # via
     #   fastapi
     #   mandr (pyproject.toml)
+    #   pydantic-numpy
 pydantic-core==2.20.1
     # via pydantic
+pydantic-numpy==6.0.0
+    # via mandr (pyproject.toml)
 pygments==2.18.0
     # via rich
 pyparsing==3.1.2
@@ -145,10 +153,16 @@ rpds-py==0.19.0
     # via
     #   jsonschema
     #   referencing
+ruamel-yaml==0.18.6
+    # via pydantic-numpy
+ruamel-yaml-clib==0.2.8
+    # via ruamel-yaml
 scikit-learn==1.5.1
     # via mandr (pyproject.toml)
 scipy==1.14.0
     # via scikit-learn
+semver==3.0.2
+    # via pydantic-numpy
 shellingham==1.5.4
     # via typer
 six==1.16.0

@@ -22,6 +22,7 @@ dependencies = [
   "fastapi",
   "matplotlib",
   "pydantic",
+  "pydantic_numpy",
 ]
 
 [project.optional-dependencies]
@@ -106,3 +107,5 @@ extend-exclude = [
 [tool.typos.default.extend-words]
 # acronym for "False Positive Rate"
 fpr = "fpr"
+# typos considers pnd.NpNDArray as a typo and corrects it to pnd.NpANDArray
+ND= "ND"
