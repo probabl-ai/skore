@@ -28,7 +28,7 @@ function onDragStart(event: DragEvent) {
   >
     <div class="actions">
       <div class="add" @click="addKey">+</div>
-      <div class="drag" @mousedown="isDraggable = true">=</div>
+      <div class="drag" @mousedown="isDraggable = true">::</div>
     </div>
     <div class="label">
       {{ props.itemKey }}
@@ -58,6 +58,7 @@ function onDragStart(event: DragEvent) {
     right: 5px;
     display: flex;
     color: var(--text-color-normal);
+    font-weight: bolder;
     gap: var(--spacing-padding-small);
 
     & .drag {
