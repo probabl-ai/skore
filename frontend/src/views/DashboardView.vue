@@ -95,7 +95,7 @@ await fetchDataStoreDetail(route.params.segments);
         @dragleave="onDragLeave"
       >
         <div class="editor-header" ref="editorHeader">
-          <h1>Board</h1>
+          <h1>Report</h1>
           <SimpleButton label="Save report settings" @click="onSaveBoard" />
         </div>
         <div class="drop-indicator" :class="{ visible: isDropIndicatorVisible }"></div>
