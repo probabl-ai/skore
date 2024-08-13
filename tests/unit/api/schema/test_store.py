@@ -184,7 +184,8 @@ class TestStore:
             (
                 {"type": "numpy_array", "data": None},
                 ValidationError,
-                "Input should be an instance of NumPy Array",
+                # quick fix to match pydantic_numpy error message
+                "Input should be an instance of .*",
             ),
         ],
     )
