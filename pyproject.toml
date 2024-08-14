@@ -106,4 +106,4 @@ extend-exclude = [
 # acronym for "False Positive Rate"
 fpr = "fpr"
 # typos considers pnd.NpNDArray as a typo and corrects it to pnd.NpANDArray
-ND= "ND"
+ND = "ND"
