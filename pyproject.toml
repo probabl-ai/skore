@@ -38,6 +38,7 @@ tools = [
 ]
 
 doc = [
+  "skrub",
   "sphinx",
   "sphinx-gallery",
   "matplotlib"
