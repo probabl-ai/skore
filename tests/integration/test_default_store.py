@@ -7,7 +7,7 @@ from mandr.store.store import MandrRootException
 
 
 class TestDefaultStorage:
-    """Test the behaviour of initialisation Mandr when `storage` is not given."""
+    """Test the behaviour of initialising a Mandr when `storage` is not given."""
 
     def test_absolute_path(self, monkeypatch, tmp_path):
         """If MANDR_ROOT is an absolute path, the storage is in MANDR_ROOT."""
