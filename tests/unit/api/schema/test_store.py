@@ -36,9 +36,9 @@ class TestStore:
                 {
                     "type": "dataframe",
                     "data": {
-                        "column_string": ["a", "b", "c"],
-                        "column_int": [1, 2, 3],
-                        "column_float": [1.1, 2.2, 3.3],
+                        "columns": ["column_string", "column_int", "column_float"],
+                        "index": [0, 1, 2],
+                        "data": [["a", 1, 1.1], ["b", 2, 2.2], ["c", 3, 3.3]],
                     },
                 },
             ),
