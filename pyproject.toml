@@ -19,6 +19,7 @@ dependencies = [
   "pydantic",
   "pydantic_numpy",
   "uvicorn",
+  "rich",
 ]
 
 [project.optional-dependencies]

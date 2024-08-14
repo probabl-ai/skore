@@ -48,10 +48,14 @@ kiwisolver==1.4.5
     # via matplotlib
 lz4==4.3.3
     # via compress-pickle
+markdown-it-py==3.0.0
+    # via rich
 markupsafe==2.1.5
     # via jinja2
 matplotlib==3.9.2
     # via mandr (pyproject.toml)
+mdurl==0.1.2
+    # via markdown-it-py
 narwhals==1.4.1
     # via altair
 numpy==2.0.1
@@ -84,6 +88,8 @@ pydantic-core==2.20.1
     # via pydantic
 pydantic-numpy==6.0.0
     # via mandr (pyproject.toml)
+pygments==2.18.0
+    # via rich
 pyparsing==3.1.2
     # via matplotlib
 pyproject-hooks==1.1.0
@@ -100,6 +106,8 @@ referencing==0.35.1
     # via
     #   jsonschema
     #   jsonschema-specifications
+rich==13.7.1
+    # via mandr (pyproject.toml)
 rpds-py==0.20.0
     # via
     #   jsonschema
