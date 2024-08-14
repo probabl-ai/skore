@@ -1,13 +1,13 @@
 """The definition of API routes to list stores and get them."""
 
 import os
-from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
 
 from mandr import registry
 from mandr.api import schema
 from mandr.storage import URI, FileSystem
+from mandr.store.store import _get_storage_path
 
 MANDRS_ROUTER = APIRouter(prefix="/mandrs", deprecated=True)
 STORES_ROUTER = APIRouter(prefix="/stores")
@@ -19,7 +19,7 @@ STORES_ROUTER = APIRouter(prefix="/stores")
 @STORES_ROUTER.get("/")
 async def list_stores() -> list[str]:
     """Route used to list the URI of stores."""
-    directory = Path(os.environ["MANDR_ROOT"]).resolve()
+    directory = _get_storage_path(os.environ.get("MANDR_ROOT"))
     storage = FileSystem(directory=directory)
 
     return sorted(str(store.uri) for store in registry.stores(storage))
@@ -29,7 +29,7 @@ async def list_stores() -> list[str]:
 @STORES_ROUTER.get("/{uri:path}")
 async def get_store_by_uri(uri: str):
     """Route used to get a store by its URI."""
-    directory = Path(os.environ["MANDR_ROOT"]).resolve()
+    directory = _get_storage_path(os.environ.get("MANDR_ROOT"))
     storage = FileSystem(directory=directory)
     uri = URI(uri)
 
