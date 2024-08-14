@@ -31,12 +31,12 @@ async def get_store_by_uri(uri: str):
     """Route used to get a store by its URI."""
     directory = _get_storage_path(os.environ.get("MANDR_ROOT"))
     storage = FileSystem(directory=directory)
-    uri = URI(uri)
+    parsed_uri = URI(uri)
 
     for store in registry.stores(storage):
-        if uri == store.uri:
+        if parsed_uri == store.uri:
             model = schema.Store(
-                uri=str(uri),
+                uri=uri,
                 payload={
                     key: {
                         "type": str(metadata["display_type"]),
