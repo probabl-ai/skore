@@ -9,20 +9,16 @@ name = "mandr"
 description = "..."
 version = "0.1.0"
 dependencies = [
-  "Flask",
   "altair",
   "diskcache",
-  "jinja2",
-  "markdown",
   "pandas",
   "polars",
-  "rich",
   "scikit-learn",
-  "srsly",
   "fastapi",
   "matplotlib",
   "pydantic",
   "pydantic_numpy",
+  "uvicorn",
 ]
 
 [project.optional-dependencies]
