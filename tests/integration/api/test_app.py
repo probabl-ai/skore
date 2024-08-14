@@ -59,7 +59,7 @@ class TestApiApp:
             assert response.status_code == 200
             assert response.json() == {
                 "schema": "schema:dashboard:v0",
-                "uri": "/root/subroot2/subsubroot2",
+                "uri": "root/subroot2/subsubroot2",
                 "payload": {
                     "key1": {"type": "markdown", "data": "value1"},
                     "key2": {"type": "markdown", "data": "value2"},

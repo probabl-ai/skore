@@ -9,23 +9,22 @@ name = "mandr"
 description = "..."
 version = "0.1.0"
 dependencies = [
-  "Flask",
   "altair",
   "diskcache",
-  "jinja2",
-  "markdown",
   "pandas",
   "polars",
-  "rich",
   "scikit-learn",
-  "srsly",
   "fastapi",
   "matplotlib",
   "pydantic",
+  "pydantic_numpy",
+  "uvicorn",
+  "rich",
 ]
 
 [project.optional-dependencies]
 test = [
+  "httpx",
   "jsonschema[format]",
   "pre-commit",
   "pytest",
@@ -107,3 +106,5 @@ extend-exclude = [
 [tool.typos.default.extend-words]
 # acronym for "False Positive Rate"
 fpr = "fpr"
+# typos considers pnd.NpNDArray as a typo and corrects it to pnd.NpANDArray
+ND = "ND"

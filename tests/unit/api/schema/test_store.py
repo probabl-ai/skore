@@ -3,6 +3,7 @@ import json
 import pathlib
 
 import altair
+import numpy as np
 import pandas
 import pytest
 from mandr.api import schema
@@ -36,9 +37,9 @@ class TestStore:
                 {
                     "type": "dataframe",
                     "data": {
-                        "column_string": ["a", "b", "c"],
-                        "column_int": [1, 2, 3],
-                        "column_float": [1.1, 2.2, 3.3],
+                        "columns": ["column_string", "column_int", "column_float"],
+                        "index": [0, 1, 2],
+                        "data": [["a", 1, 1.1], ["b", 2, 2.2], ["c", 3, 3.3]],
                     },
                 },
             ),
@@ -93,6 +94,10 @@ class TestStore:
                         .to_dict()
                     ),
                 },
+            ),
+            (
+                {"type": "numpy_array", "data": np.array([1, 2, 3, 4, 5])},
+                {"type": "numpy_array", "data": np.array([1, 2, 3, 4, 5]).tolist()},
             ),
         ],
     )
@@ -175,6 +180,12 @@ class TestStore:
                 {"type": "vega", "data": None},
                 ValidationError,
                 "Input should be an instance of Chart",
+            ),
+            (
+                {"type": "numpy_array", "data": None},
+                ValidationError,
+                # quick fix to match pydantic_numpy error message
+                "Input should be an instance of .*",
             ),
         ],
     )

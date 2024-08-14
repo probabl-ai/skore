@@ -26,4 +26,4 @@ class DataFrame(pydantic.BaseModel):
     @pydantic.field_serializer("data")
     def serialize_data(self, data: pandas.DataFrame) -> dict:
         """Serialize data from `pandas.DataFrame` to dict."""
-        return data.to_dict(orient="list")
+        return data.to_dict(orient="split")

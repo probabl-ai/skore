@@ -5,8 +5,12 @@ import logging
 import rich.logging
 
 from mandr.store import Store
+from mandr.store import Store as Mandr
 
-__all__ = ["Store"]
+__all__ = [
+    "Mandr",
+    "Store",
+]
 
 
 class Handler(rich.logging.RichHandler):
