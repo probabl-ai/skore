@@ -16,6 +16,7 @@ from mandr.api.schema.html import HTML
 from mandr.api.schema.integer import Integer
 from mandr.api.schema.markdown import Markdown
 from mandr.api.schema.number import Number
+from mandr.api.schema.numpy_array import NumpyArray
 from mandr.api.schema.string import String
 from mandr.api.schema.vega import Vega
 
@@ -31,6 +32,7 @@ __all__ = [
     "Integer",
     "Markdown",
     "Number",
+    "NumpyArray",
     "Store",
     "String",
     "Vega",
@@ -67,6 +69,7 @@ class Store(pydantic.BaseModel):
                 Integer,
                 Markdown,
                 Number,
+                NumpyArray,
                 String,
                 Vega,
             ],
