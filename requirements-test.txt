@@ -9,13 +9,19 @@ altair==5.4.0
 annotated-types==0.7.0
     # via pydantic
 anyio==4.4.0
-    # via starlette
+    # via
+    #   httpx
+    #   starlette
 arrow==1.3.0
     # via isoduration
 attrs==24.2.0
     # via
     #   jsonschema
     #   referencing
+certifi==2024.7.4
+    # via
+    #   httpcore
+    #   httpx
 cfgv==3.4.0
     # via pre-commit
 click==8.1.7
@@ -41,12 +47,19 @@ fonttools==4.53.1
 fqdn==1.5.1
     # via jsonschema
 h11==0.14.0
-    # via uvicorn
+    # via
+    #   httpcore
+    #   uvicorn
+httpcore==1.0.5
+    # via httpx
+httpx==0.27.0
+    # via mandr (pyproject.toml)
 identify==2.6.0
     # via pre-commit
 idna==3.7
     # via
     #   anyio
+    #   httpx
     #   jsonschema
 iniconfig==2.0.0
     # via pytest
@@ -159,7 +172,9 @@ six==1.16.0
     #   python-dateutil
     #   rfc3339-validator
 sniffio==1.3.1
-    # via anyio
+    # via
+    #   anyio
+    #   httpx
 starlette==0.37.2
     # via fastapi
 threadpoolctl==3.5.0

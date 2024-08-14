@@ -23,6 +23,7 @@ dependencies = [
 
 [project.optional-dependencies]
 test = [
+  "httpx",
   "jsonschema[format]",
   "pre-commit",
   "pytest",
