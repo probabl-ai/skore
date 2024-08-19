@@ -7,8 +7,6 @@ import altair as alt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from mandr import Store
-from mandr.storage import FileSystem
 from matplotlib import pyplot as plt
 from sklearn.ensemble import HistGradientBoostingRegressor, RandomForestRegressor
 from sklearn.inspection import permutation_importance
@@ -20,7 +18,10 @@ from skrub import TableReport, tabular_learner
 from skrub.datasets import fetch_employee_salaries
 from tqdm import tqdm
 
-DIR_MANDER = ".datamander"
+from mandr import Mandr
+from mandr.storage import FileSystem
+
+DIR_MANDER = "datamander"
 PATH_PROJECT = Path("skrub_demo")
 N_SEEDS = 5
 
@@ -53,7 +54,7 @@ def evaluate_models(model_names):
     mander = get_mander(str(PATH_PROJECT))
     mander.insert("skrub_report", plot_skrub_report(), display_type="html")
     mander.insert("target_distribution", plot_y_distribution())
-    mander.insert("Metrics", plot_table_metrics(results), display_type="html")
+    mander.insert("Metrics", plot_table_metrics(results))
     mander.insert("R2 vs fit time", plot_r2_vs_fit_time(results), display_type="html")
 
 
@@ -159,11 +160,7 @@ def plot_table_metrics(results):
         )
         df = df.drop([mean_key, std_key], axis=1)
 
-    return (
-        df.style.map(lambda x: "color:white").set_table_styles(
-            [{"selector": "th", "props": "color: white;"}]
-        )
-    ).to_html()
+    return df
 
 
 def plot_r2_vs_fit_time(results):
@@ -268,7 +265,7 @@ def plot_model_repr(model):
 
 
 def get_mander(path):
-    return Store(
+    return Mandr(
         path,
         storage=FileSystem(directory=DIR_MANDER),
     )
