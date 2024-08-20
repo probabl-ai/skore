@@ -96,6 +96,30 @@ class TestStore:
                 },
             ),
             (
+                {
+                    "type": "vega",
+                    "data": (
+                        altair.Chart(
+                            pandas.DataFrame({"a": ["A"], "b": [28]})
+                        ).mark_bar()
+                        + altair.Chart(
+                            pandas.DataFrame({"a": ["A"], "b": [28]})
+                        ).mark_bar()
+                    ),
+                },
+                {
+                    "type": "vega",
+                    "data": (
+                        altair.Chart(
+                            pandas.DataFrame({"a": ["A"], "b": [28]})
+                        ).mark_bar()
+                        + altair.Chart(
+                            pandas.DataFrame({"a": ["A"], "b": [28]})
+                        ).mark_bar()
+                    ).to_dict(),
+                },
+            ),
+            (
                 {"type": "numpy_array", "data": np.array([1, 2, 3, 4, 5])},
                 {"type": "numpy_array", "data": np.array([1, 2, 3, 4, 5]).tolist()},
             ),

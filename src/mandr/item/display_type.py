@@ -76,6 +76,7 @@ class DisplayType(StrEnum):
             float: DisplayType.NUMBER,
             numpy.ndarray: DisplayType.NUMPY_ARRAY,
             altair.vegalite.v5.api.Chart: DisplayType.VEGA,
+            altair.vegalite.v5.api.LayerChart: DisplayType.VEGA,
         }
 
         # `Paths` are `PosixPath` or `WindowsPath` when instantiated
