@@ -59,7 +59,7 @@ export class DataStore {
     ]);
   }
 
-  get(key: string): any {
+  get(key: string): IPayloadItem {
     return this.payload[key];
   }
 
