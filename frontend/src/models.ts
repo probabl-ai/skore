@@ -20,10 +20,15 @@ export interface IPayloadItem {
   data: any;
 }
 
+export type KeyLayoutSize = "small" | "medium" | "large";
+
+export type Layout = Array<{ key: string; size: KeyLayoutSize }>;
+
 export class DataStore {
   constructor(
     public uri: string,
-    public payload: { [key: string]: IPayloadItem }
+    public payload: { [key: string]: IPayloadItem },
+    public layout: Layout
   ) {}
 
   get plotKeys(): string[] {
