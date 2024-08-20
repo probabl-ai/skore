@@ -14,6 +14,7 @@ from mandr.api.schema.datetime import Datetime
 from mandr.api.schema.file import File
 from mandr.api.schema.html import HTML
 from mandr.api.schema.integer import Integer
+from mandr.api.schema.layout import LayoutItem
 from mandr.api.schema.markdown import Markdown
 from mandr.api.schema.number import Number
 from mandr.api.schema.numpy_array import NumpyArray
@@ -76,3 +77,4 @@ class Store(pydantic.BaseModel):
             pydantic.Field(discriminator="type"),
         ],
     ]
+    layout: typing.List[LayoutItem] = pydantic.Field(default=[])

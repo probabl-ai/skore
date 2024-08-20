@@ -101,7 +101,7 @@ await fetchDataStoreDetail(route.params.segments);
         <div class="drop-indicator" :class="{ visible: isDropIndicatorVisible }"></div>
         <Transition name="fade">
           <div
-            v-if="!isDropIndicatorVisible && canvasStore.displayedKeys.length === 0"
+            v-if="!isDropIndicatorVisible && canvasStore.layout.length === 0"
             class="placeholder"
             :style="`--header-height: ${editorHeaderHeight}px`"
           >

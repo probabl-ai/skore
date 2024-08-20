@@ -111,6 +111,7 @@ class TestStore:
             "payload": {
                 "key": expected,
             },
+            "layout": [],
         }
 
     @pytest.mark.parametrize(
@@ -193,3 +194,21 @@ class TestStore:
         with pytest.raises(exception, match=match):
             store = schema.Store(uri="/root", payload={"key": payload})
             store.model_dump_json(by_alias=True)
+
+    def test_layout(self):
+        payload_item = {"type": "integer", "data": 1}
+        layout_item = {"key": "key", "size": "small"}
+
+        store = schema.Store(
+            uri="/root", payload={"key": payload_item}, layout=[layout_item]
+        )
+        dump = store.model_dump_json(by_alias=True)
+
+        assert json.loads(dump) == {
+            "schema": "schema:dashboard:v0",
+            "uri": "/root",
+            "payload": {
+                "key": payload_item,
+            },
+            "layout": [layout_item],
+        }
