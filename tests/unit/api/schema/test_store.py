@@ -3,6 +3,7 @@ import json
 import pathlib
 
 import altair
+import numpy as np
 import pandas
 import pytest
 from mandr.api import schema
@@ -94,6 +95,10 @@ class TestStore:
                     ),
                 },
             ),
+            (
+                {"type": "numpy_array", "data": np.array([1, 2, 3, 4, 5])},
+                {"type": "numpy_array", "data": np.array([1, 2, 3, 4, 5]).tolist()},
+            ),
         ],
     )
     def test_payload(self, payload, expected):
@@ -176,6 +181,12 @@ class TestStore:
                 {"type": "vega", "data": None},
                 ValidationError,
                 "Input should be an instance of Chart",
+            ),
+            (
+                {"type": "numpy_array", "data": None},
+                ValidationError,
+                # quick fix to match pydantic_numpy error message
+                "Input should be an instance of .*",
             ),
         ],
     )

@@ -13,7 +13,8 @@ export type ItemType =
   | "vega"
   | "dataframe"
   | "image"
-  | "cv_results";
+  | "cv_results"
+  | "numpy_array";
 
 export interface IPayloadItem {
   type: ItemType;
@@ -54,6 +55,7 @@ export class DataStore {
       "dataframe",
       "image",
       "cv_results",
+      "numpy_array",
     ]);
   }
 
