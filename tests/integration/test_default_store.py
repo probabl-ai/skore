@@ -1,9 +1,7 @@
 from pathlib import Path
 
-import pytest
 from mandr.storage import FileSystem
 from mandr.store import Store
-from mandr.store.store import MandrRootException
 
 
 class TestDefaultStorage:
@@ -21,10 +19,12 @@ class TestDefaultStorage:
     def test_relative_path(self, monkeypatch, tmp_path):
         """If MANDR_ROOT is a relative path, we raise an error."""
         monkeypatch.setattr("pathlib.Path.cwd", lambda: tmp_path)
-        monkeypatch.setenv("MANDR_ROOT", ".not_datamander")
+        monkeypatch.setenv("MANDR_ROOT", ".datamander")
 
-        with pytest.raises(MandrRootException, match="got '.not_datamander'"):
-            Store("root/probabl")
+        store = Store("root/probabl")
+
+        assert isinstance(store.storage, FileSystem)
+        assert Path(store.storage.cache.directory) == tmp_path / ".datamander"
 
     def test_relative_path_no_mandr_root(self, monkeypatch, tmp_path):
         """If MANDR_ROOT is unset, the storage is in ".datamander",
