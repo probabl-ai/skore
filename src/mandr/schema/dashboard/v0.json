@@ -301,6 +301,17 @@
                     { "$ref": "#/$defs/if:vega" }
                 ]
             }
+        },
+        "layout": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "key": { "type": "string" },
+                    "size": { "enum": ["small", "medium", "large"] }
+                },
+                "required": ["key", "size"]
+            }
         }
     },
     "required": [ "schema", "uri", "payload" ],

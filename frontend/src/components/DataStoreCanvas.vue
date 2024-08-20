@@ -8,18 +8,17 @@ import HtmlSnippetWidget from "@/components/HtmlSnippetWidget.vue";
 import ImageWidget from "@/components/ImageWidget.vue";
 import MarkdownWidget from "@/components/MarkdownWidget.vue";
 import VegaWidget from "@/components/VegaWidget.vue";
-import { useCanvasStore, type KeyLayoutSize } from "@/stores/canvas";
+import type { KeyLayoutSize } from "@/models";
+import { useCanvasStore } from "@/stores/canvas";
 
 const canvasStore = useCanvasStore();
 const items = computed(() => {
   const dataStore = canvasStore.dataStore;
-  const r: { [key: string]: any } = {};
-  if (dataStore) {
-    for (const k of canvasStore.displayedKeys) {
-      r[k] = dataStore.get(k);
-    }
-  }
-  return r;
+  const layout = canvasStore.layout;
+
+  return layout.map(({ key, size }) => {
+    return { key, size, data: dataStore?.get(key) };
+  });
 });
 
 function onLayoutChange(key: string, size: KeyLayoutSize) {
@@ -34,25 +33,25 @@ function onCardRemoved(key: string) {
 <template>
   <div class="canvas">
     <DataStoreCard
-      v-for="(value, key) in items"
+      v-for="{ key, size, data: value } in items"
       :key="key"
-      :title="key as string"
-      :class="[canvasStore.layoutSizes[key] || 'large']"
+      :title="key"
+      :class="size"
       class="canvas-element"
-      @layout-changed="onLayoutChange(key as string, $event)"
-      @card-removed="onCardRemoved(key as string)"
+      @layout-changed="onLayoutChange(key, $event)"
+      @card-removed="onCardRemoved(key)"
     >
-      <VegaWidget v-if="value.type === 'vega'" :spec="value.data" />
+      <VegaWidget v-if="value.type === 'vega'" :spec="value" />
       <DataFrameWidget
         v-if="value.type === 'dataframe'"
-        :columns="value.data.columns"
-        :data="value.data.data"
+        :columns="value.columns"
+        :data="value.data"
       />
       <ImageWidget
         v-if="value.type === 'image'"
-        :mime-type="value.data['mime-type']"
-        :base64-src="value.data.data"
-        :alt="key as string"
+        :mime-type="value['mime-type']"
+        :base64-src="value.data"
+        :alt="key"
       />
       <MarkdownWidget
         v-if="

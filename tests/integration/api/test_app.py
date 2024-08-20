@@ -14,14 +14,18 @@ class TestApiApp:
     def setup(self, monkeypatch, tmp_path):
         monkeypatch.setenv("MANDR_ROOT", str(tmp_path))
 
-        storage = FileSystem(directory=tmp_path)
+        self.storage = FileSystem(directory=tmp_path)
 
-        Store("root", storage=storage).insert("key", "value")
-        Store("root/subroot1", storage=storage).insert("key", "value")
-        Store("root/subroot2", storage=storage).insert("key", "value")
-        Store("root/subroot2/subsubroot1", storage=storage).insert("key", "value")
-        Store("root/subroot2/subsubroot2", storage=storage).insert("key1", "value1")
-        Store("root/subroot2/subsubroot2", storage=storage).insert("key2", "value2")
+        Store("root", storage=self.storage).insert("key", "value")
+        Store("root/subroot1", storage=self.storage).insert("key", "value")
+        Store("root/subroot2", storage=self.storage).insert("key", "value")
+        Store("root/subroot2/subsubroot1", storage=self.storage).insert("key", "value")
+        Store("root/subroot2/subsubroot2", storage=self.storage).insert(
+            "key1", "value1"
+        )
+        Store("root/subroot2/subsubroot2", storage=self.storage).insert(
+            "key2", "value2"
+        )
 
     def test_list_stores(self, client):
         routes = [
@@ -59,9 +63,25 @@ class TestApiApp:
             assert response.status_code == 200
             assert response.json() == {
                 "schema": "schema:dashboard:v0",
-                "uri": "root/subroot2/subsubroot2",
+                "uri": "/root/subroot2/subsubroot2",
                 "payload": {
                     "key1": {"type": "markdown", "data": "value1"},
                     "key2": {"type": "markdown", "data": "value2"},
                 },
+                "layout": [],
             }
+
+    def test_put_layout(self, client):
+        layout = [{"key": "key", "size": "small"}]
+        s = Store("root", storage=self.storage)
+        response = client.put(f"/api/mandrs/{s.uri}/layout", json=layout)
+
+        assert response.status_code == 201
+        assert response.json() == {
+            "schema": "schema:dashboard:v0",
+            "uri": "/root",
+            "payload": {
+                "key": {"type": "markdown", "data": "value"},
+            },
+            "layout": layout,
+        }
