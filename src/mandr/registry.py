@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from mandr.storage.uri import URI
 from mandr.store import Store
 
 if TYPE_CHECKING:
@@ -35,3 +36,14 @@ def stores(storage: Storage, /) -> Generator[Store, None, None]:
         if (uri := uri.parent) not in stores:
             stores.add(uri)
             yield Store(uri, storage)
+
+
+def find_store_by_uri(uri: URI, storage: Storage, /) -> Store | None:
+    """Find a Store in `storage` given a URI.
+
+    Returns None if no Store is found with the given URI.
+    """
+    for store in stores(storage):
+        if uri == store.uri:
+            return store
+    return None
