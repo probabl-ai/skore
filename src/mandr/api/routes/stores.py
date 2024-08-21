@@ -65,11 +65,10 @@ async def get_store_by_uri(uri: str):
     """Route used to get a store by its URI."""
     directory = _get_storage_path(os.environ.get("MANDR_ROOT"))
     storage = FileSystem(directory=directory)
-    store_uri = URI(uri)
 
-    for store in registry.stores(storage):
-        if store_uri == store.uri:
-            return serialize_store(store)
+    store = registry.find_store_by_uri(URI(uri), storage)
+    if store is not None:
+        return serialize_store(store)
 
     raise HTTPException(status_code=404, detail=f"No store found in '{uri}'")
 
@@ -80,14 +79,13 @@ async def put_layout(uri: str, payload: list[LayoutItem]):
     """Save the report layout configuration."""
     directory = _get_storage_path(os.environ.get("MANDR_ROOT"))
     storage = FileSystem(directory=directory)
-    store_uri = URI(uri)
 
-    for store in registry.stores(storage):
-        if store_uri == store.uri:
-            try:
-                store.insert(LAYOUT_KEY, payload)
-            except KeyError:
-                store.update(LAYOUT_KEY, payload)
-            return serialize_store(store)
+    store = registry.find_store_by_uri(URI(uri), storage)
+    if store is not None:
+        try:
+            store.insert(LAYOUT_KEY, payload)
+        except KeyError:
+            store.update(LAYOUT_KEY, payload)
+        return serialize_store(store)
 
     raise HTTPException(status_code=404, detail=f"No store found in '{uri}'")
