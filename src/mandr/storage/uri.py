@@ -28,19 +28,19 @@ class URI:
         Examples
         --------
         >>> URI("/", "r", "/", "o", "/", "o", "/", "t")
-        URI(r,o,o,t)
+        URI("/r/o/o/t")
 
         >>> URI("/r/o", "/o/t")
-        URI(r,o,o,t)
+        URI("/r/o/o/t")
 
         >>> URI("/r/o/o/t")
-        URI(r,o,o,t)
+        URI("/r/o/o/t")
 
         >>> URI("r/o/o/t")
-        URI(r,o,o,t)
+        URI("/r/o/o/t")
 
         >>> URI("r", "o", "o", "t")
-        URI(r,o,o,t)
+        URI("/r/o/o/t")
 
         >>> URI("/")
         Traceback (most recent call last):
@@ -110,7 +110,7 @@ class URI:
 
     def __repr__(self) -> str:
         """Return repr(self)."""
-        return f"URI({','.join(self.__segments)})"
+        return f'URI("{self}")'
 
     def __hash__(self) -> int:
         """Return hash(self)."""
