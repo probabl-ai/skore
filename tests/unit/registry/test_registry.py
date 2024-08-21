@@ -42,3 +42,9 @@ class TestRegistry:
             Store(URI("/r/o/o"), storage),
             Store(URI("/r/o/o/t"), storage),
         ]
+
+    def test_find_store_by_uri(self, storage):
+        assert registry.find_store_by_uri(URI("/r/o/o"), storage) == Store(
+            URI("/r/o/o"), storage
+        )
+        assert registry.find_store_by_uri(URI("/hello"), storage) is None
