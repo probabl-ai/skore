@@ -44,6 +44,28 @@
                 "additionalProperties": false
             }
         },
+        "if:cv_results": {
+            "title": "CV results",
+            "description": "Result of a cross-validation, as output by `sklearn.model_selection.cross_validate`.",
+            "if": { "properties": { "type": { "const": "cv_results" } } },
+            "then": {
+                "type": "object",
+                "properties": {
+                    "type": { "const": "cv_results" },
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "roc_curve_spec": { "$ref": "#/$defs/if:vega" },
+                            "cv_results_table": { "$ref": "#/$defs/if:dataframe" }
+                        },
+                        "required": [ "roc_curve_spec", "cv_results_table" ],
+                        "additionalProperties": false
+                    }
+                },
+                "required": [ "type", "data" ],
+                "additionalProperties": false
+            }
+        },
         "if:dataframe": {
             "title": "DataFrame",
             "description": "DataFrame.",
@@ -127,7 +149,7 @@
                             },
                             "data": {
                                 "type": "string",
-                                "pattern": "^([a-z]|[A-Z]|\\d|\\+)*=*$",
+                                "pattern": "^([a-z]|[A-Z]|\\d|\\+|\/)*=*$",
                                 "contentEncoding": "base64"
                             }
                         },
@@ -177,8 +199,7 @@
                     "type": { "const": "html" },
                     "data": {
                         "type": "string",
-                        "contentMediaType": "text/html",
-                        "pattern": "^<!DOCTYPE html>(.|\r?\n)*<\/html>$"
+                        "contentMediaType": "text/html"
                     }
                 },
                 "required": [ "type", "data" ],
@@ -246,6 +267,7 @@
                                     "any",
                                     "array",
                                     "boolean",
+                                    "cv_results",
                                     "dataframe",
                                     "date",
                                     "datetime",
@@ -265,6 +287,7 @@
                     { "$ref": "#/$defs/if:any" },
                     { "$ref": "#/$defs/if:array" },
                     { "$ref": "#/$defs/if:boolean" },
+                    { "$ref": "#/$defs/if:cv_results" },
                     { "$ref": "#/$defs/if:dataframe" },
                     { "$ref": "#/$defs/if:date" },
                     { "$ref": "#/$defs/if:datetime" },
@@ -277,6 +300,17 @@
                     { "$ref": "#/$defs/if:string" },
                     { "$ref": "#/$defs/if:vega" }
                 ]
+            }
+        },
+        "layout": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "key": { "type": "string" },
+                    "size": { "enum": ["small", "medium", "large"] }
+                },
+                "required": ["key", "size"]
             }
         }
     },

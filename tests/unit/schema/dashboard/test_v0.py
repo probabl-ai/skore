@@ -62,6 +62,55 @@ class TestV0:
             ),
             (
                 {
+                    "type": "cv_results",
+                    "data": {
+                        "cv_results_table": {
+                            "type": "dataframe",
+                            "data": json.loads(
+                                pd.DataFrame(
+                                    [[1, 2, 3], [4, 5, 6]],
+                                    columns=["column_0", 1, True],
+                                ).to_json(orient="table")
+                            ),
+                        },
+                        "roc_curve_spec": {
+                            "type": "vega",
+                            "data": (
+                                alt.Chart(pd.DataFrame({"a": ["A"], "b": [28]}))
+                                .mark_bar()
+                                .to_dict()
+                            ),
+                        },
+                    },
+                },
+                does_not_raise(),
+            ),
+            (
+                {
+                    "type": "cv_results",
+                    "data": {
+                        "cv_results_table": json.loads(
+                            pd.DataFrame(
+                                [[1, 2, 3], [4, 5, 6]],
+                                columns=["column_0", 1, True],
+                            ).to_json(orient="table")
+                        ),
+                        "roc_curve_spec": (
+                            alt.Chart(pd.DataFrame({"a": ["A"], "b": [28]}))
+                            .mark_bar()
+                            .to_dict()
+                        ),
+                    },
+                },
+                # The error message is not particularly informative.
+                # The issue is we need to keep using the "type" and "data" keys even
+                # when nested.
+                pytest.raises(
+                    ValidationError, match="not valid under any of the given schemas"
+                ),
+            ),
+            (
+                {
                     "type": "dataframe",
                     "data": json.loads(
                         pd.DataFrame(
@@ -169,6 +218,16 @@ class TestV0:
             (
                 {
                     "type": "image",
+                    "data": {
+                        "mime-type": "image/webp",
+                        "data": "lkahsi34982djGGD/=",
+                    },
+                },
+                does_not_raise(),
+            ),
+            (
+                {
+                    "type": "image",
                     # NOTE: Invalid Base64
                     "data": {"mime-type": "image/png", "data": "hello.22"},
                 },
@@ -194,7 +253,8 @@ class TestV0:
             ),
             (
                 {"type": "html", "data": "<head></head>"},
-                pytest.raises(ValidationError, match="Failed validating 'pattern'"),
+                # NOTE: No DOCTYPE
+                does_not_raise(),
             ),
             ({"type": "integer", "data": 1}, does_not_raise()),
             (

@@ -1,30 +1,43 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onBeforeMount, ref } from "vue";
 import { useRouter } from "vue-router";
-import { type FileTreeNode } from "./FileTree.vue";
+
+import { type FileTreeNode } from "@/components/FileTree.vue";
+import { remap, sha1 } from "@/services/utils";
 
 const router = useRouter();
 const props = defineProps<FileTreeNode>();
 
+const randomColor = ref("");
 const hasChildren = computed(() => props.children?.length);
 const label = computed(() => {
   const segment = props.uri.split("/");
   return segment[segment.length - 1];
 });
 
-const randomColor = computed(() => {
-  const hue = Math.random() * 360;
-  return `background-color: hsl(${hue}deg 97 75);`;
-});
-
 function onClick() {
+  var segments = props.uri.split("/");
+
+  // Take out leading slash to get a valid URL
+  const [head, ...tail] = segments;
+  if (head === "") {
+    segments = tail;
+  }
+
   router.push({
     name: "dashboard",
     params: {
-      segments: props.uri.split("/"),
+      segments: segments,
     },
   });
 }
+
+onBeforeMount(async () => {
+  const hash = await sha1(props.uri);
+  const hashAsNumber = Number(`0x${hash.slice(0, 7)}`);
+  const hue = remap(hashAsNumber, 0x0000000, 0xfffffff, 0, 360);
+  randomColor.value = `background-color: hsl(${hue}deg 97 75);`;
+});
 </script>
 
 <template>

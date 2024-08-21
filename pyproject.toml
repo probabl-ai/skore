@@ -9,21 +9,22 @@ name = "mandr"
 description = "..."
 version = "0.1.0"
 dependencies = [
-  "Flask",
   "altair",
   "diskcache",
-  "jinja2",
-  "markdown",
   "pandas",
-  "rich",
+  "polars",
   "scikit-learn",
-  "srsly",
   "fastapi",
   "matplotlib",
+  "pydantic",
+  "pydantic_numpy",
+  "uvicorn",
+  "rich",
 ]
 
 [project.optional-dependencies]
 test = [
+  "httpx",
   "jsonschema[format]",
   "pre-commit",
   "pytest",
@@ -36,6 +37,7 @@ tools = [
 ]
 
 doc = [
+  "skrub",
   "sphinx",
   "sphinx-gallery",
   "pydata_sphinx_theme",
@@ -53,6 +55,7 @@ packages = ["src/mandr"]
 
 [tool.pytest.ini_options]
 addopts = [
+  "--doctest-modules",
   "--cov=src/",
   "--cov=tests/",
   "--cov-branch",
@@ -101,5 +104,21 @@ convention = "numpy"
   "B018",
 ]
 
+[tool.typos.default]
+extend-ignore-re = [
+  # Line ignore with trailing `# spellchecker:disable-line`
+  "(?Rm)^.*(#|//)\\s*spellchecker:disable-line$",
+  # Line block with `# spellchecker:<on|off>`
+  "(?s)(#|//)\\s*spellchecker:off.*?\\n\\s*(#|//)\\s*spellchecker:on",
+]
+
+[tool.typos.files]
+extend-exclude = [
+  "*.min.js",
+]
+
 [tool.typos.default.extend-words]
+# acronym for "False Positive Rate"
 fpr = "fpr"
+# typos considers pnd.NpNDArray as a typo and corrects it to pnd.NpANDArray
+ND = "ND"

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import "highlight.js/styles/atom-one-light.min.css";
+import { isString } from "@/services/utils";
+import "highlight.js/styles/monokai-sublime.min.css";
 import MarkdownIt from "markdown-it";
 import { full as emoji } from "markdown-it-emoji";
 import highlightjs from "markdown-it-highlightjs";
@@ -7,7 +8,7 @@ import sub from "markdown-it-sub";
 import sup from "markdown-it-sup";
 import { computed } from "vue";
 
-const props = defineProps<{ source: string }>();
+const props = defineProps<{ source: any }>();
 const renderer = MarkdownIt({
   html: true,
   linkify: true,
@@ -19,7 +20,12 @@ const renderer = MarkdownIt({
   .use(highlightjs, { inline: true });
 
 const html = computed(() => {
-  return renderer.render(props.source);
+  let s = props.source;
+  if (!isString(s)) {
+    s = JSON.stringify(s, null, 2);
+    s = "```json\n" + s + "\n```";
+  }
+  return renderer.render(s);
 });
 </script>
 

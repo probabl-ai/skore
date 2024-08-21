@@ -6,17 +6,19 @@ import DataTable from "datatables.net-vue3";
 
 DataTable.use(DataTablesCore);
 
-const props = defineProps<{
-  headers: string[];
-  values: any[][];
-}>();
+export interface DataFrameWidgetProps {
+  columns: string[];
+  data: any[][];
+}
+
+const props = defineProps<DataFrameWidgetProps>();
 </script>
 
 <template>
-  <DataTable :data="props.values">
+  <DataTable :data="props.data">
     <thead>
       <tr>
-        <th v-for="(name, index) in props.headers" :key="index">{{ name }}</th>
+        <th v-for="(name, index) in props.columns" :key="index">{{ name }}</th>
       </tr>
     </thead>
   </DataTable>

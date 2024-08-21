@@ -8,13 +8,11 @@ import DataStoreCanvas from "@/components/DataStoreCanvas.vue";
 import DataStoreKeyList from "@/components/DataStoreKeyList.vue";
 import FileTree, { transformUrisToTree } from "@/components/FileTree.vue";
 import SimpleButton from "@/components/SimpleButton.vue";
-import { type DataStore } from "@/models";
 import { fetchAllManderUris, fetchMander } from "@/services/api";
 import { useCanvasStore } from "@/stores/canvas";
 
 const route = useRoute();
 const dataStoreUris = ref<string[]>([]);
-const dataStore = ref<DataStore | null>();
 const canvasStore = useCanvasStore();
 const isDropIndicatorVisible = ref(false);
 const editor = ref<HTMLDivElement>();
@@ -30,7 +28,6 @@ async function fetchDataStoreDetail(path: string | string[]) {
     return;
   }
   const m = await fetchMander(p);
-  dataStore.value = m;
   canvasStore.setDataStore(m);
 }
 
@@ -75,17 +72,16 @@ await fetchDataStoreDetail(route.params.segments);
         <FileTree :nodes="fileTree" />
       </Simplebar>
     </nav>
-    <article :class="{ 'not-found': dataStore == null }" v-if="dataStore">
+    <article v-if="canvasStore.dataStore">
       <div class="elements">
         <DashboardHeader title="Elements (added from mandr)" icon="icon-pie-chart" />
         <Simplebar class="key-list">
-          <DataStoreKeyList title="Views" icon="icon-plot" :keys="Object.keys(dataStore.views)" />
-          <DataStoreKeyList title="Info" icon="icon-text" :keys="Object.keys(dataStore.info)" />
-          <DataStoreKeyList title="Logs" icon="icon-folder" :keys="Object.keys(dataStore.logs)" />
+          <DataStoreKeyList title="Plots" icon="icon-plot" :keys="canvasStore.dataStore.plotKeys" />
+          <DataStoreKeyList title="Info" icon="icon-text" :keys="canvasStore.dataStore.infoKeys" />
           <DataStoreKeyList
             title="Artifacts"
             icon="icon-gift"
-            :keys="Object.keys(dataStore.artifacts)"
+            :keys="canvasStore.dataStore.artifactKeys"
           />
         </Simplebar>
       </div>
@@ -99,25 +95,25 @@ await fetchDataStoreDetail(route.params.segments);
         @dragleave="onDragLeave"
       >
         <div class="editor-header" ref="editorHeader">
-          <h1>Board</h1>
+          <h1>Report</h1>
           <SimpleButton label="Save report settings" @click="onSaveBoard" />
         </div>
         <div class="drop-indicator" :class="{ visible: isDropIndicatorVisible }"></div>
         <Transition name="fade">
           <div
-            v-if="!isDropIndicatorVisible && canvasStore.displayedKeys.length === 0"
+            v-if="!isDropIndicatorVisible && canvasStore.layout.length === 0"
             class="placeholder"
             :style="`--header-height: ${editorHeaderHeight}px`"
           >
             No item selected yet, start by dragging one element!
           </div>
-          <Simplebar class="canvas" v-else>
+          <Simplebar class="canvas-wrapper" v-else>
             <DataStoreCanvas />
           </Simplebar>
         </Transition>
       </div>
     </article>
-    <div v-else>mandr not found...</div>
+    <div class="not-found" v-else>mandr not found...</div>
   </main>
 </template>
 
@@ -144,20 +140,14 @@ main {
     }
   }
 
-  article {
+  article,
+  .not-found {
     display: flex;
     flex-direction: row;
     flex-grow: 1;
+  }
 
-    &.not-found {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #c8c7c7;
-      font-size: x-large;
-      font-weight: 200;
-    }
-
+  article {
     & .elements {
       display: flex;
       width: 240px;
@@ -212,7 +202,7 @@ main {
       & .placeholder {
         height: 100%;
         padding-top: calc((100vh - var(--header-height)) * 476 / 730);
-        background-image: url("../assets/images/editor-placeholder.png");
+        background-image: url("../assets/images/editor-placeholder.svg");
         background-position: 50%;
         background-repeat: no-repeat;
         background-size: contain;
@@ -221,7 +211,7 @@ main {
         text-align: center;
       }
 
-      & .canvas {
+      & .canvas-wrapper {
         height: 0;
         flex-grow: 1;
         padding: var(--spacing-padding-large);

@@ -1,8 +1,26 @@
 <script setup lang="ts">
+import { computed } from "vue";
+
+import CrossValidationResultsWidget from "@/components/CrossValidationResultsWidget.vue";
+import DataFrameWidget from "@/components/DataFrameWidget.vue";
 import DataStoreCard from "@/components/DataStoreCard.vue";
-import { useCanvasStore, type KeyLayoutSize } from "@/stores/canvas";
+import HtmlSnippetWidget from "@/components/HtmlSnippetWidget.vue";
+import ImageWidget from "@/components/ImageWidget.vue";
+import MarkdownWidget from "@/components/MarkdownWidget.vue";
+import VegaWidget from "@/components/VegaWidget.vue";
+import type { KeyLayoutSize } from "@/models";
+import { useCanvasStore } from "@/stores/canvas";
 
 const canvasStore = useCanvasStore();
+const items = computed(() => {
+  const dataStore = canvasStore.dataStore;
+  const layout = canvasStore.layout;
+
+  return layout.map(({ key, size }) => {
+    const item = dataStore?.get(key);
+    return { key, size, data: item?.data, type: item?.type };
+  });
+});
 
 function onLayoutChange(key: string, size: KeyLayoutSize) {
   canvasStore.setKeyLayoutSize(key, size);
@@ -14,17 +32,49 @@ function onCardRemoved(key: string) {
 </script>
 
 <template>
-  <DataStoreCard
-    v-for="key in canvasStore.displayedKeys"
-    :key="key"
-    :title="key"
-    :class="[canvasStore.layoutSizes[key] || 'large']"
-    class="canvas-element"
-    @layout-changed="onLayoutChange(key, $event)"
-    @card-removed="onCardRemoved(key)"
-  >
-    <div v-html="canvasStore.get(key).toString().substring(0, 100)"></div>
-  </DataStoreCard>
+  <div class="canvas">
+    <DataStoreCard
+      v-for="{ key, size, data, type } in items"
+      :key="key"
+      :title="key"
+      :class="size"
+      class="canvas-element"
+      @layout-changed="onLayoutChange(key, $event)"
+      @card-removed="onCardRemoved(key)"
+    >
+      <VegaWidget v-if="type === 'vega'" :spec="data" />
+      <DataFrameWidget v-if="type === 'dataframe'" :columns="data.columns" :data="data.data" />
+      <ImageWidget
+        v-if="type === 'image'"
+        :mime-type="data['mime-type']"
+        :base64-src="data.data"
+        :alt="key"
+      />
+      <MarkdownWidget
+        v-if="
+          [
+            'boolean',
+            'integer',
+            'number',
+            'string',
+            'any',
+            'array',
+            'date',
+            'datetime',
+            'markdown',
+            'numpy_array',
+          ].includes(type!)
+        "
+        :source="data"
+      />
+      <HtmlSnippetWidget v-if="type === 'html'" :src="data" />
+      <CrossValidationResultsWidget
+        v-if="type === 'cv_results'"
+        :roc_curve_spec="data.roc_curve_spec"
+        :cv_results_table="data.cv_results_table"
+      />
+    </DataStoreCard>
+  </div>
 </template>
 
 <style scoped>

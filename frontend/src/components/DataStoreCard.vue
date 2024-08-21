@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { type KeyLayoutSize } from "@/stores/canvas";
+import type { KeyLayoutSize } from "@/models";
 
 const props = defineProps<{
   title: string;
