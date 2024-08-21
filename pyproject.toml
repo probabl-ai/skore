@@ -37,9 +37,12 @@ tools = [
 ]
 
 doc = [
+  "skrub",
   "sphinx",
   "sphinx-gallery",
-  "matplotlib"
+  "matplotlib",
+  "seaborn",
+  "tqdm"
 ]
 
 [tool.hatch.build.targets.wheel]
