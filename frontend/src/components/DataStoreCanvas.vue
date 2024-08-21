@@ -17,7 +17,8 @@ const items = computed(() => {
   const layout = canvasStore.layout;
 
   return layout.map(({ key, size }) => {
-    return { key, size, data: dataStore?.get(key) };
+    const item = dataStore?.get(key);
+    return { key, size, data: item?.data, type: item?.type };
   });
 });
 
@@ -33,7 +34,7 @@ function onCardRemoved(key: string) {
 <template>
   <div class="canvas">
     <DataStoreCard
-      v-for="{ key, size, data: value } in items"
+      v-for="{ key, size, data, type } in items"
       :key="key"
       :title="key"
       :class="size"
@@ -41,16 +42,12 @@ function onCardRemoved(key: string) {
       @layout-changed="onLayoutChange(key, $event)"
       @card-removed="onCardRemoved(key)"
     >
-      <VegaWidget v-if="value.type === 'vega'" :spec="value" />
-      <DataFrameWidget
-        v-if="value.type === 'dataframe'"
-        :columns="value.columns"
-        :data="value.data"
-      />
+      <VegaWidget v-if="type === 'vega'" :spec="data" />
+      <DataFrameWidget v-if="type === 'dataframe'" :columns="data.columns" :data="data.data" />
       <ImageWidget
-        v-if="value.type === 'image'"
-        :mime-type="value['mime-type']"
-        :base64-src="value.data"
+        v-if="type === 'image'"
+        :mime-type="data['mime-type']"
+        :base64-src="data.data"
         :alt="key"
       />
       <MarkdownWidget
@@ -66,15 +63,15 @@ function onCardRemoved(key: string) {
             'datetime',
             'markdown',
             'numpy_array',
-          ].includes(value.type)
+          ].includes(type!)
         "
-        :source="value.data"
+        :source="data"
       />
-      <HtmlSnippetWidget v-if="value.type === 'html'" :src="value.data" />
+      <HtmlSnippetWidget v-if="type === 'html'" :src="data" />
       <CrossValidationResultsWidget
-        v-if="value.type === 'cv_results'"
-        :roc_curve_spec="value.data.roc_curve_spec"
-        :cv_results_table="value.data.cv_results_table"
+        v-if="type === 'cv_results'"
+        :roc_curve_spec="data.roc_curve_spec"
+        :cv_results_table="data.cv_results_table"
       />
     </DataStoreCard>
   </div>
