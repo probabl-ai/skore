@@ -90,8 +90,14 @@ class TestStore:
             ),
         }
 
-        with pytest.raises(KeyError):
-            store.insert("key2", 2, display_type=DisplayType.INTEGER)
+    def test_insert_twice(self, store):
+        store.insert("key2", 2)
+
+        with pytest.raises(
+            KeyError,
+            match="Key 'key2' already exists in .*; update or delete the key instead.",
+        ):
+            store.insert("key2", 5)
 
     def test_read(self, store):
         assert store.read("key1") == "value"
