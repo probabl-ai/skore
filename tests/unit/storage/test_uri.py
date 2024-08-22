@@ -59,12 +59,14 @@ class TestURI:
         assert str(URI("r/o/o/t")) == root
 
     def test_repr(self):
-        root = "URI(r,o,o,t)"
+        root = 'URI("/r/o/o/t")'
 
         assert repr(URI("/", "r", "/", "o", "/", "o", "/", "t")) == root
         assert repr(URI("/r/o", "/o/t")) == root
         assert repr(URI("/r/o/o/t")) == root
         assert repr(URI("r/o/o/t")) == root
+
+        assert eval(repr(root)) == root
 
     def test_hash(self):
         root = hash(("r", "o", "o", "t"))
