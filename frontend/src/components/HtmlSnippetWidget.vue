@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, onBeforeUnmount, ref } from "vue";
 
 const props = defineProps<{ src: string }>();
 
@@ -27,11 +27,24 @@ const document = computed(() => {
   `;
 });
 
+const resizeObserver = new ResizeObserver((entries) => {
+  if (entries.length == 1) {
+    const observedIframe = entries[0];
+    iframeHeight.value = observedIframe.contentRect.height;
+  }
+});
+
 function onIframeLoad() {
-  if (iframe.value && iframe.value.contentWindow) {
-    iframeHeight.value = iframe.value.contentWindow.document.documentElement.scrollHeight;
+  if (iframe.value && iframe.value.contentDocument) {
+    resizeObserver.observe(iframe.value.contentDocument.body);
   }
 }
+
+onBeforeUnmount(() => {
+  if (iframe.value && iframe.value.contentDocument) {
+    resizeObserver.unobserve(iframe.value.contentDocument.body);
+  }
+});
 </script>
 
 <template>
@@ -40,7 +53,7 @@ function onIframeLoad() {
     :srcdoc="document"
     frameborder="0"
     sandbox="allow-scripts allow-same-origin"
-    scrolling="no"
+    scrolling="auto"
     @load="onIframeLoad"
     :style="{ height: `${iframeHeight}px` }"
   ></iframe>
