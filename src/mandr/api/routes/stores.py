@@ -86,7 +86,7 @@ async def share_store(request: fastapi.Request, uri: str):
         "styles": styles_content,
     }
 
-    # 5 rendre le template
+    # Render the template and send the result
     templates = Jinja2Templates(directory=Path(__file__).resolve().parent / "templates")
     return templates.TemplateResponse(
         request=request, name="share.html.jinja", context=context
