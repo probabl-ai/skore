@@ -72,7 +72,11 @@ class Store:
         uri = self.uri / key
 
         if uri in self.storage:
-            raise KeyError(key)
+            raise KeyError(
+                key,
+                f"Key '{key}' already exists in {self}; "
+                "update or delete the key instead.",
+            )
 
         now = datetime.now(tz=UTC).isoformat()
         display_type = (
@@ -100,7 +104,7 @@ class Store:
         try:
             item = self.storage.getitem(self.uri / key)
         except KeyError as e:
-            raise KeyError(key) from e
+            raise KeyError(key, f"Key '{key}' does not exist in {self}.") from e
 
         return (
             item.data
@@ -128,7 +132,7 @@ class Store:
         uri = self.uri / key
 
         if uri not in self.storage:
-            raise KeyError(key)
+            raise KeyError(key, f"Key '{key}' does not exist in {self}.")
 
         created_at = self.storage.getitem(uri).metadata.created_at
         updated_at = datetime.now(tz=UTC).isoformat()
@@ -158,7 +162,7 @@ class Store:
         try:
             self.storage.delitem(self.uri / key)
         except KeyError as e:
-            raise KeyError(key) from e
+            raise KeyError(key, f"Key '{key}' does not exist in {self}.") from e
 
     def __iter__(self) -> Generator[str, None, None]:
         """Yield the keys."""
