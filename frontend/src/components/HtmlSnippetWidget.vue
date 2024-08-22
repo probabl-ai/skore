@@ -39,6 +39,7 @@ function onIframeLoad() {
     resizeObserver.observe(iframe.value.contentDocument.body);
   }
 }
+
 onBeforeUnmount(() => {
   if (iframe.value && iframe.value.contentDocument) {
     resizeObserver.unobserve(iframe.value.contentDocument.body);
