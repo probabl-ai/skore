@@ -51,7 +51,7 @@ import seaborn as sns
 from matplotlib import pyplot as plt
 from utils_eda import get_group_cols
 
-X = pd.read_csv("X_train.csv", low_memory=False).convert_dtypes()
+df = pd.read_parquet("bnp_fraud.parquet").convert_dtypes()
 
 # Rename the 24 columns 'Nbr_of_prod_purchas' in a shorter 'nbr'
 renaming = dict(
@@ -60,12 +60,12 @@ renaming = dict(
         get_group_cols("nbr"),
     )
 )
-X = X.rename(columns=renaming)
+df = df.rename(columns=renaming)
 
 # Display the first item attributes
 attribute_cols = ["item", "cash_price", "make", "model", "goods_code", "nbr"]
 cols = ["ID", *[f"{col}1" for col in attribute_cols], "Nb_of_items"]
-X[cols]
+df[cols]
 
 # %%
 # We see products like electronics or home furnitures, with a price range close to
@@ -95,14 +95,14 @@ X[cols]
 #
 # Let's check that our IDs are unique:
 
-assert X["ID"].nunique() == X.shape[0]
+assert df["ID"].nunique() == df.shape[0]
 
 # %%
 # Then, what is the cardinality of our features? We only select the first item for
 # simplicity.
 
 cols = ["ID", *[f"{col}1" for col in attribute_cols]]
-X[cols].nunique().sort_values()
+df[cols].nunique().sort_values()
 
 # %%
 # ``nbr`` has intriguing outliers, like buying 16 times the same product, which might
@@ -114,7 +114,7 @@ X[cols].nunique().sort_values()
 # Let's go further and describe the relationship between ``model`` and ``goods_code``.
 # How many different models are attributed to each ``goods_code``?
 
-model_per_code = X.groupby("goods_code1")["model1"].nunique()
+model_per_code = df.groupby("goods_code1")["model1"].nunique()
 model_per_code.value_counts(normalize=True)
 
 # %%
@@ -124,7 +124,7 @@ model_per_code.value_counts(normalize=True)
 
 duplicate_models = model_per_code[model_per_code == 2].index
 (
-    X.loc[X["goods_code1"].isin(duplicate_models)]
+    df.loc[df["goods_code1"].isin(duplicate_models)]
     .groupby(["goods_code1", "model1"])["ID"]
     .count()
 )
@@ -140,7 +140,7 @@ duplicate_models = model_per_code[model_per_code == 2].index
 #
 # Let's reproduce this experiment with the pairs ``(item, model)`` and ``(make, item)``.
 
-item_per_model = X.groupby("model1")["item1"].nunique()
+item_per_model = df.groupby("model1")["item1"].nunique()
 item_per_model.value_counts()
 
 
@@ -149,7 +149,9 @@ item_per_model.value_counts()
 
 duplicate_items = item_per_model[item_per_model == 2].index
 (
-    X.loc[X["model1"].isin(duplicate_items)].groupby(["model1", "item1"])["ID"].count()
+    df.loc[df["model1"].isin(duplicate_items)]
+    .groupby(["model1", "item1"])["ID"]
+    .count()
 ).head(6)
 
 # %%
@@ -160,7 +162,7 @@ duplicate_items = item_per_model[item_per_model == 2].index
 #
 # Finally, let's count the occurrence of distinct ``make`` for a given ``model``.
 
-make_by_model = X.groupby("model1")["make1"].nunique()
+make_by_model = df.groupby("model1")["make1"].nunique()
 make_by_model.value_counts()
 
 
@@ -168,7 +170,7 @@ make_by_model.value_counts()
 # One model has 156 makers.
 
 duplicate_make = make_by_model[make_by_model != 1].index
-(X.loc[X["model1"].isin(duplicate_make)].groupby(["model1", "make1"])["ID"].count())
+(df.loc[df["model1"].isin(duplicate_make)].groupby(["model1", "make1"])["ID"].count())
 
 # %%
 # It seems that ``MADE TO MEASURE CURTAINS`` is a model placeholder like ``RETAILER``.
@@ -183,7 +185,7 @@ duplicate_make = make_by_model[make_by_model != 1].index
 cols = []
 for col_group in ["item", "model", "make"]:
     cols += get_group_cols(col_group, 3)
-X.loc[(X == "RETAILER").any(axis=1)][cols].head(10)
+df.loc[(df == "RETAILER").any(axis=1)][cols].head(10)
 
 # %%
 # So, ``RETAILER`` is a umbrella placeholder, that cover different concepts.
@@ -204,40 +206,16 @@ X.loc[(X == "RETAILER").any(axis=1)][cols].head(10)
 # --------------------
 #
 # We now switch gears and load the target, before merging it with the feature table.
-
-y = pd.read_csv("Y_train.csv", index_col="index")
-y
-
-# %%
-# As a safety measure and to mitigate the risk of overfitting, we only analyse the
-# training data.
 #
 # By its nature, fraud is a very imbalanced classification problem. Here, the
 # prevalence is close to 1.4%. Therefore, we use stratification strategies to avoid
 # selecting too few positive classes in our analysis, and later our modelling.
-
-from sklearn.model_selection import train_test_split
-
-target_col = "fraud_flag"
-X_train, X_test, y_train, y_test = train_test_split(
-    X,
-    y,
-    test_size=0.1,
-    stratify=y[target_col],
-    random_state=0,
-)
-X_train.shape, X_test.shape, y_train.shape, y_test.shape
-
-# %%
-# We merge our training dataset with our training target to derive more insights.
-
-df = X_train.merge(y_train, on="ID")
-df.shape
-
-# %%
+#
 # We show the target distribution:
 
 palette = sns.color_palette("colorblind", n_colors=2)
+
+target_col = "fraud_flag"
 ax = df[target_col].value_counts().plot.bar(color=palette)
 ax.bar_label(ax.containers[0])
 

@@ -38,7 +38,7 @@ import pandas as pd
 import seaborn as sns
 from utils_eda import get_group_cols
 
-X = pd.read_csv("X_train.csv", low_memory=False)
+X = pd.read_parquet("bnp_fraud.parquet")
 X.pop("ID")
 
 renaming = dict(
@@ -68,7 +68,7 @@ X.shape
 # operation, and estimating the performance across these different splits. This would
 # give us a stronger estimate of our models performance and confidence intervals.
 
-y = pd.read_csv("Y_train.csv", index_col="index")["fraud_flag"]
+y = X.pop("fraud_flag")
 y
 
 # %%
