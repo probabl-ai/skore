@@ -16,6 +16,7 @@ from mandr.api.schema.html import HTML
 from mandr.api.schema.integer import Integer
 from mandr.api.schema.layout import LayoutItem
 from mandr.api.schema.markdown import Markdown
+from mandr.api.schema.matplotlib_figure import MatplotlibFigure
 from mandr.api.schema.number import Number
 from mandr.api.schema.numpy_array import NumpyArray
 from mandr.api.schema.string import String
@@ -32,6 +33,7 @@ __all__ = [
     "HTML",
     "Integer",
     "Markdown",
+    "MatplotlibFigure",
     "Number",
     "NumpyArray",
     "Store",
@@ -69,6 +71,7 @@ class Store(pydantic.BaseModel):
                 HTML,
                 Integer,
                 Markdown,
+                MatplotlibFigure,
                 Number,
                 NumpyArray,
                 String,

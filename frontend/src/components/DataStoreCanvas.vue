@@ -50,6 +50,12 @@ function onCardRemoved(key: string) {
         :base64-src="data.data"
         :alt="key"
       />
+      <ImageWidget
+        v-if="type === 'matplotlib_figure'"
+        mime-type="image/svg+xml"
+        :base64-src="data"
+        :alt="key"
+      />
       <MarkdownWidget
         v-if="
           [

@@ -26,6 +26,7 @@ dependencies = [
 test = [
   "httpx",
   "jsonschema[format]",
+  "matplotlib",
   "pre-commit",
   "pytest",
   "pytest-cov",
