@@ -35,6 +35,8 @@ jobs:
           cd frontend
           npm run build
           cp -a dist/. ../src/mandr/dashboard/static
+          npm run build:lib
+          cp -a dist/. ../src/mandr/dashboard/static
       - name: Test with pytest
         run: |
           python -m pytest tests

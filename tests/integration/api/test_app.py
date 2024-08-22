@@ -85,3 +85,12 @@ class TestApiApp:
             },
             "layout": layout,
         }
+
+    def test_share(self, client):
+        s = Store("root", storage=self.storage)
+        response = client.get(f"/api/mandrs/share/{s.uri}")
+
+        assert response.is_success
+        assert '<script id="mandr-data" type="application/json">' in response.text
+        assert response.text.count("</script>") >= 3
+        assert response.text.count("</style>") >= 1

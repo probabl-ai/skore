@@ -10,7 +10,6 @@ const props = defineProps<{
 
 <style>
 button {
-  /* Auto layout */
   display: flex;
   flex: none;
   flex-direction: row;
