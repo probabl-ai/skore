@@ -61,6 +61,7 @@ def serialize_store(store: Store):
 async def share_store(request: fastapi.Request, uri: str):
     """Serve an inlined shareable HTML page."""
 
+    # Get static assets to inject them into the report template
     def read_asset_content(path):
         with open(STATIC_FILES_PATH / path) as f:
             return f.read()
