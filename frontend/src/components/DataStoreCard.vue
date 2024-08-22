@@ -60,6 +60,7 @@ const emit = defineEmits<{
       border-radius: var(--border-radius);
       margin: 0;
       background-color: transparent;
+      color: var(--text-color-highlight);
       font-size: 8px;
       line-height: 8px;
       text-align: center;
