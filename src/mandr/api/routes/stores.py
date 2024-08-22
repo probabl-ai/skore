@@ -78,7 +78,7 @@ async def share_store(request: fastapi.Request, uri: str):
 
     store_data = jsonable_encoder(serialize_store(store))
 
-    # 1 un context jinja
+    # Fill the Jinja context
     context = {
         "uri": store.uri,
         "store_data": store_data,
