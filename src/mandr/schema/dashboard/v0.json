@@ -175,6 +175,20 @@
                 "additionalProperties": false
             }
         },
+        "if:matplotlib_figure": {
+            "title": "Matplotlib figure",
+            "description": "Matplotlib figure in SVG format.",
+            "if": { "properties": { "type": { "const": "matplotlib_figure" } } },
+            "then": {
+                "type": "object",
+                "properties": {
+                    "type": { "const": "matplotlib_figure" },
+                    "data": { "type": "string", "contentMediaType": "image/svg" }
+                },
+                "required": [ "type", "data" ],
+                "additionalProperties": false
+            }
+        },
         "if:number": {
             "title": "Number",
             "description": "Number, analogous to the python's float type.",
@@ -274,6 +288,7 @@
                                     "file",
                                     "image",
                                     "markdown",
+                                    "matplotlib_figure",
                                     "number",
                                     "html",
                                     "integer",
@@ -294,6 +309,7 @@
                     { "$ref": "#/$defs/if:file" },
                     { "$ref": "#/$defs/if:image" },
                     { "$ref": "#/$defs/if:markdown" },
+                    { "$ref": "#/$defs/if:matplotlib_figure" },
                     { "$ref": "#/$defs/if:number" },
                     { "$ref": "#/$defs/if:html" },
                     { "$ref": "#/$defs/if:integer" },

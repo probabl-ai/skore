@@ -32,7 +32,7 @@ class DisplayType(StrEnum):
     IMAGE = auto()
     INTEGER = auto()
     MARKDOWN = auto()
-    MATPLOTLIB = auto()
+    MATPLOTLIB_FIGURE = auto()
     NUMBER = auto()
     NUMPY_ARRAY = auto()
     STRING = auto()
@@ -72,7 +72,7 @@ class DisplayType(StrEnum):
             datetime.datetime: DisplayType.DATETIME,
             int: DisplayType.INTEGER,
             str: DisplayType.MARKDOWN,
-            matplotlib.figure.Figure: DisplayType.MATPLOTLIB,
+            matplotlib.figure.Figure: DisplayType.MATPLOTLIB_FIGURE,
             float: DisplayType.NUMBER,
             numpy.ndarray: DisplayType.NUMPY_ARRAY,
             altair.vegalite.v5.api.Chart: DisplayType.VEGA,

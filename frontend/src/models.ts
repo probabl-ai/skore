@@ -10,6 +10,7 @@ export type ItemType =
   | "file"
   | "html"
   | "markdown"
+  | "matplotlib_figure"
   | "vega"
   | "dataframe"
   | "image"
@@ -33,7 +34,7 @@ export class DataStore {
   ) {}
 
   get plotKeys(): string[] {
-    return this._getKeysByType(["vega"]);
+    return this._getKeysByType(["vega", "matplotlib_figure"]);
   }
 
   get artifactKeys(): string[] {
