@@ -48,6 +48,7 @@ doc = [
   "inflect",
   "sentence-transformers",
   "tqdm",
+  "pyarrow"  # for parquet files
 ]
 
 [tool.hatch.build.targets.wheel]

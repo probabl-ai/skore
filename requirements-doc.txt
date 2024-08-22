@@ -113,6 +113,7 @@ numpy==2.1.0
     #   matplotlib
     #   pandas
     #   patsy
+    #   pyarrow
     #   pydantic-numpy
     #   scikit-learn
     #   scipy
@@ -145,6 +146,8 @@ pillow==10.4.0
     #   sentence-transformers
     #   sphinx-gallery
 polars==1.5.0
+    # via mandr (pyproject.toml)
+pyarrow==17.0.0
     # via mandr (pyproject.toml)
 pydantic==2.8.2
     # via
