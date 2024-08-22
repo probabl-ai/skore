@@ -2,6 +2,7 @@ import { fileURLToPath, URL } from "node:url";
 
 import vue from "@vitejs/plugin-vue";
 import autoprefixer from "autoprefixer";
+import { resolve } from "path";
 import postcssNesting from "postcss-nesting";
 import { defineConfig } from "vite";
 import vueDevTools from "vite-plugin-vue-devtools";
@@ -17,6 +18,16 @@ export default defineConfig({
   css: {
     postcss: {
       plugins: [autoprefixer, postcssNesting],
+    },
+  },
+  define: {
+    "process.env": {},
+  },
+  build: {
+    lib: {
+      entry: resolve(__dirname, "src/share.ts"),
+      name: "mandr",
+      fileName: "mandr",
     },
   },
 });

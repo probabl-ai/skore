@@ -22,3 +22,18 @@ export async function sha1(message: string) {
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
+
+export function saveBlob(blob: Blob, filename: string) {
+  const a = document.createElement("a");
+  const url = window.URL.createObjectURL(blob);
+
+  a.setAttribute("style", "display: none");
+  a.href = url;
+  a.download = filename;
+
+  document.body.appendChild(a);
+  a.click();
+
+  window.URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+}

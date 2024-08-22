@@ -8,7 +8,8 @@ import DataStoreCanvas from "@/components/DataStoreCanvas.vue";
 import DataStoreKeyList from "@/components/DataStoreKeyList.vue";
 import FileTree, { transformUrisToTree } from "@/components/FileTree.vue";
 import SimpleButton from "@/components/SimpleButton.vue";
-import { fetchAllManderUris, fetchMander } from "@/services/api";
+import { fetchAllManderUris, fetchMander, fetchShareableBlob } from "@/services/api";
+import { saveBlob } from "@/services/utils";
 import { useCanvasStore } from "@/stores/canvas";
 
 const route = useRoute();
@@ -31,8 +32,19 @@ async function fetchDataStoreDetail(path: string | string[]) {
   canvasStore.setDataStore(m);
 }
 
-function onSaveBoard(/*event: PointerEvent*/) {
-  alert("not implemented yet");
+async function onShareReport(/*event: PointerEvent*/) {
+  const uri = canvasStore.dataStore?.uri;
+  if (uri) {
+    const shareable = await fetchShareableBlob(uri);
+    if (shareable) {
+      saveBlob(
+        shareable,
+        uri.replace(/\//g, (m, i) => {
+          return i === 0 ? "" : "-";
+        })
+      );
+    }
+  }
 }
 
 function onItemDrop(event: DragEvent) {
@@ -96,7 +108,7 @@ await fetchDataStoreDetail(route.params.segments);
       >
         <div class="editor-header" ref="editorHeader">
           <h1>Report</h1>
-          <SimpleButton label="Save report settings" @click="onSaveBoard" />
+          <SimpleButton label="Share report" @click="onShareReport" />
         </div>
         <div class="drop-indicator" :class="{ visible: isDropIndicatorVisible }"></div>
         <Transition name="fade">
