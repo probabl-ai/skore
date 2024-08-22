@@ -42,7 +42,6 @@ build-frontend:
 	# clean up
 	rm -rf frontend/dist
 
-
 build-doc:
 	python -m pip install -e . -r requirements-doc.txt
 	cd doc
