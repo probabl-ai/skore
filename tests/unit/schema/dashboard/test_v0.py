@@ -5,11 +5,29 @@ from datetime import UTC, date, datetime
 import altair as alt
 import httpx
 import mandr.schema.dashboard
+import matplotlib.pyplot as plt
 import pandas as pd
 import pytest
 import referencing
 from jsonschema import Draft202012Validator
 from jsonschema.exceptions import ValidationError
+from matplotlib.figure import Figure
+
+
+def matplotlib_to_svg(figure: Figure) -> str:
+    """Convert a Matplotlib Figure to a string in SVG format."""
+    from io import StringIO
+
+    output = StringIO()
+    figure.savefig(output, format="svg")
+    return output.getvalue()
+
+
+def make_matplotlib_figure() -> Figure:
+    """Make a test Matplotlib Figure."""
+    fig, ax = plt.subplots()
+    ax.plot([1, 2, 3, 4], [1, 4, 2, 3])
+    return fig
 
 
 class TestV0:
@@ -277,6 +295,28 @@ class TestV0:
             ),
             (
                 {"type": "markdown", "data": 1},
+                pytest.raises(ValidationError, match="is not of type 'string'"),
+            ),
+            (
+                {
+                    "type": "matplotlib_figure",
+                    "data": matplotlib_to_svg(make_matplotlib_figure()),
+                },
+                does_not_raise(),
+            ),
+            (
+                {
+                    "type": "matplotlib_figure",
+                    # NOTE: Not really SVG
+                    "data": "hello",
+                },
+                does_not_raise(),
+            ),
+            (
+                {
+                    "type": "matplotlib_figure",
+                    "data": make_matplotlib_figure(),
+                },
                 pytest.raises(ValidationError, match="is not of type 'string'"),
             ),
             ({"type": "number", "data": 1.2}, does_not_raise()),
