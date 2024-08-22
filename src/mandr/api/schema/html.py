@@ -21,4 +21,4 @@ class HTML(pydantic.BaseModel):
 
     type: typing.Literal["html"] = "html"
     data: str
-    metadata: typing.Optional[typing.Any]
+    metadata: typing.Optional[typing.Any] = None

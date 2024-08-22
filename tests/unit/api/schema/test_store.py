@@ -129,6 +129,7 @@ class TestStore:
         store = schema.Store(uri="/root", payload={"key": payload})
         dump = store.model_dump_json(by_alias=True)
 
+        expected.update(metadata=None)
         assert json.loads(dump) == {
             "schema": "schema:dashboard:v0",
             "uri": "/root",
@@ -220,7 +221,7 @@ class TestStore:
             store.model_dump_json(by_alias=True)
 
     def test_layout(self):
-        payload_item = {"type": "integer", "data": 1}
+        payload_item = {"type": "integer", "data": 1, "metadata": None}
         layout_item = {"key": "key", "size": "small"}
 
         store = schema.Store(

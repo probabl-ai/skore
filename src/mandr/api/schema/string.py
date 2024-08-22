@@ -21,4 +21,4 @@ class String(pydantic.BaseModel):
 
     type: typing.Literal["string"] = "string"
     data: str
-    metadata: typing.Optional[typing.Any]
+    metadata: typing.Optional[typing.Any] = None

@@ -26,7 +26,7 @@ class NumpyArray(pydantic.BaseModel):
 
     type: typing.Literal["numpy_array"] = "numpy_array"
     data: pnd.NpNDArray
-    metadata: typing.Optional[typing.Any]
+    metadata: typing.Optional[typing.Any] = None
 
     @pydantic.field_serializer("data")
     def serialize_data(self, data: np.ndarray) -> list:

@@ -21,4 +21,4 @@ class Integer(pydantic.BaseModel):
 
     type: typing.Literal["integer"] = "integer"
     data: int
-    metadata: typing.Optional[typing.Any]
+    metadata: typing.Optional[typing.Any] = None

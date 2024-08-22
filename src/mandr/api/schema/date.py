@@ -22,4 +22,4 @@ class Date(pydantic.BaseModel):
 
     type: typing.Literal["date"] = "date"
     data: datetime.date
-    metadata: typing.Optional[typing.Any]
+    metadata: typing.Optional[typing.Any] = None
