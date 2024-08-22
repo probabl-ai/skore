@@ -33,6 +33,7 @@ We start with loading the features and showing the attributes of the first produ
 each basket.
 """
 
+# %%
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -584,18 +585,13 @@ def row_aggregate_post_target_encoder(X):
 # We use Pipeline, ColumnTransformer and FeatureUnion instead of make_pipeline,
 # make_column_transformer and make_union to set meaningful names.
 
-from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 
-target_encoder = ColumnTransformer(
-    [
-        ("target_encoder", TargetEncoder(), get_group_cols("goods_code")),
-    ],
-    remainder="passthrough",
-    verbose_feature_names_out=False,
-    force_int_remainder_cols=False,
+target_encoder = TableVectorizer(
+    specific_transformers=[(TargetEncoder(), get_group_cols("goods_code"))],
+    low_cardinality="passthrough",
+    high_cardinality="passthrough",
 )
-target_encoder.set_output(transform="pandas")
 
 row_aggregate = FunctionTransformer(row_aggregate_post_target_encoder)
 
@@ -609,8 +605,14 @@ row_aggregate_target_encoder
 
 
 # %%
+# The TargetEncoder does not appreciate <NA> from pandas string dtype.
+X_train[get_group_cols("goods_code")] = X_train[get_group_cols("goods_code")].astype(
+    str
+)
+
 row_aggregate_target_encoder.fit_transform(X_train, y_train)
 
+# %%
 
 # %%
 # Finally, we can assemble our aggregation vectorizer by unioning all of our
