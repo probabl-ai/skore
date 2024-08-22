@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, ref } from "vue";
 
+import type { IPayloadItemMetadata } from "@/models";
 import { useCanvasStore } from "@/stores/canvas";
+import { formatDistance } from "date-fns";
 
-const props = defineProps<{ itemKey: string; metadata: string }>();
+const props = defineProps<{ itemKey: string; metadata?: IPayloadItemMetadata }>();
 const canvasStore = useCanvasStore();
 const isDraggable = ref(false);
 
@@ -16,6 +18,15 @@ function onDragStart(event: DragEvent) {
     event.dataTransfer.setData("key", props.itemKey);
   }
 }
+
+const lastUpdate = computed(() => {
+  if (props.metadata) {
+    const update = new Date(props.metadata.updated_at);
+    const now = new Date();
+    return formatDistance(update, now, { addSuffix: true });
+  }
+  return "";
+});
 </script>
 
 <template>
@@ -33,7 +44,7 @@ function onDragStart(event: DragEvent) {
     <div class="label">
       {{ props.itemKey }}
     </div>
-    <div class="metadata">Added unknown #FIXME</div>
+    <div class="metadata" v-if="props.metadata">{{ lastUpdate }}</div>
   </div>
 </template>
 

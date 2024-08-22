@@ -30,6 +30,7 @@ def serialize_store(store: Store):
         payload[key] = {
             "type": str(metadata["display_type"]),
             "data": value,
+            "metadata": metadata,
         }
 
     try:

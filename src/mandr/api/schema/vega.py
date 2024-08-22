@@ -22,6 +22,7 @@ class Vega(pydantic.BaseModel):
 
     type: typing.Literal["vega"] = "vega"
     data: typing.Union[altair.vegalite.v5.api.Chart, altair.vegalite.v5.api.LayerChart]
+    metadata: typing.Optional[typing.Any]
 
     @pydantic.field_serializer("data")
     def serialize_data(self, data: altair.vegalite.v5.api.Chart) -> dict:

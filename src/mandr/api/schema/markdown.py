@@ -21,3 +21,4 @@ class Markdown(pydantic.BaseModel):
 
     type: typing.Literal["markdown"] = "markdown"
     data: str
+    metadata: typing.Optional[typing.Any]
