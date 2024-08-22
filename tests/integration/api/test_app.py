@@ -85,3 +85,9 @@ class TestApiApp:
             },
             "layout": layout,
         }
+
+    def test_share(self, client):
+        s = Store("root", storage=self.storage)
+        response = client.get(f"/api/mandrs/share/{s.uri}")
+
+        assert response.is_success

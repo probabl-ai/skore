@@ -1,9 +1,13 @@
 """The definition of API routes to list stores and get them."""
 
 import os
+from pathlib import Path
 from typing import Any, Iterable
 
+import fastapi
 from fastapi import APIRouter, HTTPException, status
+from fastapi.encoders import jsonable_encoder
+from fastapi.templating import Jinja2Templates
 
 from mandr import registry
 from mandr.api import schema
@@ -16,6 +20,11 @@ STORES_ROUTER = APIRouter(prefix="/stores")
 
 # FIXME find a better to isolate layotu from users items
 LAYOUT_KEY = "__mandr__layout__"
+
+# TODO Move this to a more appropriate place
+STATIC_FILES_PATH = (
+    Path(__file__).resolve().parent.parent.parent / "dashboard" / "static"
+)
 
 
 def serialize_store(store: Store):
@@ -47,6 +56,42 @@ def serialize_store(store: Store):
     return model.model_dump(by_alias=True)
 
 
+@MANDRS_ROUTER.get("/share/{uri:path}")
+@STORES_ROUTER.get("/share/{uri:path}")
+async def share_store(request: fastapi.Request, uri: str):
+    """Serve an inlined shareable HTML page."""
+
+    def read_asset_content(path):
+        with open(STATIC_FILES_PATH / path) as f:
+            return f.read()
+
+    script_content = read_asset_content("mandr.umd.cjs")
+    styles_content = read_asset_content("style.css")
+
+    # 4 le mandr
+    directory = _get_storage_path(os.environ.get("MANDR_ROOT"))
+    storage = FileSystem(directory=directory)
+    store = registry.find_store_by_uri(URI(uri), storage)
+    if store is None:
+        raise HTTPException(status_code=404, detail=f"No store found in '{uri}'")
+
+    store_data = jsonable_encoder(serialize_store(store))
+
+    # 1 un context jinja
+    context = {
+        "uri": store.uri,
+        "store_data": store_data,
+        "script": script_content,
+        "styles": styles_content,
+    }
+
+    # 5 rendre le template
+    templates = Jinja2Templates(directory=Path(__file__).resolve().parent / "templates")
+    return templates.TemplateResponse(
+        request=request, name="share.html.jinja", context=context
+    )
+
+
 @MANDRS_ROUTER.get("")
 @MANDRS_ROUTER.get("/")
 @STORES_ROUTER.get("")
@@ -74,7 +119,7 @@ async def get_store_by_uri(uri: str):
 
 
 @MANDRS_ROUTER.put("/{uri:path}/layout", status_code=status.HTTP_201_CREATED)
-@STORES_ROUTER.put("/{uri:path}/layout")
+@STORES_ROUTER.put("/{uri:path}/layout", status_code=status.HTTP_201_CREATED)
 async def put_layout(uri: str, payload: list[LayoutItem]):
     """Save the report layout configuration."""
     directory = _get_storage_path(os.environ.get("MANDR_ROOT"))

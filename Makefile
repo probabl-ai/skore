@@ -36,7 +36,12 @@ build-frontend:
 	# empty app static folder
 	rm -rf src/mandr/dashboard/static
 	cp -a frontend/dist/. src/mandr/dashboard/static
+	# build the sharing library
+	cd frontend && npm run build:lib
+	cp -a frontend/dist/. src/mandr/dashboard/static
+	# clean up
 	rm -rf frontend/dist
+
 
 build-doc:
 	python -m pip install -e . -r requirements-doc.txt
