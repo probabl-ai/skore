@@ -69,7 +69,7 @@ async def share_store(request: fastapi.Request, uri: str):
     script_content = read_asset_content("mandr.umd.cjs")
     styles_content = read_asset_content("style.css")
 
-    # 4 le mandr
+    # Get Mandr and serialize it
     directory = _get_storage_path(os.environ.get("MANDR_ROOT"))
     storage = FileSystem(directory=directory)
     store = registry.find_store_by_uri(URI(uri), storage)
