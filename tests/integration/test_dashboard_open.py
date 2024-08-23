@@ -2,7 +2,7 @@ import contextlib
 
 import httpx
 import pytest
-from mandr.dashboard import Dashboard
+from mandr.dashboard import AddressAlreadyInUseError, Dashboard
 
 
 def test_dashboard_open_with_no_mandr_root(monkeypatch, tmp_path):
@@ -62,5 +62,5 @@ def test_dashboard_open_twice(monkeypatch, tmp_path):
         assert response.is_success
 
         dashboard2 = Dashboard()
-        with pytest.raises(RuntimeError):
+        with pytest.raises(AddressAlreadyInUseError):
             dashboard2.open(open_browser=False)
