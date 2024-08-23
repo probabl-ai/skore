@@ -32,6 +32,7 @@ onMounted(async () => {
       {
         theme: "dark",
         config: vegaConfig,
+        actions: false,
       }
     );
     vegaView = r.view;
@@ -42,6 +43,9 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   if (container.value) {
     resizeObserver.unobserve(container.value);
+  }
+  if (vegaView) {
+    vegaView.finalize();
   }
 });
 </script>
