@@ -27,7 +27,7 @@ class Dashboard:
         dashboard.close()
     """
 
-    def __init__(self, *, port=8000):
+    def __init__(self, *, port=22140):
         configuration = uvicorn.Config(
             app="mandr.dashboard.app:create_dashboard_app",
             port=port,
