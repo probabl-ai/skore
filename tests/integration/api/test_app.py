@@ -57,6 +57,9 @@ class TestApiApp:
             "/api/stores/root/subroot2/subsubroot2",
         ]
 
+        s = Store("root/subroot2/subsubroot2")
+        v1, m1 = s.read("key1", metadata=True)
+        v2, m2 = s.read("key2", metadata=True)
         for route in routes:
             response = client.get(route)
 
@@ -65,8 +68,8 @@ class TestApiApp:
                 "schema": "schema:dashboard:v0",
                 "uri": "/root/subroot2/subsubroot2",
                 "payload": {
-                    "key1": {"type": "markdown", "data": "value1"},
-                    "key2": {"type": "markdown", "data": "value2"},
+                    "key1": {"type": "markdown", "data": v1, "metadata": m1},
+                    "key2": {"type": "markdown", "data": v2, "metadata": m2},
                 },
                 "layout": [],
             }
@@ -74,6 +77,7 @@ class TestApiApp:
     def test_put_layout(self, client):
         layout = [{"key": "key", "size": "small"}]
         s = Store("root", storage=self.storage)
+        value, metadata = s.read("key", metadata=True)
         response = client.put(f"/api/mandrs/{s.uri}/layout", json=layout)
 
         assert response.status_code == 201
@@ -81,7 +85,7 @@ class TestApiApp:
             "schema": "schema:dashboard:v0",
             "uri": "/root",
             "payload": {
-                "key": {"type": "markdown", "data": "value"},
+                "key": {"type": "markdown", "data": value, "metadata": metadata},
             },
             "layout": layout,
         }

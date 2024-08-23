@@ -22,3 +22,4 @@ class File(pydantic.BaseModel):
 
     type: typing.Literal["file"] = "file"
     data: pathlib.Path
+    metadata: typing.Optional[typing.Any] = None
