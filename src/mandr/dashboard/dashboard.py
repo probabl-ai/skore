@@ -44,6 +44,12 @@ class Dashboard:
         self.thread.start()
 
         while not self.server.started:
+            if not self.thread.is_alive():
+                self.close()
+                raise RuntimeError(
+                    "Server failed to start; refer to runtime logs "
+                    "for more information."
+                )
             continue
 
         if open_browser:

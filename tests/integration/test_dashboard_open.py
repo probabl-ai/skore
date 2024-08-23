@@ -1,6 +1,7 @@
 import contextlib
 
 import httpx
+import pytest
 from mandr.dashboard import Dashboard
 
 
@@ -62,10 +63,5 @@ def test_dashboard_open_twice(monkeypatch, tmp_path):
         assert response.is_success
 
         dashboard2 = Dashboard()
-        with contextlib.closing(dashboard2.open(open_browser=False)):
-            assert dashboard2.server.started
-
-            host = dashboard2.server.config.host
-            port = dashboard2.server.config.port
-            response = httpx.get(f"http://{host}:{port}/api/mandrs")
-            assert response.is_success
+        with pytest.raises(RuntimeError):
+            dashboard2.open(open_browser=False)
