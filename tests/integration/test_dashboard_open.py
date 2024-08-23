@@ -50,6 +50,7 @@ def test_dashboard_open_with_absolute_mandr_root(monkeypatch, tmp_path):
 
 def test_dashboard_open_twice(monkeypatch, tmp_path):
     monkeypatch.setenv("MANDR_ROOT", str(tmp_path / ".datamander"))
+    breakpoint()
 
     dashboard1 = Dashboard()
     with contextlib.closing(dashboard1.open(open_browser=False)):
