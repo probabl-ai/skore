@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import DataStoreKey from "@/components/DataStoreKey.vue";
 
-import { useCanvasStore } from "@/stores/canvas";
+import { useReportsStore } from "@/stores/reports";
 
-const canvasStore = useCanvasStore();
+const reportsStore = useReportsStore();
 const props = defineProps<{ icon: string; title: string; keys: string[] }>();
 </script>
 
@@ -15,7 +15,7 @@ const props = defineProps<{ icon: string; title: string; keys: string[] }>();
         v-for="key in props.keys"
         :key="key"
         :item-key="key"
-        :metadata="canvasStore.dataStore?.get(key).metadata"
+        :metadata="reportsStore.report?.get(key).metadata"
       />
     </div>
   </div>

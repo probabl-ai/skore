@@ -2,15 +2,15 @@
 import { computed, ref } from "vue";
 
 import type { IPayloadItemMetadata } from "@/models";
-import { useCanvasStore } from "@/stores/canvas";
+import { useReportsStore } from "@/stores/reports";
 import { formatDistance } from "date-fns";
 
 const props = defineProps<{ itemKey: string; metadata?: IPayloadItemMetadata }>();
-const canvasStore = useCanvasStore();
+const reportsStore = useReportsStore();
 const isDraggable = ref(false);
 
 function addKey() {
-  canvasStore.displayKey(props.itemKey);
+  reportsStore.displayKey(props.itemKey);
 }
 
 function onDragStart(event: DragEvent) {

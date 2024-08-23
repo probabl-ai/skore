@@ -9,25 +9,25 @@ import ImageWidget from "@/components/ImageWidget.vue";
 import MarkdownWidget from "@/components/MarkdownWidget.vue";
 import VegaWidget from "@/components/VegaWidget.vue";
 import type { KeyLayoutSize } from "@/models";
-import { useCanvasStore } from "@/stores/canvas";
+import { useReportsStore } from "@/stores/reports";
 
-const canvasStore = useCanvasStore();
+const reportsStore = useReportsStore();
 const items = computed(() => {
-  const dataStore = canvasStore.dataStore;
-  const layout = canvasStore.layout;
+  const report = reportsStore.report;
+  const layout = reportsStore.layout;
 
   return layout.map(({ key, size }) => {
-    const item = dataStore?.get(key);
+    const item = report?.get(key);
     return { key, size, data: item?.data, type: item?.type };
   });
 });
 
 function onLayoutChange(key: string, size: KeyLayoutSize) {
-  canvasStore.setKeyLayoutSize(key, size);
+  reportsStore.setKeyLayoutSize(key, size);
 }
 
 function onCardRemoved(key: string) {
-  canvasStore.hideKey(key);
+  reportsStore.hideKey(key);
 }
 </script>
 

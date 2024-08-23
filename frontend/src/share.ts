@@ -6,7 +6,7 @@ import { createApp } from "vue";
 
 import App from "@/ShareApp.vue";
 import { DataStore } from "@/models";
-import { useCanvasStore } from "@/stores/canvas";
+import { useReportsStore } from "@/stores/reports";
 
 export default function share() {
   const app = createApp(App);
@@ -15,6 +15,6 @@ export default function share() {
 
   const m = JSON.parse(document.getElementById("mandr-data")?.innerText || "{}");
   const ds = new DataStore(m.uri, m.payload, m.layout);
-  const canvasStore = useCanvasStore();
-  canvasStore.setDataStore(ds);
+  const reportsStore = useReportsStore();
+  reportsStore.report = ds;
 }

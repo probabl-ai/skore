@@ -1,11 +1,30 @@
+/**
+ * Wait for a givezn time.
+ * @param delay wait time in ms
+ * @returns a promise that will resolve after the delay
+ */
 export function sleep(delay: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, delay));
 }
 
+/**
+ * Is this a string ?
+ * @param s the object to check
+ * @returns true if the given object is a string otherwise returns false
+ */
 export function isString(s: any) {
   return typeof s === "string" || s instanceof String;
 }
 
+/**
+ * Remap a number from a range to another.
+ * @param x the number to remap
+ * @param fromMin the min of the source range
+ * @param fromMax the max of the source range
+ * @param toMin the min of the destination range
+ * @param toMax the max of the destination range
+ * @returns the remapped number
+ */
 export function remap(
   x: number,
   fromMin: number,
@@ -16,6 +35,11 @@ export function remap(
   return ((x - fromMin) * (toMax - toMin)) / (fromMax - fromMin) + toMin;
 }
 
+/**
+ * Hash a message using SHA 1
+ * @param message the message to hash
+ * @returns the hashed message as an hex string
+ */
 export async function sha1(message: string) {
   const msgUint8 = new TextEncoder().encode(message);
   const hashBuffer = await crypto.subtle.digest("SHA-1", msgUint8);
@@ -23,6 +47,11 @@ export async function sha1(message: string) {
   return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+/**
+ * Save a blob to the users filesystme by triggering a download.
+ * @param blob the blob to save
+ * @param filename the filename to be downloaded
+ */
 export function saveBlob(blob: Blob, filename: string) {
   const a = document.createElement("a");
   const url = window.URL.createObjectURL(blob);
@@ -36,4 +65,30 @@ export function saveBlob(blob: Blob, filename: string) {
 
   window.URL.revokeObjectURL(url);
   document.body.removeChild(a);
+}
+
+/**
+ * Run a given function immediatlu then run it periodycally.
+ * @param fn the function to run
+ * @param interval the delay in ms between each call
+ * @returns a function that when called stops the polling.
+ */
+export async function poll(fn: Function, interval: number): Promise<() => void> {
+  let intervalId: number = -1;
+
+  const start = () => {
+    intervalId = setInterval(fn, interval);
+  };
+
+  const stop = () => {
+    if (intervalId) {
+      clearInterval(intervalId);
+      intervalId = -1;
+    }
+  };
+
+  await fn();
+  start();
+
+  return stop;
 }
