@@ -24,6 +24,7 @@ class Array(pydantic.BaseModel):
 
     type: typing.Literal["array"] = "array"
     data: typing.Iterable
+    metadata: typing.Optional[typing.Any] = None
 
     @pydantic.field_serializer("data")
     def serialize_data(self, data: typing.Iterable) -> list:

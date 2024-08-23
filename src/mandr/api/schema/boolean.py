@@ -21,3 +21,4 @@ class Boolean(pydantic.BaseModel):
 
     type: typing.Literal["boolean"] = "boolean"
     data: bool
+    metadata: typing.Optional[typing.Any] = None

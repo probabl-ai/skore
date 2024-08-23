@@ -21,3 +21,4 @@ class Number(pydantic.BaseModel):
 
     type: typing.Literal["number"] = "number"
     data: float
+    metadata: typing.Optional[typing.Any] = None

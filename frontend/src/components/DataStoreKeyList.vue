@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import DataStoreKey from "@/components/DataStoreKey.vue";
 
+import { useCanvasStore } from "@/stores/canvas";
+
+const canvasStore = useCanvasStore();
 const props = defineProps<{ icon: string; title: string; keys: string[] }>();
 </script>
 
@@ -8,7 +11,12 @@ const props = defineProps<{ icon: string; title: string; keys: string[] }>();
   <div class="data-store-list-item">
     <h2><span :class="props.icon"></span>{{ props.title }}</h2>
     <div class="keys">
-      <DataStoreKey v-for="key in props.keys" :key="key" :item-key="key" metadata="Added unknown" />
+      <DataStoreKey
+        v-for="key in props.keys"
+        :key="key"
+        :item-key="key"
+        :metadata="canvasStore.dataStore?.get(key).metadata"
+      />
     </div>
   </div>
 </template>

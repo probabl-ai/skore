@@ -21,3 +21,4 @@ class Any(pydantic.BaseModel):
 
     type: typing.Literal["any"] = "any"
     data: typing.Any
+    metadata: typing.Optional[typing.Any] = None

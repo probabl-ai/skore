@@ -17,9 +17,16 @@ export type ItemType =
   | "cv_results"
   | "numpy_array";
 
+export interface IPayloadItemMetadata {
+  display_type: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface IPayloadItem {
   type: ItemType;
   data: any;
+  metadata?: IPayloadItemMetadata;
 }
 
 export type KeyLayoutSize = "small" | "medium" | "large";

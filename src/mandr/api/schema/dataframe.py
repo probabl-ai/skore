@@ -22,6 +22,7 @@ class DataFrame(pydantic.BaseModel):
 
     type: typing.Literal["dataframe"] = "dataframe"
     data: pandas.DataFrame
+    metadata: typing.Optional[typing.Any] = None
 
     @pydantic.field_serializer("data")
     def serialize_data(self, data: pandas.DataFrame) -> dict:
