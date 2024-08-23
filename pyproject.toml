@@ -41,9 +41,15 @@ doc = [
   "skrub",
   "sphinx",
   "sphinx-gallery",
-  "matplotlib",
+  "pydata_sphinx_theme",
   "seaborn",
-  "tqdm"
+  "networkx",
+  "statsmodels",
+  "skrub",
+  "inflect",
+  "sentence-transformers",
+  "tqdm",
+  "pyarrow"  # for parquet files
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -91,7 +97,14 @@ convention = "numpy"
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["D"]
-"examples/*" = ["D"]
+"examples/*" = [
+  "D",
+  # It's fine not to put the import at the top of the file in the examples
+  # folder.
+  "E402",
+  # Useless expressions are useful!
+  "B018",
+]
 
 [tool.typos.default]
 extend-ignore-re = [
