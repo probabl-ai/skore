@@ -46,3 +46,25 @@ def test_dashboard_open_with_absolute_mandr_root(monkeypatch, tmp_path):
         assert response.is_success
 
     assert (tmp_path / ".datamander").exists()
+
+
+def test_dashboard_open_twice(monkeypatch, tmp_path):
+    monkeypatch.setenv("MANDR_ROOT", str(tmp_path / ".datamander"))
+
+    dashboard1 = Dashboard()
+    with contextlib.closing(dashboard1.open(open_browser=False)):
+        assert dashboard1.server.started
+
+        host = dashboard1.server.config.host
+        port = dashboard1.server.config.port
+        response = httpx.get(f"http://{host}:{port}/api/mandrs")
+        assert response.is_success
+
+        dashboard2 = Dashboard()
+        with contextlib.closing(dashboard2.open(open_browser=False)):
+            assert dashboard2.server.started
+
+            host = dashboard2.server.config.host
+            port = dashboard2.server.config.port
+            response = httpx.get(f"http://{host}:{port}/api/mandrs")
+            assert response.is_success
