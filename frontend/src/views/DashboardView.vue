@@ -90,11 +90,6 @@ await fetchDataStoreDetail(route.params.segments);
         <Simplebar class="key-list">
           <DataStoreKeyList title="Plots" icon="icon-plot" :keys="canvasStore.dataStore.plotKeys" />
           <DataStoreKeyList title="Info" icon="icon-text" :keys="canvasStore.dataStore.infoKeys" />
-          <DataStoreKeyList
-            title="Artifacts"
-            icon="icon-gift"
-            :keys="canvasStore.dataStore.artifactKeys"
-          />
         </Simplebar>
       </div>
 
