@@ -92,11 +92,6 @@ onBeforeUnmount(() => reportsStore.stopBackendPolling());
             icon="icon-text"
             :keys="reportsStore.selectedReport.infoKeys"
           />
-          <DataStoreKeyList
-            title="Artifacts"
-            icon="icon-gift"
-            :keys="reportsStore.selectedReport.artifactKeys"
-          />
         </Simplebar>
       </div>
 

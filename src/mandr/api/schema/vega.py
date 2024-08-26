@@ -2,7 +2,7 @@
 
 import typing
 
-import altair
+import altair.vegalite.v5.schema.core
 import pydantic
 
 
@@ -21,7 +21,7 @@ class Vega(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(strict=True, arbitrary_types_allowed=True)
 
     type: typing.Literal["vega"] = "vega"
-    data: typing.Union[altair.vegalite.v5.api.Chart, altair.vegalite.v5.api.LayerChart]
+    data: altair.vegalite.v5.schema.core.TopLevelSpec
     metadata: typing.Optional[typing.Any] = None
 
     @pydantic.field_serializer("data")

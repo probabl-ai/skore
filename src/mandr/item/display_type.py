@@ -11,7 +11,7 @@ import pathlib
 from enum import StrEnum, auto
 from typing import Any
 
-import altair
+import altair.vegalite.v5.schema.core
 import matplotlib.figure
 import numpy
 import pandas
@@ -75,9 +75,10 @@ class DisplayType(StrEnum):
             matplotlib.figure.Figure: DisplayType.MATPLOTLIB_FIGURE,
             float: DisplayType.NUMBER,
             numpy.ndarray: DisplayType.NUMPY_ARRAY,
-            altair.vegalite.v5.api.Chart: DisplayType.VEGA,
-            altair.vegalite.v5.api.LayerChart: DisplayType.VEGA,
         }
+
+        if isinstance(x, altair.vegalite.v5.schema.core.TopLevelSpec):
+            return DisplayType.VEGA
 
         # `Paths` are `PosixPath` or `WindowsPath` when instantiated
         if isinstance(x, pathlib.Path):
