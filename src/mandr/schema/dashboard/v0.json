@@ -261,6 +261,23 @@
                 "required": [ "type", "data" ],
                 "additionalProperties": false
             }
+        },
+        "if:sklearn_model": {
+            "title": "sklearn Model",
+            "description": "A scikit learn fitted or not model serialized as its HTML representation.",
+            "if": { "properties": { "type": { "const": "sklearn_model" } } },
+            "then": {
+                "type": "object",
+                "properties": {
+                    "type": { "const": "html" },
+                    "data": {
+                        "type": "string",
+                        "contentMediaType": "text/html"
+                    }
+                },
+                "required": [ "type", "data" ],
+                "additionalProperties": false
+            }
         }
     },
 
@@ -293,7 +310,8 @@
                                     "html",
                                     "integer",
                                     "string",
-                                    "vega"
+                                    "vega",
+                                    "sklearn_model"
                                 ]
                             }
                         },
