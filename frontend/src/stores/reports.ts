@@ -10,7 +10,7 @@ export const useReportsStore = defineStore("reports", () => {
   // this object is not deeply reactive as it may be very large
   const reportUris = ref<string[]>([]);
   const selectedReportUri = ref<string>("");
-  const report = shallowRef<DataStore | null>(null);
+  const selectedReport = shallowRef<DataStore | null>(null);
   const layout = ref<Layout>([]);
 
   async function displayKey(key: string) {
@@ -36,7 +36,7 @@ export const useReportsStore = defineStore("reports", () => {
    * thruth comes from the backend except card size that the user may have change
    */
   function merge() {
-    const r = report.value;
+    const r = selectedReport.value;
     if (r) {
       // merge layout
       const old = structuredClone(toRaw(layout.value));
@@ -62,7 +62,7 @@ export const useReportsStore = defineStore("reports", () => {
     reportUris.value = await fetchAllManderUris();
     const selectedUri = selectedReportUri.value;
     if (selectedUri.length > 0) {
-      report.value = await fetchMander(selectedUri);
+      selectedReport.value = await fetchMander(selectedUri);
       merge();
     }
   }
@@ -87,10 +87,10 @@ export const useReportsStore = defineStore("reports", () => {
    */
   async function _persistLayout() {
     stopBackendPolling();
-    if (report.value && layout.value) {
-      const refreshed = await putLayout(report.value.uri, layout.value);
+    if (selectedReport.value && layout.value) {
+      const refreshed = await putLayout(selectedReport.value.uri, layout.value);
       if (refreshed) {
-        report.value = refreshed;
+        selectedReport.value = refreshed;
       }
     }
     await startBackendPolling();
@@ -104,7 +104,7 @@ export const useReportsStore = defineStore("reports", () => {
   return {
     reportUris,
     selectedReportUri,
-    report,
+    selectedReport,
     layout,
     displayKey,
     hideKey,

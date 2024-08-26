@@ -13,7 +13,7 @@ import { useReportsStore } from "@/stores/reports";
 
 const reportsStore = useReportsStore();
 const items = computed(() => {
-  const report = reportsStore.report;
+  const report = reportsStore.selectedReport;
   const layout = reportsStore.layout;
 
   return layout.map(({ key, size }) => {

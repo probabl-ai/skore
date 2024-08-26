@@ -15,7 +15,7 @@ const props = defineProps<{ icon: string; title: string; keys: string[] }>();
         v-for="key in props.keys"
         :key="key"
         :item-key="key"
-        :metadata="reportsStore.report?.get(key).metadata"
+        :metadata="reportsStore.selectedReport?.get(key).metadata"
       />
     </div>
   </div>

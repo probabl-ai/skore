@@ -16,5 +16,5 @@ export default function share() {
   const m = JSON.parse(document.getElementById("mandr-data")?.innerText || "{}");
   const ds = new DataStore(m.uri, m.payload, m.layout);
   const reportsStore = useReportsStore();
-  reportsStore.report = ds;
+  reportsStore.selectedReport = ds;
 }

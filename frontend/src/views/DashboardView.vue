@@ -23,7 +23,7 @@ const editorHeaderHeight = computed(() =>
 );
 
 async function onShareReport(/*event: PointerEvent*/) {
-  const uri = reportsStore.report?.uri;
+  const uri = reportsStore.selectedReport?.uri;
   if (uri) {
     const shareable = await fetchShareableBlob(uri);
     if (shareable) {
@@ -78,16 +78,24 @@ onBeforeUnmount(() => reportsStore.stopBackendPolling());
         <FileTree :nodes="fileTree" />
       </Simplebar>
     </nav>
-    <article v-if="reportsStore.report">
+    <article v-if="reportsStore.selectedReport">
       <div class="elements">
         <DashboardHeader title="Elements (added from mandr)" icon="icon-pie-chart" />
         <Simplebar class="key-list">
-          <DataStoreKeyList title="Plots" icon="icon-plot" :keys="reportsStore.report.plotKeys" />
-          <DataStoreKeyList title="Info" icon="icon-text" :keys="reportsStore.report.infoKeys" />
+          <DataStoreKeyList
+            title="Plots"
+            icon="icon-plot"
+            :keys="reportsStore.selectedReport.plotKeys"
+          />
+          <DataStoreKeyList
+            title="Info"
+            icon="icon-text"
+            :keys="reportsStore.selectedReport.infoKeys"
+          />
           <DataStoreKeyList
             title="Artifacts"
             icon="icon-gift"
-            :keys="reportsStore.report.artifactKeys"
+            :keys="reportsStore.selectedReport.artifactKeys"
           />
         </Simplebar>
       </div>
