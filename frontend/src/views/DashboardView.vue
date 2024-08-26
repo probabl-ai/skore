@@ -80,12 +80,13 @@ await fetchDataStoreDetail(route.params.segments);
   <main>
     <nav>
       <DashboardHeader title="File Manager" icon="icon-folder" />
-      <Simplebar class="file-trees">
+      <Simplebar class="file-trees" v-if="fileTree.length > 0">
         <FileTree :nodes="fileTree" />
       </Simplebar>
+      <div class="empty-tree" v-else>No Mandr found</div>
     </nav>
-    <article v-if="canvasStore.dataStore">
-      <div class="elements">
+    <article v-if="fileTree.length > 0">
+      <div class="elements" v-if="canvasStore.dataStore">
         <DashboardHeader title="Elements (added from mandr)" icon="icon-pie-chart" />
         <Simplebar class="key-list">
           <DataStoreKeyList title="Plots" icon="icon-plot" :keys="canvasStore.dataStore.plotKeys" />
@@ -117,15 +118,24 @@ await fetchDataStoreDetail(route.params.segments);
             class="placeholder"
             :style="`--header-height: ${editorHeaderHeight}px`"
           >
+            <!-- #FIXME make this wording dynamic when #161 is mergeed and stores expose the currently selected store URI.-->
             No item selected yet, start by dragging one element!
           </div>
+
           <Simplebar class="canvas-wrapper" v-else>
             <DataStoreCanvas />
           </Simplebar>
         </Transition>
       </div>
     </article>
-    <div class="not-found" v-else>mandr not found...</div>
+    <div class="not-found" v-else-if="fileTree.length === 0">
+      <div class="not-found-header">No elements yet!</div>
+      <p>
+        It looks like there is no created mandr yet.
+        <br />
+        We recommend you to do so on your workstation.
+      </p>
+    </div>
   </main>
 </template>
 
@@ -146,20 +156,35 @@ main {
     flex-shrink: 0;
     border-right: solid 1px var(--border-color-normal);
 
-    & .file-trees {
+    & .file-trees,
+    & .empty-tree {
       height: 0;
       flex-grow: 1;
+    }
+
+    & .empty-tree {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      background-image: url("../assets/images/sad-face.svg");
+      background-position: 50% calc(50% - 24px);
+      background-repeat: no-repeat;
+      background-size: 24px;
+      color: var(--text-color-normal);
+      font-size: var(--text-size-small);
+      text-align: center;
     }
   }
 
   article,
   .not-found {
     display: flex;
-    flex-direction: row;
     flex-grow: 1;
   }
 
   article {
+    flex-direction: row;
+
     & .elements {
       display: flex;
       width: 240px;
@@ -213,7 +238,7 @@ main {
 
       & .placeholder {
         height: 100%;
-        padding-top: calc((100vh - var(--header-height)) * 476 / 730);
+        padding-top: calc((100vh - var(--header-height)) * 450 / 730);
         background-image: url("../assets/images/editor-placeholder.svg");
         background-position: 50%;
         background-repeat: no-repeat;
@@ -228,6 +253,24 @@ main {
         flex-grow: 1;
         padding: var(--spacing-padding-large);
       }
+    }
+  }
+
+  .not-found {
+    flex-direction: column;
+    justify-content: center;
+    background-image: url("../assets/images/not-found.png");
+    background-position: 50% calc(50% - 62px);
+    background-repeat: no-repeat;
+    background-size: 109px 82px;
+    color: var(--text-color-normal);
+    font-size: var(--text-size-small);
+    text-align: center;
+
+    & .not-found-header {
+      margin-bottom: var(--spacing-padding-small);
+      color: var(--text-color-highlight);
+      font-size: var(--text-size-large);
     }
   }
 }

@@ -18,7 +18,9 @@
   --text-color-normal: #a2a2a2;
   --text-color-highlight: #fff;
   --text-color-title: var(--color-primary);
+  --text-size-small: 10px;
   --text-size-normal: 14px;
+  --text-size-large: 16px;
   --text-size-highlight: 12px;
   --text-size-title: 12px;
   --text-weight-normal: 300;
