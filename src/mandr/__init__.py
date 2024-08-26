@@ -4,12 +4,14 @@ import logging
 
 import rich.logging
 
+from mandr.api.routes.stores import set_layout
 from mandr.store import Store
 from mandr.store import Store as Mandr
 
 __all__ = [
     "Mandr",
     "Store",
+    "set_layout",
 ]
 
 

@@ -57,6 +57,14 @@ def serialize_store(store: Store):
     return model.model_dump(by_alias=True)
 
 
+def set_layout(store: Store, layout: list[LayoutItem]) -> None:
+    """Set the layout of `store` to `layout`."""
+    try:
+        store.insert(LAYOUT_KEY, layout)
+    except KeyError:
+        store.update(LAYOUT_KEY, layout)
+
+
 @MANDRS_ROUTER.get("/share/{uri:path}")
 @STORES_ROUTER.get("/share/{uri:path}")
 async def share_store(request: fastapi.Request, uri: str):
@@ -129,10 +137,6 @@ async def put_layout(uri: str, payload: list[LayoutItem]):
 
     store = registry.find_store_by_uri(URI(uri), storage)
     if store is not None:
-        try:
-            store.insert(LAYOUT_KEY, payload)
-        except KeyError:
-            store.update(LAYOUT_KEY, payload)
-        return serialize_store(store)
+        set_layout(store, payload)
 
     raise HTTPException(status_code=404, detail=f"No store found in '{uri}'")
