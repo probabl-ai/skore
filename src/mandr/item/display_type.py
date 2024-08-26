@@ -16,6 +16,7 @@ import matplotlib.figure
 import numpy
 import pandas
 import polars
+from sklearn.base import BaseEstimator
 
 
 class DisplayType(StrEnum):
@@ -37,6 +38,7 @@ class DisplayType(StrEnum):
     NUMPY_ARRAY = auto()
     STRING = auto()
     VEGA = auto()
+    SKLEARN_MODEL = auto()
 
     @staticmethod
     def infer(x: Any) -> DisplayType:
@@ -83,6 +85,9 @@ class DisplayType(StrEnum):
         # `Paths` are `PosixPath` or `WindowsPath` when instantiated
         if isinstance(x, pathlib.Path):
             return DisplayType.FILE
+
+        if isinstance(x, BaseEstimator):
+            return DisplayType.SKLEARN_MODEL
 
         # Exact match
         return TYPE_TO_DISPLAY_TYPE.get(type(x), DisplayType.ANY)

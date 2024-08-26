@@ -6,12 +6,15 @@ import altair as alt
 import httpx
 import mandr.schema.dashboard
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import pytest
 import referencing
 from jsonschema import Draft202012Validator
 from jsonschema.exceptions import ValidationError
 from matplotlib.figure import Figure
+from sklearn.base import estimator_html_repr
+from sklearn.linear_model import LinearRegression
 
 
 def matplotlib_to_svg(figure: Figure) -> str:
@@ -28,6 +31,10 @@ def make_matplotlib_figure() -> Figure:
     fig, ax = plt.subplots()
     ax.plot([1, 2, 3, 4], [1, 4, 2, 3])
     return fig
+
+
+X = np.array([[1, 1], [1, 2], [2, 2], [2, 3]])
+y = np.dot(X, np.array([1, 2])) + 3
 
 
 class TestV0:
@@ -345,6 +352,20 @@ class TestV0:
                 pytest.raises(
                     ValidationError, match="is not valid under any of the given schemas"
                 ),
+            ),
+            (
+                {
+                    "type": "sklearn_model",
+                    "data": estimator_html_repr(LinearRegression()),
+                },
+                does_not_raise(),
+            ),
+            (
+                {
+                    "type": "sklearn_model",
+                    "data": estimator_html_repr(LinearRegression().fit(X, y)),
+                },
+                does_not_raise(),
             ),
         ],
     )
