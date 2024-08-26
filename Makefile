@@ -20,6 +20,7 @@ serve-api:
 		--factory mandr.api:create_api_app \
 		--reload --reload-dir ./src \
 		--host 0.0.0.0 \
+		--port 22140 \
 		--timeout-graceful-shutdown 0
 
 serve-dashboard:
@@ -27,6 +28,7 @@ serve-dashboard:
 		--factory mandr.dashboard:create_dashboard_app \
 		--reload --reload-dir ./src \
 		--host 0.0.0.0 \
+		--port 22140 \
 		--timeout-graceful-shutdown 0
 
 build-frontend:

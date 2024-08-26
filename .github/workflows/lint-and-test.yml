@@ -38,6 +38,7 @@ jobs:
           npm run build:lib
           cp -a dist/. ../src/mandr/dashboard/static
       - name: Test with pytest
+        timeout-minutes: 5
         run: |
           python -m pytest tests
       - name: Test with vitest

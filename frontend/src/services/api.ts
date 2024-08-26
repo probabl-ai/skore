@@ -1,7 +1,7 @@
 import { DataStore, type Layout } from "@/models";
 
 const { protocol, hostname } = window.location;
-export const BASE_URL = `${protocol}//${hostname}:8000/api`;
+export const BASE_URL = `${protocol}//${hostname}:22140/api`;
 
 function getErrorMessage(error: unknown) {
   if (error instanceof Error) return error.message;
