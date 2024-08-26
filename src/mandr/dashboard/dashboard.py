@@ -9,12 +9,6 @@ import uvicorn
 from mandr import logger
 
 
-class AddressAlreadyInUseError(Exception):
-    """Exception raised when binding a server to a port that is already in use."""
-
-    pass
-
-
 class Dashboard:
     """Dashboard to display stores.
 
@@ -55,11 +49,12 @@ class Dashboard:
             test_server = HTTPServer(("127.0.0.1", self.port), BaseHTTPRequestHandler)
         except OSError as e:
             if e.errno == 98:
-                raise AddressAlreadyInUseError(
+                logger.info(
                     f"Address 127.0.0.1:{self.port} is already in use. "
                     "Check if the dashboard or another service is already running at "
                     "that address."
-                ) from e
+                )
+                return
         finally:
             if test_server is not None:
                 test_server.server_close()

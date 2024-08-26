@@ -1,8 +1,7 @@
 import contextlib
 
 import httpx
-import pytest
-from mandr.dashboard import AddressAlreadyInUseError, Dashboard
+from mandr.dashboard import Dashboard
 
 
 def test_dashboard_open_with_no_mandr_root(monkeypatch, tmp_path):
@@ -49,7 +48,7 @@ def test_dashboard_open_with_absolute_mandr_root(monkeypatch, tmp_path):
     assert (tmp_path / ".datamander").exists()
 
 
-def test_dashboard_open_twice(monkeypatch, tmp_path):
+def test_dashboard_open_twice(monkeypatch, tmp_path, caplog):
     monkeypatch.setenv("MANDR_ROOT", str(tmp_path / ".datamander"))
 
     dashboard1 = Dashboard()
@@ -62,5 +61,13 @@ def test_dashboard_open_twice(monkeypatch, tmp_path):
         assert response.is_success
 
         dashboard2 = Dashboard()
-        with pytest.raises(AddressAlreadyInUseError):
-            dashboard2.open(open_browser=False)
+        dashboard2.open(open_browser=False)
+        # assert "Address is already in use" was properly logged
+        assert caplog.record_tuples == [
+            (
+                "mandr",
+                20,
+                "Address 127.0.0.1:22140 is already in use. Check if the dashboard or "
+                "another service is already running at that address.",
+            )
+        ]
