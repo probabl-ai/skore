@@ -5,7 +5,7 @@ from enum import StrEnum, auto
 from pydantic import BaseModel
 
 
-class LayoutItemSizeEnum(StrEnum):
+class LayoutItemSize(StrEnum):
     """String enum to store report card size."""
 
     small = auto()
@@ -20,4 +20,7 @@ class LayoutItem(BaseModel):
     """
 
     key: str
-    size: LayoutItemSizeEnum
+    size: LayoutItemSize
+
+
+Layout = list[LayoutItem]

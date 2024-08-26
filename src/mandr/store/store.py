@@ -15,7 +15,11 @@ if TYPE_CHECKING:
     from pathlib import PosixPath
     from typing import Any, Generator
 
+    from mandr.api.schema.layout import Layout
     from mandr.storage import Storage
+
+# FIXME find a better to isolate layout from users items
+LAYOUT_KEY = "__mandr__layout__"
 
 
 def _get_storage_path(MANDR_ROOT: str | None) -> Path:
@@ -183,3 +187,44 @@ class Store:
                     if not metadata
                     else (key.stem, item.data, dataclasses.asdict(item.metadata))
                 )
+
+    def get_layout(self) -> Layout:
+        """Get the layout, or `[]` if the layout was never set."""
+        try:
+            layout: Layout = self.read(LAYOUT_KEY)  # type: ignore
+        except KeyError:
+            layout: Layout = []
+        return layout
+
+    def set_layout(self, layout: Layout) -> None:
+        """Set the layout to `layout`.
+
+        Raises
+        ------
+        KeyError
+            If `layout` refers to a key which is not in the Store.
+
+        ValueError
+            If `layout` is malformed, e.g. if "size" is not a valid
+            `LayoutItemSize`.
+
+
+        Examples
+        --------
+        >>> Mandr("my_test_root").set_layout([
+        ...     {"key": "my_integer", "size": "small"},
+        ...     {"key": "my_string", "size": "medium"},
+        ...     {"key": "my_array", "size": "large"},
+        ... ])
+        """
+        if not isinstance(layout, list):
+            raise ValueError("Layout must be a list.")
+
+        for layout_item in layout:
+            if layout_item["key"] not in self.keys():
+                raise KeyError(f"Key '{layout_item["key"]}' is not in the store.")
+
+        try:
+            self.insert(LAYOUT_KEY, layout)
+        except KeyError:
+            self.update(LAYOUT_KEY, layout)

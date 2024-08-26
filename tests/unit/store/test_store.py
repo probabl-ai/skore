@@ -168,3 +168,15 @@ class TestStore:
                 },
             )
         ]
+
+    def test_set_layout(self, store):
+        # Doesn't raise
+        store.set_layout([])
+
+        store.set_layout([{"key": "key1", "size": "small"}])
+
+        with pytest.raises(ValueError):
+            store.set_layout([{"key": "key1", "size": "xxl"}])
+
+        with pytest.raises(KeyError):
+            store.set_layout([{"key": "key3000", "size": "large"}])
