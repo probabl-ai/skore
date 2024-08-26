@@ -1,5 +1,5 @@
 /**
- * Wait for a givezn time.
+ * Wait for a given time.
  * @param delay wait time in ms
  * @returns a promise that will resolve after the delay
  */
@@ -48,7 +48,7 @@ export async function sha1(message: string) {
 }
 
 /**
- * Save a blob to the users filesystme by triggering a download.
+ * Save a blob to the user's file system by triggering a download.
  * @param blob the blob to save
  * @param filename the filename to be downloaded
  */
@@ -68,7 +68,7 @@ export function saveBlob(blob: Blob, filename: string) {
 }
 
 /**
- * Run a given function immediatlu then run it periodycally.
+ * Run a given function immediately then run it periodically.
  * @param fn the function to run
  * @param interval the delay in ms between each call
  * @returns a function that when called stops the polling.

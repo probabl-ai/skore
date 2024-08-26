@@ -15,12 +15,12 @@ export const useReportsStore = defineStore("reports", () => {
 
   async function displayKey(key: string) {
     layout.value.push({ key, size: "large" });
-    await syncLayout();
+    await persistLayout();
   }
 
   async function hideKey(key: string) {
     layout.value = layout.value.filter(({ key: k }) => key != k);
-    await syncLayout();
+    await persistLayout();
   }
 
   async function setKeyLayoutSize(key: string, size: KeyLayoutSize) {
@@ -28,7 +28,7 @@ export const useReportsStore = defineStore("reports", () => {
     if (index !== -1) {
       layout.value[index].size = size;
     }
-    await syncLayout();
+    await persistLayout();
   }
 
   /**
@@ -70,36 +70,36 @@ export const useReportsStore = defineStore("reports", () => {
   /**
    * Start real time sync with the server.
    */
-  let _stopBackendSync: Function | null = null;
-  async function startBackendSync() {
-    _stopBackendSync = await poll(fetch, 500);
+  let _stopBackendPolling: Function | null = null;
+  async function startBackendPolling() {
+    _stopBackendPolling = await poll(fetch, 500);
   }
 
   /**
    * Stop real time sync with the server.
    */
-  function stopBackendSync() {
-    _stopBackendSync && _stopBackendSync();
+  function stopBackendPolling() {
+    _stopBackendPolling && _stopBackendPolling();
   }
 
   /**
    * Send new layout to backend
    */
-  async function _syncLayout() {
-    stopBackendSync();
+  async function _persistLayout() {
+    stopBackendPolling();
     if (report.value && layout.value) {
       const refreshed = await putLayout(report.value.uri, layout.value);
       if (refreshed) {
         report.value = refreshed;
       }
     }
-    await startBackendSync();
+    await startBackendPolling();
   }
   /**
    * Debounced layout sync with the backend.
    * To avoid server spamming.
    */
-  const syncLayout = debounce(_syncLayout, 1000, { leading: true, trailing: false });
+  const persistLayout = debounce(_persistLayout, 1000, { leading: true, trailing: false });
 
   return {
     reportUris,
@@ -109,7 +109,7 @@ export const useReportsStore = defineStore("reports", () => {
     displayKey,
     hideKey,
     setKeyLayoutSize,
-    startBackendSync,
-    stopBackendSync,
+    startBackendPolling,
+    stopBackendPolling,
   };
 });

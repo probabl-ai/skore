@@ -60,14 +60,14 @@ watch(
   (newSegments) => {
     const uri = Array.isArray(newSegments) ? newSegments.join("/") : newSegments;
     reportsStore.selectedReportUri = uri;
-    // relaunch the background sync to get report right now
-    reportsStore.stopBackendSync();
-    reportsStore.startBackendSync();
+    // relaunch the background polling to get report right now
+    reportsStore.stopBackendPolling();
+    reportsStore.startBackendPolling();
   }
 );
 
-onMounted(() => reportsStore.startBackendSync());
-onBeforeUnmount(() => reportsStore.stopBackendSync());
+onMounted(() => reportsStore.startBackendPolling());
+onBeforeUnmount(() => reportsStore.stopBackendPolling());
 </script>
 
 <template>
