@@ -51,18 +51,26 @@ function onDragLeave(event: DragEvent) {
   }
 }
 
+function setSelectedReportUri(uriSegments: string | Array<string>) {
+  const uri = Array.isArray(uriSegments) ? uriSegments.join("/") : uriSegments;
+  reportsStore.selectedReportUri = uri;
+}
+
 watch(
   () => route.params.segments,
   (newSegments) => {
-    const uri = Array.isArray(newSegments) ? newSegments.join("/") : newSegments;
-    reportsStore.selectedReportUri = uri;
+    setSelectedReportUri(newSegments);
     // relaunch the background polling to get report right now
     reportsStore.stopBackendPolling();
     reportsStore.startBackendPolling();
   }
 );
 
-onMounted(() => reportsStore.startBackendPolling());
+onMounted(() => {
+  setSelectedReportUri(route.params.segments);
+  reportsStore.startBackendPolling();
+});
+
 onBeforeUnmount(() => reportsStore.stopBackendPolling());
 </script>
 
