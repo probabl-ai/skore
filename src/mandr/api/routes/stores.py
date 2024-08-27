@@ -13,7 +13,7 @@ from mandr import registry
 from mandr.api import schema
 from mandr.storage import URI, FileSystem
 from mandr.store.layout import Layout
-from mandr.store.store import LAYOUT_KEY, Store, _get_storage_path
+from mandr.store.store import Store, _get_storage_path
 
 MANDRS_ROUTER = APIRouter(prefix="/mandrs", deprecated=True)
 STORES_ROUTER = APIRouter(prefix="/stores")
@@ -26,12 +26,13 @@ STATIC_FILES_PATH = (
 
 def serialize_store(store: Store):
     """Serialize a Store."""
-    payload: dict = {}
     # mypy does not understand union in generator
     user_items: Iterable[tuple[str, Any, dict]] = filter(
-        lambda i: i[0] != LAYOUT_KEY,
+        lambda i: i[0] != Store.LAYOUT_KEY,
         store.items(metadata=True),  # type: ignore
     )
+
+    payload: dict = {}
     for key, value, metadata in user_items:
         payload[key] = {
             "type": str(metadata["display_type"]),

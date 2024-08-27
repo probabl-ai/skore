@@ -20,7 +20,7 @@ from mandr.api.schema.number import Number
 from mandr.api.schema.numpy_array import NumpyArray
 from mandr.api.schema.string import String
 from mandr.api.schema.vega import Vega
-from mandr.store.layout import LayoutItem
+from mandr.store.layout import Layout
 
 __all__ = [
     "Any",
@@ -80,4 +80,4 @@ class Store(pydantic.BaseModel):
             pydantic.Field(discriminator="type"),
         ],
     ]
-    layout: typing.List[LayoutItem] = pydantic.Field(default=[])
+    layout: Layout = pydantic.Field(default=[])

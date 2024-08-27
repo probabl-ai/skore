@@ -1,3 +1,4 @@
+import pydantic
 import pytest
 from mandr.item import DisplayType, Item, ItemMetadata
 from mandr.storage import URI, NonPersistentStorage
@@ -175,8 +176,11 @@ class TestStore:
 
         store.set_layout([{"key": "key1", "size": "small"}])
 
-        with pytest.raises(ValueError):
+        with pytest.raises(
+            pydantic.ValidationError,
+            match="Input should be 'small', 'medium' or 'large'",
+        ):
             store.set_layout([{"key": "key1", "size": "xxl"}])
 
-        with pytest.raises(KeyError):
+        with pytest.raises(KeyError, match="Key 'key3000' is not in the store."):
             store.set_layout([{"key": "key3000", "size": "large"}])

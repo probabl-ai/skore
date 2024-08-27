@@ -8,18 +8,17 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from pydantic import RootModel
+
 from mandr.item import DisplayType, Item, ItemMetadata
 from mandr.storage import URI, FileSystem
+from mandr.store.layout import Layout
 
 if TYPE_CHECKING:
     from pathlib import PosixPath
     from typing import Any, Generator
 
-    from mandr.api.schema.layout import Layout
     from mandr.storage import Storage
-
-# FIXME find a better to isolate layout from users items
-LAYOUT_KEY = "__mandr__layout__"
 
 
 def _get_storage_path(MANDR_ROOT: str | None) -> Path:
@@ -35,6 +34,9 @@ def _get_storage_path(MANDR_ROOT: str | None) -> Path:
 
 class Store:
     """Object used to store pairs of (key, value) by URI over a storage."""
+
+    # FIXME find a better to isolate layout from users items
+    LAYOUT_KEY = "__mandr__layout__"
 
     def __init__(self, uri: URI | PosixPath | str, storage: Storage = None):
         self.uri = URI(uri)
@@ -191,7 +193,7 @@ class Store:
     def get_layout(self) -> Layout:
         """Get the layout, or `[]` if the layout was never set."""
         try:
-            layout: Layout = self.read(LAYOUT_KEY)  # type: ignore
+            layout: Layout = self.read(Store.LAYOUT_KEY)  # type: ignore
         except KeyError:
             layout: Layout = []
         return layout
@@ -204,7 +206,7 @@ class Store:
         KeyError
             If `layout` refers to a key which is not in the Store.
 
-        ValueError
+        pydantic.ValidationError
             If `layout` is malformed, e.g. if "size" is not a valid
             `LayoutItemSize`.
 
@@ -217,14 +219,13 @@ class Store:
         ...     {"key": "my_array", "size": "large"},
         ... ])
         """
-        if not isinstance(layout, list):
-            raise ValueError("Layout must be a list.")
+        layout = RootModel[Layout].model_validate(layout).root
 
         for layout_item in layout:
-            if layout_item["key"] not in self.keys():
-                raise KeyError(f"Key '{layout_item["key"]}' is not in the store.")
+            if layout_item.key not in self.keys():
+                raise KeyError(f"Key '{layout_item.key}' is not in the store.")
 
         try:
-            self.insert(LAYOUT_KEY, layout)
+            self.insert(Store.LAYOUT_KEY, layout)
         except KeyError:
-            self.update(LAYOUT_KEY, layout)
+            self.update(Store.LAYOUT_KEY, layout)
