@@ -6,7 +6,6 @@ import { useRoute } from "vue-router";
 
 import DashboardView from "@/views/DashboardView.vue";
 
-import FileTree from "@/components/FileTree.vue";
 import { mountSuspense } from "../test.utils";
 
 const app = createApp({});
@@ -34,8 +33,5 @@ describe("DashboardView", () => {
     const dashboard = await mountSuspense(DashboardView);
     // i.e. not a `VueError`
     expect(dashboard).toBeInstanceOf(VueWrapper);
-
-    const fileTree = await dashboard.findComponent(FileTree);
-    expect(fileTree).toBeInstanceOf(VueWrapper);
   });
 });

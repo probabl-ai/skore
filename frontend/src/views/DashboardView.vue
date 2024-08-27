@@ -70,12 +70,13 @@ onBeforeUnmount(() => reportsStore.stopBackendPolling());
   <main>
     <nav>
       <DashboardHeader title="File Manager" icon="icon-folder" />
-      <Simplebar class="file-trees">
+      <Simplebar class="file-trees" v-if="fileTree.length > 0">
         <FileTree :nodes="fileTree" />
       </Simplebar>
+      <div class="empty-tree" v-else>No Mandr found.</div>
     </nav>
-    <article v-if="reportsStore.selectedReport">
-      <div class="elements">
+    <article v-if="fileTree.length > 0">
+      <div class="elements" v-if="reportsStore.selectedReport">
         <DashboardHeader title="Elements (added from mandr)" icon="icon-pie-chart" />
         <Simplebar class="key-list">
           <DataStoreKeyList
@@ -109,15 +110,22 @@ onBeforeUnmount(() => reportsStore.stopBackendPolling());
             v-if="!isDropIndicatorVisible && reportsStore.layout.length === 0"
             class="placeholder"
           >
-            <div class="wrapper">No item selected yet, start by dragging one element!</div>
+            <div class="wrapper" v-if="reportsStore.selectedReportUri.length > 0">
+              No item selected yet, start by dragging one element.
+            </div>
+            <div class="wrapper" v-else>No item selected yet, start by selecting a Mandr.</div>
           </div>
+
           <Simplebar class="canvas-wrapper" v-else>
             <DataStoreCanvas />
           </Simplebar>
         </Transition>
       </div>
     </article>
-    <div class="not-found" v-else>mandr not found...</div>
+    <div class="not-found" v-else-if="fileTree.length === 0">
+      <div class="not-found-header">Empty workspace.</div>
+      <p>No mandr has been created, this worskpace is empty.</p>
+    </div>
   </main>
 </template>
 
@@ -138,20 +146,35 @@ main {
     flex-shrink: 0;
     border-right: solid 1px var(--border-color-normal);
 
-    & .file-trees {
+    & .file-trees,
+    & .empty-tree {
       height: 0;
       flex-grow: 1;
+    }
+
+    & .empty-tree {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      background-image: url("../assets/images/sad-face.svg");
+      background-position: 50% calc(50% - 24px);
+      background-repeat: no-repeat;
+      background-size: 24px;
+      color: var(--text-color-normal);
+      font-size: var(--text-size-small);
+      text-align: center;
     }
   }
 
   article,
   .not-found {
     display: flex;
-    flex-direction: row;
     flex-grow: 1;
   }
 
   article {
+    flex-direction: row;
+
     & .elements {
       display: flex;
       width: 240px;
@@ -240,6 +263,24 @@ main {
         flex-grow: 1;
         padding: var(--spacing-padding-large);
       }
+    }
+  }
+
+  .not-found {
+    flex-direction: column;
+    justify-content: center;
+    background-image: url("../assets/images/not-found.png");
+    background-position: 50% calc(50% - 62px);
+    background-repeat: no-repeat;
+    background-size: 109px 82px;
+    color: var(--text-color-normal);
+    font-size: var(--text-size-small);
+    text-align: center;
+
+    & .not-found-header {
+      margin-bottom: var(--spacing-padding-small);
+      color: var(--text-color-highlight);
+      font-size: var(--text-size-large);
     }
   }
 }
