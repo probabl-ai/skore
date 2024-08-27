@@ -3,6 +3,7 @@ import type { KeyLayoutSize } from "@/models";
 
 const props = defineProps<{
   title: string;
+  showButtons: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -13,7 +14,7 @@ const emit = defineEmits<{
 
 <template>
   <div class="dashboard-card">
-    <div class="buttons">
+    <div v-if="props.showButtons" class="buttons">
       <button @click="emit('layoutChanged', 'small')">
         <span class="icon-grid-layout-small"></span>
       </button>

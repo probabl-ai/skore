@@ -38,6 +38,7 @@ function onCardRemoved(key: string) {
       :key="key"
       :title="key"
       :class="size"
+      :showButtons="true"
       class="canvas-element"
       @layout-changed="onLayoutChange(key, $event)"
       @card-removed="onCardRemoved(key)"
