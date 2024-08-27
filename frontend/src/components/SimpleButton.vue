@@ -20,7 +20,7 @@ button {
   border: none;
   border-radius: var(--border-radius);
   background: #f08b30;
-  color: var(--text-color-highlight);
+  color: var(--button-color);
   cursor: pointer;
   font-size: var(--text-size-highlight);
   font-weight: var(--text-weight-highlight);

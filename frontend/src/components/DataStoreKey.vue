@@ -55,6 +55,7 @@ const lastUpdate = computed(() => {
   padding: var(--spacing-padding-small);
   border: var(--border-color-elevated) 1px solid;
   border-radius: var(--border-radius);
+  background-color: var(--background-color-elevated-high);
   opacity: 1;
   transition: opacity var(--transition-duration) var(--transition-easing);
 
