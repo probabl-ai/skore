@@ -13,7 +13,9 @@
 :root {
   /* typography */
   --text-color-title: var(--color-primary);
+  --text-size-small: 10px;
   --text-size-normal: 14px;
+  --text-size-large: 16px;
   --text-size-highlight: 12px;
   --text-size-title: 12px;
   --text-weight-normal: 300;
