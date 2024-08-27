@@ -10,7 +10,7 @@ import DataStoreCanvas from "@/components/DataStoreCanvas.vue";
       <h1>Report</h1>
     </div>
     <Simplebar class="canvas-wrapper">
-      <DataStoreCanvas />
+      <DataStoreCanvas :showCardButtons="false" />
     </Simplebar>
   </div>
 </template>
