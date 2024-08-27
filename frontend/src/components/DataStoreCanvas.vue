@@ -73,7 +73,7 @@ function onCardRemoved(key: string) {
         "
         :source="data"
       />
-      <HtmlSnippetWidget v-if="type === 'html'" :src="data" />
+      <HtmlSnippetWidget v-if="['html', 'sklearn_model'].includes(type!)" :src="data" />
       <CrossValidationResultsWidget
         v-if="type === 'cv_results'"
         :roc_curve_spec="data.roc_curve_spec"

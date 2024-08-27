@@ -15,7 +15,8 @@ export type ItemType =
   | "dataframe"
   | "image"
   | "cv_results"
-  | "numpy_array";
+  | "numpy_array"
+  | "sklearn_model";
 
 export interface IPayloadItemMetadata {
   display_type: string;
@@ -45,7 +46,7 @@ export class DataStore {
   }
 
   get artifactKeys(): string[] {
-    return this._getKeysByType(["file"]);
+    return this._getKeysByType([]);
   }
 
   get infoKeys(): string[] {
@@ -64,6 +65,7 @@ export class DataStore {
       "image",
       "cv_results",
       "numpy_array",
+      "sklearn_model",
     ]);
   }
 

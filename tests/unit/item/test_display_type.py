@@ -3,6 +3,7 @@ import pathlib
 
 import pytest
 from mandr.item import DisplayType
+from sklearn.linear_model import LinearRegression
 
 
 @pytest.mark.parametrize(
@@ -20,6 +21,7 @@ from mandr.item import DisplayType
         (pathlib.PosixPath("./my_file.txt"), DisplayType.FILE),
         ({"a": 1}, DisplayType.ANY),
         (set([1, 2]), DisplayType.ANY),
+        (LinearRegression(), DisplayType.SKLEARN_MODEL),
     ],
 )
 def test_infer(x, expected):

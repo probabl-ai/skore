@@ -19,6 +19,7 @@ from mandr.api.schema.markdown import Markdown
 from mandr.api.schema.matplotlib_figure import MatplotlibFigure
 from mandr.api.schema.number import Number
 from mandr.api.schema.numpy_array import NumpyArray
+from mandr.api.schema.sklearn_model import SKLearnModel
 from mandr.api.schema.string import String
 from mandr.api.schema.vega import Vega
 
@@ -38,6 +39,7 @@ __all__ = [
     "NumpyArray",
     "Store",
     "String",
+    "SKLearnModel",
     "Vega",
 ]
 
@@ -75,6 +77,7 @@ class Store(pydantic.BaseModel):
                 Number,
                 NumpyArray,
                 String,
+                SKLearnModel,
                 Vega,
             ],
             pydantic.Field(discriminator="type"),
