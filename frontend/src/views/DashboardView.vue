@@ -110,8 +110,10 @@ onBeforeUnmount(() => reportsStore.stopBackendPolling());
             v-if="!isDropIndicatorVisible && reportsStore.layout.length === 0"
             class="placeholder"
           >
-            <!-- #FIXME make this wording dynamic when #161 is mergeed and stores expose the currently selected store URI.-->
-            <div class="wrapper">No item selected yet, start by dragging one element!</div>
+            <div class="wrapper" v-if="reportsStore.selectedReportUri.length > 0">
+              No item selected yet, start by dragging one element!
+            </div>
+            <div class="wrapper" v-else>No item selected yet, start by selecting a Mandr!</div>
           </div>
 
           <Simplebar class="canvas-wrapper" v-else>
