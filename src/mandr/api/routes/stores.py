@@ -11,15 +11,12 @@ from fastapi.templating import Jinja2Templates
 
 from mandr import registry
 from mandr.api import schema
-from mandr.api.schema.layout import LayoutItem
 from mandr.storage import URI, FileSystem
+from mandr.store.layout import Layout
 from mandr.store.store import Store, _get_storage_path
 
 MANDRS_ROUTER = APIRouter(prefix="/mandrs", deprecated=True)
 STORES_ROUTER = APIRouter(prefix="/stores")
-
-# FIXME find a better to isolate layotu from users items
-LAYOUT_KEY = "__mandr__layout__"
 
 # TODO Move this to a more appropriate place
 STATIC_FILES_PATH = (
@@ -29,12 +26,13 @@ STATIC_FILES_PATH = (
 
 def serialize_store(store: Store):
     """Serialize a Store."""
-    payload: dict = {}
     # mypy does not understand union in generator
     user_items: Iterable[tuple[str, Any, dict]] = filter(
-        lambda i: i[0] != LAYOUT_KEY,
+        lambda i: i[0] != Store.LAYOUT_KEY,
         store.items(metadata=True),  # type: ignore
     )
+
+    payload: dict = {}
     for key, value, metadata in user_items:
         payload[key] = {
             "type": str(metadata["display_type"]),
@@ -42,10 +40,7 @@ def serialize_store(store: Store):
             "metadata": metadata,
         }
 
-    try:
-        layout: list[LayoutItem] = store.read(LAYOUT_KEY)  # type: ignore
-    except KeyError:
-        layout: list[LayoutItem] = []
+    layout = store.get_layout()
 
     model = schema.Store(
         schema="schema:dashboard:v0",
@@ -122,17 +117,14 @@ async def get_store_by_uri(uri: str):
 
 @MANDRS_ROUTER.put("/{uri:path}/layout", status_code=status.HTTP_201_CREATED)
 @STORES_ROUTER.put("/{uri:path}/layout", status_code=status.HTTP_201_CREATED)
-async def put_layout(uri: str, payload: list[LayoutItem]):
+async def put_layout(uri: str, payload: Layout):
     """Save the report layout configuration."""
     directory = _get_storage_path(os.environ.get("MANDR_ROOT"))
     storage = FileSystem(directory=directory)
 
     store = registry.find_store_by_uri(URI(uri), storage)
     if store is not None:
-        try:
-            store.insert(LAYOUT_KEY, payload)
-        except KeyError:
-            store.update(LAYOUT_KEY, payload)
+        store.set_layout(payload)
         return serialize_store(store)
 
     raise HTTPException(status_code=404, detail=f"No store found in '{uri}'")

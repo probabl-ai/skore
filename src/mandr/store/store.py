@@ -8,8 +8,11 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from pydantic import RootModel
+
 from mandr.item import DisplayType, Item, ItemMetadata
 from mandr.storage import URI, FileSystem
+from mandr.store.layout import Layout
 
 if TYPE_CHECKING:
     from pathlib import PosixPath
@@ -31,6 +34,9 @@ def _get_storage_path(MANDR_ROOT: str | None) -> Path:
 
 class Store:
     """Object used to store pairs of (key, value) by URI over a storage."""
+
+    # FIXME find a better to isolate layout from users items
+    LAYOUT_KEY = "__mandr__layout__"
 
     def __init__(self, uri: URI | PosixPath | str, storage: Storage = None):
         self.uri = URI(uri)
@@ -183,3 +189,43 @@ class Store:
                     if not metadata
                     else (key.stem, item.data, dataclasses.asdict(item.metadata))
                 )
+
+    def get_layout(self) -> Layout:
+        """Get the layout, or `[]` if the layout was never set."""
+        try:
+            layout: Layout = self.read(Store.LAYOUT_KEY)  # type: ignore
+        except KeyError:
+            layout: Layout = []
+        return layout
+
+    def set_layout(self, layout: Layout) -> None:
+        """Set the layout to `layout`.
+
+        Raises
+        ------
+        KeyError
+            If `layout` refers to a key which is not in the Store.
+
+        pydantic.ValidationError
+            If `layout` is malformed, e.g. if "size" is not a valid
+            `LayoutItemSize`.
+
+
+        Examples
+        --------
+        >>> Mandr("my_test_root").set_layout([
+        ...     {"key": "my_integer", "size": "small"},
+        ...     {"key": "my_string", "size": "medium"},
+        ...     {"key": "my_array", "size": "large"},
+        ... ])
+        """
+        layout = RootModel[Layout].model_validate(layout).root
+
+        for layout_item in layout:
+            if layout_item.key not in self.keys():
+                raise KeyError(f"Key '{layout_item.key}' is not in the store.")
+
+        try:
+            self.insert(Store.LAYOUT_KEY, layout)
+        except KeyError:
+            self.update(Store.LAYOUT_KEY, layout)
