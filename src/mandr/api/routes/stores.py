@@ -11,8 +11,8 @@ from fastapi.templating import Jinja2Templates
 
 from mandr import registry
 from mandr.api import schema
-from mandr.api.schema.layout import LayoutItem
 from mandr.storage import URI, FileSystem
+from mandr.store.layout import LayoutItem
 from mandr.store.store import Store, _get_storage_path
 
 MANDRS_ROUTER = APIRouter(prefix="/mandrs", deprecated=True)

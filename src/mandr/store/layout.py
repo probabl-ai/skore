@@ -1,4 +1,4 @@
-"""Models to strope reports UI state."""
+"""Models to store state of a report's UI."""
 
 from enum import StrEnum, auto
 
