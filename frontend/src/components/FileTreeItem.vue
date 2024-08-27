@@ -4,15 +4,20 @@ import { useRouter } from "vue-router";
 
 import { type FileTreeNode } from "@/components/FileTree.vue";
 import { remap, sha1 } from "@/services/utils";
+import { useReportsStore } from "@/stores/reports";
 
 const router = useRouter();
 const props = defineProps<FileTreeNode>();
+const reportsStore = useReportsStore();
 
 const randomColor = ref("");
 const hasChildren = computed(() => props.children?.length);
 const label = computed(() => {
   const segment = props.uri.split("/");
   return segment[segment.length - 1];
+});
+const isSelected = computed(() => {
+  return reportsStore.selectedReportUri === props.uri;
 });
 
 function onClick() {
@@ -45,7 +50,7 @@ onBeforeMount(async () => {
     <div class="label">
       <div v-if="props.indentationLevel == 0" class="top-level-indicator" :style="randomColor" />
       <div v-else class="child-indicator">L</div>
-      <div class="text" @click="onClick">
+      <div class="text" :class="{ selected: isSelected }" @click="onClick">
         {{ label }}
       </div>
     </div>
@@ -84,6 +89,7 @@ onBeforeMount(async () => {
         background-color var(--transition-duration) var(--transition-easing);
     }
 
+    & .text.selected,
     & .text:hover {
       background-color: var(--background-color-selected);
       color: var(--text-color-highlight);

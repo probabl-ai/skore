@@ -1,7 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import FileTree, { transformUrisToTree, type FileTreeNode } from "@/components/FileTree.vue";
 import { mount } from "@vue/test-utils";
+import { createPinia, setActivePinia } from "pinia";
+import { createApp } from "vue";
 
 function countLeaves(nodes: FileTreeNode[]): number {
   function countInNode(node: FileTreeNode): number {
@@ -17,7 +19,15 @@ function countLeaves(nodes: FileTreeNode[]): number {
   return allBranches.reduce((accumulator, leavesCount) => accumulator + leavesCount);
 }
 
+const app = createApp({});
+
 describe("FileTree", () => {
+  beforeEach(() => {
+    const pinia = createPinia();
+    app.use(pinia);
+    setActivePinia(pinia);
+  });
+
   it("Renders properly.", () => {
     const records: FileTreeNode[] = [
       {
