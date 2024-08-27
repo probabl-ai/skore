@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Simplebar from "simplebar-vue";
-import { computed, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 
 import DashboardHeader from "@/components/DashboardHeader.vue";
@@ -8,32 +8,18 @@ import DataStoreCanvas from "@/components/DataStoreCanvas.vue";
 import DataStoreKeyList from "@/components/DataStoreKeyList.vue";
 import FileTree, { transformUrisToTree } from "@/components/FileTree.vue";
 import SimpleButton from "@/components/SimpleButton.vue";
-import { fetchAllManderUris, fetchMander, fetchShareableBlob } from "@/services/api";
+import { fetchShareableBlob } from "@/services/api";
 import { saveBlob } from "@/services/utils";
-import { useCanvasStore } from "@/stores/canvas";
+import { useReportsStore } from "@/stores/reports";
 
 const route = useRoute();
-const dataStoreUris = ref<string[]>([]);
-const canvasStore = useCanvasStore();
+const reportsStore = useReportsStore();
 const isDropIndicatorVisible = ref(false);
 const editor = ref<HTMLDivElement>();
-const editorHeader = ref<HTMLElement>();
-const fileTree = computed(() => transformUrisToTree(dataStoreUris.value));
-const editorHeaderHeight = computed(() =>
-  editorHeader.value ? editorHeader.value.clientHeight : 0
-);
-
-async function fetchDataStoreDetail(path: string | string[]) {
-  const p = Array.isArray(path) ? path.join("/") : path;
-  if (p.length == 0) {
-    return;
-  }
-  const m = await fetchMander(p);
-  canvasStore.setDataStore(m);
-}
+const fileTree = computed(() => transformUrisToTree(reportsStore.reportUris));
 
 async function onShareReport(/*event: PointerEvent*/) {
-  const uri = canvasStore.dataStore?.uri;
+  const uri = reportsStore.selectedReport?.uri;
   if (uri) {
     const shareable = await fetchShareableBlob(uri);
     if (shareable) {
@@ -51,7 +37,7 @@ function onItemDrop(event: DragEvent) {
   isDropIndicatorVisible.value = false;
   if (event.dataTransfer) {
     const key = event.dataTransfer.getData("key");
-    canvasStore.displayKey(key);
+    reportsStore.displayKey(key);
   }
 }
 
@@ -67,13 +53,17 @@ function onDragLeave(event: DragEvent) {
 
 watch(
   () => route.params.segments,
-  async (newSegments) => {
-    await fetchDataStoreDetail(newSegments);
+  (newSegments) => {
+    const uri = Array.isArray(newSegments) ? newSegments.join("/") : newSegments;
+    reportsStore.selectedReportUri = uri;
+    // relaunch the background polling to get report right now
+    reportsStore.stopBackendPolling();
+    reportsStore.startBackendPolling();
   }
 );
 
-dataStoreUris.value = await fetchAllManderUris();
-await fetchDataStoreDetail(route.params.segments);
+onMounted(() => reportsStore.startBackendPolling());
+onBeforeUnmount(() => reportsStore.stopBackendPolling());
 </script>
 
 <template>
@@ -84,12 +74,20 @@ await fetchDataStoreDetail(route.params.segments);
         <FileTree :nodes="fileTree" />
       </Simplebar>
     </nav>
-    <article v-if="canvasStore.dataStore">
+    <article v-if="reportsStore.selectedReport">
       <div class="elements">
         <DashboardHeader title="Elements (added from mandr)" icon="icon-pie-chart" />
         <Simplebar class="key-list">
-          <DataStoreKeyList title="Plots" icon="icon-plot" :keys="canvasStore.dataStore.plotKeys" />
-          <DataStoreKeyList title="Info" icon="icon-text" :keys="canvasStore.dataStore.infoKeys" />
+          <DataStoreKeyList
+            title="Plots"
+            icon="icon-plot"
+            :keys="reportsStore.selectedReport.plotKeys"
+          />
+          <DataStoreKeyList
+            title="Info"
+            icon="icon-text"
+            :keys="reportsStore.selectedReport.infoKeys"
+          />
         </Simplebar>
       </div>
 
@@ -101,18 +99,17 @@ await fetchDataStoreDetail(route.params.segments);
         @dragenter="onDragEnter"
         @dragleave="onDragLeave"
       >
-        <div class="editor-header" ref="editorHeader">
+        <div class="editor-header">
           <h1>Report</h1>
           <SimpleButton label="Share report" @click="onShareReport" />
         </div>
         <div class="drop-indicator" :class="{ visible: isDropIndicatorVisible }"></div>
         <Transition name="fade">
           <div
-            v-if="!isDropIndicatorVisible && canvasStore.layout.length === 0"
+            v-if="!isDropIndicatorVisible && reportsStore.layout.length === 0"
             class="placeholder"
-            :style="`--header-height: ${editorHeaderHeight}px`"
           >
-            No item selected yet, start by dragging one element!
+            <div class="wrapper">No item selected yet, start by dragging one element!</div>
           </div>
           <Simplebar class="canvas-wrapper" v-else>
             <DataStoreCanvas />
@@ -194,7 +191,7 @@ main {
       }
 
       & .drop-indicator {
-        height: 3px;
+        height: 0;
         border-radius: 8px;
         margin: 0 10%;
         background-color: var(--text-color-title);
@@ -202,20 +199,40 @@ main {
         transition: opacity var(--transition-duration) var(--transition-easing);
 
         &.visible {
+          height: 3px;
           opacity: 1;
         }
       }
 
       & .placeholder {
+        display: flex;
         height: 100%;
-        padding-top: calc((100vh - var(--header-height)) * 476 / 730);
-        background-image: url("../assets/images/editor-placeholder.svg");
-        background-position: 50%;
-        background-repeat: no-repeat;
-        background-size: contain;
-        color: var(--text-color-normal);
-        font-size: var(--text-size-normal);
-        text-align: center;
+        flex-direction: column;
+        justify-content: center;
+        background-color: var(--background-color-normal);
+        background-image: radial-gradient(
+            circle at center,
+            transparent 0,
+            transparent 60%,
+            var(--background-color-normal) 100%
+          ),
+          linear-gradient(to right, var(--border-color-lower) 1px, transparent 1px),
+          linear-gradient(to bottom, var(--border-color-lower) 1px, transparent 1px);
+        background-size:
+          auto,
+          76px 76px,
+          76px 76px;
+
+        & .wrapper {
+          padding-top: 192px;
+          background-image: url("../assets/images/editor-placeholder.svg");
+          background-position: 50% 0;
+          background-repeat: no-repeat;
+          background-size: 265px 192px;
+          color: var(--text-color-normal);
+          font-size: var(--text-size-normal);
+          text-align: center;
+        }
       }
 
       & .canvas-wrapper {
