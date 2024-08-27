@@ -14,7 +14,6 @@ from mandr.api.schema.datetime import Datetime
 from mandr.api.schema.file import File
 from mandr.api.schema.html import HTML
 from mandr.api.schema.integer import Integer
-from mandr.api.schema.layout import LayoutItem
 from mandr.api.schema.markdown import Markdown
 from mandr.api.schema.matplotlib_figure import MatplotlibFigure
 from mandr.api.schema.number import Number
@@ -22,6 +21,7 @@ from mandr.api.schema.numpy_array import NumpyArray
 from mandr.api.schema.sklearn_model import SKLearnModel
 from mandr.api.schema.string import String
 from mandr.api.schema.vega import Vega
+from mandr.store.layout import Layout
 
 __all__ = [
     "Any",
@@ -83,4 +83,4 @@ class Store(pydantic.BaseModel):
             pydantic.Field(discriminator="type"),
         ],
     ]
-    layout: typing.List[LayoutItem] = pydantic.Field(default=[])
+    layout: Layout = pydantic.Field(default=[])
