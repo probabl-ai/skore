@@ -16,11 +16,7 @@ const route = useRoute();
 const reportsStore = useReportsStore();
 const isDropIndicatorVisible = ref(false);
 const editor = ref<HTMLDivElement>();
-const editorHeader = ref<HTMLElement>();
 const fileTree = computed(() => transformUrisToTree(reportsStore.reportUris));
-const editorHeaderHeight = computed(() =>
-  editorHeader.value ? editorHeader.value.clientHeight : 0
-);
 
 async function onShareReport(/*event: PointerEvent*/) {
   const uri = reportsStore.selectedReport?.uri;
@@ -103,7 +99,7 @@ onBeforeUnmount(() => reportsStore.stopBackendPolling());
         @dragenter="onDragEnter"
         @dragleave="onDragLeave"
       >
-        <div class="editor-header" ref="editorHeader">
+        <div class="editor-header">
           <h1>Report</h1>
           <SimpleButton label="Share report" @click="onShareReport" />
         </div>
@@ -112,9 +108,8 @@ onBeforeUnmount(() => reportsStore.stopBackendPolling());
           <div
             v-if="!isDropIndicatorVisible && reportsStore.layout.length === 0"
             class="placeholder"
-            :style="`--header-height: ${editorHeaderHeight}px`"
           >
-            No item selected yet, start by dragging one element!
+            <div class="wrapper">No item selected yet, start by dragging one element!</div>
           </div>
           <Simplebar class="canvas-wrapper" v-else>
             <DataStoreCanvas />
@@ -196,7 +191,7 @@ main {
       }
 
       & .drop-indicator {
-        height: 3px;
+        height: 0;
         border-radius: 8px;
         margin: 0 10%;
         background-color: var(--text-color-title);
@@ -204,20 +199,40 @@ main {
         transition: opacity var(--transition-duration) var(--transition-easing);
 
         &.visible {
+          height: 3px;
           opacity: 1;
         }
       }
 
       & .placeholder {
+        display: flex;
         height: 100%;
-        padding-top: calc((100vh - var(--header-height)) * 476 / 730);
-        background-image: url("../assets/images/editor-placeholder.svg");
-        background-position: 50%;
-        background-repeat: no-repeat;
-        background-size: contain;
-        color: var(--text-color-normal);
-        font-size: var(--text-size-normal);
-        text-align: center;
+        flex-direction: column;
+        justify-content: center;
+        background-color: var(--background-color-normal);
+        background-image: radial-gradient(
+            circle at center,
+            transparent 0,
+            transparent 60%,
+            var(--background-color-normal) 100%
+          ),
+          linear-gradient(to right, var(--border-color-lower) 1px, transparent 1px),
+          linear-gradient(to bottom, var(--border-color-lower) 1px, transparent 1px);
+        background-size:
+          auto,
+          76px 76px,
+          76px 76px;
+
+        & .wrapper {
+          padding-top: 192px;
+          background-image: url("../assets/images/editor-placeholder.svg");
+          background-position: 50% 0;
+          background-repeat: no-repeat;
+          background-size: 265px 192px;
+          color: var(--text-color-normal);
+          font-size: var(--text-size-normal);
+          text-align: center;
+        }
       }
 
       & .canvas-wrapper {

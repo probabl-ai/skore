@@ -11,12 +11,7 @@
 */
 
 :root {
-  --color-primary: #f08b30;
-  --color-secondary: #2329ff;
-
   /* typography */
-  --text-color-normal: #a2a2a2;
-  --text-color-highlight: #fff;
   --text-color-title: var(--color-primary);
   --text-size-normal: 14px;
   --text-size-highlight: 12px;
@@ -25,15 +20,8 @@
   --text-weight-highlight: 400;
   --text-weight-title: 400;
 
-  /* backgrounds */
-  --background-color-normal: #121212;
-  --background-color-elevated: #222;
-  --background-color-elevated-high: #2f2f2f;
-  --background-color-selected: rgb(191 191 191 / 25%);
-
   /* buttons */
   --button-background: var(--color-primary);
-  --button-color: #fff;
 
   /* spacings */
   --spacing-padding-large: 24px;
@@ -43,8 +31,6 @@
   --spacing-gap-small: 4px;
 
   /* borders */
-  --border-color-normal: #292a2a;
-  --border-color-elevated: #3f3f3f;
   --border-width-normal: 1px;
   --border-width-small: 0.34px;
   --border-radius: 4px;
@@ -52,4 +38,54 @@
   /* misc */
   --transition-duration: 0.1s;
   --transition-easing: cubic-bezier(0.1, 0.6, 0.7, 0.2);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-primary: #f08b30;
+    --color-secondary: #2329ff;
+
+    /* typography */
+    --text-color-normal: #a2a2a2;
+    --text-color-highlight: #fff;
+
+    /* backgrounds */
+    --background-color-normal: #121212;
+    --background-color-elevated: #222;
+    --background-color-elevated-high: #2f2f2f;
+    --background-color-selected: rgb(191 191 191 / 25%);
+
+    /* buttons */
+    --button-color: #fff;
+
+    /* borders */
+    --border-color-lower: #171717;
+    --border-color-normal: #292a2a;
+    --border-color-elevated: #3f3f3f;
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --color-primary: #2329ff;
+    --color-secondary: #f08b30;
+
+    /* typography */
+    --text-color-normal: #616271;
+    --text-color-highlight: #2f3037;
+
+    /* backgrounds */
+    --background-color-normal: #fafafb;
+    --background-color-elevated: #f3f3f6;
+    --background-color-elevated-high: #fff;
+    --background-color-selected: rgb(101 106 255 / 8%);
+
+    /* buttons */
+    --button-color: #fff;
+
+    /* borders */
+    --border-color-lower: #f0f0f0;
+    --border-color-normal: #eeeef0;
+    --border-color-elevated: #dadada;
+  }
 }

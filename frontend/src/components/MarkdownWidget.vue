@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { isString } from "@/services/utils";
-import "highlight.js/styles/monokai-sublime.min.css";
 import MarkdownIt from "markdown-it";
 import { full as emoji } from "markdown-it-emoji";
 import highlightjs from "markdown-it-highlightjs";
