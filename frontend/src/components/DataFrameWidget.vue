@@ -15,7 +15,7 @@ const props = defineProps<DataFrameWidgetProps>();
 </script>
 
 <template>
-  <DataTable :data="props.data">
+  <DataTable :data="props.data" :options="{ paging: props.data.length > 10 }">
     <thead>
       <tr>
         <th v-for="(name, index) in props.columns" :key="index">{{ name }}</th>
