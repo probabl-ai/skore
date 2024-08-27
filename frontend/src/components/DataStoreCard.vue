@@ -64,10 +64,13 @@ const emit = defineEmits<{
       font-size: 8px;
       line-height: 8px;
       text-align: center;
-      transition: background-color var(--transition-duration) var(--transition-easing);
+      transition:
+        background-color var(--transition-duration) var(--transition-easing),
+        color var(--transition-duration) var(--transition-easing);
 
       &:hover {
         background-color: var(--text-color-title);
+        color: var(--button-color);
       }
     }
   }
