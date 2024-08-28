@@ -27,6 +27,10 @@
   text-transform: none;
 }
 
+.icon-focus::before {
+  content: "\e908";
+}
+
 .icon-text::before {
   content: "\e900";
 }

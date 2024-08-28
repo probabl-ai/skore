@@ -8,7 +8,7 @@ const props = defineProps<{
   <button>{{ props.label }}</button>
 </template>
 
-<style>
+<style scoped>
 button {
   display: flex;
   flex: none;
@@ -19,7 +19,7 @@ button {
   padding: var(--spacing-padding-small) var(--spacing-padding-normal);
   border: none;
   border-radius: var(--border-radius);
-  background: #f08b30;
+  background: var(--button-background-color);
   color: var(--button-color);
   cursor: pointer;
   font-size: var(--text-size-highlight);
