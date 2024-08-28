@@ -7,6 +7,7 @@ import DashboardHeader from "@/components/DashboardHeader.vue";
 import DataStoreCanvas from "@/components/DataStoreCanvas.vue";
 import DataStoreKeyList from "@/components/DataStoreKeyList.vue";
 import FileTree, { transformUrisToTree } from "@/components/FileTree.vue";
+import IconButton from "@/components/IconButton.vue";
 import SimpleButton from "@/components/SimpleButton.vue";
 import { fetchShareableBlob } from "@/services/api";
 import { saveBlob } from "@/services/utils";
@@ -16,9 +17,10 @@ const route = useRoute();
 const reportsStore = useReportsStore();
 const isDropIndicatorVisible = ref(false);
 const editor = ref<HTMLDivElement>();
+const isInFocusMode = ref(false);
 const fileTree = computed(() => transformUrisToTree(reportsStore.reportUris));
 
-async function onShareReport(/*event: PointerEvent*/) {
+async function onShareReport() {
   const uri = reportsStore.selectedReport?.uri;
   if (uri) {
     const shareable = await fetchShareableBlob(uri);
@@ -31,6 +33,10 @@ async function onShareReport(/*event: PointerEvent*/) {
       );
     }
   }
+}
+
+function onFocusMode() {
+  isInFocusMode.value = !isInFocusMode.value;
 }
 
 function onItemDrop(event: DragEvent) {
@@ -76,7 +82,7 @@ onBeforeUnmount(() => reportsStore.stopBackendPolling());
 
 <template>
   <main>
-    <nav>
+    <nav v-if="!isInFocusMode">
       <DashboardHeader title="File Manager" icon="icon-folder" />
       <Simplebar class="file-trees" v-if="fileTree.length > 0">
         <FileTree :nodes="fileTree" />
@@ -84,7 +90,7 @@ onBeforeUnmount(() => reportsStore.stopBackendPolling());
       <div class="empty-tree" v-else>No Mandr found.</div>
     </nav>
     <article v-if="fileTree.length > 0">
-      <div class="elements" v-if="reportsStore.selectedReport">
+      <div class="elements" v-if="reportsStore.selectedReport && !isInFocusMode">
         <DashboardHeader title="Elements (added from mandr)" icon="icon-pie-chart" />
         <Simplebar class="key-list">
           <DataStoreKeyList
@@ -109,6 +115,7 @@ onBeforeUnmount(() => reportsStore.stopBackendPolling());
         @dragleave="onDragLeave"
       >
         <div class="editor-header">
+          <IconButton icon="icon-focus" @click="onFocusMode" />
           <h1>Report</h1>
           <SimpleButton label="Share report" @click="onShareReport" />
         </div>
@@ -124,7 +131,7 @@ onBeforeUnmount(() => reportsStore.stopBackendPolling());
             <div class="wrapper" v-else>No item selected yet, start by selecting a Mandr.</div>
           </div>
 
-          <Simplebar class="canvas-wrapper" v-else>
+          <Simplebar class="canvas-wrapper" v-else ref="reportScrollBar">
             <DataStoreCanvas />
           </Simplebar>
         </Transition>
@@ -149,7 +156,9 @@ main {
 
   nav {
     display: flex;
+    overflow: hidden;
     width: 240px;
+    min-width: 0;
     flex-direction: column;
     flex-shrink: 0;
     border-right: solid 1px var(--border-color-normal);
@@ -177,6 +186,8 @@ main {
   article,
   .not-found {
     display: flex;
+    overflow: hidden;
+    min-width: 0;
     flex-grow: 1;
   }
 
@@ -199,9 +210,11 @@ main {
 
     & .editor {
       display: flex;
+      overflow: hidden;
+      min-width: 0;
       max-height: 100vh;
+      flex: auto;
       flex-direction: column;
-      flex-grow: 1;
 
       & .editor-header {
         display: flex;
