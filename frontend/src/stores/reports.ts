@@ -1,9 +1,9 @@
 import { defineStore } from "pinia";
-import { ref, shallowRef } from "vue";
+import { ref, shallowRef, toRaw } from "vue";
 
 import { DataStore, type KeyLayoutSize, type Layout } from "@/models";
 import { fetchAllManderUris, fetchMander, putLayout } from "@/services/api";
-import { poll } from "@/services/utils";
+import { isDeepEqual, poll } from "@/services/utils";
 
 export const useReportsStore = defineStore("reports", () => {
   // this object is not deeply reactive as it may be very large
@@ -59,6 +59,18 @@ export const useReportsStore = defineStore("reports", () => {
   }
 
   /**
+   * Set the selected report ref to a new one only if there is a difference.
+   * @param report the new report
+   */
+  function setSelectedReportIfDifferent(report: DataStore) {
+    const current = toRaw(selectedReport.value);
+    if (!isDeepEqual(current as object, report)) {
+      selectedReport.value = report;
+      layout.value = report.layout;
+    }
+  }
+
+  /**
    * Fetch all reports URI
    * and eventually the detail of the currently selected report
    */
@@ -70,8 +82,7 @@ export const useReportsStore = defineStore("reports", () => {
       if (selectedUri.length > 0) {
         const report = await fetchMander(selectedUri);
         if (report) {
-          selectedReport.value = report;
-          layout.value = report.layout;
+          setSelectedReportIfDifferent(report);
         }
       }
     }
@@ -102,7 +113,7 @@ export const useReportsStore = defineStore("reports", () => {
     if (selectedReport.value && layout.value) {
       const report = await putLayout(selectedReport.value.uri, layout.value);
       if (report) {
-        selectedReport.value = report;
+        setSelectedReportIfDifferent(report);
       }
     }
     await startBackendPolling();
@@ -118,5 +129,6 @@ export const useReportsStore = defineStore("reports", () => {
     setKeyLayoutSize,
     startBackendPolling,
     stopBackendPolling,
+    setSelectedReportIfDifferent,
   };
 });
