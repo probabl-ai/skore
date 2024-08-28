@@ -25,9 +25,7 @@ async function onShareReport(/*event: PointerEvent*/) {
     if (shareable) {
       saveBlob(
         shareable,
-        uri.replace(/\//g, (m, i) => {
-          return i === 0 ? "" : "-";
-        })
+        uri.replace(/\//g, (_, i) => (i === 0 ? "" : "-"))
       );
     }
   }

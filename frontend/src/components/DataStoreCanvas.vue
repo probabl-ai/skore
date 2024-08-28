@@ -29,6 +29,13 @@ function onLayoutChange(key: string, size: KeyLayoutSize) {
 function onCardRemoved(key: string) {
   reportsStore.hideKey(key);
 }
+
+const props = defineProps({
+  showCardButtons: {
+    type: Boolean,
+    default: true,
+  },
+});
 </script>
 
 <template>
@@ -38,6 +45,7 @@ function onCardRemoved(key: string) {
       :key="key"
       :title="key"
       :class="size"
+      :showButtons="props.showCardButtons"
       class="canvas-element"
       @layout-changed="onLayoutChange(key, $event)"
       @card-removed="onCardRemoved(key)"
