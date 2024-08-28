@@ -92,3 +92,15 @@ export async function poll(fn: Function, interval: number): Promise<() => void> 
 
   return stop;
 }
+
+/**
+ * Deep compare two objects.
+ * @param a
+ * @param b
+ * @returns true if object are equals false otherwise
+ */
+export function isDeepEqual(a: object, b: object) {
+  const sa = JSON.stringify(a);
+  const sb = JSON.stringify(b);
+  return sa == sb;
+}
