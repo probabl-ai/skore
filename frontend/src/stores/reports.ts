@@ -1,6 +1,5 @@
-import { debounce } from "lodash";
 import { defineStore } from "pinia";
-import { ref, shallowRef, toRaw } from "vue";
+import { ref, shallowRef } from "vue";
 
 import { DataStore, type KeyLayoutSize, type Layout } from "@/models";
 import { fetchAllManderUris, fetchMander, putLayout } from "@/services/api";
@@ -13,44 +12,49 @@ export const useReportsStore = defineStore("reports", () => {
   const selectedReport = shallowRef<DataStore | null>(null);
   const layout = ref<Layout>([]);
 
-  async function displayKey(key: string) {
-    layout.value.push({ key, size: "large" });
-    await persistLayout();
-  }
-
-  async function hideKey(key: string) {
-    layout.value = layout.value.filter(({ key: k }) => key != k);
-    await persistLayout();
-  }
-
-  async function setKeyLayoutSize(key: string, size: KeyLayoutSize) {
-    const index = layout.value.findIndex(({ key: k }) => key == k);
-    if (index !== -1) {
-      layout.value[index].size = size;
-    }
-    await persistLayout();
+  /**
+   * Return true if the the given key is in the list of displayed keys, false otherwise.
+   * @param key the key to look for
+   */
+  function isKeyDisplayed(key: string) {
+    const visibleKeys = layout.value.map(({ key: k }) => k);
+    return visibleKeys.includes(key);
   }
 
   /**
-   * merge report
-   * thruth comes from the backend except card size that the user may have change
+   * Add the value of a key to the report.
+   * @param key the key to add to the report
    */
-  function merge() {
-    const r = selectedReport.value;
-    if (r) {
-      // merge layout
-      const old = structuredClone(toRaw(layout.value));
-      const allKeys = Object.keys(r.payload);
-      const displayedKeys = layout.value.map((v) => v.key).filter((v) => allKeys.indexOf(v) !== -1);
-      const newLayout = [];
-      for (const { key, size: s } of r.layout) {
-        if (displayedKeys.indexOf(key) !== -1) {
-          const localSizeIndex = old.findIndex(({ key: k }) => key == k);
-          const size = localSizeIndex !== -1 ? old[localSizeIndex].size : s;
-          newLayout.push({ key, size });
-        }
+  async function displayKey(key: string) {
+    if (!isKeyDisplayed(key)) {
+      layout.value.push({ key, size: "large" });
+      await persistLayout();
+    }
+  }
+
+  /**
+   * Hide the value of a key from the report.
+   * @param key the key to hide
+   */
+  async function hideKey(key: string) {
+    if (isKeyDisplayed(key)) {
+      layout.value = layout.value.filter(({ key: k }) => key != k);
+      await persistLayout();
+    }
+  }
+
+  /**
+   * Change the visual size of the value of a key in the report.
+   * @param key the key which changes
+   * @param size the target size
+   */
+  async function setKeyLayoutSize(key: string, size: KeyLayoutSize) {
+    if (isKeyDisplayed(key)) {
+      const index = layout.value.findIndex(({ key: k }) => key == k);
+      if (index !== -1) {
+        layout.value[index].size = size;
       }
-      layout.value = newLayout;
+      await persistLayout();
     }
   }
 
@@ -58,12 +62,18 @@ export const useReportsStore = defineStore("reports", () => {
    * Fetch all reports URI
    * and eventually the detail of the currently selected report
    */
+  let _isCanceledCall = false;
   async function fetch() {
     reportUris.value = await fetchAllManderUris();
-    const selectedUri = selectedReportUri.value;
-    if (selectedUri.length > 0) {
-      selectedReport.value = await fetchMander(selectedUri);
-      merge();
+    if (!_isCanceledCall) {
+      const selectedUri = selectedReportUri.value;
+      if (selectedUri.length > 0) {
+        const report = await fetchMander(selectedUri);
+        if (report) {
+          selectedReport.value = report;
+          layout.value = report.layout;
+        }
+      }
     }
   }
 
@@ -72,6 +82,7 @@ export const useReportsStore = defineStore("reports", () => {
    */
   let _stopBackendPolling: Function | null = null;
   async function startBackendPolling() {
+    _isCanceledCall = false;
     _stopBackendPolling = await poll(fetch, 500);
   }
 
@@ -79,27 +90,23 @@ export const useReportsStore = defineStore("reports", () => {
    * Stop real time sync with the server.
    */
   function stopBackendPolling() {
+    _isCanceledCall = true;
     _stopBackendPolling && _stopBackendPolling();
   }
 
   /**
    * Send new layout to backend
    */
-  async function _persistLayout() {
+  async function persistLayout() {
     stopBackendPolling();
     if (selectedReport.value && layout.value) {
-      const refreshed = await putLayout(selectedReport.value.uri, layout.value);
-      if (refreshed) {
-        selectedReport.value = refreshed;
+      const report = await putLayout(selectedReport.value.uri, layout.value);
+      if (report) {
+        selectedReport.value = report;
       }
     }
     await startBackendPolling();
   }
-  /**
-   * Debounced layout sync with the backend.
-   * To avoid server spamming.
-   */
-  const persistLayout = debounce(_persistLayout, 1000, { leading: true, trailing: false });
 
   return {
     reportUris,
