@@ -16,6 +16,18 @@ import DataStoreCanvas from "@/components/DataStoreCanvas.vue";
 </template>
 
 <style scoped>
+@media (prefers-color-scheme: dark) {
+  main {
+    --editor-placeholder-image: url("../assets/images/editor-placeholder-dark.svg");
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  main {
+    --editor-placeholder-image: url("../assets/images/editor-placeholder-light.svg");
+  }
+}
+
 .share {
   display: flex;
   height: 100dvh;
@@ -57,7 +69,7 @@ import DataStoreCanvas from "@/components/DataStoreCanvas.vue";
   & .placeholder {
     height: 100%;
     padding-top: calc((100vh - var(--header-height)) * 476 / 730);
-    background-image: url("@/assets/images/editor-placeholder.svg");
+    background-image: var(--editor-placeholder-image);
     background-position: 50%;
     background-repeat: no-repeat;
     background-size: contain;

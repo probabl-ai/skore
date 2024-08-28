@@ -138,6 +138,22 @@ onBeforeUnmount(() => reportsStore.stopBackendPolling());
 </template>
 
 <style scoped>
+@media (prefers-color-scheme: dark) {
+  main {
+    --sad-face-image: url("../assets/images/sad-face-dark.svg");
+    --not-found-image: url("../assets/images/not-found-dark.png");
+    --editor-placeholder-image: url("../assets/images/editor-placeholder-dark.svg");
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  main {
+    --sad-face-image: url("../assets/images/sad-face-light.svg");
+    --not-found-image: url("../assets/images/not-found-light.png");
+    --editor-placeholder-image: url("../assets/images/editor-placeholder-light.svg");
+  }
+}
+
 main {
   display: flex;
   flex-direction: row;
@@ -164,7 +180,7 @@ main {
       display: flex;
       flex-direction: column;
       justify-content: center;
-      background-image: url("../assets/images/sad-face.svg");
+      background-image: var(--sad-face-image);
       background-position: 50% calc(50% - 24px);
       background-repeat: no-repeat;
       background-size: 24px;
@@ -256,7 +272,7 @@ main {
 
         & .wrapper {
           padding-top: 192px;
-          background-image: url("../assets/images/editor-placeholder.svg");
+          background-image: var(--editor-placeholder-image);
           background-position: 50% 0;
           background-repeat: no-repeat;
           background-size: 265px 192px;
@@ -277,7 +293,7 @@ main {
   .not-found {
     flex-direction: column;
     justify-content: center;
-    background-image: url("../assets/images/not-found.png");
+    background-image: var(--not-found-image);
     background-position: 50% calc(50% - 62px);
     background-repeat: no-repeat;
     background-size: 109px 82px;
