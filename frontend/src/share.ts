@@ -17,4 +17,5 @@ export default function share() {
   const ds = new DataStore(m.uri, m.payload, m.layout);
   const reportsStore = useReportsStore();
   reportsStore.selectedReport = ds;
+  reportsStore.layout = ds.layout;
 }
