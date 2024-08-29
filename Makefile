@@ -49,3 +49,7 @@ build-doc:
 	cd doc
 	# Run a make instruction inside the doc folder
 	$(MAKE) -C doc html
+
+build-package: build-frontend
+	python -m pip install build
+	python -m build
