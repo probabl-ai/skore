@@ -83,9 +83,12 @@ const lastUpdate = computed(() => {
   }
 
   & .label {
+    padding-right: 30px;
     color: var(--text-color-highlight);
     font-size: var(--text-size-highlight);
     font-weight: var(--text-weight-highlight);
+    overflow-x: hidden;
+    text-overflow: ellipsis;
   }
 
   & .metadata {
