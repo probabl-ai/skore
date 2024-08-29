@@ -7,7 +7,6 @@ import DashboardHeader from "@/components/DashboardHeader.vue";
 import DataStoreCanvas from "@/components/DataStoreCanvas.vue";
 import DataStoreKeyList from "@/components/DataStoreKeyList.vue";
 import FileTree, { transformUrisToTree } from "@/components/FileTree.vue";
-import IconButton from "@/components/IconButton.vue";
 import SimpleButton from "@/components/SimpleButton.vue";
 import { fetchShareableBlob } from "@/services/api";
 import { saveBlob } from "@/services/utils";
@@ -113,9 +112,9 @@ onBeforeUnmount(() => reportsStore.stopBackendPolling());
         @dragleave="onDragLeave"
       >
         <div class="editor-header">
-          <IconButton icon="icon-focus" @click="onFocusMode" />
+          <SimpleButton icon="icon-focus" @click="onFocusMode" />
           <h1>Report</h1>
-          <SimpleButton label="Share report" @click="onShareReport" />
+          <SimpleButton label="Share report" @click="onShareReport" :is-primary="true" />
         </div>
         <div class="drop-indicator" :class="{ visible: isDropIndicatorVisible }"></div>
         <Transition name="fade">
