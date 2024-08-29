@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { isUserInDarkMode } from "@/services/utils";
 import { View as VegaView } from "vega";
 import embed, { type Config, type VisualizationSpec } from "vega-embed";
 import { onBeforeUnmount, onMounted, ref } from "vue";
@@ -30,7 +31,7 @@ onMounted(async () => {
         ...props.spec,
       },
       {
-        theme: "dark",
+        theme: isUserInDarkMode() ? "dark" : undefined,
         config: vegaConfig,
         actions: false,
       }

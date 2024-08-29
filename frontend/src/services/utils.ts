@@ -104,3 +104,11 @@ export function isDeepEqual(a: object, b: object) {
   const sb = JSON.stringify(b);
   return sa == sb;
 }
+
+/**
+ * Is the user in dark mode ? 🧛🏻‍♀️
+ * @returns true if the user prefers dark model false otherwise.
+ */
+export function isUserInDarkMode() {
+  return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+}
