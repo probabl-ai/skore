@@ -1,4 +1,5 @@
 import {
+  generateRandomMultiple,
   isDeepEqual,
   isString,
   isUserInDarkMode,
@@ -85,5 +86,10 @@ describe("utils", () => {
       { a: 2, b: 2 },
       { a: 1, b: 1 },
     ]);
+  });
+
+  it("Can generate random numbers that are multiple of a given one", () => {
+    expect(generateRandomMultiple(3, 0, 100) % 3).toEqual(0);
+    expect(generateRandomMultiple(42, 0, 100) % 42).toEqual(0);
   });
 });

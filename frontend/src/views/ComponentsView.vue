@@ -4,6 +4,7 @@ import type { VisualizationSpec } from "vega-embed";
 import DataFrameWidget from "@/components/DataFrameWidget.vue";
 import ImageWidget from "@/components/ImageWidget.vue";
 import MarkdownWidget from "@/components/MarkdownWidget.vue";
+import SimpleButton from "@/components/SimpleButton.vue";
 import Tabs from "@/components/TabsWidget.vue";
 import TabsItem from "@/components/TabsWidgetItem.vue";
 import VegaWidget from "@/components/VegaWidget.vue";
@@ -17,7 +18,7 @@ import CrossValidationResultsWidget from "@/components/CrossValidationResultsWid
 <template>
   <main>
     <h1>Components library</h1>
-    <Tabs :tab-names="['markdown', 'vega', 'DataFrame', 'Image', 'CV Results']">
+    <Tabs :tab-names="['markdown', 'vega', 'DataFrame', 'Image', 'CV Results', 'buttons']">
       <TabsItem :value="0">
         <MarkdownWidget :source="markdownString" />
       </TabsItem>
@@ -75,6 +76,34 @@ import CrossValidationResultsWidget from "@/components/CrossValidationResultsWid
           }"
         />
       </TabsItem>
+      <TabsItem :value="5">
+        <div class="buttons">
+          <p>
+            <SimpleButton label="hey ho" :is-primary="true" />
+            primary button with label
+          </p>
+          <p>
+            <SimpleButton label="hey ho" :is-primary="true" icon="icon-pie-chart" />
+            primary button with label and icon
+          </p>
+          <p>
+            <SimpleButton :is-primary="true" icon="icon-pie-chart" />
+            primary button with icon
+          </p>
+          <p>
+            <SimpleButton label="hey ho" />
+            button with label
+          </p>
+          <p>
+            <SimpleButton label="hey ho" icon="icon-pie-chart" />
+            button with label and icon
+          </p>
+          <p>
+            <SimpleButton icon="icon-pie-chart" />
+            button with icon
+          </p>
+        </div>
+      </TabsItem>
     </Tabs>
   </main>
 </template>
@@ -84,5 +113,11 @@ import CrossValidationResultsWidget from "@/components/CrossValidationResultsWid
   display: grid;
   grid-template-columns: 1fr 1fr 1fr 1fr;
   place-items: center center;
+}
+
+.buttons {
+  & > p {
+    padding: 10px;
+  }
 }
 </style>
