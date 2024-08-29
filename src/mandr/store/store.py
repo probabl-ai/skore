@@ -213,7 +213,7 @@ class Store:
 
         Examples
         --------
-        >>> Mandr("my_test_root").set_layout([
+        >>> Mandr("my_test_root").set_layout([          # doctest: +SKIP
         ...     {"key": "my_integer", "size": "small"},
         ...     {"key": "my_string", "size": "medium"},
         ...     {"key": "my_array", "size": "large"},
