@@ -25,7 +25,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e . -r requirements.txt -r requirements-test.txt -r requirements-doc.txt
+          python -m pip install -e . -r requirements.txt -r requirements-test.txt
           cd frontend && npm install
       - name: Lint with pre-commit
         run: |

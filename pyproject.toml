@@ -64,6 +64,8 @@ addopts = [
   "--import-mode=importlib",
   "--no-header",
   "--verbosity=2",
+  "src",
+  "tests",
 ]
 
 [tool.ruff]
