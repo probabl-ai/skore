@@ -10,7 +10,6 @@ const props = defineProps<{
 
 <style scoped>
 button {
-  /* Auto layout */
   display: flex;
   width: 24px;
   height: 24px;
@@ -23,6 +22,7 @@ button {
   background: var(--border-color-lower);
   box-shadow: inset 0 0 3.24px 2.4px rgb(var(--text-color-highlight) 0.5);
   color: var(--text-color-normal);
+  cursor: pointer;
   font-size: 14px;
 }
 </style>
