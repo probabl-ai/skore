@@ -31,6 +31,7 @@ export interface IPayloadItem {
 }
 
 export type KeyLayoutSize = "small" | "medium" | "large";
+export type KeyMoveDirection = "up" | "down";
 
 export type Layout = Array<{ key: string; size: KeyLayoutSize }>;
 

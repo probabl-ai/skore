@@ -8,7 +8,7 @@ import HtmlSnippetWidget from "@/components/HtmlSnippetWidget.vue";
 import ImageWidget from "@/components/ImageWidget.vue";
 import MarkdownWidget from "@/components/MarkdownWidget.vue";
 import VegaWidget from "@/components/VegaWidget.vue";
-import type { KeyLayoutSize } from "@/models";
+import type { KeyLayoutSize, KeyMoveDirection } from "@/models";
 import { useReportsStore } from "@/stores/reports";
 
 const reportsStore = useReportsStore();
@@ -30,6 +30,10 @@ function onCardRemoved(key: string) {
   reportsStore.hideKey(key);
 }
 
+function onPositionChange(key: string, direction: KeyMoveDirection) {
+  reportsStore.moveKey(key, direction);
+}
+
 const props = defineProps({
   showCardButtons: {
     type: Boolean,
@@ -41,13 +45,16 @@ const props = defineProps({
 <template>
   <div class="canvas">
     <DataStoreCard
-      v-for="{ key, size, data, type } in items"
+      v-for="({ key, size, data, type }, index) in items"
       :key="key"
       :title="key"
       :class="size"
       :showButtons="props.showCardButtons"
+      :can-move-up="index > 0"
+      :can-move-down="index < items.length - 1"
       class="canvas-element"
       @layout-changed="onLayoutChange(key, $event)"
+      @position-changed="onPositionChange(key, $event)"
       @card-removed="onCardRemoved(key)"
     >
       <VegaWidget v-if="type === 'vega'" :spec="data" />

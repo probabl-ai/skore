@@ -112,3 +112,20 @@ export function isDeepEqual(a: object, b: object) {
 export function isUserInDarkMode() {
   return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
 }
+
+/**
+ * Swap two item in an array.
+ * @param a the array
+ * @param srcIndex the index of the item to swap
+ * @param dstIndex the index where you want the item to be swapped
+ */
+export function swapItemInArray(a: any[], srcIndex: number, dstIndex: number) {
+  if (srcIndex < 0 || srcIndex > a.length || dstIndex < 0 || dstIndex > a.length) {
+    console.error(
+      "Cant swap item in array because some index are out of range",
+      srcIndex,
+      dstIndex
+    );
+  }
+  a.splice(dstIndex, 0, a.splice(srcIndex, 1)[0]);
+}
