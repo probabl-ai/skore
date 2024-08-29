@@ -85,7 +85,7 @@
 
     /* buttons */
     --button-color: #fff;
-    --button-background-color: var(--color-secondary);
+    --button-background-color: var(--color-primary);
 
     /* borders */
     --border-color-lower: #f0f0f0;

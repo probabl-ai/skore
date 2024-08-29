@@ -107,8 +107,21 @@ export function isDeepEqual(a: object, b: object) {
 
 /**
  * Is the user in dark mode ? 🧛🏻‍♀️
- * @returns true if the user prefers dark model false otherwise.
+ * @returns true if the user prefers dark mode, false otherwise.
  */
 export function isUserInDarkMode() {
   return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+}
+
+/**
+ * Generate a random number which is a multiple of a given integer.
+ * @param baseNumber The number for which you want to generate multiples
+ * @param min The lowest number that can be generated.
+ * @param max The highest number that can be generated.
+ * @returns a random number
+ */
+export function generateRandomMultiple(baseNumber: number, min: number, max: number) {
+  const multiplier = Math.floor(Math.random() * (max - min + 1)) + min;
+
+  return baseNumber * multiplier;
 }
