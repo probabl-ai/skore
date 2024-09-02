@@ -73,7 +73,7 @@ export class DataStore {
     return this.payload[key];
   }
 
-  _getKeysByType(types: ItemType[]) {
+  private _getKeysByType(types: ItemType[]) {
     const filteredKeys = [];
     for (const [key, item] of Object.entries(this.payload)) {
       if (types.includes(item.type)) {
