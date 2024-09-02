@@ -1,14 +1,14 @@
 import {
-  generateRandomMultiple,
-  isDeepEqual,
-  isString,
-  isUserInDarkMode,
-  poll,
-  remap,
-  saveBlob,
-  sha1,
-  sleep,
-  swapItemInArray,
+    generateRandomMultiple,
+    isDeepEqual,
+    isString,
+    isUserInDarkMode,
+    poll,
+    remap,
+    saveBlob,
+    sha1,
+    sleep,
+    swapItemsInArray,
 } from "@/services/utils";
 import { describe, expect, it, vi } from "vitest";
 
@@ -75,13 +75,13 @@ describe("utils", () => {
 
   it("Can swap two items in an array", () => {
     const a = [1, 2, 3, 4, 5];
-    swapItemInArray(a, 0, 1);
+    swapItemsInArray(a, 0, 1);
     expect(a).toEqual([2, 1, 3, 4, 5]);
     const b = [
       { a: 1, b: 1 },
       { a: 2, b: 2 },
     ];
-    swapItemInArray(b, 0, 1);
+    swapItemsInArray(b, 0, 1);
     expect(b).toEqual([
       { a: 2, b: 2 },
       { a: 1, b: 1 },

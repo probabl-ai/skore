@@ -114,12 +114,14 @@ export function isUserInDarkMode() {
 }
 
 /**
- * Swap two item in an array.
+ * Swap two items in an array.
+ *
+ * This function does the swap in place.
  * @param a the array
  * @param srcIndex the index of the item to swap
  * @param dstIndex the index where you want the item to be swapped
  */
-export function swapItemInArray(a: any[], srcIndex: number, dstIndex: number) {
+export function swapItemsInArray(a: any[], srcIndex: number, dstIndex: number) {
   if (srcIndex < 0 || srcIndex > a.length || dstIndex < 0 || dstIndex > a.length) {
     console.error(
       "Cant swap item in array because some index are out of range",

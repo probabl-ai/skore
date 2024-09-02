@@ -30,7 +30,7 @@ function onCardRemoved(key: string) {
   reportsStore.hideKey(key);
 }
 
-function onPositionChange(key: string, direction: KeyMoveDirection) {
+function onPositionChanged(key: string, direction: KeyMoveDirection) {
   reportsStore.moveKey(key, direction);
 }
 
@@ -54,7 +54,7 @@ const props = defineProps({
       :can-move-down="index < items.length - 1"
       class="canvas-element"
       @layout-changed="onLayoutChange(key, $event)"
-      @position-changed="onPositionChange(key, $event)"
+      @position-changed="onPositionChanged(key, $event)"
       @card-removed="onCardRemoved(key)"
     >
       <VegaWidget v-if="type === 'vega'" :spec="data" />

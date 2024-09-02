@@ -3,7 +3,7 @@ import { ref, shallowRef, toRaw } from "vue";
 
 import { DataStore, type KeyLayoutSize, type KeyMoveDirection, type Layout } from "@/models";
 import { fetchAllManderUris, fetchMander, putLayout } from "@/services/api";
-import { isDeepEqual, poll, swapItemInArray } from "@/services/utils";
+import { isDeepEqual, poll, swapItemsInArray } from "@/services/utils";
 
 export const useReportsStore = defineStore("reports", () => {
   // this object is not deeply reactive as it may be very large
@@ -73,7 +73,7 @@ export const useReportsStore = defineStore("reports", () => {
     stopBackendPolling();
     const offset = direction == "up" ? -1 : 1;
     const index = layout.value.findIndex(({ key: k }) => key == k);
-    swapItemInArray(layout.value, index, index + offset);
+    swapItemsInArray(layout.value, index, index + offset);
     await persistLayout();
     await startBackendPolling();
   }
