@@ -1,6 +1,5 @@
 import { createRouter, createWebHashHistory } from "vue-router";
 
-import ComponentsView from "./views/ComponentsView.vue";
 import DashboardView from "./views/DashboardView.vue";
 
 const router = createRouter({
@@ -14,7 +13,7 @@ const router = createRouter({
     {
       path: "/components",
       name: "components",
-      component: ComponentsView,
+      component: () => import("./views/ComponentsView.vue"),
     },
   ],
 });
