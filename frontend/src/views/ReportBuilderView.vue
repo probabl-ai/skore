@@ -3,10 +3,10 @@ import Simplebar from "simplebar-vue";
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 
-import DashboardHeader from "@/components/DashboardHeader.vue";
 import DataStoreCanvas from "@/components/DataStoreCanvas.vue";
 import DataStoreKeyList from "@/components/DataStoreKeyList.vue";
 import FileTree, { transformUrisToTree } from "@/components/FileTree.vue";
+import SectionHeader from "@/components/SectionHeader.vue";
 import SimpleButton from "@/components/SimpleButton.vue";
 import { fetchShareableBlob } from "@/services/api";
 import { saveBlob } from "@/services/utils";
@@ -80,7 +80,7 @@ onBeforeUnmount(() => reportsStore.stopBackendPolling());
 <template>
   <main>
     <nav v-if="!isInFocusMode">
-      <DashboardHeader title="File Manager" icon="icon-folder" />
+      <SectionHeader title="File Manager" icon="icon-folder" />
       <Simplebar class="file-trees" v-if="fileTree.length > 0">
         <FileTree :nodes="fileTree" />
       </Simplebar>
@@ -88,7 +88,7 @@ onBeforeUnmount(() => reportsStore.stopBackendPolling());
     </nav>
     <article v-if="fileTree.length > 0">
       <div class="elements" v-if="reportsStore.selectedReport && !isInFocusMode">
-        <DashboardHeader title="Elements (added from mandr)" icon="icon-pie-chart" />
+        <SectionHeader title="Elements (added from mandr)" icon="icon-pie-chart" />
         <Simplebar class="key-list">
           <DataStoreKeyList
             title="Plots"

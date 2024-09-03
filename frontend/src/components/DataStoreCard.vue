@@ -13,7 +13,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="dashboard-card">
+  <div class="card">
     <div v-if="props.showButtons" class="buttons">
       <button @click="emit('layoutChanged', 'small')">
         <span class="icon-grid-layout-small"></span>
@@ -34,7 +34,7 @@ const emit = defineEmits<{
 </template>
 
 <style scoped>
-.dashboard-card {
+.card {
   position: relative;
   padding: var(--spacing-padding-large);
   border: solid 1px var(--background-color-normal);
