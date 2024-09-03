@@ -53,3 +53,7 @@ build-doc:
 build-package: build-frontend
 	python -m pip install build
 	python -m build
+
+release-package: build-package
+	python -m pip install twine
+	python -m twine upload --repository testpypi dist/*
