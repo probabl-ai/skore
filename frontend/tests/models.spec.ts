@@ -1,47 +1,32 @@
-import { DataStore, type IPayloadItem, type ItemType } from "@/models";
+import { type ItemType } from "@/models";
 import { describe, expect, it } from "vitest";
+import { makeDataStore } from "./test.utils";
 
-function makePayloadItem(type: ItemType, data: any = {}): IPayloadItem {
-  const now = new Date().toISOString();
-  return {
-    type,
-    data,
-    metadata: {
-      display_type: type,
-      created_at: now,
-      updated_at: now,
-    },
-  };
-}
+describe("DataStore model", () => {
+  it("Can access keys by type", () => {
+    const infoKeys: ItemType[] = [
+      "boolean",
+      "integer",
+      "number",
+      "string",
+      "any",
+      "array",
+      "date",
+      "datetime",
+      "html",
+      "markdown",
+      "dataframe",
+      "image",
+      "cv_results",
+      "numpy_array",
+      "sklearn_model",
+    ];
+    const plotKeys: ItemType[] = ["vega", "matplotlib_figure"];
 
-describe("models", () => {
-  it("Can access keys by type", async () => {
-    const m = new DataStore(
-      "/test/fixture",
-      {
-        boolean: makePayloadItem("boolean"),
-        integer: makePayloadItem("integer"),
-        number: makePayloadItem("number"),
-        string: makePayloadItem("string"),
-        any: makePayloadItem("any"),
-        array: makePayloadItem("array"),
-        date: makePayloadItem("date"),
-        datetime: makePayloadItem("datetime"),
-        html: makePayloadItem("html"),
-        markdown: makePayloadItem("markdown"),
-        dataframe: makePayloadItem("dataframe"),
-        image: makePayloadItem("image"),
-        cv_results: makePayloadItem("cv_results"),
-        numpy_array: makePayloadItem("numpy_array"),
-        sklearn_model: makePayloadItem("sklearn_model"),
-        vega: makePayloadItem("vega"),
-        matplotlib_figure: makePayloadItem("matplotlib_figure"),
-      },
-      []
-    );
+    const m = makeDataStore("/test/fixture", [...infoKeys, ...plotKeys]);
 
-    expect(m.infoKeys).toHaveLength(15);
-    expect(m.plotKeys).toHaveLength(2);
+    expect(m.infoKeys).toHaveLength(infoKeys.length);
+    expect(m.plotKeys).toHaveLength(plotKeys.length);
     expect(m.artifactKeys).toHaveLength(0);
 
     expect(m.get("boolean")).toBeDefined();

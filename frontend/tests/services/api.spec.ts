@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { DataStore } from "@/models";
 import { createFetchResponse, mockedFetch } from "../test.utils";
 
-describe("api", () => {
+describe("API Service", () => {
   it("Can fetch the list of manders from the server.", async () => {
     const uris = [
       "probabl-ai/demo-usecase/training/0",
