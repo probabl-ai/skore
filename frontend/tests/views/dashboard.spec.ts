@@ -4,13 +4,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "vue";
 import { useRoute } from "vue-router";
 
-import DashboardView from "@/views/DashboardView.vue";
+import ReportBuilderView from "@/views/ReportBuilderView.vue";
 
 import { mountSuspense } from "../test.utils";
 
 const app = createApp({});
 
-describe("DashboardView", () => {
+describe("ReportBuilderView", () => {
   beforeEach(() => {
     vi.mock("vue-router", () => ({
       useRoute: vi.fn(),
@@ -30,8 +30,8 @@ describe("DashboardView", () => {
       },
     }));
 
-    const dashboard = await mountSuspense(DashboardView);
+    const builder = await mountSuspense(ReportBuilderView);
     // i.e. not a `VueError`
-    expect(dashboard).toBeInstanceOf(VueWrapper);
+    expect(builder).toBeInstanceOf(VueWrapper);
   });
 });

@@ -3,6 +3,7 @@ import { computed, onBeforeMount, ref } from "vue";
 import { useRouter } from "vue-router";
 
 import { type FileTreeNode } from "@/components/FileTree.vue";
+import { ROUTE_NAMES } from "@/router";
 import { remap, sha1 } from "@/services/utils";
 import { useReportsStore } from "@/stores/reports";
 
@@ -30,7 +31,7 @@ function onClick() {
   }
 
   router.push({
-    name: "dashboard",
+    name: ROUTE_NAMES.REPORT_BUILDER,
     params: {
       segments: segments,
     },
