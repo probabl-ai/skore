@@ -116,7 +116,8 @@ export function isUserInDarkMode() {
 /**
  * Swap two items in an array.
  *
- * This function does the swap in place.
+ * This function does the swap in place
+ * and fails silently if you pass out of range indexes.
  * @param a the array
  * @param srcIndex the index of the item to swap
  * @param dstIndex the index where you want the item to be swapped
@@ -128,6 +129,7 @@ export function swapItemsInArray(a: any[], srcIndex: number, dstIndex: number) {
       srcIndex,
       dstIndex
     );
+    return;
   }
   a.splice(dstIndex, 0, a.splice(srcIndex, 1)[0]);
 }
