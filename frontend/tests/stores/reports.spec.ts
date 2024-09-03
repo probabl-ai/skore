@@ -73,6 +73,7 @@ describe("Reports store", () => {
     reportsStore.displayKey("boolean");
     reportsStore.setKeyLayoutSize("boolean", "small");
     expect(reportsStore.layout).toHaveLength(1);
+    expect(reportsStore.layout).toEqual([{ key: "boolean", size: "small" }]);
     reportsStore.setKeyLayoutSize("unknown", "small");
     expect(reportsStore.layout).toHaveLength(1);
     reportsStore.hideKey("boolean");
