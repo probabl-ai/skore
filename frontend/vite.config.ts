@@ -19,4 +19,7 @@ export default defineConfig({
       plugins: [autoprefixer, postcssNesting],
     },
   },
+  test: {
+    setupFiles: ["./vitest.setup.ts"],
+  },
 });

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import FileTree, { transformUrisToTree, type FileTreeNode } from "@/components/FileTree.vue";
 import { mount } from "@vue/test-utils";
@@ -19,13 +19,17 @@ function countLeaves(nodes: FileTreeNode[]): number {
   return allBranches.reduce((accumulator, leavesCount) => accumulator + leavesCount);
 }
 
-const app = createApp({});
-
 describe("FileTree", () => {
   beforeEach(() => {
+    vi.mock("vue-router");
+    const app = createApp({});
     const pinia = createPinia();
     app.use(pinia);
     setActivePinia(pinia);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it("Renders properly.", () => {
