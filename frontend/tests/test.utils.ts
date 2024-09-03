@@ -41,7 +41,7 @@ export async function mountSuspense(
 
 /**
  * Create a a fake payload item.
- * @param type the type of the paylaod item
+ * @param type the type of the payload item
  * @param data the inner data of the item
  * @returns an object with IPayloadItem interface
  */
