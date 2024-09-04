@@ -1,10 +1,10 @@
 import { type ItemType, type KeyLayoutSize } from "@/models";
-import { fetchAllManderUris, fetchMander } from "@/services/api";
+import { fetchAllManderUris, fetchMander, putLayout } from "@/services/api";
 import { useReportsStore } from "@/stores/reports";
 import { createTestingPinia } from "@pinia/testing";
 import { setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { makeDataStore } from "../test.utils";
+import { createFetchResponse, makeDataStore, mockedFetch } from "../test.utils";
 
 const uri = "/test/fixture";
 const infoKeys: ItemType[] = [
@@ -88,5 +88,52 @@ describe("Reports store", () => {
     await reportsStore.startBackendPolling();
     expect(fetchAllManderUris).toBeCalled();
     expect(fetchMander).toBeCalled();
+    reportsStore.stopBackendPolling();
+  });
+
+  it("Can move keys in layout.", () => {
+    const ds = makeDataStore(uri, [...infoKeys, ...plotKeys]);
+    const reportsStore = useReportsStore();
+
+    reportsStore.setSelectedReportIfDifferent(ds);
+    reportsStore.displayKey("boolean");
+    reportsStore.displayKey("integer");
+    reportsStore.setKeyLayoutSize("boolean", "large");
+    reportsStore.setKeyLayoutSize("integer", "large");
+    expect(reportsStore.layout).toEqual([
+      { key: "boolean", size: "large" },
+      { key: "integer", size: "large" },
+    ]);
+    reportsStore.moveKey("integer", "up");
+    expect(reportsStore.layout).toEqual([
+      { key: "integer", size: "large" },
+      { key: "boolean", size: "large" },
+    ]);
+    reportsStore.moveKey("integer", "down");
+    expect(reportsStore.layout).toEqual([
+      { key: "boolean", size: "large" },
+      { key: "integer", size: "large" },
+    ]);
+  });
+
+  it("Can persist layout.", () => {
+    const reportsStore = useReportsStore();
+
+    const ds = makeDataStore(
+      uri,
+      [...infoKeys, ...plotKeys],
+      [
+        { key: "boolean", size: "large" },
+        { key: "integer", size: "large" },
+      ]
+    );
+    mockedFetch.mockResolvedValue(createFetchResponse(ds, 201));
+
+    reportsStore.setSelectedReportIfDifferent(ds);
+    reportsStore.displayKey("boolean");
+    reportsStore.displayKey("integer");
+    reportsStore.setKeyLayoutSize("boolean", "large");
+    reportsStore.setKeyLayoutSize("integer", "large");
+    expect(putLayout).toBeCalledTimes(2);
   });
 });

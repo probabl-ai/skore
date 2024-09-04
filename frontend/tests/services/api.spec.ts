@@ -1,7 +1,7 @@
-import { fetchAllManderUris, fetchMander } from "@/services/api";
+import { fetchAllManderUris, fetchMander, fetchShareableBlob, putLayout } from "@/services/api";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { DataStore } from "@/models";
+import { DataStore, type Layout } from "@/models";
 import { createFetchResponse, mockedFetch } from "../test.utils";
 
 describe("API Service", () => {
@@ -69,5 +69,59 @@ describe("API Service", () => {
     const r = await fetchMander("random");
     expect(r).toBeInstanceOf(DataStore);
     expect(r?.infoKeys.length).toBe(8);
+  });
+
+  it("Can persist a layout.", async () => {
+    const layout: Layout = [
+      { key: "title", size: "medium" },
+      { key: "errors", size: "large" },
+      { key: "creation_date", size: "small" },
+    ];
+    const mander = new DataStore(
+      "random",
+      {
+        title: {
+          type: "string",
+          data: "My Awesome Dashboard",
+        },
+        errors: {
+          type: "array",
+          data: [0.1, 0.2, 0.3, 0.4, 0.5],
+        },
+        creation_date: {
+          type: "date",
+          data: "2024-07-24",
+        },
+      },
+      layout
+    );
+
+    mockedFetch.mockResolvedValue(createFetchResponse(mander, 201));
+
+    const r = await putLayout("random", layout);
+    expect(r).toBeInstanceOf(DataStore);
+    expect(r).toEqual(mander);
+    expect(r?.layout).toEqual(layout);
+  });
+
+  it("Can report errors.", async () => {
+    const error = new Error("Something went wrong");
+    mockedFetch.mockImplementation(() => {
+      throw error;
+    });
+
+    expect(await fetchAllManderUris()).toEqual([]);
+    expect(await fetchMander("random")).toBeNull();
+    expect(await putLayout("random", [])).toBeNull();
+    expect(await fetchShareableBlob("random")).toBeNull();
+  });
+
+  it("Can fetch a shareable blob.", async () => {
+    const blob = new Blob(["Hello, world!"], { type: "text/plain" });
+    mockedFetch.mockResolvedValue(createFetchResponse(blob));
+
+    const r = await fetchShareableBlob("random");
+    expect(r).toBeInstanceOf(Blob);
+    expect(r?.size).toBe(13);
   });
 });

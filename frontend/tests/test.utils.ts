@@ -13,7 +13,8 @@ global.fetch = mockedFetch;
  * @returns a promise that will resolve with the given data
  */
 export function createFetchResponse(data: object, status = 200) {
-  return { json: () => new Promise((resolve) => resolve(data)), status };
+  const promise = () => new Promise((resolve) => resolve(data));
+  return { json: promise, blob: promise, status };
 }
 
 /**
