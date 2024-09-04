@@ -26,7 +26,11 @@ def launch_dashboard(project_name: str | Path, port: int, open_browser: bool) ->
     -------
     The project directory path
     """
-    if not Path(project_name).exists():
+    if Path(project_name).exists():
+        pass
+    elif Path(project_name + ".mandr").exists():
+        project_name = project_name + ".mandr"
+    else:
         raise ProjectNotFound(
             f"Project '{project_name}' not found. "
             "Maybe you forget to create it? Please check the file name and try again."
