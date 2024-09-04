@@ -18,13 +18,13 @@ import DataStoreCanvas from "@/components/DataStoreCanvas.vue";
 <style scoped>
 @media (prefers-color-scheme: dark) {
   main {
-    --editor-placeholder-image: url("../assets/images/editor-placeholder-dark.svg");
+    --editor-placeholder-image: url("./assets/images/editor-placeholder-dark.svg");
   }
 }
 
 @media (prefers-color-scheme: light) {
   main {
-    --editor-placeholder-image: url("../assets/images/editor-placeholder-light.svg");
+    --editor-placeholder-image: url("./assets/images/editor-placeholder-light.svg");
   }
 }
 

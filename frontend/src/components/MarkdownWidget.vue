@@ -1,11 +1,21 @@
 <script setup lang="ts">
 import { isString } from "@/services/utils";
+import hljs from "highlight.js/lib/core";
+import json from "highlight.js/lib/languages/json";
+import python from "highlight.js/lib/languages/python";
+import sql from "highlight.js/lib/languages/sql";
+import xml from "highlight.js/lib/languages/xml";
 import MarkdownIt from "markdown-it";
 import { full as emoji } from "markdown-it-emoji";
-import highlightjs from "markdown-it-highlightjs";
+import highlightjs from "markdown-it-highlightjs/core";
 import sub from "markdown-it-sub";
 import sup from "markdown-it-sup";
 import { computed } from "vue";
+
+hljs.registerLanguage("python", python);
+hljs.registerLanguage("sql", sql);
+hljs.registerLanguage("json", json);
+hljs.registerLanguage("xml", xml);
 
 const props = defineProps<{ source: any }>();
 const renderer = MarkdownIt({
@@ -16,7 +26,7 @@ const renderer = MarkdownIt({
   .use(emoji)
   .use(sub)
   .use(sup)
-  .use(highlightjs, { inline: true });
+  .use(highlightjs, { inline: true, hljs });
 
 const html = computed(() => {
   let s = props.source;
