@@ -29,7 +29,7 @@ def launch_dashboard(project_name: str | Path, port: int, open_browser: bool) ->
     if not Path(project_name).exists():
         raise ProjectNotFound(
             f"Project '{project_name}' not found. "
-            "Please check the file name and try again."
+            "Maybe you forget to create it? Please check the file name and try again."
         )
 
     # FIXME: Passing the project name through environment variables is smelly
