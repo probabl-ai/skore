@@ -68,6 +68,7 @@ class Dashboard:
                     "Server failed to start; refer to runtime logs "
                     "for more information."
                 )
+                return None
             continue
 
         if open_browser:
