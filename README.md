@@ -37,7 +37,7 @@ for key, value in store.items():
 
 Then, in your project root (i.e. where `.datamander` is), run the following command to start the frontend locally:
 ```sh
-python -m mandr dashboard
+python -m mandr launch .datamander
 ```
 This should automatically open a browser tab pointing at the app URL.
 
