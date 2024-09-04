@@ -88,7 +88,7 @@ onBeforeUnmount(() => reportsStore.stopBackendPolling());
     </nav>
     <article v-if="fileTree.length > 0">
       <div class="elements" v-if="reportsStore.selectedReport && !isInFocusMode">
-        <SectionHeader title="Elements (added from mandr)" icon="icon-pie-chart" />
+        <SectionHeader title="Elements" icon="icon-pie-chart" />
         <Simplebar class="key-list">
           <DataStoreKeyList
             title="Plots"
