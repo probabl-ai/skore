@@ -3,6 +3,7 @@
 import threading
 import webbrowser
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from typing import Self
 
 import uvicorn
 
@@ -42,8 +43,13 @@ class Dashboard:
         self.server = uvicorn.Server(configuration)
         self.thread = threading.Thread(target=self.server.run)
 
-    def open(self, *, open_browser=True):
-        """Open the dashboard's activity."""
+    def open(self, *, open_browser=True) -> Self | None:
+        """Open the dashboard's activity.
+
+        Returns
+        -------
+        The Dashboard object if succeeded, None if failed
+        """
         try:
             test_server = None
             test_server = HTTPServer(("127.0.0.1", self.port), BaseHTTPRequestHandler)
@@ -54,7 +60,7 @@ class Dashboard:
                     "Check if the dashboard or another service is already running at "
                     "that address."
                 )
-                return
+                return None
         finally:
             if test_server is not None:
                 test_server.server_close()
