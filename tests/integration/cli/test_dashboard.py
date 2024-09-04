@@ -19,7 +19,7 @@ def terminate(process):
         process.terminate()
 
 
-def test_launch():
+def test_launch(tmp_path):
     """If the `launch` subcommand is called, the app is properly served at the
     specified port."""
 
@@ -29,7 +29,7 @@ def test_launch():
 
     with terminate(
         subprocess.Popen(
-            f"python -m mandr launch --no-open-browser --port {PORT}".split()
+            f"python -m mandr launch {tmp_path} --no-open-browser --port {PORT}".split()
         )
     ):
         start = monotonic()
