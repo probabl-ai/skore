@@ -1,42 +1,53 @@
 name: Release
+
 on:
   release:
     types: [released, prereleased]
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   release:
-    name: Build distribution archives and publish to PyPI
+    name: Build package distributions and publish to PyPI
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
 
     steps:
       - uses: actions/checkout@v4
-      #
-      # - name: Set up Node 20
-      #   uses: actions/setup-node@v4
-      #   with:
-      #     node-version: 20
-      # - name: Build frontend and share library
-      #   run: |
-      #     cd frontend
-      #     npm run build
-      #     cp -a dist/. ../src/mandr/dashboard/static
-      #     npm run build:lib
-      #     cp -a dist/. ../src/mandr/dashboard/static
-      #     rm -rf frontend/dist
-      #
-      - name: Create VERSION.txt
-        run: |
-          echo "${GITHUB_REF_NAME:1}" > VERSION.txt
-      #
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build frontend and share library
+        run: make build-frontend
+
+      - name: Override VERSION.txt with tag version
+        run: echo "${GITHUB_REF_NAME:1}" > VERSION.txt
+
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Build sdist and wheel
+
+      - name: Build package distributions
         run: |
           python -m pip install build
           python -m build
-      # - name: Publish to PyPI
-      #   run: |
-      #     python -m pip install twine
-      #     python -m twine upload --repository testpypi dist/*
+
+      - name: Checks whether distribution’s long description will render correctly on PyPI
+        continue-on-error: true
+        run: |
+          python -m pip install twine
+          python -m twine check dist/*
+
+      - name: Publish package distributions to TestPyPI using trusted publisher
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          verify-metadata: false
