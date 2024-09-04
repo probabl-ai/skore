@@ -1,13 +1,16 @@
 <script setup lang="ts">
-import type { KeyLayoutSize } from "@/models";
+import type { KeyLayoutSize, KeyMoveDirection } from "@/models";
 
 const props = defineProps<{
   title: string;
   showButtons: boolean;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
 }>();
 
 const emit = defineEmits<{
   layoutChanged: [size: KeyLayoutSize];
+  positionChanged: [direction: KeyMoveDirection];
   cardRemoved: [];
 }>();
 </script>
@@ -23,6 +26,15 @@ const emit = defineEmits<{
       </button>
       <button @click="emit('layoutChanged', 'large')">
         <span class="icon-grid-layout-large"></span>
+      </button>
+      <button @click="emit('layoutChanged', 'large')">
+        <span class="icon-grid-layout-large"></span>
+      </button>
+      <button v-if="props.canMoveUp" @click="emit('positionChanged', 'up')">
+        <span class="icon-up"></span>
+      </button>
+      <button v-if="props.canMoveDown" @click="emit('positionChanged', 'down')">
+        <span class="icon-down"></span>
       </button>
       <button @click="emit('cardRemoved')">x</button>
     </div>
