@@ -19,8 +19,8 @@ def terminate(process):
         process.terminate()
 
 
-def test_dashboard():
-    """If the `dashboard` subcommand is called, the app is properly served at the
+def test_launch():
+    """If the `launch` subcommand is called, the app is properly served at the
     specified port."""
 
     PORT = 22140
@@ -29,7 +29,7 @@ def test_dashboard():
 
     with terminate(
         subprocess.Popen(
-            f"python -m mandr dashboard --no-open-browser --port {PORT}".split()
+            f"python -m mandr launch --no-open-browser --port {PORT}".split()
         )
     ):
         start = monotonic()
@@ -37,6 +37,8 @@ def test_dashboard():
             try:
                 response = httpx.get(f"http://localhost:{PORT}")
             except httpx.ConnectError:
+                # TODO: Deal with the case where the test failed because the command
+                # exited with an error
                 continue
 
             assert response.is_success
@@ -44,4 +46,6 @@ def test_dashboard():
             assert b"<title>:mandr.</title>" in response.content
             return
 
-        raise AssertionError("Dashboard took too long to start")
+        raise AssertionError(
+            "The dashboard took too long to start; maybe the command failed?"
+        )
