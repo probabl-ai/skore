@@ -2,9 +2,10 @@
 
 import argparse
 import pathlib
+import signal
 
 from mandr.create_project import create_project
-from mandr.dashboard.dashboard import Dashboard
+from mandr.launch_dashboard import launch_dashboard
 
 
 def cli(args: list[str]):
@@ -12,14 +13,20 @@ def cli(args: list[str]):
     parser = argparse.ArgumentParser(prog="mandr")
     subparsers = parser.add_subparsers(dest="subcommand")
 
-    parser_dashboard = subparsers.add_parser("dashboard", help="Start the dashboard")
-    parser_dashboard.add_argument(
+    parser_launch = subparsers.add_parser("launch", help="Launch the dashboard")
+    parser_launch.add_argument(
+        "project_name",
+        nargs="?",
+        help="the name of the project to visualize (default: %(default)s)",
+        default="project",
+    )
+    parser_launch.add_argument(
         "--port",
         type=int,
         help="the port at which to bind the UI server (default: %(default)s)",
         default=22140,
     )
-    parser_dashboard.add_argument(
+    parser_launch.add_argument(
         "--open-browser",
         action=argparse.BooleanOptionalAction,
         help=(
@@ -51,8 +58,26 @@ def cli(args: list[str]):
     match parsed_args.subcommand:
         case None:
             parser.print_help()
-        case "dashboard":
-            Dashboard(port=parsed_args.port).open(open_browser=parsed_args.open_browser)
+        case "launch":
+            dashboard, project_directory = launch_dashboard(
+                project_name=parsed_args.project_name,
+                port=parsed_args.port,
+                open_browser=parsed_args.open_browser,
+            )
+            print(  # noqa: T201
+                f"Web app for project file '{project_directory}' is running at URL http://localhost:{parsed_args.port}"
+            )
+
+            # Keep the main thread going so that we can properly close the dashboard
+            # upon program exit (e.g. Ctrl-C)
+            while True:
+                try:
+                    signal.pause()
+                except (KeyboardInterrupt, SystemExit):
+                    print("\nClosing dashboard")  # noqa: T201
+                    # breakpoint()
+                    dashboard.close()
+                    break
         case "create":
             project_directory = create_project(
                 project_name=parsed_args.project_name,
