@@ -65,6 +65,7 @@
     "vite": "^5.4.2",
     "vite-plugin-vue-devtools": "^7.3.9",
     "vitest": "^2.0.5",
+    "vitest-canvas-mock": "^0.3.3",
     "vue-tsc": "^2.1.4"
   }
 }

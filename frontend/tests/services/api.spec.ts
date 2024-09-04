@@ -1,10 +1,14 @@
 import { fetchAllManderUris, fetchMander } from "@/services/api";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { DataStore } from "@/models";
 import { createFetchResponse, mockedFetch } from "../test.utils";
 
 describe("API Service", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("Can fetch the list of manders from the server.", async () => {
     const uris = [
       "probabl-ai/demo-usecase/training/0",

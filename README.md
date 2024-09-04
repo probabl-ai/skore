@@ -35,11 +35,11 @@ for key, value in store.items():
     print(f"Key {key} corresponds to value {value}")
 ```
 
-Then, to use the frontend, execute this Python code:
-```python
-from mandr.dashboard import Dashboard
-Dashboard().open()
+Then, in your project root (i.e. where `.datamander` is), run the following command to start the frontend locally:
+```sh
+python -m mandr dashboard
 ```
+This should automatically open a browser tab pointing at the app URL.
 
 ## ML-specific example
 

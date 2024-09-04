@@ -28,14 +28,15 @@ const plotKeys: ItemType[] = ["vega", "matplotlib_figure"];
 
 vi.mock("@/services/api", () => {
   const fetchAllManderUris = vi.fn().mockImplementation(() => {
-    console.log(`mocked fetchAllManderUris`);
     return [uri];
   });
   const fetchMander = vi.fn().mockImplementation(() => {
-    console.log(`mocked fetchMander`);
     return makeDataStore(uri, [...infoKeys, ...plotKeys]);
   });
-  return { fetchAllManderUris, fetchMander };
+  const putLayout = vi.fn().mockImplementation(() => {
+    return makeDataStore(uri, [...infoKeys, ...plotKeys]);
+  });
+  return { fetchAllManderUris, fetchMander, putLayout };
 });
 
 describe("Reports store", () => {
