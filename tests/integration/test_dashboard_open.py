@@ -67,7 +67,10 @@ def test_dashboard_open_twice(monkeypatch, tmp_path, caplog):
             (
                 "mandr",
                 20,
-                "Address 127.0.0.1:22140 is already in use. Check if the dashboard or "
-                "another service is already running at that address.",
+                (
+                    "Address 127.0.0.1:22140 is already in use. "
+                    "Please check if the dashboard or "
+                    "another service is already running at that address."
+                ),
             )
         ]

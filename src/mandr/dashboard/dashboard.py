@@ -57,8 +57,8 @@ class Dashboard:
             if e.errno == 98:
                 logger.info(
                     f"Address 127.0.0.1:{self.port} is already in use. "
-                    "Check if the dashboard or another service is already running at "
-                    "that address."
+                    "Please check if the dashboard or another service is "
+                    "already running at that address."
                 )
                 return None
         finally:
