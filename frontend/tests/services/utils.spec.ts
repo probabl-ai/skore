@@ -1,14 +1,14 @@
 import {
-    generateRandomMultiple,
-    isDeepEqual,
-    isString,
-    isUserInDarkMode,
-    poll,
-    remap,
-    saveBlob,
-    sha1,
-    sleep,
-    swapItemsInArray,
+  generateRandomMultiple,
+  isDeepEqual,
+  isString,
+  isUserInDarkMode,
+  poll,
+  remap,
+  saveBlob,
+  sha1,
+  sleep,
+  swapItemsInArray,
 } from "@/services/utils";
 import { describe, expect, it, vi } from "vitest";
 
@@ -86,6 +86,8 @@ describe("utils", () => {
       { a: 2, b: 2 },
       { a: 1, b: 1 },
     ]);
+    swapItemsInArray(b, -42, 1);
+    expect(b).toEqual(b);
   });
 
   it("Can generate random numbers that are multiple of a given one", () => {
