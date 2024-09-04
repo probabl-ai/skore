@@ -4,18 +4,12 @@ on:
   release:
     types: [released, prereleased]
 
-permissions:
-  contents: read
-  id-token: write
-
 jobs:
-  release:
-    name: Build package distributions and publish to PyPI
+  build:
+    name: Build package distributions
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash
-
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
@@ -25,6 +19,7 @@ jobs:
           node-version: 20
 
       - name: Build frontend and share library
+        shell: bash
         run: make build-frontend
 
       - name: Override VERSION.txt with tag version
@@ -46,8 +41,37 @@ jobs:
           python -m pip install twine
           python -m twine check dist/*
 
-      - name: Publish package distributions to TestPyPI using trusted publisher
+      - name: Upload package distributions
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+
+  publish:
+    name: Publish package distributions to TestPyPI using trusted publisher
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    needs: build
+    steps:
+      - name: Download package distributions
+        uses: actions/download-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+
+      - name: Publish package distributions to TestPyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository-url: https://test.pypi.org/legacy/
           verify-metadata: false
+
+  clean:
+    name: Delete package distributions artifacts
+    runs-on: ubuntu-latest
+    if: always()
+    needs: publish
+    steps:
+      - uses: geekyeggo/delete-artifact@v5
+        with:
+          name: python-package-distributions
