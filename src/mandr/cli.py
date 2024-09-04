@@ -59,11 +59,15 @@ def cli(args: list[str]):
         case None:
             parser.print_help()
         case "launch":
-            dashboard, project_directory = launch_dashboard(
+            result = launch_dashboard(
                 project_name=parsed_args.project_name,
                 port=parsed_args.port,
                 open_browser=parsed_args.open_browser,
             )
+            if result is None:
+                return
+
+            dashboard, project_directory = result
             print(  # noqa: T201
                 f"Web app for project file '{project_directory}' is running at URL http://localhost:{parsed_args.port}"
             )

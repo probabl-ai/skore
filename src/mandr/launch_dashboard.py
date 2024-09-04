@@ -10,7 +10,9 @@ class ProjectNotFound(Exception):
     """Project was not found."""
 
 
-def launch_dashboard(project_name: str | Path, port: int, open_browser: bool) -> Path:
+def launch_dashboard(
+    project_name: str | Path, port: int, open_browser: bool
+) -> None | tuple[Dashboard, Path]:
     """Launch dashboard to visualize a project.
 
     Parameters
@@ -24,7 +26,8 @@ def launch_dashboard(project_name: str | Path, port: int, open_browser: bool) ->
 
     Returns
     -------
-    The project directory path
+    A tuple with the dashboard and the project directory path if succeeded,
+    None if failed
     """
     if Path(project_name).exists():
         pass
@@ -40,7 +43,8 @@ def launch_dashboard(project_name: str | Path, port: int, open_browser: bool) ->
     if os.environ.get("MANDR_ROOT") is None:
         os.environ["MANDR_ROOT"] = project_name
 
-    dashboard = Dashboard(port=port)
-    dashboard.open(open_browser=open_browser)
+    dashboard = Dashboard(port=port).open(open_browser=open_browser)
+    if dashboard is None:
+        return None
 
     return dashboard, project_name
