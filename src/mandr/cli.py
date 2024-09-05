@@ -2,7 +2,6 @@
 
 import argparse
 import pathlib
-import signal
 
 from mandr.create_project import create_project
 from mandr.launch_dashboard import launch_dashboard
@@ -59,29 +58,11 @@ def cli(args: list[str]):
         case None:
             parser.print_help()
         case "launch":
-            result = launch_dashboard(
+            launch_dashboard(
                 project_name=parsed_args.project_name,
                 port=parsed_args.port,
                 open_browser=parsed_args.open_browser,
             )
-            if result is None:
-                return
-
-            dashboard, project_directory = result
-            print(  # noqa: T201
-                f"Web app for project file '{project_directory}' is running at URL http://localhost:{parsed_args.port}"
-            )
-
-            # Keep the main thread going so that we can properly close the dashboard
-            # upon program exit (e.g. Ctrl-C)
-            while True:
-                try:
-                    signal.pause()
-                except (KeyboardInterrupt, SystemExit):
-                    print("\nClosing dashboard")  # noqa: T201
-                    # breakpoint()
-                    dashboard.close()
-                    break
         case "create":
             project_directory = create_project(
                 project_name=parsed_args.project_name,
