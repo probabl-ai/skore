@@ -15,9 +15,9 @@ import { describe, expect, it, vi } from "vitest";
 describe("utils", () => {
   it("Can sleep for a given time.", async () => {
     const delay = 10;
-    const tic = Date.now();
+    const tic = performance.now();
     await sleep(delay);
-    const toc = Date.now();
+    const toc = performance.now();
     expect(toc).toBeGreaterThanOrEqual(tic + delay);
   });
 
