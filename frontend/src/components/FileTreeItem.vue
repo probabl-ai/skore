@@ -42,7 +42,7 @@ onBeforeMount(async () => {
   const hash = await sha1(props.uri);
   const hashAsNumber = Number(`0x${hash.slice(0, 7)}`);
   const hue = remap(hashAsNumber, 0x0000000, 0xfffffff, 0, 360);
-  randomColor.value = `background-color: hsl(${hue}deg 97 75);`;
+  randomColor.value = `background-color: hsl(${hue}deg 97% 75%);`;
 });
 </script>
 
