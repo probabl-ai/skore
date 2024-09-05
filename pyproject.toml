@@ -1,13 +1,23 @@
-#:schema https://json.schemastore.org/pyproject.json
-
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.hatch.version]
+path = "./VERSION.txt"
+pattern = "(?P<version>[^']+)"
+
+[tool.hatch.build.targets.sdist]
+only-include = ["src/"]
+artifacts = ["src/mandr/dashboard/static/"]
+
+[tool.hatch.build.targets.wheel]
+package = ["src/mandr/"]
+artifacts = ["src/mandr/dashboard/static/"]
+
 [project]
 name = "mandr"
 description = "..."
-version = "0.1.0"
+dynamic = ["version"]
 dependencies = [
   "altair",
   "diskcache",
@@ -52,8 +62,6 @@ doc = [
   "pyarrow"  # for parquet files
 ]
 
-[tool.hatch.build.targets.wheel]
-packages = ["src/mandr"]
 
 [tool.pytest.ini_options]
 addopts = [
