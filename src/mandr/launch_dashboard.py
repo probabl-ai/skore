@@ -1,4 +1,4 @@
-"""Implement the "launch dashboard" command."""
+"""Implement the "launch" command."""
 
 import os
 import signal
@@ -28,7 +28,7 @@ def launch_dashboard(project_name: str | Path, port: int, open_browser: bool):
     A tuple with the dashboard and the project directory path if succeeded,
     None if failed
     """
-    result = __launch_dashboard(
+    result = __launch(
         project_name=project_name,
         port=port,
         open_browser=open_browser,
@@ -53,7 +53,7 @@ def launch_dashboard(project_name: str | Path, port: int, open_browser: bool):
             break
 
 
-def __launch_dashboard(
+def __launch(
     project_name: str | Path, port: int, open_browser: bool
 ) -> None | tuple[Dashboard, Path]:
     """Launch dashboard to visualize a project.
