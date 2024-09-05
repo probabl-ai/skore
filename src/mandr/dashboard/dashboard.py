@@ -1,89 +1,74 @@
-"""Dashboard to display stores."""
+"""Implement the "launch" command."""
 
+import os
 import threading
+import time
 import webbrowser
-from http.server import BaseHTTPRequestHandler, HTTPServer
-from typing import Self
+from pathlib import Path
 
 import uvicorn
 
 from mandr import logger
 
 
-class Dashboard:
-    """Dashboard to display stores.
+class ProjectNotFound(Exception):
+    """Project was not found."""
 
-    .. highlight:: python
-    .. code-block:: python
+    project_path: Path
 
-        import contextlib
-        dashboard = Dashboard()
-        with contextlib.closing(dashboard.open()):
-            ...
 
-    .. highlight:: python
-    .. code-block:: python
+def __open_browser(port: int):
+    time.sleep(0.5)
+    webbrowser.open(f"http://localhost:{port}")
 
-        dashboard = Dashboard()
-        dashboard.open()
-        ...
-        dashboard.close()
+
+def launch_dashboard(project_name: str | Path, port: int, open_browser: bool):
+    """Launch dashboard to visualize a project.
+
+    Parameters
+    ----------
+    project_name : Path-like
+        Name of the project to be created, or a relative or absolute path.
+    port : int
+        Port at which to bind the UI server.
+    open_browser: bool
+        Whether to automatically open a browser tab showing the dashboard.
+
+    Returns
+    -------
+    A tuple with the dashboard and the project directory path if succeeded,
+    None if failed
     """
-
-    def __init__(self, *, port=22140):
-        configuration = uvicorn.Config(
-            app="mandr.dashboard.app:create_dashboard_app",
-            port=port,
-            log_level="error",
-            reload=True,
-            factory=True,
+    if Path(project_name).exists():
+        pass
+    elif Path(project_name + ".mandr").exists():
+        project_name = project_name + ".mandr"
+    else:
+        raise ProjectNotFound(
+            f"Project '{project_name}' not found. "
+            "Maybe you forget to create it? Please check the file name and try again."
         )
 
-        self.port = port
-        self.server = uvicorn.Server(configuration)
-        self.thread = threading.Thread(target=self.server.run)
+    # FIXME: Passing the project name through environment variables is smelly
+    if os.environ.get("MANDR_ROOT") is None:
+        os.environ["MANDR_ROOT"] = project_name
 
-    def open(self, *, open_browser=True) -> Self | None:
-        """Open the dashboard's activity.
+    logger.info(
+        f"Running dashboard for project file '{project_name}' at URL http://localhost:{port}"
+    )
 
-        Returns
-        -------
-        The Dashboard object if succeeded, None if failed
-        """
-        # Test whether port is already bound
-        try:
-            test_server = None
-            test_server = HTTPServer(("127.0.0.1", self.port), BaseHTTPRequestHandler)
-        except OSError as e:
-            if e.errno == 98:
-                logger.info(
-                    f"Address 127.0.0.1:{self.port} is already in use. "
-                    "Please check if the dashboard or another service is "
-                    "already running at that address."
-                )
-                return None
-        finally:
-            if test_server is not None:
-                test_server.server_close()
+    if open_browser:
+        threading.Thread(target=lambda: __open_browser(port=port)).start()
 
-        self.thread.start()
-
-        while not self.server.started:
-            if not self.thread.is_alive():
-                self.close()
-                logger.error(
-                    "Server failed to start; refer to runtime logs "
-                    "for more information."
-                )
-                return None
-            continue
-
-        if open_browser:
-            webbrowser.open(f"http://localhost:{self.port}")
-
-        return self
-
-    def close(self):
-        """Close the dashboard's activity."""
-        self.server.should_exit = True
-        self.thread.join()
+    # TODO: Check beforehand that port is not already bound
+    config = uvicorn.Config(
+        app="mandr.dashboard.app:create_dashboard_app",
+        port=port,
+        log_level="error",
+        factory=True,
+    )
+    server = uvicorn.Server(config=config)
+    try:
+        server.run()
+    except KeyboardInterrupt:
+        logger.info("Closing dashboard")

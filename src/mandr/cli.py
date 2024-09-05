@@ -4,7 +4,7 @@ import argparse
 import pathlib
 
 from mandr.create_project import create_project
-from mandr.launch_dashboard import launch_dashboard
+from mandr.dashboard.dashboard import launch_dashboard
 
 
 def cli(args: list[str]):
