@@ -5,11 +5,22 @@ on:
     types: [released, prereleased]
 
 jobs:
+  tag-restriction:
+    name: Tag must match semantic versioning pattern
+    runs-on: ubuntu-latest
+    steps:
+      - shell: bash
+        run: |
+          if ! [[ "${GITHUB_REF_NAME}" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-rc\.(1|[1-9][0-9]*))?$ ]]; then
+              exit -1
+          fi
+
   build:
     name: Build package distributions
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    needs: tag-restriction
     steps:
       - uses: actions/checkout@v4
 
@@ -22,7 +33,7 @@ jobs:
         shell: bash
         run: make build-frontend
 
-      - name: Override VERSION.txt with tag version
+      - name: Override VERSION.txt with tag
         run: echo "${GITHUB_REF_NAME:1}" > VERSION.txt
 
       - name: Set up Python 3.12
