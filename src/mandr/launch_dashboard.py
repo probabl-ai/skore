@@ -4,6 +4,7 @@ import os
 import signal
 from pathlib import Path
 
+from mandr import logger
 from mandr.dashboard.dashboard import Dashboard
 
 
@@ -12,50 +13,6 @@ class ProjectNotFound(Exception):
 
 
 def launch_dashboard(project_name: str | Path, port: int, open_browser: bool):
-    """Launch dashboard to visualize a project.
-
-    Parameters
-    ----------
-    project_name : Path-like
-        Name of the project to be created, or a relative or absolute path.
-    port : int
-        Port at which to bind the UI server.
-    open_browser: bool
-        Whether to automatically open a browser tab showing the dashboard.
-
-    Returns
-    -------
-    A tuple with the dashboard and the project directory path if succeeded,
-    None if failed
-    """
-    result = __launch(
-        project_name=project_name,
-        port=port,
-        open_browser=open_browser,
-    )
-    if result is None:
-        return
-
-    dashboard, project_directory = result
-    print(  # noqa: T201
-        f"Web app for project file '{project_directory}' is running at URL http://localhost:{port}"
-    )
-
-    # Keep the main thread going so that we can properly close the dashboard
-    # upon program exit (e.g. Ctrl-C)
-    while True:
-        try:
-            signal.pause()
-        except (KeyboardInterrupt, SystemExit):
-            print("\nClosing dashboard")  # noqa: T201
-            # breakpoint()
-            dashboard.close()
-            break
-
-
-def __launch(
-    project_name: str | Path, port: int, open_browser: bool
-) -> None | tuple[Dashboard, Path]:
     """Launch dashboard to visualize a project.
 
     Parameters
@@ -90,4 +47,17 @@ def __launch(
     if dashboard is None:
         return None
 
-    return dashboard, project_name
+    logger.info(
+        f"Web app for project file '{project_name}' is running at URL http://localhost:{port}"
+    )
+
+    # Keep the main thread going so that we can properly close the dashboard
+    # upon program exit (e.g. Ctrl-C)
+    while True:
+        try:
+            signal.pause()
+        except (KeyboardInterrupt, SystemExit):
+            logger.info("\nClosing dashboard")
+            # breakpoint()
+            dashboard.close()
+            break
