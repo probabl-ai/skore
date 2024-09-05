@@ -2,6 +2,8 @@
 import type { VisualizationSpec } from "vega-embed";
 
 import DataFrameWidget from "@/components/DataFrameWidget.vue";
+import DropdownButton from "@/components/DropdownButton.vue";
+import DropdownButtonItem from "@/components/DropdownButtonItem.vue";
 import ImageWidget from "@/components/ImageWidget.vue";
 import MarkdownWidget from "@/components/MarkdownWidget.vue";
 import SimpleButton from "@/components/SimpleButton.vue";
@@ -102,6 +104,55 @@ import CrossValidationResultsWidget from "@/components/CrossValidationResultsWid
             <SimpleButton icon="icon-pie-chart" />
             button with icon
           </p>
+          <hr />
+          <p>
+            <DropdownButton label="hey ho" icon="icon-pie-chart" :is-primary="true">
+              <DropdownButtonItem label="hey ho" icon="icon-pie-chart" />
+              <DropdownButtonItem icon="icon-pie-chart" />
+              <DropdownButtonItem label="hey ho" />
+            </DropdownButton>
+            primary dropdown button with label and icon
+          </p>
+          <p>
+            <DropdownButton label="hey ho" :is-primary="true">
+              <DropdownButtonItem label="hey ho" icon="icon-pie-chart" />
+              <DropdownButtonItem icon="icon-pie-chart" />
+              <DropdownButtonItem label="hey ho" />
+            </DropdownButton>
+            primary dropdown button with label
+          </p>
+          <p style="text-align: right">
+            <DropdownButton icon="icon-pie-chart" :is-primary="true" align="right">
+              <DropdownButtonItem label="hey ho" icon="icon-pie-chart" />
+              <DropdownButtonItem icon="icon-pie-chart" />
+              <DropdownButtonItem label="hey ho" />
+            </DropdownButton>
+            primary dropdown button with icon
+          </p>
+          <p>
+            <DropdownButton label="hey ho" icon="icon-pie-chart">
+              <DropdownButtonItem label="hey ho" icon="icon-pie-chart" />
+              <DropdownButtonItem icon="icon-pie-chart" />
+              <DropdownButtonItem label="hey ho" />
+            </DropdownButton>
+            dropdown button with label and icon
+          </p>
+          <p style="text-align: right">
+            <DropdownButton label="hey ho" align="right">
+              <DropdownButtonItem label="hey ho" icon="icon-pie-chart" />
+              <DropdownButtonItem icon="icon-pie-chart" />
+              <DropdownButtonItem label="hey ho" />
+            </DropdownButton>
+            dropdown button with label
+          </p>
+          <p>
+            <DropdownButton icon="icon-pie-chart">
+              <DropdownButtonItem label="hey ho" icon="icon-pie-chart" />
+              <DropdownButtonItem icon="icon-pie-chart" />
+              <DropdownButtonItem label="hey ho" />
+            </DropdownButton>
+            dropdown button with icon
+          </p>
         </div>
       </TabsItem>
     </Tabs>
@@ -109,6 +160,10 @@ import CrossValidationResultsWidget from "@/components/CrossValidationResultsWid
 </template>
 
 <style scoped>
+main {
+  padding: 0 5vw;
+}
+
 .images {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr 1fr;
