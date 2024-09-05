@@ -16,7 +16,7 @@ def cli(args: list[str]):
     parser_launch.add_argument(
         "project_name",
         nargs="?",
-        help="the name of the project to visualize (default: %(default)s)",
+        help="the name of the project to open (default: %(default)s)",
         default="project",
     )
     parser_launch.add_argument(
