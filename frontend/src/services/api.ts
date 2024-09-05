@@ -1,6 +1,8 @@
 import { DataStore, type Layout } from "@/models";
 
-const { protocol, hostname, port } = window.location;
+const { protocol, hostname, port: windowPort } = window.location;
+// In the general case we expect the webapp to run at the same port as the API
+const port = import.meta.env.DEV ? 22140 : windowPort;
 export const BASE_URL = `${protocol}//${hostname}:${port}/api`;
 
 function getErrorMessage(error: unknown) {
