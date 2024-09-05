@@ -14,10 +14,10 @@
   /* typography */
   --text-color-title: var(--color-primary);
   --text-size-small: 10px;
-  --text-size-normal: 14px;
+  --text-size-normal: 12px;
   --text-size-large: 16px;
-  --text-size-highlight: 12px;
-  --text-size-title: 12px;
+  --text-size-highlight: 14px;
+  --text-size-title: 14px;
   --text-weight-normal: 300;
   --text-weight-highlight: 400;
   --text-weight-title: 400;
