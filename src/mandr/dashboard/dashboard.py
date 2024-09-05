@@ -50,6 +50,7 @@ class Dashboard:
         -------
         The Dashboard object if succeeded, None if failed
         """
+        # Test whether port is already bound
         try:
             test_server = None
             test_server = HTTPServer(("127.0.0.1", self.port), BaseHTTPRequestHandler)
