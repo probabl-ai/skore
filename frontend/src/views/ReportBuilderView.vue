@@ -87,8 +87,8 @@ onBeforeUnmount(() => reportsStore.stopBackendPolling());
       <div class="empty-tree" v-else>No Mandr found.</div>
     </nav>
     <article v-if="fileTree.length > 0">
-      <div class="elements" v-if="reportsStore.selectedReport && !isInFocusMode">
-        <SectionHeader title="Elements (added from mandr)" icon="icon-pie-chart" />
+      <div class="items" v-if="reportsStore.selectedReport && !isInFocusMode">
+        <SectionHeader title="Items" icon="icon-pie-chart" />
         <Simplebar class="key-list">
           <DataStoreKeyList
             title="Plots"
@@ -207,7 +207,7 @@ main {
   article {
     flex-direction: row;
 
-    & .elements {
+    & .items {
       display: flex;
       width: 240px;
       flex-direction: column;

@@ -10,6 +10,7 @@ import MarkdownWidget from "@/components/MarkdownWidget.vue";
 import VegaWidget from "@/components/VegaWidget.vue";
 import type { KeyLayoutSize, KeyMoveDirection } from "@/models";
 import { useReportsStore } from "@/stores/reports";
+import { formatDistance } from "date-fns";
 
 const reportsStore = useReportsStore();
 const items = computed(() => {
@@ -17,8 +18,18 @@ const items = computed(() => {
   const layout = reportsStore.layout;
 
   return layout.map(({ key, size }) => {
+    const now = new Date();
     const item = report?.get(key);
-    return { key, size, data: item?.data, type: item?.type };
+    const r: any = {
+      key,
+      size,
+      data: item?.data,
+      type: item?.type,
+    };
+    if (item?.metadata?.created_at) {
+      r.updatedAt = formatDistance(item?.metadata?.updated_at, now, { addSuffix: true });
+    }
+    return r;
   });
 });
 
@@ -45,9 +56,10 @@ const props = defineProps({
 <template>
   <div class="canvas">
     <DataStoreCard
-      v-for="({ key, size, data, type }, index) in items"
+      v-for="({ key, size, data, type, updatedAt }, index) in items"
       :key="key"
       :title="key"
+      :subtitle="`Updated ${updatedAt}`"
       :class="size"
       :showButtons="props.showCardButtons"
       :can-move-up="index > 0"
