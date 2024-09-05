@@ -4,7 +4,7 @@ import argparse
 import pathlib
 
 from mandr.create_project import create_project
-from mandr.dashboard.dashboard import launch_dashboard
+from mandr.dashboard.dashboard import __launch
 
 
 def cli(args: list[str]):
@@ -58,7 +58,7 @@ def cli(args: list[str]):
         case None:
             parser.print_help()
         case "launch":
-            launch_dashboard(
+            __launch(
                 project_name=parsed_args.project_name,
                 port=parsed_args.port,
                 open_browser=parsed_args.open_browser,

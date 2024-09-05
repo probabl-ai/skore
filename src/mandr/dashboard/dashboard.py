@@ -22,7 +22,7 @@ def __open_browser(port: int):
     webbrowser.open(f"http://localhost:{port}")
 
 
-def launch_dashboard(project_name: str | Path, port: int, open_browser: bool):
+def __launch(project_name: str | Path, port: int, open_browser: bool):
     """Launch dashboard to visualize a project.
 
     Parameters
