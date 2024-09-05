@@ -4,8 +4,9 @@ import argparse
 import pathlib
 from importlib.metadata import version
 
-from mandr.create_project import ProjectAlreadyExists, create_project
+from mandr.create_project import create_project
 from mandr.dashboard.dashboard import __launch
+from mandr.quickstart_command import __quickstart
 
 
 def cli(args: list[str]):
@@ -79,19 +80,7 @@ def cli(args: list[str]):
                 working_dir=parsed_args.working_dir,
             )
         case "quickstart":
-            try:
-                project_directory = create_project(project_name="project.mandr")
-            except ProjectAlreadyExists:
-                print(  # noqa: T201
-                    f"Project file '{project_directory}' already exists. "
-                    "Skipping creation step."
-                )
-
-            __launch(
-                project_name="project.mandr",
-                port=parsed_args.port,
-                open_browser=True,
-            )
+            __quickstart()
         case _:
             # `parser.parse_args` raises an error if an unknown subcommand is passed,
             # so this case is impossible
