@@ -10,13 +10,13 @@ permissions:
   pull-requests: write
 
 jobs:
-  build:
+  lint-and-test:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python 3.12
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - name: Set up Node 20
@@ -27,17 +27,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -e . -r requirements.txt -r requirements-test.txt
-          cd frontend && npm install
+      - name: Build frontend and share library
+        shell: bash
+        run: make build-frontend
       - name: Lint with pre-commit
         run: |
           pre-commit run --all-files
-      - name: Build SPA
-        run: |
-          cd frontend
-          npm run build
-          cp -a dist/. ../src/mandr/dashboard/static
-          npm run build:lib
-          cp -a dist/. ../src/mandr/dashboard/static
       - name: Test with pytest
         timeout-minutes: 5
         run: |
