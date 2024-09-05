@@ -74,15 +74,13 @@ def cli(args: list[str]):
                 open_browser=parsed_args.open_browser,
             )
         case "create":
-            project_directory = create_project(
+            create_project(
                 project_name=parsed_args.project_name,
                 working_dir=parsed_args.working_dir,
             )
-            print(f"Project file '{project_directory}' was successfully created.")  # noqa: T201
         case "quickstart":
             try:
                 project_directory = create_project(project_name="project.mandr")
-                print(f"Project file '{project_directory}' was successfully created.")  # noqa: T201
             except ProjectAlreadyExists:
                 print(  # noqa: T201
                     f"Project file '{project_directory}' already exists. "

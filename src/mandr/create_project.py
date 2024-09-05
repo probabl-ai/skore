@@ -4,6 +4,8 @@ import os
 import re
 from pathlib import Path
 
+from mandr import logger
+
 
 class ProjectNameTooLong(Exception):
     """The project name must be at most 255 characters long (including ".mandr")."""
@@ -134,4 +136,5 @@ def create_project(project_name: str | Path, working_dir: Path | None = None) ->
             f"Unable to create project file '{project_directory}'."
         ) from e
 
+    logger.info(f"Project file '{project_directory}' was successfully created.")
     return project_directory
