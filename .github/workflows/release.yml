@@ -8,6 +8,7 @@ jobs:
   tag-restriction:
     name: Tag must match semantic versioning pattern
     runs-on: ubuntu-latest
+    environment: release
     steps:
       - shell: bash
         run: |
@@ -18,6 +19,7 @@ jobs:
   build:
     name: Build package distributions
     runs-on: ubuntu-latest
+    environment: release
     permissions:
       contents: read
     needs: tag-restriction
@@ -61,6 +63,7 @@ jobs:
   publish:
     name: Publish package distributions to TestPyPI using trusted publisher
     runs-on: ubuntu-latest
+    environment: release
     permissions:
       id-token: write
     needs: build
@@ -80,6 +83,7 @@ jobs:
   clean:
     name: Delete package distributions artifacts
     runs-on: ubuntu-latest
+    environment: release
     if: always()
     needs: publish
     steps:
