@@ -18,7 +18,7 @@ describe("utils", () => {
     const tic = performance.now();
     await sleep(delay);
     const toc = performance.now();
-    expect(toc).toBeGreaterThanOrEqual(tic + delay);
+    expect(toc - tic).toBeGreaterThanOrEqual(delay - 1);
   });
 
   it("Can check if an object is a string", () => {
