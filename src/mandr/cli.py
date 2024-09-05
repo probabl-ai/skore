@@ -4,7 +4,7 @@ import argparse
 import pathlib
 from importlib.metadata import version
 
-from mandr.create_project import create_project
+from mandr.create_project import ProjectAlreadyExists, create_project
 from mandr.dashboard.dashboard import __launch
 
 
@@ -58,6 +58,10 @@ def cli(args: list[str]):
         default=None,
     )
 
+    subparsers.add_parser(
+        "quickstart", help='Create a "project.mandr" file and start the dashboard'
+    )
+
     parsed_args: argparse.Namespace = parser.parse_args(args)
 
     match parsed_args.subcommand:
@@ -75,6 +79,21 @@ def cli(args: list[str]):
                 working_dir=parsed_args.working_dir,
             )
             print(f"Project file '{project_directory}' was successfully created.")  # noqa: T201
+        case "quickstart":
+            try:
+                project_directory = create_project(project_name="project.mandr")
+                print(f"Project file '{project_directory}' was successfully created.")  # noqa: T201
+            except ProjectAlreadyExists:
+                print(  # noqa: T201
+                    f"Project file '{project_directory}' already exists. "
+                    "Skipping creation step."
+                )
+
+            __launch(
+                project_name="project.mandr",
+                port=parsed_args.port,
+                open_browser=True,
+            )
         case _:
             # `parser.parse_args` raises an error if an unknown subcommand is passed,
             # so this case is impossible
