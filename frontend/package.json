@@ -18,6 +18,7 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
+    "@vscode/markdown-it-katex": "^1.1.0",
     "datatables.net-buttons-dt": "^3.1.2",
     "datatables.net-vue3": "^3.0.2",
     "date-fns": "^3.6.0",
