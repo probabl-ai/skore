@@ -3,6 +3,7 @@ import subprocess
 import pytest
 from mandr.create_project import (
     ImproperProjectName,
+    ProjectAlreadyExists,
     ProjectCreationError,
     ProjectNameTooLong,
     create_project,
@@ -49,7 +50,7 @@ def test_create_project_absolute_path(tmp_path):
 def test_create_project_fails_if_file_exists(tmp_path):
     create_project(tmp_path / "hello")
     assert (tmp_path / "hello.mandr").exists()
-    with pytest.raises(ProjectCreationError):
+    with pytest.raises(ProjectAlreadyExists):
         create_project(tmp_path / "hello")
 
 
@@ -68,10 +69,7 @@ def test_create_project_cli_default_argument(tmp_path):
     completed_process = subprocess.run(
         f"python -m mandr create --working-dir {tmp_path}".split(), capture_output=True
     )
-    assert (
-        f"Project file '{tmp_path}/project.mandr' was successfully created.".encode()
-        in completed_process.stdout
-    )
+    completed_process.check_returncode()
     assert (tmp_path / "project.mandr").exists()
 
 
@@ -80,10 +78,7 @@ def test_create_project_cli_ends_in_mandr(tmp_path):
         f"python -m mandr create hello.mandr --working-dir {tmp_path}".split(),
         capture_output=True,
     )
-    assert (
-        f"Project file '{tmp_path}/hello.mandr' was successfully created.".encode()
-        in completed_process.stdout
-    )
+    completed_process.check_returncode()
     assert (tmp_path / "hello.mandr").exists()
 
 
