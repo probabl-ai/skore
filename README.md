@@ -76,10 +76,8 @@ In the future, you can:
 
 ## Concepts
 
-- A **Mandr** or **Store** is the core concept of this project. It is a dict-like data structure that implements a CRUD interface.
+- A **Store** is the core concept of this project. It is a dict-like data structure that implements a CRUD interface.
 - A **Storage** represents the actual data storage medium, e.g. a computer's filesystem or an S3 bucket. Every Store has one Storage.
-- The **registry** bridges the gap between Mandrs, for example it can recover Mandrs from a Storage using the `stores()` method.
-- A **URI** is a key in a Storage.
 
 ## Contributing
 
