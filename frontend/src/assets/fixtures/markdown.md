@@ -1,4 +1,4 @@
-# h1 Heading 8-)
+# h1 Heading
 
 ## h2 Heading
 
@@ -33,10 +33,6 @@ test.. test... test..... test?..... test!....
 ## Emphasis
 
 **This is bold text**
-
-**This is bold text**
-
-_This is italic text_
 
 _This is italic text_
 
@@ -95,12 +91,11 @@ Sample text here...
 
 Syntax highlighting
 
-```js
-var foo = function (bar) {
-  return bar++;
-};
+```python
+def foo(bar):
+  return bar + 1
 
-console.log(foo(5));
+print(foo(5));
 ```
 
 ## Tables
@@ -125,20 +120,9 @@ Right aligned columns
 
 [link with title](http://nodeca.github.io/pica/demo/ "title text!")
 
-Autoconverted link https://github.com/nodeca/pica (enable linkify to see)
-
 ## Images
 
-![Minion](https://octodex.github.com/images/minion.png)
-![Stormtroopocat](https://octodex.github.com/images/stormtroopocat.jpg "The Stormtroopocat")
-
-Like links, Images also have a footnote style syntax
-
-![Alt text][id]
-
-With a reference later in the document defining the URL location:
-
-[id]: https://octodex.github.com/images/dojocat.jpg "The Dojocat"
+![placeholder](https://placehold.co/600x300 "placeholder")
 
 ## Plugins
 
@@ -157,3 +141,11 @@ see [how to change output](https://github.com/markdown-it/markdown-it-emoji#chan
 
 - 19^th^
 - H~2~O
+
+### [Katex](https://github.com/waylonflinn/markdown-it-katex)
+
+$$
+\sum_{x=1}^{3} x_i
+$$
+
+$\sum_{x=1}^{3} x_i$
