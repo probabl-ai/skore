@@ -4,7 +4,7 @@
 
 Both bugs and feature requests can be filed in the Github issue tracker, as well as general questions and feedback.
 
-Bug reports are of course welcome, especially those reported with [short, self-contained, correct examples](http://sscce.org/).
+Bug reports are welcome, especially those reported with [short, self-contained, correct examples](http://sscce.org/).
 
 ## Development
 
