@@ -69,9 +69,7 @@ def test_create_project_cli_default_argument(tmp_path):
     completed_process = subprocess.run(
         f"python -m mandr create --working-dir {tmp_path}".split(), capture_output=True
     )
-    # Logging message is split into multiple lines
-    assert b"successfully" in completed_process.stdout
-    assert b"created" in completed_process.stdout
+    completed_process.check_returncode()
     assert (tmp_path / "project.mandr").exists()
 
 
@@ -80,9 +78,7 @@ def test_create_project_cli_ends_in_mandr(tmp_path):
         f"python -m mandr create hello.mandr --working-dir {tmp_path}".split(),
         capture_output=True,
     )
-    # Logging message is split into multiple lines
-    assert b"successfully" in completed_process.stdout
-    assert b"created" in completed_process.stdout
+    completed_process.check_returncode()
     assert (tmp_path / "hello.mandr").exists()
 
 
