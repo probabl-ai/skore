@@ -41,7 +41,9 @@ This should automatically open a browser tab pointing at the app URL.
 
 ## Help for common issues
 
-For a complete introductory example, see our [basic usage notebook](/notebooks/basic_usage.ipynb).
+`make build-frontend` doesn't work!
+
+Please check that the node version is above 20 thanks to the following command: `node -v`
 
 ## Roadmap
 
