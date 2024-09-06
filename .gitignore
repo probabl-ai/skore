@@ -163,6 +163,8 @@ cython_debug/
 
 # Skore
 *.skore
+# Mandr
+*.mandr
 .DS_Store
 
 # Visual studio code
