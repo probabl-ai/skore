@@ -26,8 +26,8 @@ export default defineConfig({
   build: {
     lib: {
       entry: resolve(__dirname, "src/share.ts"),
-      name: "mandr",
-      fileName: "mandr",
+      name: "skore",
+      fileName: "skore",
     },
   },
 });

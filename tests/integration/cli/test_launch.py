@@ -29,7 +29,7 @@ def test_launch(tmp_path):
 
     with terminate(
         subprocess.Popen(
-            f"python -m mandr launch {tmp_path} --no-open-browser --port {PORT}".split()
+            f"python -m skore launch {tmp_path} --no-open-browser --port {PORT}".split()
         )
     ):
         start = monotonic()
@@ -43,7 +43,7 @@ def test_launch(tmp_path):
 
             assert response.is_success
             assert b"<!DOCTYPE html>" in response.content
-            assert b"<title>:mandr.</title>" in response.content
+            assert b"<title>:skore.</title>" in response.content
             return
 
         raise AssertionError(

@@ -7,12 +7,12 @@ import altair
 import numpy as np
 import pandas
 import pytest
-from mandr.api import schema
 from pydantic_core import PydanticSerializationError, ValidationError
 from sklearn.base import estimator_html_repr
 from sklearn.linear_model import Lasso, LogisticRegression
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
+from skore.api import schema
 from tests.unit.schema.dashboard.test_v0 import (
     make_matplotlib_figure,
     matplotlib_to_svg,

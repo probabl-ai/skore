@@ -84,7 +84,7 @@ onBeforeUnmount(() => reportsStore.stopBackendPolling());
       <Simplebar class="file-trees" v-if="fileTree.length > 0">
         <FileTree :nodes="fileTree" />
       </Simplebar>
-      <div class="empty-tree" v-else>No Mandr found.</div>
+      <div class="empty-tree" v-else>No Skore found.</div>
     </nav>
     <article v-if="fileTree.length > 0">
       <div class="items" v-if="reportsStore.selectedReport && !isInFocusMode">
@@ -125,7 +125,7 @@ onBeforeUnmount(() => reportsStore.stopBackendPolling());
             <div class="wrapper" v-if="reportsStore.selectedReportUri.length > 0">
               No item selected yet, start by dragging one element.
             </div>
-            <div class="wrapper" v-else>No item selected yet, start by selecting a Mandr.</div>
+            <div class="wrapper" v-else>No item selected yet, start by selecting a Skore.</div>
           </div>
 
           <Simplebar class="canvas-wrapper" v-else ref="reportScrollBar">
@@ -136,7 +136,7 @@ onBeforeUnmount(() => reportsStore.stopBackendPolling());
     </article>
     <div class="not-found" v-else-if="fileTree.length === 0">
       <div class="not-found-header">Empty workspace.</div>
-      <p>No mandr has been created, this worskpace is empty.</p>
+      <p>No Skore has been created, this worskpace is empty.</p>
     </div>
   </main>
 </template>

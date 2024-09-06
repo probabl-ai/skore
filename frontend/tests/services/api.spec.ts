@@ -12,11 +12,11 @@ describe("API Service", () => {
   it("Can fetch the list of manders from the server.", async () => {
     const uris = [
       "probabl-ai/demo-usecase/training/0",
-      "probabl-ai/test-mandr/0",
-      "probabl-ai/test-mandr/1",
-      "probabl-ai/test-mandr/2",
-      "probabl-ai/test-mandr/3",
-      "probabl-ai/test-mandr/4",
+      "probabl-ai/test-skore/0",
+      "probabl-ai/test-skore/1",
+      "probabl-ai/test-skore/2",
+      "probabl-ai/test-skore/3",
+      "probabl-ai/test-skore/4",
     ];
 
     mockedFetch.mockResolvedValue(createFetchResponse(uris));

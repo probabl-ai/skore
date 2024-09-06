@@ -1,8 +1,8 @@
 import pydantic
 import pytest
-from mandr.item import DisplayType, Item, ItemMetadata
-from mandr.storage import URI, NonPersistentStorage
-from mandr.store import Store
+from skore.item import DisplayType, Item, ItemMetadata
+from skore.storage import URI, NonPersistentStorage
+from skore.store import Store
 
 
 class TestStore:
@@ -13,7 +13,7 @@ class TestStore:
             def now(*args, **kwargs):
                 return mock_now
 
-        monkeypatch.setattr("mandr.store.store.datetime", MockDatetime)
+        monkeypatch.setattr("skore.store.store.datetime", MockDatetime)
 
         return NonPersistentStorage(
             content={
