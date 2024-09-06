@@ -4,7 +4,7 @@ import argparse
 import pathlib
 
 from mandr.create_project import create_project
-from mandr.dashboard.dashboard import Dashboard
+from mandr.dashboard.dashboard import __launch
 
 
 def cli(args: list[str]):
@@ -12,14 +12,20 @@ def cli(args: list[str]):
     parser = argparse.ArgumentParser(prog="mandr")
     subparsers = parser.add_subparsers(dest="subcommand")
 
-    parser_dashboard = subparsers.add_parser("dashboard", help="Start the dashboard")
-    parser_dashboard.add_argument(
+    parser_launch = subparsers.add_parser("launch", help="Launch the dashboard")
+    parser_launch.add_argument(
+        "project_name",
+        nargs="?",
+        help="the name of the project to open (default: %(default)s)",
+        default="project",
+    )
+    parser_launch.add_argument(
         "--port",
         type=int,
         help="the port at which to bind the UI server (default: %(default)s)",
         default=22140,
     )
-    parser_dashboard.add_argument(
+    parser_launch.add_argument(
         "--open-browser",
         action=argparse.BooleanOptionalAction,
         help=(
@@ -51,8 +57,12 @@ def cli(args: list[str]):
     match parsed_args.subcommand:
         case None:
             parser.print_help()
-        case "dashboard":
-            Dashboard(port=parsed_args.port).open(open_browser=parsed_args.open_browser)
+        case "launch":
+            __launch(
+                project_name=parsed_args.project_name,
+                port=parsed_args.port,
+                open_browser=parsed_args.open_browser,
+            )
         case "create":
             project_directory = create_project(
                 project_name=parsed_args.project_name,
