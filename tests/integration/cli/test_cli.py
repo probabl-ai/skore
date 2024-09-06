@@ -6,7 +6,7 @@ import pytest
 
 def test_no_subcommand():
     """If the CLI is given no subcommand, it should output the help menu."""
-    completed_process = subprocess.run("python -m mandr".split())
+    completed_process = subprocess.run("python -m skore".split())
 
     completed_process.check_returncode()
 
@@ -15,7 +15,7 @@ def test_invalid_subcommand():
     """If the CLI is given an invalid subcommand,
     it should exit and warn that the subcommand is invalid."""
     completed_process = subprocess.run(
-        "python -m mandr probabl-wrong-command".split(), capture_output=True
+        "python -m skore probabl-wrong-command".split(), capture_output=True
     )
 
     with pytest.raises(subprocess.CalledProcessError):
@@ -28,8 +28,8 @@ def test_invalid_subcommand():
 def test_version():
     """The --version command should not fail."""
     completed_process = subprocess.run(
-        "python -m mandr --version".split(), capture_output=True
+        "python -m skore --version".split(), capture_output=True
     )
 
     completed_process.check_returncode()
-    assert f"mandr {version("mandr")}".encode() in completed_process.stdout
+    assert f"skore {version("skore")}".encode() in completed_process.stdout

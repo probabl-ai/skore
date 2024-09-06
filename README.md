@@ -1,22 +1,22 @@
-# Mandr
+# skore
 
-![lint and test](https://github.com/probabl-ai/mandr/actions/workflows/lint-and-test.yml/badge.svg)
+![lint and test](https://github.com/probabl-ai/skore/actions/workflows/lint-and-test.yml/badge.svg)
 
 ## Installation
 
-For now, the only supported method to use mandr is from source.
+For now, the only supported method to use skore is from source.
 Follow the instructions in [CONTRIBUTING.md](/CONTRIBUTING.md#quick-start) to install dependencies and start the dashboard.
 
 ## Basic usage
 
 Initialize and use a Store as follows:
 ```python
-from mandr import Store
+from skore import Store
 
 # To initialize a Store, we need to give it a root path. This abstract path lets you express a hierarchy between Stores (so a Store can contain Stores).
 # A store also needs some physical storage to get and put items from/into.
 # By default, this storage will be in a `.datamander` directory in the current working directory.
-# This can be customized by setting the MANDR_ROOT environment variable.
+# This can be customized by setting the SKORE_ROOT environment variable.
 store = Store("root/probabl")
 
 store.insert("my int", 3)
@@ -28,7 +28,7 @@ store.read("my int")
 # For example, strings are assumed to be Markdown:
 store.insert("my string", "<p>Hello world!</p>")
 
-# But you can tell Mandr to interpret the input as HTML
+# But you can tell Skore to interpret the input as HTML
 store.update("my string", "<p>Hello world!</p>", display_type="html")
 
 for key, value in store.items():
@@ -37,14 +37,14 @@ for key, value in store.items():
 
 Then, in your project root (i.e. where `.datamander` is), run the following command to start the frontend locally:
 ```sh
-python -m mandr launch .datamander
+python -m skore launch .datamander
 ```
 This should automatically open a browser tab pointing at the app URL.
 
 ## ML-specific example
 
 ```python
-from mandr import Store
+from skore import Store
 
 store = Store("root/ml_example")
 
@@ -65,9 +65,9 @@ store.insert("my_cv", pd.DataFrame(cross_validate(lasso, X, y, cv=5)))
 
 ## Roadmap
 
-With Mandr, you can:
-- Store data (`mandr.insert()`)
-- Visualize data (`mandr.launch_dashboard()`)
+With Skore, you can:
+- Store data (`skore.insert()`)
+- Visualize data (`skore.launch_dashboard()`)
 
 In the future, you can:
 - Share visualizations of your data
@@ -76,9 +76,9 @@ In the future, you can:
 
 ## Concepts
 
-- A **Mandr** or **Store** is the core concept of this project. It is a dict-like data structure that implements a CRUD interface.
+- A **Skore** or **Store** is the core concept of this project. It is a dict-like data structure that implements a CRUD interface.
 - A **Storage** represents the actual data storage medium, e.g. a computer's filesystem or an S3 bucket. Every Store has one Storage.
-- The **registry** bridges the gap between Mandrs, for example it can recover Mandrs from a Storage using the `stores()` method.
+- The **registry** bridges the gap between Stores, for example it can recover Stores from a Storage using the `stores()` method.
 - A **URI** is a key in a Storage.
 
 ## Contributing

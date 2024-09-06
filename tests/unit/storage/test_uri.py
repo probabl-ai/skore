@@ -1,5 +1,5 @@
 import pytest
-from mandr.storage import URI
+from skore.storage import URI
 
 
 class TestURI:

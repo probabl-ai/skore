@@ -1,4 +1,4 @@
-MANDR_ROOT ?= ".datamander"
+SKORE_ROOT ?= ".datamander"
 
 pip-compile:
 	pip-compile --output-file=requirements.txt pyproject.toml
@@ -16,16 +16,16 @@ check-wip:
 	python -m pytest tests
 
 serve-api:
-	MANDR_ROOT=$(MANDR_ROOT) python -m uvicorn \
-		--factory mandr.api:create_api_app \
+	SKORE_ROOT=$(SKORE_ROOT) python -m uvicorn \
+		--factory skore.api:create_api_app \
 		--reload --reload-dir ./src \
 		--host 0.0.0.0 \
 		--port 22140 \
 		--timeout-graceful-shutdown 0
 
 serve-dashboard:
-	MANDR_ROOT=$(MANDR_ROOT) python -m uvicorn \
-		--factory mandr.dashboard:create_dashboard_app \
+	SKORE_ROOT=$(SKORE_ROOT) python -m uvicorn \
+		--factory skore.dashboard:create_dashboard_app \
 		--reload --reload-dir ./src \
 		--host 0.0.0.0 \
 		--port 22140 \
@@ -36,11 +36,11 @@ build-frontend:
 	cd frontend && npm install
 	cd frontend && npm run build
 	# empty app static folder
-	rm -rf src/mandr/dashboard/static
-	cp -a frontend/dist/. src/mandr/dashboard/static
+	rm -rf src/skore/dashboard/static
+	cp -a frontend/dist/. src/skore/dashboard/static
 	# build the sharing library
 	cd frontend && npm run build:lib
-	cp -a frontend/dist/. src/mandr/dashboard/static
+	cp -a frontend/dist/. src/skore/dashboard/static
 	# clean up
 	rm -rf frontend/dist
 
