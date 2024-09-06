@@ -4,12 +4,12 @@ from datetime import UTC, date, datetime
 
 import altair as alt
 import httpx
-import mandr.schema.dashboard
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pytest
 import referencing
+import skore.schema.dashboard
 from jsonschema import Draft202012Validator
 from jsonschema.exceptions import ValidationError
 from matplotlib.figure import Figure
@@ -58,7 +58,7 @@ class TestV0:
 
         registry = referencing.Registry(retrieve=retrieve_via_httpx)
         draft202012validator = Draft202012Validator(
-            schema=mandr.schema.dashboard.v0,
+            schema=skore.schema.dashboard.v0,
             registry=registry,
             format_checker=Draft202012Validator.FORMAT_CHECKER,
         )

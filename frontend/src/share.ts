@@ -13,7 +13,7 @@ export default function share() {
   app.use(createPinia());
   app.mount("#app");
 
-  const m = JSON.parse(document.getElementById("mandr-data")?.innerText || "{}");
+  const m = JSON.parse(document.getElementById("skore-data")?.innerText || "{}");
   const ds = new DataStore(m.uri, m.payload, m.layout);
   const reportsStore = useReportsStore();
   reportsStore.setSelectedReportIfDifferent(ds);
