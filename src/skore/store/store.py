@@ -36,7 +36,7 @@ class Store:
     """Object used to store pairs of (key, value) by URI over a storage."""
 
     # FIXME find a better to isolate layout from users items
-    LAYOUT_KEY = "__mandr__layout__"
+    LAYOUT_KEY = "__skore__layout__"
 
     def __init__(self, uri: URI | PosixPath | str, storage: Storage = None):
         self.uri = URI(uri)

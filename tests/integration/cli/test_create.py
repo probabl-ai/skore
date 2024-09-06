@@ -73,7 +73,7 @@ def test_create_project_cli_default_argument(tmp_path):
     assert (tmp_path / "project.skore").exists()
 
 
-def test_create_project_cli_ends_in_mandr(tmp_path):
+def test_create_project_cli_ends_in_skore(tmp_path):
     completed_process = subprocess.run(
         f"python -m skore create hello.skore --working-dir {tmp_path}".split(),
         capture_output=True,
