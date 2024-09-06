@@ -2,8 +2,8 @@ import datetime
 import pathlib
 
 import pytest
-from mandr.item import DisplayType
 from sklearn.linear_model import LinearRegression
+from skore.item import DisplayType
 
 
 @pytest.mark.parametrize(

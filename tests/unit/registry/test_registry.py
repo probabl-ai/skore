@@ -1,7 +1,7 @@
 import pytest
-from mandr import registry
-from mandr.storage import URI, NonPersistentStorage
-from mandr.store import Store
+from skore import registry
+from skore.storage import URI, NonPersistentStorage
+from skore.store import Store
 
 
 class TestRegistry:

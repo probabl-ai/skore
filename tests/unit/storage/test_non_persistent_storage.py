@@ -1,6 +1,6 @@
 import pytest
-from mandr.item import DisplayType, Item, ItemMetadata
-from mandr.storage import URI, NonPersistentStorage
+from skore.item import DisplayType, Item, ItemMetadata
+from skore.storage import URI, NonPersistentStorage
 
 
 class TestNonPersistentStorage:
