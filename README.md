@@ -7,29 +7,27 @@
 For now, the only supported method to use mandr is from source.
 Follow the instructions in [CONTRIBUTING.md](/CONTRIBUTING.md#quick-start) to install dependencies and start the dashboard.
 
-## Basic usage
+## Quick start
+
+For a complete introductory example, see our [basic usage notebook](/notebooks/basic_usage.ipynb).
 
 Initialize and use a Store as follows:
 ```python
 from mandr import Store
 
-# To initialize a Store, we need to give it a root path. This abstract path lets you express a hierarchy between Stores (so a Store can contain Stores).
-# A store also needs some physical storage to get and put items from/into.
-# By default, this storage will be in a `.datamander` directory in the current working directory.
-# This can be customized by setting the MANDR_ROOT environment variable.
 store = Store("root/probabl")
+```
 
+To initialize a Store, we need to give it a root path.
+A store also needs some physical storage to get and put items from/into. By default, this storage will be in a `.datamander` directory in the current working directory. This can be customized by setting the MANDR_ROOT environment variable.
+
+```python
 store.insert("my int", 3)
-
 store.read("my int")
 
-# The store infers the type of the inserted object by default, but sometimes it
-# is necessary to be explicit.
-# For example, strings are assumed to be Markdown:
-store.insert("my string", "<p>Hello world!</p>")
-
-# But you can tell Mandr to interpret the input as HTML
-store.update("my string", "<p>Hello world!</p>", display_type="html")
+# Strings are assumed to be Markdown:
+store.insert("my string", "Hello world!")
+store.update("my string", "Hello again!")
 
 for key, value in store.items():
     print(f"Key {key} corresponds to value {value}")
@@ -41,38 +39,20 @@ python -m mandr launch .datamander
 ```
 This should automatically open a browser tab pointing at the app URL.
 
-## ML-specific example
+## Help for common issues
 
-```python
-from mandr import Store
-
-store = Store("root/ml_example")
-
-# Train an sklearn estimator and evaluate it with cross-validation
-import sklearn
-from sklearn.datasets import load_diabetes
-from sklearn.linear_model import Lasso
-from sklearn.model_selection import cross_validate
-
-diabetes = load_diabetes()
-X = diabetes.data[:150]
-y = diabetes.target[:150]
-lasso = Lasso()
-
-import pandas as pd
-store.insert("my_cv", pd.DataFrame(cross_validate(lasso, X, y, cv=5)))
-```
+For a complete introductory example, see our [basic usage notebook](/notebooks/basic_usage.ipynb).
 
 ## Roadmap
 
 With Mandr, you can:
-- Store data (`mandr.insert()`)
-- Visualize data (`mandr.launch_dashboard()`)
+- Store data
+- Visualize data
 
-In the future, you can:
+In the future, you will be able to:
 - Share visualizations of your data
 - Extract insights from your data
-- Get tips on how to improve your data science
+- Get tips on how to improve your data science code
 
 ## Concepts
 
@@ -81,4 +61,4 @@ In the future, you can:
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for more information.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for more information and to contribute to the evolution of this library.
