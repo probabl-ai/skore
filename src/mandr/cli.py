@@ -6,6 +6,7 @@ from importlib.metadata import version
 
 from mandr.create_project import create_project
 from mandr.dashboard.dashboard import __launch
+from mandr.quickstart_command import __quickstart
 
 
 def cli(args: list[str]):
@@ -58,6 +59,10 @@ def cli(args: list[str]):
         default=None,
     )
 
+    subparsers.add_parser(
+        "quickstart", help='Create a "project.mandr" file and start the dashboard'
+    )
+
     parsed_args: argparse.Namespace = parser.parse_args(args)
 
     match parsed_args.subcommand:
@@ -70,11 +75,12 @@ def cli(args: list[str]):
                 open_browser=parsed_args.open_browser,
             )
         case "create":
-            project_directory = create_project(
+            create_project(
                 project_name=parsed_args.project_name,
                 working_dir=parsed_args.working_dir,
             )
-            print(f"Project file '{project_directory}' was successfully created.")  # noqa: T201
+        case "quickstart":
+            __quickstart()
         case _:
             # `parser.parse_args` raises an error if an unknown subcommand is passed,
             # so this case is impossible

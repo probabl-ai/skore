@@ -4,6 +4,8 @@ import os
 import re
 from pathlib import Path
 
+from mandr import logger
+
 
 class ProjectNameTooLong(Exception):
     """The project name must be at most 255 characters long (including ".mandr")."""
@@ -66,7 +68,15 @@ def validate_project_name(project_name: str) -> (bool, Exception | None):
 
 
 class ProjectCreationError(Exception):
-    """Creating the project failed."""
+    """Project creation failed."""
+
+
+class ProjectAlreadyExists(Exception):
+    """A project with this name already exists."""
+
+
+class ProjectPermissionError(Exception):
+    """Permissions in the directory do not allow creating a file."""
 
 
 def create_project(project_name: str | Path, working_dir: Path | None = None) -> Path:
@@ -111,13 +121,13 @@ def create_project(project_name: str | Path, working_dir: Path | None = None) ->
     try:
         os.mkdir(project_directory)
     except FileExistsError as e:
-        raise ProjectCreationError(
+        raise ProjectAlreadyExists(
             f"Unable to create project file '{project_directory}' because a file "
             "with that name already exists. Please choose a different name or delete "
             "the existing file."
         ) from e
     except PermissionError as e:
-        raise ProjectCreationError(
+        raise ProjectPermissionError(
             f"Unable to create project file '{project_directory}'. "
             "Please check your permissions for the current directory."
         ) from e
@@ -126,4 +136,5 @@ def create_project(project_name: str | Path, working_dir: Path | None = None) ->
             f"Unable to create project file '{project_directory}'."
         ) from e
 
+    logger.info(f"Project file '{project_directory}' was successfully created.")
     return project_directory
