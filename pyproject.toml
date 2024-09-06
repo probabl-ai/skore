@@ -8,14 +8,14 @@ pattern = "(?P<version>[^']+)"
 
 [tool.hatch.build.targets.sdist]
 only-include = ["src/"]
-artifacts = ["src/mandr/dashboard/static/"]
+artifacts = ["src/skore/dashboard/static/"]
 
 [tool.hatch.build.targets.wheel]
-package = ["src/mandr/"]
-artifacts = ["src/mandr/dashboard/static/"]
+package = ["src/skore/"]
+artifacts = ["src/skore/dashboard/static/"]
 
 [project]
-name = "mandr"
+name = "skore"
 description = "..."
 dynamic = ["version"]
 dependencies = [
@@ -81,7 +81,7 @@ addopts = [
 ]
 
 [tool.ruff]
-src = ["mandr"]
+src = ["skore"]
 exclude = [
   "doc"
 ]

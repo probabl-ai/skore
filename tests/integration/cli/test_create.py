@@ -1,8 +1,9 @@
 import subprocess
 
 import pytest
-from mandr.create_project import (
+from skore.create_project import (
     ImproperProjectName,
+    ProjectAlreadyExists,
     ProjectCreationError,
     ProjectNameTooLong,
     create_project,
@@ -33,23 +34,23 @@ def test_validate_project_name(project_name, expected):
     assert type(exception) is type(expected_exception)
 
 
-@pytest.mark.parametrize("project_name", ["hello", "hello.mandr"])
+@pytest.mark.parametrize("project_name", ["hello", "hello.skore"])
 def test_create_project(project_name, tmp_path):
     create_project(project_name, working_dir=tmp_path)
-    assert (tmp_path / "hello.mandr").exists()
+    assert (tmp_path / "hello.skore").exists()
 
 
 # TODO: If using fixtures in test cases is possible, join this with
 # `test_create_project`
 def test_create_project_absolute_path(tmp_path):
     create_project(tmp_path / "hello")
-    assert (tmp_path / "hello.mandr").exists()
+    assert (tmp_path / "hello.skore").exists()
 
 
 def test_create_project_fails_if_file_exists(tmp_path):
     create_project(tmp_path / "hello")
-    assert (tmp_path / "hello.mandr").exists()
-    with pytest.raises(ProjectCreationError):
+    assert (tmp_path / "hello.skore").exists()
+    with pytest.raises(ProjectAlreadyExists):
         create_project(tmp_path / "hello")
 
 
@@ -66,30 +67,24 @@ def test_create_project_fails_if_invalid_name(project_name, tmp_path):
 
 def test_create_project_cli_default_argument(tmp_path):
     completed_process = subprocess.run(
-        f"python -m mandr create --working-dir {tmp_path}".split(), capture_output=True
+        f"python -m skore create --working-dir {tmp_path}".split(), capture_output=True
     )
-    assert (
-        f"Project file '{tmp_path}/project.mandr' was successfully created.".encode()
-        in completed_process.stdout
-    )
-    assert (tmp_path / "project.mandr").exists()
+    completed_process.check_returncode()
+    assert (tmp_path / "project.skore").exists()
 
 
-def test_create_project_cli_ends_in_mandr(tmp_path):
+def test_create_project_cli_ends_in_skore(tmp_path):
     completed_process = subprocess.run(
-        f"python -m mandr create hello.mandr --working-dir {tmp_path}".split(),
+        f"python -m skore create hello.skore --working-dir {tmp_path}".split(),
         capture_output=True,
     )
-    assert (
-        f"Project file '{tmp_path}/hello.mandr' was successfully created.".encode()
-        in completed_process.stdout
-    )
-    assert (tmp_path / "hello.mandr").exists()
+    completed_process.check_returncode()
+    assert (tmp_path / "hello.skore").exists()
 
 
 def test_create_project_cli_invalid_name(tmp_path):
     completed_process = subprocess.run(
-        f"python -m mandr create hello.txt --working-dir {tmp_path}".split(),
+        f"python -m skore create hello.txt --working-dir {tmp_path}".split(),
         capture_output=True,
     )
     with pytest.raises(subprocess.CalledProcessError):

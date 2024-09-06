@@ -35,9 +35,6 @@ const emit = defineEmits<{
         <button @click="emit('layoutChanged', 'large')">
           <span class="icon-grid-layout-large"></span>
         </button>
-        <button @click="emit('layoutChanged', 'large')">
-          <span class="icon-grid-layout-large"></span>
-        </button>
         <button v-if="props.canMoveUp" @click="emit('positionChanged', 'up')">
           <span class="icon-up"></span>
         </button>

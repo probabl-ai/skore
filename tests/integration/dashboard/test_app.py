@@ -1,6 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
-from mandr.dashboard import create_dashboard_app
+from skore.dashboard import create_dashboard_app
 
 
 class TestDashboardApp:
@@ -13,4 +13,4 @@ class TestDashboardApp:
 
         assert response.status_code == 200
         assert b"<!DOCTYPE html>" in response.content
-        assert b"<title>:mandr.</title>" in response.content
+        assert b"<title>:skore.</title>" in response.content

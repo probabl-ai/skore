@@ -1,10 +1,10 @@
-# Mandr
+# skore
 
-![lint and test](https://github.com/probabl-ai/mandr/actions/workflows/lint-and-test.yml/badge.svg)
+![lint and test](https://github.com/probabl-ai/skore/actions/workflows/lint-and-test.yml/badge.svg)
 
 ## Installation
 
-For now, the only supported method to use mandr is from source.
+For now, the only supported method to use skore is from source.
 Follow the instructions in [CONTRIBUTING.md](/CONTRIBUTING.md#quick-start) to install dependencies and start the dashboard.
 
 ## Quick start
@@ -13,7 +13,7 @@ For a complete introductory example, see our [basic usage notebook](/notebooks/b
 
 Initialize and use a Store as follows:
 ```python
-from mandr import Store
+from skore import Store
 
 store = Store("root/probabl")
 ```
@@ -25,6 +25,7 @@ A store also needs some physical storage to get and put items from/into. By defa
 store.insert("my int", 3)
 store.read("my int")
 
+
 # Strings are assumed to be Markdown:
 store.insert("my string", "Hello world!")
 store.update("my string", "Hello again!")
@@ -35,17 +36,21 @@ for key, value in store.items():
 
 Then, in your project root (i.e. where `.datamander` is), run the following command to start the frontend locally:
 ```sh
-python -m mandr launch .datamander
+python -m skore launch .datamander
 ```
 This should automatically open a browser tab pointing at the app URL.
 
 ## Help for common issues
 
-For a complete introductory example, see our [basic usage notebook](/notebooks/basic_usage.ipynb).
+
+`make build-frontend` doesn't work!
+
+Please check that the node version is above 20 thanks to the following command: `node -v`
 
 ## Roadmap
 
-With Mandr, you can:
+
+With Skore, you can:
 - Store data
 - Visualize data
 
@@ -55,6 +60,7 @@ In the future, you will be able to:
 - Get tips on how to improve your data science code
 
 ## Concepts
+
 
 - A **Store** is the core concept of this project. It is a dict-like data structure that implements a CRUD interface.
 - A **Storage** represents the actual data storage medium, e.g. a computer's filesystem or an S3 bucket. Every Store has one Storage.

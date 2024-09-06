@@ -1,8 +1,8 @@
 import pytest
 from fastapi.testclient import TestClient
-from mandr.api import create_api_app
-from mandr.storage import FileSystem
-from mandr.store import Store
+from skore.api import create_api_app
+from skore.storage import FileSystem
+from skore.store import Store
 
 
 class TestApiApp:
@@ -12,7 +12,7 @@ class TestApiApp:
 
     @pytest.fixture(autouse=True)
     def setup(self, monkeypatch, tmp_path):
-        monkeypatch.setenv("MANDR_ROOT", str(tmp_path))
+        monkeypatch.setenv("SKORE_ROOT", str(tmp_path))
 
         self.storage = FileSystem(directory=tmp_path)
 
@@ -29,8 +29,8 @@ class TestApiApp:
 
     def test_list_stores(self, client):
         routes = [
-            "/api/mandrs",
-            "/api/mandrs/",
+            "/api/skores",
+            "/api/skores/",
             "/api/stores",
             "/api/stores/",
         ]
@@ -48,12 +48,12 @@ class TestApiApp:
             ]
 
     def test_get_store_by_uri(self, client):
-        response = client.get("/api/mandrs/root/subroot2/subsubroot3")
+        response = client.get("/api/skores/root/subroot2/subsubroot3")
 
         assert response.status_code == 404
 
         routes = [
-            "/api/mandrs/root/subroot2/subsubroot2",
+            "/api/skores/root/subroot2/subsubroot2",
             "/api/stores/root/subroot2/subsubroot2",
         ]
 
@@ -78,7 +78,7 @@ class TestApiApp:
         layout = [{"key": "key", "size": "small"}]
         s = Store("root", storage=self.storage)
         value, metadata = s.read("key", metadata=True)
-        response = client.put(f"/api/mandrs/{s.uri}/layout", json=layout)
+        response = client.put(f"/api/skores/{s.uri}/layout", json=layout)
 
         assert response.status_code == 201
         assert response.json() == {
@@ -92,9 +92,9 @@ class TestApiApp:
 
     def test_share(self, client):
         s = Store("root", storage=self.storage)
-        response = client.get(f"/api/mandrs/share/{s.uri}")
+        response = client.get(f"/api/skores/share/{s.uri}")
 
         assert response.is_success
-        assert '<script id="mandr-data" type="application/json">' in response.text
+        assert '<script id="skore-data" type="application/json">' in response.text
         assert response.text.count("</script>") >= 3
         assert response.text.count("</style>") >= 1

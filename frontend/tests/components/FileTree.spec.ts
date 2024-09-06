@@ -111,11 +111,11 @@ describe("FileTree", () => {
   it("Can transform an array of URIs to a tree", () => {
     const uris = [
       "probabl-ai/demo-usecase/training/0",
-      "probabl-ai/test-mandr/0",
-      "probabl-ai/test-mandr/1",
-      "probabl-ai/test-mandr/2",
-      "probabl-ai/test-mandr/3",
-      "probabl-ai/test-mandr/4",
+      "probabl-ai/test-skore/0",
+      "probabl-ai/test-skore/1",
+      "probabl-ai/test-skore/2",
+      "probabl-ai/test-skore/3",
+      "probabl-ai/test-skore/4",
     ];
 
     const tree = transformUrisToTree(uris);
@@ -133,13 +133,13 @@ describe("FileTree", () => {
             ],
           },
           {
-            uri: "probabl-ai/test-mandr",
+            uri: "probabl-ai/test-skore",
             children: [
-              { uri: "probabl-ai/test-mandr/0" },
-              { uri: "probabl-ai/test-mandr/1" },
-              { uri: "probabl-ai/test-mandr/2" },
-              { uri: "probabl-ai/test-mandr/3" },
-              { uri: "probabl-ai/test-mandr/4" },
+              { uri: "probabl-ai/test-skore/0" },
+              { uri: "probabl-ai/test-skore/1" },
+              { uri: "probabl-ai/test-skore/2" },
+              { uri: "probabl-ai/test-skore/3" },
+              { uri: "probabl-ai/test-skore/4" },
             ],
           },
         ],
