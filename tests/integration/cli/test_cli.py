@@ -1,4 +1,5 @@
 import subprocess
+from importlib.metadata import version
 
 import pytest
 
@@ -22,3 +23,13 @@ def test_invalid_subcommand():
 
     assert b"invalid" in completed_process.stderr
     assert b"probabl-wrong-command" in completed_process.stderr
+
+
+def test_version():
+    """The --version command should not fail."""
+    completed_process = subprocess.run(
+        "python -m mandr --version".split(), capture_output=True
+    )
+
+    completed_process.check_returncode()
+    assert f"mandr {version("mandr")}".encode() in completed_process.stdout

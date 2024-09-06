@@ -2,6 +2,7 @@
 
 import argparse
 import pathlib
+from importlib.metadata import version
 
 from mandr.create_project import create_project
 from mandr.dashboard.dashboard import __launch
@@ -10,6 +11,11 @@ from mandr.dashboard.dashboard import __launch
 def cli(args: list[str]):
     """CLI for Mandr."""
     parser = argparse.ArgumentParser(prog="mandr")
+
+    parser.add_argument(
+        "--version", action="version", version=f"%(prog)s {version("mandr")}"
+    )
+
     subparsers = parser.add_subparsers(dest="subcommand")
 
     parser_launch = subparsers.add_parser("launch", help="Launch the dashboard")
