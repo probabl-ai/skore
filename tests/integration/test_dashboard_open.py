@@ -70,7 +70,7 @@ def test_dashboard_open_with_absolute_mandr_root(monkeypatch, tmp_path):
     assert (tmp_path / ".datamander").exists()
 
 
-def test_dashboard_open_twice(monkeypatch, tmp_path, caplog):
+def test_dashboard_open_twice(monkeypatch, tmp_path):
     """Running the app twice at the same port fails because the address
     is already in use when the second app is ran."""
     monkeypatch.setenv("MANDR_ROOT", str(tmp_path / ".datamander"))
