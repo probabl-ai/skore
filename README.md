@@ -63,7 +63,6 @@ In the future, you will be able to:
 
 ## Concepts
 
-
 - A **Store** is the core concept of this project. It is a dict-like data structure that implements a CRUD interface.
 - A **Storage** represents the actual data storage medium, e.g. a computer's filesystem or an S3 bucket. Every Store has one Storage.
 
