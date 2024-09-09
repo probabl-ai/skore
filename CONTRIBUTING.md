@@ -17,7 +17,7 @@ make build-frontend
 make serve-dashboard
 ```
 
-You are now all setup run the library locally.
+You are now all setup to run the library locally.
 If you want to contribute, please continue with the three other sections.
 
 ### Backend

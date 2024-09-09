@@ -32,6 +32,8 @@ store.update("my string", "Hello again!")
 
 for key, value in store.items():
     print(f"Key {key} corresponds to value {value}")
+
+store.delete("my int")
 ```
 
 Then, in your project root (i.e. where `.datamander` is), run the following command to start the frontend locally:
@@ -43,9 +45,9 @@ This should automatically open a browser tab pointing at the app URL.
 ## Help for common issues
 
 
-`make build-frontend` doesn't work!
+### `make build-frontend` doesn't work!
 
-Please check that the node version is above 20 thanks to the following command: `node -v`
+Please check that your version of node is at least 20 using the following command: `node -v`
 
 ## Roadmap
 
@@ -60,7 +62,6 @@ In the future, you will be able to:
 - Get tips on how to improve your data science code
 
 ## Concepts
-
 
 - A **Store** is the core concept of this project. It is a dict-like data structure that implements a CRUD interface.
 - A **Storage** represents the actual data storage medium, e.g. a computer's filesystem or an S3 bucket. Every Store has one Storage.
