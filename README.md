@@ -32,6 +32,8 @@ store.update("my string", "Hello again!")
 
 for key, value in store.items():
     print(f"Key {key} corresponds to value {value}")
+
+store.delete("my int")
 ```
 
 Then, in your project root (i.e. where `.datamander` is), run the following command to start the frontend locally:
