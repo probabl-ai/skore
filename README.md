@@ -45,7 +45,7 @@ This should automatically open a browser tab pointing at the app URL.
 ## Help for common issues
 
 
-`make build-frontend` doesn't work!
+### `make build-frontend` doesn't work!
 
 Please check that the node version is above 20 thanks to the following command: `node -v`
 
