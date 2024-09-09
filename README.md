@@ -9,7 +9,7 @@ Follow the instructions in [CONTRIBUTING.md](/CONTRIBUTING.md#quick-start) to in
 
 ## Quick start
 
-For a complete introductory example, see our [basic usage notebook](/notebooks/basic_usage.ipynb) that generated a skore dashboard that was then exported into [this HTML file](https://drive.google.com/file/d/1wPUTWBov6lWVivnbkLyhzUis3aQJsSjV/view?usp=share_link).
+For a complete introductory example, see our [basic usage notebook](/notebooks/basic_usage.ipynb). The resulting skore dashboard has been exported to [this HTML file](https://gist.github.com/augustebaum/6b21dbd7f7d5a584fbf2c1956692574e): download it and open it in your browser to visualize it.
 
 Initialize and use a Store as follows:
 ```python
