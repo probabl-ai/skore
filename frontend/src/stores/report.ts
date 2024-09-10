@@ -1,9 +1,9 @@
 import { defineStore } from "pinia";
-import { ref, shallowRef } from "vue";
+import { ref, shallowRef, toRaw } from "vue";
 
 import { type KeyLayoutSize, type KeyMoveDirection, type Layout, type ReportItem } from "@/models";
 import { fetchReport } from "@/services/api";
-import { poll, swapItemsInArray } from "@/services/utils";
+import { poll, sha1, swapItemsInArray } from "@/services/utils";
 
 export const useReportStore = defineStore("reports", () => {
   // this object is not deeply reactive as it may be very large
@@ -83,7 +83,10 @@ export const useReportStore = defineStore("reports", () => {
   let _isCanceledCall = false;
   async function fetch() {
     if (!_isCanceledCall) {
-      report.value = await fetchReport();
+      const r = await fetchReport();
+      if (r) {
+        setReport(r);
+      }
     }
   }
   /**
@@ -105,17 +108,30 @@ export const useReportStore = defineStore("reports", () => {
 
   /**
    * Send new layout to backend
+   * ⚠️ temporary save to the local storage
+   * until backend accepts to store layouts
    */
   async function persistLayout() {
     if (report.value && layout.value) {
-      // FIXME p
-      //const report = await putLayout(report.value.uri, layout.value);
+      const rawReport = toRaw(report.value);
+      const rawLayout = toRaw(layout.value);
+      const storageKey = await sha1(JSON.stringify(rawReport));
+      localStorage.setItem(storageKey, JSON.stringify(rawLayout));
     }
   }
 
-  function setReport(r: { [key: string]: ReportItem }) {
+  /**
+   * Set the current report and populate the layout
+   * @param r data received from the backend
+   */
+  async function setReport(r: { [key: string]: ReportItem }) {
     report.value = r;
-    // FIXME setup layout
+    const rawReport = toRaw(report.value);
+    const storageKey = await sha1(JSON.stringify(rawReport));
+    const l = localStorage.getItem(storageKey);
+    if (l !== null) {
+      layout.value = JSON.parse(l);
+    }
   }
 
   return {

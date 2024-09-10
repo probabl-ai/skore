@@ -28,10 +28,10 @@ describe("Reports store", () => {
     vi.restoreAllMocks();
   });
 
-  it("Can create an empty layout when setting a DataStore with no layout.", () => {
+  it("Can create an empty layout when setting a DataStore with no layout.", async () => {
     const reportStore = useReportStore();
 
-    reportStore.setReport(makeFakeReport());
+    await reportStore.setReport(makeFakeReport());
     expect(reportStore.layout).toHaveLength(0);
   });
 
@@ -43,10 +43,10 @@ describe("Reports store", () => {
     reportStore.stopBackendPolling();
   });
 
-  it("Can move keys in layout.", () => {
+  it("Can move keys in layout.", async () => {
     const reportStore = useReportStore();
 
-    reportStore.setReport(makeFakeReport());
+    await reportStore.setReport(makeFakeReport());
     reportStore.displayKey("Any");
     reportStore.displayKey("Array");
     reportStore.setKeyLayoutSize("Any", "large");
