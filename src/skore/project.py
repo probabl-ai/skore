@@ -13,14 +13,17 @@ from skore.storage.filesystem import FileSystem
 
 
 class ItemType(StrEnum):
+    """Type of Item."""
+
     JSON = auto()
     PANDAS_DATAFRAME = auto()
     NUMPY_ARRAY = auto()
     SKLEARN_BASE_ESTIMATOR = auto()
+    ALTAIR_CHART = auto()
     MEDIA = auto()
 
 
-# attensssion parlezen à thomas experience déguelasse
+# FIXME: attensssion parlezen à thomas experience déguelasse
 # s.put_item(
 #     "HTML",
 #     Item(
@@ -32,7 +35,7 @@ class ItemType(StrEnum):
 # )
 @dataclass(frozen=True)
 class Item:
-    """An item is a value that is stored in the project."""
+    """A value that is stored in a Project."""
 
     serialized: str
     raw: Any
@@ -41,11 +44,12 @@ class Item:
 
 
 def serialize(o: Any) -> Item:
-    """Transform an object into an item."""
+    """Transform an object into an Item."""
     try:
         serialized = json.dumps(o)
         return Item(raw=o, item_type=ItemType.JSON, serialized=serialized)
     except TypeError:
+        import altair
         import matplotlib.figure
         import numpy
         import pandas
@@ -76,6 +80,13 @@ def serialize(o: Any) -> Item:
                 ),
                 media_type="text/html",
             )
+        if isinstance(o, altair.vegalite.v5.schema.core.TopLevelSpec):
+            return Item(
+                raw=o,
+                item_type=ItemType.ALTAIR_CHART,
+                serialized=json.dumps(o.to_dict()),
+                media_type=None,
+            )
         if isinstance(o, matplotlib.figure.Figure):
             output = StringIO()
             o.savefig(output, format="svg")
@@ -94,7 +105,7 @@ def deserialize(
     media_type: str | None,
     serialized: str,
 ) -> Item:
-    """Transform a serialized Item back to an object based on the given class name."""
+    """Transform a serialized Item back to an object based on `item_type`."""
     match item_type:
         case ItemType.JSON:
             raw = json.loads(serialized)
@@ -112,6 +123,10 @@ def deserialize(
             o = json.loads(serialized)
             unserialized = base64.b64decode(o["skops"])
             raw = skops.io.loads(unserialized)
+        case ItemType.ALTAIR_CHART:
+            import altair
+
+            raw = altair.Chart.from_dict(json.loads(serialized))
         case _:
             raw = None
 
@@ -130,10 +145,12 @@ class Project:
         self.storage = storage
 
     def put(self, key: str, value: Any):
+        """Add a value to the Project."""
         i = serialize(value)
         self.put_item(key, i)
 
     def put_item(self, key: str, item: Item):
+        """Add an Item to the Project."""
         self.storage.setitem(
             key,
             {
@@ -144,23 +161,26 @@ class Project:
         )
 
     def get(self, key: str) -> Any:
+        """Get the value corresponding to `key` from the Project."""
         return self.get_item(key).raw
 
     def get_item(self, key: str) -> Item:
+        """Add the Item corresponding to `key` from the Project."""
         item = self.storage.getitem(key)
 
         return deserialize(**item)
 
     def list_keys(self) -> List[str]:
-        """List all keys in the project."""
+        """List all keys in the Project."""
         return list(self.storage.keys())
 
     def delete_item(self, key: str):
-        """Delete an item from the project."""
+        """Delete an item from the Project."""
         self.storage.delitem(key)
 
 
 def load(directory: str | Path) -> Project:
+    """Load a Project given a project name or path."""
     storage = FileSystem(directory=Path(directory))
     project = Project(storage=storage)
 

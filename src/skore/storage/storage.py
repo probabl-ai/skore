@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from typing import Any, Generator
+    from typing import Any, Iterator
 
 
 class Storage(ABC):
@@ -17,7 +17,7 @@ class Storage(ABC):
         """Return True if the storage has the specified key, else False."""
 
     @abstractmethod
-    def __iter__(self) -> Generator[str, None, None]:
+    def __iter__(self) -> Iterator[str]:
         """Yield the keys."""
 
     @abstractmethod
@@ -45,9 +45,9 @@ class Storage(ABC):
         """
 
     @abstractmethod
-    def keys(self) -> Generator[str, None, None]:
+    def keys(self) -> Iterator[str]:
         """Yield the keys."""
 
     @abstractmethod
-    def items(self) -> Generator[tuple[str, Any], None, None]:
+    def items(self) -> Iterator[tuple[str, Any]]:
         """Yield the pairs (key, item)."""

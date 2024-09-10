@@ -10,10 +10,9 @@ from skore.storage.storage import Storage
 
 if TYPE_CHECKING:
     from pathlib import Path
-    from typing import Generator
+    from typing import Iterator
 
     from skore.item import Item
-    from skore.storage.storage import URI
 
 
 class FileSystem(Storage):
@@ -22,15 +21,15 @@ class FileSystem(Storage):
     def __init__(self, *, directory: Path | None = None):
         self.cache = Cache(directory)
 
-    def __contains__(self, key: URI) -> bool:
+    def __contains__(self, key: str) -> bool:
         """Return True if the storage has the specified key, else False."""
         return key in self.cache
 
-    def __iter__(self) -> Generator[URI, None, None]:
+    def __iter__(self) -> Iterator[str]:
         """Yield the keys."""
         yield from self.cache.iterkeys()
 
-    def getitem(self, key: URI) -> Item:
+    def getitem(self, key: str) -> Item:
         """Return the item for te specified key.
 
         Raises
@@ -40,11 +39,11 @@ class FileSystem(Storage):
         """
         return self.cache[key]
 
-    def setitem(self, key: URI, item: Item):
+    def setitem(self, key: str, item: Item):
         """Set the item for the specified key."""
         self.cache[key] = item
 
-    def delitem(self, key: URI):
+    def delitem(self, key: str):
         """Delete the specified key and its item.
 
         Raises
@@ -54,11 +53,11 @@ class FileSystem(Storage):
         """
         del self.cache[key]
 
-    def keys(self) -> Generator[URI, None, None]:
+    def keys(self) -> Iterator[str]:
         """Yield the keys."""
         yield from self
 
-    def items(self) -> Generator[tuple[URI, Item], None, None]:
+    def items(self) -> Iterator[tuple[str, Item]]:
         """Yield the pairs (key, item)."""
         for key in self.cache.iterkeys():
             yield (key, self.cache[key])

@@ -1,5 +1,6 @@
 import json
 
+import altair
 import numpy
 import numpy.testing
 import pandas
@@ -171,6 +172,9 @@ def test_project_here(monkeypatch):
     ax.plot([1, 2, 3, 4])
     project.put("mpl_figure", fig)  # MediaItem (SVG)
 
+    # Add an Altair chart
+    project.put("vega_chart", altair.Chart().mark_point())
+
     # Add a PIL Image
     # pil_image = Image.new("RGB", (100, 100), color="red")
     # project.put("pil_image", pil_image)  # MediaItem (PNG)
@@ -234,6 +238,11 @@ def test_project_here(monkeypatch):
             "item_type": str(ItemType.SKLEARN_BASE_ESTIMATOR),
             "serialized": '{"skops": "", "html": ""}',
             "media_type": "text/html",
+        },
+        "vega_chart": {
+            "item_type": str(ItemType.ALTAIR_CHART),
+            "serialized": "",
+            "media_type": None,
         },
     }
 
