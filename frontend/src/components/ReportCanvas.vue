@@ -1,13 +1,25 @@
 <script setup lang="ts">
 import DataFrameWidget from "@/components/DataFrameWidget.vue";
-import DataStoreCard from "@/components/DataStoreCard.vue";
 import HtmlSnippetWidget from "@/components/HtmlSnippetWidget.vue";
 import ImageWidget from "@/components/ImageWidget.vue";
 import MarkdownWidget from "@/components/MarkdownWidget.vue";
+import ReportCard from "@/components/ReportCard.vue";
 import type { KeyLayoutSize, KeyMoveDirection, SupportedImageMimeType } from "@/models";
 import { useReportStore } from "@/stores/report";
+import { computed } from "vue";
 
 const reportStore = useReportStore();
+
+const visibleItems = computed(() => {
+  if (reportStore.report !== null) {
+    return reportStore.layout.map((value, index) => ({
+      ...value,
+      ...reportStore.report![value.key],
+      index,
+    }));
+  }
+  return [];
+});
 
 function onLayoutChange(key: string, size: KeyLayoutSize) {
   reportStore.setKeyLayoutSize(key, size);
@@ -31,14 +43,13 @@ const props = defineProps({
 
 <template>
   <div class="canvas">
-    <DataStoreCard
-      v-for="({ item_type, media_type, serialized }, key) in reportStore.report"
+    <ReportCard
+      v-for="{ item_type, media_type, serialized, key, index } in visibleItems"
       :key="key"
       :title="key.toString()"
-      subtitle="FIXME"
       :showButtons="props.showCardButtons"
-      :can-move-up="true"
-      :can-move-down="true"
+      :can-move-up="index > 0"
+      :can-move-down="index < reportStore.layout.length - 1"
       class="canvas-element large"
       @layout-changed="onLayoutChange(key.toString(), $event)"
       @position-changed="onPositionChanged(key.toString(), $event)"
@@ -68,7 +79,7 @@ const props = defineProps({
         v-if="'sklearn_base_estimator' === item_type && media_type === 'text/html'"
         :src="serialized.html"
       />
-    </DataStoreCard>
+    </ReportCard>
   </div>
 </template>
 

@@ -2,8 +2,8 @@
 import Simplebar from "simplebar-vue";
 import { onBeforeUnmount, onMounted, ref } from "vue";
 
-import DataStoreCanvas from "@/components/DataStoreCanvas.vue";
-import DataStoreKeyList from "@/components/DataStoreKeyList.vue";
+import ReportCanvas from "@/components/ReportCanvas.vue";
+import ReportKeyList from "@/components/ReportKeyList.vue";
 import SectionHeader from "@/components/SectionHeader.vue";
 import SimpleButton from "@/components/SimpleButton.vue";
 import { useReportStore } from "@/stores/report";
@@ -64,7 +64,7 @@ onBeforeUnmount(() => reportStore.stopBackendPolling());
       <div class="items" v-if="reportStore.report && !isInFocusMode">
         <SectionHeader title="Items" icon="icon-pie-chart" />
         <Simplebar class="key-list">
-          <DataStoreKeyList title="Info" icon="icon-text" :keys="Object.keys(reportStore.report)" />
+          <ReportKeyList title="Info" icon="icon-text" :keys="Object.keys(reportStore.report)" />
         </Simplebar>
       </div>
 
@@ -91,7 +91,7 @@ onBeforeUnmount(() => reportStore.stopBackendPolling());
           </div>
 
           <Simplebar class="canvas-wrapper" v-else ref="reportScrollBar">
-            <DataStoreCanvas />
+            <ReportCanvas />
           </Simplebar>
         </Transition>
       </div>
