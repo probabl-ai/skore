@@ -1,6 +1,5 @@
 """Implement the "launch" command."""
 
-import os
 import threading
 import time
 import webbrowser
@@ -9,6 +8,8 @@ from pathlib import Path
 import uvicorn
 
 from skore import logger
+from skore.dashboard.app import create_dashboard_app
+from skore.project import load
 
 
 class ProjectNotFound(Exception):
@@ -22,7 +23,7 @@ def __open_browser(port: int):
     webbrowser.open(f"http://localhost:{port}")
 
 
-def __launch(project_name: str | Path, port: int, open_browser: bool):
+def __launch(directory: str | Path, port: int, open_browser: bool):
     """Launch dashboard to visualize a project.
 
     Parameters
@@ -39,36 +40,16 @@ def __launch(project_name: str | Path, port: int, open_browser: bool):
     A tuple with the dashboard and the project directory path if succeeded,
     None if failed
     """
-    if Path(project_name).exists():
-        pass
-    elif Path(project_name + ".skore").exists():
-        project_name = project_name + ".skore"
-    else:
-        raise ProjectNotFound(
-            f"Project '{project_name}' not found. "
-            "Maybe you forget to create it? Please check the file name and try again."
-        )
-
-    # FIXME: Passing the project name through environment variables is smelly
-    if os.environ.get("SKORE_ROOT") is None:
-        os.environ["SKORE_ROOT"] = project_name
-
-    logger.info(
-        f"Running dashboard for project file '{project_name}' at URL http://localhost:{port}"
-    )
+    logger.info(f"Running dashboard from '{directory}' at URL http://localhost:{port}")
 
     if open_browser:
         threading.Thread(target=lambda: __open_browser(port=port)).start()
 
-    # TODO: Check beforehand that port is not already bound
-    config = uvicorn.Config(
-        app="skore.dashboard.app:create_dashboard_app",
-        port=port,
-        log_level="error",
-        factory=True,
-    )
-    server = uvicorn.Server(config=config)
+    project = load(directory)
+    app = create_dashboard_app(project=project)
+
     try:
-        server.run()
+        # TODO: check port is free
+        uvicorn.run(app, port=port, log_level="error")
     except KeyboardInterrupt:
         logger.info("Closing dashboard")

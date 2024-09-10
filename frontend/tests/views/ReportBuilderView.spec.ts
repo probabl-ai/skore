@@ -4,25 +4,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "vue";
 import { useRoute } from "vue-router";
 
-import type { ItemType } from "@/models";
 import { ROUTE_NAMES } from "@/router";
 import ReportBuilderView from "@/views/ReportBuilderView.vue";
-import { makeDataStore, mountSuspense } from "../test.utils";
-
-const uri = "/a/b";
-const keys: ItemType[] = ["boolean", "integer", "vega", "matplotlib_figure"];
+import { mountSuspense } from "../test.utils";
 
 vi.mock("@/services/api", () => {
-  const fetchAllManderUris = vi.fn().mockImplementation(() => {
-    return [uri];
+  const fetchReport = vi.fn().mockImplementation(() => {
+    return {};
   });
-  const fetchMander = vi.fn().mockImplementation(() => {
-    return makeDataStore(uri, keys);
-  });
-  const putLayout = vi.fn().mockImplementation(() => {
-    return makeDataStore(uri, keys);
-  });
-  return { fetchAllManderUris, fetchMander, putLayout };
+  return { fetchReport };
 });
 
 describe("ReportBuilderView", () => {
@@ -41,12 +31,10 @@ describe("ReportBuilderView", () => {
 
   it("Renders properly", async () => {
     vi.mocked(useRoute).mockImplementationOnce(() => ({
-      fullPath: `/${ROUTE_NAMES.REPORT_BUILDER}/a/b`,
-      path: `/${ROUTE_NAMES.REPORT_BUILDER}/a/b`,
+      fullPath: `/${ROUTE_NAMES.REPORT_BUILDER}`,
+      path: `/${ROUTE_NAMES.REPORT_BUILDER}`,
       query: {},
-      params: {
-        segments: ["a", "b"],
-      },
+      params: {},
       matched: [],
       name: ROUTE_NAMES.REPORT_BUILDER,
       hash: "",

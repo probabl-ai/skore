@@ -1,48 +1,24 @@
 <script setup lang="ts">
-import { computed } from "vue";
-
-import CrossValidationResultsWidget from "@/components/CrossValidationResultsWidget.vue";
 import DataFrameWidget from "@/components/DataFrameWidget.vue";
 import DataStoreCard from "@/components/DataStoreCard.vue";
 import HtmlSnippetWidget from "@/components/HtmlSnippetWidget.vue";
 import ImageWidget from "@/components/ImageWidget.vue";
 import MarkdownWidget from "@/components/MarkdownWidget.vue";
-import VegaWidget from "@/components/VegaWidget.vue";
-import type { KeyLayoutSize, KeyMoveDirection } from "@/models";
-import { useReportsStore } from "@/stores/reports";
-import { formatDistance } from "date-fns";
+import type { KeyLayoutSize, KeyMoveDirection, SupportedImageMimeType } from "@/models";
+import { useReportStore } from "@/stores/report";
 
-const reportsStore = useReportsStore();
-const items = computed(() => {
-  const report = reportsStore.selectedReport;
-  const layout = reportsStore.layout;
-
-  return layout.map(({ key, size }) => {
-    const now = new Date();
-    const item = report?.get(key);
-    const r: any = {
-      key,
-      size,
-      data: item?.data,
-      type: item?.type,
-    };
-    if (item?.metadata?.created_at) {
-      r.updatedAt = formatDistance(item?.metadata?.updated_at, now, { addSuffix: true });
-    }
-    return r;
-  });
-});
+const reportStore = useReportStore();
 
 function onLayoutChange(key: string, size: KeyLayoutSize) {
-  reportsStore.setKeyLayoutSize(key, size);
+  reportStore.setKeyLayoutSize(key, size);
 }
 
 function onCardRemoved(key: string) {
-  reportsStore.hideKey(key);
+  reportStore.hideKey(key);
 }
 
 function onPositionChanged(key: string, direction: KeyMoveDirection) {
-  reportsStore.moveKey(key, direction);
+  reportStore.moveKey(key, direction);
 }
 
 const props = defineProps({
@@ -56,55 +32,41 @@ const props = defineProps({
 <template>
   <div class="canvas">
     <DataStoreCard
-      v-for="({ key, size, data, type, updatedAt }, index) in items"
+      v-for="({ item_type, media_type, serialized }, key) in reportStore.report"
       :key="key"
-      :title="key"
-      :subtitle="`Updated ${updatedAt}`"
-      :class="size"
+      :title="key.toString()"
+      subtitle="FIXME"
       :showButtons="props.showCardButtons"
-      :can-move-up="index > 0"
-      :can-move-down="index < items.length - 1"
-      class="canvas-element"
-      @layout-changed="onLayoutChange(key, $event)"
-      @position-changed="onPositionChanged(key, $event)"
-      @card-removed="onCardRemoved(key)"
+      :can-move-up="true"
+      :can-move-down="true"
+      class="canvas-element large"
+      @layout-changed="onLayoutChange(key.toString(), $event)"
+      @position-changed="onPositionChanged(key.toString(), $event)"
+      @card-removed="onCardRemoved(key.toString())"
     >
-      <VegaWidget v-if="type === 'vega'" :spec="data" />
-      <DataFrameWidget v-if="type === 'dataframe'" :columns="data.columns" :data="data.data" />
-      <ImageWidget
-        v-if="type === 'image'"
-        :mime-type="data['mime-type']"
-        :base64-src="data.data"
-        :alt="key"
+      <DataFrameWidget
+        v-if="item_type === 'pandas_dataframe'"
+        :columns="serialized.columns"
+        :data="serialized.data"
       />
       <ImageWidget
-        v-if="type === 'matplotlib_figure'"
-        mime-type="image/svg+xml"
-        :base64-src="data"
-        :alt="key"
-      />
-      <MarkdownWidget
         v-if="
-          [
-            'boolean',
-            'integer',
-            'number',
-            'string',
-            'any',
-            'array',
-            'date',
-            'datetime',
-            'markdown',
-            'numpy_array',
-          ].includes(type!)
+          item_type === 'media' &&
+          media_type &&
+          ['image/svg+xml', 'image/png', 'image/jpeg', 'image/webp'].includes(media_type)
         "
-        :source="data"
+        :mime-type="media_type as SupportedImageMimeType"
+        :base64-src="serialized"
+        :alt="key.toString()"
       />
-      <HtmlSnippetWidget v-if="['html', 'sklearn_model'].includes(type!)" :src="data" />
-      <CrossValidationResultsWidget
-        v-if="type === 'cv_results'"
-        :roc_curve_spec="data.roc_curve_spec"
-        :cv_results_table="data.cv_results_table"
+      <MarkdownWidget v-if="['json', 'numpy_array'].includes(item_type)" :source="serialized" />
+      <HtmlSnippetWidget
+        v-if="'media' === item_type && media_type === 'text/html'"
+        :src="serialized"
+      />
+      <HtmlSnippetWidget
+        v-if="'sklearn_base_estimator' === item_type && media_type === 'text/html'"
+        :src="serialized.html"
       />
     </DataStoreCard>
   </div>

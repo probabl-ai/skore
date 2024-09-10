@@ -1,9 +1,11 @@
 <script setup lang="tsx">
 import { computed } from "vue";
 
+import { type SupportedImageMimeType } from "@/models";
+
 interface ImageWidgetProps {
   base64Src: string;
-  mimeType: "image/svg+xml" | "image/png" | "image/jpeg" | "image/webp";
+  mimeType: SupportedImageMimeType;
   alt?: string;
 }
 

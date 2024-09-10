@@ -1,15 +1,13 @@
 import { defineStore } from "pinia";
-import { ref, shallowRef, toRaw } from "vue";
+import { ref, shallowRef } from "vue";
 
-import { DataStore, type KeyLayoutSize, type KeyMoveDirection, type Layout } from "@/models";
-import { fetchAllManderUris, fetchMander, putLayout } from "@/services/api";
-import { isDeepEqual, poll, swapItemsInArray } from "@/services/utils";
+import { type KeyLayoutSize, type KeyMoveDirection, type Layout, type ReportItem } from "@/models";
+import { fetchReport } from "@/services/api";
+import { poll, swapItemsInArray } from "@/services/utils";
 
-export const useReportsStore = defineStore("reports", () => {
+export const useReportStore = defineStore("reports", () => {
   // this object is not deeply reactive as it may be very large
-  const reportUris = ref<string[]>([]);
-  const selectedReportUri = ref<string>("");
-  const selectedReport = shallowRef<DataStore | null>(null);
+  const report = shallowRef<{ [key: string]: ReportItem } | null>(null);
   const layout = ref<Layout>([]);
 
   /**
@@ -79,35 +77,15 @@ export const useReportsStore = defineStore("reports", () => {
   }
 
   /**
-   * Set the selected report ref to a new one only if there is a difference.
-   * @param report the new report
-   */
-  function setSelectedReportIfDifferent(report: DataStore) {
-    const current = toRaw(selectedReport.value);
-    if (!isDeepEqual(current as object, report)) {
-      selectedReport.value = report;
-      layout.value = report.layout;
-    }
-  }
-
-  /**
    * Fetch all reports URI
    * and eventually the detail of the currently selected report
    */
   let _isCanceledCall = false;
   async function fetch() {
-    reportUris.value = await fetchAllManderUris();
     if (!_isCanceledCall) {
-      const selectedUri = selectedReportUri.value;
-      if (selectedUri.length > 0) {
-        const report = await fetchMander(selectedUri);
-        if (report) {
-          setSelectedReportIfDifferent(report);
-        }
-      }
+      report.value = await fetchReport();
     }
   }
-
   /**
    * Start real time sync with the server.
    */
@@ -129,25 +107,26 @@ export const useReportsStore = defineStore("reports", () => {
    * Send new layout to backend
    */
   async function persistLayout() {
-    if (selectedReport.value && layout.value) {
-      const report = await putLayout(selectedReport.value.uri, layout.value);
-      if (report) {
-        setSelectedReportIfDifferent(report);
-      }
+    if (report.value && layout.value) {
+      // FIXME p
+      //const report = await putLayout(report.value.uri, layout.value);
     }
   }
 
+  function setReport(r: { [key: string]: ReportItem }) {
+    report.value = r;
+    // FIXME setup layout
+  }
+
   return {
-    reportUris,
-    selectedReportUri,
-    selectedReport,
     layout,
+    report,
     displayKey,
     hideKey,
     setKeyLayoutSize,
     startBackendPolling,
     stopBackendPolling,
-    setSelectedReportIfDifferent,
+    setReport,
     moveKey,
   };
 });

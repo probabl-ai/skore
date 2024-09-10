@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import DataStoreKey from "@/components/DataStoreKey.vue";
 
-import { useReportsStore } from "@/stores/reports";
+import { useReportStore } from "@/stores/report";
 
-const reportsStore = useReportsStore();
+const reportsStore = useReportStore();
 const props = defineProps<{ icon: string; title: string; keys: string[] }>();
 </script>
 
@@ -11,12 +11,7 @@ const props = defineProps<{ icon: string; title: string; keys: string[] }>();
   <div class="data-store-list-item">
     <h2><span :class="props.icon"></span>{{ props.title }}</h2>
     <div class="keys">
-      <DataStoreKey
-        v-for="key in props.keys"
-        :key="key"
-        :item-key="key"
-        :metadata="reportsStore.selectedReport?.get(key).metadata"
-      />
+      <DataStoreKey v-for="key in props.keys" :key="key" :item-key="key" />
     </div>
   </div>
 </template>

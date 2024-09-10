@@ -21,10 +21,10 @@ def cli(args: list[str]):
 
     parser_launch = subparsers.add_parser("launch", help="Launch the dashboard")
     parser_launch.add_argument(
-        "project_name",
+        "directory",
         nargs="?",
-        help="the name of the project to open (default: %(default)s)",
-        default="project",
+        help="the directory to open (default: %(default)s)",
+        default="project.skore",
     )
     parser_launch.add_argument(
         "--port",
@@ -44,9 +44,9 @@ def cli(args: list[str]):
 
     parser_create = subparsers.add_parser("create", help="Create a project")
     parser_create.add_argument(
-        "project_name",
+        "directory",
         nargs="?",
-        help="the name of the project (default: %(default)s)",
+        help="the directory to create (default: %(default)s)",
         default="project",
     )
     parser_create.add_argument(
@@ -70,13 +70,13 @@ def cli(args: list[str]):
             parser.print_help()
         case "launch":
             __launch(
-                project_name=parsed_args.project_name,
+                directory=parsed_args.directory,
                 port=parsed_args.port,
                 open_browser=parsed_args.open_browser,
             )
         case "create":
             create_project(
-                project_name=parsed_args.project_name,
+                directory=parsed_args.directory,
                 working_dir=parsed_args.working_dir,
             )
         case "quickstart":

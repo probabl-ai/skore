@@ -1,4 +1,4 @@
-import { DataStore, type Layout } from "@/models";
+import type { ReportItem } from "@/models";
 
 const { protocol, hostname, port: windowPort } = window.location;
 // In the general case we expect the webapp to run at the same port as the API
@@ -14,54 +14,11 @@ function reportError(message: string) {
   console.error(message);
 }
 
-export async function fetchAllManderUris(): Promise<string[]> {
+export async function fetchReport(): Promise<{ [key: string]: ReportItem } | null> {
   try {
-    const r = await fetch(`${BASE_URL}/skores`);
-    const uris = await r.json();
-    return uris;
-  } catch (error) {
-    reportError(getErrorMessage(error));
-    return [];
-  }
-}
-
-export async function fetchMander(uri: string): Promise<DataStore | null> {
-  try {
-    const r = await fetch(`${BASE_URL}/skores/${uri}`);
+    const r = await fetch(`${BASE_URL}/skores/`);
     if (r.status == 200) {
-      const m = await r.json();
-      return new DataStore(m.uri, m.payload, m.layout);
-    }
-  } catch (error) {
-    reportError(getErrorMessage(error));
-  }
-  return null;
-}
-
-export async function putLayout(uri: string, payload: Layout): Promise<DataStore | null> {
-  try {
-    const r = await fetch(`${BASE_URL}/skores${uri}/layout`, {
-      method: "PUT",
-      body: JSON.stringify(payload),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-    if (r.status == 201) {
-      const m = await r.json();
-      return new DataStore(m.uri, m.payload, m.layout);
-    }
-  } catch (error) {
-    reportError(getErrorMessage(error));
-  }
-  return null;
-}
-
-export async function fetchShareableBlob(uri: string) {
-  try {
-    const r = await fetch(`${BASE_URL}/stores/share${uri}`);
-    if (r.status == 200) {
-      return await r.blob();
+      return await r.json();
     }
   } catch (error) {
     reportError(getErrorMessage(error));

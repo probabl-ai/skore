@@ -15,16 +15,16 @@ def __quickstart():
     port : int
         Port at which to bind the UI server.
     """
-    project_name = "project.skore"
+    directory = "project.skore"
     try:
-        create_project(project_name=project_name)
+        create_project(directory=directory)
     except ProjectAlreadyExists:
         logger.info(
-            f"Project file '{project_name}' already exists. Skipping creation step."
+            f"Project file '{directory}' already exists. Skipping creation step."
         )
 
     __launch(
-        project_name="project.skore",
+        directory="project.skore",
         port=22140,
         open_browser=True,
     )

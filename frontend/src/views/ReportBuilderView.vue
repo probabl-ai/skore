@@ -1,26 +1,21 @@
 <script setup lang="ts">
 import Simplebar from "simplebar-vue";
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import { useRoute } from "vue-router";
+import { onBeforeUnmount, onMounted, ref } from "vue";
 
 import DataStoreCanvas from "@/components/DataStoreCanvas.vue";
 import DataStoreKeyList from "@/components/DataStoreKeyList.vue";
-import FileTree, { transformUrisToTree } from "@/components/FileTree.vue";
 import SectionHeader from "@/components/SectionHeader.vue";
 import SimpleButton from "@/components/SimpleButton.vue";
-import { fetchShareableBlob } from "@/services/api";
-import { saveBlob } from "@/services/utils";
-import { useReportsStore } from "@/stores/reports";
+import { useReportStore } from "@/stores/report";
 
-const route = useRoute();
-const reportsStore = useReportsStore();
+const reportStore = useReportStore();
 const isDropIndicatorVisible = ref(false);
 const editor = ref<HTMLDivElement>();
 const isInFocusMode = ref(false);
-const fileTree = computed(() => transformUrisToTree(reportsStore.reportUris));
 
 async function onShareReport() {
-  const uri = reportsStore.selectedReport?.uri;
+  /*
+  const uri = reportsStore.report?.uri;
   if (uri) {
     const shareable = await fetchShareableBlob(uri);
     if (shareable) {
@@ -30,6 +25,8 @@ async function onShareReport() {
       );
     }
   }
+  */
+  alert("Not implemented yet");
 }
 
 function onFocusMode() {
@@ -40,7 +37,7 @@ function onItemDrop(event: DragEvent) {
   isDropIndicatorVisible.value = false;
   if (event.dataTransfer) {
     const key = event.dataTransfer.getData("key");
-    reportsStore.displayKey(key);
+    reportStore.displayKey(key);
   }
 }
 
@@ -54,52 +51,20 @@ function onDragLeave(event: DragEvent) {
   }
 }
 
-function setSelectedReportUri(uriSegments: string | Array<string>) {
-  const uri = Array.isArray(uriSegments) ? uriSegments.join("/") : uriSegments;
-  reportsStore.selectedReportUri = uri;
-}
-
-watch(
-  () => route.params.segments,
-  (newSegments) => {
-    setSelectedReportUri(newSegments);
-    // relaunch the background polling to get report right now
-    reportsStore.stopBackendPolling();
-    reportsStore.startBackendPolling();
-  }
-);
-
 onMounted(() => {
-  setSelectedReportUri(route.params.segments);
-  reportsStore.startBackendPolling();
+  reportStore.startBackendPolling();
 });
 
-onBeforeUnmount(() => reportsStore.stopBackendPolling());
+onBeforeUnmount(() => reportStore.stopBackendPolling());
 </script>
 
 <template>
   <main>
-    <nav v-if="!isInFocusMode">
-      <SectionHeader title="File Manager" icon="icon-folder" />
-      <Simplebar class="file-trees" v-if="fileTree.length > 0">
-        <FileTree :nodes="fileTree" />
-      </Simplebar>
-      <div class="empty-tree" v-else>No Skore found.</div>
-    </nav>
-    <article v-if="fileTree.length > 0">
-      <div class="items" v-if="reportsStore.selectedReport && !isInFocusMode">
+    <article>
+      <div class="items" v-if="reportStore.report && !isInFocusMode">
         <SectionHeader title="Items" icon="icon-pie-chart" />
         <Simplebar class="key-list">
-          <DataStoreKeyList
-            title="Plots"
-            icon="icon-plot"
-            :keys="reportsStore.selectedReport.plotKeys"
-          />
-          <DataStoreKeyList
-            title="Info"
-            icon="icon-text"
-            :keys="reportsStore.selectedReport.infoKeys"
-          />
+          <DataStoreKeyList title="Info" icon="icon-text" :keys="Object.keys(reportStore.report)" />
         </Simplebar>
       </div>
 
@@ -119,13 +84,10 @@ onBeforeUnmount(() => reportsStore.stopBackendPolling());
         <div class="drop-indicator" :class="{ visible: isDropIndicatorVisible }"></div>
         <Transition name="fade">
           <div
-            v-if="!isDropIndicatorVisible && reportsStore.layout.length === 0"
+            v-if="!isDropIndicatorVisible && reportStore.layout.length === 0"
             class="placeholder"
           >
-            <div class="wrapper" v-if="reportsStore.selectedReportUri.length > 0">
-              No item selected yet, start by dragging one element.
-            </div>
-            <div class="wrapper" v-else>No item selected yet, start by selecting a Skore.</div>
+            <div class="wrapper">No item selected yet, start by selecting a Skore.</div>
           </div>
 
           <Simplebar class="canvas-wrapper" v-else ref="reportScrollBar">
@@ -134,7 +96,7 @@ onBeforeUnmount(() => reportsStore.stopBackendPolling());
         </Transition>
       </div>
     </article>
-    <div class="not-found" v-else-if="fileTree.length === 0">
+    <div class="not-found" v-if="reportStore.report === null">
       <div class="not-found-header">Empty workspace.</div>
       <p>No Skore has been created, this worskpace is empty.</p>
     </div>

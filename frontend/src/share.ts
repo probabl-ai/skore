@@ -5,8 +5,7 @@ import { createPinia } from "pinia";
 import { createApp } from "vue";
 
 import App from "@/ShareApp.vue";
-import { DataStore } from "@/models";
-import { useReportsStore } from "@/stores/reports";
+import { useReportStore } from "@/stores/report";
 
 export default function share() {
   const app = createApp(App);
@@ -14,7 +13,6 @@ export default function share() {
   app.mount("#app");
 
   const m = JSON.parse(document.getElementById("skore-data")?.innerText || "{}");
-  const ds = new DataStore(m.uri, m.payload, m.layout);
-  const reportsStore = useReportsStore();
-  reportsStore.setSelectedReportIfDifferent(ds);
+  const reportsStore = useReportStore();
+  reportsStore.setReport(m);
 }

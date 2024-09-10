@@ -30,6 +30,7 @@ dependencies = [
   "pydantic_numpy",
   "uvicorn",
   "rich",
+  "skops",
 ]
 
 [project.optional-dependencies]
