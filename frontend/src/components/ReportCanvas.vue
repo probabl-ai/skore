@@ -44,13 +44,14 @@ const props = defineProps({
 <template>
   <div class="canvas">
     <ReportCard
-      v-for="{ item_type, media_type, serialized, key, index } in visibleItems"
+      v-for="{ item_type, media_type, serialized, key, index, size } in visibleItems"
       :key="key"
       :title="key.toString()"
       :showButtons="props.showCardButtons"
       :can-move-up="index > 0"
       :can-move-down="index < reportStore.layout.length - 1"
-      class="canvas-element large"
+      :class="size"
+      class="canvas-element"
       @layout-changed="onLayoutChange(key.toString(), $event)"
       @position-changed="onPositionChanged(key.toString(), $event)"
       @card-removed="onCardRemoved(key.toString())"
