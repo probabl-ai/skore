@@ -60,7 +60,7 @@ onBeforeUnmount(() => reportStore.stopBackendPolling());
 
 <template>
   <main>
-    <article>
+    <article v-if="reportStore.report !== null">
       <div class="items" v-if="reportStore.report && !isInFocusMode">
         <SectionHeader title="Items" icon="icon-pie-chart" />
         <Simplebar class="key-list">
@@ -87,16 +87,15 @@ onBeforeUnmount(() => reportStore.stopBackendPolling());
             v-if="!isDropIndicatorVisible && reportStore.layout.length === 0"
             class="placeholder"
           >
-            <div class="wrapper">No item selected yet, start by selecting a Skore.</div>
+            <div class="wrapper">No item selected yet, start by dragging one element.</div>
           </div>
-
-          <Simplebar class="canvas-wrapper" v-else ref="reportScrollBar">
+          <Simplebar class="canvas-wrapper" v-else>
             <ReportCanvas />
           </Simplebar>
         </Transition>
       </div>
     </article>
-    <div class="not-found" v-if="reportStore.report === null">
+    <div class="not-found" v-else>
       <div class="not-found-header">Empty workspace.</div>
       <p>No Skore has been created, this worskpace is empty.</p>
     </div>
@@ -263,6 +262,7 @@ main {
   }
 
   .not-found {
+    height: 100vh;
     flex-direction: column;
     justify-content: center;
     background-image: var(--not-found-image);
