@@ -17,12 +17,12 @@ def create_app(project: Project | None = None) -> FastAPI:
     """FastAPI factory used to create the API to interact with `stores`."""
     app = FastAPI()
 
-    # Give the app access to the project directory
+    # Give the app access to the project
     if not project:
-        directory = Path.cwd() / "project.skore"
-        directory.mkdir(exist_ok=True)
+        project_path = Path.cwd() / "project.skore"
+        project_path.mkdir(exist_ok=True)
 
-        filesystem = FileSystem(directory=directory)
+        filesystem = FileSystem(directory=project_path)
         project = Project(filesystem)
 
     app.state.project = project
@@ -36,6 +36,14 @@ def create_app(project: Project | None = None) -> FastAPI:
         allow_headers=["*"],
     )
 
+    # Include routers from bottom to top.
+    # Include routers always after all routes have been defined/imported.
+    router = APIRouter(prefix="/api")
+    router.include_router(report_router)
+
+    # Include all sub routers.
+    app.include_router(router)
+
     # Mount frontend from the static directory.
     static_path = get_static_path()
     if static_path.exists():
@@ -48,11 +56,5 @@ def create_app(project: Project | None = None) -> FastAPI:
             ),
             name="static",
         )
-
-    # Include routers from bottom to top.
-    # Include routers always after all routes have been defined/imported.
-    router = APIRouter(prefix="/api")
-    router.include_router(report_router)
-    app.include_router(router)
 
     return app

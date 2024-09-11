@@ -4,14 +4,15 @@ import json
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Request
+from fastapi.params import Depends
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
 from skore.project import PersistedItem, Project
 from skore.ui.dependencies import get_static_path, get_templates
 
-router = APIRouter(prefix="/report")
+router = APIRouter()
 
 
 class LayoutItem(BaseModel):
@@ -26,7 +27,7 @@ def __serialize_project(project: Project) -> dict[str, PersistedItem]:
     for key in project.list_keys():
         item = project.get_item(key)
         serialized[key] = PersistedItem(
-            item_type=str(item.item_type),
+            item_type=item.item_type,
             media_type=item.media_type,
             serialized=json.loads(item.serialized),
         )
@@ -34,14 +35,14 @@ def __serialize_project(project: Project) -> dict[str, PersistedItem]:
     return serialized
 
 
-@router.get("")
+@router.get("/items")
 async def get_items(request: Request):
     """Serialize a project and send it."""
     project = request.app.state.project
     return __serialize_project(project)
 
 
-@router.post("/share")
+@router.post("/report/share")
 async def share_store(
     request: Request,
     layout: list[LayoutItem],

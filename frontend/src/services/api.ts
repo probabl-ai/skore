@@ -16,7 +16,7 @@ function reportError(message: string) {
 
 export async function fetchReport(): Promise<{ [key: string]: ReportItem } | null> {
   try {
-    const r = await fetch(`${BASE_URL}/report`);
+    const r = await fetch(`${BASE_URL}/items`);
     if (r.status == 200) {
       return await r.json();
     }
