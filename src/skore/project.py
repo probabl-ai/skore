@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from enum import StrEnum, auto
 from io import BytesIO, StringIO
 from pathlib import Path
-from typing import Any, List
+from typing import Any, TypedDict
 
 from skore.storage import Storage
 from skore.storage.filesystem import DirectoryDoesNotExist, FileSystem
@@ -32,7 +32,7 @@ class Item:
     media_type: str | None = None
 
 
-def serialize(o: Any) -> Item:
+def object_to_item(o: Any) -> Item:
     """Transform an object into an Item."""
     try:
         serialized = json.dumps(o)
@@ -99,29 +99,44 @@ def serialize(o: Any) -> Item:
     raise NotImplementedError(f"Type {o.__class__.__name__} is not supported yet.")
 
 
-def deserialize(
-    item_type: ItemType,
-    media_type: str | None,
-    serialized: str,
-) -> Item:
-    """Transform a serialized Item back to an object based on `item_type`."""
-    match item_type:
+class PersistedItem(TypedDict):
+    """Item in persisted form."""
+
+    item_type: ItemType
+    media_type: str | None
+    serialized: str
+
+
+def persist(item: Item) -> PersistedItem:
+    """Transform an Item to a PersistedItem."""
+    return {
+        "item_type": str(item.item_type),
+        "media_type": item.media_type,
+        "serialized": item.serialized,
+    }
+
+
+def unpersist(persisted_item: PersistedItem) -> Item:
+    """Transform a persisted Item back to an object based on `item_type`."""
+    match persisted_item["item_type"]:
         case ItemType.JSON:
-            raw = json.loads(serialized)
+            raw = json.loads(persisted_item["serialized"])
         case ItemType.PANDAS_DATAFRAME:
             import io
 
             import pandas
 
-            raw = pandas.read_json(io.StringIO(serialized), orient="split")
+            raw = pandas.read_json(
+                io.StringIO(persisted_item["serialized"]), orient="split"
+            )
         case ItemType.NUMPY_ARRAY:
             import numpy
 
-            raw = numpy.array(json.loads(serialized))
+            raw = numpy.array(json.loads(persisted_item["serialized"]))
         case ItemType.SKLEARN_BASE_ESTIMATOR:
             import skops.io
 
-            o = json.loads(serialized)
+            o = json.loads(persisted_item["serialized"])
             unserialized = base64.b64decode(o["skops"])
             raw = skops.io.loads(unserialized)
         case _:
@@ -129,9 +144,9 @@ def deserialize(
 
     return Item(
         raw=raw,
-        item_type=item_type,
-        serialized=serialized,
-        media_type=media_type,
+        item_type=persisted_item["item_type"],
+        serialized=persisted_item["serialized"],
+        media_type=persisted_item["media_type"],
     )
 
 
@@ -143,19 +158,12 @@ class Project:
 
     def put(self, key: str, value: Any):
         """Add a value to the Project."""
-        i = serialize(value)
-        self.put_item(key, i)
+        item = object_to_item(value)
+        self.put_item(key, item)
 
     def put_item(self, key: str, item: Item):
         """Add an Item to the Project."""
-        self.storage.setitem(
-            key,
-            {
-                "item_type": str(item.item_type),
-                "media_type": item.media_type,
-                "serialized": item.serialized,
-            },
-        )
+        self.storage.setitem(key, persist(item))
 
     def get(self, key: str) -> Any:
         """Get the value corresponding to `key` from the Project."""
@@ -163,11 +171,11 @@ class Project:
 
     def get_item(self, key: str) -> Item:
         """Add the Item corresponding to `key` from the Project."""
-        item = self.storage.getitem(key)
+        persisted_item: PersistedItem = self.storage.getitem(key)
 
-        return deserialize(**item)
+        return unpersist(persisted_item)
 
-    def list_keys(self) -> List[str]:
+    def list_keys(self) -> list[str]:
         """List all keys in the Project."""
         return list(self.storage.keys())
 

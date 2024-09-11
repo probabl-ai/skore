@@ -14,7 +14,7 @@ def cli(args: list[str]):
     parser = argparse.ArgumentParser(prog="skore")
 
     parser.add_argument(
-        "--version", action="version", version=f"%(prog)s {version("skore")}"
+        "--version", action="version", version=f"%(prog)s {version('skore')}"
     )
 
     subparsers = parser.add_subparsers(dest="subcommand")

@@ -18,25 +18,26 @@ from sklearn.ensemble import RandomForestClassifier
 from skore.project import (
     Item,
     ItemType,
+    PersistedItem,
     Project,
     ProjectDoesNotExist,
-    deserialize,
     load,
-    serialize,
+    object_to_item,
+    unpersist,
 )
 from skore.storage.non_persistent_storage import NonPersistentStorage
 
 
 def test_transform_primitive():
     o = 3
-    actual = serialize(o)
+    actual = object_to_item(o)
     expected = Item(raw=3, item_type=ItemType.JSON, serialized="3")
     assert actual == expected
 
 
 def test_transform_pandas_dataframe():
     o = pandas.DataFrame([{"key": "value"}])
-    actual = serialize(o)
+    actual = object_to_item(o)
     expected = Item(
         raw=o,
         item_type=ItemType.PANDAS_DATAFRAME,
@@ -48,7 +49,7 @@ def test_transform_pandas_dataframe():
 
 def test_transform_numpy_ndarray():
     o = numpy.array([1, 2, 3])
-    actual = serialize(o)
+    actual = object_to_item(o)
     expected = Item(
         raw=o,
         item_type=ItemType.NUMPY_ARRAY,
@@ -63,7 +64,7 @@ def test_transform_sklearn_base_baseestimator(monkeypatch):
     monkeypatch.setattr("skops.io.dumps", lambda _: b"")
 
     o = sklearn.svm.SVC()
-    actual = serialize(o)
+    actual = object_to_item(o)
     expected = Item(
         raw=o,
         item_type=ItemType.SKLEARN_BASE_ESTIMATOR,
@@ -88,7 +89,7 @@ def test_matplotlib(monkeypatch):
     fig, ax = plt.subplots()
     ax.plot([1, 2, 3, 4])
 
-    s = serialize(fig)
+    s = object_to_item(fig)
 
     assert s.media_type == "image/svg+xml"
     assert s.serialized == ""
@@ -96,23 +97,27 @@ def test_matplotlib(monkeypatch):
 
 def test_untransform_primitive():
     o = 3
-    transformed = serialize(o)
-    assert (
-        deserialize(
-            serialized=transformed.serialized,
-            item_type=transformed.item_type,
+    item = object_to_item(o)
+
+    expected = unpersist(
+        PersistedItem(
+            serialized=item.serialized,
+            item_type=item.item_type,
             media_type=None,
-        ).raw
-        == o
-    )
+        )
+    ).raw
+
+    assert o == expected
 
 
 def test_untransform_pandas_dataframe():
     o = pandas.DataFrame([{"key": "value"}])
-    item = deserialize(
-        serialized=o.to_json(orient="split"),
-        item_type=ItemType.PANDAS_DATAFRAME,
-        media_type=None,
+    item = unpersist(
+        PersistedItem(
+            serialized=o.to_json(orient="split"),
+            item_type=ItemType.PANDAS_DATAFRAME,
+            media_type=None,
+        )
     )
 
     pandas.testing.assert_frame_equal(item.raw, o)
@@ -120,10 +125,12 @@ def test_untransform_pandas_dataframe():
 
 def test_untransform_numpy_ndarray():
     o = numpy.array([1, 2, 3])
-    item = deserialize(
-        serialized=json.dumps(o.tolist()),
-        item_type=ItemType.NUMPY_ARRAY,
-        media_type=None,
+    item = unpersist(
+        PersistedItem(
+            serialized=json.dumps(o.tolist()),
+            item_type=ItemType.NUMPY_ARRAY,
+            media_type=None,
+        )
     )
 
     numpy.testing.assert_array_equal(o, item.raw)
@@ -131,8 +138,12 @@ def test_untransform_numpy_ndarray():
 
 def test_untransform_sklearn_model():
     o = sklearn.svm.SVC()
-    t = serialize(o)
-    u = deserialize(serialized=t.serialized, item_type=t.item_type, media_type=None)
+    item: Item = object_to_item(o)
+    u: Item = unpersist(
+        PersistedItem(
+            serialized=item.serialized, item_type=item.item_type, media_type=None
+        )
+    )
 
     assert isinstance(u.raw, sklearn.svm.SVC)
 
@@ -146,10 +157,12 @@ def test_untransform_matplotlib_figure(monkeypatch):
     fig, ax = plt.subplots()
     ax.plot([1, 2, 3, 4])
 
-    s = serialize(fig)
+    s: Item = object_to_item(fig)
 
-    assert deserialize(
-        serialized=s.serialized, item_type=s.item_type, media_type=s.media_type
+    assert unpersist(
+        PersistedItem(
+            serialized=s.serialized, item_type=s.item_type, media_type=s.media_type
+        )
     ) == Item(
         raw=None,
         item_type=ItemType.MEDIA,
@@ -250,7 +263,9 @@ def test_project_here(monkeypatch):
     }
     assert project.storage.content["pandas_df"] == {
         "item_type": str(ItemType.PANDAS_DATAFRAME),
-        "serialized": '{"columns":["A","B"],"index":[0,1,2],"data":[[1,4],[2,5],[3,6]]}',
+        "serialized": (
+            '{"columns":["A","B"],"index":[0,1,2],"data":[[1,4],[2,5],[3,6]]}'
+        ),
         "media_type": None,
     }
     assert project.storage.content["numpy_array"] == {
@@ -290,14 +305,14 @@ def test_project_here(monkeypatch):
 
 def test_api_get_items():
     from fastapi.testclient import TestClient
-    from skore.api import create_api_app
+    from skore.ui.app import create_app
 
     project = Project(NonPersistentStorage())
     project.put("string_item", "Hello, World!")
     project.put("int_item", 42)
 
-    client = TestClient(app=create_api_app(project))
-    response = client.get("/api/skores")
+    client = TestClient(app=create_app(project))
+    response = client.get("/api/report")
     json_response = response.json()
 
     assert response.status_code == 200

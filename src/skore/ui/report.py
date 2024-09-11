@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
-from skore.project import Project
+from skore.project import PersistedItem, Project
 from skore.ui.dependencies import get_static_path, get_templates
 
 router = APIRouter(prefix="/report")
@@ -21,15 +21,15 @@ class LayoutItem(BaseModel):
     size: str
 
 
-def __serialize_project(project: Project):
+def __serialize_project(project: Project) -> dict[str, PersistedItem]:
     serialized = {}
     for key in project.list_keys():
         item = project.get_item(key)
-        serialized[key] = {
-            "item_type": str(item.item_type),
-            "media_type": item.media_type,
-            "serialized": json.loads(item.serialized),
-        }
+        serialized[key] = PersistedItem(
+            item_type=str(item.item_type),
+            media_type=item.media_type,
+            serialized=json.loads(item.serialized),
+        )
 
     return serialized
 
