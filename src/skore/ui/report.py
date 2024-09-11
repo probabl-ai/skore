@@ -1,16 +1,24 @@
-"""The definition of API routes to list stores and get them."""
+"""The definition of API routes to list project items and get them."""
 
 import json
 from pathlib import Path
+from typing import Annotated
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
 from skore.project import Project
+from skore.ui.dependencies import get_static_path, get_templates
 
-SKORES_ROUTER = APIRouter(prefix="/skores", deprecated=True)
-STORES_ROUTER = APIRouter(prefix="/stores")
+router = APIRouter(prefix="/report")
+
+
+class LayoutItem(BaseModel):
+    """A layout item."""
+
+    key: str
+    size: str
 
 
 def __serialize_project(project: Project):
@@ -26,35 +34,26 @@ def __serialize_project(project: Project):
     return serialized
 
 
-@SKORES_ROUTER.get("")
-@SKORES_ROUTER.get("/")
+@router.get("")
 async def get_items(request: Request):
     """Serialize a project and send it."""
     project = request.app.state.project
     return __serialize_project(project)
 
 
-STATIC_FILES_PATH = (
-    Path(__file__).resolve().parent.parent.parent / "dashboard" / "static"
-)
-
-
-class LayoutItem(BaseModel):
-    """A layout item."""
-
-    key: str
-    size: str
-
-
-@SKORES_ROUTER.post("/share")
-@SKORES_ROUTER.post("/share/")
-async def share_store(request: Request, layout: list[LayoutItem]):
+@router.post("/share")
+async def share_store(
+    request: Request,
+    layout: list[LayoutItem],
+    templates: Annotated[Jinja2Templates, Depends(get_templates)],
+    static_path: Annotated[Path, Depends(get_static_path)],
+):
     """Serve an inlined shareable HTML page."""
     project = request.app.state.project
 
     # Get static assets to inject them into the report template
-    def read_asset_content(path):
-        with open(STATIC_FILES_PATH / path) as f:
+    def read_asset_content(filename: str):
+        with open(static_path / filename) as f:
             return f.read()
 
     script_content = read_asset_content("skore.umd.cjs")
@@ -69,7 +68,6 @@ async def share_store(request: Request, layout: list[LayoutItem]):
     }
 
     # Render the template and send the result
-    templates = Jinja2Templates(directory=Path(__file__).resolve().parent / "templates")
     return templates.TemplateResponse(
         request=request, name="share.html.jinja", context=context
     )

@@ -5,8 +5,8 @@ import pathlib
 from importlib.metadata import version
 
 from skore.create_project import create_project
-from skore.dashboard.dashboard import __launch
 from skore.quickstart_command import __quickstart
+from skore.ui import __launch
 
 
 def cli(args: list[str]):

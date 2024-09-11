@@ -8,8 +8,9 @@ from pathlib import Path
 import uvicorn
 
 from skore import logger
-from skore.dashboard.app import create_dashboard_app
 from skore.project import load
+
+from .app import create_app
 
 
 class ProjectNotFound(Exception):
@@ -46,7 +47,7 @@ def __launch(project_name: str | Path, port: int, open_browser: bool):
         threading.Thread(target=lambda: __open_browser(port=port)).start()
 
     project = load(project_name)
-    app = create_dashboard_app(project=project)
+    app = create_app(project=project)
 
     try:
         # TODO: check port is free

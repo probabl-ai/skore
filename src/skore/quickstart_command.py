@@ -2,7 +2,7 @@
 
 from skore import logger
 from skore.create_project import ProjectAlreadyExists, create_project
-from skore.dashboard.dashboard import __launch
+from skore.ui import __launch
 
 
 def __quickstart():

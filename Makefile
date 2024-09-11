@@ -36,11 +36,11 @@ build-frontend:
 	cd frontend && npm install
 	cd frontend && npm run build
 	# empty app static folder
-	rm -rf src/skore/dashboard/static
-	cp -a frontend/dist/. src/skore/dashboard/static
+	rm -rf src/skore/ui/static
+	cp -a frontend/dist/. src/skore/ui/static
 	# build the sharing library
 	cd frontend && npm run build:lib
-	cp -a frontend/dist/. src/skore/dashboard/static
+	cp -a frontend/dist/. src/skore/ui/static
 	# clean up
 	rm -rf frontend/dist
 

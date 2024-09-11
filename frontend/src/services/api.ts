@@ -16,7 +16,7 @@ function reportError(message: string) {
 
 export async function fetchReport(): Promise<{ [key: string]: ReportItem } | null> {
   try {
-    const r = await fetch(`${BASE_URL}/skores/`);
+    const r = await fetch(`${BASE_URL}/report`);
     if (r.status == 200) {
       return await r.json();
     }
@@ -28,7 +28,7 @@ export async function fetchReport(): Promise<{ [key: string]: ReportItem } | nul
 
 export async function fetchShareableBlob(layout: Layout) {
   try {
-    const r = await fetch(`${BASE_URL}/skores/share`, {
+    const r = await fetch(`${BASE_URL}/report/share`, {
       method: "POST",
       body: JSON.stringify(layout),
       headers: {

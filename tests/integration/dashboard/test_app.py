@@ -1,12 +1,12 @@
 import pytest
 from fastapi.testclient import TestClient
-from skore.dashboard import create_dashboard_app
+from skore.ui.app import create_app
 
 
 class TestDashboardApp:
     @pytest.fixture
     def client(self):
-        return TestClient(app=create_dashboard_app())
+        return TestClient(app=create_app())
 
     def test_frontend_index(self, client):
         response = client.get("/")
