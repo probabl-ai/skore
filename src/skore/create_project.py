@@ -79,7 +79,7 @@ class ProjectPermissionError(Exception):
     """Permissions in the directory do not allow creating a file."""
 
 
-def create_project(directory: str | Path, working_dir: Path | None = None) -> Path:
+def create_project(project_name: str | Path, working_dir: Path | None = None) -> Path:
     """Create a project file named according to `project_name`.
 
     Parameters
@@ -96,7 +96,7 @@ def create_project(directory: str | Path, working_dir: Path | None = None) -> Pa
     -------
     The project directory path
     """
-    project_path = Path(directory)
+    project_path = Path(project_name)
 
     # Remove trailing ".skore" if it exists to check the name is valid
     checked_project_name: str = project_path.name.split(".skore")[0]

@@ -15,10 +15,16 @@ if TYPE_CHECKING:
     from skore.item import Item
 
 
+class DirectoryDoesNotExist(Exception):
+    """Directory does not exist."""
+
+
 class FileSystem(Storage):
     """Persistent storage implementation over disk based on the diskcache library."""
 
-    def __init__(self, *, directory: Path | None = None):
+    def __init__(self, *, directory: Path):
+        if not directory.exists():
+            raise DirectoryDoesNotExist(f"Directory {directory} does not exist.")
         self.cache = Cache(directory)
 
     def __contains__(self, key: str) -> bool:

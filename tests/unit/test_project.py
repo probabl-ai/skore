@@ -1,17 +1,29 @@
 import base64
 import json
+import os
+import tempfile
 from io import BytesIO
+from pathlib import Path
 
 import altair
 import numpy
 import numpy.testing
 import pandas
 import pandas.testing
+import pytest
 import sklearn.svm
 from matplotlib import pyplot as plt
 from PIL import Image
 from sklearn.ensemble import RandomForestClassifier
-from skore.project import Item, ItemType, Project, deserialize, serialize
+from skore.project import (
+    Item,
+    ItemType,
+    Project,
+    ProjectDoesNotExist,
+    deserialize,
+    load,
+    serialize,
+)
 from skore.storage.non_persistent_storage import NonPersistentStorage
 
 
@@ -300,3 +312,16 @@ def test_api_get_items():
         "media_type": None,
         "serialized": 42,
     }
+
+
+def test_load(tmp_path):
+    with pytest.raises(ProjectDoesNotExist):
+        load("/empty")
+
+    # Project path must end with ".skore"
+    project_path = tmp_path.parent / (tmp_path.name + ".skore")
+    os.mkdir(project_path)
+    load(project_path)
+
+    with tempfile.TemporaryDirectory(dir=Path.cwd(), suffix=".skore") as tmp_dir:
+        load(Path(tmp_dir).stem)

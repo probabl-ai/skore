@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any, List
 
 from skore.storage import Storage
-from skore.storage.filesystem import FileSystem
+from skore.storage.filesystem import DirectoryDoesNotExist, FileSystem
 
 
 class ItemType(StrEnum):
@@ -176,9 +176,29 @@ class Project:
         self.storage.delitem(key)
 
 
-def load(directory: str | Path) -> Project:
-    """Load a Project given a project name or path."""
-    storage = FileSystem(directory=Path(directory))
-    project = Project(storage=storage)
+class ProjectDoesNotExist(Exception):
+    """Project does not exist."""
+
+
+def load(project_name: str | Path) -> Project:
+    """Load an existing Project given a project name or path."""
+    # Transform a project name to a directory path:
+    # - Resolve relative path to current working directory,
+    # - Check that the file ends with the ".skore" extension,
+    #    - If not provided, it will be automatically appended,
+    # - If project name is an absolute path, we keep that path.
+
+    path = Path(project_name).resolve()
+
+    if path.suffix != ".skore":
+        path = path.parent / (path.name + ".skore")
+
+    try:
+        storage = FileSystem(directory=Path(path))
+        project = Project(storage=storage)
+    except DirectoryDoesNotExist as e:
+        raise ProjectDoesNotExist(
+            f"Project '{path}' does not exist. Did you create it?"
+        ) from e
 
     return project
