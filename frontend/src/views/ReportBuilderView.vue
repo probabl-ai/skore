@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Simplebar from "simplebar-vue";
-import { onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 
 import ReportCanvas from "@/components/ReportCanvas.vue";
 import ReportKeyList from "@/components/ReportKeyList.vue";
@@ -14,6 +14,15 @@ const reportStore = useReportStore();
 const isDropIndicatorVisible = ref(false);
 const editor = ref<HTMLDivElement>();
 const isInFocusMode = ref(false);
+
+const unusedReportKeys = computed(() => {
+  if (reportStore.report === null) {
+    return [];
+  }
+  const allKeys = Object.keys(reportStore.report);
+  const usedKeys = reportStore.layout.map(({ key }) => key);
+  return allKeys.filter((key) => !usedKeys.includes(key));
+});
 
 async function onShareReport() {
   const shareable = await fetchShareableBlob(reportStore.layout);
@@ -63,7 +72,12 @@ onBeforeUnmount(() => reportStore.stopBackendPolling());
       <div class="items" v-if="reportStore.report && !isInFocusMode">
         <SectionHeader title="Items" icon="icon-pie-chart" />
         <Simplebar class="key-list">
-          <ReportKeyList title="Info" icon="icon-text" :keys="Object.keys(reportStore.report)" />
+          <ReportKeyList
+            title="Info"
+            icon="icon-text"
+            :keys="unusedReportKeys"
+            v-if="unusedReportKeys.length > 0"
+          />
         </Simplebar>
       </div>
 
