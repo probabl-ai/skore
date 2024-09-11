@@ -1,4 +1,6 @@
+import base64
 import json
+from io import BytesIO
 
 import altair
 import numpy
@@ -7,6 +9,7 @@ import pandas
 import pandas.testing
 import sklearn.svm
 from matplotlib import pyplot as plt
+from PIL import Image
 from sklearn.ensemble import RandomForestClassifier
 from skore.project import Item, ItemType, Project, deserialize, serialize
 from skore.storage.non_persistent_storage import NonPersistentStorage
@@ -149,7 +152,6 @@ def test_project_here(monkeypatch):
 
     monkeypatch.setattr("matplotlib.figure.Figure.savefig", savefig)
     monkeypatch.setattr("sklearn.utils.estimator_html_repr", lambda _: "")
-    monkeypatch.setattr("skops.io.dumps", lambda _: b"")
 
     project = Project(NonPersistentStorage())
     project.put("string_item", "Hello, World!")  # JSONItem
@@ -173,85 +175,105 @@ def test_project_here(monkeypatch):
     project.put("mpl_figure", fig)  # MediaItem (SVG)
 
     # Add an Altair chart
-    project.put("vega_chart", altair.Chart().mark_point())
+    altair_chart = altair.Chart().mark_point()
+    project.put("vega_chart", altair_chart)
 
     # Add a PIL Image
-    # pil_image = Image.new("RGB", (100, 100), color="red")
-    # project.put("pil_image", pil_image)  # MediaItem (PNG)
+    pil_image = Image.new("RGB", (100, 100), color="red")
+    project.put("pil_image", pil_image)  # MediaItem (PNG)
+
+    with BytesIO() as output:
+        pil_image.save(output, format="jpeg")
+        pil_image_str = base64.b64encode(output.getvalue()).decode("ascii")
 
     # Add raw bytes with media type
     # raw_bytes = b"Some raw data"
     # project.put_item("raw_data", MediaItem(raw_bytes, "application/octet-stream"))
+
+    # mybytes = b""
+    # project.put_item(
+    #     "mybytes",
+    #     Item(
+    #         raw=mybytes,
+    #         item_type=ItemType.MEDIA,
+    #         media_type="application/octet-stream",
+    #         serialized=mybytes.decode()
+    #     )
+    # )
 
     # Add a scikit-learn model
     model = RandomForestClassifier()
     model.fit(numpy.array([[1, 2], [3, 4]]), [0, 1])
     project.put("rf_model", model)  # ScikitLearnModelItem
 
-    assert project.storage.content == {
-        "string_item": {
-            "item_type": str(ItemType.JSON),
-            "serialized": '"Hello, World!"',
-            "media_type": None,
-        },
-        "int_item": {
-            "item_type": str(ItemType.JSON),
-            "serialized": "42",
-            "media_type": None,
-        },
-        "float_item": {
-            "item_type": str(ItemType.JSON),
-            "serialized": "3.14",
-            "media_type": None,
-        },
-        "bool_item": {
-            "item_type": str(ItemType.JSON),
-            "serialized": "true",
-            "media_type": None,
-        },
-        "list_item": {
-            "item_type": str(ItemType.JSON),
-            "serialized": "[1, 2, 3]",
-            "media_type": None,
-        },
-        "dict_item": {
-            "item_type": str(ItemType.JSON),
-            "serialized": '{"key": "value"}',
-            "media_type": None,
-        },
-        "pandas_df": {
-            "item_type": str(ItemType.PANDAS_DATAFRAME),
-            "serialized": '{"columns":["A","B"],"index":[0,1,2],"data":[[1,4],[2,5],[3,6]]}',
-            "media_type": None,
-        },
-        "numpy_array": {
-            "item_type": str(ItemType.NUMPY_ARRAY),
-            "serialized": "[1, 2, 3, 4, 5]",
-            "media_type": None,
-        },
-        "mpl_figure": {
-            "item_type": str(ItemType.MEDIA),
-            "serialized": "",
-            "media_type": "image/svg+xml",
-        },
-        "rf_model": {
-            "item_type": str(ItemType.SKLEARN_BASE_ESTIMATOR),
-            "serialized": '{"skops": "", "html": ""}',
-            "media_type": "text/html",
-        },
-        "vega_chart": {
-            "item_type": str(ItemType.ALTAIR_CHART),
-            "serialized": "",
-            "media_type": None,
-        },
+    assert project.storage.content["string_item"] == {
+        "item_type": str(ItemType.JSON),
+        "serialized": '"Hello, World!"',
+        "media_type": None,
+    }
+    assert project.storage.content["int_item"] == {
+        "item_type": str(ItemType.JSON),
+        "serialized": "42",
+        "media_type": None,
+    }
+    assert project.storage.content["float_item"] == {
+        "item_type": str(ItemType.JSON),
+        "serialized": "3.14",
+        "media_type": None,
+    }
+    assert project.storage.content["bool_item"] == {
+        "item_type": str(ItemType.JSON),
+        "serialized": "true",
+        "media_type": None,
+    }
+    assert project.storage.content["list_item"] == {
+        "item_type": str(ItemType.JSON),
+        "serialized": "[1, 2, 3]",
+        "media_type": None,
+    }
+    assert project.storage.content["dict_item"] == {
+        "item_type": str(ItemType.JSON),
+        "serialized": '{"key": "value"}',
+        "media_type": None,
+    }
+    assert project.storage.content["pandas_df"] == {
+        "item_type": str(ItemType.PANDAS_DATAFRAME),
+        "serialized": '{"columns":["A","B"],"index":[0,1,2],"data":[[1,4],[2,5],[3,6]]}',
+        "media_type": None,
+    }
+    assert project.storage.content["numpy_array"] == {
+        "item_type": str(ItemType.NUMPY_ARRAY),
+        "serialized": "[1, 2, 3, 4, 5]",
+        "media_type": None,
+    }
+    assert project.storage.content["mpl_figure"] == {
+        "item_type": str(ItemType.MEDIA),
+        "serialized": "",
+        "media_type": "image/svg+xml",
+    }
+    assert project.storage.content["vega_chart"] == {
+        "item_type": str(ItemType.MEDIA),
+        "serialized": json.dumps(altair_chart.to_dict()),
+        "media_type": "application/vnd.vega.v5+json",
+    }
+    assert project.storage.content["pil_image"] == {
+        "item_type": str(ItemType.MEDIA),
+        "serialized": pil_image_str,
+        "media_type": "image/jpeg",
     }
 
     assert project.get("string_item") == "Hello, World!"
     assert project.get("int_item") == 42
     assert project.get("float_item") == 3.14
-    assert project.get("bool_item")
+    assert project.get("bool_item") is True
     assert project.get("list_item") == [1, 2, 3]
     assert project.get("dict_item") == {"key": "value"}
+    pandas.testing.assert_frame_equal(project.get("pandas_df"), df)
+    numpy.testing.assert_array_equal(project.get("numpy_array"), arr)
+    assert isinstance(project.get("rf_model"), RandomForestClassifier)
+    assert project.get("mpl_figure") is None
+    assert project.get("vega_chart") is None
+    assert project.get("pil_image") is None
 
 
 def test_api_get_items():

@@ -4,7 +4,7 @@ import base64
 import json
 from dataclasses import dataclass
 from enum import StrEnum, auto
-from io import StringIO
+from io import BytesIO, StringIO
 from pathlib import Path
 from typing import Any, List
 
@@ -19,20 +19,9 @@ class ItemType(StrEnum):
     PANDAS_DATAFRAME = auto()
     NUMPY_ARRAY = auto()
     SKLEARN_BASE_ESTIMATOR = auto()
-    ALTAIR_CHART = auto()
     MEDIA = auto()
 
 
-# FIXME: attensssion parlezen à thomas experience déguelasse
-# s.put_item(
-#     "HTML",
-#     Item(
-#         serialized=markup,
-#         raw=markup,
-#         media_type="text/html",
-#         item_type=ItemType.MEDIA,
-#     ),
-# )
 @dataclass(frozen=True)
 class Item:
     """A value that is stored in a Project."""
@@ -53,6 +42,7 @@ def serialize(o: Any) -> Item:
         import matplotlib.figure
         import numpy
         import pandas
+        import PIL.Image
         import sklearn
         import skops.io
 
@@ -83,19 +73,28 @@ def serialize(o: Any) -> Item:
         if isinstance(o, altair.vegalite.v5.schema.core.TopLevelSpec):
             return Item(
                 raw=o,
-                item_type=ItemType.ALTAIR_CHART,
+                item_type=ItemType.MEDIA,
                 serialized=json.dumps(o.to_dict()),
-                media_type=None,
+                media_type="application/vnd.vega.v5+json",
             )
         if isinstance(o, matplotlib.figure.Figure):
-            output = StringIO()
-            o.savefig(output, format="svg")
-            return Item(
-                raw=o,
-                item_type=ItemType.MEDIA,
-                serialized=output.getvalue(),
-                media_type="image/svg+xml",
-            )
+            with StringIO() as output:
+                o.savefig(output, format="svg")
+                return Item(
+                    raw=o,
+                    item_type=ItemType.MEDIA,
+                    serialized=output.getvalue(),
+                    media_type="image/svg+xml",
+                )
+        if isinstance(o, PIL.Image.Image):
+            with BytesIO() as output:
+                o.save(output, format="jpeg")
+                return Item(
+                    raw=o,
+                    item_type=ItemType.MEDIA,
+                    serialized=base64.b64encode(output.getvalue()).decode("ascii"),
+                    media_type="image/jpeg",
+                )
 
     raise NotImplementedError(f"Type {o.__class__.__name__} is not supported yet.")
 
@@ -110,9 +109,11 @@ def deserialize(
         case ItemType.JSON:
             raw = json.loads(serialized)
         case ItemType.PANDAS_DATAFRAME:
+            import io
+
             import pandas
 
-            raw = pandas.read_json(serialized, orient="split")
+            raw = pandas.read_json(io.StringIO(serialized), orient="split")
         case ItemType.NUMPY_ARRAY:
             import numpy
 
@@ -123,10 +124,6 @@ def deserialize(
             o = json.loads(serialized)
             unserialized = base64.b64decode(o["skops"])
             raw = skops.io.loads(unserialized)
-        case ItemType.ALTAIR_CHART:
-            import altair
-
-            raw = altair.Chart.from_dict(json.loads(serialized))
         case _:
             raw = None
 
