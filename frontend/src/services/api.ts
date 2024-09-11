@@ -1,4 +1,4 @@
-import type { ReportItem } from "@/models";
+import type { Layout, ReportItem } from "@/models";
 
 const { protocol, hostname, port: windowPort } = window.location;
 // In the general case we expect the webapp to run at the same port as the API
@@ -19,6 +19,24 @@ export async function fetchReport(): Promise<{ [key: string]: ReportItem } | nul
     const r = await fetch(`${BASE_URL}/skores/`);
     if (r.status == 200) {
       return await r.json();
+    }
+  } catch (error) {
+    reportError(getErrorMessage(error));
+  }
+  return null;
+}
+
+export async function fetchShareableBlob(layout: Layout) {
+  try {
+    const r = await fetch(`${BASE_URL}/skores/share`, {
+      method: "POST",
+      body: JSON.stringify(layout),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    if (r.status == 200) {
+      return await r.blob();
     }
   } catch (error) {
     reportError(getErrorMessage(error));

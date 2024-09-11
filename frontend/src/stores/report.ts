@@ -124,13 +124,17 @@ export const useReportStore = defineStore("reports", () => {
    * Set the current report and populate the layout
    * @param r data received from the backend
    */
-  async function setReport(r: { [key: string]: ReportItem }) {
+  async function setReport(r: { [key: string]: ReportItem }, l: Layout = []) {
     report.value = r;
-    const rawReport = toRaw(report.value);
-    const storageKey = await sha1(JSON.stringify(rawReport));
-    const l = localStorage.getItem(storageKey);
-    if (l !== null) {
-      layout.value = JSON.parse(l);
+    if (l.length > 0) {
+      layout.value = l;
+    } else {
+      const rawReport = toRaw(report.value);
+      const storageKey = await sha1(JSON.stringify(rawReport));
+      const localLayout = localStorage.getItem(storageKey);
+      if (localLayout !== null) {
+        layout.value = JSON.parse(localLayout);
+      }
     }
   }
 

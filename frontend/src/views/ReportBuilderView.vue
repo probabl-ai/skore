@@ -6,6 +6,8 @@ import ReportCanvas from "@/components/ReportCanvas.vue";
 import ReportKeyList from "@/components/ReportKeyList.vue";
 import SectionHeader from "@/components/SectionHeader.vue";
 import SimpleButton from "@/components/SimpleButton.vue";
+import { fetchShareableBlob } from "@/services/api";
+import { saveBlob } from "@/services/utils";
 import { useReportStore } from "@/stores/report";
 
 const reportStore = useReportStore();
@@ -14,19 +16,16 @@ const editor = ref<HTMLDivElement>();
 const isInFocusMode = ref(false);
 
 async function onShareReport() {
-  /*
-  const uri = reportsStore.report?.uri;
-  if (uri) {
-    const shareable = await fetchShareableBlob(uri);
-    if (shareable) {
-      saveBlob(
-        shareable,
-        uri.replace(/\//g, (_, i) => (i === 0 ? "" : "-"))
-      );
+  const shareable = await fetchShareableBlob(reportStore.layout);
+  if (shareable) {
+    let name = prompt("Enter a name for the report");
+    if (name) {
+      if (!name.toLowerCase().endsWith(".html")) {
+        name += ".html";
+      }
+      saveBlob(shareable, name);
     }
   }
-  */
-  alert("Not implemented yet");
 }
 
 function onFocusMode() {
