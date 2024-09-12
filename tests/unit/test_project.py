@@ -19,72 +19,90 @@ from skore.project import Project, ProjectDoesNotExist, load
 
 
 @pytest.fixture
-def storage():
-    return InMemoryStorage()
+def project():
+    return Project(InMemoryStorage())
 
 
-@pytest.fixture
-def project(storage):
-    return Project(storage)
+def test_put_string_item(project):
+    project.put("string_item", "Hello, World!")  # JSONItem
+    assert project.get("string_item") == "Hello, World!"
 
 
-# FIXME: Split this test into several small test
-def test_project(monkeypatch):
+def test_put_int_item(project):
+    project.put("int_item", 42)  # JSONItem
+    assert project.get("int_item") == 42
+
+
+def test_put_float_item(project):
+    project.put("float_item", 3.14)  # JSONItem
+    assert project.get("float_item") == 3.14
+
+
+def test_put_bool_item(project):
+    project.put("bool_item", True)  # JSONItem
+    assert project.get("bool_item") is True
+
+
+def test_put_list_item(project):
+    project.put("list_item", [1, 2, 3])  # JSONItem
+    assert project.get("list_item") == [1, 2, 3]
+
+
+def test_put_dict_item(project):
+    project.put("dict_item", {"key": "value"})  # JSONItem
+    assert project.get("dict_item") == {"key": "value"}
+
+
+def test_put_pandas_df(project):
+    df = pandas.DataFrame({"A": [1, 2, 3], "B": [4, 5, 6]})
+    project.put("pandas_df", df)  # DataFrameItem
+    pandas.testing.assert_frame_equal(project.get("pandas_df"), df)
+
+
+def test_put_numpy_array(project):
+    # Add a Numpy array
+    arr = numpy.array([1, 2, 3, 4, 5])
+    project.put("numpy_array", arr)  # NumpyArrayItem
+    numpy.testing.assert_array_equal(project.get("numpy_array"), arr)
+
+
+def test_put_mpl_figure(project, monkeypatch):
+    # Add a Matplotlib figure
     def savefig(*args, **kwargs):
         return ""
 
     monkeypatch.setattr("matplotlib.figure.Figure.savefig", savefig)
-    monkeypatch.setattr("sklearn.utils.estimator_html_repr", lambda _: "")
-
-    project = Project(InMemoryStorage())
-    project.put("string_item", "Hello, World!")  # JSONItem
-    project.put("int_item", 42)  # JSONItem
-    project.put("float_item", 3.14)  # JSONItem
-    project.put("bool_item", True)  # JSONItem
-    project.put("list_item", [1, 2, 3])  # JSONItem
-    project.put("dict_item", {"key": "value"})  # JSONItem
-
-    # Add a DataFrame
-    df = pandas.DataFrame({"A": [1, 2, 3], "B": [4, 5, 6]})
-    project.put("pandas_df", df)  # DataFrameItem
-
-    # Add a Numpy array
-    arr = numpy.array([1, 2, 3, 4, 5])
-    project.put("numpy_array", arr)  # NumpyArrayItem
-
-    # Add a Matplotlib figure
     fig, ax = plt.subplots()
     ax.plot([1, 2, 3, 4])
-    project.put("mpl_figure", fig)  # MediaItem (SVG)
 
+    project.put("mpl_figure", fig)  # MediaItem (SVG)
+    assert project.get("mpl_figure") is None
+
+
+def test_put_vega_chart(project):
     # Add an Altair chart
     altair_chart = altair.Chart().mark_point()
     project.put("vega_chart", altair_chart)
+    assert project.get("vega_chart") is None
 
+
+def test_put_pil_image(project):
     # Add a PIL Image
     pil_image = Image.new("RGB", (100, 100), color="red")
-    project.put("pil_image", pil_image)  # MediaItem (PNG)
-
     with BytesIO() as output:
         pil_image.save(output, format="jpeg")
 
+    project.put("pil_image", pil_image)  # MediaItem (PNG)
+    assert project.get("pil_image") is None
+
+
+def test_put_rf_model(project, monkeypatch):
     # Add a scikit-learn model
+    monkeypatch.setattr("sklearn.utils.estimator_html_repr", lambda _: "")
     model = RandomForestClassifier()
     model.fit(numpy.array([[1, 2], [3, 4]]), [0, 1])
     project.put("rf_model", model)  # ScikitLearnModelItem
-
-    assert project.get("string_item") == "Hello, World!"
-    assert project.get("int_item") == 42
-    assert project.get("float_item") == 3.14
-    assert project.get("bool_item") is True
-    assert project.get("list_item") == [1, 2, 3]
-    assert project.get("dict_item") == {"key": "value"}
-    pandas.testing.assert_frame_equal(project.get("pandas_df"), df)
-    numpy.testing.assert_array_equal(project.get("numpy_array"), arr)
     assert isinstance(project.get("rf_model"), RandomForestClassifier)
-    assert project.get("mpl_figure") is None
-    assert project.get("vega_chart") is None
-    assert project.get("pil_image") is None
 
 
 def test_load(tmp_path):
