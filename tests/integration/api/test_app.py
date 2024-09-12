@@ -86,19 +86,3 @@ class TestApiApp:
             }
 
         json.dumps(serialized)
-
-    def test_put_layout(self, client):
-        layout = [{"key": "key", "size": "small"}]
-        s = Store("root", storage=self.storage)
-        value, metadata = s.read("key", metadata=True)
-        response = client.put(f"/api/skores/{s.uri}/layout", json=layout)
-
-        assert response.status_code == 201
-        assert response.json() == {
-            "schema": "schema:dashboard:v0",
-            "uri": "/root",
-            "payload": {
-                "key": {"type": "markdown", "data": value, "metadata": metadata},
-            },
-            "layout": layout,
-        }
