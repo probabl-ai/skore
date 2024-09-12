@@ -8,6 +8,7 @@ import pandas as pd
 import pytest
 from fastapi.testclient import TestClient
 from sklearn.linear_model import Lasso
+from skore.create_project import create_project
 from skore.project import load
 from skore.storage import FileSystem
 from skore.store import Store
@@ -37,6 +38,7 @@ class TestApiApp:
         )
 
     def test_get_report(self, tmp_path):
+        create_project(tmp_path / "test.skore")
         project = load(tmp_path / "test.skore")
         project.put("Math", "$\\sum_{x=1}^{3} x_i$")
         project.put("Array", np.random.randint(0, 1000, size=50).tolist())
