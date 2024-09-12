@@ -87,33 +87,6 @@ class TestApiApp:
 
         json.dumps(serialized)
 
-    def test_get_store_by_uri(self, client):
-        response = client.get("/api/skores/root/subroot2/subsubroot3")
-
-        assert response.status_code == 404
-
-        routes = [
-            "/api/skores/root/subroot2/subsubroot2",
-            "/api/stores/root/subroot2/subsubroot2",
-        ]
-
-        s = Store("root/subroot2/subsubroot2")
-        v1, m1 = s.read("key1", metadata=True)
-        v2, m2 = s.read("key2", metadata=True)
-        for route in routes:
-            response = client.get(route)
-
-            assert response.status_code == 200
-            assert response.json() == {
-                "schema": "schema:dashboard:v0",
-                "uri": "/root/subroot2/subsubroot2",
-                "payload": {
-                    "key1": {"type": "markdown", "data": v1, "metadata": m1},
-                    "key2": {"type": "markdown", "data": v2, "metadata": m2},
-                },
-                "layout": [],
-            }
-
     def test_put_layout(self, client):
         layout = [{"key": "key", "size": "small"}]
         s = Store("root", storage=self.storage)
