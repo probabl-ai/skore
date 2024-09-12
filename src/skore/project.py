@@ -8,8 +8,8 @@ from io import BytesIO, StringIO
 from pathlib import Path
 from typing import Any, TypedDict
 
-from skore.storage import Storage
-from skore.storage.filesystem import DirectoryDoesNotExist, FileSystem
+from skore.persistence.core import AbstractStorage
+from skore.persistence.disk import DirectoryDoesNotExist, DiskCacheStorage
 
 
 class ItemType(StrEnum):
@@ -153,7 +153,7 @@ def unpersist(persisted_item: PersistedItem) -> Item:
 class Project:
     """A project is a collection of items that are stored in a storage."""
 
-    def __init__(self, storage: Storage):
+    def __init__(self, storage: AbstractStorage):
         self.storage = storage
 
     def put(self, key: str, value: Any):
@@ -163,7 +163,8 @@ class Project:
 
     def put_item(self, key: str, item: Item):
         """Add an Item to the Project."""
-        self.storage.setitem(key, persist(item))
+        internal_key = self.__get_internal_item_key(key)
+        self.storage[internal_key] = persist(item)
 
     def get(self, key: str) -> Any:
         """Get the value corresponding to `key` from the Project."""
@@ -171,17 +172,33 @@ class Project:
 
     def get_item(self, key: str) -> Item:
         """Add the Item corresponding to `key` from the Project."""
-        persisted_item: PersistedItem = self.storage.getitem(key)
+        internal_key = self.__get_internal_item_key(key)
+        persisted_item: PersistedItem = self.storage[internal_key]
 
         return unpersist(persisted_item)
 
     def list_keys(self) -> list[str]:
         """List all keys in the Project."""
-        return list(self.storage.keys())
+        item_keys = [
+            key
+            for key in self.storage
+            if key.startswith(self.__INTERNAL_ITEM_KEY_PREFIX)
+        ]
+        unprefixed_keys = map(
+            lambda key: key.removeprefix(self.__INTERNAL_ITEM_KEY_PREFIX), item_keys
+        )
+        return list(unprefixed_keys)
 
     def delete_item(self, key: str):
         """Delete an item from the Project."""
-        self.storage.delitem(key)
+        internal_key = self.__get_internal_item_key(key)
+        del self.storage[internal_key]
+
+    __INTERNAL_ITEM_KEY_PREFIX = "item_"
+
+    def __get_internal_item_key(self, key: str) -> str:
+        """Get the internal key for an item."""
+        return f"{self.__INTERNAL_ITEM_KEY_PREFIX}{key}"
 
 
 class ProjectDoesNotExist(Exception):
@@ -202,7 +219,7 @@ def load(project_name: str | Path) -> Project:
         path = path.parent / (path.name + ".skore")
 
     try:
-        storage = FileSystem(directory=Path(path))
+        storage = DiskCacheStorage(directory=Path(path))
         project = Project(storage=storage)
     except DirectoryDoesNotExist as e:
         raise ProjectDoesNotExist(

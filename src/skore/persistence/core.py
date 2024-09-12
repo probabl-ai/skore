@@ -134,3 +134,14 @@ class AbstractStorage(ABC):
             The number of items in the storage.
         """
         return len(list(self.keys()))
+
+    def __iter__(self) -> Iterator[str]:
+        """
+        Yield the keys in the storage.
+
+        Returns
+        -------
+        Iterator[str]
+            An iterator yielding all keys in the storage.
+        """
+        return self.keys()

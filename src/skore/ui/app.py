@@ -6,8 +6,8 @@ from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from skore.persistence.disk import DiskCacheStorage
 from skore.project import Project
-from skore.storage.filesystem import FileSystem
 
 from .dependencies import get_static_path
 from .report import router as report_router
@@ -22,8 +22,8 @@ def create_app(project: Project | None = None) -> FastAPI:
         project_path = Path.cwd() / "project.skore"
         project_path.mkdir(exist_ok=True)
 
-        filesystem = FileSystem(directory=project_path)
-        project = Project(filesystem)
+        storage = DiskCacheStorage(directory=project_path)
+        project = Project(storage)
 
     app.state.project = project
 

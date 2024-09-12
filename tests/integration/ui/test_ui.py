@@ -1,13 +1,13 @@
 import pytest
 from fastapi.testclient import TestClient
+from skore.persistence.memory import InMemoryStorage
 from skore.project import Project
-from skore.storage.non_persistent_storage import NonPersistentStorage
 from skore.ui.app import create_app
 
 
 @pytest.fixture
 def storage():
-    return NonPersistentStorage()
+    return InMemoryStorage()
 
 
 @pytest.fixture

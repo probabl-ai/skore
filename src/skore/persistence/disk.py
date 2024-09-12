@@ -8,6 +8,10 @@ from diskcache import Cache
 from .core import AbstractStorage
 
 
+class DirectoryDoesNotExist(Exception):
+    """Directory does not exist."""
+
+
 class DiskCacheStorage(AbstractStorage):
     """
     Disk-based storage implementation using diskcache.
@@ -36,6 +40,8 @@ class DiskCacheStorage(AbstractStorage):
         directory : Path
             The directory path where the cache will be stored.
         """
+        if not directory.exists():
+            raise DirectoryDoesNotExist(f"Directory {directory} does not exist.")
         self.storage = Cache(directory)
 
     def __getitem__(self, key: str) -> Any:
