@@ -11,7 +11,7 @@ class PandasDataFrameItem:
 
     @cached_property
     def dataframe(self) -> pandas.DataFrame:
-        return pandas.DataFrame.from_dict(self.dataframe_dict, orient="split")
+        return pandas.DataFrame.from_dict(self.dataframe_dict, orient="tight")
 
     @property
     def __dict__(self):
@@ -19,7 +19,7 @@ class PandasDataFrameItem:
 
     @classmethod
     def factory(cls, dataframe: pandas.DataFrame) -> PandasDataFrameItem:
-        instance = cls(dataframe.to_dict(orient="split"))
+        instance = cls(dataframe.to_dict(orient="tight"))
 
         # add dataframe as cached property
         instance.dataframe = dataframe

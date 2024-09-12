@@ -22,4 +22,4 @@ class PrimitiveItem:
 
     @classmethod
     def factory(cls, primitive: Primitive) -> PrimitiveItem:
-        return cls(primitive=primitive)
+        return cls(primitive)
