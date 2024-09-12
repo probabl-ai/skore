@@ -37,11 +37,7 @@ jobs:
         run: make build-frontend
       - name: Lint with pre-commit
         run: |
-          ls -la .
           pre-commit run --all-files
-      - name: pre-commit errors
-        if: always()
-        run: cat /home/runner/.cache/pre-commit/pre-commit.log
       - name: Test with pytest
         timeout-minutes: 5
         run: |
