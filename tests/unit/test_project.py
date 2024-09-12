@@ -312,7 +312,7 @@ def test_api_get_items():
     project.put("int_item", 42)
 
     client = TestClient(app=create_app(project))
-    response = client.get("/api/report")
+    response = client.get("/api/items")
     json_response = response.json()
 
     assert response.status_code == 200
