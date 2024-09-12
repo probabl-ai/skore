@@ -45,6 +45,7 @@ def create_app(project: Project | None = None) -> FastAPI:
     app.include_router(router)
 
     # Mount frontend from the static directory.
+    # Should be after the API routes to avoid shadowing previous routes.
     static_path = get_static_path()
     if static_path.exists():
         app.mount(
