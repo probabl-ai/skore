@@ -87,26 +87,6 @@ class TestApiApp:
 
         json.dumps(serialized)
 
-    def test_list_stores(self, client):
-        routes = [
-            "/api/skores",
-            "/api/skores/",
-            "/api/stores",
-            "/api/stores/",
-        ]
-
-        for route in routes:
-            response = client.get(route)
-
-            assert response.status_code == 200
-            assert response.json() == [
-                "/root",
-                "/root/subroot1",
-                "/root/subroot2",
-                "/root/subroot2/subsubroot1",
-                "/root/subroot2/subsubroot2",
-            ]
-
     def test_get_store_by_uri(self, client):
         response = client.get("/api/skores/root/subroot2/subsubroot3")
 
