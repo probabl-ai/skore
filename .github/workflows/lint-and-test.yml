@@ -11,7 +11,8 @@ permissions:
 
 jobs:
   lint-and-test:
-    runs-on: ubuntu-latest
+    runs-on:
+      labels: arc-runner-set
 
     steps:
       - uses: actions/checkout@v4
