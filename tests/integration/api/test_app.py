@@ -9,16 +9,15 @@ import pytest
 from fastapi.testclient import TestClient
 from sklearn.linear_model import Lasso
 from skore.create_project import create_project
-from skore.project import load
+from skore.project import Project, load
 from skore.storage import FileSystem
-from skore.store import Store
 from skore.ui.app import create_app
 
 
 class TestApiApp:
     @pytest.fixture
     def client(self):
-        return TestClient(app=create_app())
+        return TestClient(app=create_app(Project(self.storage)))
 
     @pytest.fixture(autouse=True)
     def setup(self, monkeypatch, tmp_path):
@@ -26,16 +25,12 @@ class TestApiApp:
 
         self.storage = FileSystem(directory=tmp_path)
 
-        Store("root", storage=self.storage).insert("key", "value")
-        Store("root/subroot1", storage=self.storage).insert("key", "value")
-        Store("root/subroot2", storage=self.storage).insert("key", "value")
-        Store("root/subroot2/subsubroot1", storage=self.storage).insert("key", "value")
-        Store("root/subroot2/subsubroot2", storage=self.storage).insert(
-            "key1", "value1"
-        )
-        Store("root/subroot2/subsubroot2", storage=self.storage).insert(
-            "key2", "value2"
-        )
+        Project(self.storage).put("root/key", "value")
+        Project(self.storage).put("root/subroot1/key", "value")
+        Project(self.storage).put("root/subroot2/key", "value")
+        Project(self.storage).put("root/subroot2/subsubroot1/key", "value")
+        Project(self.storage).put("root/subroot2/subsubroot2/key1", "value1")
+        Project(self.storage).put("root/subroot2/subsubroot2/key2", "value2")
 
     def test_get_report(self, tmp_path):
         create_project(tmp_path / "test.skore")
