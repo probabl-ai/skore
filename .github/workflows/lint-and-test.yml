@@ -29,7 +29,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e . -r requirements.txt -r requirements-test.txt
       - name: Install packages
-        run: sudo apt-get install -y make
+        run: sudo apt-get install -y make git
       - name: Build frontend and share library
         shell: bash
         run: make build-frontend
