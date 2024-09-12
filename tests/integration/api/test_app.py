@@ -8,16 +8,16 @@ import pandas as pd
 import pytest
 from fastapi.testclient import TestClient
 from sklearn.linear_model import Lasso
-from skore.api import create_api_app
 from skore.project import load
 from skore.storage import FileSystem
 from skore.store import Store
+from skore.ui.app import create_app
 
 
 class TestApiApp:
     @pytest.fixture
     def client(self):
-        return TestClient(app=create_api_app())
+        return TestClient(app=create_app())
 
     @pytest.fixture(autouse=True)
     def setup(self, monkeypatch, tmp_path):
@@ -51,7 +51,8 @@ class TestApiApp:
 
             Returns
             -------
-            A pandas DataFrame with columns 'id', 'date', 'random_string', and 'random_float'.
+            A pandas DataFrame with columns 'id', 'date', 'random_string',
+            and 'random_float'.
             """
             data = []
             start_date = datetime(2023, 1, 1)
