@@ -41,7 +41,9 @@ def __launch(project_name: str | Path, port: int, open_browser: bool):
     A tuple with the dashboard and the project directory path if succeeded,
     None if failed
     """
-    logger.info(f"Running dashboard from '{project_name}' at URL http://localhost:{port}")
+    logger.info(
+        f"Running dashboard from '{project_name}' at URL http://localhost:{port}"
+    )
 
     if open_browser:
         threading.Thread(target=lambda: __open_browser(port=port)).start()
