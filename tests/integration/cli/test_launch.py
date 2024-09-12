@@ -5,6 +5,7 @@ from contextlib import contextmanager
 from time import monotonic
 
 import httpx
+from skore.create_project import create_project
 
 
 @contextmanager
@@ -27,9 +28,12 @@ def test_launch(tmp_path):
     # Limit time of test to make sure it doesn't run forever
     MAX_TIME = 10  # seconds
 
+    project_path = tmp_path / "project.skore"
+    create_project(project_path)
     with terminate(
         subprocess.Popen(
-            f"python -m skore launch {tmp_path} --no-open-browser --port {PORT}".split()
+            f"""python -m skore launch {project_path}
+            --no-open-browser --port {PORT}""".split()
         )
     ):
         start = monotonic()
