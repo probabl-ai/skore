@@ -1,13 +1,19 @@
 import { defineStore } from "pinia";
-import { ref, shallowRef, toRaw } from "vue";
+import { ref, shallowRef } from "vue";
 
-import { type KeyLayoutSize, type KeyMoveDirection, type Layout, type ReportItem } from "@/models";
-import { fetchReport } from "@/services/api";
-import { poll, sha1, swapItemsInArray } from "@/services/utils";
+import {
+  type KeyLayoutSize,
+  type KeyMoveDirection,
+  type Layout,
+  type Report,
+  type ReportItem,
+} from "@/models";
+import { fetchReport, putLayout } from "@/services/api";
+import { poll, swapItemsInArray } from "@/services/utils";
 
 export const useReportStore = defineStore("reports", () => {
   // this object is not deeply reactive as it may be very large
-  const report = shallowRef<{ [key: string]: ReportItem } | null>(null);
+  const items = shallowRef<{ [key: string]: ReportItem } | null>(null);
   const layout = ref<Layout>([]);
 
   /**
@@ -108,15 +114,13 @@ export const useReportStore = defineStore("reports", () => {
 
   /**
    * Send new layout to backend
-   * ⚠️ temporary save to the local storage
-   * until backend accepts to store layouts
    */
   async function persistLayout() {
-    if (report.value && layout.value) {
-      const rawReport = toRaw(report.value);
-      const rawLayout = toRaw(layout.value);
-      const storageKey = await sha1(JSON.stringify(rawReport));
-      localStorage.setItem(storageKey, JSON.stringify(rawLayout));
+    if (items.value && layout.value) {
+      const r = await putLayout(layout.value);
+      if (r) {
+        setReport(r);
+      }
     }
   }
 
@@ -124,23 +128,14 @@ export const useReportStore = defineStore("reports", () => {
    * Set the current report and populate the layout
    * @param r data received from the backend
    */
-  async function setReport(r: { [key: string]: ReportItem }, l: Layout = []) {
-    report.value = r;
-    if (l.length > 0) {
-      layout.value = l;
-    } else {
-      const rawReport = toRaw(report.value);
-      const storageKey = await sha1(JSON.stringify(rawReport));
-      const localLayout = localStorage.getItem(storageKey);
-      if (localLayout !== null) {
-        layout.value = JSON.parse(localLayout);
-      }
-    }
+  async function setReport(r: Report) {
+    items.value = r.items;
+    layout.value = r.layout;
   }
 
   return {
     layout,
-    report,
+    items,
     displayKey,
     hideKey,
     setKeyLayoutSize,

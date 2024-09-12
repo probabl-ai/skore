@@ -13,10 +13,10 @@ import { computed } from "vue";
 const reportStore = useReportStore();
 
 const visibleItems = computed(() => {
-  if (reportStore.report !== null) {
+  if (reportStore.items !== null) {
     return reportStore.layout.map((value, index) => ({
       ...value,
-      ...reportStore.report![value.key],
+      ...reportStore.items![value.key],
       index,
     }));
   }
@@ -51,8 +51,8 @@ function unserializeVegaSpec(serialized: string) {
 }
 
 function getItemSubtitle(key: string) {
-  if (reportStore.report) {
-    const item = reportStore.report[key];
+  if (reportStore.items) {
+    const item = reportStore.items[key];
     if (item) {
       const now = new Date();
       return `Created ${formatDistance(item.created_at, now)} ago, updated ${formatDistance(item.updated_at, now)} ago`;

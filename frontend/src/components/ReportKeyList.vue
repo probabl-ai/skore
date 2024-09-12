@@ -7,10 +7,10 @@ const reportsStore = useReportStore();
 const props = defineProps<{ icon: string; title: string; keys: string[] }>();
 
 function getMetadata(key: string) {
-  if (!reportsStore.report) {
+  if (!reportsStore.items) {
     return undefined;
   }
-  const item = reportsStore.report[key];
+  const item = reportsStore.items[key];
   return {
     created_at: item.created_at,
     updated_at: item.updated_at,

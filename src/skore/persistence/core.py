@@ -90,24 +90,6 @@ class AbstractStorage(ABC):
             An iterator yielding all (key, value) pairs in the storage.
         """
 
-    def __missing__(self, key: str) -> Any:
-        """
-        Return None if the item for the specified key is not found.
-
-        This method is called by __getitem__ when the key is not found.
-
-        Parameters
-        ----------
-        key : str
-            The key that was not found in the storage.
-
-        Returns
-        -------
-        Any
-            Always returns None.
-        """
-        return None
-
     def __contains__(self, key: str) -> bool:
         """
         Return True if the storage has the specified key, else False.

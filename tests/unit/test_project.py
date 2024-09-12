@@ -13,6 +13,7 @@ import pytest
 from matplotlib import pyplot as plt
 from PIL import Image
 from sklearn.ensemble import RandomForestClassifier
+from skore.layout import LayoutItem, LayoutItemSize
 from skore.persistence.memory import InMemoryStorage
 from skore.project import Project, ProjectDoesNotExist, load
 
@@ -153,3 +154,13 @@ def test_item_metadata():
     project.put("key", "world")
     item = project.get_item("key")
     assert item.updated_at > previous_updated_at
+
+
+def test_report_layout(project):
+    layout = [
+        LayoutItem(key="key1", size=LayoutItemSize.LARGE),
+        LayoutItem(key="key2", size=LayoutItemSize.SMALL),
+    ]
+
+    project.put_report_layout(layout)
+    assert project.get_report_layout() == layout

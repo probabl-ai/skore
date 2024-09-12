@@ -35,7 +35,7 @@ def test_get_items(client, project):
     response = client.get("/api/items")
 
     assert response.status_code == 200
-    assert response.json() == {}
+    assert response.json() == {"items": {}, "layout": []}
 
     project.put("test", "test")
     item = project.get_item("test")
@@ -43,13 +43,16 @@ def test_get_items(client, project):
     response = client.get("/api/items")
     assert response.status_code == 200
     assert response.json() == {
-        "test": {
-            "item_type": item.item_type,
-            "media_type": item.media_type,
-            "serialized": "test",
-            "updated_at": item.updated_at.isoformat(),
-            "created_at": item.created_at.isoformat(),
-        }
+        "layout": [],
+        "items": {
+            "test": {
+                "item_type": item.item_type,
+                "media_type": item.media_type,
+                "serialized": "test",
+                "updated_at": item.updated_at.isoformat(),
+                "created_at": item.created_at.isoformat(),
+            }
+        },
     }
 
 
@@ -59,3 +62,8 @@ def test_share_report(client, project):
     response = client.post("/api/report/share", json=[{"key": "test", "size": "large"}])
     assert response.status_code == 200
     assert b"<!DOCTYPE html>" in response.content
+
+
+def test_put_report_layout(client, project):
+    response = client.put("/api/report/layout", json=[{"key": "test", "size": "large"}])
+    assert response.status_code == 201

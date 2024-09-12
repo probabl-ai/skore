@@ -9,6 +9,7 @@ from io import BytesIO, StringIO
 from pathlib import Path
 from typing import Any, TypedDict
 
+from skore.layout import Layout
 from skore.persistence.core import AbstractStorage
 from skore.persistence.disk import DirectoryDoesNotExist, DiskCacheStorage
 
@@ -213,6 +214,16 @@ class Project:
     def __get_internal_item_key(self, key: str) -> str:
         """Get the internal key for an item."""
         return f"{self.__INTERNAL_ITEM_KEY_PREFIX}{key}"
+
+    __INTERNAL_REPORT_LAYOUT_PREFIX = "layout_"
+
+    def put_report_layout(self, layout: Layout):
+        """Add a report layout to the Project."""
+        self.storage[self.__INTERNAL_REPORT_LAYOUT_PREFIX] = layout
+
+    def get_report_layout(self) -> Layout:
+        """Get the report layout corresponding to `key` from the Project."""
+        return self.storage[self.__INTERNAL_REPORT_LAYOUT_PREFIX]
 
 
 class ProjectDoesNotExist(Exception):

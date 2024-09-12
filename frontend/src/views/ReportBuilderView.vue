@@ -16,10 +16,10 @@ const editor = ref<HTMLDivElement>();
 const isInFocusMode = ref(false);
 
 const unusedReportKeys = computed(() => {
-  if (reportStore.report === null) {
+  if (reportStore.items === null) {
     return [];
   }
-  const allKeys = Object.keys(reportStore.report);
+  const allKeys = Object.keys(reportStore.items);
   const usedKeys = reportStore.layout.map(({ key }) => key);
   return allKeys.filter((key) => !usedKeys.includes(key));
 });
@@ -68,8 +68,8 @@ onBeforeUnmount(() => reportStore.stopBackendPolling());
 
 <template>
   <main>
-    <article v-if="reportStore.report !== null">
-      <div class="items" v-if="reportStore.report && !isInFocusMode">
+    <article v-if="reportStore.items !== null">
+      <div class="items" v-if="reportStore.items && !isInFocusMode">
         <SectionHeader title="Items" icon="icon-pie-chart" />
         <Simplebar class="key-list">
           <ReportKeyList

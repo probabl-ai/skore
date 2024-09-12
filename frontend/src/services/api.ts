@@ -1,4 +1,4 @@
-import type { Layout, ReportItem } from "@/models";
+import type { Layout, Report } from "@/models";
 
 const { protocol, hostname, port: windowPort } = window.location;
 // In the general case we expect the webapp to run at the same port as the API
@@ -14,10 +14,28 @@ function reportError(message: string) {
   console.error(message);
 }
 
-export async function fetchReport(): Promise<{ [key: string]: ReportItem } | null> {
+export async function fetchReport(): Promise<Report | null> {
   try {
     const r = await fetch(`${BASE_URL}/items`);
     if (r.status == 200) {
+      return await r.json();
+    }
+  } catch (error) {
+    reportError(getErrorMessage(error));
+  }
+  return null;
+}
+
+export async function putLayout(payload: Layout): Promise<Report | null> {
+  try {
+    const r = await fetch(`${BASE_URL}/report/layout`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    if (r.status == 201) {
       return await r.json();
     }
   } catch (error) {

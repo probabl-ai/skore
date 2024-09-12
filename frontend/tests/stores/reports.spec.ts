@@ -5,25 +5,28 @@ import { setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/services/api", () => {
-  const fetchReport = vi.fn().mockImplementation(() => { });
+  const fetchReport = vi.fn().mockImplementation(() => {});
   return { fetchReport };
 });
 
 function makeFakeReport() {
   return {
-    Any: {
-      item_type: "json",
-      media_type: null,
-      serialized: { k1: "v1" },
-      updated_at: "epoch",
-      created_at: "epoch",
-    },
-    Array: {
-      item_type: "json",
-      media_type: null,
-      serialized: [1, 2, 3],
-      updated_at: "epoch",
-      created_at: "epoch",
+    layout: [],
+    items: {
+      Any: {
+        item_type: "json",
+        media_type: null,
+        serialized: { k1: "v1" },
+        updated_at: "epoch",
+        created_at: "epoch",
+      },
+      Array: {
+        item_type: "json",
+        media_type: null,
+        serialized: [1, 2, 3],
+        updated_at: "epoch",
+        created_at: "epoch",
+      },
     },
   };
 }

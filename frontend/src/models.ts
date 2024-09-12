@@ -11,4 +11,9 @@ export interface ReportItem {
   created_at: string;
 }
 
+export interface Report {
+  items: { [key: string]: ReportItem };
+  layout: Layout;
+}
+
 export type SupportedImageMimeType = "image/svg+xml" | "image/png" | "image/jpeg" | "image/webp";

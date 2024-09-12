@@ -15,5 +15,5 @@ export default async function share(layout: Layout) {
 
   const m = JSON.parse(document.getElementById("project-data")?.innerText || "{}");
   const reportsStore = useReportStore();
-  await reportsStore.setReport(m, layout);
+  await reportsStore.setReport(m);
 }
