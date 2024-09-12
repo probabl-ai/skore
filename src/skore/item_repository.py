@@ -1,6 +1,10 @@
 import typing
 from datetime import UTC, datetime
-from functools import singledispatchmethod
+from functools import cached_property, singledispatchmethod
+
+from altair.vegalite.v5.schema.core import TopLevelSpec as Altair
+from matplotlib.figure import Figure as Matplotlib
+from PIL.Image import Image as Pillow
 
 Item = PrimitiveItem | SklearnBaseEstimatorItem
 Metadata = dict[str, str]
@@ -34,93 +38,105 @@ class ItemRepository:
         return item_class(**item)
 
     def put_item(self, key, item: Item) -> None:
+        now = datetime.now(tz=UTC).isoformat()
+
         self.storage.setitem(
             key,
             {
                 "item_class_name": item.__class__.__name__,
                 "item": vars(item),
+                "created_at": now,
+                "updated_at": now,
             },
         )
 
 
 class PrimitiveItem:
-    def __init__(self, primitive: Primitive, metadata: Metadata):
+    def __init__(self, primitive: Primitive, /):
         self.primitive = primitive
-        self.metadata = metadata
 
     @classmethod
     def factory(cls, primitive: Primitive) -> PrimitiveItem:
-        now = datetime.now(tz=UTC).isoformat()
-        metadata = {
-            "created_at": now,
-            "updated_at": now,
-        }
-
-        return cls(primitive=primitive, metadata=metadata)
+        return cls(primitive=primitive)
 
 
 class PandasDataFrameItem:
-    def __init__(self, dataframe_dict: dict, metadata: Metadata):
+    def __init__(self, dataframe_dict: dict, /):
         self.dataframe_dict = dataframe_dict
-        self.metadata = metadata
+
+    @cached_property
+    def dataframe(self) -> pandas.DataFrame:
+        return pandas.DataFrame.from_dict(self.dataframe_dict, orient="split")
+
+    @property
+    def __dict__(self):
+        return {"dataframe_dict": self.dataframe_dict}
 
     @classmethod
     def factory(cls, dataframe: pandas.DataFrame) -> PandasDataFrameItem:
-        now = datetime.now(tz=UTC).isoformat()
-        dataframe_dict = dataframe.to_dict(orient="split")
-        metadata = {
-            "created_at": now,
-            "updated_at": now,
-        }
+        instance = cls(dataframe.to_dict(orient="split"))
 
-        return cls(dataframe_dict=dataframe_dict, metadata=metadata)
+        # add dataframe as cached property
+        instance.dataframe = dataframe
+
+        return instance
 
 
 class NumpyArrayItem:
-    def __init__(self, array_list: list, metadata: Metadata):
+    def __init__(self, array_list: list, /):
         self.array_list = array_list
-        self.metadata = metadata
+
+    @cached_property
+    def array(self) -> numpy.ndarray:
+        return numpy.asarray(self.array_list)
+
+    @property
+    def __dict__(self):
+        return {"array_list": self.array_list}
 
     @classmethod
     def factory(cls, array: numpy.ndarray) -> NumpyArrayItem:
-        now = datetime.now(tz=UTC).isoformat()
-        array_list = array.tolist()
-        metadata = {
-            "created_at": now,
-            "updated_at": now,
-        }
+        instance = cls(array.tolist())
 
-        return cls(array_list=array_list, metadata=metadata)
+        # add array as cached property
+        instance.array = array
+
+        return instance
 
 
 class SklearnBaseEstimatorItem:
-    def __init__(self, estimator_skops, estimator_html_repr, metadata: Metadata):
+    def __init__(self, estimator_skops, estimator_html_repr):
         self.estimator_skops = estimator_skops
         self.estimator_html_repr = estimator_html_repr
-        self.metadata = metadata
+
+    @cached_property
+    def estimator(self) -> sklearn.base.BaseEstimator:
+        return sklearn.io.loads(self.estimator_skops)
+
+    @property
+    def __dict__(self):
+        return {
+            "estimator_skops": self.estimator_skops,
+            "estimator_html_repr": self.estimator_html_repr,
+        }
 
     @classmethod
     def factory(cls, estimator: sklearn.base.BaseEstimator) -> SklearnBaseEstimatorItem:
-        now = datetime.now(tz=UTC).isoformat()
-        estimator_skops = skops.io.dumps(estimator)
-        estimator_html_repr = sklearn.utils.estimator_html_repr(estimator)
-        now = datetime.now(tz=UTC).isoformat()
-        metadata = {
-            "created_at": now,
-            "updated_at": now,
-        }
-
-        return cls(
-            estimator_skops=estimator_skops,
-            estimator_html_repr=estimator_html_repr,
-            metadata=metadata,
+        instance = cls(
+            skops.io.dumps(estimator),
+            sklearn.utils.estimator_html_repr(estimator)
         )
+
+        # add estimator as cached property
+        instance.estimator = estimator
+
+        return instance
 
 
 Media = typing.Union[
-    altair.vegalite.v5.schema.core.TopLevelSpec,
-    matplotlib.figure.Figure,
-    PIL.Image.Image,
+    Altair,
+    Matplotlib,
+    Pillow,
     str,
     bytes,
 ]
@@ -132,22 +148,11 @@ class MediaItem:
         media_bytes: bytes,
         media_encoding: str,
         media_type: str,
-        metadata: Metadata,
     ):
         self.media_bytes = media_bytes
         self.media_encoding = media_encoding
         self.media_type = media_type
-        self.metadata = metadata
 
-    @staticmethod
-    def __metadata():
-        now = datetime.now(tz=UTC).isoformat()
-        metadata = {
-            "created_at": now,
-            "updated_at": now,
-        }
-
-        return metadata
 
     @singledispatchmethod
     @classmethod
@@ -166,7 +171,6 @@ class MediaItem:
             media_bytes=media,
             media_encoding=media_type,
             media_type=media_type,
-            metadata=MediaItem.__metadata(),
         )
 
     @factory.register(str)
@@ -178,26 +182,22 @@ class MediaItem:
             media_bytes=media_bytes,
             media_encoding="utf-8",
             media_type=media_type,
-            metadata=MediaItem.__metadata(),
         )
 
-    @factory.register(altair.vegalite.v5.schema.core.TopLevelSpec)
+    @factory.register(Altair)
     @classmethod
-    def factory_altair(
-        cls, media: altair.vegalite.v5.schema.core.TopLevelSpec
-    ) -> MediaItem:
+    def factory_altair(cls, media: Altair) -> MediaItem:
         media_bytes = media.to_json().encode("utf-8")
 
         return cls(
             media_bytes=media_bytes,
             media_encoding="utf-8",
             media_type="application/vnd.vega.v5+json",
-            metadata=MediaItem.__metadata(),
         )
 
-    @factory.register(matplotlib.figure.Figure)
+    @factory.register(Matplotlib)
     @classmethod
-    def factory_matplotlib(cls, media: matplotlib.figure.Figure) -> MediaItem:
+    def factory_matplotlib(cls, media: Matplotlib) -> MediaItem:
         with BytesIO() as stream:
             media.savefig(stream, format="svg")
             media_bytes = stream.get_value()
@@ -206,12 +206,11 @@ class MediaItem:
                 media_bytes=media_bytes,
                 media_encoding="utf-8",
                 media_type="image/svg+xml",
-                metadata=MediaItem.__metadata(),
             )
 
-    @factory.register(PIL.Image.Image)
+    @factory.register(Pillow)
     @classmethod
-    def factory_pil(cls, media: PIL.Image.Image) -> MediaItem:
+    def factory_pillow(cls, media: Pillow) -> MediaItem:
         with BytesIO() as stream:
             media.save(stream, format="jpeg")
             media_bytes = stream.get_value()
@@ -220,7 +219,6 @@ class MediaItem:
                 media_bytes=media_bytes,
                 media_encoding="utf-8",
                 media_type="image/jpeg",
-                metadata=MediaItem.__metadata(),
             )
 
 
