@@ -38,10 +38,18 @@ def test_get_items(client, project):
     assert response.json() == {}
 
     project.put("test", "test")
+    item = project.get_item("test")
+
     response = client.get("/api/items")
     assert response.status_code == 200
     assert response.json() == {
-        "test": {"item_type": "json", "media_type": None, "serialized": "test"}
+        "test": {
+            "item_type": item.item_type,
+            "media_type": item.media_type,
+            "serialized": "test",
+            "updated_at": item.updated_at.isoformat(),
+            "created_at": item.created_at.isoformat(),
+        }
     }
 
 

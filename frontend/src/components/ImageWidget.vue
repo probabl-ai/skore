@@ -1,7 +1,7 @@
 <script setup lang="tsx">
 import { computed } from "vue";
 
-import { type SupportedImageMimeType } from "@/models";
+import type { SupportedImageMimeType } from "@/models";
 
 interface ImageWidgetProps {
   base64Src: string;

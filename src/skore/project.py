@@ -3,6 +3,7 @@
 import base64
 import json
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from enum import StrEnum, auto
 from io import BytesIO, StringIO
 from pathlib import Path
@@ -30,6 +31,8 @@ class Item:
     raw: Any
     item_type: ItemType
     media_type: str | None = None
+    updated_at: datetime | None = None
+    created_at: datetime | None = None
 
 
 def object_to_item(o: Any) -> Item:
@@ -105,14 +108,18 @@ class PersistedItem(TypedDict):
     item_type: ItemType
     media_type: str | None
     serialized: str
+    created_at: str  # ISO 8601 datetime
+    updated_at: str  # ISO 8601 datetime
 
 
-def persist(item: Item) -> PersistedItem:
+def persist(item: Item, updated_at: datetime, created_at: datetime) -> PersistedItem:
     """Transform an Item to a PersistedItem."""
     return {
         "item_type": str(item.item_type),
         "media_type": item.media_type,
         "serialized": item.serialized,
+        "created_at": created_at.isoformat(),
+        "updated_at": updated_at.isoformat(),
     }
 
 
@@ -147,6 +154,8 @@ def unpersist(persisted_item: PersistedItem) -> Item:
         item_type=persisted_item["item_type"],
         serialized=persisted_item["serialized"],
         media_type=persisted_item["media_type"],
+        created_at=datetime.fromisoformat(persisted_item["created_at"]),
+        updated_at=datetime.fromisoformat(persisted_item["updated_at"]),
     )
 
 
@@ -164,7 +173,12 @@ class Project:
     def put_item(self, key: str, item: Item):
         """Add an Item to the Project."""
         internal_key = self.__get_internal_item_key(key)
-        self.storage[internal_key] = persist(item)
+
+        updated_at = datetime.now(tz=timezone.utc)
+        if item.created_at is None:
+            created_at = updated_at
+
+        self.storage[internal_key] = persist(item, updated_at, created_at)
 
     def get(self, key: str) -> Any:
         """Get the value corresponding to `key` from the Project."""

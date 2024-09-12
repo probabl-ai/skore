@@ -37,6 +37,8 @@ def __serialize_project(project: Project) -> dict[str, PersistedItem]:
             item_type=item.item_type,
             media_type=item.media_type,
             serialized=data,
+            updated_at=item.updated_at.isoformat(),
+            created_at=item.created_at.isoformat(),
         )
 
     return serialized

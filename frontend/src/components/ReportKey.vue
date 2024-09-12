@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 
-import { type ReportItemMetadata } from "@/models";
 import { useReportStore } from "@/stores/report";
 import { formatDistance } from "date-fns";
 
-const props = defineProps<{ itemKey: string; metadata?: ReportItemMetadata }>();
+const props = defineProps<{
+  itemKey: string;
+  metadata?: { created_at: string; updated_at: string };
+}>();
 const reportStore = useReportStore();
 const isDraggable = ref(false);
 

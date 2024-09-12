@@ -5,13 +5,29 @@ import { useReportStore } from "@/stores/report";
 
 const reportsStore = useReportStore();
 const props = defineProps<{ icon: string; title: string; keys: string[] }>();
+
+function getMetadata(key: string) {
+  if (!reportsStore.report) {
+    return undefined;
+  }
+  const item = reportsStore.report[key];
+  return {
+    created_at: item.created_at,
+    updated_at: item.updated_at,
+  };
+}
 </script>
 
 <template>
   <div class="data-store-list-item">
     <h2><span :class="props.icon"></span>{{ props.title }}</h2>
     <div class="keys">
-      <ReportKey v-for="key in props.keys" :key="key" :item-key="key" />
+      <ReportKey
+        v-for="key in props.keys"
+        :key="key"
+        :item-key="key"
+        :metadata="getMetadata(key)"
+      />
     </div>
   </div>
 </template>

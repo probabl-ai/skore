@@ -4,8 +4,10 @@ import HtmlSnippetWidget from "@/components/HtmlSnippetWidget.vue";
 import ImageWidget from "@/components/ImageWidget.vue";
 import MarkdownWidget from "@/components/MarkdownWidget.vue";
 import ReportCard from "@/components/ReportCard.vue";
+import VegaWidget from "@/components/VegaWidget.vue";
 import type { KeyLayoutSize, KeyMoveDirection, SupportedImageMimeType } from "@/models";
 import { useReportStore } from "@/stores/report";
+import { formatDistance } from "date-fns";
 import { computed } from "vue";
 
 const reportStore = useReportStore();
@@ -39,6 +41,25 @@ const props = defineProps({
     default: true,
   },
 });
+
+function unserializeHtmlSnippet(serialized: string) {
+  return atob(serialized);
+}
+
+function unserializeVegaSpec(serialized: string) {
+  return JSON.parse(atob(serialized));
+}
+
+function getItemSubtitle(key: string) {
+  if (reportStore.report) {
+    const item = reportStore.report[key];
+    if (item) {
+      const now = new Date();
+      return `Created ${formatDistance(item.created_at, now)} ago, updated ${formatDistance(item.updated_at, now)} ago`;
+    }
+  }
+  return "";
+}
 </script>
 
 <template>
@@ -47,6 +68,7 @@ const props = defineProps({
       v-for="{ item_type, media_type, serialized, key, index, size } in visibleItems"
       :key="key"
       :title="key.toString()"
+      :subtitle="getItemSubtitle(key)"
       :showButtons="props.showCardButtons"
       :can-move-up="index > 0"
       :can-move-down="index < reportStore.layout.length - 1"
@@ -74,11 +96,15 @@ const props = defineProps({
       <MarkdownWidget v-if="['json', 'numpy_array'].includes(item_type)" :source="serialized" />
       <HtmlSnippetWidget
         v-if="'media' === item_type && media_type === 'text/html'"
-        :src="serialized"
+        :src="unserializeHtmlSnippet(serialized)"
       />
       <HtmlSnippetWidget
         v-if="'sklearn_base_estimator' === item_type && media_type === 'text/html'"
         :src="serialized.html"
+      />
+      <VegaWidget
+        v-if="'media' === item_type && media_type === 'application/vnd.vega.v5+json'"
+        :spec="unserializeVegaSpec(serialized)"
       />
     </ReportCard>
   </div>
