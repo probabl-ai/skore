@@ -171,7 +171,7 @@ def test_untransform_matplotlib_figure(monkeypatch):
     )
 
 
-def test_project_here(monkeypatch):
+def test_project(monkeypatch):
     def savefig(*args, **kwargs):
         return ""
 
@@ -340,3 +340,89 @@ def test_load(tmp_path):
 
     with tempfile.TemporaryDirectory(dir=Path.cwd(), suffix=".skore") as tmp_dir:
         load(Path(tmp_dir).stem)
+
+
+class TestProject:
+    @pytest.fixture
+    def storage(self, monkeypatch, mock_now, mock_nowstr):
+        class MockDatetime:
+            @staticmethod
+            def now(*args, **kwargs):
+                return mock_now
+
+        return NonPersistentStorage(
+            content={
+                "key1": PersistedItem(
+                    item_type=ItemType.JSON,
+                    serialized='"value"',
+                    media_type=None,
+                ),
+                "key3": PersistedItem(
+                    item_type=ItemType.JSON,
+                    serialized='"value"',
+                    media_type=None,
+                ),
+            }
+        )
+
+    @pytest.fixture
+    def project(self, storage):
+        return Project(storage)
+
+    def test_insert(self, monkeypatch, mock_nowstr, storage, project):
+        project.put("key2", 2)
+        project.put("key3", 3)
+        project.put("key4", 4)
+
+        assert storage.content == {
+            "key1": {
+                "item_type": "json",
+                "media_type": None,
+                "serialized": '"value"',
+            },
+            "key2": {
+                "item_type": "json",
+                "media_type": None,
+                "serialized": "2",
+            },
+            "key3": {
+                "item_type": "json",
+                "media_type": None,
+                "serialized": "3",
+            },
+            "key4": {
+                "item_type": "json",
+                "media_type": None,
+                "serialized": "4",
+            },
+        }
+
+    def test_put_twice(self, project):
+        project.put("key2", 2)
+
+        project.put("key2", 5)
+
+        assert project.get("key2") == 5
+
+    def test_get(self, project):
+        assert project.get("key1") == "value"
+
+        with pytest.raises(KeyError):
+            project.get("key2")
+
+    def test_delete(self, monkeypatch, mock_nowstr, storage, project):
+        project.delete_item("key1")
+
+        assert storage.content == {
+            "key3": {
+                "item_type": "json",
+                "media_type": None,
+                "serialized": '"value"',
+            },
+        }
+
+        with pytest.raises(KeyError):
+            project.delete_item("key2")
+
+    def test_keys(self, project):
+        assert project.list_keys() == ["key1", "key3"]
