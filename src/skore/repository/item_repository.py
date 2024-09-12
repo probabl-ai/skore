@@ -1,5 +1,17 @@
 from datetime import UTC, datetime
 
+from skore.item import (
+    MediaItem,
+    NumpyArrayItem,
+    PandasDataFrameItem,
+    PrimitiveItem,
+    SklearnBaseEstimatorItem,
+)
+
+
+Storage = None
+Item = None
+
 
 class ItemRepository:
     ITEM_CLASS_NAME_TO_ITEM_CLASS = {

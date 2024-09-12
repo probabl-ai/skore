@@ -13,9 +13,9 @@ if TYPE_CHECKING:
 
     Metadata = dict[str, str]
     Item = Union[
-        PrimitiveItem,
-        PandasDataFrameItem,
-        NumpyArrayItem,
-        SklearnBaseEstimatorItem,
         MediaItem,
+        NumpyArrayItem,
+        PandasDataFrameItem,
+        PrimitiveItem,
+        SklearnBaseEstimatorItem,
     ]

@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from functools import singledispatchmethod
+from io import BytesIO
 
 from altair.vegalite.v5.schema.core import TopLevelSpec as Altair
 from matplotlib.figure import Figure as Matplotlib
@@ -14,7 +17,7 @@ class MediaItem:
     @singledispatchmethod
     @classmethod
     def factory(cls, media):
-        raise NotImplementedError
+        raise NotImplementedError(f"Type '{type(media)}' is not yet supported")
 
     @factory.register(bytes)
     @classmethod
@@ -26,7 +29,7 @@ class MediaItem:
     ) -> MediaItem:
         return cls(
             media_bytes=media,
-            media_encoding=media_type,
+            media_encoding=media_encoding,
             media_type=media_type,
         )
 
@@ -57,7 +60,7 @@ class MediaItem:
     def factory_matplotlib(cls, media: Matplotlib) -> MediaItem:
         with BytesIO() as stream:
             media.savefig(stream, format="svg")
-            media_bytes = stream.get_value()
+            media_bytes = stream.getvalue()
 
             return cls(
                 media_bytes=media_bytes,
@@ -69,11 +72,11 @@ class MediaItem:
     @classmethod
     def factory_pillow(cls, media: Pillow) -> MediaItem:
         with BytesIO() as stream:
-            media.save(stream, format="jpeg")
-            media_bytes = stream.get_value()
+            media.save(stream, format="png")
+            media_bytes = stream.getvalue()
 
             return cls(
                 media_bytes=media_bytes,
                 media_encoding="utf-8",
-                media_type="image/jpeg",
+                media_type="image/png",
             )
