@@ -1,4 +1,3 @@
-import base64
 import json
 import os
 import tempfile
@@ -15,6 +14,7 @@ import sklearn.svm
 from matplotlib import pyplot as plt
 from PIL import Image
 from sklearn.ensemble import RandomForestClassifier
+from skore.persistence.memory import InMemoryStorage
 from skore.project import (
     Item,
     ItemType,
@@ -25,7 +25,6 @@ from skore.project import (
     object_to_item,
     unpersist,
 )
-from skore.storage.non_persistent_storage import NonPersistentStorage
 
 
 def test_transform_primitive():
@@ -178,7 +177,7 @@ def test_project(monkeypatch):
     monkeypatch.setattr("matplotlib.figure.Figure.savefig", savefig)
     monkeypatch.setattr("sklearn.utils.estimator_html_repr", lambda _: "")
 
-    project = Project(NonPersistentStorage())
+    project = Project(InMemoryStorage())
     project.put("string_item", "Hello, World!")  # JSONItem
     project.put("int_item", 42)  # JSONItem
     project.put("float_item", 3.14)  # JSONItem
@@ -209,85 +208,11 @@ def test_project(monkeypatch):
 
     with BytesIO() as output:
         pil_image.save(output, format="jpeg")
-        pil_image_str = base64.b64encode(output.getvalue()).decode("ascii")
-
-    # Add raw bytes with media type
-    # raw_bytes = b"Some raw data"
-    # project.put_item("raw_data", MediaItem(raw_bytes, "application/octet-stream"))
-
-    # mybytes = b""
-    # project.put_item(
-    #     "mybytes",
-    #     Item(
-    #         raw=mybytes,
-    #         item_type=ItemType.MEDIA,
-    #         media_type="application/octet-stream",
-    #         serialized=mybytes.decode()
-    #     )
-    # )
 
     # Add a scikit-learn model
     model = RandomForestClassifier()
     model.fit(numpy.array([[1, 2], [3, 4]]), [0, 1])
     project.put("rf_model", model)  # ScikitLearnModelItem
-
-    assert project.storage.content["string_item"] == {
-        "item_type": str(ItemType.JSON),
-        "serialized": '"Hello, World!"',
-        "media_type": None,
-    }
-    assert project.storage.content["int_item"] == {
-        "item_type": str(ItemType.JSON),
-        "serialized": "42",
-        "media_type": None,
-    }
-    assert project.storage.content["float_item"] == {
-        "item_type": str(ItemType.JSON),
-        "serialized": "3.14",
-        "media_type": None,
-    }
-    assert project.storage.content["bool_item"] == {
-        "item_type": str(ItemType.JSON),
-        "serialized": "true",
-        "media_type": None,
-    }
-    assert project.storage.content["list_item"] == {
-        "item_type": str(ItemType.JSON),
-        "serialized": "[1, 2, 3]",
-        "media_type": None,
-    }
-    assert project.storage.content["dict_item"] == {
-        "item_type": str(ItemType.JSON),
-        "serialized": '{"key": "value"}',
-        "media_type": None,
-    }
-    assert project.storage.content["pandas_df"] == {
-        "item_type": str(ItemType.PANDAS_DATAFRAME),
-        "serialized": (
-            '{"columns":["A","B"],"index":[0,1,2],"data":[[1,4],[2,5],[3,6]]}'
-        ),
-        "media_type": None,
-    }
-    assert project.storage.content["numpy_array"] == {
-        "item_type": str(ItemType.NUMPY_ARRAY),
-        "serialized": "[1, 2, 3, 4, 5]",
-        "media_type": None,
-    }
-    assert project.storage.content["mpl_figure"] == {
-        "item_type": str(ItemType.MEDIA),
-        "serialized": "",
-        "media_type": "image/svg+xml",
-    }
-    assert project.storage.content["vega_chart"] == {
-        "item_type": str(ItemType.MEDIA),
-        "serialized": json.dumps(altair_chart.to_dict()),
-        "media_type": "application/vnd.vega.v5+json",
-    }
-    assert project.storage.content["pil_image"] == {
-        "item_type": str(ItemType.MEDIA),
-        "serialized": pil_image_str,
-        "media_type": "image/jpeg",
-    }
 
     assert project.get("string_item") == "Hello, World!"
     assert project.get("int_item") == 42
@@ -307,7 +232,7 @@ def test_api_get_items():
     from fastapi.testclient import TestClient
     from skore.ui.app import create_app
 
-    project = Project(NonPersistentStorage())
+    project = Project(InMemoryStorage())
     project.put("string_item", "Hello, World!")
     project.put("int_item", 42)
 
@@ -344,85 +269,44 @@ def test_load(tmp_path):
 
 class TestProject:
     @pytest.fixture
-    def storage(self, monkeypatch, mock_now, mock_nowstr):
-        class MockDatetime:
-            @staticmethod
-            def now(*args, **kwargs):
-                return mock_now
-
-        return NonPersistentStorage(
-            content={
-                "key1": PersistedItem(
-                    item_type=ItemType.JSON,
-                    serialized='"value"',
-                    media_type=None,
-                ),
-                "key3": PersistedItem(
-                    item_type=ItemType.JSON,
-                    serialized='"value"',
-                    media_type=None,
-                ),
-            }
-        )
+    def storage(self):
+        return InMemoryStorage()
 
     @pytest.fixture
     def project(self, storage):
         return Project(storage)
 
-    def test_insert(self, monkeypatch, mock_nowstr, storage, project):
+    def test_put(self, project):
+        project.put("key1", 1)
         project.put("key2", 2)
         project.put("key3", 3)
         project.put("key4", 4)
 
-        assert storage.content == {
-            "key1": {
-                "item_type": "json",
-                "media_type": None,
-                "serialized": '"value"',
-            },
-            "key2": {
-                "item_type": "json",
-                "media_type": None,
-                "serialized": "2",
-            },
-            "key3": {
-                "item_type": "json",
-                "media_type": None,
-                "serialized": "3",
-            },
-            "key4": {
-                "item_type": "json",
-                "media_type": None,
-                "serialized": "4",
-            },
-        }
+        assert project.list_keys() == ["key1", "key2", "key3", "key4"]
 
     def test_put_twice(self, project):
         project.put("key2", 2)
-
         project.put("key2", 5)
 
         assert project.get("key2") == 5
 
     def test_get(self, project):
-        assert project.get("key1") == "value"
+        project.put("key1", 1)
+        assert project.get("key1") == 1
 
         with pytest.raises(KeyError):
             project.get("key2")
 
-    def test_delete(self, monkeypatch, mock_nowstr, storage, project):
+    def test_delete(self, project):
+        project.put("key1", 1)
         project.delete_item("key1")
 
-        assert storage.content == {
-            "key3": {
-                "item_type": "json",
-                "media_type": None,
-                "serialized": '"value"',
-            },
-        }
+        assert project.list_keys() == []
 
         with pytest.raises(KeyError):
             project.delete_item("key2")
 
     def test_keys(self, project):
-        assert project.list_keys() == ["key1", "key3"]
+        project.put("key1", 1)
+        project.put("key2", 2)
+        assert project.list_keys() == ["key1", "key2"]
