@@ -2,7 +2,7 @@
 
 import base64
 import json
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Annotated
 
@@ -78,7 +78,7 @@ async def share_store(
 
     # Fill the Jinja context
     context = {
-        "project": __serialize_project(project),
+        "project": asdict(__serialize_project(project)),
         "layout": [{"key": item.key, "size": item.size} for item in layout],
         "script": script_content,
         "styles": styles_content,
