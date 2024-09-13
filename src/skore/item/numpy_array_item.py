@@ -5,13 +5,14 @@ This module defines the NumpyArrayItem class, which represents a NumPy array ite
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
 from functools import cached_property
 
 import numpy
 
+from skore.item.item import Item
 
-class NumpyArrayItem:
+
+class NumpyArrayItem(Item):
     """
     A class to represent a NumPy array item.
 
@@ -37,8 +38,8 @@ class NumpyArrayItem:
     def __init__(
         self,
         array_list: list,
-        created_at: str,
-        updated_at: str,
+        created_at: str | None = None,
+        updated_at: str | None = None,
     ):
         """
         Initialize a NumpyArrayItem.
@@ -52,9 +53,9 @@ class NumpyArrayItem:
         updated_at : str
             The last update timestamp in ISO format.
         """
+        super().__init__(created_at, updated_at)
+
         self.array_list = array_list
-        self.created_at = created_at
-        self.updated_at = updated_at
 
     @cached_property
     def array(self) -> numpy.ndarray:
@@ -67,22 +68,6 @@ class NumpyArrayItem:
             The NumPy array representation of the stored list.
         """
         return numpy.asarray(self.array_list)
-
-    @property
-    def __dict__(self):
-        """
-        Get a dictionary representation of the object.
-
-        Returns
-        -------
-        dict
-            A dictionary containing the 'array_list' key.
-        """
-        return {
-            "array_list": self.array_list,
-            "created_at": self.created_at,
-            "updated_at": self.updated_at,
-        }
 
     @classmethod
     def factory(cls, array: numpy.ndarray) -> NumpyArrayItem:
@@ -99,12 +84,7 @@ class NumpyArrayItem:
         NumpyArrayItem
             A new NumpyArrayItem instance.
         """
-        now = datetime.now(tz=UTC).isoformat()
-        instance = cls(
-            array_list=array.tolist(),
-            created_at=now,
-            updated_at=now,
-        )
+        instance = cls(array_list=array.tolist())
 
         # add array as cached property
         instance.array = array

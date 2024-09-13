@@ -16,12 +16,10 @@ class TestPrimitiveItem:
         ],
     )
     def test_factory(self, monkeypatch, mock_nowstr, MockDatetime, primitive):
-        monkeypatch.setattr("skore.item.primitive_item.datetime", MockDatetime)
+        monkeypatch.setattr("skore.item.item.datetime", MockDatetime)
 
         item = PrimitiveItem.factory(primitive)
 
-        assert vars(item) == {
-            "primitive": primitive,
-            "created_at": mock_nowstr,
-            "updated_at": mock_nowstr,
-        }
+        assert item.primitive == primitive
+        assert item.created_at == mock_nowstr
+        assert item.updated_at == mock_nowstr

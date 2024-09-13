@@ -5,7 +5,6 @@ This module defines the MediaItem class, which represents media items.
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
 from functools import singledispatchmethod
 from io import BytesIO
 
@@ -13,25 +12,14 @@ from altair.vegalite.v5.schema.core import TopLevelSpec as Altair
 from matplotlib.figure import Figure as Matplotlib
 from PIL.Image import Image as Pillow
 
+from skore.item.item import Item
 
-class MediaItem:
+
+class MediaItem(Item):
     """
     A class to represent a media item.
 
     This class encapsulates various types of media along with metadata.
-
-    Attributes
-    ----------
-    media_bytes : bytes
-        The raw bytes of the media content.
-    media_encoding : str
-        The encoding of the media content.
-    media_type : str
-        The MIME type of the media content.
-    created_at : str
-        The timestamp when the item was created, in ISO format.
-    updated_at : str
-        The timestamp when the item was last updated, in ISO format.
     """
 
     def __init__(
@@ -39,8 +27,8 @@ class MediaItem:
         media_bytes: bytes,
         media_encoding: str,
         media_type: str,
-        created_at: str,
-        updated_at: str,
+        created_at: str | None = None,
+        updated_at: str | None = None,
     ):
         """
         Initialize a MediaItem.
@@ -53,16 +41,16 @@ class MediaItem:
             The encoding of the media content.
         media_type : str
             The MIME type of the media content.
-        created_at : str
+        created_at : str, optional
             The creation timestamp in ISO format.
-        updated_at : str
+        updated_at : str, optional
             The last update timestamp in ISO format.
         """
+        super().__init__(created_at, updated_at)
+
         self.media_bytes = media_bytes
         self.media_encoding = media_encoding
         self.media_type = media_type
-        self.created_at = created_at
-        self.updated_at = updated_at
 
     @singledispatchmethod
     @classmethod
@@ -89,22 +77,6 @@ class MediaItem:
             A new MediaItem instance.
         """
         raise NotImplementedError(f"Type '{type(media)}' is not yet supported")
-
-    @staticmethod
-    def __metadata():
-        """
-        Generate metadata for a new MediaItem.
-
-        Returns
-        -------
-        dict
-            A dictionary containing 'created_at' and 'updated_at' timestamps.
-        """
-        now = datetime.now(tz=UTC).isoformat()
-        return {
-            "created_at": now,
-            "updated_at": now,
-        }
 
     @factory.register(bytes)
     @classmethod
@@ -135,7 +107,6 @@ class MediaItem:
             media_bytes=media,
             media_encoding=media_encoding,
             media_type=media_type,
-            **cls.__metadata(),
         )
 
     @factory.register(str)
@@ -162,7 +133,6 @@ class MediaItem:
             media_bytes=media_bytes,
             media_encoding="utf-8",
             media_type=media_type,
-            **cls.__metadata(),
         )
 
     @factory.register(Altair)
@@ -187,7 +157,6 @@ class MediaItem:
             media_bytes=media_bytes,
             media_encoding="utf-8",
             media_type="application/vnd.vega.v5+json",
-            **cls.__metadata(),
         )
 
     @factory.register(Matplotlib)
@@ -214,7 +183,6 @@ class MediaItem:
                 media_bytes=media_bytes,
                 media_encoding="utf-8",
                 media_type="image/svg+xml",
-                **cls.__metadata(),
             )
 
     @factory.register(Pillow)
@@ -241,5 +209,4 @@ class MediaItem:
                 media_bytes=media_bytes,
                 media_encoding="utf-8",
                 media_type="image/png",
-                **cls.__metadata(),
             )

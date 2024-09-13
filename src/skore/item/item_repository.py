@@ -78,14 +78,14 @@ class ItemRepository:
         item : Item
             The item to be stored.
         """
-        item_dict = vars(item)
+        item_parameters = item.__parameters__
 
         if key in self.storage:
-            item_dict["created_at"] = self.storage[key]["item"]["created_at"]
+            item_parameters["created_at"] = self.storage[key]["item"]["created_at"]
 
         self.storage[key] = {
             "item_class_name": item.__class__.__name__,
-            "item": item_dict,
+            "item": item_parameters,
         }
 
     def delete_item(self, key):
