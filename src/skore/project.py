@@ -120,9 +120,10 @@ def load(project_name: str | Path) -> Project:
         path = path.parent / (path.name + ".skore")
 
     try:
-        item_storage = DiskCacheStorage(directory=Path(path))
+        # FIXME should those hardcoded string be factorized somewhere ?
+        item_storage = DiskCacheStorage(directory=Path(path) / "items")
         item_repository = ItemRepository(storage=item_storage)
-        layout_storage = DiskCacheStorage(directory=Path(path))
+        layout_storage = DiskCacheStorage(directory=Path(path) / "layouts")
         layout_repository = LayoutRepository(storage=layout_storage)
         project = Project(
             item_repository=item_repository,

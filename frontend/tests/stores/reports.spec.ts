@@ -1,3 +1,4 @@
+import type { ReportItem } from "@/models";
 import { fetchReport } from "@/services/api";
 import { useReportStore } from "@/stores/report";
 import { createTestingPinia } from "@pinia/testing";
@@ -10,23 +11,24 @@ vi.mock("@/services/api", () => {
 });
 
 function makeFakeReport() {
+  const epoch = new Date("1970-01-01T00:00:00Z").toISOString();
+  const i1 = {
+    media_type: "text/markdown",
+    value: "",
+    updated_at: epoch,
+    created_at: epoch,
+  } as ReportItem;
+  const i2 = {
+    media_type: "text/markdown",
+    value: "",
+    updated_at: epoch,
+    created_at: epoch,
+  } as ReportItem;
   return {
     layout: [],
     items: {
-      Any: {
-        item_type: "json",
-        media_type: null,
-        serialized: { k1: "v1" },
-        updated_at: "epoch",
-        created_at: "epoch",
-      },
-      Array: {
-        item_type: "json",
-        media_type: null,
-        serialized: [1, 2, 3],
-        updated_at: "epoch",
-        created_at: "epoch",
-      },
+      Any: i1,
+      Array: i2,
     },
   };
 }

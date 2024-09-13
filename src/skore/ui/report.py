@@ -42,26 +42,26 @@ def __serialize_project(project: Project) -> SerializedProject:
 
         media_type = None
         if isinstance(item, PrimitiveItem):
-            data = item.primitive
+            value = item.primitive
             media_type = "text/markdown"
         elif isinstance(item, NumpyArrayItem):
-            data = item.array_list
+            value = item.array_list
             media_type = "text/markdown"
         elif isinstance(item, PandasDataFrameItem):
-            data = item.dataframe_dict
+            value = item.dataframe_dict
             media_type = "application/vnd.dataframe+json"
         elif isinstance(item, SklearnBaseEstimatorItem):
-            data = item.estimator_html_repr
-            media_type = "text/html"
+            value = item.estimator_html_repr
+            media_type = "application/vnd.sklearn.estimator+html"
         elif isinstance(item, MediaItem):
-            data = base64.b64encode(item.media_bytes).decode()
+            value = base64.b64encode(item.media_bytes).decode()
             media_type = item.media_type
         else:
             raise ValueError(f"Item {item} is not a known item type.")
 
         items[key] = {
             "media_type": media_type,
-            "serialized": data,
+            "value": value,
             "updated_at": item.updated_at,
             "created_at": item.created_at,
         }

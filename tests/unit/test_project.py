@@ -1,7 +1,5 @@
 import os
-import tempfile
 from io import BytesIO
-from pathlib import Path
 
 import altair
 import numpy
@@ -117,10 +115,10 @@ def test_load(tmp_path):
     # Project path must end with ".skore"
     project_path = tmp_path.parent / (tmp_path.name + ".skore")
     os.mkdir(project_path)
-    load(project_path)
-
-    with tempfile.TemporaryDirectory(dir=Path.cwd(), suffix=".skore") as tmp_dir:
-        load(Path(tmp_dir).stem)
+    os.mkdir(project_path / "items")
+    os.mkdir(project_path / "layouts")
+    p = load(project_path)
+    assert isinstance(p, Project)
 
 
 def test_put(project):

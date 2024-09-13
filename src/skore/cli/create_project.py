@@ -120,6 +120,9 @@ def create_project(project_name: str | Path, working_dir: Path | None = None) ->
 
     try:
         os.mkdir(project_directory)
+        # FIXME should those hardcoded string be factorized somewhere ?
+        (project_directory / "items").mkdir()
+        (project_directory / "layouts").mkdir()
     except FileExistsError as e:
         raise ProjectAlreadyExists(
             f"Unable to create project file '{project_directory}' because a file "

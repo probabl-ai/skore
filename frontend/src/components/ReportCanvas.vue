@@ -5,7 +5,7 @@ import ImageWidget from "@/components/ImageWidget.vue";
 import MarkdownWidget from "@/components/MarkdownWidget.vue";
 import ReportCard from "@/components/ReportCard.vue";
 import VegaWidget from "@/components/VegaWidget.vue";
-import type { KeyLayoutSize, KeyMoveDirection, SupportedImageMimeType } from "@/models";
+import type { KeyLayoutSize, KeyMoveDirection } from "@/models";
 import { useReportStore } from "@/stores/report";
 import { formatDistance } from "date-fns";
 import { computed } from "vue";
@@ -13,14 +13,48 @@ import { computed } from "vue";
 const reportStore = useReportStore();
 
 const visibleItems = computed(() => {
+  const items = [];
+  let index = 0;
   if (reportStore.items !== null) {
-    return reportStore.layout.map((value, index) => ({
-      ...value,
-      ...reportStore.items![value.key],
-      index,
-    }));
+    for (const { key, size } of reportStore.layout) {
+      const item = reportStore.items[key];
+      if (item) {
+        const mediaType = item.media_type || "";
+        let data;
+        if (
+          [
+            "text/markdown",
+            "application/vnd.dataframe+json",
+            "application/vnd.sklearn.estimator+html",
+            "image/png",
+            "image/jpeg",
+            "image/webp",
+            "image/svg+xml",
+          ].includes(mediaType)
+        ) {
+          data = item.value;
+        } else {
+          data = atob(item.value);
+          if (mediaType === "application/vnd.vega.v5+json") {
+            data = JSON.parse(data);
+          }
+        }
+        const createdAt = new Date(item.created_at);
+        const updatedAt = new Date(item.updated_at);
+        items.push({
+          key,
+          size,
+          mediaType,
+          data,
+          createdAt,
+          updatedAt,
+          index,
+        });
+        index++;
+      }
+    }
   }
-  return [];
+  return items;
 });
 
 function onLayoutChange(key: string, size: KeyLayoutSize) {
@@ -42,33 +76,19 @@ const props = defineProps({
   },
 });
 
-function unserializeHtmlSnippet(serialized: string) {
-  return atob(serialized);
-}
-
-function unserializeVegaSpec(serialized: string) {
-  return JSON.parse(atob(serialized));
-}
-
-function getItemSubtitle(key: string) {
-  if (reportStore.items) {
-    const item = reportStore.items[key];
-    if (item) {
-      const now = new Date();
-      return `Created ${formatDistance(item.created_at, now)} ago, updated ${formatDistance(item.updated_at, now)} ago`;
-    }
-  }
-  return "";
+function getItemSubtitle(created_at: Date, updated_at: Date) {
+  const now = new Date();
+  return `Created ${formatDistance(created_at, now)} ago, updated ${formatDistance(updated_at, now)} ago`;
 }
 </script>
 
 <template>
   <div class="canvas">
     <ReportCard
-      v-for="{ item_type, media_type, serialized, key, index, size } in visibleItems"
+      v-for="{ key, size, mediaType, data, createdAt, updatedAt, index } in visibleItems"
       :key="key"
       :title="key.toString()"
-      :subtitle="getItemSubtitle(key)"
+      :subtitle="getItemSubtitle(createdAt, updatedAt)"
       :showButtons="props.showCardButtons"
       :can-move-up="index > 0"
       :can-move-down="index < reportStore.layout.length - 1"
@@ -79,33 +99,23 @@ function getItemSubtitle(key: string) {
       @card-removed="onCardRemoved(key.toString())"
     >
       <DataFrameWidget
-        v-if="item_type === 'pandas_dataframe'"
-        :columns="serialized.columns"
-        :data="serialized.data"
+        v-if="mediaType === 'application/vnd.dataframe+json'"
+        :columns="data.columns"
+        :data="data.data"
       />
       <ImageWidget
-        v-if="
-          item_type === 'media' &&
-          media_type &&
-          ['image/svg+xml', 'image/png', 'image/jpeg', 'image/webp'].includes(media_type)
-        "
-        :mime-type="media_type as SupportedImageMimeType"
-        :base64-src="serialized"
+        v-if="['image/svg+xml', 'image/png', 'image/jpeg', 'image/webp'].includes(mediaType)"
+        :mediaType="mediaType"
+        :base64-src="data"
         :alt="key.toString()"
       />
-      <MarkdownWidget v-if="['json', 'numpy_array'].includes(item_type)" :source="serialized" />
+      <MarkdownWidget v-if="mediaType === 'text/markdown'" :source="data" />
+      <VegaWidget v-if="mediaType === 'application/vnd.vega.v5+json'" :spec="data" />
       <HtmlSnippetWidget
-        v-if="'media' === item_type && media_type === 'text/html'"
-        :src="unserializeHtmlSnippet(serialized)"
+        v-if="mediaType === 'application/vnd.sklearn.estimator+html'"
+        :src="data"
       />
-      <HtmlSnippetWidget
-        v-if="'sklearn_base_estimator' === item_type && media_type === 'text/html'"
-        :src="serialized.html"
-      />
-      <VegaWidget
-        v-if="'media' === item_type && media_type === 'application/vnd.vega.v5+json'"
-        :spec="unserializeVegaSpec(serialized)"
-      />
+      <HtmlSnippetWidget v-if="mediaType === 'text/html'" :src="data" />
     </ReportCard>
   </div>
 </template>

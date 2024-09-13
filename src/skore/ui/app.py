@@ -1,13 +1,10 @@
 """FastAPI factory used to create the API to interact with stores."""
 
-from pathlib import Path
-
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from skore.persistence.disk import DiskCacheStorage
-from skore.project import Project
+from skore.project import Project, load
 
 from .dependencies import get_static_path
 from .report import router as report_router
@@ -19,11 +16,7 @@ def create_app(project: Project | None = None) -> FastAPI:
 
     # Give the app access to the project
     if not project:
-        project_path = Path.cwd() / "project.skore"
-        project_path.mkdir(exist_ok=True)
-
-        storage = DiskCacheStorage(directory=project_path)
-        project = Project(storage)
+        project = load("project.skore")
 
     app.state.project = project
 

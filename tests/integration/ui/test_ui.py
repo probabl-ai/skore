@@ -49,7 +49,7 @@ def test_get_items(client, project):
         "items": {
             "test": {
                 "media_type": "text/markdown",
-                "serialized": "test",
+                "value": "test",
                 "updated_at": item.updated_at,
                 "created_at": item.created_at,
             }
