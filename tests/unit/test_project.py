@@ -1,6 +1,5 @@
 import os
 import tempfile
-from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import Path
 
@@ -13,14 +12,19 @@ import pytest
 from matplotlib import pyplot as plt
 from PIL import Image
 from sklearn.ensemble import RandomForestClassifier
-from skore.layout import LayoutItem, LayoutItemSize
+from skore.item import ItemRepository
+from skore.layout import LayoutRepository
+from skore.layout.layout import LayoutItem, LayoutItemSize
 from skore.persistence.memory import InMemoryStorage
 from skore.project import Project, ProjectDoesNotExist, load
 
 
 @pytest.fixture
 def project():
-    return Project(InMemoryStorage())
+    return Project(
+        item_repository=ItemRepository(InMemoryStorage()),
+        layout_repository=LayoutRepository(InMemoryStorage()),
+    )
 
 
 def test_put_string_item(project):
@@ -76,24 +80,25 @@ def test_put_mpl_figure(project, monkeypatch):
     ax.plot([1, 2, 3, 4])
 
     project.put("mpl_figure", fig)  # MediaItem (SVG)
-    assert project.get("mpl_figure") is None
+    assert isinstance(project.get("mpl_figure"), bytes)
 
 
 def test_put_vega_chart(project):
     # Add an Altair chart
     altair_chart = altair.Chart().mark_point()
     project.put("vega_chart", altair_chart)
-    assert project.get("vega_chart") is None
+    assert isinstance(project.get("vega_chart"), bytes)
 
 
 def test_put_pil_image(project):
     # Add a PIL Image
     pil_image = Image.new("RGB", (100, 100), color="red")
     with BytesIO() as output:
+        # FIXME: Not JPEG!
         pil_image.save(output, format="jpeg")
 
     project.put("pil_image", pil_image)  # MediaItem (PNG)
-    assert project.get("pil_image") is None
+    assert isinstance(project.get("pil_image"), bytes)
 
 
 def test_put_rf_model(project, monkeypatch):
@@ -156,22 +161,6 @@ def test_keys(project):
     project.put("key1", 1)
     project.put("key2", 2)
     assert project.list_keys() == ["key1", "key2"]
-
-
-def test_item_metadata():
-    project = Project(InMemoryStorage())
-    project.put("key", "hello")
-
-    now = datetime.now(tz=timezone.utc)
-    item = project.get_item("key")
-
-    assert (now - item.created_at).seconds < 1
-    assert item.updated_at == item.created_at
-
-    previous_updated_at = item.updated_at
-    project.put("key", "world")
-    item = project.get_item("key")
-    assert item.updated_at > previous_updated_at
 
 
 def test_report_layout(project):

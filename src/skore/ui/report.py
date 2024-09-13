@@ -1,17 +1,21 @@
 """The definition of API routes to list project items and get them."""
 
 import base64
-import json
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Request
 from fastapi.params import Depends
 from fastapi.templating import Jinja2Templates
 
+from skore.item.media_item import MediaItem
+from skore.item.numpy_array_item import NumpyArrayItem
+from skore.item.pandas_dataframe_item import PandasDataFrameItem
+from skore.item.primitive_item import PrimitiveItem
+from skore.item.sklearn_base_estimator_item import SklearnBaseEstimatorItem
 from skore.layout import Layout
-from skore.project import ItemType, PersistedItem, Project
+from skore.project import Project
 
 from .dependencies import get_static_path, get_templates
 
@@ -23,7 +27,7 @@ class SerializedProject:
     """Serialized project, to be sent to the frontend."""
 
     layout: Layout
-    items: dict[str, PersistedItem]
+    items: dict[str, dict[str, Any]]
 
 
 def __serialize_project(project: Project) -> SerializedProject:
@@ -35,18 +39,32 @@ def __serialize_project(project: Project) -> SerializedProject:
     items = {}
     for key in project.list_keys():
         item = project.get_item(key)
-        if item.item_type == ItemType.MEDIA:
-            data = base64.b64encode(item.serialized.encode()).decode()
-        else:
-            data = json.loads(item.serialized)
 
-        items[key] = PersistedItem(
-            item_type=item.item_type,
-            media_type=item.media_type,
-            serialized=data,
-            updated_at=item.updated_at.isoformat(),
-            created_at=item.created_at.isoformat(),
-        )
+        media_type = None
+        if isinstance(item, PrimitiveItem):
+            data = item.primitive
+            media_type = "text/markdown"
+        elif isinstance(item, NumpyArrayItem):
+            data = item.array_list
+            media_type = "text/markdown"
+        elif isinstance(item, PandasDataFrameItem):
+            data = item.dataframe_dict
+            media_type = "application/vnd.dataframe+json"
+        elif isinstance(item, SklearnBaseEstimatorItem):
+            data = item.estimator_html_repr
+            media_type = "text/html"
+        elif isinstance(item, MediaItem):
+            data = base64.b64encode(item.media_bytes).decode()
+            media_type = item.media_type
+        else:
+            raise ValueError(f"Item {item} is not a known item type.")
+
+        items[key] = {
+            "media_type": media_type,
+            "serialized": data,
+            "updated_at": item.updated_at,
+            "created_at": item.created_at,
+        }
 
     return SerializedProject(layout=layout, items=items)
 
