@@ -1,7 +1,7 @@
 import pytest
 from skore.layout import LayoutRepository
 from skore.layout.layout import LayoutItem, LayoutItemSize
-from skore.persistence.memory import InMemoryStorage
+from skore.persistence.in_memory_storage import InMemoryStorage
 
 
 @pytest.fixture

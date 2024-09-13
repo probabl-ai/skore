@@ -18,7 +18,7 @@ from skore.item.pandas_dataframe_item import PandasDataFrameItem
 from skore.item.primitive_item import PrimitiveItem, is_primitive
 from skore.item.sklearn_base_estimator_item import SklearnBaseEstimatorItem
 from skore.layout import Layout, LayoutRepository
-from skore.persistence.disk import DirectoryDoesNotExist, DiskCacheStorage
+from skore.persistence.disk_cache_storage import DirectoryDoesNotExist, DiskCacheStorage
 
 
 def object_to_item(o: Any) -> Item:

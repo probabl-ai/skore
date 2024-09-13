@@ -13,7 +13,7 @@ from sklearn.ensemble import RandomForestClassifier
 from skore.item import ItemRepository
 from skore.layout import LayoutRepository
 from skore.layout.layout import LayoutItem, LayoutItemSize
-from skore.persistence.memory import InMemoryStorage
+from skore.persistence.in_memory_storage import InMemoryStorage
 from skore.project import Project, ProjectDoesNotExist, load
 
 

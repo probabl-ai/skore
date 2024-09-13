@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from skore.layout import Layout
-    from skore.persistence.core import AbstractStorage
+    from skore.persistence.abstract_storage import AbstractStorage
 
 
 class LayoutRepository:

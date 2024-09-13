@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from skore.item.item import Item
-    from skore.persistence.core import AbstractStorage
+    from skore.persistence.abstract_storage import AbstractStorage
 
 
 from skore.item.media_item import MediaItem

@@ -1,51 +1,24 @@
 """In-memory storage."""
 
-from pathlib import Path
 from typing import Any, Iterator
 
-from diskcache import Cache
-
-from .core import AbstractStorage
+from .abstract_storage import AbstractStorage
 
 
-class DirectoryDoesNotExist(Exception):
-    """Directory does not exist."""
+class InMemoryStorage(AbstractStorage):
+    """In-memory storage."""
 
-
-class DiskCacheStorage(AbstractStorage):
-    """
-    Disk-based storage implementation using diskcache.
-
-    This class provides a persistent storage solution using the diskcache library,
-    which allows for efficient caching of data on disk.
-
-    Parameters
-    ----------
-    directory : Path
-        The directory path where the cache will be stored.
-
-    Attributes
-    ----------
-    storage : Cache
-        The underlying diskcache Cache object.
-    """
-
-    def __init__(self, directory: Path):
+    def __init__(self):
         """
-        Initialize the DiskCacheStorage with the specified directory.
+        Initialize an empty in-memory storage.
 
-        Parameters
-        ----------
-        directory : Path
-            The directory path where the cache will be stored.
+        The storage is implemented as a dictionary.
         """
-        if not directory.exists():
-            raise DirectoryDoesNotExist(f"Directory {directory} does not exist.")
-        self.storage = Cache(directory)
+        self.storage = {}
 
     def __getitem__(self, key: str) -> Any:
         """
-        Retrieve an item from the storage.
+        Get the item for the specified key.
 
         Parameters
         ----------
@@ -55,7 +28,7 @@ class DiskCacheStorage(AbstractStorage):
         Returns
         -------
         Any
-            The value associated with the given key.
+            The value associated with the key.
 
         Raises
         ------
@@ -66,7 +39,7 @@ class DiskCacheStorage(AbstractStorage):
 
     def __setitem__(self, key: str, value: Any):
         """
-        Set an item in the storage.
+        Set the item for the specified key.
 
         Parameters
         ----------
@@ -79,7 +52,7 @@ class DiskCacheStorage(AbstractStorage):
 
     def __delitem__(self, key: str):
         """
-        Delete an item from the storage.
+        Delete the item for the specified key.
 
         Parameters
         ----------
@@ -95,38 +68,36 @@ class DiskCacheStorage(AbstractStorage):
 
     def keys(self) -> Iterator[str]:
         """
-        Get an iterator over the keys in the storage.
+        Yield the keys.
 
         Returns
         -------
         Iterator[str]
             An iterator yielding all keys in the storage.
         """
-        return self.storage.iterkeys()
+        return iter(self.storage.keys())
 
     def values(self) -> Iterator[Any]:
         """
-        Get an iterator over the values in the storage.
+        Yield the values.
 
         Returns
         -------
         Iterator[Any]
             An iterator yielding all values in the storage.
         """
-        for key in self.storage.iterkeys():
-            yield self.storage[key]
+        return iter(self.storage.values())
 
     def items(self) -> Iterator[tuple[str, Any]]:
         """
-        Get an iterator over the (key, value) pairs in the storage.
+        Yield the pairs (key, value).
 
         Returns
         -------
         Iterator[tuple[str, Any]]
             An iterator yielding all (key, value) pairs in the storage.
         """
-        for key in self.storage.iterkeys():
-            yield (key, self.storage[key])
+        return iter(self.storage.items())
 
     def __repr__(self) -> str:
         """
@@ -137,4 +108,4 @@ class DiskCacheStorage(AbstractStorage):
         str
             A string representation of the storage.
         """
-        return f"DiskCacheStorage(directory='{self.storage.directory}')"
+        return "InMemoryStorage()"

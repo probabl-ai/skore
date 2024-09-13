@@ -2,7 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 from skore.item.item_repository import ItemRepository
 from skore.layout.layout_repository import LayoutRepository
-from skore.persistence.memory import InMemoryStorage
+from skore.persistence.in_memory_storage import InMemoryStorage
 from skore.project import Project
 from skore.ui.app import create_app
 
