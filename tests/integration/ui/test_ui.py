@@ -1,18 +1,20 @@
 import pytest
 from fastapi.testclient import TestClient
+from skore.item.item_repository import ItemRepository
+from skore.layout.layout_repository import LayoutRepository
 from skore.persistence.memory import InMemoryStorage
 from skore.project import Project
 from skore.ui.app import create_app
 
 
 @pytest.fixture
-def storage():
-    return InMemoryStorage()
-
-
-@pytest.fixture
-def project(storage):
-    return Project(storage=storage)
+def project():
+    item_repository = ItemRepository(storage=InMemoryStorage())
+    layout_repository = LayoutRepository(storage=InMemoryStorage())
+    return Project(
+        item_repository=item_repository,
+        layout_repository=layout_repository,
+    )
 
 
 @pytest.fixture
@@ -46,11 +48,10 @@ def test_get_items(client, project):
         "layout": [],
         "items": {
             "test": {
-                "item_type": item.item_type,
-                "media_type": item.media_type,
+                "media_type": "text/markdown",
                 "serialized": "test",
-                "updated_at": item.updated_at.isoformat(),
-                "created_at": item.created_at.isoformat(),
+                "updated_at": item.updated_at,
+                "created_at": item.created_at,
             }
         },
     }
@@ -64,6 +65,6 @@ def test_share_report(client, project):
     assert b"<!DOCTYPE html>" in response.content
 
 
-def test_put_report_layout(client, project):
+def test_put_report_layout(client):
     response = client.put("/api/report/layout", json=[{"key": "test", "size": "large"}])
     assert response.status_code == 201
