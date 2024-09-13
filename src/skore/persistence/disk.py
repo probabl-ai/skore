@@ -28,7 +28,6 @@ class DiskCacheStorage(AbstractStorage):
     ----------
     storage : Cache
         The underlying diskcache Cache object.
-
     """
 
     def __init__(self, directory: Path):

@@ -2,7 +2,6 @@
 
 This module provides the ItemRepository class, which is responsible for
 storing, retrieving, and deleting items in a storage system.
-
 """
 
 from __future__ import annotations
@@ -26,7 +25,6 @@ class ItemRepository:
     A repository for managing storage and retrieval of items.
 
     This class provides methods to get, put, and delete items from a storage system.
-
     """
 
     ITEM_CLASS_NAME_TO_ITEM_CLASS = {
@@ -45,7 +43,6 @@ class ItemRepository:
         ----------
         storage : AbstractStorage
             The storage system to be used by the repository.
-
         """
         self.storage = storage
 
@@ -62,7 +59,6 @@ class ItemRepository:
         -------
         Item
             The retrieved item.
-
         """
         value = self.storage[key]
         item_class_name = value["item_class_name"]
@@ -81,7 +77,6 @@ class ItemRepository:
             The key to use for storing the item.
         item : Item
             The item to be stored.
-
         """
         item_dict = vars(item)
 
@@ -101,7 +96,6 @@ class ItemRepository:
         ----------
         key : Any
             The key of the item to be deleted.
-
         """
         del self.storage[key]
 
