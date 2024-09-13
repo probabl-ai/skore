@@ -92,7 +92,7 @@ class SklearnBaseEstimatorItem:
     @classmethod
     def factory(cls, estimator: sklearn.base.BaseEstimator) -> SklearnBaseEstimatorItem:
         """
-        Create a new SklearnBaseEstimatorItem instance from a scikit-learn BaseEstimator.
+        Create a SklearnBaseEstimatorItem instance from a scikit-learn BaseEstimator.
 
         Parameters
         ----------
