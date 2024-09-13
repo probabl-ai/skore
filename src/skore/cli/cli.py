@@ -4,9 +4,9 @@ import argparse
 import pathlib
 from importlib.metadata import version
 
-from skore.create_project import create_project
-from skore.quickstart_command import __quickstart
-from skore.ui import __launch
+from skore.cli.create_project import create_project
+from skore.cli.launch_dashboard import __launch
+from skore.cli.quickstart_command import __quickstart
 
 
 def cli(args: list[str]):

@@ -1,7 +1,7 @@
 import subprocess
 
 import pytest
-from skore.create_project import (
+from skore.cli.create_project import (
     ImproperProjectName,
     ProjectAlreadyExists,
     ProjectCreationError,

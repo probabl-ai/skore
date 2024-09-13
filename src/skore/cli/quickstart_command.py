@@ -1,8 +1,8 @@
 """Implement the "quickstart" command."""
 
 from skore import logger
-from skore.create_project import ProjectAlreadyExists, create_project
-from skore.ui import __launch
+from skore.cli.create_project import ProjectAlreadyExists, create_project
+from skore.cli.launch_dashboard import __launch
 
 
 def __quickstart():

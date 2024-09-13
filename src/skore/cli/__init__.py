@@ -1,0 +1,1 @@
+"""Implement skore CLI."""

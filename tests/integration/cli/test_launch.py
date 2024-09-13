@@ -5,7 +5,7 @@ from contextlib import contextmanager
 from time import monotonic
 
 import httpx
-from skore.create_project import create_project
+from skore.cli.create_project import create_project
 
 
 @contextmanager
