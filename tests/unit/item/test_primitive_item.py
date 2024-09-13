@@ -11,17 +11,19 @@ class TestPrimitiveItem:
             "a",
             0,
             1.1,
-            b"a",
+            True,
             [0, 1, 2],
             (0, 1, 2),
             {"a": 0},
         ],
     )
-    def test_factory(self, monkeypatch, primitive):
-        now = datetime.now(tz=UTC).isoformat()
-        mocked_datetime = monkeypatch.patch("module_to_mock.datetime")
-        mocked_datetime.datetime.now.return_value = JAN_31
+    def test_factory(self, monkeypatch, mock_nowstr, MockDatetime, primitive):
+        monkeypatch.setattr("skore.item.primitive_item.datetime", MockDatetime)
 
         item = PrimitiveItem.factory(primitive)
 
-        assert vars(item) == {"primitive": primitive}
+        assert vars(item) == {
+            "primitive": primitive,
+            "created_at": mock_nowstr,
+            "updated_at": mock_nowstr,
+        }
