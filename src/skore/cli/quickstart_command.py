@@ -1,6 +1,6 @@
 """Implement the "quickstart" command."""
 
-from skore import logger
+from skore.cli import logger
 from skore.cli.create_project import ProjectAlreadyExists, __create
 from skore.cli.launch_dashboard import __launch
 
