@@ -102,8 +102,8 @@ class Project:
             return []
 
 
-class ProjectDoesNotExist(Exception):
-    """Project does not exist."""
+class ProjectLoadError(Exception):
+    """Failed to load project."""
 
 
 def load(project_name: str | Path) -> Project:
@@ -119,6 +119,9 @@ def load(project_name: str | Path) -> Project:
     if path.suffix != ".skore":
         path = path.parent / (path.name + ".skore")
 
+    if not Path(path).exists():
+        raise ProjectLoadError(f"Project '{path}' does not exist: did you create it?")
+
     try:
         # FIXME should those hardcoded string be factorized somewhere ?
         item_storage = DiskCacheStorage(directory=Path(path) / "items")
@@ -130,8 +133,11 @@ def load(project_name: str | Path) -> Project:
             layout_repository=layout_repository,
         )
     except DirectoryDoesNotExist as e:
-        raise ProjectDoesNotExist(
-            f"Project '{path}' does not exist. Did you create it?"
+        missing_directory = e.args[0].split()[1]
+        raise ProjectLoadError(
+            f"Project '{path}' is corrupted: "
+            f"directory '{missing_directory}' should exist. "
+            "Consider re-creating the project."
         ) from e
 
     return project

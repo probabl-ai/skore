@@ -14,7 +14,7 @@ from skore.item import ItemRepository
 from skore.layout import LayoutRepository
 from skore.layout.layout import LayoutItem, LayoutItemSize
 from skore.persistence.in_memory_storage import InMemoryStorage
-from skore.project import Project, ProjectDoesNotExist, load
+from skore.project import Project, ProjectLoadError, load
 
 
 @pytest.fixture
@@ -109,7 +109,7 @@ def test_put_rf_model(project, monkeypatch):
 
 
 def test_load(tmp_path):
-    with pytest.raises(ProjectDoesNotExist):
+    with pytest.raises(ProjectLoadError):
         load("/empty")
 
     # Project path must end with ".skore"
