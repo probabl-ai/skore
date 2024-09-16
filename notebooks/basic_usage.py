@@ -301,31 +301,31 @@ project.put_item(
 # %%
 project.put_item(
     "my_comment_2",
-    MediaItem.factory("<p><h2>Integers</h1></p>", media_type="text/html"),
+    MediaItem.factory("<p><h2>Integers</h2></p>", media_type="text/html"),
 )
 
 # %%
 project.put_item(
-    "my_comment_3", MediaItem.factory("<p><h2>Strings</h1></p>", media_type="text/html")
+    "my_comment_3", MediaItem.factory("<p><h2>Strings</h2></p>", media_type="text/html")
 )
 
 # %%
 project.put_item(
     "my_comment_4",
-    MediaItem.factory("<p><h2>Many kinds of data</h1></p>", media_type="text/html"),
+    MediaItem.factory("<p><h2>Many kinds of data</h2></p>", media_type="text/html"),
 )
 
 # %%
 project.put_item(
     "my_comment_5",
-    MediaItem.factory("<p><h2>Altair plots</h1></p>", media_type="text/html"),
+    MediaItem.factory("<p><h2>Altair plots</h2></p>", media_type="text/html"),
 )
 
 # %%
 project.put_item(
     "my_comment_6",
     MediaItem.factory(
-        "<p><h2>Scikit-learn models and pipelines</h1></p>", media_type="text/html"
+        "<p><h2>Scikit-learn models and pipelines</h2></p>", media_type="text/html"
     ),
 )
 
@@ -333,7 +333,7 @@ project.put_item(
 project.put_item(
     "my_comment_7",
     MediaItem.factory(
-        "<p><h2>Manipulating the skore dashboard</h1></p>", media_type="text/html"
+        "<p><h2>Manipulating the skore dashboard</h2></p>", media_type="text/html"
     ),
 )
 
