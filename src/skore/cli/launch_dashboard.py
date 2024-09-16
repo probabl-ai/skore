@@ -40,18 +40,17 @@ def __launch(project_name: str | Path, port: int, open_browser: bool):
     A tuple with the dashboard and the project directory path if succeeded,
     None if failed
     """
-    logger.info(
-        f"Running dashboard from '{project_name}' at URL http://localhost:{port}"
-    )
+    project = load(project_name)
+    app = create_app(project=project)
 
     if open_browser:
         threading.Thread(target=lambda: __open_browser(port=port)).start()
 
-    project = load(project_name)
-    app = create_app(project=project)
-
     try:
         # TODO: check port is free
+        logger.info(
+            f"Running dashboard from '{project_name}' at URL http://localhost:{port}"
+        )
         uvicorn.run(app, port=port, log_level="error")
     except KeyboardInterrupt:
         logger.info("Closing dashboard")
