@@ -118,9 +118,6 @@ def __create(project_name: str | Path, working_dir: Path | None = None) -> Path:
     )
 
     try:
-        # FIXME should those hardcoded string be factorized somewhere ?
-        (project_directory / "items").mkdir()
-        (project_directory / "layouts").mkdir()
         project_directory.mkdir()
     except FileExistsError as e:
         raise ProjectAlreadyExists(
@@ -136,6 +133,25 @@ def __create(project_name: str | Path, working_dir: Path | None = None) -> Path:
     except Exception as e:
         raise ProjectCreationError(
             f"Unable to create project file '{project_directory}'."
+        ) from e
+
+    # Once main project directory has been created, created the nested directories
+
+    # FIXME should those hardcoded directory paths be factorized somewhere?
+    items_dir = project_directory / "items"
+    try:
+        items_dir.mkdir()
+    except Exception as e:
+        raise ProjectCreationError(
+            f"Unable to create project file '{items_dir}'."
+        ) from e
+
+    layouts_dir = project_directory / "layouts"
+    try:
+        layouts_dir.mkdir()
+    except Exception as e:
+        raise ProjectCreationError(
+            f"Unable to create project file '{layouts_dir}'."
         ) from e
 
     logger.info(f"Project file '{project_directory}' was successfully created.")
