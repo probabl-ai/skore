@@ -3,6 +3,7 @@
 import logging
 
 import rich.logging
+import rich.traceback
 
 from skore.project import Project, load
 
@@ -10,6 +11,9 @@ __all__ = [
     "load",
     "Project",
 ]
+
+# Display error tracebacks with Rich
+rich.traceback.install(show_locals=True)
 
 
 class Handler(rich.logging.RichHandler):
