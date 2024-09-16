@@ -3,7 +3,7 @@
 import re
 from pathlib import Path
 
-from skore.logger import logger
+from skore import logger
 
 
 class ProjectNameTooLong(Exception):
