@@ -10,7 +10,7 @@ import { mountSuspense } from "../test.utils";
 
 vi.mock("@/services/api", () => {
   const fetchReport = vi.fn().mockImplementation(() => {
-    return {};
+    return { items: {}, layout: [] };
   });
   return { fetchReport };
 });
