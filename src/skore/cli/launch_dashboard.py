@@ -7,7 +7,7 @@ from pathlib import Path
 
 import uvicorn
 
-from skore import logger
+from skore.logger import logger
 from skore.project import load
 from skore.ui.app import create_app
 
