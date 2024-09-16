@@ -4,7 +4,7 @@ import argparse
 import pathlib
 from importlib.metadata import version
 
-from skore.cli.create_project import create_project
+from skore.cli.create_project import __create
 from skore.cli.launch_dashboard import __launch
 from skore.cli.quickstart_command import __quickstart
 
@@ -75,7 +75,7 @@ def cli(args: list[str]):
                 open_browser=parsed_args.open_browser,
             )
         case "create":
-            create_project(
+            __create(
                 project_name=parsed_args.project_name,
                 working_dir=parsed_args.working_dir,
             )

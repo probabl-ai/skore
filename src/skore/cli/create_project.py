@@ -79,7 +79,7 @@ class ProjectPermissionError(Exception):
     """Permissions in the directory do not allow creating a file."""
 
 
-def create_project(project_name: str | Path, working_dir: Path | None = None) -> Path:
+def __create(project_name: str | Path, working_dir: Path | None = None) -> Path:
     """Create a project file named according to `project_name`.
 
     Parameters
