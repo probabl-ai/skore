@@ -69,3 +69,9 @@ Then, you can access the local build via:
 ```sh
 open doc/_build/html/index.html
 ```
+
+## Help for common issues
+
+### `make build-frontend` doesn't work!
+
+Please check that your version of node is at least 20 using the following command: `node -v`
