@@ -5,11 +5,11 @@
 ## Installation
 
 For now, the only supported method to use skore is from source.
-Follow the instructions in [CONTRIBUTING.md](/CONTRIBUTING.md#quick-start) to install dependencies and start the dashboard.
+Follow the instructions in [CONTRIBUTING.md](/CONTRIBUTING.md#quick-start) to install dependencies and start the UI.
 
 ## Quick start
 
-For a complete introductory example, see our [basic usage notebook](/notebooks/basic_usage.ipynb). The resulting skore dashboard has been exported to [this HTML file](https://gist.github.com/augustebaum/6b21dbd7f7d5a584fbf2c1956692574e): download it and open it in your browser to visualize it.
+For a complete introductory example, see our [basic usage notebook](/notebooks/basic_usage.ipynb). The resulting skore report has been exported to [this HTML file](https://gist.github.com/augustebaum/6b21dbd7f7d5a584fbf2c1956692574e): download it and open it in your browser to visualize it.
 
 In your shell, run the following to create a project file `project.skore` in your current working directory:
 ```sh
@@ -23,29 +23,42 @@ from skore import load
 project = load("project.skore")
 ```
 
-You can insert objects in and read objects from the project using the following commands:
+You can save items you need to track in your project:
 ```python
 project.put("my int", 3)
+```
 
+You can also get them back:
+```python
 project.get("my int")
+```
 
-# Strings are assumed to be Markdown:
+By default, strings are assumed to be Markdown:
+```python
 project.put("my string", "Hello world!")
+```
 
-# `put` overwrites previous data
+Note that `put` overwrites previous data
+```python
 project.put("my string", "Hello again!")
+```
 
+You can list all the keys in a project with:
+```python
 project.list_keys()
+```
 
+You can delete items with:
+```python
 project.delete_item("my int")
 ```
 
-Then, in your project root (i.e. where `project.skore` is), run the following command to start the frontend locally:
+Then, in the directory containing your project, run the following command to start the UI locally:
 ```sh
 python -m skore launch project.skore
 ```
 
-This should automatically open a browser tab pointing at the app URL.
+This will automatically open a browser at the UI's location.
 
 
 ## Roadmap

@@ -10,11 +10,11 @@ Bug reports are welcome, especially those reported with [short, self-contained, 
 
 ### Quick start
 
-You'll need Python>=3.12 to build the backend and Node>=20 to build the frontend. Then, you can install dependencies and run the dashboard with:
+You'll need Python>=3.12 to build the backend and Node>=20 to build the frontend. Then, you can install dependencies and run the UI with:
 ```sh
 make install
 make build-frontend
-make serve-dashboard
+make serve-ui
 ```
 
 You are now all setup to run the library locally.
@@ -55,7 +55,7 @@ in the `frontend` directory
 Then, to use the frontend
 ```sh
 make build-frontend
-make serve-dashboard
+make serve-ui
 ```
 
 ### Documentation

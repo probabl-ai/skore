@@ -23,7 +23,7 @@ serve-api:
 		--port 22140 \
 		--timeout-graceful-shutdown 0
 
-serve-dashboard:
+serve-ui:
 	SKORE_ROOT=$(SKORE_ROOT) python -m uvicorn \
 		--factory skore.ui.app:create_app \
 		--reload --reload-dir ./src \

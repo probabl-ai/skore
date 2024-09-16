@@ -19,7 +19,7 @@ def cli(args: list[str]):
 
     subparsers = parser.add_subparsers(dest="subcommand")
 
-    parser_launch = subparsers.add_parser("launch", help="Launch the dashboard")
+    parser_launch = subparsers.add_parser("launch", help="Launch the web UI")
     parser_launch.add_argument(
         "project_name",
         nargs="?",
@@ -36,7 +36,7 @@ def cli(args: list[str]):
         "--open-browser",
         action=argparse.BooleanOptionalAction,
         help=(
-            "whether to automatically open a browser tab showing the dashboard "
+            "whether to automatically open a browser tab showing the web UI "
             "(default: %(default)s)"
         ),
         default=True,
@@ -60,7 +60,7 @@ def cli(args: list[str]):
     )
 
     subparsers.add_parser(
-        "quickstart", help='Create a "project.skore" file and start the dashboard'
+        "quickstart", help='Create a "project.skore" file and start the UI'
     )
 
     parsed_args: argparse.Namespace = parser.parse_args(args)

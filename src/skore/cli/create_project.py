@@ -135,9 +135,8 @@ def __create(project_name: str | Path, working_dir: Path | None = None) -> Path:
             f"Unable to create project file '{project_directory}'."
         ) from e
 
-    # Once main project directory has been created, created the nested directories
+    # Once the main project directory has been created, created the nested directories
 
-    # FIXME should those hardcoded directory paths be factorized somewhere?
     items_dir = project_directory / "items"
     try:
         items_dir.mkdir()

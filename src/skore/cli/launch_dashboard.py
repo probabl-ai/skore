@@ -24,7 +24,7 @@ def __open_browser(port: int):
 
 
 def __launch(project_name: str | Path, port: int, open_browser: bool):
-    """Launch dashboard to visualize a project.
+    """Launch the UI to visualize a project.
 
     Parameters
     ----------
@@ -33,12 +33,7 @@ def __launch(project_name: str | Path, port: int, open_browser: bool):
     port : int
         Port at which to bind the UI server.
     open_browser: bool
-        Whether to automatically open a browser tab showing the dashboard.
-
-    Returns
-    -------
-    A tuple with the dashboard and the project directory path if succeeded,
-    None if failed
+        Whether to automatically open a browser tab showing the UI.
     """
     project = load(project_name)
     app = create_app(project=project)
@@ -49,8 +44,8 @@ def __launch(project_name: str | Path, port: int, open_browser: bool):
     try:
         # TODO: check port is free
         logger.info(
-            f"Running dashboard from '{project_name}' at URL http://localhost:{port}"
+            f"Running skore UI from '{project_name}' at URL http://localhost:{port}"
         )
         uvicorn.run(app, port=port, log_level="error")
     except KeyboardInterrupt:
-        logger.info("Closing dashboard")
+        logger.info("Closing skore UI")

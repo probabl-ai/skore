@@ -8,7 +8,7 @@ from skore.cli.launch_dashboard import __launch
 def __quickstart():
     """Quickstart a Skore project.
 
-    Create it if it does not exist, then launch the dashboard.
+    Create it if it does not exist, then launch the web UI.
 
     Parameters
     ----------
