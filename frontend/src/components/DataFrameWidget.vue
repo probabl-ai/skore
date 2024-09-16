@@ -1,10 +1,6 @@
 <script setup lang="ts">
-import "datatables.net-dt/css/dataTables.dataTables.min.css";
-
-import DataTablesCore from "datatables.net";
-import DataTable from "datatables.net-vue3";
-
-DataTable.use(DataTablesCore);
+import Simplebar from "simplebar-vue";
+import { computed, ref, watch } from "vue";
 
 export interface DataFrameWidgetProps {
   columns: string[];
@@ -12,14 +8,154 @@ export interface DataFrameWidgetProps {
 }
 
 const props = defineProps<DataFrameWidgetProps>();
+
+const rowPerPage = ref(10);
+const currentPage = ref(0);
+const totalPages = computed(() => {
+  return Math.ceil(props.data.length / rowPerPage.value);
+});
+const pageStart = computed(() => {
+  return currentPage.value * rowPerPage.value;
+});
+const pageEnd = computed(() => {
+  return (currentPage.value + 1) * rowPerPage.value;
+});
+const rows = computed(() => {
+  return props.data.slice(pageStart.value, pageEnd.value);
+});
+
+function nextPage() {
+  if (currentPage.value < totalPages.value - 1) {
+    currentPage.value++;
+  }
+}
+function previousPage() {
+  if (currentPage.value > 0) {
+    currentPage.value--;
+  }
+}
+function onPageSizeChange(event: Event) {
+  currentPage.value = 0;
+  rowPerPage.value = parseInt((event.target as HTMLSelectElement).value);
+}
+
+watch(props.data, () => {
+  currentPage.value = 0;
+});
+watch(props.columns, () => {
+  currentPage.value = 0;
+});
 </script>
 
 <template>
-  <DataTable :data="props.data" :options="{ paging: props.data.length > 10 }">
-    <thead>
-      <tr>
-        <th v-for="(name, index) in props.columns" :key="index">{{ name }}</th>
-      </tr>
-    </thead>
-  </DataTable>
+  <Simplebar>
+    <table>
+      <thead>
+        <tr>
+          <th v-for="(name, index) in props.columns" :key="index">{{ name }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="(row, index) in rows" :key="index">
+          <td v-for="(value, index) in row" :key="index">{{ value }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </Simplebar>
+  <div class="pagination" v-if="totalPages > 1 || rowPerPage == props.data.length">
+    <div class="pagination-page-size">
+      Page size
+      <select @change="onPageSizeChange">
+        <option value="10">10</option>
+        <option value="25">25</option>
+        <option value="50">50</option>
+      </select>
+    </div>
+    <div class="pagination-buttons" v-if="totalPages > 1">
+      <button @click="currentPage = 1">&lt;&lt;</button>
+      <button @click="previousPage">&lt;</button>
+      <button @click="nextPage">&gt;</button>
+      <button @click="currentPage = totalPages - 1">&gt;&gt;</button>
+    </div>
+    <div class="page-info">
+      Results: {{ pageStart + 1 }}-{{ pageEnd }} of {{ props.data.length }}
+    </div>
+  </div>
 </template>
+
+<style scoped>
+table {
+  width: 100%;
+  border: 1px solid var(--border-color-normal);
+  border-radius: var(--border-radius);
+  border-collapse: collapse;
+  text-align: right;
+
+  & thead {
+    background-color: var(--background-color-elevated);
+    color: var(--text-color-normal);
+    font-size: var(--text-size-normal);
+    font-weight: var(--text-weight-normal);
+
+    & tr {
+      & th {
+        padding: var(--spacing-padding-small);
+      }
+    }
+  }
+
+  & tbody {
+    & tr {
+      padding: var(--spacing-padding-small);
+      border-bottom: 1px solid var(--border-color-normal);
+
+      & td {
+        padding: var(--spacing-padding-small);
+        color: var(--text-color-highlight);
+        font-size: var(--text-size-highlight);
+        font-weight: var(--text-weight-highlight);
+      }
+
+      &:last-child {
+        border-bottom: none;
+      }
+    }
+  }
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--spacing-gap-normal);
+  color: var(--text-color-normal);
+  font-size: var(--text-size-normal);
+  font-weight: var(--text-weight-normal);
+
+  .pagination-buttons {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-gap-normal);
+
+    & button {
+      border: none;
+      background-color: transparent;
+      cursor: pointer;
+      font-size: var(--text-size-highlight);
+      font-weight: var(--text-weight-highlight);
+    }
+  }
+
+  & select {
+    padding: var(--spacing-padding-small);
+    border: 1px solid var(--border-color-lower);
+    border-radius: var(--border-radius);
+    background-color: var(--background-color-elevated-high);
+    box-shadow: 0 1px 2px var(--background-color-selected);
+    color: var(--text-color-highlight);
+    cursor: pointer;
+    font-size: var(--text-size-highlight);
+    font-weight: var(--text-weight-highlight);
+  }
+}
+</style>
