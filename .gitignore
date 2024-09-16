@@ -166,6 +166,7 @@ cython_debug/
 # Mandr
 *.mandr
 .DS_Store
+*.datamander
 
 # Visual studio code
 .vscode
