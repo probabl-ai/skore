@@ -6,6 +6,7 @@ import ReportCanvas from "@/components/ReportCanvas.vue";
 import ReportKeyList from "@/components/ReportKeyList.vue";
 import SectionHeader from "@/components/SectionHeader.vue";
 import SimpleButton from "@/components/SimpleButton.vue";
+import type { ReportItem } from "@/models";
 import { fetchShareableBlob } from "@/services/api";
 import { saveBlob } from "@/services/utils";
 import { useReportStore } from "@/stores/report";
@@ -15,13 +16,36 @@ const isDropIndicatorVisible = ref(false);
 const editor = ref<HTMLDivElement>();
 const isInFocusMode = ref(false);
 
-const unusedReportKeys = computed(() => {
+const infoMediaTypes = ["text/markdown", "text/html"];
+const mediaMediaTypes = [
+  "application/vnd.dataframe+json",
+  "application/vnd.sklearn.estimator+html",
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "image/svg+xml",
+];
+
+// {
+//       infoMediaTypes.includes(value.media_type);
+//     }
+function getFilteredUnusedReportKeys(filterPredicate: (key: string, value: ReportItem) => boolean) {
   if (reportStore.items === null) {
     return [];
   }
-  const allKeys = Object.keys(reportStore.items);
+  const infoItemKeys = Object.entries(reportStore.items)
+    .filter(([key, value]) => filterPredicate(key, value))
+    .map(([key]) => key);
   const usedKeys = reportStore.layout.map(({ key }) => key);
-  return allKeys.filter((key) => !usedKeys.includes(key));
+  return infoItemKeys.filter((key) => !usedKeys.includes(key));
+}
+
+const unusedInfoKeys = computed(() => {
+  return getFilteredUnusedReportKeys((key, value) => infoMediaTypes.includes(value.media_type));
+});
+
+const unusedMediaKeys = computed(() => {
+  return getFilteredUnusedReportKeys((key, value) => mediaMediaTypes.includes(value.media_type));
 });
 
 async function onShareReport() {
@@ -75,8 +99,14 @@ onBeforeUnmount(() => reportStore.stopBackendPolling());
           <ReportKeyList
             title="Info"
             icon="icon-text"
-            :keys="unusedReportKeys"
-            v-if="unusedReportKeys.length > 0"
+            :keys="unusedInfoKeys"
+            v-if="unusedInfoKeys.length > 0"
+          />
+          <ReportKeyList
+            title="Media"
+            icon="icon-plot"
+            :keys="unusedMediaKeys"
+            v-if="unusedMediaKeys.length > 0"
           />
         </Simplebar>
       </div>

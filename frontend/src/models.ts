@@ -4,7 +4,7 @@ export type KeyMoveDirection = "up" | "down";
 export type Layout = Array<{ key: string; size: KeyLayoutSize }>;
 
 export interface ReportItem {
-  media_type: string | null;
+  media_type: string;
   value: any;
   updated_at: string;
   created_at: string;
