@@ -9,6 +9,7 @@ on:
       - Makefile
       - requirements*.txt
       - .pre-commit-config.yaml
+      - .github/workflows/lint-and-test-backend.yml
 
 permissions:
   contents: read

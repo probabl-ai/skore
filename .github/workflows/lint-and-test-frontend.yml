@@ -5,6 +5,7 @@ on:
     paths:
       - 'frontend/**'
       - .pre-commit-config.yaml
+      - .github/workflows/lint-and-test-frontend.yml
 
 permissions:
   contents: read
