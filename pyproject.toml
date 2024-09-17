@@ -49,22 +49,6 @@ tools = [
   "pip-tools",
 ]
 
-doc = [
-  "skrub",
-  "sphinx",
-  "sphinx-gallery",
-  "pydata_sphinx_theme",
-  "seaborn",
-  "networkx",
-  "statsmodels",
-  "skrub",
-  "inflect",
-  "sentence-transformers",
-  "tqdm",
-  "pyarrow"  # for parquet files
-]
-
-
 [tool.pytest.ini_options]
 addopts = [
   "--doctest-modules",
