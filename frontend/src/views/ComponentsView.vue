@@ -9,18 +9,25 @@ import MarkdownWidget from "@/components/MarkdownWidget.vue";
 import SimpleButton from "@/components/SimpleButton.vue";
 import Tabs from "@/components/TabsWidget.vue";
 import TabsItem from "@/components/TabsWidgetItem.vue";
+import TextInput from "@/components/TextInput.vue";
 import VegaWidget from "@/components/VegaWidget.vue";
 
 import datatable from "@/assets/fixtures/datatable.json";
 import markdownString from "@/assets/fixtures/markdown.md?raw";
 import spec from "@/assets/fixtures/vega.json";
 import CrossValidationResultsWidget from "@/components/CrossValidationResultsWidget.vue";
+
+const textInputValue = defineModel<string>("value");
+const textInputValue2 = defineModel<string>("value2");
+const textInputValue3 = defineModel<string>("value3");
 </script>
 
 <template>
   <main>
     <h1>Components library</h1>
-    <Tabs :tab-names="['markdown', 'vega', 'DataFrame', 'Image', 'CV Results', 'buttons']">
+    <Tabs
+      :tab-names="['markdown', 'vega', 'DataFrame', 'Image', 'CV Results', 'buttons', 'inputs']"
+    >
       <TabsItem :value="0">
         <MarkdownWidget :source="markdownString" />
       </TabsItem>
@@ -155,6 +162,28 @@ import CrossValidationResultsWidget from "@/components/CrossValidationResultsWid
           </p>
         </div>
       </TabsItem>
+      <TabsItem :value="6">
+        <div class="text-inputs">
+          <p>
+            Regular text input
+            <TextInput v-model="textInputValue" /> value: {{ textInputValue }}
+          </p>
+          <p>
+            Text input with icon
+            <TextInput v-model="textInputValue2" icon="icon-magnifying-glass" /> value:
+            {{ textInputValue2 }}
+          </p>
+          <p>
+            Text input with icon and placeholder
+            <TextInput
+              v-model="textInputValue3"
+              icon="icon-pie-chart"
+              placeholder="Enter your name"
+            />
+            value: {{ textInputValue3 }}
+          </p>
+        </div>
+      </TabsItem>
     </Tabs>
   </main>
 </template>
@@ -171,6 +200,12 @@ main {
 }
 
 .buttons {
+  & > p {
+    padding: 10px;
+  }
+}
+
+.text-inputs {
   & > p {
     padding: 10px;
   }

@@ -72,10 +72,12 @@ watch(props.columns, () => {
       </select>
     </div>
     <div class="pagination-buttons" v-if="totalPages > 1">
-      <button @click="currentPage = 1">&lt;&lt;</button>
-      <button @click="previousPage">&lt;</button>
-      <button @click="nextPage">&gt;</button>
-      <button @click="currentPage = totalPages - 1">&gt;&gt;</button>
+      <button @click="currentPage = 0" :disabled="currentPage == 0">&lt;&lt;</button>
+      <button @click="previousPage" :disabled="currentPage == 0">&lt;</button>
+      <button @click="nextPage" :disabled="currentPage == totalPages - 1">&gt;</button>
+      <button @click="currentPage = totalPages - 1" :disabled="currentPage == totalPages - 1">
+        &gt;&gt;
+      </button>
     </div>
     <div class="page-info">
       Results: {{ pageStart + 1 }}-{{ pageEnd }} of {{ props.data.length }}
@@ -150,6 +152,7 @@ table {
     padding: var(--spacing-padding-small);
     border: 1px solid var(--border-color-lower);
     border-radius: var(--border-radius);
+    margin-left: var(--spacing-gap-normal);
     background-color: var(--background-color-elevated-high);
     box-shadow: 0 1px 2px var(--background-color-selected);
     color: var(--text-color-highlight);
