@@ -34,7 +34,7 @@ const textInputValue3 = defineModel<string>("value3");
       <TabsItem :value="1">
         <VegaWidget :spec="spec as VisualizationSpec" />
       </TabsItem>
-      <TabsItem :value="2">
+      <TabsItem :value="2" class="dataframe">
         <DataFrameWidget
           :columns="['id', 'first_name', 'last_name', 'email', 'gender', 'ip_address']"
           :data="datatable"
@@ -191,6 +191,10 @@ const textInputValue3 = defineModel<string>("value3");
 <style scoped>
 main {
   padding: 0 5vw;
+}
+
+.dataframe {
+  margin-top: 10px;
 }
 
 .images {

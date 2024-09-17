@@ -1,27 +1,43 @@
 <script setup lang="ts">
 import Simplebar from "simplebar-vue";
 import { computed, ref, watch } from "vue";
+import TextInput from "./TextInput.vue";
 
 export interface DataFrameWidgetProps {
   columns: string[];
   data: any[][];
 }
-
 const props = defineProps<DataFrameWidgetProps>();
 
 const rowPerPage = ref(10);
 const currentPage = ref(0);
-const totalPages = computed(() => {
-  return Math.ceil(props.data.length / rowPerPage.value);
+const search = defineModel<string>("search");
+
+const rows = computed(() => {
+  if (search.value !== undefined && search.value.length > 0) {
+    const searchToken = search.value.toLowerCase();
+    return props.data.filter((row) => {
+      const text = row.join(" ").toLowerCase();
+      return text.includes(searchToken);
+    });
+  }
+  return props.data;
 });
+
+const totalPages = computed(() => {
+  return Math.ceil(rows.value.length / rowPerPage.value);
+});
+
 const pageStart = computed(() => {
   return currentPage.value * rowPerPage.value;
 });
+
 const pageEnd = computed(() => {
   return (currentPage.value + 1) * rowPerPage.value;
 });
-const rows = computed(() => {
-  return props.data.slice(pageStart.value, pageEnd.value);
+
+const visibleRows = computed(() => {
+  return rows.value.slice(pageStart.value, pageEnd.value);
 });
 
 function nextPage() {
@@ -29,11 +45,13 @@ function nextPage() {
     currentPage.value++;
   }
 }
+
 function previousPage() {
   if (currentPage.value > 0) {
     currentPage.value--;
   }
 }
+
 function onPageSizeChange(event: Event) {
   currentPage.value = 0;
   rowPerPage.value = parseInt((event.target as HTMLSelectElement).value);
@@ -42,12 +60,14 @@ function onPageSizeChange(event: Event) {
 watch(props.data, () => {
   currentPage.value = 0;
 });
+
 watch(props.columns, () => {
   currentPage.value = 0;
 });
 </script>
 
 <template>
+  <TextInput v-model="search" icon="icon-magnifying-glass" placeholder="Search" />
   <Simplebar>
     <table>
       <thead>
@@ -56,13 +76,13 @@ watch(props.columns, () => {
         </tr>
       </thead>
       <tbody>
-        <tr v-for="(row, index) in rows" :key="index">
+        <tr v-for="(row, index) in visibleRows" :key="index">
           <td v-for="(value, index) in row" :key="index">{{ value }}</td>
         </tr>
       </tbody>
     </table>
   </Simplebar>
-  <div class="pagination" v-if="totalPages > 1 || rowPerPage == props.data.length">
+  <div class="pagination" v-if="totalPages > 1 || rowPerPage == rows.length">
     <div class="pagination-page-size">
       Page size
       <select @change="onPageSizeChange">
@@ -80,7 +100,10 @@ watch(props.columns, () => {
       </button>
     </div>
     <div class="page-info">
-      Results: {{ pageStart + 1 }}-{{ pageEnd }} of {{ props.data.length }}
+      Results: {{ pageStart + 1 }}-{{ Math.min(pageEnd, rows.length) }} of {{ rows.length }}
+      <span v-if="search && search.length > 0">
+        (filtered from {{ props.data.length }} results)</span
+      >
     </div>
   </div>
 </template>
@@ -90,7 +113,9 @@ table {
   width: 100%;
   border: 1px solid var(--border-color-normal);
   border-radius: var(--border-radius);
-  border-collapse: collapse;
+  margin-top: var(--spacing-gap-small);
+  border-collapse: separate;
+  border-spacing: 0;
   text-align: right;
 
   & thead {
@@ -109,7 +134,6 @@ table {
   & tbody {
     & tr {
       padding: var(--spacing-padding-small);
-      border-bottom: 1px solid var(--border-color-normal);
 
       & td {
         padding: var(--spacing-padding-small);
@@ -122,6 +146,18 @@ table {
         border-bottom: none;
       }
     }
+  }
+
+  & > thead > tr:not(:last-child) > th,
+  & > thead > tr:not(:last-child) > td,
+  & > tbody > tr:not(:last-child) > th,
+  & > tbody > tr:not(:last-child) > td,
+  & > tfoot > tr:not(:last-child) > th,
+  & > tfoot > tr:not(:last-child) > td,
+  & > thead:not(:last-child),
+  & > tbody:not(:last-child),
+  & > tfoot:not(:last-child) {
+    border-bottom: 1px solid var(--border-color-normal);
   }
 }
 
