@@ -8,11 +8,11 @@ pattern = "(?P<version>[^']+)"
 
 [tool.hatch.build.targets.sdist]
 only-include = ["src/"]
-artifacts = ["src/skore/dashboard/static/"]
+artifacts = ["src/skore/ui/static/"]
 
 [tool.hatch.build.targets.wheel]
 package = ["src/skore/"]
-artifacts = ["src/skore/dashboard/static/"]
+artifacts = ["src/skore/ui/static/"]
 
 [project]
 name = "skore"
