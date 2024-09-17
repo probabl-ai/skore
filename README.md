@@ -11,9 +11,9 @@ Follow the instructions in [CONTRIBUTING.md](/CONTRIBUTING.md#quick-start) to in
 
 For a complete introductory example, see our [basic usage notebook](/notebooks/basic_usage.ipynb). The resulting skore report has been exported to [this HTML file](https://gist.github.com/augustebaum/6b21dbd7f7d5a584fbf2c1956692574e): download it and open it in your browser to visualize it.
 
-In your shell, run the following to create a project file `project.skore` in your current working directory:
+In your shell, run the following to create a project file `project.skore` (the default) in your current working directory:
 ```sh
-python -m skore create project.skore
+python -m skore create
 ```
 
 Run the following in your Python code to load the project:
