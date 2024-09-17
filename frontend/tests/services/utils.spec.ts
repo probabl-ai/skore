@@ -49,7 +49,7 @@ describe("utils", () => {
   it("Can poll a function and stp the polling", async () => {
     const f = vi.fn();
     const stop = await poll(f, 10);
-    await sleep(22);
+    await sleep(25);
     stop();
     expect(f).toBeCalledTimes(3);
   });

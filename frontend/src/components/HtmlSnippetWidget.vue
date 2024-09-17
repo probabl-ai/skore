@@ -1,11 +1,21 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from "vue";
 
-const props = defineProps<{ src: string }>();
+interface Props {
+  src?: string;
+  base64Src?: string;
+}
+const props = withDefaults(defineProps<Props>(), {
+  src: "",
+  base64Src: "",
+});
 
 const iframe = ref<HTMLIFrameElement>();
 const iframeHeight = ref(0);
 
+const src = computed(() => {
+  return props.src || btoa(props.base64Src);
+});
 const document = computed(() => {
   return `
     <!DOCTYPE html>
@@ -23,7 +33,7 @@ const document = computed(() => {
       </style>
     </head>
 
-    <body>${props.src}</body>
+    <body>${src.value}</body>
   `;
 });
 
