@@ -1,12 +1,12 @@
 import subprocess
 
 import pytest
-from skore.create_project import (
+from skore.cli.create_project import (
     ImproperProjectName,
     ProjectAlreadyExists,
     ProjectCreationError,
     ProjectNameTooLong,
-    create_project,
+    __create,
     validate_project_name,
 )
 
@@ -36,33 +36,33 @@ def test_validate_project_name(project_name, expected):
 
 @pytest.mark.parametrize("project_name", ["hello", "hello.skore"])
 def test_create_project(project_name, tmp_path):
-    create_project(project_name, working_dir=tmp_path)
+    __create(project_name, working_dir=tmp_path)
     assert (tmp_path / "hello.skore").exists()
 
 
 # TODO: If using fixtures in test cases is possible, join this with
 # `test_create_project`
 def test_create_project_absolute_path(tmp_path):
-    create_project(tmp_path / "hello")
+    __create(tmp_path / "hello")
     assert (tmp_path / "hello.skore").exists()
 
 
 def test_create_project_fails_if_file_exists(tmp_path):
-    create_project(tmp_path / "hello")
+    __create(tmp_path / "hello")
     assert (tmp_path / "hello.skore").exists()
     with pytest.raises(ProjectAlreadyExists):
-        create_project(tmp_path / "hello")
+        __create(tmp_path / "hello")
 
 
 def test_create_project_fails_if_permission_denied(tmp_path):
     with pytest.raises(ProjectCreationError):
-        create_project("/")
+        __create("/")
 
 
 @pytest.mark.parametrize("project_name", ["hello.txt", "%%%", "COM1"])
 def test_create_project_fails_if_invalid_name(project_name, tmp_path):
     with pytest.raises(ProjectCreationError):
-        create_project(project_name, working_dir=tmp_path)
+        __create(project_name, working_dir=tmp_path)
 
 
 def test_create_project_cli_default_argument(tmp_path):

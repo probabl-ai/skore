@@ -30,6 +30,7 @@ dependencies = [
   "pydantic_numpy",
   "uvicorn",
   "rich",
+  "skops",
 ]
 
 [project.optional-dependencies]
@@ -40,6 +41,7 @@ test = [
   "pre-commit",
   "pytest",
   "pytest-cov",
+  "pytest-order",
   "pytest-randomly",
   "ruff",
 ]

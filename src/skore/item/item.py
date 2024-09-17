@@ -1,29 +1,69 @@
-"""Item class used to store data."""
+"""Base class for all items in the project."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from datetime import datetime
-    from typing import Any
-
-    from skore.item.display_type import DisplayType
+import inspect
+from abc import ABC, abstractmethod
+from datetime import UTC, datetime
+from functools import cached_property
+from typing import Any
 
 
-@dataclass(kw_only=True, frozen=True)
-class ItemMetadata:
-    """ItemMetadata class used to store metadata."""
+class Item(ABC):
+    """
+    Abstract base class for all items in the project.
 
-    display_type: DisplayType
-    created_at: datetime
-    updated_at: datetime
+    This class provides a common interface for all items, including
+    creation and update timestamps.
 
+    Parameters
+    ----------
+    created_at : str | None, optional
+        The creation timestamp of the item. If None, the current time is used.
+    updated_at : str | None, optional
+        The last update timestamp of the item. If None, the current time is used.
 
-@dataclass(kw_only=True, frozen=True)
-class Item:
-    """Item class used to store data and metadata."""
+    Attributes
+    ----------
+    created_at : str
+        The creation timestamp of the item.
+    updated_at : str
+        The last update timestamp of the item.
+    """
 
-    data: Any
-    metadata: ItemMetadata
+    def __init__(
+        self,
+        created_at: str | None = None,
+        updated_at: str | None = None,
+    ):
+        now = datetime.now(tz=UTC).isoformat()
+
+        self.created_at = created_at or now
+        self.updated_at = updated_at or now
+
+    @classmethod
+    @abstractmethod
+    def factory(cls) -> Item:
+        """
+        Create and return a new instance of the Item.
+
+        Returns
+        -------
+        Item
+            A new instance of the Item.
+        """
+
+    @cached_property
+    def __parameters__(self) -> dict[str, Any]:
+        """
+        Get the parameters of the Item instance.
+
+        Returns
+        -------
+        dict[str, Any]
+            A dictionary containing the parameters of the Item instance.
+        """
+        cls = self.__class__
+        cls_parameters = inspect.signature(cls).parameters
+
+        return {parameter: getattr(self, parameter) for parameter in cls_parameters}

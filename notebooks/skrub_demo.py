@@ -1,8 +1,22 @@
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: -all
+#     formats: ipynb,py:percent
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.16.1
+# ---
+
+# %%
 # ruff: noqa
 import base64
 from pathlib import Path
 from time import time
 
+# %%
 import altair as alt
 import numpy as np
 import pandas as pd
@@ -18,26 +32,39 @@ from skrub import TableReport, tabular_learner
 from skrub.datasets import fetch_employee_salaries
 from tqdm import tqdm
 
-from mandr import Mandr
-from mandr.storage import FileSystem
+# %%
+from skore import load
+from skore.item import MediaItem
 
+# %%
 DIR_MANDER = "datamander"
 PATH_PROJECT = Path("skrub_demo")
 N_SEEDS = 5
 
+# %%
+# Create a project at path './skrub_demo.skore'
+# !python -m skore create skrub_demo
 
+# %% [markdown]
+# Launch the web UI with `python -m skore launch skrub_demo`
+
+
+# %%
 def init_ridge():
     return tabular_learner(RidgeCV())
 
 
+# %%
 def init_rf():
     return tabular_learner(RandomForestRegressor(n_jobs=4))
 
 
+# %%
 def init_gb():
     return tabular_learner(HistGradientBoostingRegressor())
 
 
+# %%
 INIT_MODEL_FUNC = {
     "ridge": init_ridge,
     "rf": init_rf,
@@ -45,19 +72,25 @@ INIT_MODEL_FUNC = {
 }
 
 
+# %%
 def evaluate_models(model_names):
     results = []
     for model_name in model_names:
         print(f"{' Evaluating ' + model_name + ' ':=^50}")
         results.append(evaluate_seeds(model_name))
 
-    mander = get_mander(str(PATH_PROJECT))
-    mander.insert("skrub_report", plot_skrub_report(), display_type="html")
-    mander.insert("target_distribution", plot_y_distribution())
-    mander.insert("Metrics", plot_table_metrics(results))
-    mander.insert("R2 vs fit time", plot_r2_vs_fit_time(results), display_type="html")
+    project = load(PATH_PROJECT)
+    project.put_item(
+        "skrub_report",
+        MediaItem.factory(plot_skrub_report(), media_type="text/html"),
+    )
+
+    project.put("target_distribution", plot_y_distribution())
+    project.put("Metrics", plot_table_metrics(results))
+    project.put("R2 vs fit time", plot_r2_vs_fit_time(results))
 
 
+# %%
 def evaluate_seeds(model_name):
     path_model = PATH_PROJECT / model_name
 
@@ -80,19 +113,25 @@ def evaluate_seeds(model_name):
         )
 
         path_seed = path_model / f"random_state{random_state}"
-        mander = get_mander(str(path_seed))
-        mander.insert("scores", scores)  # scores is a dict
-        mander.insert("model_repr", plot_model_repr(model), display_type="html")
-        mander.insert("feature importance", plot_feature_importance(model, bunch))
+
+        project = load(PATH_PROJECT)
+        project.put(path_seed / "scores", scores)  # scores is a dict
+        project.put_item(
+            path_seed / "model_repr",
+            MediaItem.factory(plot_model_repr(model), media_type="text/html"),
+        )
+        project.put(
+            path_seed / "feature importance", plot_feature_importance(model, bunch)
+        )
         seed_scores.append(scores)
 
     agg_scores = aggregate_seeds_results(seed_scores)
-    mander = get_mander(str(path_model))
-    mander.insert("agg_scores", agg_scores)
+    project.put(path_model / "agg_scores", agg_scores)
 
     return agg_scores
 
 
+# %%
 def evaluate(model, bunch):
     y_pred = model.predict(bunch.X_test)
     y_test = bunch["y_test"]
@@ -111,6 +150,7 @@ def evaluate(model, bunch):
     return scores
 
 
+# %%
 def aggregate_seeds_results(scores):
     agg_score = dict()
     for metric in ["r2", "mae", "mse", "fit_time"]:
@@ -127,6 +167,7 @@ def aggregate_seeds_results(scores):
     return agg_score
 
 
+# %%
 def get_data(random_state, split=True):
     dataset = fetch_employee_salaries()
     X, y = dataset.X, dataset.y
@@ -144,6 +185,7 @@ def get_data(random_state, split=True):
         return Bunch(X=X, y=y)
 
 
+# %%
 def plot_table_metrics(results):
     df = pd.DataFrame(results)
     rename = {
@@ -163,7 +205,11 @@ def plot_table_metrics(results):
     return df
 
 
-def plot_r2_vs_fit_time(results):
+# %%
+import matplotlib.figure
+
+
+def plot_r2_vs_fit_time(results) -> matplotlib.figure.Figure:
     df = pd.DataFrame(results)
 
     model_names = df["model_name"].tolist()
@@ -207,26 +253,25 @@ def plot_r2_vs_fit_time(results):
     sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
     # plt.tight_layout()
 
-    filename = "r2_vs_fit_time.png"
-    plt.savefig(filename)
-
-    return convert_fig_to_html(filename)
+    return fig
 
 
+# %%
 def plot_skrub_report():
     bunch = get_data(random_state=0, split=False)
     df = pd.concat([bunch.X, bunch.y], axis=1)
     return TableReport(df).html()
 
 
-def plot_feature_importance(model, bunch):
+# %%
+def plot_feature_importance(model, bunch) -> alt.Chart:
     importances = permutation_importance(model, bunch.X_test, bunch.y_test, n_jobs=4)
 
     feature_imp = pd.DataFrame(
         importances["importances"].T, columns=bunch.X_train.columns
     ).melt()  # Convert the dataframe to a long format
 
-    fig = (
+    return (
         alt.Chart(feature_imp)
         .mark_boxplot(extent="min-max")
         .encode(
@@ -235,17 +280,17 @@ def plot_feature_importance(model, bunch):
         )
     )
 
-    return fig
 
-
-def plot_y_distribution():
+# %%
+def plot_y_distribution() -> alt.Chart:
     bunch = get_data(random_state=0, split=False)
     df = pd.concat([bunch.X, bunch.y], axis=1)
     N = min(1000, df.shape[0])
     df = df.sample(N)
 
-    alt.data_transformers.enable("vegafusion")
-    fig = (
+    # alt.data_transformers.enable("vegafusion")
+
+    return (
         alt.Chart(df)
         .mark_bar()
         .encode(
@@ -257,29 +302,12 @@ def plot_y_distribution():
         .interactive()
     )
 
-    return fig
 
-
-def plot_model_repr(model):
+# %%
+def plot_model_repr(model) -> str:
     return model._repr_html_()
 
 
-def get_mander(path):
-    return Mandr(
-        path,
-        storage=FileSystem(directory=DIR_MANDER),
-    )
-
-
-def delete_mander(mander):
-    for k in list(mander):
-        mander.delete(k)
-
-
-def convert_fig_to_html(path_file):
-    data_uri = base64.b64encode(open(path_file, "rb").read()).decode("utf-8")
-    return f'<img src="data:image/png;base64,{data_uri}">'
-
-
+# %%
 if __name__ == "__main__":
     evaluate_models(model_names=list(INIT_MODEL_FUNC))

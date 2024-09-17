@@ -1,4 +1,4 @@
-# Dashboard
+# Skore UI
 
 This sub directory aims at creating a single page application supporting Skore.
 

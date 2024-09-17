@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Simplebar from "simplebar-vue";
 
-import DataStoreCanvas from "@/components/DataStoreCanvas.vue";
+import ReportCanvas from "@/components/ReportCanvas.vue";
 </script>
 
 <template>
@@ -10,7 +10,7 @@ import DataStoreCanvas from "@/components/DataStoreCanvas.vue";
       <h1>Report</h1>
     </div>
     <Simplebar class="canvas-wrapper">
-      <DataStoreCanvas :showCardButtons="false" />
+      <ReportCanvas :showCardButtons="false" />
     </Simplebar>
   </div>
 </template>
