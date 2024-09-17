@@ -1,0 +1,37 @@
+name: Lint and test frontend
+
+on:
+  push:
+    paths:
+      - 'frontend/**'
+      - .pre-commit-config.yaml
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  lint-and-test-frontend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Lint with pre-commit
+        run: |
+          pre-commit run --files frontend
+      - name: Test with vitest
+        run: |
+          cd frontend
+          npm run test:unit:coverage
+      - uses: jwalton/gh-find-current-pr@v1
+        id: findPr
+      - name: Report coverage
+        if: always()
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          working-directory: ./frontend
+          pr-number: ${{ steps.findPr.outputs.pr }}
