@@ -27,54 +27,62 @@
   text-transform: none;
 }
 
-.icon-left::before {
-  content: "\e908";
-}
-
-.icon-down::before {
-  content: "\e909";
-}
-
-.icon-right::before {
-  content: "\e90a";
-}
-
-.icon-up::before {
-  content: "\e90b";
-}
-
-.icon-focus::before {
-  content: "\e90c";
-}
-
-.icon-grid-layout-large::before {
-  content: "\e905";
-}
-
-.icon-grid-layout-medium::before {
-  content: "\e906";
-}
-
-.icon-grid-layout-small::before {
-  content: "\e907";
-}
-
-.icon-text::before {
+.icon-magnifying-glass::before {
   content: "\e900";
 }
 
-.icon-plot::before {
+.icon-grid-layout-large::before {
   content: "\e901";
 }
 
-.icon-gift::before {
+.icon-grid-layout-medium::before {
   content: "\e902";
 }
 
-.icon-pie-chart::before {
+.icon-grid-layout-small::before {
   content: "\e903";
 }
 
-.icon-folder::before {
+.icon-focus::before {
   content: "\e904";
+}
+
+.icon-folder::before {
+  content: "\e905";
+}
+
+.icon-plot::before {
+  content: "\e906";
+}
+
+.icon-text-size::before {
+  content: "\e907";
+}
+
+.icon-gift::before {
+  content: "\e908";
+}
+
+.icon-pie-chart::before {
+  content: "\e909";
+}
+
+.icon-equal::before {
+  content: "\e90a";
+}
+
+.icon-left::before {
+  content: "\e90b";
+}
+
+.icon-down::before {
+  content: "\e90c";
+}
+
+.icon-right::before {
+  content: "\e90d";
+}
+
+.icon-up::before {
+  content: "\e90e";
 }
