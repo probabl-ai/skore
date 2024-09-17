@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import type { VisualizationSpec } from "vega-embed";
 
+import datatable from "@/assets/fixtures/datatable.json";
+import markdownString from "@/assets/fixtures/markdown.md?raw";
+import spec from "@/assets/fixtures/vega.json";
+
+import CrossValidationResultsWidget from "@/components/CrossValidationResultsWidget.vue";
 import DataFrameWidget from "@/components/DataFrameWidget.vue";
 import DropdownButton from "@/components/DropdownButton.vue";
 import DropdownButtonItem from "@/components/DropdownButtonItem.vue";
@@ -9,18 +14,22 @@ import MarkdownWidget from "@/components/MarkdownWidget.vue";
 import SimpleButton from "@/components/SimpleButton.vue";
 import Tabs from "@/components/TabsWidget.vue";
 import TabsItem from "@/components/TabsWidgetItem.vue";
+import ToastNotification from "@/components/ToastNotification.vue";
 import VegaWidget from "@/components/VegaWidget.vue";
+import { useToastsStore } from "@/stores/toasts";
 
-import datatable from "@/assets/fixtures/datatable.json";
-import markdownString from "@/assets/fixtures/markdown.md?raw";
-import spec from "@/assets/fixtures/vega.json";
-import CrossValidationResultsWidget from "@/components/CrossValidationResultsWidget.vue";
+const toastsStore = useToastsStore();
+
+let count = 0;
+function showToast() {
+  toastsStore.addToast(`Info toast ${count++}`, "info");
+}
 </script>
 
 <template>
   <main>
     <h1>Components library</h1>
-    <Tabs :tab-names="['markdown', 'vega', 'DataFrame', 'Image', 'CV Results', 'buttons']">
+    <Tabs :tab-names="['markdown', 'vega', 'DataFrame', 'Image', 'CV Results', 'buttons', 'toast']">
       <TabsItem :value="0">
         <MarkdownWidget :source="markdownString" />
       </TabsItem>
@@ -155,6 +164,15 @@ import CrossValidationResultsWidget from "@/components/CrossValidationResultsWid
           </p>
         </div>
       </TabsItem>
+      <TabsItem :value="6">
+        <div class="toasts">
+          <ToastNotification message="Info toast" type="info" id="info-toast" />
+          <ToastNotification message="Success toast" type="success" id="success-toast" />
+          <ToastNotification message="Warning toast" type="warning" id="warning-toast" />
+          <ToastNotification message="Error toast" type="error" id="error-toast" />
+        </div>
+        <SimpleButton label="Show toast" @click="showToast" />
+      </TabsItem>
     </Tabs>
   </main>
 </template>
@@ -173,6 +191,14 @@ main {
 .buttons {
   & > p {
     padding: 10px;
+  }
+}
+
+.toasts {
+  padding-top: 10px;
+
+  & > * {
+    margin-bottom: 10px;
   }
 }
 </style>
