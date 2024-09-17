@@ -7,9 +7,10 @@ which represents a scikit-learn BaseEstimator item.
 from __future__ import annotations
 
 from functools import cached_property
+from typing import TYPE_CHECKING
 
-import sklearn
-import skops.io
+if TYPE_CHECKING:
+    import sklearn.base
 
 from skore.item.item import Item
 
@@ -58,6 +59,8 @@ class SklearnBaseEstimatorItem(Item):
         sklearn.base.BaseEstimator
             The scikit-learn BaseEstimator representation of the stored skops object.
         """
+        import skops.io
+
         return skops.io.loads(self.estimator_skops)
 
     @classmethod
@@ -75,6 +78,9 @@ class SklearnBaseEstimatorItem(Item):
         SklearnBaseEstimatorItem
             A new SklearnBaseEstimatorItem instance.
         """
+        import sklearn.utils
+        import skops.io
+
         instance = cls(
             estimator_skops=skops.io.dumps(estimator),
             estimator_html_repr=sklearn.utils.estimator_html_repr(estimator),

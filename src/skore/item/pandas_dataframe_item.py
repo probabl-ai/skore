@@ -7,8 +7,10 @@ which represents a pandas DataFrame item.
 from __future__ import annotations
 
 from functools import cached_property
+from typing import TYPE_CHECKING
 
-import pandas
+if TYPE_CHECKING:
+    import pandas
 
 from skore.item.item import Item
 
@@ -53,6 +55,8 @@ class PandasDataFrameItem(Item):
         pd.DataFrame
             The pandas DataFrame representation of the stored dictionary.
         """
+        import pandas
+
         return pandas.DataFrame.from_dict(self.dataframe_dict, orient="tight")
 
     @classmethod

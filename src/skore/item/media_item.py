@@ -5,12 +5,13 @@ This module defines the MediaItem class, which represents media items.
 
 from __future__ import annotations
 
-from functools import singledispatchmethod
 from io import BytesIO
+from typing import TYPE_CHECKING
 
-from altair.vegalite.v5.schema.core import TopLevelSpec as Altair
-from matplotlib.figure import Figure as Matplotlib
-from PIL.Image import Image as Pillow
+if TYPE_CHECKING:
+    from altair.vegalite.v5.schema.core import TopLevelSpec as Altair
+    from matplotlib.figure import Figure as Matplotlib
+    from PIL.Image import Image as Pillow
 
 from skore.item.item import Item
 
@@ -52,9 +53,8 @@ class MediaItem(Item):
         self.media_encoding = media_encoding
         self.media_type = media_type
 
-    @singledispatchmethod
     @classmethod
-    def factory(cls, media):
+    def factory(cls, media, *args, **kwargs):
         """
         Create a new MediaItem instance.
 
@@ -76,9 +76,23 @@ class MediaItem(Item):
         MediaItem
             A new MediaItem instance.
         """
-        raise NotImplementedError(f"Type '{type(media)}' is not yet supported")
+        media_mro_fullnames = {
+            f"{cls.__module__}.{cls.__name__}" for cls in media.__class__.__mro__
+        }
 
-    @factory.register(bytes)
+        if "builtins.bytes" in media_mro_fullnames:
+            return cls.factory_bytes(media, *args, **kwargs)
+        if "builtins.str" in media_mro_fullnames:
+            return cls.factory_str(media, *args, **kwargs)
+        if "altair.vegalite.v5.schema.core.TopLevelSpec" in media_mro_fullnames:
+            return cls.factory_altair(media, *args, **kwargs)
+        if "matplotlib.figure.Figure" in media_mro_fullnames:
+            return cls.factory_matplotlib(media, *args, **kwargs)
+        if "PIL.Image.Image" in media_mro_fullnames:
+            return cls.factory_pillow(media, *args, **kwargs)
+
+        raise NotImplementedError(f"Type '{media.__class__}' is not yet supported")
+
     @classmethod
     def factory_bytes(
         cls,
@@ -109,7 +123,6 @@ class MediaItem(Item):
             media_type=media_type,
         )
 
-    @factory.register(str)
     @classmethod
     def factory_str(cls, media: str, media_type: str = "text/markdown") -> MediaItem:
         """
@@ -135,7 +148,6 @@ class MediaItem(Item):
             media_type=media_type,
         )
 
-    @factory.register(Altair)
     @classmethod
     def factory_altair(cls, media: Altair) -> MediaItem:
         """
@@ -159,7 +171,6 @@ class MediaItem(Item):
             media_type="application/vnd.vega.v5+json",
         )
 
-    @factory.register(Matplotlib)
     @classmethod
     def factory_matplotlib(cls, media: Matplotlib) -> MediaItem:
         """
@@ -185,7 +196,6 @@ class MediaItem(Item):
                 media_type="image/svg+xml",
             )
 
-    @factory.register(Pillow)
     @classmethod
     def factory_pillow(cls, media: Pillow) -> MediaItem:
         """

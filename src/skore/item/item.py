@@ -52,7 +52,6 @@ class Item(ABC):
         Item
             A new instance of the Item.
         """
-        ...
 
     @cached_property
     def __parameters__(self) -> dict[str, Any]:

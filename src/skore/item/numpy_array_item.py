@@ -6,8 +6,10 @@ This module defines the NumpyArrayItem class, which represents a NumPy array ite
 from __future__ import annotations
 
 from functools import cached_property
+from typing import TYPE_CHECKING
 
-import numpy
+if TYPE_CHECKING:
+    import numpy
 
 from skore.item.item import Item
 
@@ -67,6 +69,8 @@ class NumpyArrayItem(Item):
         numpy.ndarray
             The NumPy array representation of the stored list.
         """
+        import numpy
+
         return numpy.asarray(self.array_list)
 
     @classmethod
