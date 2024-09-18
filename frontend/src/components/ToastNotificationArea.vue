@@ -8,7 +8,6 @@ function onBeforeLeave(el: Element) {
   const div = el as HTMLDivElement;
   div.style.top = `${div.offsetTop}px`;
   div.style.zIndex = "1";
-  console.log("before leave", el, div.offsetTop);
 }
 </script>
 
