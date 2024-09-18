@@ -45,7 +45,7 @@ function onBeforeLeave(el: Element) {
 .toasts-move,
 .toasts-enter-active,
 .toasts-leave-active {
-  transition: all 1s ease;
+  transition: all 0.3s ease;
 }
 
 .toasts-enter-from {
