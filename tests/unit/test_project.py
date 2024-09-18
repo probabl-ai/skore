@@ -175,3 +175,20 @@ def test_report_layout(project):
 
     project.put_report_layout(layout)
     assert project.get_report_layout() == layout
+
+
+def test_put_several_items(project):
+    project.put({"a": "foo", "b": "bar"})
+    assert project.list_keys() == ["a", "b"]
+
+
+def test_put_several_items_nested(project):
+    project.put({"a": {"b": "baz"}})
+    assert project.list_keys() == ["a"]
+    assert project.get("a") == {"b": "baz"}
+
+
+def test_put_several_items_error(project):
+    with pytest.raises(NotImplementedError):
+        project.put({"a": "foo", "b": (lambda: "unsupported object")})
+    assert project.list_keys() == []
