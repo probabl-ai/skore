@@ -62,7 +62,5 @@ repos:
           - "stylelint-config-standard@36.0.1"
           - "stylelint-order@6.0.4"
           - "postcss-html@1.7.0"
-          - "postcss-nesting@13.0.0"
-          - "postcss-sorting@8.0.2"
 
 exclude: fixtures/
