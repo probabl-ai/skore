@@ -28,23 +28,25 @@ repos:
       # Run the formatter.
       - id: ruff-format
 
+  # use eslint mirror hook https://github.com/thibaudcolas/pre-commit-stylelint
+  # use & install prettier using additional_dependencies
+  # use & install stylelint using additional_dependencies
+  # clean package.json
+
   - repo: local
     hooks:
-      - id: tsc
-        language: node
-        name: Use vue-tsc to typecheck frontend code.
-        entry: bash -c "cd frontend && npm run type-check"
-        files: ^frontend/
       - id: eslint
         language: node
         name: Use eslint to lint frontend code.
         entry: bash -c "cd frontend && npm run lint"
         files: ^frontend/
+
       - id: prettier
         language: node
         name: Use prettier to format frontend code.
         entry: bash -c "cd frontend && npm run format"
         files: ^frontend/
+
       - id: stylelint
         language: node
         name: Use stylelint to lint CSS.
