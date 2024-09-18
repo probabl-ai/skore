@@ -67,13 +67,13 @@
     --border-color-elevated: #3f3f3f;
 
     /* toast */
-    --toast-background-color: #151517;
-    --toast-stripe-color: hsl(240deg 5% 10%);
-    --toast-border-color: black;
-    --toast-text-color: white;
-    --toast-dismiss-color: #a7a7a7;
-    --toast-shadow-elevation: rgb(0 0 0 / 48%);
-    --toast-shadow-inset: inset 0 0 1.1px 2px rgb(255 255 255 / 13%);
+    --toast-background-color: hsl(240deg 5% 91%);
+    --toast-stripe-color: hsl(240deg 5% 90%);
+    --toast-border-color: white;
+    --toast-text-color: black;
+    --toast-dismiss-color: hsl(0deg 0% 35%);
+    --toast-shadow-elevation: rgb(255 255 255 / 48%);
+    --toast-shadow-inset: inset 0 0 1.1px 2px rgb(0 0 0 / 13%);
   }
 }
 
@@ -102,8 +102,12 @@
     --border-color-elevated: #dadada;
 
     /* toast */
-    --toast-background-color: white;
-    --toast-text-color: black;
-    --toast-dismiss-color: #3b3b3b;
+    --toast-background-color: #151517;
+    --toast-stripe-color: hsl(240deg 5% 10%);
+    --toast-border-color: black;
+    --toast-text-color: white;
+    --toast-dismiss-color: #a7a7a7;
+    --toast-shadow-elevation: rgb(0 0 0 / 48%);
+    --toast-shadow-inset: inset 0 0 1.1px 2px rgb(255 255 255 / 13%);
   }
 }

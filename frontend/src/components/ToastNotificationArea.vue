@@ -3,11 +3,18 @@ import ToastNotification from "@/components/ToastNotification.vue";
 import { useToastsStore } from "@/stores/toasts";
 
 const toastsStore = useToastsStore();
+
+function onBeforeLeave(el: Element) {
+  const div = el as HTMLDivElement;
+  div.style.top = `${div.offsetTop}px`;
+  div.style.zIndex = "1";
+  console.log("before leave", el, div.offsetTop);
+}
 </script>
 
 <template>
   <div class="toast-notification-area">
-    <TransitionGroup name="toasts" tag="div">
+    <TransitionGroup name="toasts" tag="div" class="toasts" @before-leave="onBeforeLeave">
       <div v-for="toast in toastsStore.toasts" :key="toast.id">
         <ToastNotification :id="toast.id" :message="toast.message" :type="toast.type" />
       </div>
@@ -21,18 +28,25 @@ const toastsStore = useToastsStore();
   z-index: 9000;
   right: 0;
   bottom: 0;
-  display: flex;
   width: 60dvw;
-  flex-direction: column;
   padding: var(--spacing-padding-large);
-  gap: var(--spacing-gap-small);
+
+  & .toasts {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-gap-normal);
+
+    & > div {
+      z-index: 2;
+    }
+  }
 }
 
 .toasts-move,
 .toasts-enter-active,
 .toasts-leave-active {
-  z-index: 1;
-  transition: all 0.5s ease;
+  transition: all 1s ease;
 }
 
 .toasts-enter-from {
@@ -42,11 +56,10 @@ const toastsStore = useToastsStore();
 
 .toasts-leave-to {
   opacity: 0;
-  transform: translateY(-30px);
 }
 
 .toasts-leave-active {
   position: absolute;
-  z-index: 2;
+  width: 100%;
 }
 </style>
