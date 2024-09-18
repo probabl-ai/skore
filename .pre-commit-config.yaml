@@ -24,15 +24,11 @@ repos:
         args: [--fix]
       - id: ruff-format
 
-  # use eslint mirror hook https://github.com/thibaudcolas/pre-commit-stylelint
-  # use & install prettier using additional_dependencies
-  # use & install stylelint using additional_dependencies
-  # clean package.json
-
   - repo: https://github.com/pre-commit/mirrors-eslint
     rev: v8.57.0
     hooks:
       - id: eslint
+        # TODO: Move --ext to files
         files: ^frontend/
         args:
           - .
@@ -60,6 +56,11 @@ repos:
         files: ^frontend/src/**/*.{css,vue}
         language: node
         entry: bash -c "stylelint --fix"
-        additional_dependencies: ["stylelint@16.9.0"]
+        additional_dependencies: 
+          - "stylelint@16.9.0"
+          - "stylelint-config-idiomatic-order@10.0.0"
+          - "stylelint-config-recommended-vue@1.5.0"
+          - "stylelint-config-standard@36.0.1"
+          - "stylelint-order@6.0.4"
 
 exclude: fixtures/
