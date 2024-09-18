@@ -1,4 +1,5 @@
 import type { Layout, Report } from "@/models";
+import { useToastsStore } from "@/stores/toasts";
 
 const { protocol, hostname, port: windowPort } = window.location;
 // In the general case we expect the webapp to run at the same port as the API
@@ -11,15 +12,22 @@ function getErrorMessage(error: unknown) {
 }
 
 function reportError(message: string) {
+  const toastsStore = useToastsStore();
+  toastsStore.addToast(message, "error");
   console.error(message);
+}
+
+function checkResponseStatus(r: Response, attendedStatusCode: number) {
+  if (r.status !== attendedStatusCode) {
+    throw new Error(`Server responded with unexpected status code: ${r.status}`);
+  }
 }
 
 export async function fetchReport(): Promise<Report | null> {
   try {
     const r = await fetch(`${BASE_URL}/items`);
-    if (r.status == 200) {
-      return await r.json();
-    }
+    checkResponseStatus(r, 200);
+    return await r.json();
   } catch (error) {
     reportError(getErrorMessage(error));
   }
@@ -35,9 +43,8 @@ export async function putLayout(payload: Layout): Promise<Report | null> {
         "Content-Type": "application/json",
       },
     });
-    if (r.status == 201) {
-      return await r.json();
-    }
+    checkResponseStatus(r, 201);
+    return await r.json();
   } catch (error) {
     reportError(getErrorMessage(error));
   }

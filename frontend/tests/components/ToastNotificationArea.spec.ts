@@ -2,10 +2,10 @@ import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
 import { setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { nextTick } from "vue";
 
 import ToastNotificationArea from "@/components/ToastNotificationArea.vue";
 import { useToastsStore } from "@/stores/toasts";
-import { nextTick } from "vue";
 
 describe("ToastNotificationArea", () => {
   beforeEach(() => {
