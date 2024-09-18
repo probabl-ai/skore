@@ -3,16 +3,9 @@
 from pathlib import Path
 from typing import Any
 
-import altair
-import matplotlib
-import numpy
-import pandas
-import PIL
-import sklearn
-
 from skore.item import Item
 from skore.item.item_repository import ItemRepository
-from skore.item.media_item import MediaItem
+from skore.item.media_item import MediaItem, lazy_is_instance
 from skore.item.numpy_array_item import NumpyArrayItem
 from skore.item.pandas_dataframe_item import PandasDataFrameItem
 from skore.item.primitive_item import PrimitiveItem, is_primitive
@@ -25,17 +18,17 @@ def object_to_item(o: Any) -> Item:
     """Transform an object into an Item."""
     if is_primitive(o):
         return PrimitiveItem.factory(o)
-    elif isinstance(o, pandas.DataFrame):
+    elif lazy_is_instance(o, "pandas.core.frame.DataFrame"):
         return PandasDataFrameItem.factory(o)
-    elif isinstance(o, numpy.ndarray):
+    elif lazy_is_instance(o, "numpy.ndarray"):
         return NumpyArrayItem.factory(o)
-    elif isinstance(o, sklearn.base.BaseEstimator):
+    elif lazy_is_instance(o, "sklearn.base.BaseEstimator"):
         return SklearnBaseEstimatorItem.factory(o)
-    elif isinstance(o, altair.vegalite.v5.schema.core.TopLevelSpec):
+    elif lazy_is_instance(o, "altair.vegalite.v5.schema.core.TopLevelSpec"):
         return MediaItem.factory_altair(o)
-    elif isinstance(o, matplotlib.figure.Figure):
+    elif lazy_is_instance(o, "matplotlib.figure.Figure"):
         return MediaItem.factory_matplotlib(o)
-    elif isinstance(o, PIL.Image.Image):
+    elif lazy_is_instance(o, "PIL.Image.Image"):
         return MediaItem.factory_pillow(o)
     else:
         raise NotImplementedError(f"Type {o.__class__.__name__} is not supported yet.")
