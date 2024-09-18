@@ -1,4 +1,4 @@
-name: Lint and test backend
+name: Test backend
 
 on:
   push:
@@ -8,8 +8,7 @@ on:
       - pyproject.toml
       - Makefile
       - requirements*.txt
-      - .pre-commit-config.yaml
-      - .github/workflows/lint-and-test-backend.yml
+      - .github/workflows/test-backend.yml
 
 permissions:
   contents: read
@@ -20,6 +19,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
@@ -29,18 +29,11 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -e . -r requirements.txt -r requirements-test.txt
+
       - name: Build frontend and share library
         shell: bash
         run: make build-frontend
 
-      - name: Lint src/ with pre-commit
-        run: |
-          cd src/
-          pre-commit run --all-files
-      - name: Lint tests/ with pre-commit
-        run: |
-          cd tests/
-          pre-commit run --all-files
       - name: Test with pytest
         timeout-minutes: 5
         run: |
