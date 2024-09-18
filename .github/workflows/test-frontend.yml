@@ -1,11 +1,10 @@
-name: Lint and test frontend
+name: Test frontend
 
 on:
   push:
     paths:
       - 'frontend/**'
-      - .pre-commit-config.yaml
-      - .github/workflows/lint-and-test-frontend.yml
+      - .github/workflows/test-frontend.yml
 
 permissions:
   contents: read
@@ -17,6 +16,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Node 20
         uses: actions/setup-node@v4
         with:
@@ -33,6 +33,7 @@ jobs:
 
       - uses: jwalton/gh-find-current-pr@v1
         id: findPr
+
       - name: Report coverage
         if: always()
         uses: davelosert/vitest-coverage-report-action@v2
