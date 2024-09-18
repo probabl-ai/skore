@@ -6,15 +6,20 @@ This module defines the MediaItem class, which represents media items.
 from __future__ import annotations
 
 from io import BytesIO
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from altair.vegalite.v5.schema.core import TopLevelSpec as Altair
     from matplotlib.figure import Figure as Matplotlib
     from PIL.Image import Image as Pillow
 
-from skore import lazy_is_instance
 from skore.item.item import Item
+
+
+def lazy_is_instance(object: Any, cls_fullname: str) -> bool:
+    return cls_fullname in {
+        f"{cls.__module__}.{cls.__name__}" for cls in object.__class__.__mro__
+    }
 
 
 class MediaItem(Item):
