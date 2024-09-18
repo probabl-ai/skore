@@ -27,62 +27,78 @@
   text-transform: none;
 }
 
-.icon-magnifying-glass::before {
+.icon-warning::before {
   content: "\e900";
 }
 
-.icon-grid-layout-large::before {
+.icon-info::before {
   content: "\e901";
 }
 
-.icon-grid-layout-medium::before {
+.icon-error::before {
   content: "\e902";
 }
 
-.icon-grid-layout-small::before {
+.icon-success::before {
   content: "\e903";
 }
 
-.icon-focus::before {
+.icon-grid-layout-large::before {
   content: "\e904";
 }
 
-.icon-folder::before {
+.icon-grid-layout-medium::before {
   content: "\e905";
 }
 
-.icon-plot::before {
+.icon-grid-layout-small::before {
   content: "\e906";
 }
 
-.icon-text-size::before {
+.icon-magnifying-glass::before {
   content: "\e907";
 }
 
-.icon-gift::before {
+.icon-focus::before {
   content: "\e908";
 }
 
-.icon-pie-chart::before {
+.icon-folder::before {
   content: "\e909";
 }
 
-.icon-equal::before {
+.icon-plot::before {
   content: "\e90a";
 }
 
-.icon-left::before {
+.icon-text-size::before {
   content: "\e90b";
 }
 
-.icon-down::before {
+.icon-gift::before {
   content: "\e90c";
 }
 
-.icon-right::before {
+.icon-pie-chart::before {
   content: "\e90d";
 }
 
-.icon-up::before {
+.icon-equal::before {
   content: "\e90e";
+}
+
+.icon-chevron-left::before {
+  content: "\e90f";
+}
+
+.icon-chevron-down::before {
+  content: "\e910";
+}
+
+.icon-chevron-right::before {
+  content: "\e911";
+}
+
+.icon-chevron-up::before {
+  content: "\e912";
 }
