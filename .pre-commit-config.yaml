@@ -47,13 +47,15 @@ repos:
   - repo: local
     hooks:
       - id: prettier
+        name: Prettier
         files: ^frontend/src/
         language: node
         entry: bash -c "prettier --write"
         additional_dependencies: ["prettier@3.3.3"]
 
       - id: stylelint
-        files: ^frontend/src/**/*.{css,vue}
+        name: Stylelint
+        files: ^frontend/src/([^/]*/)*\.(css|vue)
         language: node
         entry: bash -c "stylelint --fix"
         additional_dependencies: 
