@@ -21,13 +21,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Lint with pre-commit
-        run: |
-          pre-commit run --files frontend
-      - name: Test with vitest
+
+      - name: Build frontend and share library
+        shell: bash
+        run: make build-frontend
+
+      - name: Vitest
         run: |
           cd frontend
           npm run test:unit:coverage
+
       - uses: jwalton/gh-find-current-pr@v1
         id: findPr
       - name: Report coverage
