@@ -47,23 +47,26 @@ repos:
   - repo: local
     hooks:
       - id: prettier
-        name: Prettier
+        name: prettier
         files: ^frontend/src/
-        language: node  # TODO: remove ?
+        language: node
         entry: bash -c "prettier --write frontend/src"
         additional_dependencies: ["prettier@3.3.3"]
 
       - id: stylelint
-        name: Stylelint
+        name: stylelint
         # files: ^frontend/src/([^/]*/)*\.(css|vue)
         files: ^frontend/src/
-        language: node  # TODO: remove ?
-        entry: bash -c "stylelint --fix src/**/*.{css,vue}"
+        language: node
+        entry: bash -c "stylelint --fix frontend/src/**/*.{css,vue} --config frontend/.stylelintrc.json"
         additional_dependencies:
           - "stylelint@16.9.0"
           - "stylelint-config-idiomatic-order@10.0.0"
           - "stylelint-config-recommended-vue@1.5.0"
           - "stylelint-config-standard@36.0.1"
           - "stylelint-order@6.0.4"
+          - "postcss-html@1.7.0"
+          - "postcss-nesting@13.0.0"
+          - "postcss-sorting@8.0.2"
 
 exclude: fixtures/
