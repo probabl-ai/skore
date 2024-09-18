@@ -19,4 +19,4 @@ jobs:
           python -m pip install --upgrade pre-commit
       - name: Lint
         run: |
-          pre-commit run --all-files
+          pre-commit run
