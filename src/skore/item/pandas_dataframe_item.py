@@ -74,6 +74,11 @@ class PandasDataFrameItem(Item):
         PandasDataFrameItem
             A new PandasDataFrameItem instance.
         """
+        import pandas.core.frame
+
+        if not isinstance(dataframe, pandas.core.frame.DataFrame):
+            raise TypeError(f"Type '{dataframe.__class__}' is not supported.")
+
         instance = cls(dataframe_dict=dataframe.to_dict(orient="tight"))
 
         # add dataframe as cached property

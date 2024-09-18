@@ -78,8 +78,12 @@ class SklearnBaseEstimatorItem(Item):
         SklearnBaseEstimatorItem
             A new SklearnBaseEstimatorItem instance.
         """
+        import sklearn.base
         import sklearn.utils
         import skops.io
+
+        if not isinstance(estimator, sklearn.base.BaseEstimator):
+            raise TypeError(f"Type '{estimator.__class__}' is not supported.")
 
         instance = cls(
             estimator_skops=skops.io.dumps(estimator),

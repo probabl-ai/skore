@@ -94,7 +94,7 @@ class MediaItem(Item):
         if lazy_is_instance(media, "PIL.Image.Image"):
             return cls.factory_pillow(media, *args, **kwargs)
 
-        raise NotImplementedError(f"Type '{media.__class__}' is not yet supported")
+        raise TypeError(f"Type '{media.__class__}' is not supported.")
 
     @classmethod
     def factory_bytes(

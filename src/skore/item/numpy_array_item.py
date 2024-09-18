@@ -88,6 +88,11 @@ class NumpyArrayItem(Item):
         NumpyArrayItem
             A new NumpyArrayItem instance.
         """
+        import numpy
+
+        if not isinstance(array, numpy.ndarray):
+            raise TypeError(f"Type '{array.__class__}' is not supported.")
+
         instance = cls(array_list=array.tolist())
 
         # add array as cached property

@@ -83,6 +83,6 @@ class PrimitiveItem(Item):
             A new PrimitiveItem instance.
         """
         if not is_primitive(primitive):
-            raise ValueError(f"{primitive} is not Primitive.")
+            raise TypeError(f"Type '{primitive.__class__}' is not supported.")
 
         return cls(primitive=primitive)

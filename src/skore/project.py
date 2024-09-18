@@ -3,35 +3,18 @@
 from pathlib import Path
 from typing import Any
 
-from skore.item import Item
-from skore.item.item_repository import ItemRepository
-from skore.item.media_item import MediaItem, lazy_is_instance
-from skore.item.numpy_array_item import NumpyArrayItem
-from skore.item.pandas_dataframe_item import PandasDataFrameItem
-from skore.item.primitive_item import PrimitiveItem, is_primitive
-from skore.item.sklearn_base_estimator_item import SklearnBaseEstimatorItem
+from skore.item import (
+    Item,
+    ItemRepository,
+    MediaItem,
+    NumpyArrayItem,
+    PandasDataFrameItem,
+    PrimitiveItem,
+    SklearnBaseEstimatorItem,
+    object_to_item,
+)
 from skore.layout import Layout, LayoutRepository
 from skore.persistence.disk_cache_storage import DirectoryDoesNotExist, DiskCacheStorage
-
-
-def object_to_item(o: Any) -> Item:
-    """Transform an object into an Item."""
-    if is_primitive(o):
-        return PrimitiveItem.factory(o)
-    elif lazy_is_instance(o, "pandas.core.frame.DataFrame"):
-        return PandasDataFrameItem.factory(o)
-    elif lazy_is_instance(o, "numpy.ndarray"):
-        return NumpyArrayItem.factory(o)
-    elif lazy_is_instance(o, "sklearn.base.BaseEstimator"):
-        return SklearnBaseEstimatorItem.factory(o)
-    elif lazy_is_instance(o, "altair.vegalite.v5.schema.core.TopLevelSpec"):
-        return MediaItem.factory_altair(o)
-    elif lazy_is_instance(o, "matplotlib.figure.Figure"):
-        return MediaItem.factory_matplotlib(o)
-    elif lazy_is_instance(o, "PIL.Image.Image"):
-        return MediaItem.factory_pillow(o)
-    else:
-        raise NotImplementedError(f"Type {o.__class__.__name__} is not supported yet.")
 
 
 class Project:
@@ -47,8 +30,7 @@ class Project:
 
     def put(self, key: str, value: Any):
         """Add a value to the Project."""
-        item = object_to_item(value)
-        self.put_item(key, item)
+        self.put_item(key, object_to_item(value))
 
     def put_item(self, key: str, item: Item):
         """Add an Item to the Project."""
