@@ -45,6 +45,7 @@
     "autoprefixer": "^10.4.20",
     "jsdom": "^25.0.0",
     "npm-run-all2": "^6.2.2",
+    "postcss-nesting": "^13.0.0",
     "typescript": "~5.5.4",
     "vite": "^5.4.2",
     "vite-plugin-vue-devtools": "^7.3.9",

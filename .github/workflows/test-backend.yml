@@ -14,7 +14,7 @@ permissions:
   contents: read
 
 jobs:
-  lint-and-test-backend:
+  test-backend:
     runs-on: ubuntu-latest
 
     steps:

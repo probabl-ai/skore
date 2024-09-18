@@ -11,7 +11,7 @@ permissions:
   pull-requests: write
 
 jobs:
-  lint-and-test-frontend:
+  test-frontend:
     runs-on: ubuntu-latest
 
     steps:
