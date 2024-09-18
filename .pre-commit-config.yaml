@@ -28,7 +28,6 @@ repos:
     rev: v9.10.0
     hooks:
       - id: eslint
-        # TODO: Move --ext to files
         files: ^frontend/
         args:
           - .
@@ -55,7 +54,6 @@ repos:
 
       - id: stylelint
         name: stylelint
-        # files: ^frontend/src/([^/]*/)*\.(css|vue)
         files: ^frontend/src/
         language: node
         entry: bash -c "stylelint --fix frontend/src/**/*.{css,vue} --config frontend/.stylelintrc.json"
