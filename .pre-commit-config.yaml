@@ -2,7 +2,7 @@
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v3.2.0
+    rev: v4.6.0
     hooks:
       - id: check-yaml
       - id: check-toml
@@ -13,7 +13,7 @@ repos:
       - id: trailing-whitespace
 
   - repo: https://github.com/crate-ci/typos
-    rev: v1.21.0
+    rev: v1.24.6
     hooks:
       - id: typos
 
@@ -25,7 +25,7 @@ repos:
       - id: ruff-format
 
   - repo: https://github.com/pre-commit/mirrors-eslint
-    rev: v8.57.0
+    rev: v9.10.0
     hooks:
       - id: eslint
         # TODO: Move --ext to files
@@ -38,7 +38,7 @@ repos:
           - --ignore-path
           - .gitignore
         additional_dependencies:
-          # - "eslint@8.57.0"
+          - "eslint@8.57.0"
           - "@rushstack/eslint-patch@1.10.4"
           - "@vue/eslint-config-prettier@9.0.0"
           - "@vue/eslint-config-typescript@13.0.0"
@@ -49,16 +49,17 @@ repos:
       - id: prettier
         name: Prettier
         files: ^frontend/src/
-        language: node
-        entry: bash -c "prettier --write"
+        language: node  # TODO: remove ?
+        entry: bash -c "prettier --write frontend/src"
         additional_dependencies: ["prettier@3.3.3"]
 
       - id: stylelint
         name: Stylelint
-        files: ^frontend/src/([^/]*/)*\.(css|vue)
-        language: node
-        entry: bash -c "stylelint --fix"
-        additional_dependencies: 
+        # files: ^frontend/src/([^/]*/)*\.(css|vue)
+        files: ^frontend/src/
+        language: node  # TODO: remove ?
+        entry: bash -c "stylelint --fix src/**/*.{css,vue}"
+        additional_dependencies:
           - "stylelint@16.9.0"
           - "stylelint-config-idiomatic-order@10.0.0"
           - "stylelint-config-recommended-vue@1.5.0"
