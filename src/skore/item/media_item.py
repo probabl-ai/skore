@@ -17,6 +17,7 @@ from skore.item.item import Item
 
 
 def lazy_is_instance(object: Any, cls_fullname: str) -> bool:
+    """Return True if object is an instance of a class named `cls_fullname`."""
     return cls_fullname in {
         f"{cls.__module__}.{cls.__name__}" for cls in object.__class__.__mro__
     }
