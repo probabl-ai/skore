@@ -14,6 +14,7 @@ import MarkdownWidget from "@/components/MarkdownWidget.vue";
 import SimpleButton from "@/components/SimpleButton.vue";
 import Tabs from "@/components/TabsWidget.vue";
 import TabsItem from "@/components/TabsWidgetItem.vue";
+import TextInput from "@/components/TextInput.vue";
 import ToastNotification from "@/components/ToastNotification.vue";
 import VegaWidget from "@/components/VegaWidget.vue";
 import { useToastsStore } from "@/stores/toasts";
@@ -24,19 +25,34 @@ let count = 0;
 function showToast() {
   toastsStore.addToast(`Info toast ${count++}`, "info");
 }
+
+const textInputValue = defineModel<string>("value");
+const textInputValue2 = defineModel<string>("value2");
+const textInputValue3 = defineModel<string>("value3");
 </script>
 
 <template>
   <main>
     <h1>Components library</h1>
-    <Tabs :tab-names="['markdown', 'vega', 'DataFrame', 'Image', 'CV Results', 'buttons', 'toast']">
+    <Tabs
+      :tab-names="[
+        'markdown',
+        'vega',
+        'DataFrame',
+        'Image',
+        'CV Results',
+        'buttons',
+        'toast',
+        'inputs',
+      ]"
+    >
       <TabsItem :value="0">
         <MarkdownWidget :source="markdownString" />
       </TabsItem>
       <TabsItem :value="1">
         <VegaWidget :spec="spec as VisualizationSpec" />
       </TabsItem>
-      <TabsItem :value="2">
+      <TabsItem :value="2" class="dataframe">
         <DataFrameWidget
           :columns="['id', 'first_name', 'last_name', 'email', 'gender', 'ip_address']"
           :data="datatable"
@@ -173,6 +189,28 @@ function showToast() {
         </div>
         <SimpleButton label="Show toast" @click="showToast" />
       </TabsItem>
+      <TabsItem :value="7">
+        <div class="text-inputs">
+          <p>
+            Regular text input
+            <TextInput v-model="textInputValue" /> value: {{ textInputValue }}
+          </p>
+          <p>
+            Text input with icon
+            <TextInput v-model="textInputValue2" icon="icon-magnifying-glass" /> value:
+            {{ textInputValue2 }}
+          </p>
+          <p>
+            Text input with icon and placeholder
+            <TextInput
+              v-model="textInputValue3"
+              icon="icon-pie-chart"
+              placeholder="Enter your name"
+            />
+            value: {{ textInputValue3 }}
+          </p>
+        </div>
+      </TabsItem>
     </Tabs>
   </main>
 </template>
@@ -180,6 +218,10 @@ function showToast() {
 <style scoped>
 main {
   padding: 0 5vw;
+}
+
+.dataframe {
+  margin-top: 10px;
 }
 
 .images {
@@ -199,6 +241,12 @@ main {
 
   & > * {
     margin-bottom: 10px;
+  }
+}
+
+.text-inputs {
+  & > p {
+    padding: 10px;
   }
 }
 </style>
