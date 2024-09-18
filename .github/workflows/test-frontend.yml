@@ -17,19 +17,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Node 20
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: "20"
 
       - name: Build frontend and share library
         shell: bash
         run: make build-frontend
 
       - name: Vitest
-        run: |
-          cd frontend
-          npm run test:unit:coverage
+        run: cd frontend && npm run test:unit:coverage
 
       - uses: jwalton/gh-find-current-pr@v1
         id: findPr
