@@ -36,10 +36,8 @@ jobs:
 
       - name: Install
         run: |
-          wheel=[...]
-
           python -m pip install -r requirements.txt -r requirements-test.txt
-          python -m pip install "${wheel}" --no-dependencies
+          python -m pip install "dist/*.whl" --no-dependencies
 
       - name: Pytest
         timeout-minutes: 5
