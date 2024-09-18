@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from matplotlib.figure import Figure as Matplotlib
     from PIL.Image import Image as Pillow
 
+from skore import lazy_is_instance
 from skore.item.item import Item
 
 
@@ -76,19 +77,15 @@ class MediaItem(Item):
         MediaItem
             A new MediaItem instance.
         """
-        media_mro_fullnames = {
-            f"{cls.__module__}.{cls.__name__}" for cls in media.__class__.__mro__
-        }
-
-        if "builtins.bytes" in media_mro_fullnames:
+        if lazy_is_instance(media, "builtins.bytes"):
             return cls.factory_bytes(media, *args, **kwargs)
-        if "builtins.str" in media_mro_fullnames:
+        if lazy_is_instance(media, "builtins.str"):
             return cls.factory_str(media, *args, **kwargs)
-        if "altair.vegalite.v5.schema.core.TopLevelSpec" in media_mro_fullnames:
+        if lazy_is_instance(media, "altair.vegalite.v5.schema.core.TopLevelSpec"):
             return cls.factory_altair(media, *args, **kwargs)
-        if "matplotlib.figure.Figure" in media_mro_fullnames:
+        if lazy_is_instance(media, "matplotlib.figure.Figure"):
             return cls.factory_matplotlib(media, *args, **kwargs)
-        if "PIL.Image.Image" in media_mro_fullnames:
+        if lazy_is_instance(media, "PIL.Image.Image"):
             return cls.factory_pillow(media, *args, **kwargs)
 
         raise NotImplementedError(f"Type '{media.__class__}' is not yet supported")
