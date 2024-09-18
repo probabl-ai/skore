@@ -33,6 +33,22 @@ repos:
   # use & install stylelint using additional_dependencies
   # clean package.json
 
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v8.57.0
+    hooks:
+      - id: eslint
+        files: ^frontend/
+        args: 
+          - .
+          - --ext
+          - .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts
+          - --fix
+          - --ignore-path
+          - .gitignore
+        additional_dependencies:
+          - '@rushstack/eslint-patch@1.10.4'
+        
+
   - repo: local
     hooks:
       - id: eslint
