@@ -18,14 +18,10 @@ repos:
       - id: typos
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    # Ruff version.
-    rev: v0.3.7
+    rev: v0.6.5
     hooks:
-      # Run the linter.
       - id: ruff
-        # Comment to disable autofix:
         args: [--fix]
-      # Run the formatter.
       - id: ruff-format
 
   # use eslint mirror hook https://github.com/thibaudcolas/pre-commit-stylelint
@@ -38,7 +34,7 @@ repos:
     hooks:
       - id: eslint
         files: ^frontend/
-        args: 
+        args:
           - .
           - --ext
           - .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts
@@ -46,27 +42,24 @@ repos:
           - --ignore-path
           - .gitignore
         additional_dependencies:
-          - '@rushstack/eslint-patch@1.10.4'
-        
+          # - "eslint@8.57.0"
+          - "@rushstack/eslint-patch@1.10.4"
+          - "@vue/eslint-config-prettier@9.0.0"
+          - "@vue/eslint-config-typescript@13.0.0"
+          - "eslint-plugin-vue@9.27.0"
 
   - repo: local
     hooks:
-      - id: eslint
-        language: node
-        name: Use eslint to lint frontend code.
-        entry: bash -c "cd frontend && npm run lint"
-        files: ^frontend/
-
       - id: prettier
+        files: ^frontend/src/
         language: node
-        name: Use prettier to format frontend code.
-        entry: bash -c "cd frontend && npm run format"
-        files: ^frontend/
+        entry: bash -c "prettier --write"
+        additional_dependencies: ["prettier@3.3.3"]
 
       - id: stylelint
+        files: ^frontend/src/**/*.{css,vue}
         language: node
-        name: Use stylelint to lint CSS.
-        entry: bash -c "cd frontend && npm run style-lint"
-        files: ^frontend/
+        entry: bash -c "stylelint --fix"
+        additional_dependencies: ["stylelint@16.9.0"]
 
 exclude: fixtures/
