@@ -21,7 +21,7 @@ describe("ToastNotificationArea", () => {
     expect(wrapper.html().length).toBeGreaterThan(0);
   });
 
-  it("Can render all kind of tosts", async () => {
+  it("Can render all kind of toasts", async () => {
     const toastsStore = useToastsStore();
     toastsStore.addToast("Hello", "info");
     toastsStore.addToast("Hello", "warning");

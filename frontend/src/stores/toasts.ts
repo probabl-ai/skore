@@ -23,7 +23,9 @@ export const useToastsStore = defineStore("toasts", () => {
    */
   function addToast(message: string, type: ToastType) {
     // Check if the message is already in the toasts array
-    const existingToast = toasts.value.find((toast) => toast.message === message);
+    const existingToast = toasts.value.find(
+      (toast) => toast.message === message && toast.type === type
+    );
     if (existingToast) {
       // If the message is already in the array, increment the count
       existingToast.count = (existingToast.count || 1) + 1;
