@@ -39,4 +39,20 @@ describe("Toasts store", () => {
     toastsStore.dismissToast(toastsStore.toasts[0].id);
     expect(toastsStore.toasts.length).toBe(0);
   });
+
+  it("Can only add the same message once", () => {
+    const toastsStore = useToastsStore();
+
+    toastsStore.addToast("Hello", "info");
+    toastsStore.addToast("Hello", "info");
+
+    const toast = toastsStore.toasts[0];
+    expect(toastsStore.toasts.length).toBe(1);
+    expect(toast.message).toBe("Hello");
+    expect(toast.count).toBe(2);
+
+    toastsStore.addToast("Hello", "info");
+    expect(toastsStore.toasts.length).toBe(1);
+    expect(toast.count).toBe(3);
+  });
 });

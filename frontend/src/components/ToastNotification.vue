@@ -30,6 +30,7 @@ function onDismiss() {
     <div class="message">
       <span class="icon" :class="icon"></span>
       {{ props.message }}
+      <span class="count" v-if="props.count && props.count > 1">(x{{ props.count }})</span>
     </div>
     <div class="actions">
       <button @click="onDismiss">dismiss</button>

@@ -17,13 +17,17 @@ import TabsItem from "@/components/TabsWidgetItem.vue";
 import TextInput from "@/components/TextInput.vue";
 import ToastNotification from "@/components/ToastNotification.vue";
 import VegaWidget from "@/components/VegaWidget.vue";
+import { generateRandomId } from "@/services/utils";
 import { useToastsStore } from "@/stores/toasts";
 
 const toastsStore = useToastsStore();
 
-let count = 0;
 function showToast() {
-  toastsStore.addToast(`Info toast ${count++}`, "info");
+  toastsStore.addToast(generateRandomId(), "info");
+}
+
+function showToastWithCount() {
+  toastsStore.addToast(`Info toast`, "info");
 }
 
 const textInputValue = defineModel<string>("value");
@@ -187,7 +191,8 @@ const textInputValue3 = defineModel<string>("value3");
           <ToastNotification message="Warning toast" type="warning" id="warning-toast" />
           <ToastNotification message="Error toast" type="error" id="error-toast" />
         </div>
-        <SimpleButton label="Show toast" @click="showToast" />
+        <SimpleButton label="Show unique toast" @click="showToast" />
+        <SimpleButton label="Show toast" @click="showToastWithCount" />
       </TabsItem>
       <TabsItem :value="7">
         <div class="text-inputs">

@@ -15,7 +15,12 @@ function onBeforeLeave(el: Element) {
   <div class="toast-notification-area">
     <TransitionGroup name="toasts" tag="div" class="toasts" @before-leave="onBeforeLeave">
       <div v-for="toast in toastsStore.toasts" :key="toast.id">
-        <ToastNotification :id="toast.id" :message="toast.message" :type="toast.type" />
+        <ToastNotification
+          :id="toast.id"
+          :message="toast.message"
+          :type="toast.type"
+          :count="toast.count"
+        />
       </div>
     </TransitionGroup>
   </div>
