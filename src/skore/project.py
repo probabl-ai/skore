@@ -40,6 +40,17 @@ class Project:
             )
         self.put_item(key, object_to_item(value))
 
+    def put_several(self, key_value_pairs: dict[str, Any]):
+        """Add several values to the Project.
+
+        All values must be valid, or none of them will be added to the Project.
+        """
+        key_item_pairs = {
+            key: object_to_item(value) for key, value in key_value_pairs.items()
+        }
+        for key, item in key_item_pairs.items():
+            self.put_item(key, item)
+
     def put_item(self, key: str, item: Item):
         """Add an Item to the Project."""
         self.item_repository.put_item(key, item)
