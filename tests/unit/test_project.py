@@ -197,3 +197,18 @@ def test_put_several_error(project):
     with pytest.raises(NotImplementedError):
         project.put({"a": "foo", "b": (lambda: "unsupported object")})
     assert project.list_keys() == []
+
+
+def test_put_key_is_a_tuple(project):
+    with pytest.raises(TypeError):
+        project.put(("a", "foo"), ("b", "bar"))
+
+
+def test_put_key_is_a_set(project):
+    with pytest.raises(TypeError):
+        project.put(set(), "hello")
+
+
+def test_put_key_is_an_int(project):
+    with pytest.raises(TypeError):
+        project.put(0, "hello")

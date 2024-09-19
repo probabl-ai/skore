@@ -36,11 +36,7 @@ class Project:
     @singledispatchmethod
     def put(self, key: str, value: Any):
         """Add a value to the Project."""
-        if not isinstance(key, str):
-            raise KeyTypeError(
-                f"Key must be a string; '{key}' is of type '{type(key)}'"
-            )
-        self.put_item(key, object_to_item(value))
+        self.put_several({key: value})
 
     @put.register
     def put_several(self, key_value_pairs: dict):
@@ -48,6 +44,9 @@ class Project:
 
         All values must be valid, or none of them will be added to the Project.
         """
+        for key in key_value_pairs:
+            if not isinstance(key, str):
+                raise TypeError(f"All keys must be strings; key {key} is {type(key)}")
         key_item_pairs = {
             key: object_to_item(value) for key, value in key_value_pairs.items()
         }
