@@ -1,4 +1,5 @@
 import {
+  generateRandomId,
   generateRandomMultiple,
   isDeepEqual,
   isString,
@@ -93,5 +94,9 @@ describe("utils", () => {
   it("Can generate random numbers that are multiple of a given one", () => {
     expect(generateRandomMultiple(3, 0, 100) % 3).toEqual(0);
     expect(generateRandomMultiple(42, 0, 100) % 42).toEqual(0);
+  });
+
+  it("Can generate a random id", () => {
+    expect(generateRandomId()).toBeTypeOf("string");
   });
 });

@@ -4,11 +4,10 @@ import "simplebar-vue/dist/simplebar.min.css";
 import { createPinia } from "pinia";
 import { createApp } from "vue";
 
-import type { Layout } from "@/models";
 import App from "@/ShareApp.vue";
 import { useReportStore } from "@/stores/report";
 
-export default async function share(layout: Layout) {
+export default async function share() {
   const app = createApp(App);
   app.use(createPinia());
   app.mount("#app");
