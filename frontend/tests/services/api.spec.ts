@@ -1,10 +1,17 @@
-import { fetchReport, putLayout } from "@/services/api";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { createTestingPinia } from "@pinia/testing";
+import { setActivePinia } from "pinia";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { KeyLayoutSize } from "@/models";
+import { fetchReport, putLayout } from "@/services/api";
+import { useToastsStore } from "@/stores/toasts";
 import { createFetchResponse, mockedFetch } from "../test.utils";
 
 describe("API Service", () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false, createSpy: vi.fn }));
+  });
+
   afterEach(() => {
     vi.restoreAllMocks();
   });
@@ -36,6 +43,8 @@ describe("API Service", () => {
     });
 
     expect(await fetchReport()).toBeNull();
+    const toastsStore = useToastsStore();
+    expect(toastsStore.toasts.length).toBe(1);
   });
 
   it("Can put a layout", async () => {

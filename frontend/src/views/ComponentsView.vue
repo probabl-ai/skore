@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import type { VisualizationSpec } from "vega-embed";
 
+import datatable from "@/assets/fixtures/datatable.json";
+import markdownString from "@/assets/fixtures/markdown.md?raw";
+import spec from "@/assets/fixtures/vega.json";
+
+import CrossValidationResultsWidget from "@/components/CrossValidationResultsWidget.vue";
 import DataFrameWidget from "@/components/DataFrameWidget.vue";
 import DropdownButton from "@/components/DropdownButton.vue";
 import DropdownButtonItem from "@/components/DropdownButtonItem.vue";
@@ -10,12 +15,20 @@ import SimpleButton from "@/components/SimpleButton.vue";
 import Tabs from "@/components/TabsWidget.vue";
 import TabsItem from "@/components/TabsWidgetItem.vue";
 import TextInput from "@/components/TextInput.vue";
+import ToastNotification from "@/components/ToastNotification.vue";
 import VegaWidget from "@/components/VegaWidget.vue";
+import { generateRandomId } from "@/services/utils";
+import { useToastsStore } from "@/stores/toasts";
 
-import datatable from "@/assets/fixtures/datatable.json";
-import markdownString from "@/assets/fixtures/markdown.md?raw";
-import spec from "@/assets/fixtures/vega.json";
-import CrossValidationResultsWidget from "@/components/CrossValidationResultsWidget.vue";
+const toastsStore = useToastsStore();
+
+function showToast() {
+  toastsStore.addToast(generateRandomId(), "info");
+}
+
+function showToastWithCount() {
+  toastsStore.addToast(`Info toast`, "info");
+}
 
 const textInputValue = defineModel<string>("value");
 const textInputValue2 = defineModel<string>("value2");
@@ -26,7 +39,16 @@ const textInputValue3 = defineModel<string>("value3");
   <main>
     <h1>Components library</h1>
     <Tabs
-      :tab-names="['markdown', 'vega', 'DataFrame', 'Image', 'CV Results', 'buttons', 'inputs']"
+      :tab-names="[
+        'markdown',
+        'vega',
+        'DataFrame',
+        'Image',
+        'CV Results',
+        'buttons',
+        'toast',
+        'inputs',
+      ]"
     >
       <TabsItem :value="0">
         <MarkdownWidget :source="markdownString" />
@@ -163,6 +185,16 @@ const textInputValue3 = defineModel<string>("value3");
         </div>
       </TabsItem>
       <TabsItem :value="6">
+        <div class="toasts">
+          <ToastNotification message="Info toast" type="info" id="info-toast" />
+          <ToastNotification message="Success toast" type="success" id="success-toast" />
+          <ToastNotification message="Warning toast" type="warning" id="warning-toast" />
+          <ToastNotification message="Error toast" type="error" id="error-toast" />
+        </div>
+        <SimpleButton label="Show unique toast" @click="showToast" />
+        <SimpleButton label="Show toast" @click="showToastWithCount" />
+      </TabsItem>
+      <TabsItem :value="7">
         <div class="text-inputs">
           <p>
             Regular text input
@@ -206,6 +238,14 @@ main {
 .buttons {
   & > p {
     padding: 10px;
+  }
+}
+
+.toasts {
+  padding-top: 10px;
+
+  & > * {
+    margin-bottom: 10px;
   }
 }
 
