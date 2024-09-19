@@ -59,6 +59,10 @@ function onDismiss() {
     0 4px 18.2px -2px var(--toast-shadow-elevation),
     inset 0 0 1.1px 2px var(--toast-shadow-inset);
 
+  & .icon {
+    font-size: calc(13px * 1.5);
+  }
+
   &.success .icon {
     color: #77bf85;
   }
