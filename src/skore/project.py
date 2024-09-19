@@ -39,20 +39,23 @@ class Project:
         self.put_several({key: value})
 
     @put.register
-    def put_several(self, key_value_pairs: dict):
+    def put_several(self, key_to_value: dict):
         """Add several values to the Project.
 
         All values must be valid, or none of them will be added to the Project.
         """
-        for key in key_value_pairs:
-            if not isinstance(key, str):
-                raise TypeError(
-                    f"All keys must be strings; key '{key}' is of type '{type(key)}'"
-                )
-        key_item_pairs = {
-            key: object_to_item(value) for key, value in key_value_pairs.items()
+
+        def check_str(key):
+            if isinstance(key, str):
+                return key
+            raise TypeError(
+                f"All keys must be strings; key '{key}' is of type '{type(key)}'"
+            )
+
+        key_to_item = {
+            check_str(key): object_to_item(value) for key, value in key_to_value.items()
         }
-        for key, item in key_item_pairs.items():
+        for key, item in key_to_item.items():
             self.put_item(key, item)
 
     def put_item(self, key: str, item: Item):
