@@ -13,7 +13,7 @@ class TestMediaItem:
         monkeypatch.setattr("skore.item.item.datetime", MockDatetime)
 
     def test_factory_exception(self):
-        with pytest.raises(NotImplementedError):
+        with pytest.raises(TypeError):
             MediaItem.factory(None)
 
     def test_factory_bytes(self, mock_nowstr):
