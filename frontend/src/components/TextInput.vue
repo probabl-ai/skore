@@ -41,6 +41,8 @@ function onChange(event: Event) {
   }
 
   input {
+    width: 100%;
+    min-width: 0;
     border: none;
     background-color: var(--background-color-normal);
     color: inherit;

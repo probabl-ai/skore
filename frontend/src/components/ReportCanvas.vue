@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { formatDistance } from "date-fns";
+import { computed } from "vue";
+
 import DataFrameWidget from "@/components/DataFrameWidget.vue";
 import HtmlSnippetWidget from "@/components/HtmlSnippetWidget.vue";
 import ImageWidget from "@/components/ImageWidget.vue";
@@ -7,8 +10,6 @@ import ReportCard from "@/components/ReportCard.vue";
 import VegaWidget from "@/components/VegaWidget.vue";
 import type { KeyLayoutSize, KeyMoveDirection } from "@/models";
 import { useReportStore } from "@/stores/report";
-import { formatDistance } from "date-fns";
-import { computed } from "vue";
 
 const reportStore = useReportStore();
 
@@ -103,6 +104,9 @@ function getItemSubtitle(created_at: Date, updated_at: Date) {
         :columns="data.columns"
         :data="data.data"
       />
+      <!-- <div v-if="mediaType === 'application/vnd.dataframe+json'">
+        <div style=" width: 1500px; height:10px; background-color: red"></div>
+      </div> -->
       <ImageWidget
         v-if="['image/svg+xml', 'image/png', 'image/jpeg', 'image/webp'].includes(mediaType)"
         :mediaType="mediaType"
