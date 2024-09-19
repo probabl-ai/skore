@@ -19,32 +19,28 @@ name = "skore"
 description = "..."
 dynamic = ["version"]
 dependencies = [
-  "altair",
   "diskcache",
-  "pandas",
-  "polars",
-  "scikit-learn",
   "fastapi",
-  "matplotlib",
-  "pydantic",
-  "pydantic_numpy",
-  "uvicorn",
   "rich",
   "skops",
+  "uvicorn",
 ]
 
 [project.optional-dependencies]
 test = [
+  "altair",
   "httpx",
-  "jsonschema[format]",
   "matplotlib",
+  "pandas",
   "pre-commit",
   "pytest",
   "pytest-cov",
   "pytest-order",
   "pytest-randomly",
   "ruff",
+  "scikit-learn",
 ]
+
 tools = [
   "pip-tools",
 ]
