@@ -182,8 +182,8 @@ def test_put_several(project):
     assert project.list_keys() == ["a", "b"]
 
 
-def test_put_several_alias(project):
-    project.put({"a": "foo", "b": "bar"})
+def test_put_several_canonical(project):
+    project.put_several({"a": "foo", "b": "bar"})
     assert project.list_keys() == ["a", "b"]
 
 

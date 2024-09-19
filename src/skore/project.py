@@ -46,7 +46,9 @@ class Project:
         """
         for key in key_value_pairs:
             if not isinstance(key, str):
-                raise TypeError(f"All keys must be strings; key {key} is {type(key)}")
+                raise TypeError(
+                    f"All keys must be strings; key '{key}' is of type '{type(key)}'"
+                )
         key_item_pairs = {
             key: object_to_item(value) for key, value in key_value_pairs.items()
         }
