@@ -1,5 +1,6 @@
 """Define a Project."""
 
+from functools import singledispatchmethod
 from pathlib import Path
 from typing import Any
 
@@ -32,6 +33,7 @@ class Project:
         self.item_repository = item_repository
         self.layout_repository = layout_repository
 
+    @singledispatchmethod
     def put(self, key: str, value: Any):
         """Add a value to the Project."""
         if not isinstance(key, str):
@@ -40,7 +42,8 @@ class Project:
             )
         self.put_item(key, object_to_item(value))
 
-    def put_several(self, key_value_pairs: dict[str, Any]):
+    @put.register
+    def put_several(self, key_value_pairs: dict):
         """Add several values to the Project.
 
         All values must be valid, or none of them will be added to the Project.
