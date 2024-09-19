@@ -24,6 +24,13 @@ def object_to_item(object: Any) -> Item:
         MediaItem,
     ):
         with suppress(ImportError, TypeError):
+            # ImportError:
+            #     The factories are responsible to import third-party libraries in a
+            #     lazy way. If library is missing, an ImportError exception will
+            #     automatically be thrown.
+            # TypeError:
+            #     The factories are responsible for checking that parameters are of the
+            #     correct type. If not, they throw a TypeError exception.
             return cls.factory(object)
 
     raise NotImplementedError(f"Type '{object.__class__}' is not supported.")
