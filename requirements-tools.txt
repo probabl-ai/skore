@@ -20,7 +20,7 @@ click==8.1.7
     #   uvicorn
 diskcache==5.6.3
     # via skore (pyproject.toml)
-fastapi==0.114.1
+fastapi==0.115.0
     # via skore (pyproject.toml)
 filelock==3.16.1
     # via huggingface-hub
@@ -30,7 +30,7 @@ h11==0.14.0
     # via uvicorn
 huggingface-hub==0.25.0
     # via skops
-idna==3.8
+idna==3.10
     # via
     #   anyio
     #   requests
@@ -51,9 +51,9 @@ packaging==24.1
     #   skops
 pip-tools==7.4.1
     # via skore (pyproject.toml)
-pydantic==2.9.1
+pydantic==2.9.2
     # via fastapi
-pydantic-core==2.23.3
+pydantic-core==2.23.4
     # via pydantic
 pygments==2.18.0
     # via rich
