@@ -69,7 +69,12 @@ export const useModalsStore = defineStore("modals", () => {
    * @param cancelText The text of the cancel button.
    * @returns A promise that resolves to true if the user confirms the modal, false otherwise.
    */
-  function confirm(title: string, message: string, confirmText = "ok", cancelText = "cancel") {
+  async function confirm(
+    title: string,
+    message: string,
+    confirmText = "ok",
+    cancelText = "cancel"
+  ) {
     return new Promise<boolean>((resolve) => {
       function handleConfirm(isConfirmed: boolean) {
         stack.value.shift();
@@ -107,7 +112,7 @@ export const useModalsStore = defineStore("modals", () => {
    * @param cancelText The text of the cancel button.
    * @returns A promise that resolves to the prompted value.
    */
-  function prompt(
+  async function prompt(
     title: string,
     message: string,
     promptedValueName: string,

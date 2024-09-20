@@ -57,10 +57,8 @@ const modal = computed(() => modalsStore.getCurrentModal());
   & .dialog {
     position: relative;
     width: 40dvw;
+    border: solid 1px var(--border-color-normal);
     border-radius: var(--modal-border-radius);
-    box-shadow:
-      0 4px 19.5px rgb(114 114 114 / 25%),
-      0 -4px 0 var(--color-primary);
 
     & button.close {
       position: absolute;
@@ -73,7 +71,7 @@ const modal = computed(() => modalsStore.getCurrentModal());
       cursor: pointer;
       font-size: calc(var(--text-size-title) * 1.5);
       transform-origin: center;
-      transition: color 0.1s ease-in-out;
+      transition: color var(--transition-duration) var(--transition-easing);
 
       &:hover {
         background-color: transparent;
@@ -148,12 +146,28 @@ const modal = computed(() => modalsStore.getCurrentModal());
   }
 }
 
+@media (prefers-color-scheme: dark) {
+  .container .dialog {
+    box-shadow:
+      0 4px 19.5px hsl(0deg 0% 65% / 25%),
+      0 -4px 0 var(--color-primary);
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  .container .dialog {
+    box-shadow:
+      0 4px 19.5px hsl(0deg 0% 45% / 25%),
+      0 -4px 0 var(--color-primary);
+  }
+}
+
 .modal-appear-enter-active,
 .modal-appear-leave-active {
-  transition: opacity 0.3s ease-in-out;
+  transition: opacity var(--transition-duration) var(--transition-easing);
 
   & .dialog {
-    transition: transform 0.3s ease-in-out;
+    transition: transform var(--transition-duration) var(--transition-easing);
   }
 }
 

@@ -35,6 +35,7 @@ function onChange(event: Event) {
   background-color: var(--background-color-normal);
   box-shadow: 0 1px 2px var(--background-color-selected);
   color: var(--text-color-normal);
+  transition: all var(--transition-duration) var(--transition-easing);
 
   .icon {
     margin: 0 var(--spacing-gap-normal);

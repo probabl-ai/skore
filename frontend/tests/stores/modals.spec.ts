@@ -68,7 +68,7 @@ describe("Modals store", () => {
       expect(result).toBe(false);
     });
     const refuse = modalStore.getCurrentModal();
-    refuse.onConfirm();
+    refuse.onCancel();
   });
 
   it("Can ask for user input.", async () => {
