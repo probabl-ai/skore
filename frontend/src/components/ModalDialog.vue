@@ -2,6 +2,7 @@
 import { computed } from "vue";
 
 import SimpleButton from "@/components/SimpleButton.vue";
+import TextInput from "@/components/TextInput.vue";
 import { useModalsStore } from "@/stores/modals";
 
 const modalsStore = useModalsStore();
@@ -14,13 +15,23 @@ const modal = computed(() => modalsStore.getCurrentModal());
       <div class="dialog">
         <button class="close" @click="modal.onCancel"><span class="icon-error"></span></button>
         <div class="content">
-          <h2>{{ modal.title }}</h2>
-          <p>{{ modal.message }}</p>
+          <div class="header">
+            <h2>{{ modal.title }}</h2>
+            <p>{{ modal.message }}</p>
+          </div>
+          <label class="prompt" v-if="modal.type === 'prompt'">
+            {{ modal.promptedValueName }}
+            <TextInput />
+          </label>
         </div>
         <div class="actions alert" v-if="modal.type === 'alert'">
           <SimpleButton @click="modal.onConfirm" :label="modal.confirmText" :is-primary="true" />
         </div>
         <div class="actions confirm" v-if="modal.type === 'confirm'">
+          <SimpleButton @click="modal.onCancel" :label="modal.cancelText" />
+          <SimpleButton @click="modal.onConfirm" :label="modal.confirmText" :is-primary="true" />
+        </div>
+        <div class="actions prompt" v-if="modal.type === 'prompt'">
           <SimpleButton @click="modal.onCancel" :label="modal.cancelText" />
           <SimpleButton @click="modal.onConfirm" :label="modal.confirmText" :is-primary="true" />
         </div>
@@ -31,7 +42,7 @@ const modal = computed(() => modalsStore.getCurrentModal());
 
 <style scoped>
 .container {
-  --border-radius: 12px;
+  --modal-border-radius: 12px;
 
   position: fixed;
   top: 0;
@@ -46,7 +57,7 @@ const modal = computed(() => modalsStore.getCurrentModal());
   & .dialog {
     position: relative;
     width: 40dvw;
-    border-radius: var(--border-radius);
+    border-radius: var(--modal-border-radius);
     box-shadow:
       0 4px 19.5px rgb(114 114 114 / 25%),
       0 -4px 0 var(--color-primary);
@@ -73,10 +84,14 @@ const modal = computed(() => modalsStore.getCurrentModal());
     & .content {
       position: relative;
       z-index: 2;
-      padding: var(--spacing-padding-normal);
+      display: flex;
+      flex-direction: column;
+      padding: var(--spacing-padding-normal) var(--spacing-padding-normal)
+        calc(var(--spacing-padding-normal) * 2) var(--spacing-padding-normal);
       border: solid 1px var(--border-color-normal);
-      border-radius: var(--border-radius);
+      border-radius: var(--modal-border-radius);
       background-color: var(--background-color-elevated-high);
+      gap: 24px;
 
       & h2 {
         color: var(--text-color-highlight);
@@ -89,6 +104,19 @@ const modal = computed(() => modalsStore.getCurrentModal());
         font-size: var(--text-size-normal);
         font-weight: var(--text-weight-normal);
       }
+
+      & .prompt {
+        display: flex;
+        flex-direction: column;
+        color: var(--text-color-normal);
+        font-size: var(--text-size-normal);
+        font-weight: var(--text-weight-normal);
+        gap: var(--spacing-gap-normal);
+
+        & .text-input {
+          background-color: var(--background-color-elevated-high);
+        }
+      }
     }
 
     & .actions {
@@ -97,10 +125,10 @@ const modal = computed(() => modalsStore.getCurrentModal());
       display: flex;
       flex-direction: row;
       justify-content: center;
-      padding: calc(var(--spacing-padding-normal) + var(--border-radius))
+      padding: calc(var(--spacing-padding-normal) + var(--modal-border-radius))
         var(--spacing-padding-normal) var(--spacing-padding-normal) var(--spacing-padding-normal);
-      border-radius: 0 0 var(--border-radius) var(--border-radius);
-      margin-top: calc(var(--border-radius) * -1);
+      border-radius: 0 0 var(--modal-border-radius) var(--modal-border-radius);
+      margin-top: calc(var(--modal-border-radius) * -1);
       background-color: var(--background-color-elevated);
       gap: var(--spacing-gap-normal);
 

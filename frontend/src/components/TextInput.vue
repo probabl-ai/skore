@@ -41,11 +41,12 @@ function onChange(event: Event) {
   }
 
   input {
+    width: 100%;
     border: none;
-    background-color: var(--background-color-normal);
+    background-color: transparent;
     color: inherit;
-    font-size: var(--font-size-normal);
-    font-weight: var(--font-weight-normal);
+    font-size: var(--text-size-normal);
+    font-weight: var(--text-weight-normal);
 
     &:focus {
       outline: none;
