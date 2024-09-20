@@ -19,8 +19,10 @@ repos:
     rev: v0.6.5
     hooks:
       - id: ruff
+        files: ^(src|tests)/
         args: [--fix]
       - id: ruff-format
+        files: ^(src|tests)/
 
   - repo: https://github.com/pre-commit/mirrors-eslint
     rev: v9.10.0
