@@ -26,7 +26,7 @@ function onDismiss() {
 </script>
 
 <template>
-  <div class="toast" :class="props.type">
+  <alert class="toast" :class="props.type">
     <div class="message">
       <span class="icon" :class="icon"></span>
       {{ props.message }}
@@ -35,7 +35,7 @@ function onDismiss() {
     <div class="actions">
       <button @click="onDismiss">dismiss</button>
     </div>
-  </div>
+  </alert>
 </template>
 
 <style scoped>
