@@ -1,31 +1,27 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed } from "vue";
 
 import SimpleButton from "@/components/SimpleButton.vue";
 import { useModalsStore } from "@/stores/modals";
 
 const modalsStore = useModalsStore();
 const modal = computed(() => modalsStore.getCurrentModal());
-const container = ref<HTMLDivElement>();
-
-function onClose(e: MouseEvent) {
-  if (e.target === container.value) {
-    modal.value?.onCancel();
-    e.stopImmediatePropagation();
-  }
-}
 </script>
 
 <template>
   <Transition name="modal-appear">
-    <div v-if="modal" class="container" @click.stop="onClose" ref="container">
+    <div v-if="modal" class="container">
       <div class="dialog">
         <button class="close" @click="modal.onCancel"><span class="icon-error"></span></button>
         <div class="content">
           <h2>{{ modal.title }}</h2>
           <p>{{ modal.message }}</p>
         </div>
-        <div class="actions" v-if="modal.type === 'alert'">
+        <div class="actions alert" v-if="modal.type === 'alert'">
+          <SimpleButton @click="modal.onConfirm" :label="modal.confirmText" :is-primary="true" />
+        </div>
+        <div class="actions confirm" v-if="modal.type === 'confirm'">
+          <SimpleButton @click="modal.onCancel" :label="modal.cancelText" />
           <SimpleButton @click="modal.onConfirm" :label="modal.confirmText" :is-primary="true" />
         </div>
       </div>
@@ -99,16 +95,26 @@ function onClose(e: MouseEvent) {
       position: relative;
       z-index: 1;
       display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: calc(var(--spacing-padding-large) + var(--border-radius))
-        var(--spacing-padding-large) var(--spacing-padding-large) var(--spacing-padding-large);
+      flex-direction: row;
+      justify-content: center;
+      padding: calc(var(--spacing-padding-normal) + var(--border-radius))
+        var(--spacing-padding-normal) var(--spacing-padding-normal) var(--spacing-padding-normal);
       border-radius: 0 0 var(--border-radius) var(--border-radius);
       margin-top: calc(var(--border-radius) * -1);
       background-color: var(--background-color-elevated);
+      gap: var(--spacing-gap-normal);
 
-      & button {
+      & button.regular {
+        background-color: var(--background-color-elevated-high);
+      }
+
+      &.alert button {
         width: 50%;
+      }
+
+      &.confirm button,
+      &.prompt button {
+        flex: 1;
       }
     }
   }
