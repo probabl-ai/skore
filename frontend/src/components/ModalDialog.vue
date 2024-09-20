@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onMounted, onUnmounted } from "vue";
 
 import SimpleButton from "@/components/SimpleButton.vue";
 import TextInput from "@/components/TextInput.vue";
@@ -7,6 +7,20 @@ import { useModalsStore } from "@/stores/modals";
 
 const modalsStore = useModalsStore();
 const modal = computed(() => modalsStore.getCurrentModal());
+
+function onKeyDown(event: KeyboardEvent) {
+  if (event.key === "Escape") {
+    modal.value?.onCancel();
+  }
+}
+
+onMounted(() => {
+  document.addEventListener("keydown", onKeyDown);
+});
+
+onUnmounted(() => {
+  document.removeEventListener("keydown", onKeyDown);
+});
 </script>
 
 <template>

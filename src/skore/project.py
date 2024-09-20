@@ -17,6 +17,10 @@ from skore.layout import Layout, LayoutRepository
 from skore.persistence.disk_cache_storage import DirectoryDoesNotExist, DiskCacheStorage
 
 
+class KeyTypeError(Exception):
+    """Key must be a string."""
+
+
 class Project:
     """A project is a collection of items that are stored in a storage."""
 
@@ -30,6 +34,10 @@ class Project:
 
     def put(self, key: str, value: Any):
         """Add a value to the Project."""
+        if not isinstance(key, str):
+            raise KeyTypeError(
+                f"Key must be a string; '{key}' is of type '{type(key)}'"
+            )
         self.put_item(key, object_to_item(value))
 
     def put_item(self, key: str, item: Item):
