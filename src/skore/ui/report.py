@@ -3,7 +3,7 @@
 import base64
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated
 
 from fastapi import APIRouter, Request
 from fastapi.params import Depends
@@ -14,8 +14,8 @@ from skore.item.numpy_array_item import NumpyArrayItem
 from skore.item.pandas_dataframe_item import PandasDataFrameItem
 from skore.item.primitive_item import PrimitiveItem
 from skore.item.sklearn_base_estimator_item import SklearnBaseEstimatorItem
-from skore.layout import Layout
 from skore.project import Project
+from skore.report.report import Layout, Report
 
 from .dependencies import get_static_path, get_templates
 
@@ -23,21 +23,32 @@ router = APIRouter()
 
 
 @dataclass
+class SerializedItem:
+    """Serialized item."""
+
+    media_type: str
+    value: str
+    updated_at: str
+    created_at: str
+
+
+@dataclass
 class SerializedProject:
     """Serialized project, to be sent to the frontend."""
 
-    layout: Layout
-    items: dict[str, dict[str, Any]]
+    reports: dict[str, Layout]
+    items: dict[str, SerializedItem]
 
 
 def __serialize_project(project: Project) -> SerializedProject:
-    try:
-        layout = project.get_report_layout()
-    except KeyError:
-        layout = []
+    reports = {}
+    for key in project.list_report_keys():
+        report = project.get_report(key)
+
+        reports[key] = report.layout
 
     items = {}
-    for key in project.list_keys():
+    for key in project.list_item_keys():
         item = project.get_item(key)
 
         media_type = None
@@ -59,14 +70,14 @@ def __serialize_project(project: Project) -> SerializedProject:
         else:
             raise ValueError(f"Item {item} is not a known item type.")
 
-        items[key] = {
-            "media_type": media_type,
-            "value": value,
-            "updated_at": item.updated_at,
-            "created_at": item.created_at,
-        }
+        items[key] = SerializedItem(
+            media_type=media_type,
+            value=value,
+            updated_at=item.updated_at,
+            created_at=item.created_at,
+        )
 
-    return SerializedProject(layout=layout, items=items)
+    return SerializedProject(reports=reports, items=items)
 
 
 @router.get("/items")
@@ -108,9 +119,12 @@ async def share_store(
     )
 
 
-@router.put("/report/layout", status_code=201)
-async def set_report_layout(request: Request, layout: Layout):
+@router.put("/report/layout/{key:path}", status_code=201)
+async def set_report_layout(request: Request, key: str, layout: Layout):
     """Set the report layout."""
-    project = request.app.state.project
-    project.put_report_layout(layout)
+    project: Project = request.app.state.project
+
+    report = Report(layout=layout)
+    project.put_report(key, report)
+
     return __serialize_project(project)

@@ -15,8 +15,9 @@ from skore.item import (
     SklearnBaseEstimatorItem,
     object_to_item,
 )
-from skore.layout import Layout, LayoutRepository
 from skore.persistence.disk_cache_storage import DirectoryDoesNotExist, DiskCacheStorage
+from skore.report.report import Report
+from skore.report.report_repository import ReportRepository
 
 logger = logging.getLogger(__name__)
 
@@ -31,10 +32,10 @@ class Project:
     def __init__(
         self,
         item_repository: ItemRepository,
-        layout_repository: LayoutRepository,
+        report_repository: ReportRepository,
     ):
         self.item_repository = item_repository
-        self.layout_repository = layout_repository
+        self.report_repository = report_repository
 
     @singledispatchmethod
     def put(self, key: str, value: Any, on_error: Literal["warn", "raise"] = "warn"):
@@ -130,24 +131,29 @@ class Project:
         """Add the Item corresponding to `key` from the Project."""
         return self.item_repository.get_item(key)
 
-    def list_keys(self) -> list[str]:
-        """List all keys in the Project."""
+    def list_item_keys(self) -> list[str]:
+        """List all item keys in the Project."""
         return self.item_repository.keys()
 
     def delete_item(self, key: str):
         """Delete an item from the Project."""
         self.item_repository.delete_item(key)
 
-    def put_report_layout(self, layout: Layout):
-        """Add a report layout to the Project."""
-        self.layout_repository.put_layout(layout)
+    def put_report(self, key: str, report: Report):
+        """Add a report to the Project."""
+        self.report_repository.put_report(key, report)
 
-    def get_report_layout(self) -> Layout:
-        """Get the report layout corresponding to `key` from the Project."""
-        try:
-            return self.layout_repository.get_layout()
-        except KeyError:
-            return []
+    def get_report(self, key: str) -> Report:
+        """Get the report corresponding to `key` from the Project."""
+        return self.report_repository.get_report(key)
+
+    def delete_report(self, key: str):
+        """Delete the report corresponding to `key` from the Project."""
+        return self.report_repository.delete_report(key)
+
+    def list_report_keys(self) -> list[str]:
+        """List all report keys in the Project."""
+        return self.report_repository.keys()
 
 
 class ProjectLoadError(Exception):
@@ -174,11 +180,11 @@ def load(project_name: str | Path) -> Project:
         # FIXME should those hardcoded string be factorized somewhere ?
         item_storage = DiskCacheStorage(directory=Path(path) / "items")
         item_repository = ItemRepository(storage=item_storage)
-        layout_storage = DiskCacheStorage(directory=Path(path) / "layouts")
-        layout_repository = LayoutRepository(storage=layout_storage)
+        report_storage = DiskCacheStorage(directory=Path(path) / "reports")
+        report_repository = ReportRepository(storage=report_storage)
         project = Project(
             item_repository=item_repository,
-            layout_repository=layout_repository,
+            report_repository=report_repository,
         )
     except DirectoryDoesNotExist as e:
         missing_directory = e.args[0].split()[1]

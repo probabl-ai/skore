@@ -1,19 +1,19 @@
 import pytest
 from fastapi.testclient import TestClient
 from skore.item.item_repository import ItemRepository
-from skore.layout.layout_repository import LayoutRepository
 from skore.persistence.in_memory_storage import InMemoryStorage
 from skore.project import Project
+from skore.report.report_repository import ReportRepository
 from skore.ui.app import create_app
 
 
 @pytest.fixture
 def project():
     item_repository = ItemRepository(storage=InMemoryStorage())
-    layout_repository = LayoutRepository(storage=InMemoryStorage())
+    report_repository = ReportRepository(storage=InMemoryStorage())
     return Project(
         item_repository=item_repository,
-        layout_repository=layout_repository,
+        report_repository=report_repository,
     )
 
 
@@ -37,7 +37,7 @@ def test_get_items(client, project):
     response = client.get("/api/items")
 
     assert response.status_code == 200
-    assert response.json() == {"items": {}, "layout": []}
+    assert response.json() == {"items": {}, "reports": {}}
 
     project.put("test", "test")
     item = project.get_item("test")
@@ -45,7 +45,7 @@ def test_get_items(client, project):
     response = client.get("/api/items")
     assert response.status_code == 200
     assert response.json() == {
-        "layout": [],
+        "reports": {},
         "items": {
             "test": {
                 "media_type": "text/markdown",
@@ -66,5 +66,18 @@ def test_share_report(client, project):
 
 
 def test_put_report_layout(client):
-    response = client.put("/api/report/layout", json=[{"key": "test", "size": "large"}])
+    report_name = "my_report/hello"
+    response = client.put(
+        f"/api/report/layout/{report_name}",
+        json=[{"key": "test", "size": "large"}],
+    )
+    assert response.status_code == 201
+
+
+def test_put_report_layout_with_slash_in_name(client):
+    report_name = "my_report/hello"
+    response = client.put(
+        f"/api/report/layout/{report_name}",
+        json=[{"key": "test", "size": "large"}],
+    )
     assert response.status_code == 201

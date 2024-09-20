@@ -1,4 +1,4 @@
-"""Layout models."""
+"""Report models."""
 
 from dataclasses import dataclass
 from enum import StrEnum
@@ -21,3 +21,10 @@ class LayoutItem:
 
 
 Layout = list[LayoutItem]
+
+
+@dataclass
+class Report:
+    """A report."""
+
+    layout: Layout

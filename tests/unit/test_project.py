@@ -11,17 +11,17 @@ from matplotlib import pyplot as plt
 from PIL import Image
 from sklearn.ensemble import RandomForestClassifier
 from skore.item import ItemRepository
-from skore.layout import LayoutRepository
-from skore.layout.layout import LayoutItem, LayoutItemSize
 from skore.persistence.in_memory_storage import InMemoryStorage
 from skore.project import Project, ProjectLoadError, ProjectPutError, load
+from skore.report.report import LayoutItem, LayoutItemSize, Report
+from skore.report.report_repository import ReportRepository
 
 
 @pytest.fixture
 def project():
     return Project(
         item_repository=ItemRepository(InMemoryStorage()),
-        layout_repository=LayoutRepository(InMemoryStorage()),
+        report_repository=ReportRepository(InMemoryStorage()),
     )
 
 
@@ -116,7 +116,7 @@ def test_load(tmp_path):
     project_path = tmp_path.parent / (tmp_path.name + ".skore")
     os.mkdir(project_path)
     os.mkdir(project_path / "items")
-    os.mkdir(project_path / "layouts")
+    os.mkdir(project_path / "reports")
     p = load(project_path)
     assert isinstance(p, Project)
 
@@ -127,7 +127,7 @@ def test_put(project):
     project.put("key3", 3)
     project.put("key4", 4)
 
-    assert project.list_keys() == ["key1", "key2", "key3", "key4"]
+    assert project.list_item_keys() == ["key1", "key2", "key3", "key4"]
 
 
 def test_put_twice(project):
@@ -156,7 +156,7 @@ def test_delete(project):
     project.put("key1", 1)
     project.delete_item("key1")
 
-    assert project.list_keys() == []
+    assert project.list_item_keys() == []
 
     with pytest.raises(KeyError):
         project.delete_item("key2")
@@ -165,17 +165,26 @@ def test_delete(project):
 def test_keys(project):
     project.put("key1", 1)
     project.put("key2", 2)
-    assert project.list_keys() == ["key1", "key2"]
+    assert project.list_item_keys() == ["key1", "key2"]
 
 
-def test_report_layout(project):
+def test_report(project):
     layout = [
         LayoutItem(key="key1", size=LayoutItemSize.LARGE),
         LayoutItem(key="key2", size=LayoutItemSize.SMALL),
     ]
 
-    project.put_report_layout(layout)
-    assert project.get_report_layout() == layout
+    report = Report(layout=layout)
+
+    project.put_report("report", report)
+    assert project.get_report("report") == report
+
+
+def test_list_report_keys(project):
+    report = Report(layout=[])
+
+    project.put_report("report", report)
+    assert project.list_report_keys() == ["report"]
 
 
 def test_put_several_happy_path(project):
