@@ -17,7 +17,7 @@ function onClose(e: MouseEvent) {
 </script>
 
 <template>
-  <Transition name="fade">
+  <Transition name="modal-appear">
     <div v-if="modal" class="container" @click.stop="onClose" ref="container">
       <div class="dialog">
         <button class="close" @click="modal.onCancel"><span class="icon-error"></span></button>
@@ -111,6 +111,24 @@ function onClose(e: MouseEvent) {
         width: 50%;
       }
     }
+  }
+}
+
+.modal-appear-enter-active,
+.modal-appear-leave-active {
+  transition: opacity 0.3s ease-in-out;
+
+  & .dialog {
+    transition: transform 0.3s ease-in-out;
+  }
+}
+
+.modal-appear-enter-from,
+.modal-appear-leave-to {
+  opacity: 0;
+
+  & .dialog {
+    transform: translateY(33px);
   }
 }
 </style>
