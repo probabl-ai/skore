@@ -14,7 +14,7 @@ from skore.item import ItemRepository
 from skore.layout import LayoutRepository
 from skore.layout.layout import LayoutItem, LayoutItemSize
 from skore.persistence.in_memory_storage import InMemoryStorage
-from skore.project import Project, ProjectLoadError, load
+from skore.project import KeyTypeError, Project, ProjectLoadError, load
 
 
 @pytest.fixture
@@ -135,6 +135,12 @@ def test_put_twice(project):
     project.put("key2", 5)
 
     assert project.get("key2") == 5
+
+
+def test_put_int_key(project):
+    with pytest.raises(KeyTypeError):
+        project.put(0, "hello")
+    assert project.list_keys() == []
 
 
 def test_get(project):
