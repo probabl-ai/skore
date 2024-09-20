@@ -104,9 +104,6 @@ function getItemSubtitle(created_at: Date, updated_at: Date) {
         :columns="data.columns"
         :data="data.data"
       />
-      <!-- <div v-if="mediaType === 'application/vnd.dataframe+json'">
-        <div style=" width: 1500px; height:10px; background-color: red"></div>
-      </div> -->
       <ImageWidget
         v-if="['image/svg+xml', 'image/png', 'image/jpeg', 'image/webp'].includes(mediaType)"
         :mediaType="mediaType"
