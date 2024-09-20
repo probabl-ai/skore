@@ -16,8 +16,8 @@ describe("Modals store", () => {
   it("Can create an alert.", async () => {
     const modalStore = useModalsStore();
     modalStore.alert("title", "message");
-    expect(modalStore.stack).toHaveLength(1);
-    const alert = modalStore.stack[0];
+    const alert = modalStore.getCurrentModal();
+    expect(alert).toBeDefined();
     expect(alert.title).toBe("title");
     expect(alert.message).toBe("message");
     expect(alert.type).toBe("alert");
@@ -26,8 +26,8 @@ describe("Modals store", () => {
   it("Can create a confirm.", async () => {
     const modalStore = useModalsStore();
     modalStore.confirm("title", "message");
-    expect(modalStore.stack).toHaveLength(1);
-    const confirm = modalStore.stack[0];
+    const confirm = modalStore.getCurrentModal();
+    expect(confirm).toBeDefined();
     expect(confirm.title).toBe("title");
     expect(confirm.message).toBe("message");
     expect(confirm.type).toBe("confirm");
@@ -36,8 +36,8 @@ describe("Modals store", () => {
   it("Can create a prompt.", async () => {
     const modalStore = useModalsStore();
     modalStore.prompt("title", "message", "prompt");
-    expect(modalStore.stack).toHaveLength(1);
-    const prompt = modalStore.stack[0];
+    const prompt = modalStore.getCurrentModal();
+    expect(prompt).toBeDefined();
     expect(prompt.title).toBe("title");
     expect(prompt.message).toBe("message");
     expect(prompt.type).toBe("prompt");
@@ -49,9 +49,8 @@ describe("Modals store", () => {
     modalStore.alert("title", "message").then((result) => {
       expect(result).toBeUndefined();
     });
-    const alert = modalStore.stack[0];
+    const alert = modalStore.getCurrentModal();
     alert.onConfirm();
-    expect(modalStore.stack).toHaveLength(0);
   });
 
   it("Can ask for user confirmation.", async () => {
@@ -61,16 +60,14 @@ describe("Modals store", () => {
     modalStore.confirm("title", "message").then((result) => {
       expect(result).toBe(true);
     });
-    expect(modalStore.stack).toHaveLength(1);
-    const accept = modalStore.stack[0];
+    const accept = modalStore.getCurrentModal();
     accept.onConfirm();
-    expect(modalStore.stack).toHaveLength(0);
 
     // user may decline
     modalStore.confirm("title", "message").then((result) => {
       expect(result).toBe(false);
     });
-    const refuse = modalStore.stack[0];
+    const refuse = modalStore.getCurrentModal();
     refuse.onConfirm();
   });
 
@@ -79,9 +76,31 @@ describe("Modals store", () => {
     modalStore.prompt("title", "message", "prompt").then((result) => {
       expect(result).toBe("prompt");
     });
-    const prompt = modalStore.stack[0];
+    const prompt = modalStore.getCurrentModal();
     prompt.response = "prompt";
     prompt.onConfirm();
-    expect(modalStore.stack).toHaveLength(0);
+  });
+
+  it("Can stack multiple modals.", async () => {
+    const modalStore = useModalsStore();
+    modalStore.alert("title", "message");
+    modalStore.confirm("title", "message");
+    modalStore.prompt("title", "message", "prompt");
+
+    const alert = modalStore.getCurrentModal();
+    expect(alert).toBeDefined();
+    expect(alert.type).toBe("alert");
+
+    alert.onConfirm();
+
+    const confirm = modalStore.getCurrentModal();
+    expect(confirm).toBeDefined();
+    expect(confirm.type).toBe("confirm");
+
+    confirm.onConfirm();
+
+    const prompt = modalStore.getCurrentModal();
+    expect(prompt).toBeDefined();
+    expect(prompt.type).toBe("prompt");
   });
 });

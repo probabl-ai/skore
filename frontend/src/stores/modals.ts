@@ -12,7 +12,7 @@ export interface Modal {
   promptedValueName?: string;
   response?: string;
   onConfirm: () => void;
-  onCancel?: () => void;
+  onCancel: () => void;
 }
 
 export const useModalsStore = defineStore("modals", () => {
@@ -37,7 +37,7 @@ export const useModalsStore = defineStore("modals", () => {
   async function alert(title: string, message: string, confirmText = "ok") {
     return new Promise<void>((resolve) => {
       function handleConfirm() {
-        stack.value.pop();
+        stack.value.shift();
         resolve();
       }
 
@@ -72,7 +72,7 @@ export const useModalsStore = defineStore("modals", () => {
   function confirm(title: string, message: string, confirmText = "ok", cancelText = "cancel") {
     return new Promise<boolean>((resolve) => {
       function handleConfirm(isConfirmed: boolean) {
-        stack.value.pop();
+        stack.value.shift();
         resolve(isConfirmed);
       }
 
@@ -116,7 +116,7 @@ export const useModalsStore = defineStore("modals", () => {
   ) {
     return new Promise<string>((resolve) => {
       function handleConfirm() {
-        const m = stack.value.pop();
+        const m = stack.value.shift();
         resolve(m?.response ?? "");
       }
 
@@ -133,5 +133,13 @@ export const useModalsStore = defineStore("modals", () => {
     });
   }
 
-  return { stack, alert, confirm, prompt };
+  /**
+   * Get the current modal in the stack.
+   * @returns The current modal.
+   */
+  function getCurrentModal() {
+    return stack.value[0];
+  }
+
+  return { alert, confirm, prompt, getCurrentModal };
 });
