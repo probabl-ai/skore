@@ -21,7 +21,7 @@ const modal = computed(() => modalsStore.getCurrentModal());
           </div>
           <label class="prompt" v-if="modal.type === 'prompt'">
             {{ modal.promptedValueName }}
-            <TextInput />
+            <TextInput v-model="modal.response" />
           </label>
         </div>
         <div class="actions alert" v-if="modal.type === 'alert'">
