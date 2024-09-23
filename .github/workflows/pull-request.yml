@@ -2,7 +2,6 @@ on:
   pull_request:
     types: [opened]
 
-
 jobs:
   add-assignee:
     runs-on: ubuntu-latest
