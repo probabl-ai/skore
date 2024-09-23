@@ -45,9 +45,3 @@ build-frontend:
 	cp -a frontend/dist/. src/skore/ui/static
 	# clean up
 	rm -rf frontend/dist
-
-build-doc:
-	python -m pip install -e . -r requirements-doc.txt
-	cd doc
-	# Run a make instruction inside the doc folder
-	$(MAKE) -C doc html
