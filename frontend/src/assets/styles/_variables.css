@@ -38,8 +38,8 @@
   --border-radius: 4px;
 
   /* misc */
-  --transition-duration: 0.1s;
-  --transition-easing: cubic-bezier(0.1, 0.6, 0.7, 0.2);
+  --transition-duration: 0.3s;
+  --transition-easing: ease;
 }
 
 @media (prefers-color-scheme: dark) {
