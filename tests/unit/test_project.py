@@ -137,9 +137,10 @@ def test_put_twice(project):
     assert project.get("key2") == 5
 
 
-def test_put_int_key(project):
+def test_put_int_key(project, caplog):
     # Warns that 0 is not a string, but doesn't raise
     project.put(0, "hello")
+    assert len(caplog.record_tuples) == 1
     assert project.list_keys() == []
 
 
