@@ -1,8 +1,9 @@
 """Define a Project."""
 
+import logging
 from functools import singledispatchmethod
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from skore.item import (
     Item,
@@ -17,9 +18,7 @@ from skore.item import (
 from skore.layout import Layout, LayoutRepository
 from skore.persistence.disk_cache_storage import DirectoryDoesNotExist, DiskCacheStorage
 
-
-class KeyTypeError(Exception):
-    """Key must be a string."""
+logger = logging.getLogger(__name__)
 
 
 class Project:
@@ -34,15 +33,41 @@ class Project:
         self.layout_repository = layout_repository
 
     @singledispatchmethod
-    def put(self, key: str, value: Any):
-        """Add a value to the Project."""
-        self.put_several({key: value})
+    def put(self, key: str, value: Any, on_error: Literal["warn", "raise"] = "warn"):
+        """Add a value to the Project.
+
+        Parameters
+        ----------
+        key : str
+            The key to associate with `value` in the Project. Must be a string.
+        value : Any
+            The value to associate with `key` in the Project.
+        on_error : "warn" or "raise"
+            Upon error (e.g. if the key is not a string), whether to raise an error or
+            to print a warning.
+        """
+        self.put_several({key: value}, on_error)
 
     @put.register
-    def put_several(self, key_to_value: dict):
+    def put_several(
+        self, key_to_value: dict, on_error: Literal["warn", "raise"] = "warn"
+    ):
         """Add several values to the Project.
 
-        All values must be valid, or none of them will be added to the Project.
+        All valid key-value pairs will be added to the Project; errors caused
+        by invalid key-value pairs (e.g. if the key is not a string) will be
+        collected and shown all at once after all the insertions, either as a
+        warning or an Exception, depending on the value of `on_error`.
+
+        Parameters
+        ----------
+        key : str
+            The key to associate with `value` in the Project. Must be a string.
+        value : Any
+            The value to associate with `key` in the Project.
+        on_error : "warn" or "raise"
+            Upon error (e.g. if the key is not a string), whether to raise an error or
+            to print a warning.
         """
         errors = []
 
@@ -66,8 +91,23 @@ class Project:
                 continue
 
             self.put_item(key, item)
-            
-        warnings.warn(errors)
+
+        if errors:
+            match on_error:
+                case "raise":
+                    raise ExceptionGroup(
+                        "Several items could not be inserted in the Project", errors
+                    )
+                case "warn":
+                    logger.warning(
+                        "Several items could not be inserted in the Project "
+                        f"due to the following errors: {errors}"
+                    )
+                case _:
+                    ValueError(
+                        'on_error must be set to either "warn" or "raise"; '
+                        f"got {on_error}"
+                    )
 
     def put_item(self, key: str, item: Item):
         """Add an Item to the Project."""

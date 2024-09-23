@@ -25,6 +25,7 @@ dependencies = [
   "skops",
   "uvicorn",
 ]
+requires-python = ">= 3.11"
 
 [project.optional-dependencies]
 test = [

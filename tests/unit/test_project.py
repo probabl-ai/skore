@@ -14,7 +14,7 @@ from skore.item import ItemRepository
 from skore.layout import LayoutRepository
 from skore.layout.layout import LayoutItem, LayoutItemSize
 from skore.persistence.in_memory_storage import InMemoryStorage
-from skore.project import KeyTypeError, Project, ProjectLoadError, load
+from skore.project import Project, ProjectLoadError, load
 
 
 @pytest.fixture
@@ -138,8 +138,8 @@ def test_put_twice(project):
 
 
 def test_put_int_key(project):
-    with pytest.raises(KeyTypeError):
-        project.put(0, "hello")
+    # Warns that 0 is not a string, but doesn't raise
+    project.put(0, "hello")
     assert project.list_keys() == []
 
 
@@ -177,12 +177,13 @@ def test_report_layout(project):
     assert project.get_report_layout() == layout
 
 
-def test_put_several(project):
+def test_put_several_happy_path(project):
     project.put({"a": "foo", "b": "bar"})
     assert project.list_keys() == ["a", "b"]
 
 
 def test_put_several_canonical(project):
+    """Use `put_several` instead of the `put` alias."""
     project.put_several({"a": "foo", "b": "bar"})
     assert project.list_keys() == ["a", "b"]
 
@@ -194,21 +195,24 @@ def test_put_several_nested(project):
 
 
 def test_put_several_error(project):
-    with pytest.raises(NotImplementedError):
-        project.put({"a": "foo", "b": (lambda: "unsupported object")})
-    assert project.list_keys() == []
+    """If some key-value pairs are wrong, add all that are valid and print a warning."""
+    project.put({"a": "foo", "b": (lambda: "unsupported object")})
+    assert project.list_keys() == ["a"]
 
 
 def test_put_key_is_a_tuple(project):
-    with pytest.raises(TypeError):
-        project.put(("a", "foo"), ("b", "bar"))
+    """If key is not a string, warn."""
+    project.put(("a", "foo"), ("b", "bar"))
+    assert project.list_keys() == []
 
 
 def test_put_key_is_a_set(project):
+    """Cannot use an unhashable type as a key."""
     with pytest.raises(TypeError):
         project.put(set(), "hello")
 
 
-def test_put_key_is_an_int(project):
-    with pytest.raises(TypeError):
-        project.put(0, "hello")
+def test_put_wrong_key_and_value_raise(project):
+    """When `on_error` is "raise", raise."""
+    with pytest.raises(ExceptionGroup):
+        project.put(0, (lambda: "unsupported object"), on_error="raise")
