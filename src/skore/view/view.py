@@ -25,6 +25,15 @@ Layout = list[LayoutItem]
 
 @dataclass
 class View:
-    """A view."""
+    """A view of a Project.
+
+    Examples
+    --------
+    >>> View(layout=[
+    ...     {"key": "a", "size": "medium"},
+    ...     {"key": "b", "size": "small"},
+    ... ])
+    View(...)
+    """
 
     layout: Layout
