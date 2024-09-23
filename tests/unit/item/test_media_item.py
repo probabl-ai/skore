@@ -3,6 +3,7 @@ import io
 import altair
 import matplotlib.pyplot
 import PIL as pillow
+import plotly.graph_objects as go
 import pytest
 from skore.item import MediaItem
 
@@ -73,5 +74,17 @@ class TestMediaItem:
         assert item.media_bytes == image_bytes
         assert item.media_encoding == "utf-8"
         assert item.media_type == "image/png"
+        assert item.created_at == mock_nowstr
+        assert item.updated_at == mock_nowstr
+
+    def test_factory_plotly(self, mock_nowstr):
+        figure = go.Figure(data=[go.Bar(x=[1, 2, 3], y=[1, 3, 2])])
+        figure_bytes = figure.to_json().encode("utf-8")
+
+        item = MediaItem.factory(figure)
+
+        assert item.media_bytes == figure_bytes
+        assert item.media_encoding == "utf-8"
+        assert item.media_type == "application/vnd.plotly.v1+json"
         assert item.created_at == mock_nowstr
         assert item.updated_at == mock_nowstr
