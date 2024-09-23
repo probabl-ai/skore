@@ -1,8 +1,11 @@
 <script setup lang="ts">
+import { onMounted, ref } from "vue";
+
 interface Props {
   placeholder?: string;
   type?: string;
   icon?: string;
+  focus?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -11,17 +14,30 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const model = defineModel<string>();
+const input = ref<HTMLInputElement | null>(null);
 
 function onChange(event: Event) {
   const input = event.target as HTMLInputElement;
   model.value = input.value;
 }
+
+onMounted(() => {
+  if (props.focus && input.value) {
+    input.value.focus();
+  }
+});
 </script>
 
 <template>
   <div class="text-input">
     <span v-if="props.icon" :class="props.icon" class="icon" />
-    <input type="text" :value="model" :placeholder="props.placeholder" @keyup="onChange" />
+    <input
+      type="text"
+      :value="model"
+      :placeholder="props.placeholder"
+      @keyup="onChange"
+      ref="input"
+    />
   </div>
 </template>
 

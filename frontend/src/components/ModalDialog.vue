@@ -35,7 +35,7 @@ onUnmounted(() => {
           </div>
           <label class="prompt" v-if="modal.type === 'prompt'">
             {{ modal.promptedValueName }}
-            <TextInput v-model="modal.response" />
+            <TextInput v-model="modal.response" :focus="true" />
           </label>
         </div>
         <div class="actions alert" v-if="modal.type === 'alert'">
