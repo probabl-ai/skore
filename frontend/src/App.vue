@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import LoadingBars from "@/components/LoadingBars.vue";
-import ToastNotificationArea from "@/components/ToastNotificationArea.vue";
 import { RouterView } from "vue-router";
+
+import LoadingBars from "@/components/LoadingBars.vue";
+import ModalDialog from "@/components/ModalDialog.vue";
+import ToastNotificationArea from "@/components/ToastNotificationArea.vue";
 </script>
 
 <template>
@@ -20,6 +22,7 @@ import { RouterView } from "vue-router";
     </template>
   </RouterView>
   <ToastNotificationArea />
+  <ModalDialog />
 </template>
 
 <style scoped>

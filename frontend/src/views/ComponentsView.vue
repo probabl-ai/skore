@@ -18,9 +18,11 @@ import TextInput from "@/components/TextInput.vue";
 import ToastNotification from "@/components/ToastNotification.vue";
 import VegaWidget from "@/components/VegaWidget.vue";
 import { generateRandomId } from "@/services/utils";
+import { useModalsStore } from "@/stores/modals";
 import { useToastsStore } from "@/stores/toasts";
 
 const toastsStore = useToastsStore();
+const modalsStore = useModalsStore();
 
 function showToast() {
   toastsStore.addToast(generateRandomId(), "info");
@@ -33,6 +35,29 @@ function showToastWithCount() {
 const textInputValue = defineModel<string>("value");
 const textInputValue2 = defineModel<string>("value2");
 const textInputValue3 = defineModel<string>("value3");
+
+function showAlertModal() {
+  modalsStore
+    .alert(
+      "Alert",
+      "This is an alert modal with a long text. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed ut purus eget sapien. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed ut purus eget sapien. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed ut purus eget sapien."
+    )
+    .then(() => {
+      console.info("Alert modal closed");
+    });
+}
+
+function showConfirmModal() {
+  modalsStore.confirm("Confirm", "This is a confirm modal").then((result: boolean) => {
+    console.info("Confirm modal closed with result:", result);
+  });
+}
+
+function showPromptModal() {
+  modalsStore.prompt("Prompt", "This is a prompt modal", "prompt name").then((result: string) => {
+    console.info("Prompt modal closed with result:", result);
+  });
+}
 </script>
 
 <template>
@@ -48,6 +73,7 @@ const textInputValue3 = defineModel<string>("value3");
         'buttons',
         'toast',
         'inputs',
+        'modals',
       ]"
     >
       <TabsItem :value="0">
@@ -215,6 +241,11 @@ const textInputValue3 = defineModel<string>("value3");
             value: {{ textInputValue3 }}
           </p>
         </div>
+      </TabsItem>
+      <TabsItem :value="8">
+        <SimpleButton label="Show alert modal" @click="showAlertModal" />
+        <SimpleButton label="Show confirm modal" @click="showConfirmModal" />
+        <SimpleButton label="Show prompt modal" @click="showPromptModal" />
       </TabsItem>
     </Tabs>
   </main>

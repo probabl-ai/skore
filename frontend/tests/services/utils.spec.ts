@@ -47,7 +47,7 @@ describe("utils", () => {
     expect(mockObjectURL).toHaveBeenCalledTimes(2);
   });
 
-  it("Can poll a function and stp the polling", async () => {
+  it("Can poll a function and stop the polling", async () => {
     const f = vi.fn();
     const stop = await poll(f, 10);
     await sleep(25);
