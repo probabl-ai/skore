@@ -4,11 +4,13 @@ pip-compile:
 	pip-compile --output-file=requirements.txt pyproject.toml
 	pip-compile --extra=test --output-file=requirements-test.txt pyproject.toml
 	pip-compile --extra=tools --output-file=requirements-tools.txt pyproject.toml
-	pip-compile --extra=doc --output-file=requirements-doc.txt pyproject.toml
 
 install:
-	python -m pip install -e . -r requirements.txt -r requirements-test.txt -r \
-	requirements-tools.txt -r requirements-doc.txt
+	python -m pip install \
+		-e . \
+		-r requirements.txt \
+		-r requirements-test.txt \
+		-r requirements-tools.txt
 	pre-commit install
 
 check-wip:
@@ -17,15 +19,15 @@ check-wip:
 
 serve-api:
 	SKORE_ROOT=$(SKORE_ROOT) python -m uvicorn \
-		--factory skore.api:create_api_app \
+		--factory skore.ui.app:create_app \
 		--reload --reload-dir ./src \
 		--host 0.0.0.0 \
 		--port 22140 \
 		--timeout-graceful-shutdown 0
 
-serve-dashboard:
+serve-ui:
 	SKORE_ROOT=$(SKORE_ROOT) python -m uvicorn \
-		--factory skore.dashboard:create_dashboard_app \
+		--factory skore.ui.app:create_app \
 		--reload --reload-dir ./src \
 		--host 0.0.0.0 \
 		--port 22140 \
@@ -36,16 +38,10 @@ build-frontend:
 	cd frontend && npm install
 	cd frontend && npm run build
 	# empty app static folder
-	rm -rf src/skore/dashboard/static
-	cp -a frontend/dist/. src/skore/dashboard/static
+	rm -rf src/skore/ui/static
+	cp -a frontend/dist/. src/skore/ui/static
 	# build the sharing library
 	cd frontend && npm run build:lib
-	cp -a frontend/dist/. src/skore/dashboard/static
+	cp -a frontend/dist/. src/skore/ui/static
 	# clean up
 	rm -rf frontend/dist
-
-build-doc:
-	python -m pip install -e . -r requirements-doc.txt
-	cd doc
-	# Run a make instruction inside the doc folder
-	$(MAKE) -C doc html

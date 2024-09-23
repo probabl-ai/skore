@@ -1,4 +1,5 @@
 import {
+  generateRandomId,
   generateRandomMultiple,
   isDeepEqual,
   isString,
@@ -46,10 +47,10 @@ describe("utils", () => {
     expect(mockObjectURL).toHaveBeenCalledTimes(2);
   });
 
-  it("Can poll a function and stp the polling", async () => {
+  it("Can poll a function and stop the polling", async () => {
     const f = vi.fn();
     const stop = await poll(f, 10);
-    await sleep(22);
+    await sleep(25);
     stop();
     expect(f).toBeCalledTimes(3);
   });
@@ -93,5 +94,9 @@ describe("utils", () => {
   it("Can generate random numbers that are multiple of a given one", () => {
     expect(generateRandomMultiple(3, 0, 100) % 3).toEqual(0);
     expect(generateRandomMultiple(42, 0, 100) % 42).toEqual(0);
+  });
+
+  it("Can generate a random id", () => {
+    expect(generateRandomId()).toBeTypeOf("string");
   });
 });

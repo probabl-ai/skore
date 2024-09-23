@@ -8,60 +8,43 @@ pattern = "(?P<version>[^']+)"
 
 [tool.hatch.build.targets.sdist]
 only-include = ["src/"]
-artifacts = ["src/skore/dashboard/static/"]
+artifacts = ["src/skore/ui/static/"]
 
 [tool.hatch.build.targets.wheel]
 package = ["src/skore/"]
-artifacts = ["src/skore/dashboard/static/"]
+artifacts = ["src/skore/ui/static/"]
 
 [project]
 name = "skore"
 description = "..."
 dynamic = ["version"]
 dependencies = [
-  "altair",
   "diskcache",
-  "pandas",
-  "polars",
-  "scikit-learn",
   "fastapi",
-  "matplotlib",
-  "pydantic",
-  "pydantic_numpy",
-  "uvicorn",
   "rich",
+  "skops",
+  "uvicorn",
 ]
+license = { file = "LICENSE" }
 
 [project.optional-dependencies]
 test = [
+  "altair",
   "httpx",
-  "jsonschema[format]",
   "matplotlib",
+  "pandas",
   "pre-commit",
   "pytest",
   "pytest-cov",
+  "pytest-order",
   "pytest-randomly",
   "ruff",
+  "scikit-learn",
 ]
+
 tools = [
   "pip-tools",
 ]
-
-doc = [
-  "skrub",
-  "sphinx",
-  "sphinx-gallery",
-  "pydata_sphinx_theme",
-  "seaborn",
-  "networkx",
-  "statsmodels",
-  "skrub",
-  "inflect",
-  "sentence-transformers",
-  "tqdm",
-  "pyarrow"  # for parquet files
-]
-
 
 [tool.pytest.ini_options]
 addopts = [

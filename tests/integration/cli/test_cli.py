@@ -32,4 +32,4 @@ def test_version():
     )
 
     completed_process.check_returncode()
-    assert f"skore {version("skore")}".encode() in completed_process.stdout
+    assert f'skore {version("skore")}'.encode() in completed_process.stdout

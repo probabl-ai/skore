@@ -146,3 +146,11 @@ export function generateRandomMultiple(baseNumber: number, min: number, max: num
 
   return baseNumber * multiplier;
 }
+
+/**
+ * Generate a random id.
+ * @returns a random id
+ */
+export function generateRandomId() {
+  return crypto.randomUUID();
+}

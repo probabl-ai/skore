@@ -3,14 +3,14 @@ import { computed } from "vue";
 
 interface ImageWidgetProps {
   base64Src: string;
-  mimeType: "image/svg+xml" | "image/png" | "image/jpeg" | "image/webp";
+  mediaType: string;
   alt?: string;
 }
 
 const props = withDefaults(defineProps<ImageWidgetProps>(), {
   alt: "",
 });
-const src = computed(() => `data:${props.mimeType};base64,${props.base64Src}`);
+const src = computed(() => `data:${props.mediaType};base64,${props.base64Src}`);
 </script>
 
 <template>

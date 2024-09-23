@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta name="theme-color" content="#1E22AA">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>:skore. {{ uri }}</title>
+  <script id="project-data" type="application/json">
+    {{ project|tojson }}
+  </script>
+
+  <script>
+    {{ script|safe }}
+  </script>
+
+  <style>
+    {{ styles|safe }}
+  </style>
+</head>
+
+<body>
+  <div id="app"></div>
+  <script>
+    skore({{ layout|tojson }});
+  </script>
+</body>
+
+</html>

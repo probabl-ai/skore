@@ -4,12 +4,11 @@ import logging
 
 import rich.logging
 
-from skore.store import Store
-from skore.store import Store as Skore
+from skore.project import Project, load
 
 __all__ = [
-    "Skore",
-    "Store",
+    "load",
+    "Project",
 ]
 
 

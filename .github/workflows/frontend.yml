@@ -1,0 +1,62 @@
+name: Frontend
+
+on:
+  pull_request:
+    types: [synchronize]
+    paths:
+      - 'frontend/**'
+      - Makefile
+      - .github/workflows/frontend.yml
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  lint-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Lint frontend
+        run: |
+          cd frontend
+
+          npm install
+          npm run type-check
+          npm run lint
+          npm run format
+          npm run style-lint
+
+  test-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Test frontend
+        run: |
+          cd frontend
+          npm install
+          npm run test:unit:coverage
+      - name: Report coverage
+        if: always()
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          working-directory: ./frontend
+          pr-number: ${{ github.event.number }}
+
+  build-frontend:
+    runs-on: ubuntu-latest
+    needs: test-frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Build frontend
+        shell: bash
+        run: make build-frontend
