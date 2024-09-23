@@ -44,19 +44,30 @@ class Project:
 
         All values must be valid, or none of them will be added to the Project.
         """
+        errors = []
 
-        def check_str(key):
-            if isinstance(key, str):
-                return key
-            raise TypeError(
-                f"All keys must be strings; key '{key}' is of type '{type(key)}'"
-            )
+        for key, value in key_to_value.items():
+            key_error = None
+            value_error = None
 
-        key_to_item = {
-            check_str(key): object_to_item(value) for key, value in key_to_value.items()
-        }
-        for key, item in key_to_item.items():
+            if not isinstance(key, str):
+                key_error = TypeError(
+                    f"All keys must be strings; key '{key}' is of type '{type(key)}'"
+                )
+                errors.append(key_error)
+
+            try:
+                item = object_to_item(value)
+            except NotImplementedError as e:
+                value_error = e
+                errors.append(value_error)
+
+            if key_error or value_error:
+                continue
+
             self.put_item(key, item)
+            
+        warnings.warn(errors)
 
     def put_item(self, key: str, item: Item):
         """Add an Item to the Project."""
