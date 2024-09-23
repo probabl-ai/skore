@@ -42,9 +42,9 @@ class Project:
             The key to associate with `value` in the Project. Must be a string.
         value : Any
             The value to associate with `key` in the Project.
-        on_error : "warn" or "raise"
+        on_error : "warn" or "raise", optional
             Upon error (e.g. if the key is not a string), whether to raise an error or
-            to print a warning.
+            to print a warning. Default is "warn".
         """
         self.put_several({key: value}, on_error)
 
@@ -65,9 +65,9 @@ class Project:
             The key to associate with `value` in the Project. Must be a string.
         value : Any
             The value to associate with `key` in the Project.
-        on_error : "warn" or "raise"
+        on_error : "warn" or "raise", optional
             Upon error (e.g. if the key is not a string), whether to raise an error or
-            to print a warning.
+            to print a warning. Default is "warn".
         """
         errors = []
 
