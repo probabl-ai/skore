@@ -106,7 +106,9 @@ packaging==24.1
 pandas==2.2.2
     # via skore (pyproject.toml)
 pillow==10.4.0
-    # via matplotlib
+    # via
+    #   matplotlib
+    #   skore (pyproject.toml)
 platformdirs==4.3.6
     # via virtualenv
 plotly==5.24.1
