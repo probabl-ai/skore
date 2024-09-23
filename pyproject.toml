@@ -25,6 +25,7 @@ dependencies = [
   "skops",
   "uvicorn",
 ]
+license = { file = "LICENSE" }
 
 [project.optional-dependencies]
 test = [
