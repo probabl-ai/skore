@@ -47,14 +47,7 @@ class PandasDataFrameItem(Item):
 
     @cached_property
     def dataframe(self) -> pandas.DataFrame:
-        """
-        Convert the stored dictionary to a pandas DataFrame.
-
-        Returns
-        -------
-        pd.DataFrame
-            The pandas DataFrame representation of the stored dictionary.
-        """
+        """The pandas DataFrame."""
         import pandas
 
         return pandas.DataFrame.from_dict(self.dataframe_dict, orient="tight")
@@ -74,9 +67,9 @@ class PandasDataFrameItem(Item):
         PandasDataFrameItem
             A new PandasDataFrameItem instance.
         """
-        import pandas.core.frame
+        import pandas
 
-        if not isinstance(dataframe, pandas.core.frame.DataFrame):
+        if not isinstance(dataframe, pandas.DataFrame):
             raise TypeError(f"Type '{dataframe.__class__}' is not supported.")
 
         instance = cls(dataframe_dict=dataframe.to_dict(orient="tight"))

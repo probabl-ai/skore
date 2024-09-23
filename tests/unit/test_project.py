@@ -26,39 +26,45 @@ def project():
 
 
 def test_put_string_item(project):
-    project.put("string_item", "Hello, World!")  # JSONItem
+    project.put("string_item", "Hello, World!")
     assert project.get("string_item") == "Hello, World!"
 
 
 def test_put_int_item(project):
-    project.put("int_item", 42)  # JSONItem
+    project.put("int_item", 42)
     assert project.get("int_item") == 42
 
 
 def test_put_float_item(project):
-    project.put("float_item", 3.14)  # JSONItem
+    project.put("float_item", 3.14)
     assert project.get("float_item") == 3.14
 
 
 def test_put_bool_item(project):
-    project.put("bool_item", True)  # JSONItem
+    project.put("bool_item", True)
     assert project.get("bool_item") is True
 
 
 def test_put_list_item(project):
-    project.put("list_item", [1, 2, 3])  # JSONItem
+    project.put("list_item", [1, 2, 3])
     assert project.get("list_item") == [1, 2, 3]
 
 
 def test_put_dict_item(project):
-    project.put("dict_item", {"key": "value"})  # JSONItem
+    project.put("dict_item", {"key": "value"})
     assert project.get("dict_item") == {"key": "value"}
 
 
-def test_put_pandas_df(project):
-    df = pandas.DataFrame({"A": [1, 2, 3], "B": [4, 5, 6]})
-    project.put("pandas_df", df)  # DataFrameItem
-    pandas.testing.assert_frame_equal(project.get("pandas_df"), df)
+def test_put_pandas_dataframe(project):
+    dataframe = pandas.DataFrame({"A": [1, 2, 3], "B": [4, 5, 6]})
+    project.put("pandas_dataframe", dataframe)
+    pandas.testing.assert_frame_equal(project.get("pandas_dataframe"), dataframe)
+
+
+def test_put_pandas_series(project):
+    series = pandas.Series([0, 1, 2])
+    project.put("pandas_series", series)
+    pandas.testing.assert_series_equal(project.get("pandas_series"), series)
 
 
 def test_put_numpy_array(project):

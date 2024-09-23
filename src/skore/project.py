@@ -9,6 +9,7 @@ from skore.item import (
     MediaItem,
     NumpyArrayItem,
     PandasDataFrameItem,
+    PandasSeriesItem,
     PrimitiveItem,
     SklearnBaseEstimatorItem,
     object_to_item,
@@ -54,6 +55,8 @@ class Project:
             return item.array
         elif isinstance(item, PandasDataFrameItem):
             return item.dataframe
+        elif isinstance(item, PandasSeriesItem):
+            return item.series
         elif isinstance(item, SklearnBaseEstimatorItem):
             return item.estimator
         elif isinstance(item, MediaItem):
