@@ -36,6 +36,7 @@ class SerializedItem:
 class SerializedProject:
     """Serialized project, to be sent to the frontend."""
 
+    layout: Layout
     views: dict[str, Layout]
     items: dict[str, SerializedItem]
 
@@ -77,7 +78,16 @@ def __serialize_project(project: Project) -> SerializedProject:
             created_at=item.created_at,
         )
 
-    return SerializedProject(views=views, items=items)
+    try:
+        layout = project.get_view("layout").layout
+    except KeyError:
+        layout = []
+
+    return SerializedProject(
+        layout=layout,
+        views=views,
+        items=items,
+    )
 
 
 @router.get("/items")
@@ -119,12 +129,12 @@ async def share_store(
     )
 
 
-@router.put("/report/layout/{key:path}", status_code=201)
-async def set_view_layout(request: Request, key: str, layout: Layout):
+@router.put("/report/layout", status_code=201)
+async def set_view_layout(request: Request, layout: Layout):
     """Set the view layout."""
     project: Project = request.app.state.project
 
     view = View(layout=layout)
-    project.put_view(key, view)
+    project.put_view("layout", view)
 
     return __serialize_project(project)

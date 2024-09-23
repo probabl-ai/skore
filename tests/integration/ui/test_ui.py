@@ -37,7 +37,7 @@ def test_get_items(client, project):
     response = client.get("/api/items")
 
     assert response.status_code == 200
-    assert response.json() == {"items": {}, "views": {}}
+    assert response.json() == {"layout": [], "items": {}, "views": {}}
 
     project.put("test", "test")
     item = project.get_item("test")
@@ -45,6 +45,7 @@ def test_get_items(client, project):
     response = client.get("/api/items")
     assert response.status_code == 200
     assert response.json() == {
+        "layout": [],
         "views": {},
         "items": {
             "test": {
@@ -66,18 +67,16 @@ def test_share_view(client, project):
 
 
 def test_put_view_layout(client):
-    view_name = "my_view/hello"
     response = client.put(
-        f"/api/report/layout/{view_name}",
+        "/api/report/layout",
         json=[{"key": "test", "size": "large"}],
     )
     assert response.status_code == 201
 
 
 def test_put_view_layout_with_slash_in_name(client):
-    view_name = "my_view/hello"
     response = client.put(
-        f"/api/report/layout/{view_name}",
+        "/api/report/layout",
         json=[{"key": "test", "size": "large"}],
     )
     assert response.status_code == 201
