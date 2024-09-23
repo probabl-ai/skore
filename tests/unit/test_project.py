@@ -13,15 +13,15 @@ from sklearn.ensemble import RandomForestClassifier
 from skore.item import ItemRepository
 from skore.persistence.in_memory_storage import InMemoryStorage
 from skore.project import Project, ProjectLoadError, ProjectPutError, load
-from skore.report.report import LayoutItem, LayoutItemSize, Report
-from skore.report.report_repository import ReportRepository
+from skore.view.view import LayoutItem, LayoutItemSize, View
+from skore.view.view_repository import ViewRepository
 
 
 @pytest.fixture
 def project():
     return Project(
         item_repository=ItemRepository(InMemoryStorage()),
-        report_repository=ReportRepository(InMemoryStorage()),
+        view_repository=ViewRepository(InMemoryStorage()),
     )
 
 
@@ -116,7 +116,7 @@ def test_load(tmp_path):
     project_path = tmp_path.parent / (tmp_path.name + ".skore")
     os.mkdir(project_path)
     os.mkdir(project_path / "items")
-    os.mkdir(project_path / "reports")
+    os.mkdir(project_path / "views")
     p = load(project_path)
     assert isinstance(p, Project)
 
@@ -168,23 +168,23 @@ def test_keys(project):
     assert project.list_item_keys() == ["key1", "key2"]
 
 
-def test_report(project):
+def test_view(project):
     layout = [
         LayoutItem(key="key1", size=LayoutItemSize.LARGE),
         LayoutItem(key="key2", size=LayoutItemSize.SMALL),
     ]
 
-    report = Report(layout=layout)
+    view = View(layout=layout)
 
-    project.put_report("report", report)
-    assert project.get_report("report") == report
+    project.put_view("view", view)
+    assert project.get_view("view") == view
 
 
-def test_list_report_keys(project):
-    report = Report(layout=[])
+def test_list_view_keys(project):
+    view = View(layout=[])
 
-    project.put_report("report", report)
-    assert project.list_report_keys() == ["report"]
+    project.put_view("view", view)
+    assert project.list_view_keys() == ["view"]
 
 
 def test_put_several_happy_path(project):

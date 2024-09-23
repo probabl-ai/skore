@@ -1,4 +1,4 @@
-"""Implement a repository for Reports."""
+"""Implement a repository for Views."""
 
 from __future__ import annotations
 
@@ -6,19 +6,19 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from skore.persistence.abstract_storage import AbstractStorage
-    from skore.report.report import Report
+    from skore.view.view import View
 
 
-class ReportRepository:
+class ViewRepository:
     """
-    A repository for managing storage and retrieval of Reports.
+    A repository for managing storage and retrieval of Views.
 
-    This class provides methods to get, put, and delete Reports from a storage system.
+    This class provides methods to get, put, and delete Views from a storage system.
     """
 
     def __init__(self, storage: AbstractStorage):
         """
-        Initialize the ReportRepository with a storage system.
+        Initialize the ViewRepository with a storage system.
 
         Parameters
         ----------
@@ -27,19 +27,19 @@ class ReportRepository:
         """
         self.storage = storage
 
-    def get_report(self, key: str) -> Report:
+    def get_view(self, key: str) -> View:
         """
-        Retrieve the Report from storage.
+        Retrieve the View from storage.
 
         Parameters
         ----------
         key : str
-            A key at which to look for a Report.
+            A key at which to look for a View.
 
         Returns
         -------
-        Report
-            The retrieved Report.
+        View
+            The retrieved View.
 
         Raises
         ------
@@ -48,19 +48,19 @@ class ReportRepository:
         """
         return self.storage[key]
 
-    def put_report(self, key: str, report: Report):
+    def put_view(self, key: str, view: View):
         """
-        Store a report in storage.
+        Store a view in storage.
 
         Parameters
         ----------
-        report : Report
-            The report to be stored.
+        view : View
+            The view to be stored.
         """
-        self.storage[key] = report
+        self.storage[key] = view
 
-    def delete_report(self, key: str):
-        """Delete the report from storage."""
+    def delete_view(self, key: str):
+        """Delete the view from storage."""
         del self.storage[key]
 
     def keys(self) -> list[str]:

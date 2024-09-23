@@ -15,7 +15,7 @@ from skore.item.pandas_dataframe_item import PandasDataFrameItem
 from skore.item.primitive_item import PrimitiveItem
 from skore.item.sklearn_base_estimator_item import SklearnBaseEstimatorItem
 from skore.project import Project
-from skore.report.report import Layout, Report
+from skore.view.view import Layout, View
 
 from .dependencies import get_static_path, get_templates
 
@@ -36,16 +36,16 @@ class SerializedItem:
 class SerializedProject:
     """Serialized project, to be sent to the frontend."""
 
-    reports: dict[str, Layout]
+    views: dict[str, Layout]
     items: dict[str, SerializedItem]
 
 
 def __serialize_project(project: Project) -> SerializedProject:
-    reports = {}
-    for key in project.list_report_keys():
-        report = project.get_report(key)
+    views = {}
+    for key in project.list_view_keys():
+        view = project.get_view(key)
 
-        reports[key] = report.layout
+        views[key] = view.layout
 
     items = {}
     for key in project.list_item_keys():
@@ -77,7 +77,7 @@ def __serialize_project(project: Project) -> SerializedProject:
             created_at=item.created_at,
         )
 
-    return SerializedProject(reports=reports, items=items)
+    return SerializedProject(views=views, items=items)
 
 
 @router.get("/items")
@@ -97,7 +97,7 @@ async def share_store(
     """Serve an inlined shareable HTML page."""
     project = request.app.state.project
 
-    # Get static assets to inject them into the report template
+    # Get static assets to inject them into the view template
     def read_asset_content(filename: str):
         with open(static_path / filename) as f:
             return f.read()
@@ -120,11 +120,11 @@ async def share_store(
 
 
 @router.put("/report/layout/{key:path}", status_code=201)
-async def set_report_layout(request: Request, key: str, layout: Layout):
-    """Set the report layout."""
+async def set_view_layout(request: Request, key: str, layout: Layout):
+    """Set the view layout."""
     project: Project = request.app.state.project
 
-    report = Report(layout=layout)
-    project.put_report(key, report)
+    view = View(layout=layout)
+    project.put_view(key, view)
 
     return __serialize_project(project)
