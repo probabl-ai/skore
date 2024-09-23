@@ -93,21 +93,15 @@ class Project:
             self.put_item(key, item)
 
         if errors:
-            match on_error:
-                case "raise":
-                    raise ExceptionGroup(
-                        "Several items could not be inserted in the Project", errors
-                    )
-                case "warn":
-                    logger.warning(
-                        "Several items could not be inserted in the Project "
-                        f"due to the following errors: {errors}"
-                    )
-                case _:
-                    ValueError(
-                        'on_error must be set to either "warn" or "raise"; '
-                        f"got {on_error}"
-                    )
+            if on_error == "raise":
+                raise ExceptionGroup(
+                    "Several items could not be inserted in the Project", errors
+                )
+
+            logger.warning(
+                "Several items could not be inserted in the Project "
+                f"due to the following errors: {errors}"
+            )
 
     def put_item(self, key: str, item: Item):
         """Add an Item to the Project."""
