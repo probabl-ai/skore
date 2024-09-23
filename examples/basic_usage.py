@@ -92,9 +92,9 @@ project.put("my_int_2", 10)
 
 project.delete_item("my_int_2")
 
-# You can use `Project.list_keys` to display all the keys in your project:
+# You can use `Project.list_item_keys` to display all the keys in your project:
 
-project.list_keys()
+project.list_item_keys()
 
 # ## Storing a string
 
