@@ -24,45 +24,27 @@ repos:
       - id: ruff-format
         files: ^(src|tests)/
 
-  - repo: https://github.com/pre-commit/mirrors-eslint
-    rev: v9.10.0
-    hooks:
-      - id: eslint
-        files: ^frontend/
-        args:
-          - .
-          - --ext
-          - .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts
-          - --fix
-          - --ignore-path
-          - .gitignore
-        additional_dependencies:
-          - "eslint@8.57.0"
-          - "@rushstack/eslint-patch@1.10.4"
-          - "@vue/eslint-config-prettier@9.0.0"
-          - "@vue/eslint-config-typescript@13.0.0"
-          - "eslint-plugin-vue@9.27.0"
-
   - repo: local
     hooks:
+      - id: tsc
+        language: node
+        name: Use vue-tsc to typecheck frontend code.
+        entry: bash -c "cd frontend && npm run type-check"
+        files: ^frontend/
+      - id: eslint
+        language: node
+        name: Use eslint to lint frontend code.
+        entry: bash -c "cd frontend && npm run lint"
+        files: ^frontend/
       - id: prettier
-        name: prettier
-        files: ^frontend/src/
         language: node
-        entry: bash -c "prettier --write frontend/src"
-        additional_dependencies: ["prettier@3.3.3"]
-
+        name: Use prettier to format frontend code.
+        entry: bash -c "cd frontend && npm run format"
+        files: ^frontend/
       - id: stylelint
-        name: stylelint
-        files: ^frontend/src/
         language: node
-        entry: bash -c "stylelint --fix frontend/src/**/*.{css,vue} --config frontend/.stylelintrc.json"
-        additional_dependencies:
-          - "stylelint@16.9.0"
-          - "stylelint-config-idiomatic-order@10.0.0"
-          - "stylelint-config-recommended-vue@1.5.0"
-          - "stylelint-config-standard@36.0.1"
-          - "stylelint-order@6.0.4"
-          - "postcss-html@1.7.0"
+        name: Use stylelint to lint CSS.
+        entry: bash -c "cd frontend && npm run style-lint"
+        files: ^frontend/
 
 exclude: fixtures/
