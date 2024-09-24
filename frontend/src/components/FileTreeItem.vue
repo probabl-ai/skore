@@ -18,10 +18,28 @@ function toggleChildren() {
     isCollapsed.value = !isCollapsed.value;
   }
 }
+
+function countChildrenRecursively(node: FileTreeNode): number {
+  if (!node.children || node.children.length === 0) {
+    return 0;
+  }
+
+  return node.children.reduce((total, child) => {
+    return total + 1 + countChildrenRecursively(child);
+  }, 0);
+}
+
+const totalChildrenCount = computed(() => {
+  return countChildrenRecursively(props);
+});
 </script>
 
 <template>
-  <div class="file-tree-item" :style="`--indentation-level: ${indentationLevel};`">
+  <div
+    class="file-tree-item"
+    :class="{ first: props.indentationLevel === 0 }"
+    :style="{ '--children-count': totalChildrenCount }"
+  >
     <div class="label-container" @click="toggleChildren">
       <div class="label" :class="{ 'has-children': hasChildren }">
         <span class="children-indicator icon-branch" v-if="props.indentationLevel ?? 0 > 0" />
@@ -53,17 +71,28 @@ function toggleChildren() {
 
 <style scoped>
 .file-tree-item {
+  --label-height: 17px;
+
+  position: relative;
+  overflow: hidden;
   margin-left: 19px;
 
+  &.first {
+    margin-left: 0;
+  }
+
   .label-container {
+    position: relative;
+    z-index: 2;
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
+    background-color: var(--background-color-elevated-high);
 
     .label {
       display: flex;
-      height: 17px;
+      height: var(--label-height);
       flex-direction: row;
       align-items: center;
       cursor: pointer;
@@ -114,23 +143,27 @@ function toggleChildren() {
   }
 
   .children {
+    position: relative;
+    z-index: 1;
     display: flex;
     flex-direction: column;
     padding: var(--spacing-padding-small) 0 0 0;
     gap: var(--spacing-padding-small);
   }
-}
 
-.toggle-children-move,
-.toggle-children-enter-active,
-.toggle-children-leave-active {
-  overflow: hidden;
-  transition: all 3s var(--transition-easing);
-}
+  & .toggle-children-move,
+  & .toggle-children-enter-active,
+  & .toggle-children-leave-active {
+    transform-origin: top;
+    transition: all var(--transition-duration) var(--transition-easing);
+  }
 
-.toggle-children-enter-from,
-.toggle-children-leave-to {
-  height: 0;
-  opacity: 0;
+  & .toggle-children-enter-from,
+  & .toggle-children-leave-to {
+    margin-top: calc(
+      (var(--label-height) + var(--spacing-padding-small)) * var(--children-count) * -1
+    );
+    opacity: 0;
+  }
 }
 </style>

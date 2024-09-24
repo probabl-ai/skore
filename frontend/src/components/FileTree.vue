@@ -70,6 +70,7 @@ const props = defineProps<{ nodes: FileTreeNode[] }>();
 .file-tree {
   display: flex;
   flex-direction: column;
+  background-color: var(--background-color-elevated-high);
   gap: var(--spacing-gap-large);
 }
 </style>
