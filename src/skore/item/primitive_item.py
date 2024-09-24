@@ -10,26 +10,28 @@ from typing import TYPE_CHECKING
 from skore.item.item import Item
 
 if TYPE_CHECKING:
-    Primitive = (
-        bool
-        | float
-        | int
-        | str
-        | list["Primitive"]
-        | tuple["Primitive"]
-        | dict[str | int | float, "Primitive"]
-    )
+    from typing import Union
+
+    Primitive = Union[
+        bool,
+        float,
+        int,
+        str,
+        list["Primitive"],
+        tuple["Primitive"],
+        dict[str | int | float, "Primitive"],
+    ]
 
 
 def is_primitive(obj: object) -> bool:
     """Check if the object is a primitive."""
-    if isinstance(obj, bool | float | int | str):
+    if isinstance(obj, (bool, float, int, str)):
         return True
-    if isinstance(obj, list | tuple):
+    if isinstance(obj, (list, tuple)):
         return all(is_primitive(item) for item in obj)
     if isinstance(obj, dict):
         return all(
-            isinstance(k, bool | float | int | str) and is_primitive(v)
+            isinstance(k, (bool, float, int, str)) and is_primitive(v)
             for k, v in obj.items()
         )
     return False

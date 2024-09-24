@@ -1,7 +1,6 @@
 """In-memory storage."""
 
-from collections.abc import Iterator
-from typing import Any
+from typing import Any, Iterator
 
 from .abstract_storage import AbstractStorage
 
