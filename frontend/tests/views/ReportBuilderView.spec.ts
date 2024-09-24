@@ -15,6 +15,13 @@ vi.mock("@/services/api", () => {
   return { fetchReport };
 });
 
+vi.hoisted(() => {
+  // required because plotly depends on URL.createObjectURL
+  const mockObjectURL = vi.fn();
+  window.URL.createObjectURL = mockObjectURL;
+  window.URL.revokeObjectURL = mockObjectURL;
+});
+
 describe("ReportBuilderView", () => {
   beforeEach(() => {
     vi.mock("vue-router");
