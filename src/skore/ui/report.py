@@ -27,7 +27,7 @@ class SerializedItem:
     """Serialized item."""
 
     media_type: str
-    value: str
+    value: Any
     updated_at: str
     created_at: str
 
