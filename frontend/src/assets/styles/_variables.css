@@ -29,8 +29,9 @@
   --spacing-padding-large: 24px;
   --spacing-padding-normal: 16px;
   --spacing-padding-small: 8px;
+  --spacing-gap-small: 5px;
   --spacing-gap-normal: 10px;
-  --spacing-gap-small: 4px;
+  --spacing-gap-large: 20px;
 
   /* borders */
   --border-width-normal: 1px;

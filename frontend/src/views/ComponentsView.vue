@@ -9,6 +9,7 @@ import CrossValidationResultsWidget from "@/components/CrossValidationResultsWid
 import DataFrameWidget from "@/components/DataFrameWidget.vue";
 import DropdownButton from "@/components/DropdownButton.vue";
 import DropdownButtonItem from "@/components/DropdownButtonItem.vue";
+import FileTree, { transformListToTree } from "@/components/FileTree.vue";
 import ImageWidget from "@/components/ImageWidget.vue";
 import MarkdownWidget from "@/components/MarkdownWidget.vue";
 import SimpleButton from "@/components/SimpleButton.vue";
@@ -58,6 +59,27 @@ function showPromptModal() {
     console.info("Prompt modal closed with result:", result);
   });
 }
+
+const fileTreeNodes = transformListToTree([
+  "fraud",
+  "fraud/accuracy",
+  "fraud/accuracy3",
+  "fraud2",
+  "fraud2/accuracy",
+  "fraud2/accuracy3",
+  "foo",
+  "foo/bar",
+  "foo/bar/bbbb",
+  "foo/bar/aaaa",
+  "foo/bar/baz",
+  "foo/bar/baz/qux",
+  "foo/bar/baz/pwet",
+  "foo/baz",
+  "bar",
+  "bar/baz",
+  "bar/baz/qux",
+  "bar/baz/pwet",
+]);
 </script>
 
 <template>
@@ -74,6 +96,7 @@ function showPromptModal() {
         'toast',
         'inputs',
         'modals',
+        'trees',
       ]"
     >
       <TabsItem :value="0">
@@ -246,6 +269,9 @@ function showPromptModal() {
         <SimpleButton label="Show alert modal" @click="showAlertModal" />
         <SimpleButton label="Show confirm modal" @click="showConfirmModal" />
         <SimpleButton label="Show prompt modal" @click="showPromptModal" />
+      </TabsItem>
+      <TabsItem :value="9">
+        <FileTree :nodes="fileTreeNodes" />
       </TabsItem>
     </Tabs>
   </main>
