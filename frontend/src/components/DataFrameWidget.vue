@@ -85,7 +85,7 @@ watch([() => toValue(props.data), () => toValue(props.columns)], () => {
         </tbody>
       </table>
     </Simplebar>
-    <div class="pagination" v-if="totalPages > 1 || rowPerPage == rows.length">
+    <div class="pagination" v-if="rows.length > 10">
       <div class="pagination-page-size">
         Page size
         <select @change="onPageSizeChange">
