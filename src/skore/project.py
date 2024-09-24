@@ -40,6 +40,9 @@ class Project:
     def put(self, key: str, value: Any, on_error: Literal["warn", "raise"] = "warn"):
         """Add a value to the Project.
 
+        If `on_error` is "raise", any error stops the execution. If `on_error`
+        is "warn" (or anything other than "raise"), a warning is shown instead.
+
         Parameters
         ----------
         key : str
@@ -49,16 +52,23 @@ class Project:
         on_error : "warn" or "raise", optional
             Upon error (e.g. if the key is not a string), whether to raise an error or
             to print a warning. Default is "warn".
+
+        Raises
+        ------
+        ProjectPutError
+            If the key-value pair cannot be saved properly, and `on_error` is "raise".
         """
         try:
             item = object_to_item(value)
             self.put_item(key, item)
         except (NotImplementedError, TypeError) as e:
             if on_error == "raise":
-                raise
+                raise ProjectPutError(
+                    "Key-value pair could not be inserted in the Project"
+                ) from e
 
             logger.warning(
-                "Several items could not be inserted in the Project "
+                "Key-value pair could not be inserted in the Project "
                 f"due to the following error: {e}"
             )
 
@@ -68,46 +78,33 @@ class Project:
     ):
         """Add several values to the Project.
 
-        All valid key-value pairs will be added to the Project; errors caused
-        by invalid key-value pairs (e.g. if the key is not a string) will be
-        collected and shown all at once after all the insertions, either as a
-        warning or an Exception, depending on the value of `on_error`.
+        If `on_error` is "raise", the first error stops the execution (so the
+        later key-value pairs will not be inserted). If `on_error` is "warn" (or
+        anything other than "raise"), errors do not stop the execution, and are
+        shown as they come as warnings; all the valid key-value pairs are inserted.
 
         Parameters
         ----------
-        key : str
-            The key to associate with `value` in the Project. Must be a string.
-        value : Any
-            The value to associate with `key` in the Project.
+        key_to_value : dict[str, Any]
+            The key-value pairs to put in the Project. Keys must be strings.
         on_error : "warn" or "raise", optional
-            Upon error (e.g. if the key is not a string), whether to raise an error or
+            Upon error (e.g. if a key is not a string), whether to raise an error or
             to print a warning. Default is "warn".
+
+        Raises
+        ------
+        ProjectPutError
+            If a key-value pair in `key_to_value` cannot be saved properly,
+            and `on_error` is "raise".
         """
-        errors = []
-
         for key, value in key_to_value.items():
-            try:
-                self.put(key, value, on_error="raise")
-            except (NotImplementedError, TypeError) as e:
-                errors.append(e)
-
-        if errors:
-            if on_error == "raise":
-                raise ProjectPutError(
-                    "Several items could not be inserted in the Project "
-                    f"due to the following errors: {errors}"
-                )
-
-            logger.warning(
-                "Several items could not be inserted in the Project "
-                f"due to the following errors: {errors}"
-            )
+            self.put(key, value, on_error=on_error)
 
     def put_item(self, key: str, item: Item):
         """Add an Item to the Project."""
         if not isinstance(key, str):
             raise TypeError(
-                f"All keys must be strings; key '{key}' is of type '{type(key)}'"
+                f"Key must be a string; key '{key}' is of type '{type(key)}'"
             )
 
         self.item_repository.put_item(key, item)

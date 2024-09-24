@@ -189,6 +189,18 @@ def test_put_several_canonical(project):
     assert project.list_keys() == ["a", "b"]
 
 
+def test_put_several_some_errors(project, caplog):
+    project.put(
+        {
+            0: "hello",
+            1: "hello",
+            2: "hello",
+        }
+    )
+    assert len(caplog.record_tuples) == 3
+    assert project.list_keys() == []
+
+
 def test_put_several_nested(project):
     project.put({"a": {"b": "baz"}})
     assert project.list_keys() == ["a"]
@@ -209,11 +221,11 @@ def test_put_key_is_a_tuple(project):
 
 def test_put_key_is_a_set(project):
     """Cannot use an unhashable type as a key."""
-    with pytest.raises(TypeError):
-        project.put(set(), "hello")
+    with pytest.raises(ProjectPutError):
+        project.put(set(), "hello", on_error="raise")
 
 
 def test_put_wrong_key_and_value_raise(project):
-    """When `on_error` is "raise", raise."""
+    """When `on_error` is "raise", raise the first error that occurs."""
     with pytest.raises(ProjectPutError):
         project.put(0, (lambda: "unsupported object"), on_error="raise")
