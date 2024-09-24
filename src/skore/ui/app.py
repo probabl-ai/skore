@@ -5,9 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from skore.project import Project, load
-
-from .dependencies import get_static_path
-from .report import router as report_router
+from skore.ui.dependencies import get_static_path
+from skore.ui.report import router as report_router
 
 
 def create_app(project: Project | None = None) -> FastAPI:
