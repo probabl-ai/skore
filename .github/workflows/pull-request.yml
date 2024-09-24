@@ -9,6 +9,7 @@ jobs:
       pull-requests: write
     steps:
       - shell: bash
+        continue-on-error: true
         run: |
           gh api \
             --method POST \
