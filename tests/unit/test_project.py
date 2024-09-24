@@ -14,7 +14,7 @@ from skore.item import ItemRepository
 from skore.layout import LayoutRepository
 from skore.layout.layout import LayoutItem, LayoutItemSize
 from skore.persistence.in_memory_storage import InMemoryStorage
-from skore.project import KeyTypeError, Project, ProjectLoadError, load
+from skore.project import Project, ProjectLoadError, ProjectPutError, load
 
 
 @pytest.fixture
@@ -137,9 +137,10 @@ def test_put_twice(project):
     assert project.get("key2") == 5
 
 
-def test_put_int_key(project):
-    with pytest.raises(KeyTypeError):
-        project.put(0, "hello")
+def test_put_int_key(project, caplog):
+    # Warns that 0 is not a string, but doesn't raise
+    project.put(0, "hello")
+    assert len(caplog.record_tuples) == 1
     assert project.list_keys() == []
 
 
@@ -175,3 +176,56 @@ def test_report_layout(project):
 
     project.put_report_layout(layout)
     assert project.get_report_layout() == layout
+
+
+def test_put_several_happy_path(project):
+    project.put({"a": "foo", "b": "bar"})
+    assert project.list_keys() == ["a", "b"]
+
+
+def test_put_several_canonical(project):
+    """Use `put_several` instead of the `put` alias."""
+    project.put_several({"a": "foo", "b": "bar"})
+    assert project.list_keys() == ["a", "b"]
+
+
+def test_put_several_some_errors(project, caplog):
+    project.put(
+        {
+            0: "hello",
+            1: "hello",
+            2: "hello",
+        }
+    )
+    assert len(caplog.record_tuples) == 3
+    assert project.list_keys() == []
+
+
+def test_put_several_nested(project):
+    project.put({"a": {"b": "baz"}})
+    assert project.list_keys() == ["a"]
+    assert project.get("a") == {"b": "baz"}
+
+
+def test_put_several_error(project):
+    """If some key-value pairs are wrong, add all that are valid and print a warning."""
+    project.put({"a": "foo", "b": (lambda: "unsupported object")})
+    assert project.list_keys() == ["a"]
+
+
+def test_put_key_is_a_tuple(project):
+    """If key is not a string, warn."""
+    project.put(("a", "foo"), ("b", "bar"))
+    assert project.list_keys() == []
+
+
+def test_put_key_is_a_set(project):
+    """Cannot use an unhashable type as a key."""
+    with pytest.raises(ProjectPutError):
+        project.put(set(), "hello", on_error="raise")
+
+
+def test_put_wrong_key_and_value_raise(project):
+    """When `on_error` is "raise", raise the first error that occurs."""
+    with pytest.raises(ProjectPutError):
+        project.put(0, (lambda: "unsupported object"), on_error="raise")
