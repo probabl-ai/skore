@@ -34,8 +34,8 @@ class PandasSeriesItem(Item):
 
         Parameters
         ----------
-        series_dict : dict
-            The dict representation of the series.
+        series_list : list
+            The list representation of the series.
         created_at : str
             The creation timestamp in ISO format.
         updated_at : str
