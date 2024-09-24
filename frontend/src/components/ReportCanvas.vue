@@ -6,6 +6,7 @@ import DataFrameWidget from "@/components/DataFrameWidget.vue";
 import HtmlSnippetWidget from "@/components/HtmlSnippetWidget.vue";
 import ImageWidget from "@/components/ImageWidget.vue";
 import MarkdownWidget from "@/components/MarkdownWidget.vue";
+import PlotlyWidget from "@/components/PlotlyWidget.vue";
 import ReportCard from "@/components/ReportCard.vue";
 import VegaWidget from "@/components/VegaWidget.vue";
 import type { KeyLayoutSize, KeyMoveDirection } from "@/models";
@@ -36,7 +37,7 @@ const visibleItems = computed(() => {
           data = item.value;
         } else {
           data = atob(item.value);
-          if (mediaType === "application/vnd.vega.v5+json") {
+          if (mediaType.includes("json")) {
             data = JSON.parse(data);
           }
         }
@@ -112,6 +113,7 @@ function getItemSubtitle(created_at: Date, updated_at: Date) {
       />
       <MarkdownWidget v-if="mediaType === 'text/markdown'" :source="data" />
       <VegaWidget v-if="mediaType === 'application/vnd.vega.v5+json'" :spec="data" />
+      <PlotlyWidget v-if="mediaType === 'application/vnd.plotly.v1+json'" :spec="data" />
       <HtmlSnippetWidget
         v-if="mediaType === 'application/vnd.sklearn.estimator+html'"
         :src="data"
