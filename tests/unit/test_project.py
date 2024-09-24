@@ -141,7 +141,7 @@ def test_put_int_key(project, caplog):
     # Warns that 0 is not a string, but doesn't raise
     project.put(0, "hello")
     assert len(caplog.record_tuples) == 1
-    assert project.list_keys() == []
+    assert project.list_item_keys() == []
 
 
 def test_get(project):
@@ -189,13 +189,13 @@ def test_list_view_keys(project):
 
 def test_put_several_happy_path(project):
     project.put({"a": "foo", "b": "bar"})
-    assert project.list_keys() == ["a", "b"]
+    assert project.list_item_keys() == ["a", "b"]
 
 
 def test_put_several_canonical(project):
     """Use `put_several` instead of the `put` alias."""
     project.put_several({"a": "foo", "b": "bar"})
-    assert project.list_keys() == ["a", "b"]
+    assert project.list_item_keys() == ["a", "b"]
 
 
 def test_put_several_some_errors(project, caplog):
@@ -207,25 +207,25 @@ def test_put_several_some_errors(project, caplog):
         }
     )
     assert len(caplog.record_tuples) == 3
-    assert project.list_keys() == []
+    assert project.list_item_keys() == []
 
 
 def test_put_several_nested(project):
     project.put({"a": {"b": "baz"}})
-    assert project.list_keys() == ["a"]
+    assert project.list_item_keys() == ["a"]
     assert project.get("a") == {"b": "baz"}
 
 
 def test_put_several_error(project):
     """If some key-value pairs are wrong, add all that are valid and print a warning."""
     project.put({"a": "foo", "b": (lambda: "unsupported object")})
-    assert project.list_keys() == ["a"]
+    assert project.list_item_keys() == ["a"]
 
 
 def test_put_key_is_a_tuple(project):
     """If key is not a string, warn."""
     project.put(("a", "foo"), ("b", "bar"))
-    assert project.list_keys() == []
+    assert project.list_item_keys() == []
 
 
 def test_put_key_is_a_set(project):
