@@ -20,6 +20,7 @@ const infoMediaTypes = ["text/markdown", "text/html"];
 const mediaMediaTypes = [
   "application/vnd.dataframe+json",
   "application/vnd.sklearn.estimator+html",
+  "application/vnd.vega.v5+json",
   "image/png",
   "image/jpeg",
   "image/webp",
