@@ -3,7 +3,7 @@
 import base64
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Request
 from fastapi.params import Depends
@@ -37,17 +37,10 @@ class SerializedProject:
     """Serialized project, to be sent to the frontend."""
 
     layout: Layout
-    views: dict[str, Layout]
     items: dict[str, SerializedItem]
 
 
 def __serialize_project(project: Project) -> SerializedProject:
-    views = {}
-    for key in project.list_view_keys():
-        view = project.get_view(key)
-
-        views[key] = view.layout
-
     items = {}
     for key in project.list_item_keys():
         item = project.get_item(key)
@@ -85,7 +78,6 @@ def __serialize_project(project: Project) -> SerializedProject:
 
     return SerializedProject(
         layout=layout,
-        views=views,
         items=items,
     )
 
