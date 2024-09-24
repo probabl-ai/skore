@@ -76,25 +76,11 @@ class Project:
         errors = []
 
         for key, value in key_to_value.items():
-            key_error = None
-            value_error = None
-
-            if not isinstance(key, str):
-                key_error = TypeError(
-                    f"All keys must be strings; key '{key}' is of type '{type(key)}'"
-                )
-                errors.append(key_error)
-
             try:
                 item = object_to_item(value)
-            except NotImplementedError as e:
-                value_error = e
-                errors.append(value_error)
-
-            if key_error or value_error:
-                continue
-
-            self.put_item(key, item)
+                self.put_item(key, item)
+            except (NotImplementedError, TypeError) as e:
+                errors.append(e)
 
         if errors:
             if on_error == "raise":
@@ -110,6 +96,11 @@ class Project:
 
     def put_item(self, key: str, item: Item):
         """Add an Item to the Project."""
+        if not isinstance(key, str):
+            raise TypeError(
+                f"All keys must be strings; key '{key}' is of type '{type(key)}'"
+            )
+
         self.item_repository.put_item(key, item)
 
     def get(self, key: str) -> Any:
