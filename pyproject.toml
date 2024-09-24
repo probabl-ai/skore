@@ -33,6 +33,7 @@ test = [
   "httpx",
   "matplotlib",
   "pandas",
+  "pillow",
   "plotly",
   "pre-commit",
   "pytest",

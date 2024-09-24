@@ -1,4 +1,4 @@
-"""Layout models."""
+"""Project View models."""
 
 from dataclasses import dataclass
 from enum import StrEnum
@@ -21,3 +21,19 @@ class LayoutItem:
 
 
 Layout = list[LayoutItem]
+
+
+@dataclass
+class View:
+    """A view of a Project.
+
+    Examples
+    --------
+    >>> View(layout=[
+    ...     {"key": "a", "size": "medium"},
+    ...     {"key": "b", "size": "small"},
+    ... ])
+    View(...)
+    """
+
+    layout: Layout

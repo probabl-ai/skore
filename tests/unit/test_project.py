@@ -11,17 +11,17 @@ from matplotlib import pyplot as plt
 from PIL import Image
 from sklearn.ensemble import RandomForestClassifier
 from skore.item import ItemRepository
-from skore.layout import LayoutRepository
-from skore.layout.layout import LayoutItem, LayoutItemSize
 from skore.persistence.in_memory_storage import InMemoryStorage
 from skore.project import Project, ProjectLoadError, ProjectPutError, load
+from skore.view.view import LayoutItem, LayoutItemSize, View
+from skore.view.view_repository import ViewRepository
 
 
 @pytest.fixture
 def project():
     return Project(
         item_repository=ItemRepository(InMemoryStorage()),
-        layout_repository=LayoutRepository(InMemoryStorage()),
+        view_repository=ViewRepository(InMemoryStorage()),
     )
 
 
@@ -116,7 +116,7 @@ def test_load(tmp_path):
     project_path = tmp_path.parent / (tmp_path.name + ".skore")
     os.mkdir(project_path)
     os.mkdir(project_path / "items")
-    os.mkdir(project_path / "layouts")
+    os.mkdir(project_path / "views")
     p = load(project_path)
     assert isinstance(p, Project)
 
@@ -127,7 +127,7 @@ def test_put(project):
     project.put("key3", 3)
     project.put("key4", 4)
 
-    assert project.list_keys() == ["key1", "key2", "key3", "key4"]
+    assert project.list_item_keys() == ["key1", "key2", "key3", "key4"]
 
 
 def test_put_twice(project):
@@ -141,7 +141,7 @@ def test_put_int_key(project, caplog):
     # Warns that 0 is not a string, but doesn't raise
     project.put(0, "hello")
     assert len(caplog.record_tuples) == 1
-    assert project.list_keys() == []
+    assert project.list_item_keys() == []
 
 
 def test_get(project):
@@ -156,7 +156,7 @@ def test_delete(project):
     project.put("key1", 1)
     project.delete_item("key1")
 
-    assert project.list_keys() == []
+    assert project.list_item_keys() == []
 
     with pytest.raises(KeyError):
         project.delete_item("key2")
@@ -165,28 +165,37 @@ def test_delete(project):
 def test_keys(project):
     project.put("key1", 1)
     project.put("key2", 2)
-    assert project.list_keys() == ["key1", "key2"]
+    assert project.list_item_keys() == ["key1", "key2"]
 
 
-def test_report_layout(project):
+def test_view(project):
     layout = [
         LayoutItem(key="key1", size=LayoutItemSize.LARGE),
         LayoutItem(key="key2", size=LayoutItemSize.SMALL),
     ]
 
-    project.put_report_layout(layout)
-    assert project.get_report_layout() == layout
+    view = View(layout=layout)
+
+    project.put_view("view", view)
+    assert project.get_view("view") == view
+
+
+def test_list_view_keys(project):
+    view = View(layout=[])
+
+    project.put_view("view", view)
+    assert project.list_view_keys() == ["view"]
 
 
 def test_put_several_happy_path(project):
     project.put({"a": "foo", "b": "bar"})
-    assert project.list_keys() == ["a", "b"]
+    assert project.list_item_keys() == ["a", "b"]
 
 
 def test_put_several_canonical(project):
     """Use `put_several` instead of the `put` alias."""
     project.put_several({"a": "foo", "b": "bar"})
-    assert project.list_keys() == ["a", "b"]
+    assert project.list_item_keys() == ["a", "b"]
 
 
 def test_put_several_some_errors(project, caplog):
@@ -198,25 +207,25 @@ def test_put_several_some_errors(project, caplog):
         }
     )
     assert len(caplog.record_tuples) == 3
-    assert project.list_keys() == []
+    assert project.list_item_keys() == []
 
 
 def test_put_several_nested(project):
     project.put({"a": {"b": "baz"}})
-    assert project.list_keys() == ["a"]
+    assert project.list_item_keys() == ["a"]
     assert project.get("a") == {"b": "baz"}
 
 
 def test_put_several_error(project):
     """If some key-value pairs are wrong, add all that are valid and print a warning."""
     project.put({"a": "foo", "b": (lambda: "unsupported object")})
-    assert project.list_keys() == ["a"]
+    assert project.list_item_keys() == ["a"]
 
 
 def test_put_key_is_a_tuple(project):
     """If key is not a string, warn."""
     project.put(("a", "foo"), ("b", "bar"))
-    assert project.list_keys() == []
+    assert project.list_item_keys() == []
 
 
 def test_put_key_is_a_set(project):

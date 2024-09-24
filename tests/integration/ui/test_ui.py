@@ -1,19 +1,19 @@
 import pytest
 from fastapi.testclient import TestClient
 from skore.item.item_repository import ItemRepository
-from skore.layout.layout_repository import LayoutRepository
 from skore.persistence.in_memory_storage import InMemoryStorage
 from skore.project import Project
 from skore.ui.app import create_app
+from skore.view.view_repository import ViewRepository
 
 
 @pytest.fixture
 def project():
     item_repository = ItemRepository(storage=InMemoryStorage())
-    layout_repository = LayoutRepository(storage=InMemoryStorage())
+    view_repository = ViewRepository(storage=InMemoryStorage())
     return Project(
         item_repository=item_repository,
-        layout_repository=layout_repository,
+        view_repository=view_repository,
     )
 
 
@@ -37,7 +37,7 @@ def test_get_items(client, project):
     response = client.get("/api/items")
 
     assert response.status_code == 200
-    assert response.json() == {"items": {}, "layout": []}
+    assert response.json() == {"layout": [], "items": {}}
 
     project.put("test", "test")
     item = project.get_item("test")
@@ -57,7 +57,7 @@ def test_get_items(client, project):
     }
 
 
-def test_share_report(client, project):
+def test_share_view(client, project):
     project.put("test", "test")
 
     response = client.post("/api/report/share", json=[{"key": "test", "size": "large"}])
@@ -65,6 +65,17 @@ def test_share_report(client, project):
     assert b"<!DOCTYPE html>" in response.content
 
 
-def test_put_report_layout(client):
-    response = client.put("/api/report/layout", json=[{"key": "test", "size": "large"}])
+def test_put_view_layout(client):
+    response = client.put(
+        "/api/report/layout",
+        json=[{"key": "test", "size": "large"}],
+    )
+    assert response.status_code == 201
+
+
+def test_put_view_layout_with_slash_in_name(client):
+    response = client.put(
+        "/api/report/layout",
+        json=[{"key": "test", "size": "large"}],
+    )
     assert response.status_code == 201
