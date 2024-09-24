@@ -14,7 +14,7 @@ from skore.item import ItemRepository
 from skore.layout import LayoutRepository
 from skore.layout.layout import LayoutItem, LayoutItemSize
 from skore.persistence.in_memory_storage import InMemoryStorage
-from skore.project import Project, ProjectLoadError, load
+from skore.project import Project, ProjectLoadError, ProjectPutError, load
 
 
 @pytest.fixture
@@ -215,5 +215,5 @@ def test_put_key_is_a_set(project):
 
 def test_put_wrong_key_and_value_raise(project):
     """When `on_error` is "raise", raise."""
-    with pytest.raises(ExceptionGroup):
+    with pytest.raises(ProjectPutError):
         project.put(0, (lambda: "unsupported object"), on_error="raise")

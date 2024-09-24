@@ -21,6 +21,10 @@ from skore.persistence.disk_cache_storage import DirectoryDoesNotExist, DiskCach
 logger = logging.getLogger(__name__)
 
 
+class ProjectPutError(Exception):
+    """One more key-value pairs could not be saved in the Project."""
+
+
 class Project:
     """A project is a collection of items that are stored in a storage."""
 
@@ -94,8 +98,9 @@ class Project:
 
         if errors:
             if on_error == "raise":
-                raise ExceptionGroup(
-                    "Several items could not be inserted in the Project", errors
+                raise ProjectPutError(
+                    "Several items could not be inserted in the Project "
+                    f"due to the following errors: {errors}"
                 )
 
             logger.warning(
