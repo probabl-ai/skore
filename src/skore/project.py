@@ -50,7 +50,17 @@ class Project:
             Upon error (e.g. if the key is not a string), whether to raise an error or
             to print a warning. Default is "warn".
         """
-        self.put_several({key: value}, on_error)
+        try:
+            item = object_to_item(value)
+            self.put_item(key, item)
+        except (NotImplementedError, TypeError) as e:
+            if on_error == "raise":
+                raise
+
+            logger.warning(
+                "Several items could not be inserted in the Project "
+                f"due to the following error: {e}"
+            )
 
     @put.register
     def put_several(
@@ -77,8 +87,7 @@ class Project:
 
         for key, value in key_to_value.items():
             try:
-                item = object_to_item(value)
-                self.put_item(key, item)
+                self.put(key, value, on_error="raise")
             except (NotImplementedError, TypeError) as e:
                 errors.append(e)
 
