@@ -12,6 +12,7 @@ from fastapi.templating import Jinja2Templates
 from skore.item.media_item import MediaItem
 from skore.item.numpy_array_item import NumpyArrayItem
 from skore.item.pandas_dataframe_item import PandasDataFrameItem
+from skore.item.pandas_series_item import PandasSeriesItem
 from skore.item.primitive_item import PrimitiveItem
 from skore.item.sklearn_base_estimator_item import SklearnBaseEstimatorItem
 from skore.project import Project
@@ -55,6 +56,9 @@ def __serialize_project(project: Project) -> SerializedProject:
         elif isinstance(item, PandasDataFrameItem):
             value = item.dataframe_dict
             media_type = "application/vnd.dataframe+json"
+        elif isinstance(item, PandasSeriesItem):
+            value = item.series_list
+            media_type = "text/markdown"
         elif isinstance(item, SklearnBaseEstimatorItem):
             value = item.estimator_html_repr
             media_type = "application/vnd.sklearn.estimator+html"
