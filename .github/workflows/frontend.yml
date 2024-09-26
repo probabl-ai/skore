@@ -4,8 +4,7 @@ on:
   pull_request:
     paths:
       - 'frontend/**'
-      - Makefile
-      - .github/workflows/frontend.yml
+      - '.github/workflows/frontend.yml'
 
 permissions:
   contents: read
@@ -43,6 +42,7 @@ jobs:
       - name: Test frontend
         run: |
           cd frontend
+
           npm install
           npm run test:unit:coverage
       - name: Report coverage
@@ -64,4 +64,9 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - name: Build frontend
         shell: bash
-        run: make build-frontend
+        run: |
+          cd frontend
+
+          npm install
+          npm run build
+          npm run build:lib -- --emptyOutDir false
