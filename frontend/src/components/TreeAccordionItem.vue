@@ -6,6 +6,7 @@ import { type TreeAccordionNode } from "@/components/TreeAccordion.vue";
 const props = defineProps<TreeAccordionNode>();
 
 const isCollapsed = ref(false);
+const isDraggable = ref(false);
 
 const hasChildren = computed(() => props.children?.length);
 const label = computed(() => {
@@ -32,6 +33,12 @@ function countChildrenRecursively(node: TreeAccordionNode): number {
 const totalChildrenCount = computed(() => {
   return countChildrenRecursively(props);
 });
+
+function onDragStart(event: DragEvent) {
+  if (event.dataTransfer) {
+    event.dataTransfer.setData("key", props.name);
+  }
+}
 </script>
 
 <template>
@@ -41,7 +48,15 @@ const totalChildrenCount = computed(() => {
     :style="{ '--children-count': totalChildrenCount }"
   >
     <div class="label-container" @click="toggleChildren">
-      <div class="label" :class="{ 'has-children': hasChildren }">
+      <div
+        class="label"
+        :class="{ 'has-children': hasChildren }"
+        :draggable="isDraggable && !hasChildren"
+        @dragstart="onDragStart($event)"
+        @mousedown="isDraggable = true"
+        @mouseup="isDraggable = false"
+        @mouseleave="isDraggable = false"
+      >
         <span class="children-indicator icon-branch" v-if="props.indentationLevel ?? 0 > 0" />
         <span class="icon icon-pill" />
         <span class="text">{{ label }}</span>
@@ -101,6 +116,10 @@ const totalChildrenCount = computed(() => {
       &:not(.has-children):hover {
         background-color: var(--background-color-selected);
         color: var(--text-color-highlight);
+      }
+
+      &[draggable="true"] {
+        cursor: grabbing;
       }
 
       & .children-indicator {
