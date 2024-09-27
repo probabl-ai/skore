@@ -7,12 +7,12 @@ import TreeAccordion, { type TreeAccordionNode } from "@/components/TreeAccordio
 
 function countLeaves(nodes: TreeAccordionNode[]): number {
   function countInNode(node: TreeAccordionNode): number {
-    if (!node.children?.length) {
+    if (node.children?.length === 0) {
       return 1;
     }
 
-    const countInChildren = node.children.map(countInNode);
-    return countInChildren.reduce((accumulator, leavesCount) => accumulator + leavesCount);
+    const countInChildren = node.children?.map(countInNode) ?? [];
+    return countInChildren.reduce((accumulator, leavesCount) => accumulator + leavesCount, 0);
   }
 
   const allBranches = nodes.map(countInNode);
