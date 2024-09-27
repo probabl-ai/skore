@@ -9,7 +9,6 @@ import CrossValidationResultsWidget from "@/components/CrossValidationResultsWid
 import DataFrameWidget from "@/components/DataFrameWidget.vue";
 import DropdownButton from "@/components/DropdownButton.vue";
 import DropdownButtonItem from "@/components/DropdownButtonItem.vue";
-import FileTree, { transformListToTree } from "@/components/FileTree.vue";
 import ImageWidget from "@/components/ImageWidget.vue";
 import MarkdownWidget from "@/components/MarkdownWidget.vue";
 import SimpleButton from "@/components/SimpleButton.vue";
@@ -17,6 +16,7 @@ import Tabs from "@/components/TabsWidget.vue";
 import TabsItem from "@/components/TabsWidgetItem.vue";
 import TextInput from "@/components/TextInput.vue";
 import ToastNotification from "@/components/ToastNotification.vue";
+import TreeAccordion, { type TreeAccordionNode } from "@/components/TreeAccordion.vue";
 import VegaWidget from "@/components/VegaWidget.vue";
 import { generateRandomId } from "@/services/utils";
 import { useModalsStore } from "@/stores/modals";
@@ -60,26 +60,30 @@ function showPromptModal() {
   });
 }
 
-const fileTreeNodes = transformListToTree([
-  "fraud",
-  "fraud/accuracy",
-  "fraud/accuracy3",
-  "fraud2",
-  "fraud2/accuracy",
-  "fraud2/accuracy3",
-  "foo",
-  "foo/bar",
-  "foo/bar/bbbb",
-  "foo/bar/aaaa",
-  "foo/bar/baz",
-  "foo/bar/baz/qux",
-  "foo/bar/baz/pwet",
-  "foo/baz",
-  "bar",
-  "bar/baz",
-  "bar/baz/qux",
-  "bar/baz/pwet",
-]);
+const fileTreeNodes: TreeAccordionNode[] = [
+  {
+    name: "fraud",
+    children: [{ name: "fraud/accuracy" }, { name: "fraud/accuracy3" }],
+  },
+  {
+    name: "fraud2",
+    children: [{ name: "fraud2/accuracy" }, { name: "fraud2/accuracy3" }],
+  },
+  {
+    name: "nested",
+    children: [
+      {
+        name: "nested/fraud2/accuracy",
+        children: [
+          { name: "nested/fraud2/accuracy/self" },
+          { name: "nested/fraud2/accuracy/self2" },
+          { name: "nested/fraud2/accuracy/self3" },
+        ],
+      },
+      { name: "nested/fraud2/accuracy3", children: [] },
+    ],
+  },
+];
 </script>
 
 <template>
@@ -271,7 +275,7 @@ const fileTreeNodes = transformListToTree([
         <SimpleButton label="Show prompt modal" @click="showPromptModal" />
       </TabsItem>
       <TabsItem :value="9">
-        <FileTree :nodes="fileTreeNodes" />
+        <TreeAccordion :nodes="fileTreeNodes" />
       </TabsItem>
     </Tabs>
   </main>

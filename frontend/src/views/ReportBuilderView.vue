@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import Simplebar from "simplebar-vue";
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { onBeforeUnmount, onMounted, ref } from "vue";
 
 import ReportCanvas from "@/components/ReportCanvas.vue";
-import ReportKeyList from "@/components/ReportKeyList.vue";
 import SectionHeader from "@/components/SectionHeader.vue";
 import SimpleButton from "@/components/SimpleButton.vue";
-import type { ReportItem } from "@/models";
+import TreeAccordion from "@/components/TreeAccordion.vue";
 import { fetchShareableBlob } from "@/services/api";
 import { saveBlob } from "@/services/utils";
 import { useReportStore } from "@/stores/report";
@@ -15,37 +14,6 @@ const reportStore = useReportStore();
 const isDropIndicatorVisible = ref(false);
 const editor = ref<HTMLDivElement>();
 const isInFocusMode = ref(false);
-
-const infoMediaTypes = ["text/markdown", "text/html"];
-const mediaMediaTypes = [
-  "application/vnd.dataframe+json",
-  "application/vnd.sklearn.estimator+html",
-  "application/vnd.plotly.v1+json",
-  "application/vnd.vega.v5+json",
-  "image/png",
-  "image/jpeg",
-  "image/webp",
-  "image/svg+xml",
-];
-
-function getFilteredUnusedReportKeys(filterPredicate: (key: string, value: ReportItem) => boolean) {
-  if (reportStore.items === null) {
-    return [];
-  }
-  const infoItemKeys = Object.entries(reportStore.items)
-    .filter(([key, value]) => filterPredicate(key, value))
-    .map(([key]) => key);
-  const usedKeys = reportStore.layout.map(({ key }) => key);
-  return infoItemKeys.filter((key) => !usedKeys.includes(key));
-}
-
-const unusedInfoKeys = computed(() => {
-  return getFilteredUnusedReportKeys((key, value) => infoMediaTypes.includes(value.media_type));
-});
-
-const unusedMediaKeys = computed(() => {
-  return getFilteredUnusedReportKeys((key, value) => mediaMediaTypes.includes(value.media_type));
-});
 
 async function onShareReport() {
   const shareable = await fetchShareableBlob(reportStore.layout);
@@ -93,20 +61,9 @@ onBeforeUnmount(() => reportStore.stopBackendPolling());
   <main>
     <article v-if="reportStore.items !== null">
       <div class="items" v-if="reportStore.items && !isInFocusMode">
-        <SectionHeader title="Items" icon="icon-pie-chart" />
+        <SectionHeader title="Elements" icon="icon-pie-chart" />
         <Simplebar class="key-list">
-          <ReportKeyList
-            title="Info"
-            icon="icon-text"
-            :keys="unusedInfoKeys"
-            v-if="unusedInfoKeys.length > 0"
-          />
-          <ReportKeyList
-            title="Media"
-            icon="icon-plot"
-            :keys="unusedMediaKeys"
-            v-if="unusedMediaKeys.length > 0"
-          />
+          <TreeAccordion :nodes="reportStore.keysAsTree()" />
         </Simplebar>
       </div>
 
@@ -165,40 +122,6 @@ main {
   display: flex;
   flex-direction: row;
 
-  nav,
-  article {
-    height: 100dvh;
-  }
-
-  nav {
-    display: flex;
-    overflow: hidden;
-    width: 240px;
-    min-width: 0;
-    flex-direction: column;
-    flex-shrink: 0;
-    border-right: solid 1px var(--border-color-normal);
-
-    & .file-trees,
-    & .empty-tree {
-      height: 0;
-      flex-grow: 1;
-    }
-
-    & .empty-tree {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      background-image: var(--sad-face-image);
-      background-position: 50% calc(50% - 24px);
-      background-repeat: no-repeat;
-      background-size: 24px;
-      color: var(--text-color-normal);
-      font-size: var(--text-size-small);
-      text-align: center;
-    }
-  }
-
   article,
   .not-found {
     display: flex;
@@ -208,11 +131,12 @@ main {
   }
 
   article {
+    height: 100dvh;
     flex-direction: row;
 
     & .items {
       display: flex;
-      width: 240px;
+      width: 292px;
       flex-direction: column;
       flex-shrink: 0;
       border-right: solid 1px var(--border-color-normal);
@@ -220,7 +144,8 @@ main {
       & .key-list {
         height: 0;
         flex-grow: 1;
-        background-color: var(--background-color-normal);
+        padding: var(--spacing-padding-large);
+        background-color: var(--background-color-elevated-high);
       }
     }
 

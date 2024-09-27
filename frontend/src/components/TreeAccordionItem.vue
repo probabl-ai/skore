@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 
-import { type FileTreeNode } from "@/components/FileTree.vue";
+import { type TreeAccordionNode } from "@/components/TreeAccordion.vue";
 
-const props = defineProps<FileTreeNode>();
+const props = defineProps<TreeAccordionNode>();
 
 const isCollapsed = ref(false);
 
 const hasChildren = computed(() => props.children?.length);
 const label = computed(() => {
-  const segment = props.stem.split("/");
+  const segment = props.name.split("/");
   return segment[segment.length - 1];
 });
 
@@ -19,7 +19,7 @@ function toggleChildren() {
   }
 }
 
-function countChildrenRecursively(node: FileTreeNode): number {
+function countChildrenRecursively(node: TreeAccordionNode): number {
   if (!node.children || node.children.length === 0) {
     return 0;
   }
@@ -36,7 +36,7 @@ const totalChildrenCount = computed(() => {
 
 <template>
   <div
-    class="file-tree-item"
+    class="tree-accordion-item"
     :class="{ first: props.indentationLevel === 0 }"
     :style="{ '--children-count': totalChildrenCount }"
   >
@@ -57,10 +57,10 @@ const totalChildrenCount = computed(() => {
     </div>
     <Transition name="toggle-children">
       <div class="children" v-if="hasChildren && !isCollapsed">
-        <FileTreeItem
+        <TreeAccordionItem
           v-for="(child, index) in props.children"
           :key="index"
-          :stem="child.stem"
+          :name="child.name"
           :children="child.children"
           :indentation-level="(props.indentationLevel ?? 0) + 1"
         />
@@ -70,7 +70,7 @@ const totalChildrenCount = computed(() => {
 </template>
 
 <style scoped>
-.file-tree-item {
+.tree-accordion-item {
   --label-height: 17px;
 
   position: relative;
