@@ -5,7 +5,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.params import Depends
 from fastapi.templating import Jinja2Templates
 
@@ -141,5 +141,20 @@ async def put_view(request: Request, key: str, layout: Layout):
 
     view = View(layout=layout)
     project.put_view(key, view)
+
+    return __serialize_project(project)
+
+
+@router.delete("/report/view/{key:path}", status_code=status.HTTP_200_OK)
+async def delete_view(request: Request, key: str):
+    """Delete the view corresponding to `key`."""
+    project: Project = request.app.state.project
+
+    try:
+        project.delete_view(key)
+    except KeyError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="View not found"
+        ) from None
 
     return __serialize_project(project)

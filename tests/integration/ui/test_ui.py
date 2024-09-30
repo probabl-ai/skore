@@ -4,6 +4,7 @@ from skore.item.item_repository import ItemRepository
 from skore.persistence.in_memory_storage import InMemoryStorage
 from skore.project import Project
 from skore.ui.app import create_app
+from skore.view.view import View
 from skore.view.view_repository import ViewRepository
 
 
@@ -71,3 +72,14 @@ def test_put_view_layout(client):
         json=[{"key": "test", "size": "large"}],
     )
     assert response.status_code == 201
+
+
+def test_delete_view(client, project):
+    project.put_view("hello", View(layout=[]))
+    response = client.delete("/api/report/view/hello")
+    assert response.status_code == 200
+
+
+def test_delete_view_missing(client):
+    response = client.delete("/api/report/view/hello")
+    assert response.status_code == 404
