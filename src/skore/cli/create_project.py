@@ -145,12 +145,12 @@ def __create(project_name: str | Path, working_dir: Path | None = None) -> Path:
             f"Unable to create project file '{items_dir}'."
         ) from e
 
-    layouts_dir = project_directory / "layouts"
+    views_dir = project_directory / "views"
     try:
-        layouts_dir.mkdir()
+        views_dir.mkdir()
     except Exception as e:
         raise ProjectCreationError(
-            f"Unable to create project file '{layouts_dir}'."
+            f"Unable to create project file '{views_dir}'."
         ) from e
 
     logger.info(f"Project file '{project_directory}' was successfully created.")

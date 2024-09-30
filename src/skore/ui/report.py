@@ -12,10 +12,11 @@ from fastapi.templating import Jinja2Templates
 from skore.item.media_item import MediaItem
 from skore.item.numpy_array_item import NumpyArrayItem
 from skore.item.pandas_dataframe_item import PandasDataFrameItem
+from skore.item.pandas_series_item import PandasSeriesItem
 from skore.item.primitive_item import PrimitiveItem
 from skore.item.sklearn_base_estimator_item import SklearnBaseEstimatorItem
-from skore.layout import Layout
 from skore.project import Project
+from skore.view.view import Layout, View
 
 from .dependencies import get_static_path, get_templates
 
@@ -23,21 +24,26 @@ router = APIRouter()
 
 
 @dataclass
+class SerializedItem:
+    """Serialized item."""
+
+    media_type: str
+    value: Any
+    updated_at: str
+    created_at: str
+
+
+@dataclass
 class SerializedProject:
     """Serialized project, to be sent to the frontend."""
 
     layout: Layout
-    items: dict[str, dict[str, Any]]
+    items: dict[str, SerializedItem]
 
 
 def __serialize_project(project: Project) -> SerializedProject:
-    try:
-        layout = project.get_report_layout()
-    except KeyError:
-        layout = []
-
     items = {}
-    for key in project.list_keys():
+    for key in project.list_item_keys():
         item = project.get_item(key)
 
         media_type = None
@@ -50,6 +56,9 @@ def __serialize_project(project: Project) -> SerializedProject:
         elif isinstance(item, PandasDataFrameItem):
             value = item.dataframe_dict
             media_type = "application/vnd.dataframe+json"
+        elif isinstance(item, PandasSeriesItem):
+            value = item.series_list
+            media_type = "text/markdown"
         elif isinstance(item, SklearnBaseEstimatorItem):
             value = item.estimator_html_repr
             media_type = "application/vnd.sklearn.estimator+html"
@@ -59,14 +68,22 @@ def __serialize_project(project: Project) -> SerializedProject:
         else:
             raise ValueError(f"Item {item} is not a known item type.")
 
-        items[key] = {
-            "media_type": media_type,
-            "value": value,
-            "updated_at": item.updated_at,
-            "created_at": item.created_at,
-        }
+        items[key] = SerializedItem(
+            media_type=media_type,
+            value=value,
+            updated_at=item.updated_at,
+            created_at=item.created_at,
+        )
 
-    return SerializedProject(layout=layout, items=items)
+    try:
+        layout = project.get_view("layout").layout
+    except KeyError:
+        layout = []
+
+    return SerializedProject(
+        layout=layout,
+        items=items,
+    )
 
 
 @router.get("/items")
@@ -86,7 +103,7 @@ async def share_store(
     """Serve an inlined shareable HTML page."""
     project = request.app.state.project
 
-    # Get static assets to inject them into the report template
+    # Get static assets to inject them into the view template
     def read_asset_content(filename: str):
         with open(static_path / filename) as f:
             return f.read()
@@ -109,8 +126,11 @@ async def share_store(
 
 
 @router.put("/report/layout", status_code=201)
-async def set_report_layout(request: Request, layout: Layout):
-    """Set the report layout."""
-    project = request.app.state.project
-    project.put_report_layout(layout)
+async def set_view_layout(request: Request, layout: Layout):
+    """Set the view layout."""
+    project: Project = request.app.state.project
+
+    view = View(layout=layout)
+    project.put_view("layout", view)
+
     return __serialize_project(project)

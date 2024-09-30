@@ -20,15 +20,14 @@ const infoMediaTypes = ["text/markdown", "text/html"];
 const mediaMediaTypes = [
   "application/vnd.dataframe+json",
   "application/vnd.sklearn.estimator+html",
+  "application/vnd.plotly.v1+json",
+  "application/vnd.vega.v5+json",
   "image/png",
   "image/jpeg",
   "image/webp",
   "image/svg+xml",
 ];
 
-// {
-//       infoMediaTypes.includes(value.media_type);
-//     }
 function getFilteredUnusedReportKeys(filterPredicate: (key: string, value: ReportItem) => boolean) {
   if (reportStore.items === null) {
     return [];

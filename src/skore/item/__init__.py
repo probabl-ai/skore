@@ -10,6 +10,7 @@ from skore.item.item_repository import ItemRepository
 from skore.item.media_item import MediaItem
 from skore.item.numpy_array_item import NumpyArrayItem
 from skore.item.pandas_dataframe_item import PandasDataFrameItem
+from skore.item.pandas_series_item import PandasSeriesItem
 from skore.item.primitive_item import PrimitiveItem
 from skore.item.sklearn_base_estimator_item import SklearnBaseEstimatorItem
 
@@ -19,6 +20,7 @@ def object_to_item(object: Any) -> Item:
     for cls in (
         PrimitiveItem,
         PandasDataFrameItem,
+        PandasSeriesItem,
         NumpyArrayItem,
         SklearnBaseEstimatorItem,
         MediaItem,
@@ -42,6 +44,7 @@ __all__ = [
     "MediaItem",
     "NumpyArrayItem",
     "PandasDataFrameItem",
+    "PandasSeriesItem",
     "PrimitiveItem",
     "SklearnBaseEstimatorItem",
     "object_to_item",

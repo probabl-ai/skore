@@ -36,7 +36,7 @@ jobs:
         run: make build-frontend
 
       - name: Override VERSION.txt with tag
-        run: echo "${GITHUB_REF_NAME:1}" > VERSION.txt
+        run: echo "${GITHUB_REF_NAME}" > VERSION.txt
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
