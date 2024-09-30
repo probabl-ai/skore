@@ -91,6 +91,7 @@ function onDragStart(event: DragEvent) {
   position: relative;
   overflow: hidden;
   margin-left: 19px;
+  cursor: pointer;
 
   &.first {
     margin-left: 0;
@@ -110,7 +111,6 @@ function onDragStart(event: DragEvent) {
       height: var(--label-height);
       flex-direction: row;
       align-items: center;
-      cursor: pointer;
       transition: background-color var(--transition-duration) var(--transition-easing);
 
       &:not(.has-children):hover {

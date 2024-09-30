@@ -172,24 +172,28 @@ export const useReportStore = defineStore("reports", () => {
    * @returns A tree of FileTreeNodes.
    */
   function keysAsTree() {
+    const lut: { [key: string]: TreeNode } = {};
     const tree: TreeNode[] = [];
     const keys = Object.keys(items.value || {});
+
     for (const key of keys) {
       const segments = key.split("/").filter((s) => s.length > 0);
       const rootSegment = segments[0];
-      let currentNode = tree.find((n) => n.name == rootSegment);
+      let currentNode = lut[rootSegment];
       if (!currentNode) {
         currentNode = { name: rootSegment, children: [] };
         tree.push(currentNode);
+        lut[rootSegment] = currentNode;
       }
       let n = currentNode!;
       for (const s of segments.slice(1)) {
         n.children = n.children || [];
         const name = `${n.name}/${s}`;
-        let childNode = n.children.find((n) => n.name == name);
+        let childNode = lut[name];
         if (!childNode) {
           childNode = { name, children: [] };
           n.children.push(childNode);
+          lut[name] = childNode;
         }
         n = childNode;
       }
