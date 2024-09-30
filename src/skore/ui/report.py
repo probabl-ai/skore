@@ -127,7 +127,7 @@ async def share_store(
     # Fill the Jinja context
     context = {
         "project": asdict(__serialize_project(project)),
-        "layout": [{"key": item.key, "size": item.size} for item in view.layout],
+        "layout": view.layout,
         "script": script_content,
         "styles": styles_content,
     }

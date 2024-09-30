@@ -72,10 +72,7 @@ def test_share_view_not_found(client, project):
 
 
 def test_put_view_layout(client):
-    response = client.put(
-        "/api/report/view/hello",
-        json=[{"key": "test", "size": "large"}],
-    )
+    response = client.put("/api/report/view/hello", json=["test"])
     assert response.status_code == 201
 
 
