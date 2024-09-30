@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Simplebar from "simplebar-vue";
 import type { VisualizationSpec } from "vega-embed";
 
 import datatable from "@/assets/fixtures/datatable.json";
@@ -9,6 +10,7 @@ import CrossValidationResultsWidget from "@/components/CrossValidationResultsWid
 import DataFrameWidget from "@/components/DataFrameWidget.vue";
 import DropdownButton from "@/components/DropdownButton.vue";
 import DropdownButtonItem from "@/components/DropdownButtonItem.vue";
+import EditableList, { type EditableListItemProps } from "@/components/EditableList.vue";
 import ImageWidget from "@/components/ImageWidget.vue";
 import MarkdownWidget from "@/components/MarkdownWidget.vue";
 import SectionHeader from "@/components/SectionHeader.vue";
@@ -21,6 +23,7 @@ import VegaWidget from "@/components/VegaWidget.vue";
 import { generateRandomId } from "@/services/utils";
 import { useModalsStore } from "@/stores/modals";
 import { useToastsStore } from "@/stores/toasts";
+import { ref } from "vue";
 
 const toastsStore = useToastsStore();
 const modalsStore = useModalsStore();
@@ -63,6 +66,25 @@ function showPromptModal() {
 function onSectionHeaderAction() {
   console.info("Section header action");
 }
+
+function onEditableListAction(payload: string, item: EditableListItemProps) {
+  console.info("Editable list action", payload, item);
+}
+
+const items = ref([
+  { name: "Item 1", icon: "icon-plot" },
+  { name: "Item 2" },
+  { name: "Item 3", icon: "icon-error" },
+  { name: "Item 4", icon: "icon-error" },
+  { name: "Item 5", icon: "icon-error" },
+  { name: "Item 6", icon: "icon-error" },
+  { name: "Item 7", icon: "icon-error" },
+  { name: "Item 8", icon: "icon-error" },
+  { name: "Item 9", icon: "icon-error" },
+  { name: "Item 10", icon: "icon-error" },
+  { name: "Item 11", icon: "icon-error" },
+  { name: "Item 12", icon: "icon-error" },
+]);
 </script>
 
 <template>
@@ -80,6 +102,7 @@ function onSectionHeaderAction() {
         'inputs',
         'modals',
         'section header',
+        'editable list',
       ]"
     >
       <TabsItem :value="0">
@@ -214,6 +237,19 @@ function onSectionHeaderAction() {
             </DropdownButton>
             dropdown button with icon
           </p>
+          <hr />
+          <p>
+            <SimpleButton label="hey ho" :is-inline="true" />
+            inline button with extra classes
+          </p>
+          <p>
+            <DropdownButton icon="icon-pie-chart" label="red-button" :is-inline="true">
+              <DropdownButtonItem label="hey ho" icon="icon-pie-chart" />
+              <DropdownButtonItem icon="icon-pie-chart" />
+              <DropdownButtonItem label="hey ho" />
+            </DropdownButton>
+            inline dropdown button with icon and extra classes
+          </p>
         </div>
       </TabsItem>
       <TabsItem :value="6">
@@ -261,6 +297,22 @@ function onSectionHeaderAction() {
           @action="onSectionHeaderAction"
         />
       </TabsItem>
+      <TabsItem :value="10">
+        <div class="editable-list-container">
+          <SectionHeader title="Editable list" action="icon-folder" />
+          <Simplebar class="editable-list-container-scrollable">
+            <EditableList
+              :items="items"
+              :actions="[
+                { label: 'rename', emitPayload: 'rename', icon: 'icon-gift' },
+                { label: 'duplicate', emitPayload: 'duplicate', icon: 'icon-gift' },
+                { label: 'delete', emitPayload: 'delete', icon: 'icon-gift' },
+              ]"
+              @action="onEditableListAction"
+            />
+          </Simplebar>
+        </div>
+      </TabsItem>
     </Tabs>
   </main>
 </template>
@@ -297,6 +349,17 @@ main {
 .text-inputs {
   & > p {
     padding: 10px;
+  }
+}
+
+.editable-list-container {
+  display: block;
+  width: 33vw;
+  height: 300px;
+
+  & .editable-list-container-scrollable {
+    height: 100%;
+    overflow-y: auto;
   }
 }
 </style>

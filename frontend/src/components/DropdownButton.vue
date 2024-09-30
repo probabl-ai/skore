@@ -7,6 +7,7 @@ interface DropdownProps {
   icon?: string;
   isPrimary?: boolean;
   align?: "left" | "right";
+  isInline?: boolean;
 }
 
 const props = withDefaults(defineProps<DropdownProps>(), { isPrimary: false, align: "left" });
@@ -35,6 +36,7 @@ onBeforeUnmount(() => {
       :is-primary="props.isPrimary"
       :label="props.label"
       :icon="props.icon"
+      :is-inline="props.isInline"
       @click="isOpen = !isOpen"
     />
     <Transition name="fade">
@@ -58,12 +60,10 @@ onBeforeUnmount(() => {
     display: flex;
     overflow: visible;
     flex-direction: column;
-    padding: var(--spacing-padding-small);
     border: solid 1px var(--border-color-normal);
     border-radius: var(--border-radius);
     background-color: var(--background-color-normal);
     box-shadow: 4px 10px 20px var(--background-color-selected);
-    gap: var(--spacing-padding-small);
   }
 
   &.align-right {
