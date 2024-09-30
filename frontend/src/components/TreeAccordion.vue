@@ -2,7 +2,7 @@
 export interface TreeAccordionNode {
   name: string;
   children?: TreeAccordionNode[];
-  indentationLevel?: number;
+  isRoot?: boolean;
 }
 </script>
 
@@ -19,7 +19,7 @@ const props = defineProps<{ nodes: TreeAccordionNode[] }>();
       :key="index"
       :name="node.name"
       :children="node.children"
-      :indentation-level="0"
+      :is-root="true"
     />
   </div>
 </template>

@@ -44,7 +44,7 @@ function onDragStart(event: DragEvent) {
 <template>
   <div
     class="tree-accordion-item"
-    :class="{ first: props.indentationLevel === 0 }"
+    :class="{ first: isRoot }"
     :style="{ '--children-count': totalChildrenCount }"
   >
     <div class="label-container" @click="toggleChildren">
@@ -57,7 +57,7 @@ function onDragStart(event: DragEvent) {
         @mouseup="isDraggable = false"
         @mouseleave="isDraggable = false"
       >
-        <span class="children-indicator icon-branch" v-if="props.indentationLevel ?? 0 > 0" />
+        <span class="children-indicator icon-branch" v-if="!isRoot" />
         <span class="icon icon-pill" />
         <span class="text">{{ label }}</span>
       </div>
@@ -77,7 +77,7 @@ function onDragStart(event: DragEvent) {
           :key="index"
           :name="child.name"
           :children="child.children"
-          :indentation-level="(props.indentationLevel ?? 0) + 1"
+          :is-root="false"
         />
       </div>
     </Transition>
