@@ -34,14 +34,25 @@ class SerializedItem:
 
 
 @dataclass
+class SerializedView:
+    """Serialized view."""
+
+    layout: Layout
+
+
+@dataclass
 class SerializedProject:
     """Serialized project, to be sent to the frontend."""
 
-    layout: Layout
     items: dict[str, SerializedItem]
+    views: dict[str, SerializedView]
 
 
 def __serialize_project(project: Project) -> SerializedProject:
+    views = {}
+    for key in project.list_view_keys():
+        views[key] = project.get_view(key)
+
     items = {}
     for key in project.list_item_keys():
         item = project.get_item(key)
@@ -75,14 +86,9 @@ def __serialize_project(project: Project) -> SerializedProject:
             created_at=item.created_at,
         )
 
-    try:
-        layout = project.get_view("layout").layout
-    except KeyError:
-        layout = []
-
     return SerializedProject(
-        layout=layout,
         items=items,
+        views=views,
     )
 
 
