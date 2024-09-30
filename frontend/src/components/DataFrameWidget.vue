@@ -65,12 +65,7 @@ watch([() => toValue(props.data), () => toValue(props.columns)], () => {
 
 <template>
   <div class="data-frame-widget">
-    <TextInput
-      v-model="search"
-      icon="icon-magnifying-glass"
-      placeholder="Search"
-      class="search-input"
-    />
+    <TextInput v-model="search" icon="icon-search" placeholder="Search" class="search-input" />
     <Simplebar>
       <table>
         <thead>

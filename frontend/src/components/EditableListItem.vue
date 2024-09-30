@@ -1,24 +1,53 @@
 <script setup lang="ts">
-import { defineProps } from "vue";
+import { defineProps, onMounted, ref } from "vue";
 
 import DropdownButton from "@/components/DropdownButton.vue";
 import DropdownButtonItem from "@/components/DropdownButtonItem.vue";
-import type { EditableListAction, EditableListItemProps } from "@/components/EditableList.vue";
+import type { EditableListAction, EditableListItemModel } from "@/components/EditableList.vue";
 
-const props = defineProps<{ item: EditableListItemProps; actions?: EditableListAction[] }>();
+const props = defineProps<{ actions?: EditableListAction[] }>();
 
 const emit = defineEmits<{ action: [payload: string] }>();
+
+const item = defineModel<EditableListItemModel>({ required: true });
+const label = ref<HTMLSpanElement>();
+
+function onItemNameEdited(e: Event) {
+  (e.target as HTMLInputElement).blur();
+  item.value.isUnnamed = false;
+  item.value.name = (e.target as HTMLSpanElement).textContent ?? "unnamed";
+}
+
+onMounted(() => {
+  if (item.value.isUnnamed && label.value) {
+    label.value.focus();
+
+    const sel = window.getSelection();
+    if (sel) {
+      const range = document.createRange();
+      range.selectNodeContents(label.value);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+  }
+});
 </script>
 
 <template>
   <div class="editable-list-item">
     <div class="label-container">
-      <span class="icon" v-if="props.item.icon" :class="props.item.icon" />
-      <span class="label">
-        {{ props.item.name }}
+      <span class="icon" v-if="item.icon" :class="item.icon" />
+      <span
+        class="label"
+        :contenteditable="item.isUnnamed"
+        ref="label"
+        @blur="onItemNameEdited"
+        @keydown.enter="onItemNameEdited"
+      >
+        {{ item.name }}
       </span>
     </div>
-    <DropdownButton icon="icon-equal" :is-inline="true" align="right">
+    <DropdownButton icon="icon-more" :is-inline="true" align="right">
       <DropdownButtonItem
         v-for="action in props.actions"
         :key="action.emitPayload"
@@ -38,8 +67,9 @@ const emit = defineEmits<{ action: [payload: string] }>();
   justify-content: space-between;
   padding: var(--spacing-padding-small);
   border-radius: var(--border-radius);
+  cursor: pointer;
   font-size: var(--text-size-normal);
-  font-weight: var(--text-weight-normal);
+  font-weight: var(--text-weight-highlight);
   transition: background-color var(--transition-duration) var(--transition-easing);
 
   .icon {
@@ -47,7 +77,10 @@ const emit = defineEmits<{ action: [payload: string] }>();
   }
 
   .label {
-    color: var(--color-text-highlight);
+    min-width: 100px;
+    caret-color: var(--color-primary);
+    color: var(--text-color-highlight);
+    outline: none;
     transition: font-weight var(--transition-duration) var(--transition-easing);
   }
 

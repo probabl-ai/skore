@@ -10,7 +10,7 @@ import CrossValidationResultsWidget from "@/components/CrossValidationResultsWid
 import DataFrameWidget from "@/components/DataFrameWidget.vue";
 import DropdownButton from "@/components/DropdownButton.vue";
 import DropdownButtonItem from "@/components/DropdownButtonItem.vue";
-import EditableList, { type EditableListItemProps } from "@/components/EditableList.vue";
+import EditableList, { type EditableListItemModel } from "@/components/EditableList.vue";
 import ImageWidget from "@/components/ImageWidget.vue";
 import MarkdownWidget from "@/components/MarkdownWidget.vue";
 import SectionHeader from "@/components/SectionHeader.vue";
@@ -67,11 +67,11 @@ function onSectionHeaderAction() {
   console.info("Section header action");
 }
 
-function onEditableListAction(payload: string, item: EditableListItemProps) {
+function onEditableListAction(payload: string, item: EditableListItemModel) {
   console.info("Editable list action", payload, item);
 }
 
-const items = ref([
+const items = ref<EditableListItemModel[]>([
   { name: "Item 1", icon: "icon-plot" },
   { name: "Item 2" },
   { name: "Item 3", icon: "icon-error" },
@@ -85,6 +85,11 @@ const items = ref([
   { name: "Item 11", icon: "icon-error" },
   { name: "Item 12", icon: "icon-error" },
 ]);
+
+function onAddToEditableListAction() {
+  console.info("Add to editable list action");
+  items.value.unshift({ name: "Unnamed", icon: "icon-plot", isUnnamed: true });
+}
 </script>
 
 <template>
@@ -299,7 +304,11 @@ const items = ref([
       </TabsItem>
       <TabsItem :value="10">
         <div class="editable-list-container">
-          <SectionHeader title="Editable list" action="icon-folder" />
+          <SectionHeader
+            title="Editable list"
+            action-icon="icon-plus-circle"
+            @action="onAddToEditableListAction"
+          />
           <Simplebar class="editable-list-container-scrollable">
             <EditableList
               :items="items"

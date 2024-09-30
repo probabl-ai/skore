@@ -1,9 +1,10 @@
 <script lang="ts">
 import EditableListItem from "@/components/EditableListItem.vue";
 
-export interface EditableListItemProps {
+export interface EditableListItemModel {
   name: string;
   icon?: string;
+  isUnnamed?: boolean;
 }
 
 export interface EditableListAction {
@@ -15,21 +16,25 @@ export interface EditableListAction {
 
 <script setup lang="ts">
 const props = defineProps<{
-  items: EditableListItemProps[];
   actions?: EditableListAction[];
 }>();
 
-const emit = defineEmits<{ action: [payload: string, item: EditableListItemProps] }>();
+const emit = defineEmits<{ action: [payload: string, item: EditableListItemModel] }>();
+const items = defineModel<EditableListItemModel[]>("items", { required: true });
 
-const onAction = (payload: string, item: EditableListItemProps) => {
+const onAction = (payload: string, item: EditableListItemModel) => {
   emit("action", payload, item);
 };
 </script>
 
 <template>
   <div class="editable-list">
-    <div class="editable-list-item" v-for="item in props.items" :key="item.name">
-      <EditableListItem :item="item" :actions="props.actions" @action="onAction($event, item)" />
+    <div class="editable-list-item" v-for="(item, index) in items" :key="item.name">
+      <EditableListItem
+        v-model="items[index]"
+        :actions="props.actions"
+        @action="onAction($event, item)"
+      />
     </div>
   </div>
 </template>

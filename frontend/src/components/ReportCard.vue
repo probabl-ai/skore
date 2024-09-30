@@ -27,19 +27,19 @@ const emit = defineEmits<{
       </div>
       <div v-if="props.showButtons" class="buttons">
         <button @click="emit('layoutChanged', 'small')">
-          <span class="icon-grid-layout-small"></span>
+          <span class="icon-xs"></span>
         </button>
         <button @click="emit('layoutChanged', 'medium')">
-          <span class="icon-grid-layout-medium"></span>
+          <span class="icon-sm"></span>
         </button>
         <button @click="emit('layoutChanged', 'large')">
-          <span class="icon-grid-layout-large"></span>
+          <span class="icon-xl"></span>
         </button>
         <button v-if="props.canMoveUp" @click="emit('positionChanged', 'up')">
-          <span class="icon-up"></span>
+          <span class="icon-chevron-up"></span>
         </button>
         <button v-if="props.canMoveDown" @click="emit('positionChanged', 'down')">
-          <span class="icon-down"></span>
+          <span class="icon-chevron-down"></span>
         </button>
         <button @click="emit('cardRemoved')">x</button>
       </div>
