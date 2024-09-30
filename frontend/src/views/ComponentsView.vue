@@ -11,6 +11,7 @@ import DropdownButton from "@/components/DropdownButton.vue";
 import DropdownButtonItem from "@/components/DropdownButtonItem.vue";
 import ImageWidget from "@/components/ImageWidget.vue";
 import MarkdownWidget from "@/components/MarkdownWidget.vue";
+import SectionHeader from "@/components/SectionHeader.vue";
 import SimpleButton from "@/components/SimpleButton.vue";
 import Tabs from "@/components/TabsWidget.vue";
 import TabsItem from "@/components/TabsWidgetItem.vue";
@@ -58,6 +59,10 @@ function showPromptModal() {
     console.info("Prompt modal closed with result:", result);
   });
 }
+
+function onSectionHeaderAction() {
+  console.info("Section header action");
+}
 </script>
 
 <template>
@@ -74,6 +79,7 @@ function showPromptModal() {
         'toast',
         'inputs',
         'modals',
+        'section header',
       ]"
     >
       <TabsItem :value="0">
@@ -246,6 +252,14 @@ function showPromptModal() {
         <SimpleButton label="Show alert modal" @click="showAlertModal" />
         <SimpleButton label="Show confirm modal" @click="showConfirmModal" />
         <SimpleButton label="Show prompt modal" @click="showPromptModal" />
+      </TabsItem>
+      <TabsItem :value="9">
+        <SectionHeader title="Section header" />
+        <SectionHeader
+          title="Section header with action"
+          action="icon-magnifying-glass"
+          @action="onSectionHeaderAction"
+        />
       </TabsItem>
     </Tabs>
   </main>
