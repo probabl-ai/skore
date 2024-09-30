@@ -67,15 +67,7 @@ def test_share_view(client, project):
 
 def test_put_view_layout(client):
     response = client.put(
-        "/api/report/layout",
-        json=[{"key": "test", "size": "large"}],
-    )
-    assert response.status_code == 201
-
-
-def test_put_view_layout_with_slash_in_name(client):
-    response = client.put(
-        "/api/report/layout",
+        "/api/report/view/hello",
         json=[{"key": "test", "size": "large"}],
     )
     assert response.status_code == 201

@@ -131,12 +131,15 @@ async def share_store(
     )
 
 
-@router.put("/report/layout", status_code=201)
-async def set_view_layout(request: Request, layout: Layout):
-    """Set the view layout."""
+@router.put("/report/view/{key:path}", status_code=201)
+async def put_view(request: Request, key: str, layout: Layout):
+    """Set the layout of the view corresponding to `key`.
+
+    If the view corresponding to `key` does not exist, it will be created.
+    """
     project: Project = request.app.state.project
 
     view = View(layout=layout)
-    project.put_view("layout", view)
+    project.put_view(key, view)
 
     return __serialize_project(project)
