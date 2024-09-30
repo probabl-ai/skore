@@ -176,6 +176,3 @@ cython_debug/
 auto-save-list
 tramp
 .\#*
-
-# Jupyter notebooks
-*.ipynb
