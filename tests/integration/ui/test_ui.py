@@ -59,11 +59,16 @@ def test_get_items(client, project):
 
 
 def test_share_view(client, project):
-    project.put("test", "test")
+    project.put_view("hello", View(layout=[]))
 
-    response = client.post("/api/report/share", json=[{"key": "test", "size": "large"}])
+    response = client.post("/api/report/share/hello")
     assert response.status_code == 200
     assert b"<!DOCTYPE html>" in response.content
+
+
+def test_share_view_not_found(client, project):
+    response = client.post("/api/report/share/hello")
+    assert response.status_code == 404
 
 
 def test_put_view_layout(client):

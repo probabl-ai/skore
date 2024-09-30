@@ -99,15 +99,22 @@ async def get_items(request: Request):
     return __serialize_project(project)
 
 
-@router.post("/report/share")
+@router.post("/report/share/{view_key:path}")
 async def share_store(
     request: Request,
-    layout: Layout,
+    view_key: str,
     templates: Annotated[Jinja2Templates, Depends(get_templates)],
     static_path: Annotated[Path, Depends(get_static_path)],
 ):
     """Serve an inlined shareable HTML page."""
     project = request.app.state.project
+
+    try:
+        view = project.get_view(view_key)
+    except KeyError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="View not found"
+        ) from None
 
     # Get static assets to inject them into the view template
     def read_asset_content(filename: str):
@@ -120,7 +127,7 @@ async def share_store(
     # Fill the Jinja context
     context = {
         "project": asdict(__serialize_project(project)),
-        "layout": [{"key": item.key, "size": item.size} for item in layout],
+        "layout": [{"key": item.key, "size": item.size} for item in view.layout],
         "script": script_content,
         "styles": styles_content,
     }
