@@ -70,6 +70,14 @@ Then, you can access the local build via:
 open doc/_build/html/index.html
 ```
 
+### PR format
+
+We use the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summary) format, and we automatically check that the PR title fits this format.
+In particular, commits are "sentence case", meaning "fix: Fix issue" passes, while "fix: fix issue" doesn't.
+Our custom set of rules is in [commitlint.config.js](./commitlint.config.js).
+
+Generally the description of a commit should start with a verb in the imperative voice, so that it would properly complete the sentence: "When applied, this commit will [...]".
+
 ## Help for common issues
 
 ### `make build-frontend` doesn't work!
