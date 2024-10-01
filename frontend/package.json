@@ -17,6 +17,7 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
+    "@floating-ui/vue": "^1.1.5",
     "@vscode/markdown-it-katex": "^1.1.0",
     "date-fns": "^3.6.0",
     "markdown-it": "^14.1.0",

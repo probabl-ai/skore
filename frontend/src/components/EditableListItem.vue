@@ -22,12 +22,12 @@ onMounted(() => {
   if (item.value.isUnnamed && label.value) {
     label.value.focus();
 
-    const sel = window.getSelection();
-    if (sel) {
+    const selection = window.getSelection();
+    if (selection) {
       const range = document.createRange();
       range.selectNodeContents(label.value);
-      sel.removeAllRanges();
-      sel.addRange(range);
+      selection.removeAllRanges();
+      selection.addRange(range);
     }
   }
 });
@@ -41,7 +41,6 @@ onMounted(() => {
         class="label"
         :contenteditable="item.isUnnamed"
         ref="label"
-        @blur="onItemNameEdited"
         @keydown.enter="onItemNameEdited"
       >
         {{ item.name }}
@@ -80,8 +79,15 @@ onMounted(() => {
     min-width: 100px;
     caret-color: var(--color-primary);
     color: var(--text-color-highlight);
+    line-height: 2;
     outline: none;
     transition: font-weight var(--transition-duration) var(--transition-easing);
+
+    &[contenteditable="true"] {
+      background-color: var(--color-primary);
+      color: var(--button-color);
+      cursor: text;
+    }
   }
 
   .icon:has(+ .label) {
