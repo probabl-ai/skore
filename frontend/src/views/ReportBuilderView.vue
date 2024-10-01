@@ -50,6 +50,10 @@ function onDragLeave(event: DragEvent) {
   }
 }
 
+function onItemSelected(key: string) {
+  reportStore.displayKey(key);
+}
+
 onMounted(() => {
   reportStore.startBackendPolling();
 });
@@ -63,7 +67,7 @@ onBeforeUnmount(() => reportStore.stopBackendPolling());
       <div class="items" v-if="reportStore.items && !isInFocusMode">
         <SectionHeader title="Elements" icon="icon-pie-chart" />
         <Simplebar class="key-list">
-          <TreeAccordion :nodes="reportStore.keysAsTree()" />
+          <TreeAccordion :nodes="reportStore.keysAsTree()" @item-selected="onItemSelected" />
         </Simplebar>
       </div>
 

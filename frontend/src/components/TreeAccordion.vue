@@ -10,10 +10,21 @@ export interface TreeAccordionNode {
 import TreeAccordionItem from "./TreeAccordionItem.vue";
 
 const props = defineProps<{ nodes: TreeAccordionNode[] }>();
+
+const emit = defineEmits<{ itemSelected: [key: string] }>();
+
+function onDoubleClick(event: MouseEvent) {
+  const target = event.target as HTMLElement;
+  const closestNamedElement = target.closest("[data-name]") as HTMLElement;
+
+  if (closestNamedElement) {
+    emit("itemSelected", closestNamedElement.dataset.name ?? "");
+  }
+}
 </script>
 
 <template>
-  <div class="accordion">
+  <div class="accordion" @dblclick="onDoubleClick">
     <TreeAccordionItem
       v-for="(node, index) in props.nodes"
       :key="index"

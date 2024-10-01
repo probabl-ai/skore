@@ -46,6 +46,7 @@ function onDragStart(event: DragEvent) {
     class="tree-accordion-item"
     :class="{ first: isRoot }"
     :style="{ '--children-count': totalChildrenCount }"
+    :data-name="props.name"
   >
     <div class="label-container" @click="toggleChildren">
       <div
