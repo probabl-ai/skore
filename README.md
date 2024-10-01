@@ -1,6 +1,8 @@
 # skore
 
-![lint and test](https://github.com/probabl-ai/skore/actions/workflows/lint-and-test.yml/badge.svg)
+![lint](https://github.com/probabl-ai/skore/actions/workflows/lint.yml/badge.svg)
+![tests](https://github.com/probabl-ai/skore/actions/workflows/backend.yml/badge.svg)
+![UI tests](https://github.com/probabl-ai/skore/actions/workflows/frontend.yml/badge.svg)
 
 ## Installation
 
