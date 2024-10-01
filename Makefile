@@ -34,14 +34,15 @@ serve-ui:
 		--timeout-graceful-shutdown 0
 
 build-frontend:
-	# build the SPA
-	cd frontend && npm install
-	cd frontend && npm run build
-	# empty app static folder
-	rm -rf src/skore/ui/static
-	cp -a frontend/dist/. src/skore/ui/static
-	# build the sharing library
-	cd frontend && npm run build:lib
-	cp -a frontend/dist/. src/skore/ui/static
-	# clean up
+	# cleanup
 	rm -rf frontend/dist
+	rm -rf src/skore/ui/static
+	# build
+	(\
+		cd frontend;\
+		npm install;\
+		npm run build;\
+		npm run build:lib -- --emptyOutDir false;\
+	)
+	# move
+	mv frontend/dist/ src/skore/ui/static
