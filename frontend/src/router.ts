@@ -1,6 +1,6 @@
 import { createRouter, createWebHashHistory } from "vue-router";
 
-import ReportBuilderView from "./views/ReportBuilderView.vue";
+import ProjectView from "./views/ProjectView.vue";
 
 export enum ROUTE_NAMES {
   REPORT_BUILDER = "report-builder",
@@ -13,7 +13,7 @@ const router = createRouter({
     {
       path: "/",
       name: "report-builder",
-      component: ReportBuilderView,
+      component: ProjectView,
     },
     {
       path: "/components",

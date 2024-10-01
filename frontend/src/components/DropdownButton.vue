@@ -100,7 +100,7 @@ onBeforeUnmount(() => {
 
   & .items {
     position: fixed;
-    z-index: 1000;
+    z-index: 9999;
     display: flex;
     overflow: visible;
     width: max-content;

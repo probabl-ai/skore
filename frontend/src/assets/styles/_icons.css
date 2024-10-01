@@ -27,7 +27,7 @@
   text-transform: none;
 }
 
-.icon-trash::before {
+.icon-branch::before {
   content: "\e900";
 }
 
@@ -35,7 +35,7 @@
   content: "\e901";
 }
 
-.icon-branch::before {
+.icon-trash::before {
   content: "\e902";
 }
 
@@ -79,62 +79,46 @@
   content: "\e90c";
 }
 
-.icon-xl::before {
+.icon-search::before {
   content: "\e90d";
 }
 
-.icon-sm::before {
+.icon-maximize::before {
   content: "\e90e";
 }
 
-.icon-xs::before {
+.icon-folder::before {
   content: "\e90f";
 }
 
-.icon-search::before {
+.icon-plot::before {
   content: "\e910";
 }
 
-.icon-maximize::before {
+.icon-text::before {
   content: "\e911";
 }
 
-.icon-folder::before {
+.icon-gift::before {
   content: "\e912";
 }
 
-.icon-plot::before {
+.icon-pie-chart::before {
   content: "\e913";
 }
 
-.icon-text::before {
+.icon-chevron-left::before {
   content: "\e914";
 }
 
-.icon-gift::before {
+.icon-chevron-down::before {
   content: "\e915";
 }
 
-.icon-pie-chart::before {
+.icon-chevron-right::before {
   content: "\e916";
 }
 
-.icon-equal::before {
-  content: "\e917";
-}
-
-.icon-chevron-left::before {
-  content: "\e918";
-}
-
-.icon-chevron-down::before {
-  content: "\e919";
-}
-
-.icon-chevron-right::before {
-  content: "\e91a";
-}
-
 .icon-chevron-up::before {
-  content: "\e91b";
+  content: "\e917";
 }

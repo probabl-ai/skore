@@ -7,19 +7,26 @@ import HtmlSnippetWidget from "@/components/HtmlSnippetWidget.vue";
 import ImageWidget from "@/components/ImageWidget.vue";
 import MarkdownWidget from "@/components/MarkdownWidget.vue";
 import PlotlyWidget from "@/components/PlotlyWidget.vue";
-import ReportCard from "@/components/ReportCard.vue";
+import ProjectViewCard from "@/components/ProjectViewCard.vue";
 import VegaWidget from "@/components/VegaWidget.vue";
-import type { KeyLayoutSize, KeyMoveDirection } from "@/models";
-import { useReportStore } from "@/stores/report";
+import { useProjectStore } from "@/stores/project";
 
-const reportStore = useReportStore();
+const props = defineProps({
+  showCardButtons: {
+    type: Boolean,
+    default: true,
+  },
+});
+
+const projectStore = useProjectStore();
 
 const visibleItems = computed(() => {
   const items = [];
   let index = 0;
-  if (reportStore.items !== null) {
-    for (const { key, size } of reportStore.layout) {
-      const item = reportStore.items[key];
+  if (projectStore.items !== null && projectStore.currentView !== null) {
+    const v = projectStore.views[projectStore.currentView];
+    for (const key of v) {
+      const item = projectStore.items[key];
       if (item) {
         const mediaType = item.media_type || "";
         let data;
@@ -45,7 +52,6 @@ const visibleItems = computed(() => {
         const updatedAt = new Date(item.updated_at);
         items.push({
           key,
-          size,
           mediaType,
           data,
           createdAt,
@@ -59,24 +65,11 @@ const visibleItems = computed(() => {
   return items;
 });
 
-function onLayoutChange(key: string, size: KeyLayoutSize) {
-  reportStore.setKeyLayoutSize(key, size);
-}
-
 function onCardRemoved(key: string) {
-  reportStore.hideKey(key);
+  if (projectStore.currentView) {
+    projectStore.hideKey(projectStore.currentView, key);
+  }
 }
-
-function onPositionChanged(key: string, direction: KeyMoveDirection) {
-  reportStore.moveKey(key, direction);
-}
-
-const props = defineProps({
-  showCardButtons: {
-    type: Boolean,
-    default: true,
-  },
-});
 
 function getItemSubtitle(created_at: Date, updated_at: Date) {
   const now = new Date();
@@ -86,18 +79,13 @@ function getItemSubtitle(created_at: Date, updated_at: Date) {
 
 <template>
   <div class="canvas">
-    <ReportCard
-      v-for="{ key, size, mediaType, data, createdAt, updatedAt, index } in visibleItems"
+    <ProjectViewCard
+      v-for="{ key, mediaType, data, createdAt, updatedAt } in visibleItems"
       :key="key"
       :title="key.toString()"
       :subtitle="getItemSubtitle(createdAt, updatedAt)"
       :showButtons="props.showCardButtons"
-      :can-move-up="index > 0"
-      :can-move-down="index < reportStore.layout.length - 1"
-      :class="size"
       class="canvas-element"
-      @layout-changed="onLayoutChange(key.toString(), $event)"
-      @position-changed="onPositionChanged(key.toString(), $event)"
       @card-removed="onCardRemoved(key.toString())"
     >
       <DataFrameWidget
@@ -119,33 +107,21 @@ function getItemSubtitle(created_at: Date, updated_at: Date) {
         :src="data"
       />
       <HtmlSnippetWidget v-if="mediaType === 'text/html'" :src="data" />
-    </ReportCard>
+    </ProjectViewCard>
   </div>
 </template>
 
 <style scoped>
 .canvas {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   padding: var(--spacing-gap-normal);
   background-color: var(--background-color-normal);
   gap: var(--spacing-gap-normal);
-  grid-template-columns: 1fr 1fr 1fr;
   transition: grid-column var(--transition-duration) var(--transition-easing);
 
   & .canvas-element {
     max-width: 100%;
-
-    &.small {
-      grid-column: span 1;
-    }
-
-    &.medium {
-      grid-column: span 2;
-    }
-
-    &.large {
-      grid-column: span 3;
-    }
   }
 }
 </style>

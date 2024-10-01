@@ -118,14 +118,18 @@ function onEditableListAction(action: string, item: EditableListItemModel) {
     case "rename":
       item.isUnnamed = true;
       break;
-    case "duplicate":
-      items.value.unshift({ name: "Unnamed", icon: "icon-plot", isUnnamed: true });
+    case "duplicate": {
+      const index = items.value.indexOf(item) ?? 0;
+      items.value.splice(index + 1, 0, { name: "Unnamed", icon: "icon-plot", isUnnamed: true });
       break;
+    }
     case "delete":
       items.value.splice(items.value.indexOf(item), 1);
       break;
   }
 }
+
+const lastSelectedItem = ref<string | null>(null);
 </script>
 
 <template>
@@ -349,6 +353,7 @@ function onEditableListAction(action: string, item: EditableListItemModel) {
           <ul>
             <li v-for="item in items" :key="item.name">{{ item.name }}</li>
           </ul>
+          It also emit an event when an item is selected. Last selected item: {{ lastSelectedItem }}
         </div>
         <div class="editable-list-container">
           <SectionHeader
@@ -365,6 +370,7 @@ function onEditableListAction(action: string, item: EditableListItemModel) {
                 { label: 'delete', emitPayload: 'delete', icon: 'icon-trash' },
               ]"
               @action="onEditableListAction"
+              @select="lastSelectedItem = $event"
             />
           </Simplebar>
         </div>
@@ -384,9 +390,6 @@ function onEditableListAction(action: string, item: EditableListItemModel) {
           <div>icon-info <span class="icon-info"></span></div>
           <div>icon-error <span class="icon-error"></span></div>
           <div>icon-success <span class="icon-success"></span></div>
-          <div>icon-xl <span class="icon-xl"></span></div>
-          <div>icon-sm <span class="icon-sm"></span></div>
-          <div>icon-xs <span class="icon-xs"></span></div>
           <div>icon-search <span class="icon-search"></span></div>
           <div>icon-maximize <span class="icon-maximize"></span></div>
           <div>icon-folder <span class="icon-folder"></span></div>
@@ -394,7 +397,6 @@ function onEditableListAction(action: string, item: EditableListItemModel) {
           <div>icon-text <span class="icon-text"></span></div>
           <div>icon-gift <span class="icon-gift"></span></div>
           <div>icon-pie-chart <span class="icon-pie-chart"></span></div>
-          <div>icon-equal <span class="icon-equal"></span></div>
           <div>icon-chevron-left <span class="icon-chevron-left"></span></div>
           <div>icon-chevron-down <span class="icon-chevron-down"></span></div>
           <div>icon-chevron-right <span class="icon-chevron-right"></span></div>

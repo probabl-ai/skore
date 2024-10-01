@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Simplebar from "simplebar-vue";
 
-import ReportCanvas from "@/components/ReportCanvas.vue";
+import ReportCanvas from "@/components/ProjectViewCanvas.vue";
 </script>
 
 <template>

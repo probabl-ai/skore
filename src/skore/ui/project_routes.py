@@ -20,7 +20,7 @@ from skore.view.view import Layout, View
 
 from .dependencies import get_static_path, get_templates
 
-router = APIRouter()
+router = APIRouter(prefix="/project")
 
 
 @dataclass
@@ -34,24 +34,17 @@ class SerializedItem:
 
 
 @dataclass
-class SerializedView:
-    """Serialized view."""
-
-    layout: Layout
-
-
-@dataclass
 class SerializedProject:
     """Serialized project, to be sent to the frontend."""
 
     items: dict[str, SerializedItem]
-    views: dict[str, SerializedView]
+    views: dict[str, Layout]
 
 
 def __serialize_project(project: Project) -> SerializedProject:
     views = {}
     for key in project.list_view_keys():
-        views[key] = project.get_view(key)
+        views[key] = project.get_view(key).layout
 
     items = {}
     for key in project.list_item_keys():
@@ -99,10 +92,10 @@ async def get_items(request: Request):
     return __serialize_project(project)
 
 
-@router.post("/report/share/{view_key:path}")
+@router.post("/views/share/{key:path}")
 async def share_store(
     request: Request,
-    view_key: str,
+    key: str,
     templates: Annotated[Jinja2Templates, Depends(get_templates)],
     static_path: Annotated[Path, Depends(get_static_path)],
 ):
@@ -110,7 +103,7 @@ async def share_store(
     project = request.app.state.project
 
     try:
-        view = project.get_view(view_key)
+        project.get_view(key)
     except KeyError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="View not found"
@@ -127,7 +120,7 @@ async def share_store(
     # Fill the Jinja context
     context = {
         "project": asdict(__serialize_project(project)),
-        "layout": view.layout,
+        "selected_view": key,
         "script": script_content,
         "styles": styles_content,
     }
@@ -138,7 +131,7 @@ async def share_store(
     )
 
 
-@router.put("/report/view/{key:path}", status_code=201)
+@router.put("/views/{key:path}", status_code=status.HTTP_201_CREATED)
 async def put_view(request: Request, key: str, layout: Layout):
     """Set the layout of the view corresponding to `key`.
 
@@ -152,7 +145,7 @@ async def put_view(request: Request, key: str, layout: Layout):
     return __serialize_project(project)
 
 
-@router.delete("/report/view/{key:path}", status_code=status.HTTP_200_OK)
+@router.delete("/views/{key:path}", status_code=status.HTTP_202_ACCEPTED)
 async def delete_view(request: Request, key: str):
     """Delete the view corresponding to `key`."""
     project: Project = request.app.state.project

@@ -7,7 +7,10 @@ import type { EditableListAction, EditableListItemModel } from "@/components/Edi
 
 const props = defineProps<{ actions?: EditableListAction[] }>();
 
-const emit = defineEmits<{ action: [payload: string] }>();
+const emit = defineEmits<{
+  action: [payload: string];
+  select: [name: string];
+}>();
 
 const item = defineModel<EditableListItemModel>({ required: true });
 const label = ref<HTMLSpanElement>();
@@ -35,7 +38,7 @@ onMounted(() => {
 
 <template>
   <div class="editable-list-item">
-    <div class="label-container">
+    <div class="label-container" @click="emit('select', item.name)">
       <span class="icon" v-if="item.icon" :class="item.icon" />
       <span
         class="label"
@@ -77,7 +80,6 @@ onMounted(() => {
 
   .label {
     min-width: 100px;
-    caret-color: var(--color-primary);
     color: var(--text-color-highlight);
     line-height: 2;
     outline: none;
@@ -85,6 +87,7 @@ onMounted(() => {
 
     &[contenteditable="true"] {
       background-color: var(--color-primary);
+      caret-color: var(--color-secondary);
       color: var(--button-color);
       cursor: text;
     }

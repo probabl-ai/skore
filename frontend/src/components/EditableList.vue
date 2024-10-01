@@ -19,7 +19,10 @@ const props = defineProps<{
   actions?: EditableListAction[];
 }>();
 
-const emit = defineEmits<{ action: [payload: string, item: EditableListItemModel] }>();
+const emit = defineEmits<{
+  action: [payload: string, item: EditableListItemModel];
+  select: [name: string];
+}>();
 const items = defineModel<EditableListItemModel[]>("items", { required: true });
 
 const onAction = (payload: string, item: EditableListItemModel) => {
@@ -29,13 +32,14 @@ const onAction = (payload: string, item: EditableListItemModel) => {
 
 <template>
   <div class="editable-list">
-    <div class="editable-list-item" v-for="(item, index) in items" :key="item.name">
-      <EditableListItem
-        v-model="items[index]"
-        :actions="props.actions"
-        @action="onAction($event, item)"
-      />
-    </div>
+    <EditableListItem
+      v-for="(item, index) in items"
+      :key="item.name"
+      v-model="items[index]"
+      :actions="props.actions"
+      @action="onAction($event, item)"
+      @select="emit('select', item.name)"
+    />
   </div>
 </template>
 

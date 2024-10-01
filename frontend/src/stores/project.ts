@@ -1,102 +1,71 @@
 import { defineStore } from "pinia";
 import { ref, shallowRef } from "vue";
 
-import {
-  type KeyLayoutSize,
-  type KeyMoveDirection,
-  type Layout,
-  type Report,
-  type ReportItem,
-} from "@/models";
-import { fetchReport, putLayout } from "@/services/api";
-import { swapItemsInArray } from "@/services/utils";
+import { type Layout, type Project, type ProjectItem } from "@/models";
+import { deleteView as deleteViewApi, fetchProject, putView } from "@/services/api";
 
 export interface TreeNode {
   name: string;
   children: TreeNode[];
 }
 
-export const useReportStore = defineStore("reports", () => {
+export const useProjectStore = defineStore("project", () => {
   // this object is not deeply reactive as it may be very large
-  const items = shallowRef<{ [key: string]: ReportItem } | null>(null);
-  const layout = ref<Layout>([]);
+  const items = shallowRef<{ [key: string]: ProjectItem } | null>(null);
+  const views = ref<{ [key: string]: Layout }>({});
+  const currentView = ref<string | null>(null);
 
   /**
    * Return true if the the given key is in the list of displayed keys, false otherwise.
+   * @param view the view to check
    * @param key the key to look for
+   * @returns true if the key is displayed, false otherwise
    */
-  function isKeyDisplayed(key: string) {
-    const visibleKeys = layout.value.map(({ key: k }) => k);
+  function isKeyDisplayed(view: string, key: string) {
+    const visibleKeys = views.value[view] ?? [];
     return visibleKeys.includes(key);
   }
 
   /**
-   * Add the value of a key to the report.
-   * @param key the key to add to the report
+   * Add the value of a key to the view.
+   * @param view the view to add the key to
+   * @param key the key to add to the view
    */
-  async function displayKey(key: string) {
+  async function displayKey(view: string, key: string) {
     stopBackendPolling();
-    if (!isKeyDisplayed(key)) {
-      layout.value.push({ key, size: "large" });
-      await persistLayout();
+    const realKey = key.replace(" (self)", "");
+    if (!isKeyDisplayed(view, realKey)) {
+      views.value[view].push(realKey);
+      await persistView(view, views.value[view]);
     }
     await startBackendPolling();
   }
 
   /**
-   * Hide the value of a key from the report.
+   * Hide the value of a key from the view.
+   * @param view the view to hide the key from
    * @param key the key to hide
    */
-  async function hideKey(key: string) {
+  async function hideKey(view: string, key: string) {
     stopBackendPolling();
-    if (isKeyDisplayed(key)) {
-      layout.value = layout.value.filter(({ key: k }) => key != k);
-      await persistLayout();
+    if (isKeyDisplayed(view, key)) {
+      const v = views.value[view];
+      views.value[view] = v.filter((k) => k === key);
+      await persistView(view, v);
     }
-    await startBackendPolling();
-  }
-
-  /**
-   * Change the visual size of the value of a key in the report.
-   * @param key the key which changes
-   * @param size the target size
-   */
-  async function setKeyLayoutSize(key: string, size: KeyLayoutSize) {
-    stopBackendPolling();
-    if (isKeyDisplayed(key)) {
-      const index = layout.value.findIndex(({ key: k }) => key == k);
-      if (index !== -1) {
-        layout.value[index].size = size;
-      }
-      await persistLayout();
-    }
-    await startBackendPolling();
-  }
-
-  /**
-   * Move a displayed key up or down in the list
-   * @param key the key to replace
-   * @param direction up or down
-   */
-  async function moveKey(key: string, direction: KeyMoveDirection) {
-    stopBackendPolling();
-    const offset = direction == "up" ? -1 : 1;
-    const index = layout.value.findIndex(({ key: k }) => key == k);
-    swapItemsInArray(layout.value, index, index + offset);
-    await persistLayout();
     await startBackendPolling();
   }
 
   /**
    * Fetch all reports URI
-   * and eventually the detail of the currently selected report
+   * and eventually the detail of the currently selected view
    */
   let _isCanceledCall = false;
   async function fetch() {
     if (!_isCanceledCall) {
-      const r = await fetchReport();
+      const r = await fetchProject();
       if (r) {
-        setReport(r);
+        setProject(r);
       }
     }
   }
@@ -106,7 +75,7 @@ export const useReportStore = defineStore("reports", () => {
   let _stopBackendPolling: Function | null = null;
   async function startBackendPolling() {
     _isCanceledCall = false;
-    fetch();
+    await fetch();
     _stopBackendPolling = () => {}; //await poll(fetch, 1500);
   }
 
@@ -119,24 +88,26 @@ export const useReportStore = defineStore("reports", () => {
   }
 
   /**
-   * Send new layout to backend
+   * Send the view's layout to backend
+   * @param view the view to persist
+   * @param layout the layout to persist
    */
-  async function persistLayout() {
-    if (items.value && layout.value) {
-      const r = await putLayout(layout.value);
+  async function persistView(view: string, layout: Layout) {
+    if (items.value && views.value) {
+      const r = await putView(view, layout);
       if (r) {
-        setReport(r);
+        setProject(r);
       }
     }
   }
 
   /**
-   * Set the current report and populate the layout
+   * Set the current view and populate the layout
    * @param r data received from the backend
    */
-  async function setReport(r: Report) {
+  async function setProject(r: Project) {
     items.value = r.items;
-    layout.value = r.layout;
+    views.value = r.views;
   }
 
   /**
@@ -215,16 +186,58 @@ export const useReportStore = defineStore("reports", () => {
     return tree;
   }
 
+  /**
+   * Create a new view with the given name.
+   * @param name the name of the view to create
+   */
+  async function createView(name: string) {
+    views.value[name] = [];
+    await persistView(name, views.value[name]);
+  }
+
+  /**
+   * Duplicate a view.
+   * @param src the source view to duplicate
+   * @param name the name of the new view
+   */
+  async function duplicateView(src: string, name: string) {
+    views.value[name] = [...views.value[src]];
+    await persistView(name, views.value[name]);
+  }
+
+  /**
+   * Delete a view.
+   * @param name the name of the view to delete
+   */
+  async function deleteView(name: string) {
+    delete views.value[name];
+    await deleteViewApi(name);
+  }
+
+  /**
+   * Rename a view.
+   * @param name the name of the view to rename
+   */
+  async function renameView(name: string, newName: string) {
+    views.value[newName] = views.value[name];
+    delete views.value[name];
+    await deleteView(name);
+    await persistView(newName, views.value[newName]);
+  }
+
   return {
-    layout,
     items,
+    views,
+    currentView,
     displayKey,
     hideKey,
-    setKeyLayoutSize,
     startBackendPolling,
     stopBackendPolling,
-    setReport,
-    moveKey,
+    setProject,
     keysAsTree,
+    createView,
+    duplicateView,
+    deleteView,
+    renameView,
   };
 });
