@@ -86,9 +86,19 @@ const items = ref<EditableListItemModel[]>([
   { name: "Item 12", icon: "icon-error" },
 ]);
 
-function onAddToEditableListAction() {
-  console.info("Add to editable list action");
-  items.value.unshift({ name: "Unnamed", icon: "icon-plot", isUnnamed: true });
+function onAddToEditableListAction(action: string, item: EditableListItemModel) {
+  console.info("Add to editable list action", action, item);
+  switch (action) {
+    case "rename":
+      item.isUnnamed = true;
+      break;
+    case "duplicate":
+      items.value.unshift({ name: "Unnamed", icon: "icon-plot", isUnnamed: true });
+      break;
+    case "delete":
+      items.value.splice(items.value.indexOf(item), 1);
+      break;
+  }
 }
 </script>
 
@@ -313,9 +323,9 @@ function onAddToEditableListAction() {
             <EditableList
               :items="items"
               :actions="[
-                { label: 'rename', emitPayload: 'rename', icon: 'icon-gift' },
-                { label: 'duplicate', emitPayload: 'duplicate', icon: 'icon-gift' },
-                { label: 'delete', emitPayload: 'delete', icon: 'icon-gift' },
+                { label: 'rename', emitPayload: 'rename', icon: 'icon-edit' },
+                { label: 'duplicate', emitPayload: 'duplicate', icon: 'icon-copy' },
+                { label: 'delete', emitPayload: 'delete', icon: 'icon-trash' },
               ]"
               @action="onEditableListAction"
             />

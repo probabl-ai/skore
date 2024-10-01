@@ -24,12 +24,25 @@ const { floatingStyles } = useFloating(reference, floating, {
   whileElementsMounted: autoUpdate,
 });
 
-defineExpose({
-  isOpen,
-});
+function onClick(e: Event) {
+  if (el.value && floating.value) {
+    // is it a click outside or a click on an item ?
+    if (!el.value.contains(e.target as Node) || floating.value.contains(e.target as Node)) {
+      isOpen.value = false;
+    }
+  }
+}
 
-function closeDropdown(e: Event) {
-  if (el.value && !el.value.contains(e.target as Node)) {
+// Mouse move listener to close the dropdown when the mouse moves
+function onMouseMove() {
+  if (
+    el.value &&
+    !el.value.checkVisibility({
+      opacityProperty: true,
+      contentVisibilityAuto: true,
+      visibilityProperty: true,
+    })
+  ) {
     isOpen.value = false;
   }
 }
@@ -47,22 +60,8 @@ const intersectionObserver = new IntersectionObserver(
   }
 );
 
-// Mouse move listener to close the dropdown when the mouse moves
-function onMouseMove() {
-  if (
-    el.value &&
-    !el.value.checkVisibility({
-      opacityProperty: true,
-      contentVisibilityAuto: true,
-      visibilityProperty: true,
-    })
-  ) {
-    isOpen.value = false;
-  }
-}
-
 onMounted(() => {
-  document.addEventListener("click", closeDropdown);
+  document.addEventListener("click", onClick);
   document.addEventListener("mousemove", onMouseMove);
   if (el.value) {
     intersectionObserver.observe(el.value);
@@ -70,7 +69,7 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
-  document.removeEventListener("click", closeDropdown);
+  document.removeEventListener("click", onClick);
   document.removeEventListener("mousemove", onMouseMove);
   intersectionObserver.disconnect();
 });
