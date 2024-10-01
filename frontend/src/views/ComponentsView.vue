@@ -343,7 +343,13 @@ function onEditableListAction(action: string, item: EditableListItemModel) {
       <TabsItem :value="10">
         <TreeAccordion :nodes="fileTreeNodes" />
       </TabsItem>
-      <TabsItem :value="11">
+      <TabsItem :value="11" class="editable-list-tab">
+        <div class="header">
+          Editable List as 2 way data binding... item list is:
+          <ul>
+            <li v-for="item in items" :key="item.name">{{ item.name }}</li>
+          </ul>
+        </div>
         <div class="editable-list-container">
           <SectionHeader
             title="Editable list"
@@ -352,7 +358,7 @@ function onEditableListAction(action: string, item: EditableListItemModel) {
           />
           <Simplebar class="editable-list-container-scrollable">
             <EditableList
-              :items="items"
+              v-model:items="items"
               :actions="[
                 { label: 'rename', emitPayload: 'rename', icon: 'icon-edit' },
                 { label: 'duplicate', emitPayload: 'duplicate', icon: 'icon-copy' },
@@ -435,6 +441,12 @@ main {
   }
 }
 
+.editable-list-tab {
+  display: grid;
+  padding-top: 10px;
+  grid-template-columns: 1fr 1fr;
+}
+
 .editable-list-container {
   display: block;
   width: 33vw;
@@ -451,6 +463,11 @@ main {
   padding-top: 10px;
   gap: 20px;
   grid-template-columns: 1fr 1fr 1fr 1fr;
-  place-items: left;
+
+  & [class^="icon-"],
+  & [class*=" icon-"] {
+    color: var(--color-primary);
+    font-size: 20px;
+  }
 }
 </style>
