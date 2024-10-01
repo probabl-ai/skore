@@ -79,4 +79,51 @@ describe("Reports store", () => {
       { key: "Array", size: "large" },
     ]);
   });
+
+  it("Can transform keys to a tree", async () => {
+    const reportStore = useReportStore();
+
+    const epoch = new Date("1970-01-01T00:00:00Z").toISOString();
+    function makeFakeReportItem() {
+      return {
+        media_type: "text/markdown",
+        value: "",
+        updated_at: epoch,
+        created_at: epoch,
+      } as ReportItem;
+    }
+    const report = {
+      layout: [],
+      items: {
+        a: makeFakeReportItem(),
+        "a/b": makeFakeReportItem(),
+        "a/b/d": makeFakeReportItem(),
+        "a/b/e": makeFakeReportItem(),
+        "a/b/f/g": makeFakeReportItem(),
+      },
+    };
+    await reportStore.setReport(report);
+    expect(reportStore.keysAsTree()).toEqual([
+      {
+        name: "a",
+        children: [
+          { name: "a (self)", children: [] },
+          {
+            name: "a/b",
+            children: [
+              { name: "a/b (self)", children: [] },
+              { name: "a/b/d", children: [] },
+              { name: "a/b/e", children: [] },
+              {
+                name: "a/b/f",
+                children: [
+                  { name: "a/b/f/g", children: [] },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ]);
+  });
 });

@@ -9,7 +9,12 @@ import {
   type ReportItem,
 } from "@/models";
 import { fetchReport, putLayout } from "@/services/api";
-import { poll, swapItemsInArray } from "@/services/utils";
+import { swapItemsInArray } from "@/services/utils";
+
+export interface TreeNode {
+  name: string;
+  children: TreeNode[];
+}
 
 export const useReportStore = defineStore("reports", () => {
   // this object is not deeply reactive as it may be very large
@@ -101,7 +106,8 @@ export const useReportStore = defineStore("reports", () => {
   let _stopBackendPolling: Function | null = null;
   async function startBackendPolling() {
     _isCanceledCall = false;
-    _stopBackendPolling = await poll(fetch, 1500);
+    fetch();
+    _stopBackendPolling = () => {}; //await poll(fetch, 1500);
   }
 
   /**
@@ -133,6 +139,82 @@ export const useReportStore = defineStore("reports", () => {
     layout.value = r.layout;
   }
 
+  /**
+   * Transform a list of leys into a tree of FileTreeNodes.
+   *
+   * i.e. `["a", "a/b", "a/b/d", "a/b/e", "a/b/f/g"]` ->
+   * ```json
+   * [
+   *   {
+   *     name: "a",
+   *     children: [
+   *       { name: "a (self)", children: [] },
+   *       {
+   *         name: "a/b",
+   *         children: [
+   *           { name: "a/b (self)", children: [] },
+   *           { name: "a/b/d", children: [] },
+   *           { name: "a/b/e", children: [] },
+   *           {
+   *             name: "a/b/f",
+   *             children: [
+   *               { name: "a/b/f/g", children: [] },
+   *             ],
+   *           },
+   *         ],
+   *       },
+   *     ],
+   *   },
+   * ]
+   * ```
+   *
+   * @param list - A list of strings to transform into a tree.
+   * @returns A tree of FileTreeNodes.
+   */
+  function keysAsTree() {
+    const lut: { [key: string]: TreeNode } = {};
+    const tree: TreeNode[] = [];
+    const keys = Object.keys(items.value || {});
+
+    for (const key of keys) {
+      const segments = key.split("/").filter((s) => s.length > 0);
+      const rootSegment = segments[0];
+      let currentNode = lut[rootSegment];
+      if (!currentNode) {
+        currentNode = { name: rootSegment, children: [] };
+        tree.push(currentNode);
+        lut[rootSegment] = currentNode;
+      }
+      let n = currentNode!;
+      for (const s of segments.slice(1)) {
+        n.children = n.children || [];
+        const name = `${n.name}/${s}`;
+        let childNode = lut[name];
+        if (!childNode) {
+          childNode = { name, children: [] };
+          n.children.push(childNode);
+          lut[name] = childNode;
+        }
+        n = childNode;
+      }
+    }
+
+    // add (self) to the name of the node if it is the same as the name of the key
+    function addSelf(node: TreeNode) {
+      if (keys.includes(node.name) && node.children.length > 0) {
+        node.children.unshift({ name: `${node.name} (self)`, children: [] });
+      }
+      for (const child of node.children) {
+        addSelf(child);
+      }
+    }
+
+    for (const node of tree) {
+      addSelf(node);
+    }
+    return tree;
+  }
+
   return {
     layout,
     items,
@@ -143,5 +225,6 @@ export const useReportStore = defineStore("reports", () => {
     stopBackendPolling,
     setReport,
     moveKey,
+    keysAsTree,
   };
 });
