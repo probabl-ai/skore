@@ -5,10 +5,10 @@ on:
     paths:
       - 'src/**'
       - 'tests/**'
-      - pyproject.toml
-      - Makefile
-      - requirements*.txt
-      - .github/workflows/backend.yml
+      - 'pyproject.toml'
+      - 'Makefile'
+      - 'requirements*.txt'
+      - '.github/workflows/backend.yml'
 
 permissions:
   contents: read
@@ -20,7 +20,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: '3.12'
+          cache: 'pip'
       - name: Lint backend
         run: |
           python -m pip install --upgrade pip
@@ -34,7 +35,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: '3.12'
+          cache: 'pip'
       - name: Build frontend and share library
         shell: bash
         run: make build-frontend

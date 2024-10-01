@@ -19,6 +19,7 @@ import Tabs from "@/components/TabsWidget.vue";
 import TabsItem from "@/components/TabsWidgetItem.vue";
 import TextInput from "@/components/TextInput.vue";
 import ToastNotification from "@/components/ToastNotification.vue";
+import TreeAccordion, { type TreeAccordionNode } from "@/components/TreeAccordion.vue";
 import VegaWidget from "@/components/VegaWidget.vue";
 import { generateRandomId } from "@/services/utils";
 import { useModalsStore } from "@/stores/modals";
@@ -67,9 +68,30 @@ function onSectionHeaderAction() {
   console.info("Section header action");
 }
 
-function onEditableListAction(payload: string, item: EditableListItemModel) {
-  console.info("Editable list action", payload, item);
-}
+const fileTreeNodes: TreeAccordionNode[] = [
+  {
+    name: "fraud",
+    children: [{ name: "fraud/accuracy" }, { name: "fraud/accuracy3" }],
+  },
+  {
+    name: "fraud2",
+    children: [{ name: "fraud2/accuracy" }, { name: "fraud2/accuracy3" }],
+  },
+  {
+    name: "nested",
+    children: [
+      {
+        name: "nested/fraud2/accuracy",
+        children: [
+          { name: "nested/fraud2/accuracy/self" },
+          { name: "nested/fraud2/accuracy/self2" },
+          { name: "nested/fraud2/accuracy/self3" },
+        ],
+      },
+      { name: "nested/fraud2/accuracy3", children: [] },
+    ],
+  },
+];
 
 const items = ref<EditableListItemModel[]>([
   { name: "Item 1", icon: "icon-plot" },
@@ -86,7 +108,11 @@ const items = ref<EditableListItemModel[]>([
   { name: "Item 12", icon: "icon-error" },
 ]);
 
-function onAddToEditableListAction(action: string, item: EditableListItemModel) {
+function onAddToEditableListAction() {
+  items.value.unshift({ name: "Unnamed", icon: "icon-plot", isUnnamed: true });
+}
+
+function onEditableListAction(action: string, item: EditableListItemModel) {
   console.info("Add to editable list action", action, item);
   switch (action) {
     case "rename":
@@ -117,7 +143,9 @@ function onAddToEditableListAction(action: string, item: EditableListItemModel) 
         'inputs',
         'modals',
         'section header',
+        'trees',
         'editable list',
+        'icons',
       ]"
     >
       <TabsItem :value="0">
@@ -313,6 +341,9 @@ function onAddToEditableListAction(action: string, item: EditableListItemModel) 
         />
       </TabsItem>
       <TabsItem :value="10">
+        <TreeAccordion :nodes="fileTreeNodes" />
+      </TabsItem>
+      <TabsItem :value="11">
         <div class="editable-list-container">
           <SectionHeader
             title="Editable list"
@@ -332,6 +363,38 @@ function onAddToEditableListAction(action: string, item: EditableListItemModel) 
           </Simplebar>
         </div>
       </TabsItem>
+      <TabsItem :value="12">
+        <div class="icons">
+          <div>icon-trash <span class="icon-trash"></span></div>
+          <div>icon-more <span class="icon-more"></span></div>
+          <div>icon-branch <span class="icon-branch"></span></div>
+          <div>icon-edit <span class="icon-edit"></span></div>
+          <div>icon-copy <span class="icon-copy"></span></div>
+          <div>icon-pill <span class="icon-pill"></span></div>
+          <div>icon-new-document <span class="icon-new-document"></span></div>
+          <div>icon-recent-document <span class="icon-recent-document"></span></div>
+          <div>icon-plus-circle <span class="icon-plus-circle"></span></div>
+          <div>icon-warning <span class="icon-warning"></span></div>
+          <div>icon-info <span class="icon-info"></span></div>
+          <div>icon-error <span class="icon-error"></span></div>
+          <div>icon-success <span class="icon-success"></span></div>
+          <div>icon-xl <span class="icon-xl"></span></div>
+          <div>icon-sm <span class="icon-sm"></span></div>
+          <div>icon-xs <span class="icon-xs"></span></div>
+          <div>icon-search <span class="icon-search"></span></div>
+          <div>icon-maximize <span class="icon-maximize"></span></div>
+          <div>icon-folder <span class="icon-folder"></span></div>
+          <div>icon-plot <span class="icon-plot"></span></div>
+          <div>icon-text <span class="icon-text"></span></div>
+          <div>icon-gift <span class="icon-gift"></span></div>
+          <div>icon-pie-chart <span class="icon-pie-chart"></span></div>
+          <div>icon-equal <span class="icon-equal"></span></div>
+          <div>icon-chevron-left <span class="icon-chevron-left"></span></div>
+          <div>icon-chevron-down <span class="icon-chevron-down"></span></div>
+          <div>icon-chevron-right <span class="icon-chevron-right"></span></div>
+          <div>icon-chevron-up <span class="icon-chevron-up"></span></div>
+        </div>
+      </TabsItem>
     </Tabs>
   </main>
 </template>
@@ -339,6 +402,7 @@ function onAddToEditableListAction(action: string, item: EditableListItemModel) 
 <style scoped>
 main {
   padding: 0 5vw;
+  font-size: 12px;
 }
 
 .dataframe {
@@ -380,5 +444,13 @@ main {
     height: 100%;
     overflow-y: auto;
   }
+}
+
+.icons {
+  display: grid;
+  padding-top: 10px;
+  gap: 20px;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  place-items: left;
 }
 </style>
