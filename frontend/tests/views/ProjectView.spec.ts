@@ -9,10 +9,10 @@ import ReportBuilderView from "@/views/ProjectView.vue";
 import { mountSuspense } from "../test.utils";
 
 vi.mock("@/services/api", () => {
-  const fetchReport = vi.fn().mockImplementation(() => {
-    return { items: {}, layout: [] };
+  const fetchProject = vi.fn().mockImplementation(() => {
+    return { items: {}, views: [] };
   });
-  return { fetchReport };
+  return { fetchProject };
 });
 
 vi.hoisted(() => {
