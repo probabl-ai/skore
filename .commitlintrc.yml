@@ -1,7 +1,0 @@
-# Rules for commitlint
-# Reference of all rules: https://commitlint.js.org/reference/rules.html
-# This file adds customizations rules to the default ones defined in https://www.npmjs.com/package/@commitlint/config-conventional
-
-extends: ["@commitlint/config-conventional"]
-rules:
-  "subject-case": [2, "always", ["sentence-case"]]
