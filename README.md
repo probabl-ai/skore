@@ -4,6 +4,8 @@
 
 Given to you by [:probabl.](https://probabl.ai/), `skore` is a powerful tool that allows data scientists to create tracking and clear reports from their Python code, typically a notebook.
 
+test
+
 ## Installation
 
 For now, the only supported method to use skore is from source.
