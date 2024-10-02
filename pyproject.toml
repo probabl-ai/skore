@@ -16,7 +16,7 @@ artifacts = ["src/skore/ui/static/"]
 
 [project]
 name = "skore"
-description = "..."
+description = "... TEST"
 dynamic = ["version"]
 dependencies = [
   "diskcache",
