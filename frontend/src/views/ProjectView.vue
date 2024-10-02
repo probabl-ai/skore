@@ -21,7 +21,7 @@ const isInFocusMode = ref(false);
 const views = ref<EditableListItemModel[]>([]);
 let unsavedViewsIds: string[] = [];
 
-async function onShareReport() {
+async function onShareView() {
   const currentView = projectStore.currentView;
   if (currentView) {
     const shareable = await fetchShareableBlob(currentView);
@@ -170,7 +170,7 @@ onBeforeUnmount(() => {
         <div class="editor-header">
           <SimpleButton icon="icon-maximize" @click="onFocusMode" />
           <h1>{{ projectStore.currentView }}</h1>
-          <SimpleButton label="Share report" @click="onShareReport" :is-primary="true" />
+          <SimpleButton label="Share view" @click="onShareView" :is-primary="true" />
         </div>
         <div class="drop-indicator" :class="{ visible: isDropIndicatorVisible }"></div>
         <Transition name="fade">

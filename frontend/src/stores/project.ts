@@ -58,8 +58,7 @@ export const useProjectStore = defineStore("project", () => {
   }
 
   /**
-   * Fetch all reports URI
-   * and eventually the detail of the currently selected view
+   * Fetch project data from the backend.
    */
   let _isCanceledCall = false;
   async function fetch() {

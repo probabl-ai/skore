@@ -1,16 +1,19 @@
 <script setup lang="ts">
 import Simplebar from "simplebar-vue";
 
-import ReportCanvas from "@/components/ProjectViewCanvas.vue";
+import ProjectViewCanvas from "@/components/ProjectViewCanvas.vue";
+import { useProjectStore } from "@/stores/project";
+
+const projectStore = useProjectStore();
 </script>
 
 <template>
   <div class="share">
     <div class="share-header">
-      <h1>Report</h1>
+      <h1>{{ projectStore.currentView }}</h1>
     </div>
     <Simplebar class="canvas-wrapper">
-      <ReportCanvas :showCardActions="false" />
+      <ProjectViewCanvas :showCardActions="false" />
     </Simplebar>
   </div>
 </template>

@@ -5,7 +5,7 @@ import { createApp } from "vue";
 import { useRoute } from "vue-router";
 
 import { ROUTE_NAMES } from "@/router";
-import ReportBuilderView from "@/views/ProjectView.vue";
+import ProjectView from "@/views/ProjectView.vue";
 import { mountSuspense } from "../test.utils";
 
 vi.mock("@/services/api", () => {
@@ -22,7 +22,7 @@ vi.hoisted(() => {
   window.URL.revokeObjectURL = mockObjectURL;
 });
 
-describe("ReportBuilderView", () => {
+describe("ProjectView", () => {
   beforeEach(() => {
     vi.mock("vue-router");
 
@@ -38,18 +38,18 @@ describe("ReportBuilderView", () => {
 
   it("Renders properly", async () => {
     vi.mocked(useRoute).mockImplementationOnce(() => ({
-      fullPath: `/${ROUTE_NAMES.REPORT_BUILDER}`,
-      path: `/${ROUTE_NAMES.REPORT_BUILDER}`,
+      fullPath: `/${ROUTE_NAMES.VIEW_BUILDER}`,
+      path: `/${ROUTE_NAMES.VIEW_BUILDER}`,
       query: {},
       params: {},
       matched: [],
-      name: ROUTE_NAMES.REPORT_BUILDER,
+      name: ROUTE_NAMES.VIEW_BUILDER,
       hash: "",
       redirectedFrom: undefined,
       meta: {},
     }));
 
-    const builder = await mountSuspense(ReportBuilderView);
+    const builder = await mountSuspense(ProjectView);
     // i.e. not a `VueError`
     expect(builder).toBeInstanceOf(VueWrapper);
   });
