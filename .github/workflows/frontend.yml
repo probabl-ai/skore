@@ -1,14 +1,6 @@
-name: Frontend
+name: Reusable frontend workflow
 
-on:
-  pull_request:
-    paths:
-      - 'frontend/**'
-      - '.github/workflows/frontend.yml'
-
-permissions:
-  contents: read
-  pull-requests: write
+on: [workflow_call]
 
 jobs:
   lint-frontend:
@@ -32,6 +24,7 @@ jobs:
 
   test-frontend:
     runs-on: ubuntu-latest
+    needs: lint-frontend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
