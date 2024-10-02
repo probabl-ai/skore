@@ -11,8 +11,10 @@ import TreeAccordion from "@/components/TreeAccordion.vue";
 import { fetchShareableBlob } from "@/services/api";
 import { generateRandomId, saveBlob } from "@/services/utils";
 import { useProjectStore } from "@/stores/project";
+import { useToastsStore } from "@/stores/toasts";
 
 const projectStore = useProjectStore();
+const toastsStore = useToastsStore();
 const isDropIndicatorVisible = ref(false);
 const editor = ref<HTMLDivElement>();
 const isInFocusMode = ref(false);
@@ -101,6 +103,7 @@ async function onViewsListAction(action: string, item: EditableListItemModel) {
     case "delete": {
       views.value.splice(views.value.indexOf(item), 1);
       await projectStore.deleteView(item.name);
+      toastsStore.addToast("View deleted successfully", "success");
       break;
     }
   }
@@ -110,6 +113,7 @@ function onAddView() {
   const id = generateRandomId();
   views.value.push({ name: "New view", icon: "icon-new-document", isUnnamed: true, id });
   unsavedViewsIds.push(id);
+  toastsStore.addToast("View added successfully", "success");
 }
 
 onMounted(async () => {
