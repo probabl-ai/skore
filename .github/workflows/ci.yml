@@ -1,0 +1,56 @@
+name: CI
+
+on: [pull_request]
+
+permissions:
+  pull-requests: read
+
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    permissions:
+      pull-requests: read
+    steps:
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'src/**'
+              - 'tests/**'
+              - 'pyproject.toml'
+              - 'requirements*.txt'
+              - '.github/workflows/backend.yml'
+            frontend:
+              - 'frontend/**'
+              - '.github/workflows/frontend.yml'
+
+  backend:
+    needs: changes
+    if: ${{ needs.changes.outputs.backend == 'true' }}
+    uses: ./.github/workflows/backend.yml
+    permissions:
+      contents: read
+
+  frontend:
+    needs: changes
+    if: ${{ needs.changes.outputs.frontend == 'true' }}
+    uses: ./.github/workflows/frontend.yml
+    permissions:
+      contents: read
+      pull-requests: write
+
+  ci-all-green:
+    needs:
+    - backend
+    - frontend
+    if: ${{ always() }}
+    runs-on: Ubuntu-latest
+    steps:
+      - shell: bash
+        run: |
+          [[  ${{ contains(needs.*.result, 'failure') }} = false ]]
