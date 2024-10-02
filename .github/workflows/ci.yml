@@ -53,4 +53,4 @@ jobs:
     steps:
       - shell: bash
         run: |
-          [[  ${{ contains(needs.*.result, 'failure') }} -eq false ]] || exit 1
+          [[  ${{ contains(needs.*.result, 'failure') }} = false ]]
