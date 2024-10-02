@@ -35,7 +35,7 @@ export const useProjectStore = defineStore("project", () => {
     stopBackendPolling();
     const realKey = key.replace(" (self)", "");
     if (!isKeyDisplayed(view, realKey)) {
-      views.value[view].push(realKey);
+      views.value[view] = [...views.value[view], realKey];
       await persistView(view, views.value[view]);
     }
     await startBackendPolling();
@@ -210,6 +210,9 @@ export const useProjectStore = defineStore("project", () => {
    * @param name the name of the view to delete
    */
   async function deleteView(name: string) {
+    if (name === currentView.value) {
+      currentView.value = null;
+    }
     delete views.value[name];
     await deleteViewApi(name);
   }

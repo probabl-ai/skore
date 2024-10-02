@@ -56,7 +56,7 @@ export async function deleteView(view: string) {
     const r = await fetch(`${BASE_URL}/project/views/${view}`, {
       method: "DELETE",
     });
-    checkResponseStatus(r, 200);
+    checkResponseStatus(r, 202);
   } catch (error) {
     reportError(getErrorMessage(error));
   }

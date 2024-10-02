@@ -94,22 +94,27 @@ const fileTreeNodes: TreeAccordionNode[] = [
 ];
 
 const items = ref<EditableListItemModel[]>([
-  { name: "Item 1", icon: "icon-plot" },
-  { name: "Item 2" },
-  { name: "Item 3", icon: "icon-error" },
-  { name: "Item 4", icon: "icon-error" },
-  { name: "Item 5", icon: "icon-error" },
-  { name: "Item 6", icon: "icon-error" },
-  { name: "Item 7", icon: "icon-error" },
-  { name: "Item 8", icon: "icon-error" },
-  { name: "Item 9", icon: "icon-error" },
-  { name: "Item 10", icon: "icon-error" },
-  { name: "Item 11", icon: "icon-error" },
-  { name: "Item 12", icon: "icon-error" },
+  { name: "Item 1", icon: "icon-plot", id: generateRandomId() },
+  { name: "Item 2", id: generateRandomId() },
+  { name: "Item 3", icon: "icon-error", id: generateRandomId() },
+  { name: "Item 4", icon: "icon-error", id: generateRandomId() },
+  { name: "Item 5", icon: "icon-error", id: generateRandomId() },
+  { name: "Item 6", icon: "icon-error", id: generateRandomId() },
+  { name: "Item 7", icon: "icon-error", id: generateRandomId() },
+  { name: "Item 8", icon: "icon-error", id: generateRandomId() },
+  { name: "Item 9", icon: "icon-error", id: generateRandomId() },
+  { name: "Item 10", icon: "icon-error", id: generateRandomId() },
+  { name: "Item 11", icon: "icon-error", id: generateRandomId() },
+  { name: "Item 12", icon: "icon-error", id: generateRandomId() },
 ]);
 
 function onAddToEditableListAction() {
-  items.value.unshift({ name: "Unnamed", icon: "icon-plot", isUnnamed: true });
+  items.value.unshift({
+    name: "Unnamed",
+    icon: "icon-plot",
+    isUnnamed: true,
+    id: generateRandomId(),
+  });
 }
 
 function onEditableListAction(action: string, item: EditableListItemModel) {
@@ -120,7 +125,12 @@ function onEditableListAction(action: string, item: EditableListItemModel) {
       break;
     case "duplicate": {
       const index = items.value.indexOf(item) ?? 0;
-      items.value.splice(index + 1, 0, { name: "Unnamed", icon: "icon-plot", isUnnamed: true });
+      items.value.splice(index + 1, 0, {
+        name: "Unnamed",
+        icon: "icon-plot",
+        isUnnamed: true,
+        id: generateRandomId(),
+      });
       break;
     }
     case "delete":
@@ -351,7 +361,7 @@ const lastSelectedItem = ref<string | null>(null);
         <div class="header">
           Editable List as 2 way data binding... item list is:
           <ul>
-            <li v-for="item in items" :key="item.name">{{ item.name }}</li>
+            <li v-for="item in items" :key="item.name">{{ item.name }} (id: {{ item.id }})</li>
           </ul>
           It also emit an event when an item is selected. Last selected item: {{ lastSelectedItem }}
         </div>

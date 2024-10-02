@@ -5,6 +5,7 @@ export interface EditableListItemModel {
   name: string;
   icon?: string;
   isUnnamed?: boolean;
+  id: string;
 }
 
 export interface EditableListAction {
@@ -22,12 +23,18 @@ const props = defineProps<{
 const emit = defineEmits<{
   action: [payload: string, item: EditableListItemModel];
   select: [name: string];
+  rename: [oldName: string, newName: string, item: EditableListItemModel];
 }>();
+
 const items = defineModel<EditableListItemModel[]>("items", { required: true });
 
-const onAction = (payload: string, item: EditableListItemModel) => {
+function onAction(payload: string, item: EditableListItemModel) {
   emit("action", payload, item);
-};
+}
+
+function onRename(oldName: string, newName: string, item: EditableListItemModel) {
+  emit("rename", oldName, newName, item);
+}
 </script>
 
 <template>
@@ -39,6 +46,7 @@ const onAction = (payload: string, item: EditableListItemModel) => {
       :actions="props.actions"
       @action="onAction($event, item)"
       @select="emit('select', item.name)"
+      @rename="onRename"
     />
   </div>
 </template>

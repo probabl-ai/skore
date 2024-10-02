@@ -9,7 +9,8 @@ const props = defineProps<{ actions?: EditableListAction[] }>();
 
 const emit = defineEmits<{
   action: [payload: string];
-  select: [name: string];
+  select: [];
+  rename: [oldName: string, newName: string, item: EditableListItemModel];
 }>();
 
 const item = defineModel<EditableListItemModel>({ required: true });
@@ -17,8 +18,10 @@ const label = ref<HTMLSpanElement>();
 
 function onItemNameEdited(e: Event) {
   (e.target as HTMLInputElement).blur();
+  const oldName = item.value.name;
   item.value.isUnnamed = false;
   item.value.name = (e.target as HTMLSpanElement).textContent ?? "unnamed";
+  emit("rename", oldName, item.value.name, item.value);
 }
 
 onMounted(() => {
@@ -38,12 +41,12 @@ onMounted(() => {
 
 <template>
   <div class="editable-list-item">
-    <div class="label-container" @click="emit('select', item.name)">
+    <div class="label-container" @click="emit('select')">
       <span class="icon" v-if="item.icon" :class="item.icon" />
       <span
         class="label"
-        :contenteditable="item.isUnnamed"
         ref="label"
+        :contenteditable="item.isUnnamed"
         @keydown.enter="onItemNameEdited"
       >
         {{ item.name }}

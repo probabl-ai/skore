@@ -9,7 +9,7 @@ import SectionHeader from "@/components/SectionHeader.vue";
 import SimpleButton from "@/components/SimpleButton.vue";
 import TreeAccordion from "@/components/TreeAccordion.vue";
 import { fetchShareableBlob } from "@/services/api";
-import { saveBlob } from "@/services/utils";
+import { generateRandomId, saveBlob } from "@/services/utils";
 import { useProjectStore } from "@/stores/project";
 
 const projectStore = useProjectStore();
@@ -17,6 +17,7 @@ const isDropIndicatorVisible = ref(false);
 const editor = ref<HTMLDivElement>();
 const isInFocusMode = ref(false);
 const views = ref<EditableListItemModel[]>([]);
+let unsavedViewsIds: string[] = [];
 
 async function onShareReport() {
   const currentView = projectStore.currentView;
@@ -68,12 +69,21 @@ function onViewSelected(view: string) {
   }
 }
 
+async function onViewRenamed(oldName: string, newName: string, item: EditableListItemModel) {
+  // user can rename an existing view
+  // and rename a new view that is not known by the backend
+  if (unsavedViewsIds.includes(item.id)) {
+    await projectStore.createView(newName);
+    unsavedViewsIds = unsavedViewsIds.filter((id) => id !== item.id);
+  } else {
+    await projectStore.renameView(oldName, newName);
+  }
+}
+
 async function onViewsListAction(action: string, item: EditableListItemModel) {
   switch (action) {
     case "rename": {
       item.isUnnamed = true;
-      // TODO: wait for end of namina ge rename
-      // await projectStore.renameView(item.name, item.name);
       break;
     }
     case "duplicate": {
@@ -83,7 +93,9 @@ async function onViewsListAction(action: string, item: EditableListItemModel) {
         name: newName,
         icon: "icon-new-document",
         isUnnamed: true,
+        id: generateRandomId(),
       });
+      unsavedViewsIds.push(newName);
       await projectStore.duplicateView(item.name, newName);
       break;
     }
@@ -96,7 +108,9 @@ async function onViewsListAction(action: string, item: EditableListItemModel) {
 }
 
 function onAddView() {
-  views.value.push({ name: "New view", icon: "icon-new-document", isUnnamed: true });
+  const id = generateRandomId();
+  views.value.push({ name: "New view", icon: "icon-new-document", isUnnamed: true, id });
+  unsavedViewsIds.push(id);
 }
 
 onMounted(async () => {
@@ -105,6 +119,7 @@ onMounted(async () => {
     name: key,
     icon: "icon-new-document",
     isUnnamed: false,
+    id: generateRandomId(),
   }));
 });
 onBeforeUnmount(() => {
@@ -132,6 +147,7 @@ onBeforeUnmount(() => {
             ]"
             @action="onViewsListAction"
             @select="onViewSelected"
+            @rename="onViewRenamed"
           />
         </Simplebar>
         <SectionHeader title="Elements" icon="icon-pie-chart" />

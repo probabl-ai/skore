@@ -27,16 +27,19 @@ describe("API Service", () => {
   });
 
   it("Can call endpoints", async () => {
-    mockedFetch.mockResolvedValue(createFetchResponse({}));
+    mockedFetch.mockResolvedValue(createFetchResponse({}, 200));
     const project = await fetchProject();
     expect(project).toBeDefined();
 
+    mockedFetch.mockResolvedValue(createFetchResponse({}, 201));
     const view = await putView("test", []);
     expect(view).toBeDefined();
 
+    mockedFetch.mockResolvedValue(createFetchResponse({}, 202));
     const del = await deleteView("test");
     expect(del).toBeUndefined();
 
+    mockedFetch.mockResolvedValue(createFetchResponse({}, 200));
     const share = await fetchShareableBlob("test");
     expect(share).toBeDefined();
   });
