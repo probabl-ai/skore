@@ -28,7 +28,7 @@ jobs:
   test-backend:
     runs-on: ubuntu-latest
     needs: build-frontend
-    continue-on-error: ${{ matrix.python-version != '3.12' }}
+    # continue-on-error: ${{ matrix.python-version != '3.12' }}
     strategy:
       fail-fast: true
       matrix:
