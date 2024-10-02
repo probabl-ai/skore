@@ -12,7 +12,7 @@ import VegaWidget from "@/components/VegaWidget.vue";
 import { useProjectStore } from "@/stores/project";
 
 const props = defineProps({
-  showCardButtons: {
+  showCardActions: {
     type: Boolean,
     default: true,
   },
@@ -84,9 +84,9 @@ function getItemSubtitle(created_at: Date, updated_at: Date) {
       :key="key"
       :title="key.toString()"
       :subtitle="getItemSubtitle(createdAt, updatedAt)"
-      :showButtons="props.showCardButtons"
+      :showActions="props.showCardActions"
       class="canvas-element"
-      @card-removed="onCardRemoved(key.toString())"
+      @card-removed="onCardRemoved(key)"
     >
       <DataFrameWidget
         v-if="mediaType === 'application/vnd.dataframe+json'"

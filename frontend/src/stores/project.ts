@@ -50,8 +50,8 @@ export const useProjectStore = defineStore("project", () => {
     stopBackendPolling();
     if (isKeyDisplayed(view, key)) {
       const v = views.value[view];
-      views.value[view] = v.filter((k) => k === key);
-      await persistView(view, v);
+      views.value[view] = v.filter((k) => k !== key);
+      await persistView(view, views.value[view]);
     }
     await startBackendPolling();
   }

@@ -10,7 +10,7 @@ import ReportCanvas from "@/components/ProjectViewCanvas.vue";
       <h1>Report</h1>
     </div>
     <Simplebar class="canvas-wrapper">
-      <ReportCanvas :showCardButtons="false" />
+      <ReportCanvas :showCardActions="false" />
     </Simplebar>
   </div>
 </template>
