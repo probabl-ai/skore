@@ -4,6 +4,10 @@ import skops.io
 from skore.item import SklearnBaseEstimatorItem
 
 
+class Estimator(sklearn.svm.SVC):
+    pass
+
+
 class TestSklearnBaseEstimatorItem:
     @pytest.fixture(autouse=True)
     def monkeypatch_datetime(self, monkeypatch, MockDatetime):
@@ -53,3 +57,32 @@ class TestSklearnBaseEstimatorItem:
 
         assert isinstance(item1.estimator, sklearn.svm.SVC)
         assert isinstance(item2.estimator, sklearn.svm.SVC)
+
+    @pytest.mark.order(1)
+    def test_estimator_untrusted(self, mock_nowstr):
+        estimator = Estimator()
+        estimator_skops = skops.io.dumps(estimator)
+        estimator_skops_untrusted_types = skops.io.get_untrusted_types(
+            data=estimator_skops
+        )
+
+        if not estimator_skops_untrusted_types:
+            pytest.skip(
+                """
+                This test is only intended to exhaustively test an untrusted estimator.
+                The untrusted Estimator class seems to be trusted by default.
+                Something changed in `skops`.
+                """
+            )
+
+        item1 = SklearnBaseEstimatorItem.factory(estimator)
+        item2 = SklearnBaseEstimatorItem(
+            estimator_html_repr=None,
+            estimator_skops=estimator_skops,
+            estimator_skops_untrusted_types=estimator_skops_untrusted_types,
+            created_at=mock_nowstr,
+            updated_at=mock_nowstr,
+        )
+
+        assert isinstance(item1.estimator, Estimator)
+        assert isinstance(item2.estimator, Estimator)
