@@ -31,7 +31,7 @@ describe("Project store", () => {
     const projectStore = useProjectStore();
 
     const epoch = new Date("1970-01-01T00:00:00Z").toISOString();
-    function makeFakeReportItem() {
+    function makeFakeViewItem() {
       return {
         media_type: "text/markdown",
         value: "",
@@ -41,11 +41,11 @@ describe("Project store", () => {
     }
     const project = {
       items: {
-        a: makeFakeReportItem(),
-        "a/b": makeFakeReportItem(),
-        "a/b/d": makeFakeReportItem(),
-        "a/b/e": makeFakeReportItem(),
-        "a/b/f/g": makeFakeReportItem(),
+        a: makeFakeViewItem(),
+        "a/b": makeFakeViewItem(),
+        "a/b/d": makeFakeViewItem(),
+        "a/b/e": makeFakeViewItem(),
+        "a/b/f/g": makeFakeViewItem(),
       },
       views: {},
     };
