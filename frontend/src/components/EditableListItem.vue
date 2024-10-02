@@ -21,7 +21,9 @@ function onItemNameEdited(e: Event) {
   const oldName = item.value.name;
   item.value.isUnnamed = false;
   item.value.name = (e.target as HTMLSpanElement).textContent ?? "unnamed";
-  emit("rename", oldName, item.value.name, item.value);
+  if (item.value.name !== oldName) {
+    emit("rename", oldName, item.value.name, item.value);
+  }
 }
 
 onMounted(() => {

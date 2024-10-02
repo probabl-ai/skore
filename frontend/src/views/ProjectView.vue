@@ -63,10 +63,7 @@ function onItemSelected(key: string) {
 }
 
 function onViewSelected(view: string) {
-  const item = views.value.find((item) => item.name === view);
-  if (item && !item.isUnnamed) {
-    projectStore.currentView = view;
-  }
+  projectStore.currentView = view;
 }
 
 async function onViewRenamed(oldName: string, newName: string, item: EditableListItemModel) {
@@ -78,6 +75,8 @@ async function onViewRenamed(oldName: string, newName: string, item: EditableLis
   } else {
     await projectStore.renameView(oldName, newName);
   }
+  // auto switch the view to the renamed one
+  onViewSelected(newName);
 }
 
 async function onViewsListAction(action: string, item: EditableListItemModel) {
