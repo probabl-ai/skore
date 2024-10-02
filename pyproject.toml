@@ -34,11 +34,11 @@ classifiers=[
 ]
 
 [project.urls]
-homepage = "https://probabl.ai"
-source = "https://github.com/probabl-ai/skore"
-download = "https://pypi.org/project/skore/#files"
-tracker = "https://github.com/probabl-ai/skore/issues"
-"release notes" = "https://github.com/probabl-ai/skore/releases"
+Homepage = "https://probabl.ai"
+Repository = "https://github.com/probabl-ai/skore"
+Download = "https://pypi.org/project/skore/#files"
+Issues = "https://github.com/probabl-ai/skore/issues"
+"Release notes" = "https://github.com/probabl-ai/skore/releases"
 
 [build-system]
 requires = ["hatchling"]
