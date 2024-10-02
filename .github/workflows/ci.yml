@@ -43,3 +43,14 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+
+  ci-all-green:
+    needs:
+    - backend
+    - frontend
+    if: ${{ always() }}
+    runs-on: Ubuntu-latest
+    steps:
+      - shell: bash
+        run: |
+          [[  ${{ contains(needs.*.result, 'failure') }} -eq false ]] || exit 1
