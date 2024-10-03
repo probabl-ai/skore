@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
-      frontend: ${{ steps.filter.outputs.frontend }}
+      skore-ui: ${{ steps.filter.outputs.skore-ui }}
     permissions:
       pull-requests: read
     steps:
@@ -21,9 +21,9 @@ jobs:
               - 'pyproject.toml'
               - 'requirements*.txt'
               - '.github/workflows/backend.yml'
-            frontend:
-              - 'frontend/**'
-              - '.github/workflows/frontend.yml'
+            skore-ui:
+              - 'skore-ui/**'
+              - '.github/workflows/skore-ui.yml'
 
   lint-all-files:
     uses: ./.github/workflows/lint.yml
@@ -37,10 +37,10 @@ jobs:
     permissions:
       contents: read
 
-  lint-and-test-frontend:
+  lint-and-test-skore-ui:
     needs: [lint-all-files, changes]
-    if: ${{ needs.changes.outputs.frontend == 'true' }}
-    uses: ./.github/workflows/frontend.yml
+    if: ${{ needs.changes.outputs.skore-ui == 'true' }}
+    uses: ./.github/workflows/skore-ui.yml
     permissions:
       contents: read
       pull-requests: write
@@ -49,7 +49,7 @@ jobs:
     needs:
       - lint-all-files
       - lint-and-test-backend
-      - lint-and-test-frontend
+      - lint-and-test-skore-ui
     if: ${{ always() }}
     runs-on: Ubuntu-latest
     steps:

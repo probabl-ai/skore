@@ -10,10 +10,10 @@ Bug reports are welcome, especially those reported with [short, self-contained, 
 
 ### Quick start
 
-You'll need Python>=3.12 to build the backend and Node>=20 to build the frontend. Then, you can install dependencies and run the UI with:
+You'll need Python>=3.12 to build the backend and Node>=20 to build the skore-ui. Then, you can install dependencies and run the UI with:
 ```sh
 make install
-make build-frontend
+make build-skore-ui
 make serve-ui
 ```
 
@@ -37,24 +37,24 @@ When dependencies are changed in `pyproject.toml` the lockfiles should be update
 make pip-compile
 ```
 
-### Frontend
+### skore-ui
 
-Install frontend dependencies with
+Install skore-ui dependencies with
 ```sh
 npm install
 ```
-in the `frontend` directory.
+in the `skore-ui` directory.
 
-Run the frontend in dev mode (for hot-reloading) with
+Run the skore-ui in dev mode (for hot-reloading) with
 ```sh
 npm run dev
 ```
-in the `frontend` directory
+in the `skore-ui` directory
 
 
-Then, to use the frontend
+Then, to use the skore-ui
 ```sh
-make build-frontend
+make build-skore-ui
 make serve-ui
 ```
 
@@ -91,6 +91,6 @@ When writing documentation, whether it be online, docstrings or help messages in
 
 ## Help for common issues
 
-### `make build-frontend` doesn't work!
+### `make build-skore-ui` doesn't work!
 
 Please check that your version of node is at least 20 using the following command: `node -v`

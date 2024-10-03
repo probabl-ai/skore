@@ -28,23 +28,23 @@ repos:
     hooks:
       - id: tsc
         language: node
-        name: Use vue-tsc to typecheck frontend code.
-        entry: bash -c "cd frontend && npm run type-check"
-        files: ^frontend/
+        name: Use vue-tsc to typecheck skore-ui code.
+        entry: bash -c "cd skore-ui && npm run type-check"
+        files: ^skore-ui/
       - id: eslint
         language: node
-        name: Use eslint to lint frontend code.
-        entry: bash -c "cd frontend && npm run lint"
-        files: ^frontend/
+        name: Use eslint to lint skore-ui code.
+        entry: bash -c "cd skore-ui && npm run lint"
+        files: ^skore-ui/
       - id: prettier
         language: node
-        name: Use prettier to format frontend code.
-        entry: bash -c "cd frontend && npm run format"
-        files: ^frontend/
+        name: Use prettier to format skore-ui code.
+        entry: bash -c "cd skore-ui && npm run format"
+        files: ^skore-ui/
       - id: stylelint
         language: node
         name: Use stylelint to lint CSS.
-        entry: bash -c "cd frontend && npm run style-lint"
-        files: ^frontend/
+        entry: bash -c "cd skore-ui && npm run style-lint"
+        files: ^skore-ui/
 
 exclude: fixtures/

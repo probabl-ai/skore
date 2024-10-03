@@ -33,16 +33,16 @@ serve-ui:
 		--port 22140 \
 		--timeout-graceful-shutdown 0
 
-build-frontend:
+build-skore-ui:
 	# cleanup
-	rm -rf frontend/dist
+	rm -rf skore-ui/dist
 	rm -rf src/skore/ui/static
 	# build
 	(\
-		cd frontend;\
+		cd skore-ui;\
 		npm install;\
 		npm run build;\
 		npm run build:lib -- --emptyOutDir false;\
 	)
 	# move
-	mv frontend/dist/ src/skore/ui/static
+	mv skore-ui/dist/ src/skore/ui/static

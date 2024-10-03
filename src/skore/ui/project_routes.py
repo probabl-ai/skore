@@ -35,7 +35,7 @@ class SerializedItem:
 
 @dataclass
 class SerializedProject:
-    """Serialized project, to be sent to the frontend."""
+    """Serialized project, to be sent to the skore-ui."""
 
     items: dict[str, SerializedItem]
     views: dict[str, Layout]
