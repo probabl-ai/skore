@@ -25,8 +25,9 @@ class SklearnBaseEstimatorItem(Item):
 
     def __init__(
         self,
-        estimator_skops,
-        estimator_html_repr,
+        estimator_html_repr: str,
+        estimator_skops: bytes,
+        estimator_skops_untrusted_types: list[str],
         created_at: str | None = None,
         updated_at: str | None = None,
     ):
@@ -35,10 +36,12 @@ class SklearnBaseEstimatorItem(Item):
 
         Parameters
         ----------
-        estimator_skops : Any
-            The skops representation of the scikit-learn estimator.
         estimator_html_repr : str
             The HTML representation of the scikit-learn estimator.
+        estimator_skops : bytes
+            The skops representation of the scikit-learn estimator.
+        estimator_skops_untrusted_types : list[str]
+            The list of untrusted types in the skops representation.
         created_at : str, optional
             The creation timestamp in ISO format.
         updated_at : str, optional
@@ -46,8 +49,9 @@ class SklearnBaseEstimatorItem(Item):
         """
         super().__init__(created_at, updated_at)
 
-        self.estimator_skops = estimator_skops
         self.estimator_html_repr = estimator_html_repr
+        self.estimator_skops = estimator_skops
+        self.estimator_skops_untrusted_types = estimator_skops_untrusted_types
 
     @cached_property
     def estimator(self) -> sklearn.base.BaseEstimator:
@@ -61,7 +65,9 @@ class SklearnBaseEstimatorItem(Item):
         """
         import skops.io
 
-        return skops.io.loads(self.estimator_skops)
+        return skops.io.loads(
+            self.estimator_skops, trusted=self.estimator_skops_untrusted_types
+        )
 
     @classmethod
     def factory(cls, estimator: sklearn.base.BaseEstimator) -> SklearnBaseEstimatorItem:
@@ -85,9 +91,16 @@ class SklearnBaseEstimatorItem(Item):
         if not isinstance(estimator, sklearn.base.BaseEstimator):
             raise TypeError(f"Type '{estimator.__class__}' is not supported.")
 
+        estimator_html_repr = sklearn.utils.estimator_html_repr(estimator)
+        estimator_skops = skops.io.dumps(estimator)
+        estimator_skops_untrusted_types = skops.io.get_untrusted_types(
+            data=estimator_skops
+        )
+
         instance = cls(
-            estimator_skops=skops.io.dumps(estimator),
-            estimator_html_repr=sklearn.utils.estimator_html_repr(estimator),
+            estimator_html_repr=estimator_html_repr,
+            estimator_skops=estimator_skops,
+            estimator_skops_untrusted_types=estimator_skops_untrusted_types,
         )
 
         # add estimator as cached property

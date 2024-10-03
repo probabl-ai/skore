@@ -1,9 +1,11 @@
+name: Add PR assignee
+
 on:
   pull_request:
     types: [opened]
 
 jobs:
-  add-assignee:
+  add-pr-assignee:
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write

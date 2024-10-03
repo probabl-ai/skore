@@ -1,11 +1,11 @@
 """Implement the "launch" command."""
 
-import threading
-import time
 import webbrowser
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 import uvicorn
+from fastapi import FastAPI
 
 from skore.cli import logger
 from skore.project import load
@@ -16,11 +16,6 @@ class ProjectNotFound(Exception):
     """Project was not found."""
 
     project_path: Path
-
-
-def __open_browser(port: int):
-    time.sleep(0.5)
-    webbrowser.open(f"http://localhost:{port}")
 
 
 def __launch(project_name: str | Path, port: int, open_browser: bool):
@@ -36,10 +31,14 @@ def __launch(project_name: str | Path, port: int, open_browser: bool):
         Whether to automatically open a browser tab showing the UI.
     """
     project = load(project_name)
-    app = create_app(project=project)
 
-    if open_browser:
-        threading.Thread(target=lambda: __open_browser(port=port)).start()
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        if open_browser:
+            webbrowser.open(f"http://localhost:{port}")
+        yield
+
+    app = create_app(project=project, lifespan=lifespan)
 
     try:
         # TODO: check port is free

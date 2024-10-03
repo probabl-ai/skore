@@ -3,15 +3,18 @@
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from starlette.types import Lifespan
 
 from skore.project import Project, load
 from skore.ui.dependencies import get_static_path
 from skore.ui.project_routes import router as project_router
 
 
-def create_app(project: Project | None = None) -> FastAPI:
+def create_app(
+    project: Project | None = None, lifespan: Lifespan | None = None
+) -> FastAPI:
     """FastAPI factory used to create the API to interact with `stores`."""
-    app = FastAPI()
+    app = FastAPI(lifespan=lifespan)
 
     # Give the app access to the project
     if not project:
