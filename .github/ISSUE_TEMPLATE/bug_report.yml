@@ -21,9 +21,7 @@ body:
     description: |
       Please add a minimal code example that can reproduce the error when running it. Be as succinct as possible, **do not depend on external data files**.
     placeholder: |
-      ```
       Describe each step to reproduce the problem, along with related sample code if relevant.
-      ```
   validations:
     required: true
 - type: textarea
@@ -40,9 +38,11 @@ body:
     label: Actual Behavior
     description: |
       A clear and concise description of what actually happened. If you observe an error, please paste the error message including the **full traceback** of the exception.
-      ```
     placeholder: >
       Please paste or specifically describe the actual output or traceback.
+      ```pytb
+      Paste here your traceback.
+      ````
   validations:
     required: true
 - type: textarea
