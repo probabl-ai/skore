@@ -6,6 +6,7 @@ adapted from :func:`sklearn.show_versions`
 
 import platform
 import sys
+from pathlib import Path
 
 
 def _get_sys_info():
@@ -46,7 +47,8 @@ def _get_deps_info():
 
     deps = ["pip", "setuptools"]
 
-    with open("pyproject.toml", "rb") as f:
+    pyproject_path = Path(__file__).parent.parent.parent.parent / "pyproject.toml"
+    with open(pyproject_path, "rb") as f:
         data = tomllib.load(f)
         deps += data["project"]["dependencies"]
 
