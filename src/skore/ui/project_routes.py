@@ -92,7 +92,7 @@ async def get_items(request: Request):
     return __serialize_project(project)
 
 
-@router.post("/views/share/{key:path}")
+@router.post("/views/share")
 async def share_store(
     request: Request,
     key: str,
@@ -131,7 +131,7 @@ async def share_store(
     )
 
 
-@router.put("/views/{key:path}", status_code=status.HTTP_201_CREATED)
+@router.put("/views", status_code=status.HTTP_201_CREATED)
 async def put_view(request: Request, key: str, layout: Layout):
     """Set the layout of the view corresponding to `key`.
 
@@ -145,7 +145,7 @@ async def put_view(request: Request, key: str, layout: Layout):
     return __serialize_project(project)
 
 
-@router.delete("/views/{key:path}", status_code=status.HTTP_202_ACCEPTED)
+@router.delete("/views", status_code=status.HTTP_202_ACCEPTED)
 async def delete_view(request: Request, key: str):
     """Delete the view corresponding to `key`."""
     project: Project = request.app.state.project

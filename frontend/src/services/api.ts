@@ -36,7 +36,7 @@ export async function fetchProject(): Promise<Project | null> {
 
 export async function putView(view: string, layout: Layout): Promise<Project | null> {
   try {
-    const r = await fetch(`${BASE_URL}/project/views/${view}`, {
+    const r = await fetch(`${BASE_URL}/project/views?key=${view}`, {
       method: "PUT",
       body: JSON.stringify(layout),
       headers: {
@@ -53,7 +53,7 @@ export async function putView(view: string, layout: Layout): Promise<Project | n
 
 export async function deleteView(view: string) {
   try {
-    const r = await fetch(`${BASE_URL}/project/views/${view}`, {
+    const r = await fetch(`${BASE_URL}/project/views?key=${view}`, {
       method: "DELETE",
     });
     checkResponseStatus(r, 202);
@@ -64,7 +64,7 @@ export async function deleteView(view: string) {
 
 export async function fetchShareableBlob(view: string) {
   try {
-    const r = await fetch(`${BASE_URL}/project/views/share/${view}`, {
+    const r = await fetch(`${BASE_URL}/project/views/share?key=${view}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

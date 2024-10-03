@@ -61,27 +61,27 @@ def test_get_items(client, project):
 def test_share_view(client, project):
     project.put_view("hello", View(layout=[]))
 
-    response = client.post("/api/project/views/share/hello")
+    response = client.post("/api/project/views/share?key=hello")
     assert response.status_code == 200
     assert b"<!DOCTYPE html>" in response.content
 
 
-def test_share_view_not_found(client, project):
-    response = client.post("/api/project/views/share/hello")
+def test_share_view_not_found(client):
+    response = client.post("/api/project/views/share?key=hello")
     assert response.status_code == 404
 
 
 def test_put_view_layout(client):
-    response = client.put("/api/project/views/hello", json=["test"])
+    response = client.put("/api/project/views?key=hello", json=["test"])
     assert response.status_code == 201
 
 
 def test_delete_view(client, project):
     project.put_view("hello", View(layout=[]))
-    response = client.delete("/api/project/views/hello")
+    response = client.delete("/api/project/views?key=hello")
     assert response.status_code == 202
 
 
 def test_delete_view_missing(client):
-    response = client.delete("/api/project/views/hello")
+    response = client.delete("/api/project/views?key=hello")
     assert response.status_code == 404
