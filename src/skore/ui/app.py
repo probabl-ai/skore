@@ -7,7 +7,7 @@ from starlette.types import Lifespan
 
 from skore.project import Project, load
 from skore.ui.dependencies import get_static_path
-from skore.ui.report import router as report_router
+from skore.ui.project_routes import router as project_router
 
 
 def create_app(
@@ -34,7 +34,7 @@ def create_app(
     # Include routers from bottom to top.
     # Include routers always after all routes have been defined/imported.
     router = APIRouter(prefix="/api")
-    router.include_router(report_router)
+    router.include_router(project_router)
 
     # Include all sub routers.
     app.include_router(router)

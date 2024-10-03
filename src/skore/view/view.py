@@ -1,26 +1,9 @@
 """Project View models."""
 
 from dataclasses import dataclass
-from enum import StrEnum
 
-
-class LayoutItemSize(StrEnum):
-    """The size of a layout item."""
-
-    SMALL = "small"
-    MEDIUM = "medium"
-    LARGE = "large"
-
-
-@dataclass
-class LayoutItem:
-    """A layout item."""
-
-    key: str
-    size: LayoutItemSize
-
-
-Layout = list[LayoutItem]
+# An ordered list of keys to display
+Layout = list[str]
 
 
 @dataclass
@@ -29,10 +12,7 @@ class View:
 
     Examples
     --------
-    >>> View(layout=[
-    ...     {"key": "a", "size": "medium"},
-    ...     {"key": "b", "size": "small"},
-    ... ])
+    >>> View(layout=["a", "b"])
     View(...)
     """
 

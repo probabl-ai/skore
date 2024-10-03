@@ -1,29 +1,33 @@
 <script setup lang="ts">
+import { format } from "date-fns";
 import Simplebar from "simplebar-vue";
 import { onBeforeUnmount, onMounted, ref } from "vue";
 
-import ReportCanvas from "@/components/ReportCanvas.vue";
+import EditableList, { type EditableListItemModel } from "@/components/EditableList.vue";
+import ProjectViewCanvas from "@/components/ProjectViewCanvas.vue";
 import SectionHeader from "@/components/SectionHeader.vue";
 import SimpleButton from "@/components/SimpleButton.vue";
 import TreeAccordion from "@/components/TreeAccordion.vue";
 import { fetchShareableBlob } from "@/services/api";
-import { saveBlob } from "@/services/utils";
-import { useReportStore } from "@/stores/report";
+import { generateRandomId, saveBlob } from "@/services/utils";
+import { useProjectStore } from "@/stores/project";
+import { useToastsStore } from "@/stores/toasts";
 
-const reportStore = useReportStore();
+const projectStore = useProjectStore();
+const toastsStore = useToastsStore();
 const isDropIndicatorVisible = ref(false);
 const editor = ref<HTMLDivElement>();
 const isInFocusMode = ref(false);
+const views = ref<EditableListItemModel[]>([]);
+let unsavedViewsId: string = "";
 
-async function onShareReport() {
-  const shareable = await fetchShareableBlob(reportStore.layout);
-  if (shareable) {
-    let name = prompt("Enter a name for the report");
-    if (name) {
-      if (!name.toLowerCase().endsWith(".html")) {
-        name += ".html";
-      }
-      saveBlob(shareable, name);
+async function onShareView() {
+  const currentView = projectStore.currentView;
+  if (currentView) {
+    const shareable = await fetchShareableBlob(currentView);
+    if (shareable) {
+      const formattedDate = format(new Date(), "yyyy-MM-dd-HH-mm");
+      saveBlob(shareable, `${formattedDate}-${currentView}.html`);
     }
   }
 }
@@ -32,16 +36,26 @@ function onFocusMode() {
   isInFocusMode.value = !isInFocusMode.value;
 }
 
+function displayItem(key: string) {
+  if (projectStore.currentView) {
+    projectStore.displayKey(projectStore.currentView, key);
+  } else {
+    toastsStore.addToast("No view selected", "error");
+  }
+}
+
 function onItemDrop(event: DragEvent) {
   isDropIndicatorVisible.value = false;
   if (event.dataTransfer) {
     const key = event.dataTransfer.getData("key");
-    reportStore.displayKey(key);
+    displayItem(key);
   }
 }
 
 function onDragEnter() {
-  isDropIndicatorVisible.value = true;
+  if (projectStore.currentView) {
+    isDropIndicatorVisible.value = true;
+  }
 }
 
 function onDragLeave(event: DragEvent) {
@@ -51,23 +65,110 @@ function onDragLeave(event: DragEvent) {
 }
 
 function onItemSelected(key: string) {
-  reportStore.displayKey(key);
+  displayItem(key);
 }
 
-onMounted(() => {
-  reportStore.startBackendPolling();
-});
+function onViewSelected(view: string) {
+  projectStore.currentView = view;
+}
 
-onBeforeUnmount(() => reportStore.stopBackendPolling());
+async function onViewRenamed(oldName: string, newName: string, item: EditableListItemModel) {
+  const viewAlreadyExists = views.value.filter((view) => view.name === newName).length > 1;
+  if (viewAlreadyExists) {
+    toastsStore.addToast(`A view named "${newName}" already exists`, "error");
+    item.isNamed = false;
+    return;
+  }
+  // user can rename an existing view
+  // and rename a new view that is not known by the backend
+  if (unsavedViewsId == item.id) {
+    await projectStore.createView(newName);
+    unsavedViewsId = "";
+    toastsStore.addToast("View added successfully", "success");
+  } else {
+    await projectStore.renameView(oldName, newName);
+  }
+  // auto switch the view to the renamed one
+  onViewSelected(newName);
+}
+
+async function onViewsListAction(action: string, item: EditableListItemModel) {
+  switch (action) {
+    case "rename": {
+      item.isNamed = false;
+      break;
+    }
+    case "duplicate": {
+      const index = views.value.indexOf(item) ?? 0;
+      const newName = `${item.name} - copy`;
+      views.value.splice(index + 1, 0, {
+        name: newName,
+        icon: "icon-new-document",
+        isNamed: false,
+        id: generateRandomId(),
+      });
+      unsavedViewsId = newName;
+      await projectStore.duplicateView(item.name, newName);
+      break;
+    }
+    case "delete": {
+      views.value.splice(views.value.indexOf(item), 1);
+      await projectStore.deleteView(item.name);
+      toastsStore.addToast("View deleted successfully", "success");
+      break;
+    }
+  }
+}
+
+function onAddView() {
+  const hasUnsavedViews = views.value.some((view) => !view.isNamed);
+  if (!hasUnsavedViews) {
+    const id = generateRandomId();
+    views.value.push({ name: "New view", icon: "icon-new-document", isNamed: false, id });
+    unsavedViewsId = id;
+  }
+}
+
+onMounted(async () => {
+  await projectStore.startBackendPolling();
+  views.value = Object.keys(projectStore.views).map((key) => ({
+    name: key,
+    icon: "icon-new-document",
+    isNamed: true,
+    id: generateRandomId(),
+  }));
+});
+onBeforeUnmount(() => {
+  projectStore.stopBackendPolling();
+});
 </script>
 
 <template>
   <main>
-    <article v-if="reportStore.items !== null">
-      <div class="items" v-if="reportStore.items && !isInFocusMode">
+    <article v-if="projectStore.items !== null">
+      <div class="items" v-if="projectStore.items && !isInFocusMode">
+        <SectionHeader
+          title="Views"
+          icon="icon-recent-document"
+          action-icon="icon-plus-circle"
+          @action="onAddView"
+        />
+        <Simplebar class="views-list">
+          <EditableList
+            v-model:items="views"
+            :actions="[
+              { label: 'rename', emitPayload: 'rename', icon: 'icon-edit' },
+              { label: 'duplicate', emitPayload: 'duplicate', icon: 'icon-copy' },
+              { label: 'delete', emitPayload: 'delete', icon: 'icon-trash' },
+            ]"
+            @action="onViewsListAction"
+            @select="onViewSelected"
+            @rename="onViewRenamed"
+          />
+        </Simplebar>
         <SectionHeader title="Elements" icon="icon-pie-chart" />
         <Simplebar class="key-list">
-          <TreeAccordion :nodes="reportStore.keysAsTree()" @item-selected="onItemSelected" />
+          <TreeAccordion :nodes="projectStore.keysAsTree()" @item-selected="onItemSelected" />
         </Simplebar>
       </div>
 
@@ -80,20 +181,28 @@ onBeforeUnmount(() => reportStore.stopBackendPolling());
         @dragleave="onDragLeave"
       >
         <div class="editor-header">
-          <SimpleButton icon="icon-focus" @click="onFocusMode" />
-          <h1>Report</h1>
-          <SimpleButton label="Share report" @click="onShareReport" :is-primary="true" />
+          <SimpleButton icon="icon-maximize" @click="onFocusMode" />
+          <h1>{{ projectStore.currentView }}</h1>
+          <SimpleButton label="Share view" @click="onShareView" :is-primary="true" />
         </div>
         <div class="drop-indicator" :class="{ visible: isDropIndicatorVisible }"></div>
         <Transition name="fade">
           <div
-            v-if="!isDropIndicatorVisible && reportStore.layout.length === 0"
+            v-if="
+              projectStore.currentView === null ||
+              projectStore.views[projectStore.currentView] === undefined ||
+              projectStore.views[projectStore.currentView]?.length === 0
+            "
             class="placeholder"
           >
-            <div class="wrapper">No item selected yet, start by dragging one element.</div>
+            <div class="wrapper" v-if="projectStore.currentView === null">No view selected.</div>
+            <div class="wrapper" v-else>
+              No elements in this view, start by dragging or double clicking an element from the
+              tree on the left.
+            </div>
           </div>
           <Simplebar class="canvas-wrapper" v-else>
-            <ReportCanvas />
+            <ProjectViewCanvas />
           </Simplebar>
         </Transition>
       </div>
@@ -145,7 +254,14 @@ main {
       flex-shrink: 0;
       border-right: solid 1px var(--border-color-normal);
 
+      & .views-list {
+        z-index: 2;
+        max-height: 20vh;
+        background-color: var(--background-color-elevated-high);
+      }
+
       & .key-list {
+        z-index: 1;
         height: 0;
         flex-grow: 1;
         padding: var(--spacing-padding-large);

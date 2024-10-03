@@ -1,4 +1,4 @@
-import type { Layout, Report } from "@/models";
+import type { Layout, Project } from "@/models";
 import { useToastsStore } from "@/stores/toasts";
 
 const { protocol, hostname, port: windowPort } = window.location;
@@ -23,9 +23,9 @@ function checkResponseStatus(r: Response, attendedStatusCode: number) {
   }
 }
 
-export async function fetchReport(): Promise<Report | null> {
+export async function fetchProject(): Promise<Project | null> {
   try {
-    const r = await fetch(`${BASE_URL}/items`);
+    const r = await fetch(`${BASE_URL}/project/items`);
     checkResponseStatus(r, 200);
     return await r.json();
   } catch (error) {
@@ -34,11 +34,11 @@ export async function fetchReport(): Promise<Report | null> {
   return null;
 }
 
-export async function putLayout(payload: Layout): Promise<Report | null> {
+export async function putView(view: string, layout: Layout): Promise<Project | null> {
   try {
-    const r = await fetch(`${BASE_URL}/report/layout`, {
+    const r = await fetch(`${BASE_URL}/project/views?key=${view}`, {
       method: "PUT",
-      body: JSON.stringify(payload),
+      body: JSON.stringify(layout),
       headers: {
         "Content-Type": "application/json",
       },
@@ -51,11 +51,21 @@ export async function putLayout(payload: Layout): Promise<Report | null> {
   return null;
 }
 
-export async function fetchShareableBlob(layout: Layout) {
+export async function deleteView(view: string) {
   try {
-    const r = await fetch(`${BASE_URL}/report/share`, {
+    const r = await fetch(`${BASE_URL}/project/views?key=${view}`, {
+      method: "DELETE",
+    });
+    checkResponseStatus(r, 202);
+  } catch (error) {
+    reportError(getErrorMessage(error));
+  }
+}
+
+export async function fetchShareableBlob(view: string) {
+  try {
+    const r = await fetch(`${BASE_URL}/project/views/share?key=${view}`, {
       method: "POST",
-      body: JSON.stringify(layout),
       headers: {
         "Content-Type": "application/json",
       },

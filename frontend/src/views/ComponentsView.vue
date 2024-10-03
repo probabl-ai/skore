@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Simplebar from "simplebar-vue";
 import type { VisualizationSpec } from "vega-embed";
 
 import datatable from "@/assets/fixtures/datatable.json";
@@ -9,8 +10,10 @@ import CrossValidationResultsWidget from "@/components/CrossValidationResultsWid
 import DataFrameWidget from "@/components/DataFrameWidget.vue";
 import DropdownButton from "@/components/DropdownButton.vue";
 import DropdownButtonItem from "@/components/DropdownButtonItem.vue";
+import EditableList, { type EditableListItemModel } from "@/components/EditableList.vue";
 import ImageWidget from "@/components/ImageWidget.vue";
 import MarkdownWidget from "@/components/MarkdownWidget.vue";
+import SectionHeader from "@/components/SectionHeader.vue";
 import SimpleButton from "@/components/SimpleButton.vue";
 import Tabs from "@/components/TabsWidget.vue";
 import TabsItem from "@/components/TabsWidgetItem.vue";
@@ -21,6 +24,7 @@ import VegaWidget from "@/components/VegaWidget.vue";
 import { generateRandomId } from "@/services/utils";
 import { useModalsStore } from "@/stores/modals";
 import { useToastsStore } from "@/stores/toasts";
+import { ref } from "vue";
 
 const toastsStore = useToastsStore();
 const modalsStore = useModalsStore();
@@ -60,6 +64,10 @@ function showPromptModal() {
   });
 }
 
+function onSectionHeaderAction() {
+  console.info("Section header action");
+}
+
 const fileTreeNodes: TreeAccordionNode[] = [
   {
     name: "fraud",
@@ -84,6 +92,54 @@ const fileTreeNodes: TreeAccordionNode[] = [
     ],
   },
 ];
+
+const items = ref<EditableListItemModel[]>([
+  { name: "Item 1", icon: "icon-plot", id: generateRandomId() },
+  { name: "Item 2", id: generateRandomId() },
+  { name: "Item 3", icon: "icon-error", id: generateRandomId() },
+  { name: "Item 4", icon: "icon-error", id: generateRandomId() },
+  { name: "Item 5", icon: "icon-error", id: generateRandomId() },
+  { name: "Item 6", icon: "icon-error", id: generateRandomId() },
+  { name: "Item 7", icon: "icon-error", id: generateRandomId() },
+  { name: "Item 8", icon: "icon-error", id: generateRandomId() },
+  { name: "Item 9", icon: "icon-error", id: generateRandomId() },
+  { name: "Item 10", icon: "icon-error", id: generateRandomId() },
+  { name: "Item 11", icon: "icon-error", id: generateRandomId() },
+  { name: "Item 12", icon: "icon-error", id: generateRandomId() },
+]);
+
+function onAddToEditableListAction() {
+  items.value.unshift({
+    name: "Unnamed",
+    icon: "icon-plot",
+    isNamed: false,
+    id: generateRandomId(),
+  });
+}
+
+function onEditableListAction(action: string, item: EditableListItemModel) {
+  console.info("Add to editable list action", action, item);
+  switch (action) {
+    case "rename":
+      item.isNamed = false;
+      break;
+    case "duplicate": {
+      const index = items.value.indexOf(item) ?? 0;
+      items.value.splice(index + 1, 0, {
+        name: "Unnamed",
+        icon: "icon-plot",
+        isNamed: false,
+        id: generateRandomId(),
+      });
+      break;
+    }
+    case "delete":
+      items.value.splice(items.value.indexOf(item), 1);
+      break;
+  }
+}
+
+const lastSelectedItem = ref<string | null>(null);
 </script>
 
 <template>
@@ -100,7 +156,10 @@ const fileTreeNodes: TreeAccordionNode[] = [
         'toast',
         'inputs',
         'modals',
+        'section header',
         'trees',
+        'editable list',
+        'icons',
       ]"
     >
       <TabsItem :value="0">
@@ -235,6 +294,19 @@ const fileTreeNodes: TreeAccordionNode[] = [
             </DropdownButton>
             dropdown button with icon
           </p>
+          <hr />
+          <p>
+            <SimpleButton label="hey ho" :is-inline="true" />
+            inline button with extra classes
+          </p>
+          <p>
+            <DropdownButton icon="icon-pie-chart" label="red-button" :is-inline="true">
+              <DropdownButtonItem label="hey ho" icon="icon-pie-chart" />
+              <DropdownButtonItem icon="icon-pie-chart" />
+              <DropdownButtonItem label="hey ho" />
+            </DropdownButton>
+            inline dropdown button with icon and extra classes
+          </p>
         </div>
       </TabsItem>
       <TabsItem :value="6">
@@ -275,7 +347,71 @@ const fileTreeNodes: TreeAccordionNode[] = [
         <SimpleButton label="Show prompt modal" @click="showPromptModal" />
       </TabsItem>
       <TabsItem :value="9">
+        <SectionHeader title="Section header" />
+        <SectionHeader
+          title="Section header with action"
+          action="icon-magnifying-glass"
+          @action="onSectionHeaderAction"
+        />
+      </TabsItem>
+      <TabsItem :value="10">
         <TreeAccordion :nodes="fileTreeNodes" />
+      </TabsItem>
+      <TabsItem :value="11" class="editable-list-tab">
+        <div class="header">
+          Editable List as 2 way data binding... item list is:
+          <ul>
+            <li v-for="item in items" :key="item.name">{{ item.name }} (id: {{ item.id }})</li>
+          </ul>
+          It also emit an event when an item is selected. Last selected item: {{ lastSelectedItem }}
+        </div>
+        <div class="editable-list-container">
+          <SectionHeader
+            title="Editable list"
+            action-icon="icon-plus-circle"
+            @action="onAddToEditableListAction"
+          />
+          <Simplebar class="editable-list-container-scrollable">
+            <EditableList
+              v-model:items="items"
+              :actions="[
+                { label: 'rename', emitPayload: 'rename', icon: 'icon-edit' },
+                { label: 'duplicate', emitPayload: 'duplicate', icon: 'icon-copy' },
+                { label: 'delete', emitPayload: 'delete', icon: 'icon-trash' },
+              ]"
+              @action="onEditableListAction"
+              @select="lastSelectedItem = $event"
+            />
+          </Simplebar>
+        </div>
+      </TabsItem>
+      <TabsItem :value="12">
+        <div class="icons">
+          <div>icon-trash <span class="icon-trash"></span></div>
+          <div>icon-more <span class="icon-more"></span></div>
+          <div>icon-branch <span class="icon-branch"></span></div>
+          <div>icon-edit <span class="icon-edit"></span></div>
+          <div>icon-copy <span class="icon-copy"></span></div>
+          <div>icon-pill <span class="icon-pill"></span></div>
+          <div>icon-new-document <span class="icon-new-document"></span></div>
+          <div>icon-recent-document <span class="icon-recent-document"></span></div>
+          <div>icon-plus-circle <span class="icon-plus-circle"></span></div>
+          <div>icon-warning <span class="icon-warning"></span></div>
+          <div>icon-info <span class="icon-info"></span></div>
+          <div>icon-error <span class="icon-error"></span></div>
+          <div>icon-success <span class="icon-success"></span></div>
+          <div>icon-search <span class="icon-search"></span></div>
+          <div>icon-maximize <span class="icon-maximize"></span></div>
+          <div>icon-folder <span class="icon-folder"></span></div>
+          <div>icon-plot <span class="icon-plot"></span></div>
+          <div>icon-text <span class="icon-text"></span></div>
+          <div>icon-gift <span class="icon-gift"></span></div>
+          <div>icon-pie-chart <span class="icon-pie-chart"></span></div>
+          <div>icon-chevron-left <span class="icon-chevron-left"></span></div>
+          <div>icon-chevron-down <span class="icon-chevron-down"></span></div>
+          <div>icon-chevron-right <span class="icon-chevron-right"></span></div>
+          <div>icon-chevron-up <span class="icon-chevron-up"></span></div>
+        </div>
       </TabsItem>
     </Tabs>
   </main>
@@ -284,6 +420,7 @@ const fileTreeNodes: TreeAccordionNode[] = [
 <style scoped>
 main {
   padding: 0 5vw;
+  font-size: 12px;
 }
 
 .dataframe {
@@ -313,6 +450,36 @@ main {
 .text-inputs {
   & > p {
     padding: 10px;
+  }
+}
+
+.editable-list-tab {
+  display: grid;
+  padding-top: 10px;
+  grid-template-columns: 1fr 1fr;
+}
+
+.editable-list-container {
+  display: block;
+  width: 33vw;
+  height: 300px;
+
+  & .editable-list-container-scrollable {
+    height: 100%;
+    overflow-y: auto;
+  }
+}
+
+.icons {
+  display: grid;
+  padding-top: 10px;
+  gap: 20px;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+
+  & [class^="icon-"],
+  & [class*=" icon-"] {
+    color: var(--color-primary);
+    font-size: 20px;
   }
 }
 </style>

@@ -13,7 +13,7 @@ from sklearn.ensemble import RandomForestClassifier
 from skore.item import ItemRepository
 from skore.persistence.in_memory_storage import InMemoryStorage
 from skore.project import Project, ProjectLoadError, ProjectPutError, load
-from skore.view.view import LayoutItem, LayoutItemSize, View
+from skore.view.view import View
 from skore.view.view_repository import ViewRepository
 
 
@@ -175,10 +175,7 @@ def test_keys(project):
 
 
 def test_view(project):
-    layout = [
-        LayoutItem(key="key1", size=LayoutItemSize.LARGE),
-        LayoutItem(key="key2", size=LayoutItemSize.SMALL),
-    ]
+    layout = ["key1", "key2"]
 
     view = View(layout=layout)
 
