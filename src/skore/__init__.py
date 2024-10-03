@@ -1,4 +1,4 @@
-"""Provide the Store class for managing information in a data science project."""
+"""Configure logging and global settings."""
 
 import logging
 
@@ -6,8 +6,11 @@ import rich.logging
 
 from skore.project import Project, load
 
+from .utils._show_versions import show_versions
+
 __all__ = [
     "load",
+    "show_versions",
     "Project",
 ]
 
