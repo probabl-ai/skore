@@ -18,15 +18,13 @@ const label = ref<HTMLSpanElement>();
 
 function renameItem(newName: string) {
   const oldName = item.value.name;
-  item.value.isUnnamed = false;
+  item.value.isNamed = true;
   item.value.name = newName;
-  if (item.value.name !== oldName) {
-    emit("rename", oldName, item.value.name, item.value);
-  }
+  emit("rename", oldName, item.value.name, item.value);
 }
-function onItemNameEdited(e: Event) {
+
+function onEnter(e: Event) {
   (e.target as HTMLInputElement).blur();
-  renameItem((e.target as HTMLInputElement).textContent ?? "unnamed");
 }
 
 function focusAndSelect() {
@@ -48,16 +46,16 @@ function onBlur() {
 }
 
 watch(
-  () => item.value.isUnnamed,
-  async (newValue) => {
-    if (newValue === true) {
+  () => item.value.isNamed,
+  async (isNamed) => {
+    if (isNamed === false) {
       await nextTick();
       focusAndSelect();
     }
   }
 );
 onMounted(() => {
-  if (item.value.isUnnamed && label.value) {
+  if (!item.value.isNamed && label.value) {
     focusAndSelect();
   }
 });
@@ -70,8 +68,8 @@ onMounted(() => {
       <span
         class="label"
         ref="label"
-        :contenteditable="item.isUnnamed"
-        @keydown.enter="onItemNameEdited"
+        :contenteditable="!item.isNamed"
+        @keydown.enter="onEnter"
         @blur="onBlur"
       >
         {{ item.name }}

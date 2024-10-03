@@ -4,7 +4,7 @@ import EditableListItem from "@/components/EditableListItem.vue";
 export interface EditableListItemModel {
   name: string;
   icon?: string;
-  isUnnamed?: boolean;
+  isNamed?: boolean;
   id: string;
 }
 

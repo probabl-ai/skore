@@ -19,7 +19,7 @@ const isDropIndicatorVisible = ref(false);
 const editor = ref<HTMLDivElement>();
 const isInFocusMode = ref(false);
 const views = ref<EditableListItemModel[]>([]);
-let unsavedViewsIds: string[] = [];
+let unsavedViewsId: string = "";
 
 async function onShareView() {
   const currentView = projectStore.currentView;
@@ -73,17 +73,17 @@ function onViewSelected(view: string) {
 }
 
 async function onViewRenamed(oldName: string, newName: string, item: EditableListItemModel) {
-  // does the new name already exist?
-  if (views.value.some((view) => view.name === newName)) {
+  const viewAlreadyExists = views.value.filter((view) => view.name === newName).length > 1;
+  if (viewAlreadyExists) {
     toastsStore.addToast(`A view named "${newName}" already exists`, "error");
-    item.isUnnamed = true;
+    item.isNamed = false;
     return;
   }
   // user can rename an existing view
   // and rename a new view that is not known by the backend
-  if (unsavedViewsIds.includes(item.id)) {
+  if (unsavedViewsId == item.id) {
     await projectStore.createView(newName);
-    unsavedViewsIds = unsavedViewsIds.filter((id) => id !== item.id);
+    unsavedViewsId = "";
     toastsStore.addToast("View added successfully", "success");
   } else {
     await projectStore.renameView(oldName, newName);
@@ -95,7 +95,7 @@ async function onViewRenamed(oldName: string, newName: string, item: EditableLis
 async function onViewsListAction(action: string, item: EditableListItemModel) {
   switch (action) {
     case "rename": {
-      item.isUnnamed = true;
+      item.isNamed = false;
       break;
     }
     case "duplicate": {
@@ -104,10 +104,10 @@ async function onViewsListAction(action: string, item: EditableListItemModel) {
       views.value.splice(index + 1, 0, {
         name: newName,
         icon: "icon-new-document",
-        isUnnamed: true,
+        isNamed: false,
         id: generateRandomId(),
       });
-      unsavedViewsIds.push(newName);
+      unsavedViewsId = newName;
       await projectStore.duplicateView(item.name, newName);
       break;
     }
@@ -121,9 +121,12 @@ async function onViewsListAction(action: string, item: EditableListItemModel) {
 }
 
 function onAddView() {
-  const id = generateRandomId();
-  views.value.push({ name: "New view", icon: "icon-new-document", isUnnamed: true, id });
-  unsavedViewsIds.push(id);
+  const hasUnsavedViews = views.value.some((view) => !view.isNamed);
+  if (!hasUnsavedViews) {
+    const id = generateRandomId();
+    views.value.push({ name: "New view", icon: "icon-new-document", isNamed: false, id });
+    unsavedViewsId = id;
+  }
 }
 
 onMounted(async () => {
@@ -131,7 +134,7 @@ onMounted(async () => {
   views.value = Object.keys(projectStore.views).map((key) => ({
     name: key,
     icon: "icon-new-document",
-    isUnnamed: false,
+    isNamed: true,
     id: generateRandomId(),
   }));
 });

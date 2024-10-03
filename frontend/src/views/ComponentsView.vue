@@ -112,7 +112,7 @@ function onAddToEditableListAction() {
   items.value.unshift({
     name: "Unnamed",
     icon: "icon-plot",
-    isUnnamed: true,
+    isNamed: false,
     id: generateRandomId(),
   });
 }
@@ -121,14 +121,14 @@ function onEditableListAction(action: string, item: EditableListItemModel) {
   console.info("Add to editable list action", action, item);
   switch (action) {
     case "rename":
-      item.isUnnamed = true;
+      item.isNamed = false;
       break;
     case "duplicate": {
       const index = items.value.indexOf(item) ?? 0;
       items.value.splice(index + 1, 0, {
         name: "Unnamed",
         icon: "icon-plot",
-        isUnnamed: true,
+        isNamed: false,
         id: generateRandomId(),
       });
       break;
