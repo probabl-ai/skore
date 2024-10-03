@@ -78,6 +78,17 @@ Our custom set of rules is in [commitlint.config.js](./commitlint.config.js).
 
 Generally the description of a commit should start with a verb in the imperative voice, so that it would properly complete the sentence: "When applied, this commit will [...]".
 
+### Contributing documentation
+
+When writing documentation, whether it be online, docstrings or help messages in the CLI and in the UI, we strive to follow some conventions that are listed below. These might be updated as time goes on.
+
+1. Argument descriptions should be written so that the following sentence makes sense: `Argument <argument> designates <argument description>`
+  1. Argument descriptions start with lower case, and do not end with a period or other punctuation
+  2. Argument descriptions start with "the" where relevant, and "whether" for booleans
+2. Text is written in US english ("visualize" rather than "visualise")
+3. In the CLI, positional arguments are written in snake case (`snake_case`), keyword arguments in kebab case (`kebab-case`)
+4. When there is a default argument, it should be shown in the help message, typically with `(default: <default value>)` at the end of the message
+
 ## Help for common issues
 
 ### `make build-frontend` doesn't work!
