@@ -4,9 +4,9 @@ Utility methods to print system info for debugging.
 adapted from :func:`sklearn.show_versions`
 """
 
+import importlib
 import platform
 import sys
-from pathlib import Path
 
 
 def _get_sys_info():
@@ -43,14 +43,11 @@ def _get_deps_info():
     """
     from importlib.metadata import PackageNotFoundError, version
 
-    import tomllib
-
     deps = ["pip", "setuptools"]
 
-    pyproject_path = Path(__file__).parent.parent.parent.parent / "pyproject.toml"
-    with open(pyproject_path, "rb") as f:
-        data = tomllib.load(f)
-        deps += data["project"]["dependencies"]
+    requirements = importlib.metadata.requires("skore")
+    for requirement in filter(lambda r: "; extra" not in r, requirements):
+        deps.append(requirement)
 
     deps_info = {
         "skore": version("skore"),
