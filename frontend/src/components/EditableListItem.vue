@@ -75,7 +75,7 @@ onMounted(() => {
         {{ item.name }}
       </span>
     </div>
-    <DropdownButton icon="icon-more" :is-inline="true" align="right">
+    <DropdownButton icon="icon-more" :is-inline="true" align="right" v-if="item.isNamed">
       <DropdownButtonItem
         v-for="action in props.actions"
         :key="action.emitPayload"
