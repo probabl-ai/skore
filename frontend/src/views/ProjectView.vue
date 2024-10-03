@@ -36,13 +36,19 @@ function onFocusMode() {
   isInFocusMode.value = !isInFocusMode.value;
 }
 
+function displayItem(key: string) {
+  if (projectStore.currentView) {
+    projectStore.displayKey(projectStore.currentView, key);
+  } else {
+    toastsStore.addToast("No view selected", "error");
+  }
+}
+
 function onItemDrop(event: DragEvent) {
   isDropIndicatorVisible.value = false;
   if (event.dataTransfer) {
     const key = event.dataTransfer.getData("key");
-    if (projectStore.currentView) {
-      projectStore.displayKey(projectStore.currentView, key);
-    }
+    displayItem(key);
   }
 }
 
@@ -59,9 +65,7 @@ function onDragLeave(event: DragEvent) {
 }
 
 function onItemSelected(key: string) {
-  if (projectStore.currentView) {
-    projectStore.displayKey(projectStore.currentView, key);
-  }
+  displayItem(key);
 }
 
 function onViewSelected(view: string) {
