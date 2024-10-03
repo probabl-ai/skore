@@ -31,9 +31,9 @@ jobs:
         with:
           node-version: 20
 
-      - name: Build frontend and share library
+      - name: Build skore-ui and share library
         shell: bash
-        run: make build-frontend
+        run: make build-skore-ui
 
       - name: Override VERSION.txt with tag
         run: echo "${GITHUB_REF_NAME}" > VERSION.txt
