@@ -43,7 +43,7 @@ filelock==3.16.1
     # via
     #   huggingface-hub
     #   virtualenv
-fonttools==4.53.1
+fonttools==4.54.1
     # via matplotlib
 fsspec==2024.9.0
     # via huggingface-hub
