@@ -41,7 +41,7 @@ function onRename(oldName: string, newName: string, item: EditableListItemModel)
   <div class="editable-list">
     <EditableListItem
       v-for="(item, index) in items"
-      :key="item.name"
+      :key="item.id"
       v-model="items[index]"
       :actions="props.actions"
       @action="onAction($event, item)"

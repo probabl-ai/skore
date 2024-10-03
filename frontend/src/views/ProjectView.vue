@@ -73,11 +73,18 @@ function onViewSelected(view: string) {
 }
 
 async function onViewRenamed(oldName: string, newName: string, item: EditableListItemModel) {
+  // does the new name already exist?
+  if (views.value.some((view) => view.name === newName)) {
+    toastsStore.addToast(`A view named "${newName}" already exists`, "error");
+    item.isUnnamed = true;
+    return;
+  }
   // user can rename an existing view
   // and rename a new view that is not known by the backend
   if (unsavedViewsIds.includes(item.id)) {
     await projectStore.createView(newName);
     unsavedViewsIds = unsavedViewsIds.filter((id) => id !== item.id);
+    toastsStore.addToast("View added successfully", "success");
   } else {
     await projectStore.renameView(oldName, newName);
   }
@@ -117,7 +124,6 @@ function onAddView() {
   const id = generateRandomId();
   views.value.push({ name: "New view", icon: "icon-new-document", isUnnamed: true, id });
   unsavedViewsIds.push(id);
-  toastsStore.addToast("View added successfully", "success");
 }
 
 onMounted(async () => {

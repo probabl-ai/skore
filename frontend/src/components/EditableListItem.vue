@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { defineProps, onMounted, ref } from "vue";
+import { defineProps, nextTick, onMounted, ref, watch } from "vue";
 
 import DropdownButton from "@/components/DropdownButton.vue";
 import DropdownButtonItem from "@/components/DropdownButtonItem.vue";
@@ -16,18 +16,21 @@ const emit = defineEmits<{
 const item = defineModel<EditableListItemModel>({ required: true });
 const label = ref<HTMLSpanElement>();
 
-function onItemNameEdited(e: Event) {
-  (e.target as HTMLInputElement).blur();
+function renameItem(newName: string) {
   const oldName = item.value.name;
   item.value.isUnnamed = false;
-  item.value.name = (e.target as HTMLSpanElement).textContent ?? "unnamed";
+  item.value.name = newName;
   if (item.value.name !== oldName) {
     emit("rename", oldName, item.value.name, item.value);
   }
 }
+function onItemNameEdited(e: Event) {
+  (e.target as HTMLInputElement).blur();
+  renameItem((e.target as HTMLInputElement).textContent ?? "unnamed");
+}
 
-onMounted(() => {
-  if (item.value.isUnnamed && label.value) {
+function focusAndSelect() {
+  if (label.value) {
     label.value.focus();
 
     const selection = window.getSelection();
@@ -37,6 +40,25 @@ onMounted(() => {
       selection.removeAllRanges();
       selection.addRange(range);
     }
+  }
+}
+
+function onBlur() {
+  renameItem(label.value?.textContent ?? "unnamed");
+}
+
+watch(
+  () => item.value.isUnnamed,
+  async (newValue) => {
+    if (newValue === true) {
+      await nextTick();
+      focusAndSelect();
+    }
+  }
+);
+onMounted(() => {
+  if (item.value.isUnnamed && label.value) {
+    focusAndSelect();
   }
 });
 </script>
@@ -50,6 +72,7 @@ onMounted(() => {
         ref="label"
         :contenteditable="item.isUnnamed"
         @keydown.enter="onItemNameEdited"
+        @blur="onBlur"
       >
         {{ item.name }}
       </span>
