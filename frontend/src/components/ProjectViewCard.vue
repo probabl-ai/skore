@@ -1,17 +1,14 @@
 <script setup lang="ts">
-import type { KeyLayoutSize, KeyMoveDirection } from "@/models";
+import DropdownButton from "@/components/DropdownButton.vue";
+import DropdownButtonItem from "@/components/DropdownButtonItem.vue";
 
 const props = defineProps<{
   title: string;
   subtitle?: string;
-  showButtons: boolean;
-  canMoveUp: boolean;
-  canMoveDown: boolean;
+  showActions: boolean;
 }>();
 
 const emit = defineEmits<{
-  layoutChanged: [size: KeyLayoutSize];
-  positionChanged: [direction: KeyMoveDirection];
   cardRemoved: [];
 }>();
 </script>
@@ -25,23 +22,14 @@ const emit = defineEmits<{
           {{ props.subtitle }}
         </div>
       </div>
-      <div v-if="props.showButtons" class="buttons">
-        <button @click="emit('layoutChanged', 'small')">
-          <span class="icon-grid-layout-small"></span>
-        </button>
-        <button @click="emit('layoutChanged', 'medium')">
-          <span class="icon-grid-layout-medium"></span>
-        </button>
-        <button @click="emit('layoutChanged', 'large')">
-          <span class="icon-grid-layout-large"></span>
-        </button>
-        <button v-if="props.canMoveUp" @click="emit('positionChanged', 'up')">
-          <span class="icon-up"></span>
-        </button>
-        <button v-if="props.canMoveDown" @click="emit('positionChanged', 'down')">
-          <span class="icon-down"></span>
-        </button>
-        <button @click="emit('cardRemoved')">x</button>
+      <div v-if="props.showActions" class="actions">
+        <DropdownButton icon="icon-more" align="right">
+          <DropdownButtonItem
+            label="Remove from view"
+            icon="icon-trash"
+            @click="emit('cardRemoved')"
+          />
+        </DropdownButton>
       </div>
     </div>
     <hr />
@@ -101,33 +89,9 @@ const emit = defineEmits<{
       }
     }
 
-    & .buttons {
-      display: flex;
-      gap: var(--spacing-gap-small);
+    & .actions {
       opacity: 0;
       transition: opacity var(--transition-duration) var(--transition-easing);
-
-      & button {
-        width: 16.5px;
-        height: 16.5px;
-        padding: 0;
-        border: none;
-        border-radius: var(--border-radius);
-        margin: 0;
-        background-color: transparent;
-        color: var(--text-color-highlight);
-        font-size: 8px;
-        line-height: 8px;
-        text-align: center;
-        transition:
-          background-color var(--transition-duration) var(--transition-easing),
-          color var(--transition-duration) var(--transition-easing);
-
-        &:hover {
-          background-color: var(--text-color-title);
-          color: var(--button-color);
-        }
-      }
     }
   }
 
@@ -138,10 +102,7 @@ const emit = defineEmits<{
   }
 
   &:hover {
-    border: solid 1px var(--border-color-elevated);
-    background-color: var(--background-color-elevated);
-
-    & .header .buttons {
+    & .header .actions {
       opacity: 1;
     }
   }

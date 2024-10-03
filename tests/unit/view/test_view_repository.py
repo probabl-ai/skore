@@ -1,6 +1,6 @@
 import pytest
 from skore.persistence.in_memory_storage import InMemoryStorage
-from skore.view.view import LayoutItem, LayoutItemSize, View
+from skore.view.view import View
 from skore.view.view_repository import ViewRepository
 
 
@@ -10,12 +10,7 @@ def view_repository():
 
 
 def test_get(view_repository):
-    view = View(
-        layout=[
-            LayoutItem(key="key1", size=LayoutItemSize.LARGE),
-            LayoutItem(key="key2", size=LayoutItemSize.SMALL),
-        ]
-    )
+    view = View(layout=["key1", "key2"])
 
     view_repository.put_view("view", view)
 

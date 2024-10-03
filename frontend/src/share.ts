@@ -5,14 +5,15 @@ import { createPinia } from "pinia";
 import { createApp } from "vue";
 
 import App from "@/ShareApp.vue";
-import { useReportStore } from "@/stores/report";
+import { useProjectStore } from "@/stores/project";
 
-export default async function share() {
+export default async function share(selectedView: string) {
   const app = createApp(App);
   app.use(createPinia());
   app.mount("#app");
 
   const m = JSON.parse(document.getElementById("project-data")?.innerText || "{}");
-  const reportsStore = useReportStore();
-  await reportsStore.setReport(m);
+  const projectStore = useProjectStore();
+  await projectStore.setProject(m);
+  projectStore.currentView = selectedView;
 }

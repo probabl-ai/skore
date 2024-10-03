@@ -6,6 +6,7 @@ interface ButtonProps {
   label?: string;
   icon?: string;
   isPrimary?: boolean;
+  isInline?: boolean;
 }
 
 const props = withDefaults(defineProps<ButtonProps>(), { isPrimary: false });
@@ -25,7 +26,7 @@ onBeforeMount(() => {
 <template>
   <button
     class="button"
-    :class="props.isPrimary ? 'primary' : 'regular'"
+    :class="[props.isPrimary ? 'primary' : 'regular', props.isInline ? 'inline' : '']"
     @mouseover="randomizeBackground"
     :style="`
       --background-offset-x: ${randomBackgroundOffsetX}px;
@@ -77,6 +78,12 @@ onBeforeMount(() => {
     color: var(--text-color-normal);
     font-size: var(--text-size-small);
     font-weight: var(--text-weight-normal);
+  }
+
+  &.inline {
+    border: none;
+    background: none;
+    box-shadow: none;
   }
 
   .icon:has(+ .label) {
