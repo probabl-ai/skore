@@ -5,13 +5,19 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    commit-message:
+      prefix: "chore(github-actions dependencies):"
 
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
       interval: "weekly"
+    commit-message:
+      prefix: "chore(npm dependencies):"
 
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
       interval: "weekly"
+    commit-message:
+      prefix: "chore(pip dependencies):"
