@@ -117,10 +117,10 @@ project.put("my_int_2", 10)
 project.delete_item("my_int_2")
 
 # %% [markdown]
-# You can use `project.list_keys` to display all the keys in your project:
+# You can use `project.list_item_keys` to display all the keys in your project:
 
 # %%
-project.list_keys()
+project.list_item_keys()
 
 # %% [markdown]
 # ## Storing a string
