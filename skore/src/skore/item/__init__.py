@@ -5,6 +5,7 @@ from __future__ import annotations
 from contextlib import suppress
 from typing import Any
 
+from skore.item.cross_validate_item import CrossValidateItem
 from skore.item.item import Item
 from skore.item.item_repository import ItemRepository
 from skore.item.media_item import MediaItem
@@ -23,6 +24,7 @@ def object_to_item(object: Any) -> Item:
         PandasSeriesItem,
         NumpyArrayItem,
         SklearnBaseEstimatorItem,
+        CrossValidateItem,
         MediaItem,
     ):
         with suppress(ImportError, TypeError):
