@@ -67,3 +67,7 @@ class Item(ABC):
         cls_parameters = inspect.signature(cls).parameters
 
         return {parameter: getattr(self, parameter) for parameter in cls_parameters}
+
+    def __repr__(self) -> str:
+        """Represent the item."""
+        return f"{self.__class__.__name__}(...)"
