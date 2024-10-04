@@ -35,6 +35,59 @@ def _find_ml_task(
         return "regression"
 
     return "classification"
+
+
+def _expand_scorers(scorers, scorers_to_add: list[str]):
+    """Expand `scorers` with `scorers_to_add`.
+
+    Parameters
+    ----------
+    scorers : any type that is accepted by scikit-learn's cross_validate
+        The scorer(s) to expand.
+    scorers_to_add : list[str]
+        The scorers to be added
+
+    Returns
+    -------
+    new_scorers : dict[str, str | None]
+        The scorers after adding `scorers_to_add`.
+    added_scorers : list[str]
+        The scorers that were actually added (i.e. the ones that were not already
+        in `scorers`).
+    """
+    added_scorers = []
+
+    if scorers is None:
+        new_scorers = {"score": None}
+        for s in scorers_to_add:
+            new_scorers[s] = s
+            added_scorers.append(s)
+    elif isinstance(scorers, str):
+        new_scorers = {"score": scorers}
+        for s in scorers_to_add:
+            if s == scorers:
+                continue
+            new_scorers[s] = s
+            added_scorers.append(s)
+    elif isinstance(scorers, dict):
+        new_scorers = scorers.copy()
+        for s in scorers_to_add:
+            if s in scorers:
+                continue
+            new_scorers[s] = s
+            added_scorers.append(s)
+    elif isinstance(scorers, list):
+        new_scorers = scorers.copy()
+        for s in scorers_to_add:
+            if s in scorers:
+                continue
+            new_scorers.append(s)
+            added_scorers.append(s)
+    elif isinstance(scorers, tuple):
+        scorers = list(scorers)
+        new_scorers, added_scorers = _expand_scorers(scorers, scorers_to_add)
+
+    return new_scorers, added_scorers
 def cross_validate(*args, **kwargs) -> CrossValidateItem:
     """Evaluate estimator by cross-validation and output UI-friendly object.
 
@@ -66,8 +119,6 @@ def cross_validate(*args, **kwargs) -> CrossValidateItem:
     """
     import sklearn.model_selection
 
-    cv_results = sklearn.model_selection.cross_validate(*args, **kwargs)
-    return CrossValidateItem.factory(cv_results)
     # Extend scorers with other relevant scorers
 
     # Recover target
@@ -85,3 +136,20 @@ def cross_validate(*args, **kwargs) -> CrossValidateItem:
         scorers_to_add = ["roc_auc", "neg_brier_score", "recall", "precision"]
     elif ml_task == "unknown":
         scorers_to_add = []
+
+    try:
+        scorers = kwargs.pop("scoring")
+    except KeyError:
+        scorers = None
+    new_scorers, added_scorers = _expand_scorers(scorers, scorers_to_add)
+
+    # store test_score in skore associated with the following metadata to recognize the run:
+    # estimator (name & parameters)
+    # hash of y (if present)
+    # to recognize df_train, the following set {nb_col, nb_rows, hash}. This is suboptimal, but good for an MVP.
+    # the plot (1) is displayed in the notebook if the code is ran in notebook
+    # the plot (1) is created in skore UI
+
+    cv_results = sklearn.model_selection.cross_validate(
+        *args, **kwargs, scoring=new_scorers
+    )
