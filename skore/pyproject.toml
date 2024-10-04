@@ -3,6 +3,7 @@ name = "skore"
 description = "Tooling and assistance for data scientists to \"Own Your Data Science\""
 dynamic = ["version"]
 readme = "README.md"
+requires-python = ">=3.11"
 maintainers = [
     {name = "skore developers", email="skore@signal.probabl.ai"},
 ]
