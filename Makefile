@@ -6,11 +6,17 @@ pip-compile:
 	python -m piptools compile --extra=tools --output-file=skore/requirements-tools.txt skore/pyproject.toml
 
 install-skore:
+	cp LICENSE skore/LICENSE
+	cp README.md skore/README.md
+
 	python -m pip install \
 		-e skore/ \
 		-r skore/requirements.txt \
 		-r skore/requirements-test.txt \
 		-r skore/requirements-tools.txt
+
+	rm skore/LICENSE
+	rm skore/README.md
 
 	pre-commit install
 

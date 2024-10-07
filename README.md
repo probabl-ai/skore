@@ -1,17 +1,16 @@
 # skore
 
-![lint](https://github.com/probabl-ai/skore/actions/workflows/lint.yml/badge.svg)
-![tests](https://github.com/probabl-ai/skore/actions/workflows/backend.yml/badge.svg)
-![UI tests](https://github.com/probabl-ai/skore/actions/workflows/skore-ui.yml/badge.svg)
+![ci](https://github.com/probabl-ai/skore/actions/workflows/ci.yml/badge.svg)
+![python](https://img.shields.io/badge/python-3.11%20|%203.12-blue?style=flat&logo=python)
 
 ## Installation
 
 For now, the only supported method to use skore is from source.
-Follow the instructions in [CONTRIBUTING.md](/CONTRIBUTING.md#quick-start) to install dependencies and start the UI.
+Follow the instructions in [CONTRIBUTING.md](https://github.com/probabl-ai/skore/blob/main/CONTRIBUTING.md#quick-start) to install dependencies and start the UI.
 
 ## Quick start
 
-For a complete introductory example, see our [basic usage notebook](/examples/basic_usage.ipynb). The resulting skore report has been exported to [this HTML file](https://gist.github.com/augustebaum/6b21dbd7f7d5a584fbf2c1956692574e): download it and open it in your browser to visualize it.
+For a complete introductory example, see our [basic usage notebook](https://github.com/probabl-ai/skore/blob/main/examples/basic_usage.ipynb). The resulting skore report has been exported to [this HTML file](https://gist.github.com/augustebaum/6b21dbd7f7d5a584fbf2c1956692574e): download it and open it in your browser to visualize it.
 
 In your shell, run the following to create a project file `project.skore` (the default) in your current working directory:
 ```sh
@@ -76,4 +75,4 @@ In the future, you will be able to:
 
 ## Contributing
 
-See [CONTRIBUTING.md](/CONTRIBUTING.md) for more information and to contribute to the evolution of this library.
+See [CONTRIBUTING.md](https://github.com/probabl-ai/skore/blob/main/CONTRIBUTING.md) for more information and to contribute to the evolution of this library.
