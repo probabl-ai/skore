@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.1
+#       jupytext_version: 1.16.4
 #   kernelspec:
 #     display_name: .venv
 #     language: python
@@ -34,6 +34,7 @@ import io
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import plotly.express as px
 import PIL
 
 from sklearn.datasets import load_diabetes
@@ -47,33 +48,29 @@ from skore.item import MediaItem
 # %% [markdown]
 # # Initialize and use a Project
 #
-# To initialize a Project, we need to give it a name, or equivalently a file path:
-
-# %%
-# Create a project at path './project.skore'
-# !python -m skore create 'project.skore'
-
-# %% [markdown]
+# To initialize a Project, we need to give it a name, or equivalently a file path. In your shell, run:
+# ```bash
+# $ python -m skore create 'project.skore'
+# ```
 # This will create a Skore project directory named "project.skore" in the current directory.
-
-# %% [markdown]
-# Now that you have created the `project.skore` folder (even though nothing has yet been stored), you can run the UI (in your project root i.e. where `project.skore` is):
+#
+# Now that you have created the `project.skore` folder (even though nothing has yet been stored), you can run the UI (in your project root i.e. where `project.skore` is) from your shell:
 # ```python3
 # $ python -m skore launch project.skore
 # ```
 #
-# >*Note*: If you already had some data in your `project.skore` directory from a previous run -- you can check for that in your shell by using:
+# >*Note*: If you already had a `project.skore` directory from a previous run -- you can check for that in your shell by using:
 # >```python3
 # >$ ls
 # >```
-# >and if you no longer need its objects, we recommend deleting this folder by running `rm` in your shell:
+# >and if you no longer need it, we recommend deleting this folder by running `rm` in your shell:
 # >```python3
 # >$ rm -r project.skore
 # >```
 # >This deletion needs to be done before the cells above: before initializing the store and before launching the UI!
 
 # %% [markdown]
-# Now that the project file exists, we can load it in our script so that we can read from and write to it:
+# Now that the project file exists, we can load it in our notebook so that we can read from and write to it:
 
 # %%
 project = load("project.skore")
@@ -213,9 +210,11 @@ project.put("my_df", my_df)
 
 # %% [markdown]
 # ## Data visualization
+#
+# Note that, in the dashboard, the interactivity of plots is supported, for example for `altair` and `plotly`.
 
 # %% [markdown]
-# Matplotlib Figures:
+# Matplotlib figures:
 
 # %%
 x = np.linspace(0, 2, 100)
@@ -233,7 +232,7 @@ plt.show()
 project.put("my_figure", fig)
 
 # %% [markdown]
-# Altair Charts:
+# Altair charts:
 
 # %%
 num_points = 100
@@ -241,15 +240,24 @@ df_plot = pd.DataFrame(
     {"x": np.random.randn(num_points), "y": np.random.randn(num_points)}
 )
 
-my_chart = (
+my_altair_chart = (
     alt.Chart(df_plot)
     .mark_circle()
     .encode(x="x", y="y", tooltip=["x", "y"])
     .interactive()
     .properties(title="My title")
 )
+my_altair_chart.show()
 
-project.put("my_chart", my_chart)
+project.put("my_altair_chart", my_altair_chart)
+
+# %% [markdown]
+# Plotly figures:
+
+# %%
+my_plotly_fig = px.bar(x=["a", "b", "c"], y=[1, 3, 2])
+my_plotly_fig.show()
+project.put("my_plotly_fig", my_plotly_fig)
 
 # %% [markdown]
 # PIL images:
@@ -357,6 +365,3 @@ project.put_item(
         media_type="text/html",
     ),
 )
-
-# %%
-project.put("my_chart_2", my_chart)
