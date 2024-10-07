@@ -6,7 +6,7 @@ jobs:
   changes:
     runs-on: ubuntu-latest
     outputs:
-      backend: ${{ steps.filter.outputs.backend }}
+      skore: ${{ steps.filter.outputs.skore }}
       skore-ui: ${{ steps.filter.outputs.skore-ui }}
     permissions:
       pull-requests: read
@@ -15,12 +15,12 @@ jobs:
         id: filter
         with:
           filters: |
-            backend:
-              - 'src/**'
-              - 'tests/**'
-              - 'pyproject.toml'
-              - 'requirements*.txt'
-              - '.github/workflows/backend.yml'
+            skore:
+              - 'skore/src/**'
+              - 'skore/tests/**'
+              - 'skore/pyproject.toml'
+              - 'skore/requirements*.txt'
+              - '.github/workflows/skore.yml'
             skore-ui:
               - 'skore-ui/**'
               - '.github/workflows/skore-ui.yml'
@@ -30,10 +30,10 @@ jobs:
     permissions:
       contents: read
 
-  lint-and-test-backend:
+  lint-and-test-skore:
     needs: [lint-all-files, changes]
-    if: ${{ needs.changes.outputs.backend == 'true' }}
-    uses: ./.github/workflows/backend.yml
+    if: ${{ needs.changes.outputs.skore == 'true' }}
+    uses: ./.github/workflows/skore.yml
     permissions:
       contents: read
 
@@ -48,7 +48,7 @@ jobs:
   ci-all-green:
     needs:
       - lint-all-files
-      - lint-and-test-backend
+      - lint-and-test-skore
       - lint-and-test-skore-ui
     if: ${{ always() }}
     runs-on: Ubuntu-latest
