@@ -1,8 +1,7 @@
 # skore
 
-![lint](https://github.com/probabl-ai/skore/actions/workflows/lint.yml/badge.svg)
-![tests](https://github.com/probabl-ai/skore/actions/workflows/backend.yml/badge.svg)
-![UI tests](https://github.com/probabl-ai/skore/actions/workflows/skore-ui.yml/badge.svg)
+![ci](https://github.com/probabl-ai/skore/actions/workflows/ci.yml/badge.svg)
+![python](https://img.shields.io/badge/python-3.11%20|%203.12-blue?style=flat&logo=python)
 
 ## Installation
 
