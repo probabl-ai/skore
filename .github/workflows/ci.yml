@@ -1,0 +1,58 @@
+name: CI
+
+on: [pull_request]
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      skore: ${{ steps.filter.outputs.skore }}
+      skore-ui: ${{ steps.filter.outputs.skore-ui }}
+    permissions:
+      pull-requests: read
+    steps:
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            skore:
+              - 'skore/src/**'
+              - 'skore/tests/**'
+              - 'skore/pyproject.toml'
+              - 'skore/requirements*.txt'
+              - '.github/workflows/skore.yml'
+            skore-ui:
+              - 'skore-ui/**'
+              - '.github/workflows/skore-ui.yml'
+
+  lint-all-files:
+    uses: ./.github/workflows/lint.yml
+    permissions:
+      contents: read
+
+  lint-and-test-skore:
+    needs: [lint-all-files, changes]
+    if: ${{ needs.changes.outputs.skore == 'true' }}
+    uses: ./.github/workflows/skore.yml
+    permissions:
+      contents: read
+
+  lint-and-test-skore-ui:
+    needs: [lint-all-files, changes]
+    if: ${{ needs.changes.outputs.skore-ui == 'true' }}
+    uses: ./.github/workflows/skore-ui.yml
+    permissions:
+      contents: read
+      pull-requests: write
+
+  ci-all-green:
+    needs:
+      - lint-all-files
+      - lint-and-test-skore
+      - lint-and-test-skore-ui
+    if: ${{ always() }}
+    runs-on: Ubuntu-latest
+    steps:
+      - shell: bash
+        run: |
+          [[  ${{ contains(needs.*.result, 'failure') }} = false ]]

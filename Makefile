@@ -1,47 +1,37 @@
 SKORE_ROOT ?= ".datamander"
 
 pip-compile:
-	pip-compile --output-file=requirements.txt pyproject.toml
-	pip-compile --extra=test --output-file=requirements-test.txt pyproject.toml
-	pip-compile --extra=tools --output-file=requirements-tools.txt pyproject.toml
+	python -m piptools compile --output-file=skore/requirements.txt skore/pyproject.toml
+	python -m piptools compile --extra=test --output-file=skore/requirements-test.txt skore/pyproject.toml
+	python -m piptools compile --extra=tools --output-file=skore/requirements-tools.txt skore/pyproject.toml
 
-install:
+install-skore:
 	python -m pip install \
-		-e . \
-		-r requirements.txt \
-		-r requirements-test.txt \
-		-r requirements-tools.txt
+		-e skore/ \
+		-r skore/requirements.txt \
+		-r skore/requirements-test.txt \
+		-r skore/requirements-tools.txt
+
 	pre-commit install
 
-check-wip:
-	pre-commit run --all-files
-	python -m pytest tests
+build-skore-ui:
+	# cleanup
+	rm -rf skore-ui/dist
+	rm -rf skore/src/skore/ui/static
+	# build
+	( \
+		cd skore-ui; \
+		npm install; \
+		npm run build; \
+		npm run build:lib -- --emptyOutDir false; \
+	)
+	# move
+	mv skore-ui/dist/ skore/src/skore/ui/static
 
-serve-api:
+serve-skore-ui:
 	SKORE_ROOT=$(SKORE_ROOT) python -m uvicorn \
 		--factory skore.ui.app:create_app \
-		--reload --reload-dir ./src \
+		--reload --reload-dir skore/src \
 		--host 0.0.0.0 \
 		--port 22140 \
 		--timeout-graceful-shutdown 0
-
-serve-ui:
-	SKORE_ROOT=$(SKORE_ROOT) python -m uvicorn \
-		--factory skore.ui.app:create_app \
-		--reload --reload-dir ./src \
-		--host 0.0.0.0 \
-		--port 22140 \
-		--timeout-graceful-shutdown 0
-
-build-frontend:
-	# build the SPA
-	cd frontend && npm install
-	cd frontend && npm run build
-	# empty app static folder
-	rm -rf src/skore/ui/static
-	cp -a frontend/dist/. src/skore/ui/static
-	# build the sharing library
-	cd frontend && npm run build:lib
-	cp -a frontend/dist/. src/skore/ui/static
-	# clean up
-	rm -rf frontend/dist

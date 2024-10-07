@@ -31,12 +31,12 @@ jobs:
         with:
           node-version: 20
 
-      - name: Build frontend and share library
+      - name: Build skore-ui and share library
         shell: bash
-        run: make build-frontend
+        run: make build-skore-ui
 
       - name: Override VERSION.txt with tag
-        run: echo "${GITHUB_REF_NAME}" > VERSION.txt
+        run: echo "${GITHUB_REF_NAME}" > skore/VERSION.txt
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
@@ -45,6 +45,10 @@ jobs:
 
       - name: Build package distributions
         run: |
+          cp --remove-destination LICENSE skore/LICENSE
+          cp --remove-destination README.md skore/README.md
+          cd skore
+
           python -m pip install build
           python -m build
 
@@ -52,13 +56,13 @@ jobs:
         continue-on-error: true
         run: |
           python -m pip install twine
-          python -m twine check dist/*
+          python -m twine check skore/dist/*
 
       - name: Upload package distributions
         uses: actions/upload-artifact@v4
         with:
           name: python-package-distributions
-          path: dist/
+          path: skore/dist/
 
   publish:
     name: Publish package distributions to TestPyPI using trusted publisher

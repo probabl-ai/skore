@@ -1,0 +1,114 @@
+/*
+  We try to follow a naming structure of our variables.
+
+  `--component-property-variant-kind-modifier`
+
+  - component: the domain where this variable is applied (text color, transitions, ...)
+  - property: the CSS properties related to this variable
+  - variant: where this apply, is it an error, a success, an elevation, ... ?
+  - kind: is it small, large, high, higher, ... ?
+  - modifier: is it hover, visited, ... ?
+*/
+
+:root {
+  /* typography */
+  --text-color-title: var(--color-primary);
+  --text-size-small: 10px;
+  --text-size-normal: 12px;
+  --text-size-large: 16px;
+  --text-size-highlight: 14px;
+  --text-size-title: 14px;
+  --text-weight-normal: 300;
+  --text-weight-highlight: 400;
+  --text-weight-title: 400;
+
+  /* buttons */
+  --button-background: var(--color-primary);
+
+  /* spacings */
+  --spacing-padding-large: 24px;
+  --spacing-padding-normal: 16px;
+  --spacing-padding-small: 8px;
+  --spacing-gap-small: 5px;
+  --spacing-gap-normal: 10px;
+  --spacing-gap-large: 20px;
+
+  /* borders */
+  --border-width-normal: 1px;
+  --border-width-small: 0.34px;
+  --border-radius: 4px;
+
+  /* misc */
+  --transition-duration: 0.3s;
+  --transition-easing: ease;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-primary: #f08b30;
+    --color-secondary: #2329ff;
+
+    /* typography */
+    --text-color-normal: #a2a2a2;
+    --text-color-highlight: #fff;
+
+    /* backgrounds */
+    --background-color-normal: #121212;
+    --background-color-elevated: #222;
+    --background-color-elevated-high: #2f2f2f;
+    --background-color-selected: rgb(191 191 191 / 25%);
+
+    /* buttons */
+    --button-color: #fff;
+    --button-background-color: var(--color-primary);
+
+    /* borders */
+    --border-color-lower: #171717;
+    --border-color-normal: #292a2a;
+    --border-color-elevated: #3f3f3f;
+
+    /* toast */
+    --toast-background-color: hsl(240deg 5% 91%);
+    --toast-stripe-color: hsl(240deg 5% 87%);
+    --toast-border-color: rgb(255 255 255);
+    --toast-text-color: rgb(0 0 0);
+    --toast-dismiss-color: hsl(0deg 0% 35%);
+    --toast-shadow-elevation: rgb(255 255 255 / 48%);
+    --toast-shadow-inset: inset 0 0 1.1px 2px rgb(0 0 0 / 13%);
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --color-primary: #2329ff;
+    --color-secondary: #f08b30;
+
+    /* typography */
+    --text-color-normal: #616271;
+    --text-color-highlight: #2f3037;
+
+    /* backgrounds */
+    --background-color-normal: #fafafb;
+    --background-color-elevated: #f3f3f6;
+    --background-color-elevated-high: #fff;
+    --background-color-selected: rgb(101 106 255 / 8%);
+
+    /* buttons */
+    --button-color: #fff;
+    --button-background-color: var(--color-primary);
+
+    /* borders */
+    --border-color-lower: #f0f0f0;
+    --border-color-normal: #eeeef0;
+    --border-color-elevated: #dadada;
+
+    /* toast */
+    --toast-background-color: #151517;
+    --toast-stripe-color: hsl(240deg 5% 13%);
+    --toast-border-color: black;
+    --toast-text-color: white;
+    --toast-dismiss-color: #a7a7a7;
+    --toast-shadow-elevation: rgb(0 0 0 / 48%);
+    --toast-shadow-inset: inset 0 0 1.1px 2px rgb(255 255 255 / 13%);
+  }
+}

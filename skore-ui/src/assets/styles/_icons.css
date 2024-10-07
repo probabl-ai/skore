@@ -1,0 +1,124 @@
+@font-face {
+  font-display: block;
+  font-family: icomoon;
+  font-style: normal;
+  font-weight: normal;
+  src: url("../fonts/icomoon.eot?bsrkh");
+  src:
+    url("../fonts/icomoon.eot?bsrkh#iefix") format("embedded-opentype"),
+    url("../fonts/icomoon.ttf?bsrkh") format("truetype"),
+    url("../fonts/icomoon.woff?bsrkh") format("woff"),
+    url("../fonts/icomoon.svg?bsrkh#icomoon") format("svg");
+}
+
+[class^="icon-"],
+[class*=" icon-"] {
+  /* use !important to prevent issues with browser extensions that change fonts */
+  /* stylelint-disable-next-line font-family-no-missing-generic-family-keyword */
+  font-family: icomoon !important;
+
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-style: normal;
+  font-variant: normal;
+  font-weight: normal;
+  line-height: 1;
+  text-transform: none;
+}
+
+.icon-branch::before {
+  content: "\e900";
+}
+
+.icon-more::before {
+  content: "\e901";
+}
+
+.icon-trash::before {
+  content: "\e902";
+}
+
+.icon-edit::before {
+  content: "\e903";
+}
+
+.icon-copy::before {
+  content: "\e904";
+}
+
+.icon-pill::before {
+  content: "\e905";
+}
+
+.icon-new-document::before {
+  content: "\e906";
+}
+
+.icon-recent-document::before {
+  content: "\e907";
+}
+
+.icon-plus-circle::before {
+  content: "\e908";
+}
+
+.icon-warning::before {
+  content: "\e909";
+}
+
+.icon-info::before {
+  content: "\e90a";
+}
+
+.icon-error::before {
+  content: "\e90b";
+}
+
+.icon-success::before {
+  content: "\e90c";
+}
+
+.icon-search::before {
+  content: "\e90d";
+}
+
+.icon-maximize::before {
+  content: "\e90e";
+}
+
+.icon-folder::before {
+  content: "\e90f";
+}
+
+.icon-plot::before {
+  content: "\e910";
+}
+
+.icon-text::before {
+  content: "\e911";
+}
+
+.icon-gift::before {
+  content: "\e912";
+}
+
+.icon-pie-chart::before {
+  content: "\e913";
+}
+
+.icon-chevron-left::before {
+  content: "\e914";
+}
+
+.icon-chevron-down::before {
+  content: "\e915";
+}
+
+.icon-chevron-right::before {
+  content: "\e916";
+}
+
+.icon-chevron-up::before {
+  content: "\e917";
+}
