@@ -7,7 +7,7 @@
 `skore` allows data scientists to create beautiful reports from their Python code:
 1. Users can store objects of different types (python lists and dictionaries, `numpy` arrays, `scikit-learn` fitted models, `matplotlib` graphs, etc). Storing some values over time allows one to perform **tracking** and also to **visualize** them:
 2. They can visualize these stored objects on a dashboard. The dashboard is user-friendly: objects can easily be organized.
-3. This dashboard can be exported, for example into a HTML file.
+3. This dashboard can be exported into a HTML file.
 
 These are only the first features of `skore`'s roadmap.
 `skore` is a work in progress and, on the long run, it aims to be an all-inclusive library for data scientists.
@@ -58,7 +58,8 @@ Then, in the directory containing your project, run the following command in you
 python -m skore launch project.skore
 ```
 This will automatically open a browser at the UI's location.
-You can then drag and drop items into the dashboard and start editing your report.
+In the `Elements` tab on the left, you can visualize the stored items.
+Create a new `View`, then you can then add items into this view.
 
 💡 Note that after launching the dashboard, you can keep modifying current items or store new ones, and the dashboard will automatically be refreshed.
 
