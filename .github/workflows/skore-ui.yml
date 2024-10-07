@@ -2,6 +2,11 @@ name: Reusable skore-ui workflow
 
 on: [workflow_call]
 
+defaults:
+  run:
+    shell: 'bash'
+    working-directory: './skore-ui'
+
 jobs:
   lint-skore-ui:
     runs-on: ubuntu-latest
@@ -14,8 +19,6 @@ jobs:
           cache-dependency-path: skore-ui/package-lock.json
       - name: Lint skore-ui
         run: |
-          cd skore-ui
-
           npm install
           npm run type-check
           npm run lint
@@ -34,8 +37,6 @@ jobs:
           cache-dependency-path: skore-ui/package-lock.json
       - name: Test skore-ui
         run: |
-          cd skore-ui
-
           npm install
           npm run test:unit:coverage
       - name: Report coverage
@@ -56,10 +57,7 @@ jobs:
           cache: 'npm'
           cache-dependency-path: skore-ui/package-lock.json
       - name: Build skore-ui
-        shell: bash
         run: |
-          cd skore-ui
-
           npm install
           npm run build
           npm run build:lib -- --emptyOutDir false
