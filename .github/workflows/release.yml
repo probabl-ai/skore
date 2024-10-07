@@ -65,7 +65,7 @@ jobs:
           path: skore/dist/
 
   publish:
-    name: Publish package distributions to TestPyPI using trusted publisher
+    name: Publish package distributions to PyPI using trusted publisher
     runs-on: ubuntu-latest
     environment: release
     permissions:
@@ -78,7 +78,7 @@ jobs:
           name: python-package-distributions
           path: dist/
 
-      - name: Publish package distributions to TestPyPI
+      - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           verify-metadata: false
