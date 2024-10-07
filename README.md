@@ -4,7 +4,7 @@
 ![tests](https://github.com/probabl-ai/skore/actions/workflows/backend.yml/badge.svg)
 ![UI tests](https://github.com/probabl-ai/skore/actions/workflows/skore-ui.yml/badge.svg)
 
-`skore` allows data scientists to create beautiful reports from their Python code:
+`skore` allows data scientists to create tracking and reports from their Python code:
 1. Users can store objects of different types (python lists and dictionaries, `numpy` arrays, `scikit-learn` fitted models, `matplotlib`, `altair`, and `plotly` figures, etc). Storing some values over time allows one to perform **tracking** and also to **visualize** them:
 2. They can visualize these stored objects on a dashboard. The dashboard is user-friendly: objects can easily be organized.
 3. This dashboard can be exported into a HTML file.

@@ -19,16 +19,19 @@
 # %% [markdown]
 # # Introduction
 #
-# The purpose of this guide is to illustrate some of the main features that `skore` provides. Please refer to our instructions for installing `skore`.
+# The purpose of this guide is to illustrate some of the main features that `skore` currently provides.
 #
-# Given to you by [:probabl.](https://probabl.ai/), `skore` is a powerful tool that allows data scientists to create tracking and clear reports from their Python code, typically a notebook. For example, see [this HTML file](https://gist.github.com/augustebaum/6b21dbd7f7d5a584fbf2c1956692574e): download it and open it in your browser to visualize it.
+# `skore` allows data scientists to create tracking and reports from their Python code:
+# 1. Users can store objects of different types (python lists and dictionaries, `numpy` arrays, `scikit-learn` fitted models, `matplotlib`, `altair`, and `plotly` figures, etc). Storing some values over time allows one to perform **tracking** and also to **visualize** them:
+# 2. They can visualize these stored objects on a dashboard. The dashboard is user-friendly: objects can easily be organized.
+# 3. This dashboard can be exported into a HTML file.
+#
+# This notebook will store some items that have been used to generated a skore report available at [this link](https://gist.github.com/augustebaum/6b21dbd7f7d5a584fbf2c1956692574e): download this HTML file and open it in your browser to visualize it.
 
 # %% [markdown]
 # ## Imports
 
 # %%
-# ruff: noqa
-
 import altair as alt
 import io
 import matplotlib.pyplot as plt
@@ -310,58 +313,38 @@ project.put("my_fitted_pipeline", my_pipeline)
 # The following is just some `skore` strings that we generate in order to provide more context on the obtained report.
 
 # %%
-project.put_item(
+project.put(
     "my_comment_1",
-    MediaItem.factory(
-        "<p><h1>Welcome to skore!</h1>Given to you by :probabl., skore is a powerful tool that allows data scientists to create tracking and clear reports from their Python code, typically a notebook. This HTML document is actually a skore report generated using the `basic_usage.ipynb` notebook that has been exported (into HTML)!<p>",
-        media_type="text/html",
-    ),
+    "<p><h1>Welcome to skore!</h1><p><code>skore</code> allows data scientists to create tracking and reports from their Python code. This HTML document is actually a skore report generated using the <code>basic_usage.ipynb</code> notebook and that has been exported (into HTML)!<p>",
 )
 
 # %%
-project.put_item(
+project.put(
     "my_comment_2",
-    MediaItem.factory("<p><h2>Integers</h1></p>", media_type="text/html"),
+    "<p><h2>Integers</h1></p>",
 )
 
 # %%
-project.put_item(
-    "my_comment_3", MediaItem.factory("<p><h2>Strings</h1></p>", media_type="text/html")
+project.put(
+    "my_comment_3", "<p><h2>Strings</h1></p>"
 )
 
 # %%
-project.put_item(
+project.put(
     "my_comment_4",
-    MediaItem.factory("<p><h2>Many kinds of data</h1></p>", media_type="text/html"),
+    "<p><h2>Many kinds of data</h1></p>",
 )
 
 # %%
-project.put_item(
+project.put(
     "my_comment_5",
-    MediaItem.factory("<p><h2>Altair plots</h1></p>", media_type="text/html"),
+    "<p><h2>Plots</h1></p>",
 )
 
 # %%
-project.put_item(
+project.put(
     "my_comment_6",
-    MediaItem.factory(
-        "<p><h2>Scikit-learn models and pipelines</h1></p>", media_type="text/html"
-    ),
+    "<p><h2>Scikit-learn models and pipelines</h1></p>"
 )
 
 # %%
-project.put_item(
-    "my_comment_7",
-    MediaItem.factory(
-        "<p><h2>Manipulating the skore report</h1></p>", media_type="text/html"
-    ),
-)
-
-# %%
-project.put_item(
-    "my_comment_8",
-    MediaItem.factory(
-        "<p>Once you have created cells in your Skore report, you can place them where you want: move them up or down, delete them, for example put one to the left of a graph to comment on it.</p>",
-        media_type="text/html",
-    ),
-)
