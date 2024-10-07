@@ -82,4 +82,4 @@ See [CONTRIBUTING.md](/CONTRIBUTING.md).
 | 🔨 **Contribution & Development**   | [Discord]                          |
 
 [GitHub Issue Tracker]: https://github.com/probabl-ai/skore/issues
-[Discord]: https://discord.gg/cUH3UhFD
+[Discord]: https://discord.gg/scBZerAGwW
