@@ -59,6 +59,9 @@ jobs:
           pre-commit run --all-files ruff
 
           # Build
+          cp --remove-destination ../LICENSE ./LICENSE
+          cp --remove-destination ../README.md ./README.md
+
           python -m build
 
           # Install
