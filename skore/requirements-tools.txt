@@ -40,7 +40,7 @@ markdown-it-py==3.0.0
     # via rich
 mdurl==0.1.2
     # via markdown-it-py
-numpy==2.1.1
+numpy==2.1.2
     # via
     #   scikit-learn
     #   scipy
