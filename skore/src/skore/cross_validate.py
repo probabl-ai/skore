@@ -132,9 +132,10 @@ def cross_validate(
     >>> X = diabetes.data[:150]
     >>> y = diabetes.target[:150]
     >>> lasso = linear_model.Lasso()
-    >>> cv_results = cross_validate(lasso, X, y, cv=3)
-    >>> cv_results
-    CrossValidationItem(...)
+
+    >>> project = skore.load("project.skore")  # doctest: +SKIP
+    >>> cv_results = cross_validate(lasso, X, y, cv=3, project=project)  # doctest: +SKIP
+    {'fit_time': array(...), 'score_time': array(...), 'test_score': array(...)}
     """
     import sklearn.model_selection
 
