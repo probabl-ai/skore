@@ -12,6 +12,10 @@ These are only the first features of `skore`'s roadmap.
 `skore` is a work in progress and, on the long run, it aims to be an all-inclusive library for data scientists.
 Stay tuned!
 
+<p align="center">
+    <img width="500" src="https://github.com/sylvaincom/sylvaincom.github.io/blob/master/files/probabl/skore/2024_10_08_skore_demo.gif"/>
+</p>
+
 ## ⚙️ Installation
 
 You can install `skore` by using `pip`:
