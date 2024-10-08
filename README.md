@@ -1,6 +1,6 @@
 # skore
 
-![ci](https://github.com/probabl-ai/skore/actions/workflows/ci.yml/badge.svg)
+![ci](https://github.com/probabl-ai/skore/actions/workflows/ci.yml/badge.svg?event=push)
 ![python](https://img.shields.io/badge/python-3.11%20|%203.12-blue?style=flat&logo=python)
 
 ## Installation
