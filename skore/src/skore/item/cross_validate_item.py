@@ -1,4 +1,4 @@
-"""CrossValidateItem class.
+"""CrossValidationItem class.
 
 This class represents the output of a cross-validation workflow.
 """
@@ -24,7 +24,7 @@ Data = Any
 Target = Any
 
 
-class CrossValidateItem(Item):
+class CrossValidationItem(Item):
     """
     A class to represent the output of a cross-validation workflow.
 
@@ -42,7 +42,7 @@ class CrossValidateItem(Item):
         updated_at: str | None = None,
     ):
         """
-        Initialize a CrossValidateItem.
+        Initialize a CrossValidationItem.
 
         Parameters
         ----------
@@ -73,9 +73,9 @@ class CrossValidateItem(Item):
         estimator: sklearn.base.BaseEstimator,
         X: Data,
         y: Target | None,
-    ) -> CrossValidateItem:
+    ) -> CrossValidationItem:
         """
-        Create a new CrossValidateItem instance.
+        Create a new CrossValidationItem instance.
 
         Parameters
         ----------
@@ -90,8 +90,8 @@ class CrossValidateItem(Item):
 
         Returns
         -------
-        CrossValidateItem
-            A new CrossValidateItem instance.
+        CrossValidationItem
+            A new CrossValidationItem instance.
         """
         if not isinstance(cv_results, dict):
             raise TypeError(f"Type '{cv_results.__class__}' is not supported.")

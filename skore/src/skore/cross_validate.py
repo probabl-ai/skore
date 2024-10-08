@@ -6,7 +6,7 @@ function in order to enrich it with more information and enable more analysis.
 
 from typing import Literal
 
-from skore.item.cross_validate_item import CrossValidateItem
+from skore.item.cross_validate_item import CrossValidationItem
 from skore.project import Project
 
 
@@ -137,7 +137,7 @@ def _strip_cv_results_scores(cv_results, added_scorers):
 
 def cross_validate(
     *args, project: Project | None = None, **kwargs
-) -> CrossValidateItem:
+) -> CrossValidationItem:
     """Evaluate estimator by cross-validation and output UI-friendly object.
 
     This function wraps scikit-learn's [cross_validate](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate)
@@ -154,7 +154,7 @@ def cross_validate(
 
     Returns
     -------
-    CrossValidateItem
+    CrossValidationItem
         An object containing the cross-validation results, which can be readily
         inserted into a Project.
 
@@ -167,7 +167,7 @@ def cross_validate(
     >>> lasso = linear_model.Lasso()
     >>> cv_results = cross_validate(lasso, X, y, cv=3)
     >>> cv_results
-    CrossValidateItem(...)
+    CrossValidationItem(...)
     """
     import sklearn.model_selection
 
@@ -202,7 +202,7 @@ def cross_validate(
     # Recover data
     X = args[1] if len(args) >= 2 else kwargs.get("X")
 
-    cross_validation_item = CrossValidateItem.factory(cv_results, estimator, X, y)
+    cross_validation_item = CrossValidationItem.factory(cv_results, estimator, X, y)
 
     if project is not None:
         project.put_item("cross_validation", cross_validation_item)
