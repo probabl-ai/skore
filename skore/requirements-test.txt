@@ -72,7 +72,7 @@ joblib==1.4.2
     # via scikit-learn
 jsonschema==4.23.0
     # via altair
-jsonschema-specifications==2023.12.1
+jsonschema-specifications==2024.10.1
     # via jsonschema
 kiwisolver==1.4.7
     # via matplotlib
