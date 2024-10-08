@@ -153,7 +153,7 @@ referencing==0.35.1
     #   jsonschema-specifications
 requests==2.32.3
     # via huggingface-hub
-rich==13.9.1
+rich==13.9.2
     # via skore (pyproject.toml)
 rpds-py==0.20.0
     # via
