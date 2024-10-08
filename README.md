@@ -1,11 +1,16 @@
 # 👋 Welcome to skore
 
-![lint](https://github.com/probabl-ai/skore/actions/workflows/lint.yml/badge.svg)
-![tests](https://github.com/probabl-ai/skore/actions/workflows/backend.yml/badge.svg)
-![UI tests](https://github.com/probabl-ai/skore/actions/workflows/skore-ui.yml/badge.svg)
+<p align="center">
+    <a href="https://probabl.ai" target="_blank">
+        <img width="40%" src="https://sylvaincom.github.io/files/probabl/logo_probabl.svg" alt="Probabl logo">
+    </a>
+</p>
+
+![ci](https://github.com/probabl-ai/skore/actions/workflows/ci.yml/badge.svg)
+![python](https://img.shields.io/badge/python-3.11%20|%203.12-blue?style=flat&logo=python)
 
 `skore` allows data scientists to create tracking and reports from their Python code:
-1. Users can store objects of different types (python lists and dictionaries, `numpy` arrays, `scikit-learn` fitted models, `matplotlib`, `altair`, and `plotly` figures, etc). Storing some values over time allows one to perform **tracking** and also to **visualize** them:
+1. Users can store objects of different types: python lists and dictionaries, `numpy` arrays, `scikit-learn` fitted models, `matplotlib`, `altair`, and `plotly` figures, etc. Storing some values over time allows one to perform **tracking** and also to **visualize** them:
 2. They can visualize these stored objects on a dashboard. The dashboard is user-friendly: objects can easily be organized.
 3. This dashboard can be exported into a HTML file.
 
@@ -65,7 +70,7 @@ Create a new `View`, then you can then add items into this view.
 
 👨‍🏫 For a complete introductory example, see our [basic usage notebook](/examples/basic_usage.ipynb).
 It shows you how to store all types of items: python lists and dictionaries, `numpy` arrays, `scikit-learn` fitted models, `matplotlib`, `altair`, and `plotly` figures, etc.
-The resulting `skore` report has been exported to [this HTML file](https://gist.github.com/augustebaum/6b21dbd7f7d5a584fbf2c1956692574e): download it and open it in your favorite browser to visualize it.
+The resulting `skore` report has been exported to [this HTML file](https://sylvaincom.github.io/files/probabl/skore/basic_usage.html).
 
 ## 🔨 Contributing
 
@@ -76,11 +81,9 @@ See [CONTRIBUTING.md](/CONTRIBUTING.md).
 
 | Type                                | Platforms                        |
 |-------------------------------------|----------------------------------|
-| 🐛 **Bug Reports**                  | [GitHub Issue Tracker]           |
-| ✨ **Feature Requests & Ideas**      | [GitHub Issue Tracker] & [Discord] |
-| 💻 **Usage Questions**              | [Discord]   |
-| 💬 **General Discussion**           | [Discord]   |
-| 🔨 **Contribution & Development**   | [Discord]                          |
+| 🐛 Bug reports                  | [GitHub Issue Tracker]           |
+| ✨ Feature requests and ideas      | [GitHub Issue Tracker] & [Discord] |
+| 💬 Usage questions, discussions, contributions, etc              | [Discord]   |
 
 [GitHub Issue Tracker]: https://github.com/probabl-ai/skore/issues
 [Discord]: https://discord.gg/scBZerAGwW
