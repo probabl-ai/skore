@@ -8,7 +8,7 @@ annotated-types==0.7.0
     # via pydantic
 anyio==4.6.0
     # via starlette
-build==1.2.2
+build==1.2.2.post1
     # via pip-tools
 certifi==2024.8.30
     # via requests
@@ -40,7 +40,7 @@ markdown-it-py==3.0.0
     # via rich
 mdurl==0.1.2
     # via markdown-it-py
-numpy==2.1.1
+numpy==2.1.2
     # via
     #   scikit-learn
     #   scipy
