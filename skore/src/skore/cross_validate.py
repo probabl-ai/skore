@@ -175,10 +175,11 @@ def cross_validate(
     if project is not None:
         project.put_item("cross_validation", cross_validation_item)
 
-    try:
+    # If in a IPython context (e.g. Jupyter notebook), display the plot
+    try:  # noqa: SIM105
         display(cross_validation_item.plot)
     except NameError:
-        logger.warn("Displaying the plot failed because 'display' is not in scope.")
+        pass
 
     # Remove information related to our scorers, so that our return value is
     # the same as sklearn's
