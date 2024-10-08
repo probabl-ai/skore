@@ -1,6 +1,6 @@
 import sklearn.model_selection
 from skore.cross_validate import cross_validate, plot_cross_validation
-from skore.item.cross_validate_item import CrossValidateItem
+from skore.item.cross_validate_item import CrossValidationItem
 
 
 def test_cross_validate(in_memory_project):
@@ -17,7 +17,7 @@ def test_cross_validate(in_memory_project):
         lasso, X, y, cv=n_splits
     )
 
-    assert isinstance(in_memory_project.get_item("cross_validation"), CrossValidateItem)
+    assert isinstance(in_memory_project.get_item("cross_validation"), CrossValidationItem)
     assert cv_results.keys() == cv_results_sklearn.keys()
     assert all(len(v) == n_splits for v in cv_results.values())
 
