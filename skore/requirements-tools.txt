@@ -8,7 +8,7 @@ annotated-types==0.7.0
     # via pydantic
 anyio==4.6.0
     # via starlette
-build==1.2.2
+build==1.2.2.post1
     # via pip-tools
 certifi==2024.8.30
     # via requests
