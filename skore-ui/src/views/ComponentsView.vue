@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import Simplebar from "simplebar-vue";
 import type { VisualizationSpec } from "vega-embed";
+import { ref } from "vue";
 
 import datatable from "@/assets/fixtures/datatable.json";
 import markdownString from "@/assets/fixtures/markdown.md?raw";
@@ -8,6 +9,7 @@ import spec from "@/assets/fixtures/vega.json";
 
 import CrossValidationResultsWidget from "@/components/CrossValidationResultsWidget.vue";
 import DataFrameWidget from "@/components/DataFrameWidget.vue";
+import DraggableList from "@/components/DraggableList.vue";
 import DropdownButton from "@/components/DropdownButton.vue";
 import DropdownButtonItem from "@/components/DropdownButtonItem.vue";
 import EditableList, { type EditableListItemModel } from "@/components/EditableList.vue";
@@ -24,7 +26,6 @@ import VegaWidget from "@/components/VegaWidget.vue";
 import { generateRandomId } from "@/services/utils";
 import { useModalsStore } from "@/stores/modals";
 import { useToastsStore } from "@/stores/toasts";
-import { ref } from "vue";
 
 const toastsStore = useToastsStore();
 const modalsStore = useModalsStore();
@@ -140,6 +141,17 @@ function onEditableListAction(action: string, item: EditableListItemModel) {
 }
 
 const lastSelectedItem = ref<string | null>(null);
+
+const draggableListData = ref(
+  Array.from({ length: 10 }, (v, i) => ({
+    id: `${i}`,
+    color: `hsl(${(Math.random() * 360) >> 0}deg, 90%, 50%)`,
+    content: Array.from(
+      { length: Math.floor(Math.random() * 10) + 1 }, // Random number of items between 1 and 10
+      () => String.fromCharCode(97 + Math.floor(Math.random() * 26)) // Random lowercase letter
+    ),
+  }))
+);
 </script>
 
 <template>
@@ -160,6 +172,7 @@ const lastSelectedItem = ref<string | null>(null);
         'trees',
         'editable list',
         'icons',
+        'draggable list',
       ]"
     >
       <TabsItem :value="0">
@@ -350,7 +363,7 @@ const lastSelectedItem = ref<string | null>(null);
         <SectionHeader title="Section header" />
         <SectionHeader
           title="Section header with action"
-          action="icon-magnifying-glass"
+          action-icon="icon-search"
           @action="onSectionHeaderAction"
         />
       </TabsItem>
@@ -411,7 +424,20 @@ const lastSelectedItem = ref<string | null>(null);
           <div>icon-chevron-down <span class="icon-chevron-down"></span></div>
           <div>icon-chevron-right <span class="icon-chevron-right"></span></div>
           <div>icon-chevron-up <span class="icon-chevron-up"></span></div>
+          <div>icon-handle <span class="icon-handle"></span></div>
         </div>
+      </TabsItem>
+      <TabsItem :value="13">
+        <DraggableList v-model:items="draggableListData">
+          <template #item="{ id, color, content }">
+            <div :style="{ backgroundColor: color, color: 'white' }">
+              <span>ID: {{ id }}</span>
+              <ul>
+                <li v-for="(c, i) in content" :key="i">{{ c }}</li>
+              </ul>
+            </div>
+          </template>
+        </DraggableList>
       </TabsItem>
     </Tabs>
   </main>
@@ -475,6 +501,11 @@ main {
   padding-top: 10px;
   gap: 20px;
   grid-template-columns: 1fr 1fr 1fr 1fr;
+
+  & > div {
+    display: flex;
+    gap: 10px;
+  }
 
   & [class^="icon-"],
   & [class*=" icon-"] {
