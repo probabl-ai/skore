@@ -14,6 +14,40 @@ if TYPE_CHECKING:
     import sklearn.base
 
 
+def plot_cross_validation(cv_results: dict):
+    """Plot the result of a cross-validation run."""
+    import altair
+    import pandas
+
+    # df = pandas.DataFrame(cv_results).melt(var_name="metric", value_name="score")
+    df = (
+        pandas.DataFrame(cv_results)
+        .reset_index(names="split")
+        .melt(id_vars="split", var_name="metric", value_name="score")
+    )
+
+    input_dropdown = altair.binding_select(
+        options=df["metric"].unique().tolist(), name="Metric: "
+    )
+    selection = altair.selection_point(
+        fields=["metric"], bind=input_dropdown, value="test_score"
+    )
+
+    return (
+        altair.Chart(df, title="Cross-validation scores per split")
+        .mark_bar()
+        .encode(
+            altair.X("split:N").title("Split number"),
+            altair.Y("score:Q").title("Score"),
+            tooltip=["metric:N", "split:N", "score:Q"],
+        )
+        .interactive()
+        .add_params(selection)
+        .transform_filter(selection)
+        .properties(width=400, height=200)
+    )
+
+
 def _hash_numpy(array):
     return hashlib.sha256(array.tobytes()).hexdigest()
 
