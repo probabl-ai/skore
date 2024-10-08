@@ -9,6 +9,7 @@ dynamic = [
 requires-python = ">=3.9, <3.13"
 maintainers = [{name = "skore developers", email="skore@signal.probabl.ai"}]
 dependencies = [
+  "altair>=5,<6",
   "diskcache",
   "fastapi",
   "rich",
@@ -61,7 +62,6 @@ artifacts = ["src/skore/ui/static/"]
 
 [project.optional-dependencies]
 test = [
-  "altair",
   "httpx",
   "matplotlib",
   "pandas",
