@@ -78,7 +78,7 @@ kiwisolver==1.4.7
     # via matplotlib
 markdown-it-py==3.0.0
     # via rich
-markupsafe==2.1.5
+markupsafe==3.0.0
     # via jinja2
 matplotlib==3.9.2
     # via skore (skore/pyproject.toml)
