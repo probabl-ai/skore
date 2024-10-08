@@ -38,6 +38,7 @@ class CrossValidationItem(Item):
         estimator_info: dict,
         X_info: dict,
         y_info: dict,
+        plot: Any,
         created_at: str | None = None,
         updated_at: str | None = None,
     ):
@@ -51,9 +52,11 @@ class CrossValidationItem(Item):
         estimator_info : dict
             The estimator that was cross-validated.
         X_info : dict
-            Summary of the data, input of scikit-learn's cross_validation function.
+            A summary of the data, input of scikit-learn's cross_validation function.
         y_info : dict
-            Summary of the target, input of scikit-learn's cross_validation function.
+            A summary of the target, input of scikit-learn's cross_validation function.
+        plot : Any
+            A plot of the cross-validation results.
         created_at : str
             The creation timestamp in ISO format.
         updated_at : str
@@ -65,6 +68,7 @@ class CrossValidationItem(Item):
         self.estimator_info = estimator_info
         self.X_info = X_info
         self.y_info = y_info
+        self.plot = plot
 
     @classmethod
     def factory(
@@ -109,11 +113,14 @@ class CrossValidationItem(Item):
             "hash": _hash_numpy(X),
         }
 
+        plot = plot_cross_validation(cv_results)
+
         instance = cls(
             cv_results=cv_results,
             estimator_info=estimator_info,
             X_info=X_info,
             y_info=y_info,
+            plot=plot,
         )
 
         return instance
