@@ -1,11 +1,5 @@
 # 👋 Welcome to skore
 
-<p align="center">
-    <a href="https://probabl.ai" target="_blank">
-        <img width="40%" src="https://sylvaincom.github.io/files/probabl/logo_probabl.svg" alt="Probabl logo">
-    </a>
-</p>
-
 ![ci](https://github.com/probabl-ai/skore/actions/workflows/ci.yml/badge.svg)
 ![python](https://img.shields.io/badge/python-3.11%20|%203.12-blue?style=flat&logo=python)
 
@@ -29,7 +23,7 @@ pip install -U skore
 
 In your shell, run the following to create a project file `project.skore` (the default) in your current working directory:
 ```bash
-python -m skore create
+python -m skore create 'project.skore'
 ```
 
 Run the following in your Python code (in the same working directory) to load the project, store some objects, delete them, etc:
@@ -87,3 +81,11 @@ See [CONTRIBUTING.md](/CONTRIBUTING.md).
 
 [GitHub Issue Tracker]: https://github.com/probabl-ai/skore/issues
 [Discord]: https://discord.gg/scBZerAGwW
+
+---
+
+Brought to you by:
+
+<a href="https://probabl.ai" target="_blank">
+    <img width="15%" src="https://sylvaincom.github.io/files/probabl/logo_probabl.svg" alt="Probabl logo">
+</a>
