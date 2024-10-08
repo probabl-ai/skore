@@ -159,7 +159,7 @@ rpds-py==0.20.0
     # via
     #   jsonschema
     #   referencing
-ruff==0.6.8
+ruff==0.6.9
     # via skore (pyproject.toml)
 scikit-learn==1.5.2
     # via
