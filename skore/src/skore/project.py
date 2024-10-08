@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any, Literal, Union
 
 from skore.item import (
-    CrossValidateItem,
+    CrossValidationItem,
     Item,
     ItemRepository,
     MediaItem,
@@ -126,7 +126,7 @@ class Project:
             return item.series
         elif isinstance(item, SklearnBaseEstimatorItem):
             return item.estimator
-        elif isinstance(item, CrossValidateItem):
+        elif isinstance(item, CrossValidationItem):
             return item.cv_results
         elif isinstance(item, MediaItem):
             return item.media_bytes
