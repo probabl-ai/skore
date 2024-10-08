@@ -54,7 +54,7 @@ pyyaml==6.0.2
     # via huggingface-hub
 requests==2.32.3
     # via huggingface-hub
-rich==13.9.1
+rich==13.9.2
     # via skore (pyproject.toml)
 scikit-learn==1.5.2
     # via skops
