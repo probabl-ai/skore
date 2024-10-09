@@ -163,9 +163,6 @@ onUnmounted(() => {
 
 <template>
   <div class="draggable" :class="{ dragging: movingItemIndex !== -1 }" ref="container">
-    <div style="position: fixed; top: 0; right: 0; background-color: black; color: white">
-      dropIndicatorPosition: {{ dropIndicatorPosition }}
-    </div>
     <div v-for="(item, index) in items" class="item" :key="item.id">
       <div class="handle" :data-index="index"><span class="icon-handle" /></div>
       <div class="content-wrapper">
