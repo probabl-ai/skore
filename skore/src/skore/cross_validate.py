@@ -6,15 +6,27 @@ function in order to enrich it with more information and enable more analysis.
 
 from typing import Literal
 
-from skore import logger
 from skore.item.cross_validate_item import CrossValidationItem
 from skore.project import Project
 
 
 def _find_ml_task(
-    estimator,
-    y,
+    estimator, y
 ) -> Literal["classification", "regression", "clustering", "unknown"]:
+    """Guess the ML task being addressed based on an estimator and a target array.
+
+    Parameters
+    ----------
+    estimator : sklearn.base.BaseEstimator
+        An estimator.
+    y : numpy.ndarray
+        A target vector.
+
+    Returns
+    -------
+    Literal["classification", "regression", "clustering", "unknown"]
+        The guess of the kind of ML task being performed.
+    """
     import sklearn.utils.multiclass
     from sklearn.base import is_classifier, is_regressor
 
@@ -47,7 +59,7 @@ def _expand_scorers(scorers, scorers_to_add: list[str]):
     scorers : any type that is accepted by scikit-learn's cross_validate
         The scorer(s) to expand.
     scorers_to_add : list[str]
-        The scorers to be added
+        The scorers to be added.
 
     Returns
     -------
@@ -92,8 +104,21 @@ def _expand_scorers(scorers, scorers_to_add: list[str]):
     return new_scorers, added_scorers
 
 
-def _strip_cv_results_scores(cv_results, added_scorers):
-    """Remove information about `added_scorers` in `cv_results`."""
+def _strip_cv_results_scores(cv_results: dict, added_scorers: list[str]) -> dict:
+    """Remove information about `added_scorers` in `cv_results`.
+
+    Parameters
+    ----------
+    cv_results : dict
+        A dict of the form returned by scikit-learn's cross_validate function.
+    added_scorers : list[str]
+        A list of scorers in `cv_results` which should be removed.
+
+    Returns
+    -------
+    dict
+        A new cv_results dict, with the specified scorers information removed.
+    """
     # Takes care both of train and test scores
     return {
         k: v
@@ -121,20 +146,23 @@ def cross_validate(
 
     Returns
     -------
-    CrossValidationItem
-        An object containing the cross-validation results, which can be readily
-        inserted into a Project.
+    cv_results : dict
+        A dict of the form returned by scikit-learn's cross_validate function.
 
     Examples
     --------
-    >>> from sklearn import datasets, linear_model
-    >>> diabetes = datasets.load_diabetes()
-    >>> X = diabetes.data[:150]
-    >>> y = diabetes.target[:150]
-    >>> lasso = linear_model.Lasso()
+    >>> def prepare_cv():
+    ...     from sklearn import datasets, linear_model
+    ...     diabetes = datasets.load_diabetes()
+    ...     X = diabetes.data[:150]
+    ...     y = diabetes.target[:150]
+    ...     lasso = linear_model.Lasso()
+    ...     return lasso, X, y
 
     >>> project = skore.load("project.skore")  # doctest: +SKIP
-    >>> cv_results = cross_validate(lasso, X, y, cv=3, project=project)  # doctest: +SKIP
+    >>> lasso, X, y = prepare_cv()  # doctest: +SKIP
+    >>> cross_validate(lasso, X, y, cv=3, project=project)  # doctest: +SKIP
+    alt.Chart(...)
     {'fit_time': array(...), 'score_time': array(...), 'test_score': array(...)}
     """
     import sklearn.model_selection
