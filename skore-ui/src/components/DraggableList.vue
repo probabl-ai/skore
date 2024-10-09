@@ -134,10 +134,17 @@ onMounted(() => {
       end() {
         // change the model order
         if (items.value && movingItemIndex.value !== null && dropIndicatorPosition.value !== null) {
-          // move the item to its new position
-          const newItems = items.value.filter((_, index) => index !== movingItemIndex.value);
-          newItems.splice(dropIndicatorPosition.value + 1, 0, items.value[movingItemIndex.value]);
-          items.value = newItems;
+          // did user dropped the item in its previous position ?
+          if (Math.abs(dropIndicatorPosition.value - movingItemIndex.value) > 1) {
+            // move the item to its new position
+            const destinationIndex =
+              dropIndicatorPosition.value > movingItemIndex.value
+                ? dropIndicatorPosition.value
+                : dropIndicatorPosition.value + 1;
+            const newItems = items.value.filter((_, index) => index !== movingItemIndex.value);
+            newItems.splice(destinationIndex, 0, items.value[movingItemIndex.value]);
+            items.value = newItems;
+          }
         }
         movingItemIndex.value = -1;
         dropIndicatorPosition.value = null;
@@ -156,6 +163,9 @@ onUnmounted(() => {
 
 <template>
   <div class="draggable" :class="{ dragging: movingItemIndex !== -1 }" ref="container">
+    <div style="position: fixed; top: 0; right: 0; background-color: black; color: white">
+      dropIndicatorPosition: {{ dropIndicatorPosition }}
+    </div>
     <div v-for="(item, index) in items" class="item" :key="item.id">
       <div class="handle" :data-index="index"><span class="icon-handle" /></div>
       <div class="content-wrapper">
