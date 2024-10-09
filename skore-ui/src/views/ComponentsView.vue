@@ -143,9 +143,9 @@ function onEditableListAction(action: string, item: EditableListItemModel) {
 const lastSelectedItem = ref<string | null>(null);
 
 const draggableListData = ref(
-  Array.from({ length: 10 }, (v, i) => ({
+  Array.from({ length: 25 }, (v, i) => ({
     id: `${i}`,
-    color: `hsl(${(Math.random() * 360) >> 0}deg, 90%, 50%)`,
+    color: `hsl(${(360 / 25) * i}deg, 90%, 50%)`,
     content: Array.from(
       { length: Math.floor(Math.random() * 10) + 1 }, // Random number of items between 1 and 10
       () => String.fromCharCode(97 + Math.floor(Math.random() * 26)) // Random lowercase letter
@@ -428,16 +428,18 @@ const draggableListData = ref(
         </div>
       </TabsItem>
       <TabsItem :value="13">
-        <DraggableList v-model:items="draggableListData">
-          <template #item="{ id, color, content }">
-            <div :style="{ backgroundColor: color, color: 'white' }">
-              <span>ID: {{ id }}</span>
-              <ul>
-                <li v-for="(c, i) in content" :key="i">{{ c }}</li>
-              </ul>
-            </div>
-          </template>
-        </DraggableList>
+        <Simplebar class="draggable-list-container">
+          <DraggableList v-model:items="draggableListData">
+            <template #item="{ id, color, content }">
+              <div :style="{ backgroundColor: color, color: 'white' }">
+                <span>ID: {{ id }}</span>
+                <ul>
+                  <li v-for="(c, i) in content" :key="i">{{ c }}</li>
+                </ul>
+              </div>
+            </template>
+          </DraggableList>
+        </Simplebar>
       </TabsItem>
     </Tabs>
   </main>
@@ -512,5 +514,10 @@ main {
     color: var(--color-primary);
     font-size: 20px;
   }
+}
+
+.draggable-list-container {
+  max-height: 80vh;
+  margin-top: 10px;
 }
 </style>

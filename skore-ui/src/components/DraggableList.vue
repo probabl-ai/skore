@@ -11,30 +11,13 @@ interface Item {
 
 const items = defineModel<Item[]>("items", { required: true });
 const dropIndicatorPosition = ref(-1);
-const movingItemIndex = ref(-1);
+const movingItemIndex = ref<number | null>(null);
 const movingItemAsPngData = ref("");
 const movingItemHeight = ref(0);
 const movingItemY = ref(0);
 const container = useTemplateRef("container");
 let interactable: Interactable;
 let direction: "up" | "down" | "none" = "none";
-
-function makeModifier() {
-  const containerBounds = container.value!.getBoundingClientRect();
-
-  return interact.modifiers.restrict({
-    restriction: (x, y, { element }) => {
-      const content = element?.parentElement?.querySelector(".content");
-      const { height } = content?.getBoundingClientRect() ?? { height: 0 };
-      return {
-        top: containerBounds?.top - height,
-        right: containerBounds?.right,
-        bottom: containerBounds?.bottom + height,
-        left: containerBounds?.left,
-      };
-    },
-  });
-}
 
 function dropIndicatorStyles(index: number) {
   const y = dropIndicatorPosition.value === index ? movingItemHeight.value : 0;
@@ -49,8 +32,41 @@ function dropIndicatorStyles(index: number) {
     };
   }
 }
+
+function capturedStyles() {
+  const a = -4 * (Math.PI / 180);
+  const containerBounds = container
+    .value!.querySelector(".content-wrapper")!
+    .getBoundingClientRect();
+  const width = containerBounds.width;
+  const rotatedWidth = width * Math.cos(a) + movingItemHeight.value * Math.sin(a);
+  const ratio = rotatedWidth / width;
+
+  return {
+    transform: `translateY(${movingItemY.value}px) rotate(${a}rad) scale(${ratio})`,
+  };
+}
+
+function makeModifier() {
+  const containerBounds = container.value!.getBoundingClientRect();
+
+  return interact.modifiers.restrict({
+    restriction: (x, y, { element }) => {
+      const content = element?.parentElement?.parentElement?.querySelector(".content");
+      const { height } = content?.getBoundingClientRect() ?? { height: 0 };
+      return {
+        top: containerBounds?.top - height,
+        right: containerBounds?.right,
+        bottom: containerBounds?.bottom + height,
+        left: containerBounds?.left,
+      };
+    },
+  });
+}
+
 onMounted(() => {
   interactable = interact(".handle").draggable({
+    autoScroll: true,
     startAxis: "y",
     lockAxis: "y",
     modifiers: [makeModifier()],
@@ -59,42 +75,61 @@ onMounted(() => {
         // make a rasterized copy of the moving element
         const content = event.target.parentElement.querySelector(".content");
         if (content && container.value) {
-          movingItemAsPngData.value = await toPng(content);
-          movingItemIndex.value = parseInt(event.target.dataset.index);
           const parentBounds = container.value.getBoundingClientRect();
           const bounds = content.getBoundingClientRect();
+
+          movingItemAsPngData.value = await toPng(content);
+          movingItemIndex.value = parseInt(event.target.dataset.index);
           movingItemY.value = bounds.top - parentBounds.top;
           movingItemHeight.value = bounds.height;
         }
       },
       move(event) {
+        // set direction
         direction = event.dy >= 0 ? "down" : "up";
+
         // move the rasterized copy
         movingItemY.value += event.dy;
-        // compute the drop indicator position
-        const parentBounds = container.value!.getBoundingClientRect();
-        const element = container.value!.querySelectorAll(".item");
-        dropIndicatorPosition.value = -1;
-        for (let i = 0; i < element.length; i++) {
-          const item = element[i];
-          const itemBounds = item.getBoundingClientRect();
-          const itemTop = itemBounds.top - parentBounds.top;
-          const itemBottom = itemBounds.bottom - parentBounds.top;
-          if (movingItemY.value >= itemTop && movingItemY.value <= itemBottom) {
-            dropIndicatorPosition.value = i;
-            break;
+
+        // set the drop indicator item index
+        const itemBounds = Array.from(container.value!.querySelectorAll(".item")).map(
+          (item, index) => {
+            const { top, height } = item.getBoundingClientRect();
+            const center = top + height / 2;
+            return {
+              index,
+              distance: Math.abs(event.pageY - center),
+            };
           }
+        );
+        const closestItemBelow = itemBounds.reduce((closest, item) => {
+          if (item.distance < closest.distance) {
+            return item;
+          }
+          return closest;
+        }, itemBounds[0]);
+        // if the first item is the closest we may need to move the drop indicator up
+        if (closestItemBelow.index === 0) {
+          // does the user want to move the item to the top?
+          const bounds = container.value!.getBoundingClientRect();
+          if (event.pageY < bounds.top) {
+            dropIndicatorPosition.value = -1;
+          } else {
+            dropIndicatorPosition.value = 0;
+          }
+        } else {
+          dropIndicatorPosition.value = closestItemBelow.index;
         }
       },
       end() {
         // change the model order
-        if (items.value) {
+        if (items.value && movingItemIndex.value !== null) {
           // move the item to its new position
           const newItems = items.value.filter((_, index) => index !== movingItemIndex.value);
-          newItems.splice(dropIndicatorPosition.value, 0, items.value[movingItemIndex.value]);
+          newItems.splice(dropIndicatorPosition.value + 1, 0, items.value[movingItemIndex.value]);
           items.value = newItems;
         }
-        movingItemIndex.value = -1;
+        movingItemIndex.value = null;
         dropIndicatorPosition.value = -1;
         movingItemAsPngData.value = "";
         movingItemHeight.value = 0;
@@ -111,28 +146,25 @@ onUnmounted(() => {
 
 <template>
   <div class="draggable" :class="{ dragging: movingItemIndex !== -1 }" ref="container">
-    <ul class="debug">
-      <li>movingItemIndex: {{ movingItemIndex }}</li>
-      <li>dropIndicatorPosition: {{ dropIndicatorPosition }}</li>
-      <li>items: {{ items?.map((item) => item.id).join(", ") }}</li>
-    </ul>
+    <div class="debug">
+      movingItemIndex: {{ movingItemIndex }} | dropIndicatorPosition: {{ dropIndicatorPosition }} |
+      items: {{ items?.map((item) => item.id).join(", ") }}
+    </div>
 
     <div v-for="(item, index) in items" class="item" :key="item.id">
       <div class="handle" :data-index="index"><span class="icon-handle" /></div>
-      <div class="content" :class="{ moving: movingItemIndex === index }">
-        <slot name="item" v-bind="item"></slot>
+      <div class="content-wrapper">
+        <div class="content" :class="{ moving: movingItemIndex === index }">
+          <slot name="item" v-bind="item"></slot>
+        </div>
+        <div
+          class="drop-indicator"
+          :class="{ visible: dropIndicatorPosition === index }"
+          :style="dropIndicatorStyles(index)"
+        />
       </div>
-      <div
-        class="drop-indicator"
-        :class="{ visible: dropIndicatorPosition === index }"
-        :style="dropIndicatorStyles(index)"
-      />
     </div>
-    <div
-      class="captured"
-      v-if="movingItemAsPngData.length > 0"
-      :style="{ transform: `translateY(${movingItemY}px) rotate(-4deg)` }"
-    >
+    <div class="captured" v-if="movingItemAsPngData.length > 0" :style="capturedStyles()">
       <img :src="movingItemAsPngData" />
     </div>
   </div>
@@ -151,11 +183,21 @@ onUnmounted(() => {
   }
 }
 
+.debug {
+  position: fixed;
+  z-index: 1000;
+  top: 0;
+  right: 0;
+  background-color: black;
+  color: white;
+}
+
 .draggable {
+  --content-left-margin: 15px;
+
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-gap-normal);
 
   & .item {
     position: relative;
@@ -165,12 +207,15 @@ onUnmounted(() => {
     & .handle {
       position: absolute;
       top: 0;
-      left: -20px;
+      left: 0;
       cursor: move;
     }
 
+    & .content-wrapper {
+      margin-left: var(--content-left-margin);
+    }
+
     & .content {
-      transform-origin: top left;
       transition: opacity var(--transition-duration) var(--transition-easing);
 
       &.moving {
@@ -181,12 +226,13 @@ onUnmounted(() => {
     & .drop-indicator {
       height: 0;
       border-radius: 3px;
+      margin: var(--spacing-gap-normal) 0;
       background-color: var(--color-primary);
       opacity: 0;
       transition:
         opacity var(--transition-duration) var(--transition-easing),
         height var(--transition-duration) var(--transition-easing),
-        margin-top var(--transition-duration) var(--transition-easing);
+        margin var(--transition-duration) var(--transition-easing);
 
       &.visible {
         height: 3px;
@@ -198,7 +244,9 @@ onUnmounted(() => {
   & .captured {
     position: absolute;
     z-index: 2;
+    margin-left: var(--content-left-margin);
     box-shadow: 0 4px 17.7px 1px var(--shadow-color);
+    transform-origin: top left;
   }
 
   &.dragging {
