@@ -45,8 +45,6 @@ jobs:
 
       - name: Build package distributions
         run: |
-          cp --remove-destination LICENSE skore/LICENSE
-          cp --remove-destination README.md skore/README.md
           cd skore
 
           python -m pip install build

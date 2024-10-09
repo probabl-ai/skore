@@ -1,8 +1,11 @@
 [project]
 name = "skore"
 description = "Tooling and assistance for data scientists to \"Own Your Data Science\""
-dynamic = ["version"]
-readme = "README.md"
+dynamic = [
+  "license",
+  "readme",
+  "version"
+]
 requires-python = ">=3.11"
 maintainers = [
     {name = "skore developers", email="skore@signal.probabl.ai"},
@@ -14,7 +17,6 @@ dependencies = [
   "skops",
   "uvicorn",
 ]
-license = { file = "LICENSE" }
 classifiers=[
   "Intended Audience :: Science/Research",
   "Intended Audience :: Developers",
@@ -43,12 +45,14 @@ Issues = "https://github.com/probabl-ai/skore/issues"
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[tool.hatch.version]
-path = "VERSION.txt"
-pattern = "(?P<version>[^']+)"
+[tool.hatch.metadata.hooks.custom]
+path = "hatch/metadata.py"
+license-file = "../LICENSE"
+readme-file = "../README.md"
+version-default = "0.0.0+unknown"
 
 [tool.hatch.build.targets.sdist]
-only-include = ["src/"]
+only-include = ["src/", "hatch/"]
 artifacts = ["src/skore/ui/static/"]
 
 [tool.hatch.build.targets.wheel]
