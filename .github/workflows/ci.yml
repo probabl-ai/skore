@@ -1,6 +1,10 @@
 name: CI
 
-on: [pull_request]
+on:
+  pull_request:
+  push:
+    branches:
+      - main
 
 jobs:
   changes:
@@ -11,6 +15,7 @@ jobs:
     permissions:
       pull-requests: read
     steps:
+      - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
         id: filter
         with:
@@ -47,6 +52,7 @@ jobs:
 
   ci-all-green:
     needs:
+      - changes
       - lint-all-files
       - lint-and-test-skore
       - lint-and-test-skore-ui

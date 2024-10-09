@@ -1,6 +1,6 @@
 # 👋 Welcome to skore
 
-![ci](https://github.com/probabl-ai/skore/actions/workflows/ci.yml/badge.svg)
+![ci](https://github.com/probabl-ai/skore/actions/workflows/ci.yml/badge.svg?event=push)
 ![python](https://img.shields.io/badge/python-3.11%20|%203.12-blue?style=flat&logo=python)
 
 `skore` allows data scientists to create tracking and visualization from their Python code:
@@ -24,6 +24,7 @@ pip install -U skore
 ```
 
 ## 🚀 Quick start
+=======
 
 In your shell, run the following to create a project file `project.skore` (the default) in your current working directory:
 ```bash
