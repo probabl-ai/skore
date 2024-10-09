@@ -7,6 +7,41 @@ function in order to enrich it with more information and enable more analysis.
 from typing import Literal
 
 from skore.item.cross_validate_item import CrossValidateItem
+from skore.project import Project
+
+
+def plot_cross_validation(cv_results: dict):
+    """Plot the result of a cross-validation run."""
+    import altair
+    import pandas
+
+    # df = pandas.DataFrame(cv_results).melt(var_name="metric", value_name="score")
+    df = (
+        pandas.DataFrame(cv_results)
+        .reset_index(names="split")
+        .melt(id_vars="split", var_name="metric", value_name="score")
+    )
+
+    input_dropdown = altair.binding_select(
+        options=df["metric"].unique().tolist(), name="Metric: "
+    )
+    selection = altair.selection_point(
+        fields=["metric"], bind=input_dropdown, value="test_score"
+    )
+
+    return (
+        altair.Chart(df, title="Cross-validation scores per split")
+        .mark_bar()
+        .encode(
+            altair.X("split:N").title("Split number"),
+            altair.Y("score:Q").title("Score"),
+            tooltip=["metric:N", "split:N", "score:Q"],
+        )
+        .interactive()
+        .add_params(selection)
+        .transform_filter(selection)
+        .properties(width=400, height=200)
+    )
 
 
 def _find_ml_task(
@@ -90,6 +125,16 @@ def _expand_scorers(scorers, scorers_to_add: list[str]):
     return new_scorers, added_scorers
 
 
+def _strip_cv_results_scores(cv_results, added_scorers):
+    """Remove information about `added_scorers` in `cv_results`."""
+    # Takes care both of train and test scores
+    return {
+        k: v
+        for k, v in cv_results.items()
+        if not any(added_scorer in k for added_scorer in added_scorers)
+    }
+
+
 def cross_validate(
     *args, project: Project | None = None, **kwargs
 ) -> CrossValidateItem:
@@ -150,16 +195,22 @@ def cross_validate(
         scorers = None
     new_scorers, added_scorers = _expand_scorers(scorers, scorers_to_add)
 
-    # store test_score in skore associated with the following metadata to recognize the run:
-    # estimator (name & parameters)
-    # hash of y (if present)
-    # to recognize df_train, the following set {nb_col, nb_rows, hash}. This is suboptimal, but good for an MVP.
-    # the plot (1) is displayed in the notebook if the code is ran in notebook
-    # the plot (1) is created in skore UI
-
     cv_results = sklearn.model_selection.cross_validate(
         *args, **kwargs, scoring=new_scorers
     )
 
+    # Recover data
+    X = args[1] if len(args) >= 2 else kwargs.get("X")
+
+    cross_validation_item = CrossValidateItem.factory(cv_results, estimator, X, y)
+
     if project is not None:
         project.put_item("cross_validation", cross_validation_item)
+
+    plot_cross_validation(cross_validation_item.cv_results)
+
+    # Remove information related to our scorers, so that our return value is
+    # the same as sklearn's
+    stripped_cv_results = _strip_cv_results_scores(cv_results, added_scorers)
+
+    return stripped_cv_results
