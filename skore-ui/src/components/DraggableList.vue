@@ -225,6 +225,8 @@ onUnmounted(() => {
       top: 0;
       left: 0;
       cursor: move;
+      opacity: 0;
+      transition: opacity var(--transition-duration) var(--transition-easing);
     }
 
     & .content-wrapper {
@@ -256,6 +258,12 @@ onUnmounted(() => {
 
       &.bottom {
         margin: var(--spacing-gap-normal) 0;
+      }
+    }
+
+    &:hover {
+      & .handle {
+        opacity: 1;
       }
     }
   }
