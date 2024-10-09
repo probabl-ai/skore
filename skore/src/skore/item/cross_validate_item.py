@@ -19,7 +19,6 @@ def plot_cross_validation(cv_results: dict):
     import altair
     import pandas
 
-    # df = pandas.DataFrame(cv_results).melt(var_name="metric", value_name="score")
     df = (
         pandas.DataFrame(cv_results)
         .reset_index(names="split")
