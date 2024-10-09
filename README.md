@@ -50,7 +50,7 @@ project.put("my string", "Hello world!")
 project.put("my string", "Hello again!")
 
 # list all the keys in a project
-print(project.list_keys())
+print(project.list_item_keys())
 
 # delete an item
 project.delete_item("my int")

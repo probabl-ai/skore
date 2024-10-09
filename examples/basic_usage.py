@@ -21,12 +21,12 @@
 #
 # The purpose of this guide is to illustrate some of the main features that `skore` currently provides.
 #
-# `skore` allows data scientists to create tracking and reports from their Python code:
+# `skore` allows data scientists to create tracking and visualizations from their Python code:
 # 1. Users can store objects of different types (python lists and dictionaries, `numpy` arrays, `scikit-learn` fitted models, `matplotlib`, `altair`, and `plotly` figures, etc). Storing some values over time allows one to perform **tracking** and also to **visualize** them:
 # 2. They can visualize these stored objects on a dashboard. The dashboard is user-friendly: objects can easily be organized.
 # 3. This dashboard can be exported into a HTML file.
 #
-# This notebook will store some items that have been used to generated a skore report available at [this link](https://gist.github.com/augustebaum/6b21dbd7f7d5a584fbf2c1956692574e): download this HTML file and open it in your browser to visualize it.
+# This notebook will store some items that have been used to generated a skore report available at [this link](https://sylvaincom.github.io/files/probabl/skore/basic_usage.html): download this HTML file and open it in your browser to visualize it.
 
 # %% [markdown]
 # ## Imports
