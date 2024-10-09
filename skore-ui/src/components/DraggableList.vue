@@ -10,14 +10,24 @@ interface Item {
 }
 
 const items = defineModel<Item[]>("items", { required: true });
-const dropIndicatorPosition = ref(-1);
-const movingItemIndex = ref<number | null>(null);
+const dropIndicatorPosition = ref<number | null>(null);
+const movingItemIndex = ref(-1);
 const movingItemAsPngData = ref("");
 const movingItemHeight = ref(0);
 const movingItemY = ref(0);
 const container = useTemplateRef("container");
 let interactable: Interactable;
 let direction: "up" | "down" | "none" = "none";
+
+function topDropIndicatorStyles() {
+  if (dropIndicatorPosition.value === -1) {
+    return {
+      marginTop: `${movingItemHeight.value}px`,
+      marginBottom: "var(--spacing-gap-normal)",
+    };
+  }
+  return {};
+}
 
 function dropIndicatorStyles(index: number) {
   const y = dropIndicatorPosition.value === index ? movingItemHeight.value : 0;
@@ -27,7 +37,7 @@ function dropIndicatorStyles(index: number) {
     };
   } else if (direction === "down") {
     return {
-      marginTop: `calc(var(--spacing-gap-normal)`,
+      marginTop: `var(--spacing-gap-normal)`,
       marginBottom: `${y}px`,
     };
   }
@@ -123,14 +133,14 @@ onMounted(() => {
       },
       end() {
         // change the model order
-        if (items.value && movingItemIndex.value !== null) {
+        if (items.value && movingItemIndex.value !== null && dropIndicatorPosition.value !== null) {
           // move the item to its new position
           const newItems = items.value.filter((_, index) => index !== movingItemIndex.value);
           newItems.splice(dropIndicatorPosition.value + 1, 0, items.value[movingItemIndex.value]);
           items.value = newItems;
         }
-        movingItemIndex.value = null;
-        dropIndicatorPosition.value = -1;
+        movingItemIndex.value = -1;
+        dropIndicatorPosition.value = null;
         movingItemAsPngData.value = "";
         movingItemHeight.value = 0;
         direction = "none";
@@ -154,11 +164,17 @@ onUnmounted(() => {
     <div v-for="(item, index) in items" class="item" :key="item.id">
       <div class="handle" :data-index="index"><span class="icon-handle" /></div>
       <div class="content-wrapper">
+        <div
+          v-if="index === 0"
+          class="drop-indicator top"
+          :class="{ visible: dropIndicatorPosition === -1 }"
+          :style="topDropIndicatorStyles()"
+        />
         <div class="content" :class="{ moving: movingItemIndex === index }">
           <slot name="item" v-bind="item"></slot>
         </div>
         <div
-          class="drop-indicator"
+          class="drop-indicator bottom"
           :class="{ visible: dropIndicatorPosition === index }"
           :style="dropIndicatorStyles(index)"
         />
@@ -226,7 +242,6 @@ onUnmounted(() => {
     & .drop-indicator {
       height: 0;
       border-radius: 3px;
-      margin: var(--spacing-gap-normal) 0;
       background-color: var(--color-primary);
       opacity: 0;
       transition:
@@ -237,6 +252,10 @@ onUnmounted(() => {
       &.visible {
         height: 3px;
         opacity: 1;
+      }
+
+      &.bottom {
+        margin: var(--spacing-gap-normal) 0;
       }
     }
   }
