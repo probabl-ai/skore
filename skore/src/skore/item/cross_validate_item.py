@@ -11,11 +11,24 @@ from typing import TYPE_CHECKING, Any
 from skore.item.item import Item
 
 if TYPE_CHECKING:
+    import altair
+    import numpy
     import sklearn.base
 
 
-def plot_cross_validation(cv_results: dict):
-    """Plot the result of a cross-validation run."""
+def plot_cross_validation(cv_results: dict) -> altair.Chart:
+    """Plot the result of a cross-validation run.
+
+    Parameters
+    ----------
+    cv_results : dict
+        The output of scikit-learn's cross_validate function.
+
+    Returns
+    -------
+    altair.Chart
+        A plot of the cross-validation results
+    """
     import altair
     import pandas
 
@@ -62,7 +75,19 @@ def plot_cross_validation(cv_results: dict):
     )
 
 
-def _hash_numpy(array):
+def _hash_numpy(array: numpy.ndarray) -> str:
+    """Compute a hash string from a numpy array.
+
+    Parameters
+    ----------
+    array : numpy array
+        The numpy array whose hash will be computed.
+
+    Returns
+    -------
+    hash : str
+        A hash corresponding to the input array.
+    """
     return hashlib.sha256(array.tobytes()).hexdigest()
 
 
