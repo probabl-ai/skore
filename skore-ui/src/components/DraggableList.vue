@@ -156,11 +156,6 @@ onUnmounted(() => {
 
 <template>
   <div class="draggable" :class="{ dragging: movingItemIndex !== -1 }" ref="container">
-    <div class="debug">
-      movingItemIndex: {{ movingItemIndex }} | dropIndicatorPosition: {{ dropIndicatorPosition }} |
-      items: {{ items?.map((item) => item.id).join(", ") }}
-    </div>
-
     <div v-for="(item, index) in items" class="item" :key="item.id">
       <div class="handle" :data-index="index"><span class="icon-handle" /></div>
       <div class="content-wrapper">
@@ -197,15 +192,6 @@ onUnmounted(() => {
   .draggable {
     --shadow-color: hsl(0deg 0% 46% / 25%);
   }
-}
-
-.debug {
-  position: fixed;
-  z-index: 1000;
-  top: 0;
-  right: 0;
-  background-color: black;
-  color: white;
 }
 
 .draggable {
