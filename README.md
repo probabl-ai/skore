@@ -66,14 +66,14 @@ Create a new `View`, then you can then add items into this view.
 
 💡 Note that after launching the dashboard, you can keep modifying current items or store new ones, and the dashboard will automatically be refreshed.
 
-👨‍🏫 For a complete introductory example, see our [basic usage notebook](/examples/basic_usage.ipynb).
+👨‍🏫 For a complete introductory example, see our [basic usage notebook](https://github.com/probabl-ai/skore/blob/main/examples/basic_usage.ipynb).
 It shows you how to store all types of items: python lists and dictionaries, `numpy` arrays, `scikit-learn` fitted models, `matplotlib`, `altair`, and `plotly` figures, etc.
 The resulting `skore` report has been exported to [this HTML file](https://sylvaincom.github.io/files/probabl/skore/basic_usage.html).
 
 ## 🔨 Contributing
 
 Thank you for your interest!
-See [CONTRIBUTING.md](/CONTRIBUTING.md).
+See [CONTRIBUTING.md](https://github.com/probabl-ai/skore/blob/main/CONTRIBUTING.md).
 
 ## 💬 Where to ask questions
 
