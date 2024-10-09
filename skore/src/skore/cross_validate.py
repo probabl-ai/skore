@@ -88,7 +88,11 @@ def _expand_scorers(scorers, scorers_to_add: list[str]):
         new_scorers, added_scorers = _expand_scorers(scorers, scorers_to_add)
 
     return new_scorers, added_scorers
-def cross_validate(*args, **kwargs) -> CrossValidateItem:
+
+
+def cross_validate(
+    *args, project: Project | None = None, **kwargs
+) -> CrossValidateItem:
     """Evaluate estimator by cross-validation and output UI-friendly object.
 
     This function wraps scikit-learn's [cross_validate](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate)
@@ -98,7 +102,10 @@ def cross_validate(*args, **kwargs) -> CrossValidateItem:
 
     Parameters
     ----------
-    The same parameters as scikit-learn's cross_validate function.
+    The same parameters as scikit-learn's cross_validate function, except for
+
+    project : Project or None
+        A project to save cross-validation data into. If None, no save is performed.
 
     Returns
     -------
@@ -153,3 +160,6 @@ def cross_validate(*args, **kwargs) -> CrossValidateItem:
     cv_results = sklearn.model_selection.cross_validate(
         *args, **kwargs, scoring=new_scorers
     )
+
+    if project is not None:
+        project.put_item("cross_validation", cross_validation_item)
