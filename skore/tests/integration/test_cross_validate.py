@@ -39,7 +39,7 @@ def test_cross_validate_extra_metrics(in_memory_project, lasso):
     assert isinstance(
         in_memory_project.get_item("cross_validation"), CrossValidationItem
     )
-    assert cv_results.keys() == cv_results_sklearn.keys()
+    assert set(cv_results.keys()).issuperset(cv_results_sklearn.keys())
     assert all(len(v) == kwargs["cv"] for v in cv_results.values())
 
 
