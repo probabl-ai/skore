@@ -10,6 +10,7 @@ import hashlib
 from typing import TYPE_CHECKING, Any
 
 import altair
+import numpy
 
 from skore.item.item import Item
 from skore.item.media_item import MediaItem
@@ -116,7 +117,7 @@ class CrossValidationItem(Item):
 
     def __init__(
         self,
-        cv_results: dict,
+        cv_results_serialized: dict,
         estimator_info: dict,
         X_info: dict,
         y_info: dict,
@@ -129,8 +130,9 @@ class CrossValidationItem(Item):
 
         Parameters
         ----------
-        cv_results : dict
-            The dict output of scikit-learn's cross_validate function.
+        cv_results_serialized : dict
+            The dict output of scikit-learn's cross_validate function,
+            in a form suitable for serialization.
         estimator_info : dict
             The estimator that was cross-validated.
         X_info : dict
@@ -146,7 +148,7 @@ class CrossValidationItem(Item):
         """
         super().__init__(created_at, updated_at)
 
-        self.cv_results = cv_results
+        self.cv_results_serialized = cv_results_serialized
         self.estimator_info = estimator_info
         self.X_info = X_info
         self.y_info = y_info
@@ -182,6 +184,18 @@ class CrossValidationItem(Item):
         if not isinstance(cv_results, dict):
             raise TypeError(f"Type '{cv_results.__class__}' is not supported.")
 
+        cv_results_serialized = {}
+        for k, v in cv_results.items():
+            if k == "estimator":
+                continue
+            if k == "indices":
+                cv_results_serialized["indices"] = {
+                    "train": tuple(arr.tolist() for arr in v["train"]),
+                    "test": tuple(arr.tolist() for arr in v["test"]),
+                }
+            if isinstance(v, numpy.ndarray):
+                cv_results_serialized[k] = v.tolist()
+
         estimator_info = {
             "name": estimator.__class__.__name__,
             "params": repr(estimator.get_params()),
@@ -198,7 +212,7 @@ class CrossValidationItem(Item):
         plot_bytes = MediaItem.factory(plot_cross_validation(cv_results)).media_bytes
 
         instance = cls(
-            cv_results=cv_results,
+            cv_results_serialized=cv_results_serialized,
             estimator_info=estimator_info,
             X_info=X_info,
             y_info=y_info,
@@ -211,3 +225,8 @@ class CrossValidationItem(Item):
     def plot(self):
         """A plot of the cross-validation results."""
         return altair.Chart.from_json(self.plot_bytes.decode("utf-8"))
+
+    @property
+    def cv_results(self):
+        """The cross-validation results."""
+        return self.cv_results_serialized
