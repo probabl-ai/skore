@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { isUserInDarkMode } from "@/services/utils";
+import { isDeepEqual, isUserInDarkMode } from "@/services/utils";
 import { View as VegaView } from "vega";
 import embed, { type Config, type VisualizationSpec } from "vega-embed";
-import { onBeforeUnmount, onMounted, ref } from "vue";
+import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 
 const props = defineProps<{ spec: VisualizationSpec }>();
 
@@ -49,6 +49,30 @@ onBeforeUnmount(() => {
     vegaView.finalize();
   }
 });
+
+watch(
+  () => props.spec,
+  async (newSpec, oldSpec) => {
+    if (isDeepEqual(newSpec, oldSpec)) {
+      return;
+    }
+    // Refresh view
+    // TODO: This perhaps could be done in a more fine-grained way
+    const r = await embed(
+      container.value!,
+      {
+        width: container.value?.clientWidth || 0,
+        ...newSpec,
+      },
+      {
+        theme: isUserInDarkMode() ? "dark" : undefined,
+        config: vegaConfig,
+        actions: false,
+      }
+    );
+    vegaView = r.view;
+  }
+);
 </script>
 
 <template>
