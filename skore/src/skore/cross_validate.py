@@ -196,6 +196,12 @@ def cross_validate(
     cv_results = sklearn.model_selection.cross_validate(
         *args, **kwargs, scoring=new_scorers
     )
+    # Add explicit metric to result (rather than just "test_score")
+    if isinstance(scorers, str):
+        if kwargs.get("return_train_score") is not None:
+            cv_results[f"train_{scorers}"] = cv_results["train_score"]
+        cv_results[f"test_{scorers}"] = cv_results["test_score"]
+
 
     cross_validation_item = CrossValidationItem.factory(cv_results, estimator, X, y)
 
