@@ -8,10 +8,12 @@ from __future__ import annotations
 import hashlib
 from typing import TYPE_CHECKING, Any
 
+import altair
+
 from skore.item.item import Item
+from skore.item.media_item import MediaItem
 
 if TYPE_CHECKING:
-    import altair
     import numpy
     import sklearn.base
 
@@ -111,7 +113,7 @@ class CrossValidationItem(Item):
         estimator_info: dict,
         X_info: dict,
         y_info: dict,
-        plot: Any,
+        plot_bytes: bytes,
         created_at: str | None = None,
         updated_at: str | None = None,
     ):
@@ -128,8 +130,8 @@ class CrossValidationItem(Item):
             A summary of the data, input of scikit-learn's cross_validation function.
         y_info : dict
             A summary of the target, input of scikit-learn's cross_validation function.
-        plot : Any
-            A plot of the cross-validation results.
+        plot_bytes : bytes
+            A plot of the cross-validation results, in the form of bytes.
         created_at : str
             The creation timestamp in ISO format.
         updated_at : str
@@ -141,7 +143,7 @@ class CrossValidationItem(Item):
         self.estimator_info = estimator_info
         self.X_info = X_info
         self.y_info = y_info
-        self.plot = plot
+        self.plot_bytes = plot_bytes
 
     @classmethod
     def factory(
@@ -186,14 +188,19 @@ class CrossValidationItem(Item):
             "hash": _hash_numpy(X),
         }
 
-        plot = plot_cross_validation(cv_results)
+        plot_bytes = MediaItem.factory(plot_cross_validation(cv_results)).media_bytes
 
         instance = cls(
             cv_results=cv_results,
             estimator_info=estimator_info,
             X_info=X_info,
             y_info=y_info,
-            plot=plot,
+            plot_bytes=plot_bytes,
         )
 
         return instance
+
+    @property
+    def plot(self):
+        """A plot of the cross-validation results."""
+        return altair.Chart.from_json(self.plot_bytes.decode("utf-8"))
