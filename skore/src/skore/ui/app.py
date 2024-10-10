@@ -8,10 +8,11 @@ from starlette.types import Lifespan
 from skore.project import Project, load
 from skore.ui.dependencies import get_static_path
 from skore.ui.project_routes import router as project_router
+from typing import Optional
 
 
 def create_app(
-    project: Project | None = None, lifespan: Lifespan | None = None
+    project: Optional[Project] = None, lifespan: Optional[Lifespan] = None
 ) -> FastAPI:
     """FastAPI factory used to create the API to interact with `stores`."""
     app = FastAPI(lifespan=lifespan)
