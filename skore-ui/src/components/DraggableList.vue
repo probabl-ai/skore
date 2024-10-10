@@ -239,10 +239,6 @@ onUnmounted(() => {
       border-radius: 3px;
       background-color: var(--color-primary);
       opacity: 0;
-      transition:
-        opacity var(--transition-duration) var(--transition-easing),
-        height var(--transition-duration) var(--transition-easing),
-        margin var(--transition-duration) var(--transition-easing);
 
       &.visible {
         height: 3px;
@@ -274,6 +270,13 @@ onUnmounted(() => {
       touch-action: none;
       transition: none;
       user-select: none;
+    }
+
+    & .drop-indicator {
+      transition:
+        opacity var(--transition-duration) var(--transition-easing),
+        height var(--transition-duration) var(--transition-easing),
+        margin var(--transition-duration) var(--transition-easing);
     }
   }
 }
