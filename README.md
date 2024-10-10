@@ -4,7 +4,7 @@
 ![python](https://img.shields.io/badge/python-3.11%20|%203.12-blue?style=flat&logo=python)
 
 With `skore`, data scientists can:
-1. Store objects of different types from their Python code: from python lists to `plotly` figures.
+1. Store objects of different types from their Python code: from python lists to `scikit-learn` fitted pipelines and `plotly` figures.
 2. They can **track** and  **visualize** these stored objects on a dashboard.
 3. This dashboard can be exported into a HTML file.
 
