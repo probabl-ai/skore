@@ -24,7 +24,7 @@ Then, you can install `skore` by using `pip`:
 pip install -U skore
 ```
 
-You check check `skore`'s latest version on
+You can check `skore`'s latest version on
 [PyPI](https://pypi.org/project/skore/).
 
 
