@@ -10,6 +10,7 @@ from fastapi import FastAPI
 from skore.cli import logger
 from skore.project import load
 from skore.ui.app import create_app
+from typing import Union
 
 
 class ProjectNotFound(Exception):
@@ -18,7 +19,7 @@ class ProjectNotFound(Exception):
     project_path: Path
 
 
-def __launch(project_name: str | Path, port: int, open_browser: bool):
+def __launch(project_name: Union[str, Path], port: int, open_browser: bool):
     """Launch the UI to visualize a project.
 
     Parameters

@@ -1,11 +1,11 @@
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 
 import pytest
 
 
 @pytest.fixture
 def mock_now():
-    return datetime.now(tz=UTC)
+    return datetime.now(tz=timezone.utc)
 
 
 @pytest.fixture
