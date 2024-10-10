@@ -20,6 +20,8 @@
     "@floating-ui/vue": "^1.1.5",
     "@vscode/markdown-it-katex": "^1.1.0",
     "date-fns": "^3.6.0",
+    "html-to-image": "^1.11.11",
+    "interactjs": "^1.10.27",
     "markdown-it": "^14.1.0",
     "markdown-it-emoji": "^3.0.0",
     "markdown-it-highlightjs": "^4.2.0",
