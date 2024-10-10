@@ -177,7 +177,7 @@ class CrossValidationItem(Item):
 
         estimator_info = {
             "name": estimator.__class__.__name__,
-            "params": estimator.get_params(),
+            "params": repr(estimator.get_params()),
         }
 
         y_info = None if y is None else {"hash": _hash_numpy(y)}
