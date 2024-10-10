@@ -5,6 +5,7 @@ This class represents the output of a cross-validation workflow.
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 from typing import TYPE_CHECKING, Any
 
@@ -34,8 +35,14 @@ def plot_cross_validation(cv_results: dict) -> altair.Chart:
     import altair
     import pandas
 
+    _cv_results = cv_results.copy()
+
+    with contextlib.suppress(KeyError):
+        del _cv_results["indices"]
+        del _cv_results["estimator"]
+
     df = (
-        pandas.DataFrame(cv_results)
+        pandas.DataFrame(_cv_results)
         .reset_index(names="split")
         .melt(id_vars="split", var_name="metric", value_name="score")
     )
