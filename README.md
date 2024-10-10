@@ -66,8 +66,8 @@ Then, in the directory containing your project, run the following command in you
 python -m skore launch project.skore
 ```
 This will automatically open a browser at the UI's location.
-1. Create a new `View`, then you can then add items into this view, by double-cliking on them or doing drag-and-drop.
-2. In the `Elements` tab on the left, you can visualize the stored items.
+1. Create a new `View`.
+2. Then, you can add items into this view, by double-cliking on them or doing drag-and-drop. You can visualize the stored items in the `Elements` tab on the left.
 
 💡 Note that after launching the dashboard, you can keep modifying current items or store new ones, and the dashboard will automatically be refreshed.
 
