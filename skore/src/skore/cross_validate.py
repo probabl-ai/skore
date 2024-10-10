@@ -178,7 +178,7 @@ def cross_validate(
 
     # Add scorers based on the ML task
     if ml_task == "clustering":
-        scorers_to_add = ["homogeneity_score", "silhouette_score", "rand_score"]
+        scorers_to_add = []
     elif ml_task == "regression":
         scorers_to_add = ["r2", "neg_mean_squared_error"]
     elif ml_task == "classification":
