@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.1
+#       jupytext_version: 1.16.4
 #   kernelspec:
 #     display_name: .venv
 #     language: python
@@ -19,21 +19,25 @@
 # %% [markdown]
 # # Introduction
 #
-# The purpose of this guide is to illustrate some of the main features that `skore` provides. Please refer to our instructions for installing `skore`.
+# The purpose of this guide is to illustrate some of the main features that `skore` currently provides.
 #
-# Given to you by [:probabl.](https://probabl.ai/), `skore` is a powerful tool that allows data scientists to create tracking and clear reports from their Python code, typically a notebook. For example, see [this HTML file](https://gist.github.com/augustebaum/6b21dbd7f7d5a584fbf2c1956692574e): download it and open it in your browser to visualize it.
+# `skore` allows data scientists to create tracking and visualizations from their Python code:
+# 1. Users can store objects of different types (python lists and dictionaries, `numpy` arrays, `scikit-learn` fitted models, `matplotlib`, `altair`, and `plotly` figures, etc). Storing some values over time allows one to perform **tracking** and also to **visualize** them:
+# 2. They can visualize these stored objects on a dashboard. The dashboard is user-friendly: objects can easily be organized.
+# 3. This dashboard can be exported into a HTML file.
+#
+# This notebook will store some items that have been used to generated a skore report available at [this link](https://sylvaincom.github.io/files/probabl/skore/basic_usage.html): download this HTML file and open it in your browser to visualize it.
 
 # %% [markdown]
 # ## Imports
 
 # %%
-# ruff: noqa
-
 import altair as alt
 import io
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import plotly.express as px
 import PIL
 
 from sklearn.datasets import load_diabetes
@@ -47,33 +51,29 @@ from skore.item import MediaItem
 # %% [markdown]
 # # Initialize and use a Project
 #
-# To initialize a Project, we need to give it a name, or equivalently a file path:
-
-# %%
-# Create a project at path './project.skore'
-# !python -m skore create 'project.skore'
-
-# %% [markdown]
+# To initialize a Project, we need to give it a name, or equivalently a file path. In your shell, run:
+# ```bash
+# $ python -m skore create 'project.skore'
+# ```
 # This will create a Skore project directory named "project.skore" in the current directory.
-
-# %% [markdown]
-# Now that you have created the `project.skore` folder (even though nothing has yet been stored), you can run the UI (in your project root i.e. where `project.skore` is):
+#
+# Now that you have created the `project.skore` folder (even though nothing has yet been stored), you can run the UI (in your project root i.e. where `project.skore` is) from your shell:
 # ```python3
 # $ python -m skore launch project.skore
 # ```
 #
-# >*Note*: If you already had some data in your `project.skore` directory from a previous run -- you can check for that in your shell by using:
+# >*Note*: If you already had a `project.skore` directory from a previous run -- you can check for that in your shell by using:
 # >```python3
 # >$ ls
 # >```
-# >and if you no longer need its objects, we recommend deleting this folder by running `rm` in your shell:
+# >and if you no longer need it, we recommend deleting this folder by running `rm` in your shell:
 # >```python3
 # >$ rm -r project.skore
 # >```
 # >This deletion needs to be done before the cells above: before initializing the store and before launching the UI!
 
 # %% [markdown]
-# Now that the project file exists, we can load it in our script so that we can read from and write to it:
+# Now that the project file exists, we can load it in our notebook so that we can read from and write to it:
 
 # %%
 project = load("project.skore")
@@ -213,9 +213,11 @@ project.put("my_df", my_df)
 
 # %% [markdown]
 # ## Data visualization
+#
+# Note that, in the dashboard, the interactivity of plots is supported, for example for `altair` and `plotly`.
 
 # %% [markdown]
-# Matplotlib Figures:
+# Matplotlib figures:
 
 # %%
 x = np.linspace(0, 2, 100)
@@ -233,7 +235,7 @@ plt.show()
 project.put("my_figure", fig)
 
 # %% [markdown]
-# Altair Charts:
+# Altair charts:
 
 # %%
 num_points = 100
@@ -241,15 +243,24 @@ df_plot = pd.DataFrame(
     {"x": np.random.randn(num_points), "y": np.random.randn(num_points)}
 )
 
-my_chart = (
+my_altair_chart = (
     alt.Chart(df_plot)
     .mark_circle()
     .encode(x="x", y="y", tooltip=["x", "y"])
     .interactive()
     .properties(title="My title")
 )
+my_altair_chart.show()
 
-project.put("my_chart", my_chart)
+project.put("my_altair_chart", my_altair_chart)
+
+# %% [markdown]
+# Plotly figures:
+
+# %%
+my_plotly_fig = px.bar(x=["a", "b", "c"], y=[1, 3, 2])
+my_plotly_fig.show()
+project.put("my_plotly_fig", my_plotly_fig)
 
 # %% [markdown]
 # PIL images:
@@ -302,61 +313,38 @@ project.put("my_fitted_pipeline", my_pipeline)
 # The following is just some `skore` strings that we generate in order to provide more context on the obtained report.
 
 # %%
-project.put_item(
+project.put(
     "my_comment_1",
-    MediaItem.factory(
-        "<p><h1>Welcome to skore!</h1>Given to you by :probabl., skore is a powerful tool that allows data scientists to create tracking and clear reports from their Python code, typically a notebook. This HTML document is actually a skore report generated using the `basic_usage.ipynb` notebook that has been exported (into HTML)!<p>",
-        media_type="text/html",
-    ),
+    "<p><h1>Welcome to skore!</h1><p><code>skore</code> allows data scientists to create tracking and reports from their Python code. This HTML document is actually a skore report generated using the <code>basic_usage.ipynb</code> notebook and that has been exported (into HTML)!<p>",
 )
 
 # %%
-project.put_item(
+project.put(
     "my_comment_2",
-    MediaItem.factory("<p><h2>Integers</h1></p>", media_type="text/html"),
+    "<p><h2>Integers</h1></p>",
 )
 
 # %%
-project.put_item(
-    "my_comment_3", MediaItem.factory("<p><h2>Strings</h1></p>", media_type="text/html")
+project.put(
+    "my_comment_3", "<p><h2>Strings</h1></p>"
 )
 
 # %%
-project.put_item(
+project.put(
     "my_comment_4",
-    MediaItem.factory("<p><h2>Many kinds of data</h1></p>", media_type="text/html"),
+    "<p><h2>Many kinds of data</h1></p>",
 )
 
 # %%
-project.put_item(
+project.put(
     "my_comment_5",
-    MediaItem.factory("<p><h2>Altair plots</h1></p>", media_type="text/html"),
+    "<p><h2>Plots</h1></p>",
 )
 
 # %%
-project.put_item(
+project.put(
     "my_comment_6",
-    MediaItem.factory(
-        "<p><h2>Scikit-learn models and pipelines</h1></p>", media_type="text/html"
-    ),
+    "<p><h2>Scikit-learn models and pipelines</h1></p>"
 )
 
 # %%
-project.put_item(
-    "my_comment_7",
-    MediaItem.factory(
-        "<p><h2>Manipulating the skore report</h1></p>", media_type="text/html"
-    ),
-)
-
-# %%
-project.put_item(
-    "my_comment_8",
-    MediaItem.factory(
-        "<p>Once you have created cells in your Skore report, you can place them where you want: move them up or down, delete them, for example put one to the left of a graph to comment on it.</p>",
-        media_type="text/html",
-    ),
-)
-
-# %%
-project.put("my_chart_2", my_chart)
