@@ -177,13 +177,11 @@ def cross_validate(
     ml_task = _find_ml_task(estimator, y)
 
     # Add scorers based on the ML task
-    if ml_task == "clustering":
-        scorers_to_add = []
-    elif ml_task == "regression":
+    if ml_task == "regression":
         scorers_to_add = ["r2", "neg_mean_squared_error"]
     elif ml_task == "classification":
         scorers_to_add = ["roc_auc", "neg_brier_score", "recall", "precision"]
-    elif ml_task == "unknown":
+    else:
         scorers_to_add = []
 
     try:
