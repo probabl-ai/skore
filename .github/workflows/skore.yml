@@ -59,9 +59,6 @@ jobs:
           pre-commit run --all-files ruff
 
           # Build
-          cp --remove-destination ../LICENSE ./LICENSE
-          cp --remove-destination ../README.md ./README.md
-
           python -m build
 
           # Install
@@ -69,7 +66,7 @@ jobs:
           python -m pip install -r requirements.txt -r requirements-test.txt
 
           # Test
-          python -m pytest
+          python -m pytest src/ tests/
 
   cleanup:
     runs-on: ubuntu-latest
