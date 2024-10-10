@@ -10,9 +10,9 @@ Bug reports are welcome, especially those reported with [short, self-contained, 
 
 ### Quick start
 
-You'll need Python>=3.12 to build the backend and Node>=20 to build the skore-ui. Then, you can install dependencies and run the UI with:
+You'll need `python >=3.9, <3.13` to build the backend and Node>=20 to build the skore-ui. Then, you can install dependencies and run the UI with:
 ```sh
-make install
+make install-skore
 make build-skore-ui
 make serve-ui
 ```
@@ -24,17 +24,12 @@ If you want to contribute, please continue with the three other sections.
 
 Install backend dependencies with
 ```sh
-make install
+make install-skore
 ```
 
 You can run the API server with
 ```sh
 make serve-api
-```
-
-When dependencies are changed in `pyproject.toml` the lockfiles should be updated via [`pip-compile`](https://github.com/jazzband/pip-tools):
-```sh
-make pip-compile
 ```
 
 ### skore-ui

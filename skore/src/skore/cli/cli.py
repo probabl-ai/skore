@@ -65,23 +65,18 @@ def cli(args: list[str]):
 
     parsed_args: argparse.Namespace = parser.parse_args(args)
 
-    match parsed_args.subcommand:
-        case None:
-            parser.print_help()
-        case "launch":
-            __launch(
-                project_name=parsed_args.project_name,
-                port=parsed_args.port,
-                open_browser=parsed_args.open_browser,
-            )
-        case "create":
-            __create(
-                project_name=parsed_args.project_name,
-                working_dir=parsed_args.working_dir,
-            )
-        case "quickstart":
-            __quickstart()
-        case _:
-            # `parser.parse_args` raises an error if an unknown subcommand is passed,
-            # so this case is impossible
-            return
+    if parsed_args.subcommand == "launch":
+        __launch(
+            project_name=parsed_args.project_name,
+            port=parsed_args.port,
+            open_browser=parsed_args.open_browser,
+        )
+    elif parsed_args.subcommand == "create":
+        __create(
+            project_name=parsed_args.project_name,
+            working_dir=parsed_args.working_dir,
+        )
+    elif parsed_args.subcommand == "quickstart":
+        __quickstart()
+    else:
+        parser.print_help()
