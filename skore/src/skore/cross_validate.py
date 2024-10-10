@@ -52,15 +52,17 @@ def _find_ml_task(
     return "classification"
 
 
-def _expand_scorers(scorers, scorers_to_add: list[str]):
-    """Expand `scorers` with `scorers_to_add`.
+def _add_scorers(estimator, y, scorers):
+    """Expand `scorers` with other scorers, based on `estimator` and `y`.
 
     Parameters
     ----------
+    estimator : sklearn.base.BaseEstimator
+        An estimator.
     scorers : any type that is accepted by scikit-learn's cross_validate
         The scorer(s) to expand.
-    scorers_to_add : list[str]
-        The scorers to be added.
+    y : numpy.ndarray
+        A target vector.
 
     Returns
     -------
@@ -70,6 +72,16 @@ def _expand_scorers(scorers, scorers_to_add: list[str]):
         The scorers that were actually added (i.e. the ones that were not already
         in `scorers`).
     """
+    ml_task = _find_ml_task(estimator, y)
+
+    # Add scorers based on the ML task
+    if ml_task == "regression":
+        scorers_to_add = ["r2", "neg_mean_squared_error"]
+    elif ml_task == "classification":
+        scorers_to_add = ["roc_auc", "neg_brier_score", "recall", "precision"]
+    else:
+        scorers_to_add = []
+
     added_scorers = []
 
     if scorers is None:
@@ -100,7 +112,7 @@ def _expand_scorers(scorers, scorers_to_add: list[str]):
             added_scorers.append(s)
     elif isinstance(scorers, tuple):
         scorers = list(scorers)
-        new_scorers, added_scorers = _expand_scorers(scorers, scorers_to_add)
+        new_scorers, added_scorers = _add_scorers(scorers, scorers_to_add)
 
     return new_scorers, added_scorers
 
@@ -168,34 +180,22 @@ def cross_validate(
     """
     import sklearn.model_selection
 
-    # Extend scorers with other relevant scorers
-
-    # Recover target
+    # Recover specific arguments
     estimator = args[0] if len(args) >= 1 else kwargs.get("estimator")
+    X = args[1] if len(args) >= 2 else kwargs.get("X")
     y = args[2] if len(args) == 3 else kwargs.get("y")
-
-    ml_task = _find_ml_task(estimator, y)
-
-    # Add scorers based on the ML task
-    if ml_task == "regression":
-        scorers_to_add = ["r2", "neg_mean_squared_error"]
-    elif ml_task == "classification":
-        scorers_to_add = ["roc_auc", "neg_brier_score", "recall", "precision"]
-    else:
-        scorers_to_add = []
 
     try:
         scorers = kwargs.pop("scoring")
     except KeyError:
         scorers = None
-    new_scorers, added_scorers = _expand_scorers(scorers, scorers_to_add)
+
+    # Extend scorers with other relevant scorers
+    new_scorers, added_scorers = _add_scorers(estimator, y, scorers)
 
     cv_results = sklearn.model_selection.cross_validate(
         *args, **kwargs, scoring=new_scorers
     )
-
-    # Recover data
-    X = args[1] if len(args) >= 2 else kwargs.get("X")
 
     cross_validation_item = CrossValidationItem.factory(cv_results, estimator, X, y)
 
