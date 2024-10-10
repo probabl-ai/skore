@@ -4,6 +4,7 @@ This function implements a wrapper over scikit-learn's [cross_validate](https://
 function in order to enrich it with more information and enable more analysis.
 """
 
+import contextlib
 from typing import Literal
 
 from skore.item.cross_validate_item import CrossValidationItem
@@ -204,10 +205,10 @@ def cross_validate(
         project.put_item("cross_validation", cross_validation_item)
 
     # If in a IPython context (e.g. Jupyter notebook), display the plot
-    try:  # noqa: SIM105
+    with contextlib.suppress(ImportError):
+        from IPython.display import display
+
         display(cross_validation_item.plot)
-    except NameError:
-        pass
 
     # Remove information related to our scorers, so that our return value is
     # the same as sklearn's
