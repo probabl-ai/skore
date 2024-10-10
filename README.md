@@ -3,13 +3,12 @@
 ![ci](https://github.com/probabl-ai/skore/actions/workflows/ci.yml/badge.svg?event=push)
 ![python](https://img.shields.io/badge/python-3.11%20|%203.12-blue?style=flat&logo=python)
 
-`skore` allows data scientists to create tracking and visualization from their Python code:
-1. Users can store objects of different types: python lists and dictionaries, `numpy` arrays, `scikit-learn` fitted models, `matplotlib`, `altair`, and `plotly` figures, etc. Storing some values over time allows one to perform **tracking** and also to **visualize** them:
-2. They can visualize these stored objects on a dashboard. The dashboard is user-friendly: objects can easily be organized.
+With `skore`, data scientists can:
+1. Store objects of different types from their Python code: from python lists to `plotly` figures.
+2. They can **track** and  **visualize** these stored objects on a dashboard.
 3. This dashboard can be exported into a HTML file.
 
-These are only the first features of `skore`'s roadmap.
-`skore` is a work in progress and, on the long run, it aims to be an all-inclusive library for data scientists.
+These are only the first features: `skore` is a work in progress and it aims to be an all-inclusive library for data scientists.
 Stay tuned!
 
 <p align="center">
@@ -18,10 +17,16 @@ Stay tuned!
 
 ## ⚙️ Installation
 
-You can install `skore` by using `pip`:
+First of all, we recommended using a [virtual environment (venv)](https://docs.python.org/3/tutorial/venv.html). You need `python>=3.9`.
+
+Then, you can install `skore` by using `pip`:
 ```bash
 pip install -U skore
 ```
+
+You check check `skore`'s latest version on
+[PyPI](https://pypi.org/project/skore/).
+
 
 ## 🚀 Quick start
 
@@ -61,8 +66,8 @@ Then, in the directory containing your project, run the following command in you
 python -m skore launch project.skore
 ```
 This will automatically open a browser at the UI's location.
-In the `Elements` tab on the left, you can visualize the stored items.
-Create a new `View`, then you can then add items into this view.
+1. Create a new `View`, then you can then add items into this view, by double-cliking on them or doing drag-and-drop.
+2. In the `Elements` tab on the left, you can visualize the stored items.
 
 💡 Note that after launching the dashboard, you can keep modifying current items or store new ones, and the dashboard will automatically be refreshed.
 
