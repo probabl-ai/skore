@@ -4,20 +4,20 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
     commit-message:
-      prefix: "chore(github-actions dependencies):"
+      prefix: "chore(dependencies): GITHUB-ACTIONS"
 
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
     commit-message:
-      prefix: "chore(npm dependencies):"
+      prefix: "chore(dependencies): NPM"
 
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
     commit-message:
-      prefix: "chore(pip dependencies):"
+      prefix: "chore(dependencies): PIP"

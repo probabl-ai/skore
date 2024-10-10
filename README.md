@@ -1,78 +1,96 @@
-# skore
+# 👋 Welcome to skore
 
 ![ci](https://github.com/probabl-ai/skore/actions/workflows/ci.yml/badge.svg?event=push)
 ![python](https://img.shields.io/badge/python-3.11%20|%203.12-blue?style=flat&logo=python)
 
-## Installation
+`skore` allows data scientists to create tracking and visualization from their Python code:
+1. Users can store objects of different types: python lists and dictionaries, `numpy` arrays, `scikit-learn` fitted models, `matplotlib`, `altair`, and `plotly` figures, etc. Storing some values over time allows one to perform **tracking** and also to **visualize** them:
+2. They can visualize these stored objects on a dashboard. The dashboard is user-friendly: objects can easily be organized.
+3. This dashboard can be exported into a HTML file.
 
-For now, the only supported method to use skore is from source.
-Follow the instructions in [CONTRIBUTING.md](https://github.com/probabl-ai/skore/blob/main/CONTRIBUTING.md#quick-start) to install dependencies and start the UI.
+These are only the first features of `skore`'s roadmap.
+`skore` is a work in progress and, on the long run, it aims to be an all-inclusive library for data scientists.
+Stay tuned!
 
-## Quick start
+<p align="center">
+    <img width="100%" src="https://github.com/sylvaincom/sylvaincom.github.io/blob/master/files/probabl/skore/2024_10_08_skore_demo.gif"/>
+</p>
 
-For a complete introductory example, see our [basic usage notebook](https://github.com/probabl-ai/skore/blob/main/examples/basic_usage.ipynb). The resulting skore report has been exported to [this HTML file](https://gist.github.com/augustebaum/6b21dbd7f7d5a584fbf2c1956692574e): download it and open it in your browser to visualize it.
+## ⚙️ Installation
 
-In your shell, run the following to create a project file `project.skore` (the default) in your current working directory:
-```sh
-python -m skore create
+You can install `skore` by using `pip`:
+```bash
+pip install -U skore
 ```
 
-Run the following in your Python code to load the project:
+## 🚀 Quick start
+=======
+
+In your shell, run the following to create a project file `project.skore` (the default) in your current working directory:
+```bash
+python -m skore create 'project.skore'
+```
+
+Run the following in your Python code (in the same working directory) to load the project, store some objects, delete them, etc:
 ```python
 from skore import load
 
+# load the project
 project = load("project.skore")
-```
 
-You can save items you need to track in your project:
-```python
+# save an item you need to track in your project
 project.put("my int", 3)
-```
 
-You can also get them back:
-```python
+# get an item's value
 project.get("my int")
-```
 
-By default, strings are assumed to be Markdown:
-```python
+# by default, strings are assumed to be Markdown:
 project.put("my string", "Hello world!")
-```
 
-Note that `put` overwrites previous data
-```python
+# `put` overwrites previous data
 project.put("my string", "Hello again!")
-```
 
-You can list all the keys in a project with:
-```python
-project.list_keys()
-```
+# list all the keys in a project
+print(project.list_item_keys())
 
-You can delete items with:
-```python
+# delete an item
 project.delete_item("my int")
 ```
 
-Then, in the directory containing your project, run the following command to start the UI locally:
-```sh
+Then, in the directory containing your project, run the following command in your shell to start the UI locally:
+```bash
 python -m skore launch project.skore
 ```
-
 This will automatically open a browser at the UI's location.
+In the `Elements` tab on the left, you can visualize the stored items.
+Create a new `View`, then you can then add items into this view.
 
+💡 Note that after launching the dashboard, you can keep modifying current items or store new ones, and the dashboard will automatically be refreshed.
 
-## Roadmap
+👨‍🏫 For a complete introductory example, see our [basic usage notebook](https://github.com/probabl-ai/skore/blob/main/examples/basic_usage.ipynb).
+It shows you how to store all types of items: python lists and dictionaries, `numpy` arrays, `scikit-learn` fitted models, `matplotlib`, `altair`, and `plotly` figures, etc.
+The resulting `skore` report has been exported to [this HTML file](https://sylvaincom.github.io/files/probabl/skore/basic_usage.html).
 
-With Skore, you can:
-- Store data
-- Visualize data
+## 🔨 Contributing
 
-In the future, you will be able to:
-- Share visualizations of your data
-- Extract insights from your data
-- Get tips on how to improve your data science code
+Thank you for your interest!
+See [CONTRIBUTING.md](https://github.com/probabl-ai/skore/blob/main/CONTRIBUTING.md).
 
-## Contributing
+## 💬 Where to ask questions
 
-See [CONTRIBUTING.md](https://github.com/probabl-ai/skore/blob/main/CONTRIBUTING.md) for more information and to contribute to the evolution of this library.
+| Type                                | Platforms                        |
+|-------------------------------------|----------------------------------|
+| 🐛 Bug reports                  | [GitHub Issue Tracker]           |
+| ✨ Feature requests and ideas      | [GitHub Issue Tracker] & [Discord] |
+| 💬 Usage questions, discussions, contributions, etc              | [Discord]   |
+
+[GitHub Issue Tracker]: https://github.com/probabl-ai/skore/issues
+[Discord]: https://discord.gg/scBZerAGwW
+
+---
+
+Brought to you by:
+
+<a href="https://probabl.ai" target="_blank">
+    <img width="120" src="https://sylvaincom.github.io/files/probabl/logo_probabl.svg" alt="Probabl logo">
+</a>
