@@ -27,18 +27,11 @@ function getItemSubtitle(created_at: Date, updated_at: Date) {
     <Simplebar class="cards">
       <div class="inner">
         <ProjectViewCard
-          v-for="{
-            key,
-            mediaType,
-            data,
-            createdAt,
-            updatedAt,
-          } in projectStore.presentableItemsInView()"
+          v-for="{ key, mediaType, data, createdAt, updatedAt } in projectStore.currentViewItems"
           :key="key"
           :title="key.toString()"
           :subtitle="getItemSubtitle(createdAt, updatedAt)"
           :showActions="false"
-          class="canvas-element"
         >
           <DataFrameWidget
             v-if="mediaType === 'application/vnd.dataframe+json'"

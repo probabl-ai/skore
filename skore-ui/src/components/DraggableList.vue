@@ -92,6 +92,13 @@ onMounted(() => {
           movingItemIndex.value = parseInt(event.target.dataset.index);
           movingItemY.value = bounds.top - parentBounds.top;
           movingItemHeight.value = bounds.height;
+
+          console.log(
+            `start drag done`,
+            movingItemIndex.value,
+            movingItemY.value,
+            movingItemHeight.value
+          );
         }
       },
       move(event) {
@@ -130,6 +137,8 @@ onMounted(() => {
         } else {
           dropIndicatorPosition.value = closestItemBelow.index;
         }
+
+        console.log(`move drag done`, dropIndicatorPosition.value, closestItemBelow.index);
       },
       end() {
         // change the model order
@@ -202,7 +211,7 @@ onUnmounted(() => {
 }
 
 .draggable {
-  --content-left-margin: 15px;
+  --content-left-margin: 18px;
 
   position: relative;
   display: flex;
@@ -215,11 +224,12 @@ onUnmounted(() => {
 
     & .handle {
       position: absolute;
-      top: 0;
+      top: -4px;
       left: 0;
+      display: flex;
       color: hsl(from var(--color-primary) h s calc(l * 1.5));
       cursor: move;
-      font-size: calc(var(--text-size-normal) * 1.5);
+      font-size: calc(var(--text-size-normal) * 1.7);
       opacity: 0;
       transition: opacity var(--transition-duration) var(--transition-easing);
     }

@@ -60,6 +60,17 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   projectStore.stopBackendPolling();
 });
+
+const items = ref(
+  Array.from({ length: 20 }, (_, i) => ({
+    id: `plip-${i}`,
+    key: `plip-${i}`,
+    mediaType: "text/markdown",
+    data: "# data\ncoucou",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }))
+);
 </script>
 
 <template>
@@ -90,14 +101,13 @@ onBeforeUnmount(() => {
           </div>
         </div>
         <Simplebar class="editor-wrapper" v-else>
-          <DraggableList :items="projectStore.presentableItemsInView()">
+          <DraggableList v-model:items="projectStore.currentViewItems">
             <template #item="{ key, mediaType, data, createdAt, updatedAt }">
               <ProjectViewCard
                 :key="key"
                 :title="key.toString()"
                 :subtitle="getItemSubtitle(createdAt, updatedAt)"
                 :showActions="props.showCardActions"
-                class="canvas-element"
                 @card-removed="onCardRemoved(key)"
               >
                 <DataFrameWidget

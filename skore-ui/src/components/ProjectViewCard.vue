@@ -44,6 +44,7 @@ const emit = defineEmits<{
   position: relative;
   overflow: auto;
   max-width: 100%;
+  background-color: var(--background-color-normal);
 
   & .header {
     display: flex;

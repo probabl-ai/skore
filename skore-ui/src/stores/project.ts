@@ -3,11 +3,19 @@ import { ref, shallowRef } from "vue";
 
 import { type Layout, type Project, type ProjectItem } from "@/models";
 import { deleteView as deleteViewApi, fetchProject, putView } from "@/services/api";
-import { poll } from "@/services/utils";
 
 export interface TreeNode {
   name: string;
   children: TreeNode[];
+}
+
+export interface PresentableItem {
+  id: string;
+  key: string;
+  mediaType: string;
+  data: any;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export const useProjectStore = defineStore("project", () => {
@@ -15,6 +23,7 @@ export const useProjectStore = defineStore("project", () => {
   const items = shallowRef<{ [key: string]: ProjectItem } | null>(null);
   const views = ref<{ [key: string]: Layout }>({});
   const currentView = ref<string | null>(null);
+  const currentViewItems = ref<PresentableItem[]>([]);
 
   /**
    * Return true if the the given key is in the list of displayed keys, false otherwise.
@@ -37,6 +46,7 @@ export const useProjectStore = defineStore("project", () => {
     const realKey = key.replace(" (self)", "");
     if (!isKeyDisplayed(view, realKey)) {
       views.value[view] = [...views.value[view], realKey];
+      _updatePresentableItemsInView();
       await persistView(view, views.value[view]);
     }
     await startBackendPolling();
@@ -52,6 +62,7 @@ export const useProjectStore = defineStore("project", () => {
     if (isKeyDisplayed(view, key)) {
       const v = views.value[view];
       views.value[view] = v.filter((k) => k !== key);
+      _updatePresentableItemsInView();
       await persistView(view, views.value[view]);
     }
     await startBackendPolling();
@@ -76,7 +87,7 @@ export const useProjectStore = defineStore("project", () => {
   async function startBackendPolling() {
     _isCanceledCall = false;
     await fetch();
-    _stopBackendPolling = await poll(fetch, 1500);
+    _stopBackendPolling = () => {}; // await poll(fetch, 1500);
   }
 
   /**
@@ -108,6 +119,7 @@ export const useProjectStore = defineStore("project", () => {
   async function setProject(r: Project) {
     items.value = r.items;
     views.value = r.views;
+    _updatePresentableItemsInView();
   }
 
   /**
@@ -229,12 +241,19 @@ export const useProjectStore = defineStore("project", () => {
   }
 
   /**
+   * Set the current view
+   */
+  function setCurrentView(view: string) {
+    currentView.value = view;
+    _updatePresentableItemsInView();
+  }
+
+  /**
    * Get the items in the current view as a presentable list.
    * @returns a list of items with their metadata
    */
-  function presentableItemsInView() {
-    const r = [];
-    let index = 0;
+  function _updatePresentableItemsInView() {
+    const r: PresentableItem[] = [];
     if (items.value !== null && currentView.value !== null) {
       const v = views.value[currentView.value];
       for (const key of v) {
@@ -269,19 +288,22 @@ export const useProjectStore = defineStore("project", () => {
             data,
             createdAt,
             updatedAt,
-            index,
           });
-          index++;
         }
       }
     }
-    return r;
+    currentViewItems.value = r;
   }
+
+  // watch(currentViewItems, (toto) => {
+  //   console.log("currentViewItems changed", toto);
+  // });
 
   return {
     items,
     views,
     currentView,
+    currentViewItems,
     displayKey,
     hideKey,
     startBackendPolling,
@@ -292,6 +314,6 @@ export const useProjectStore = defineStore("project", () => {
     duplicateView,
     deleteView,
     renameView,
-    presentableItemsInView,
+    setCurrentView,
   };
 });

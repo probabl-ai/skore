@@ -15,7 +15,7 @@ const views = ref<EditableListItemModel[]>([]);
 let unsavedViewsId: string = "";
 
 function onViewSelected(view: string) {
-  projectStore.currentView = view;
+  projectStore.setCurrentView(view);
 }
 
 async function onViewRenamed(oldName: string, newName: string, item: EditableListItemModel) {
