@@ -169,7 +169,7 @@ class CrossValidationItem(Item):
         ----------
         cv_results : dict
             The dict output of scikit-learn's cross_validate function.
-        estimator: sklearn.base.BaseEstimator,
+        estimator : sklearn.base.BaseEstimator,
             The estimator that was cross-validated.
         X
             The data, input of scikit-learn's cross_validation function.

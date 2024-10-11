@@ -32,7 +32,7 @@ def _find_ml_task(
     from sklearn.base import is_classifier, is_regressor
 
     if y is None:
-        # FIXME: The task might not be clustering
+        # NOTE: The task might not be clustering
         return "clustering"
 
     if is_classifier(estimator):
@@ -202,6 +202,7 @@ def cross_validate(
             cv_results[f"train_{scorers}"] = cv_results["train_score"]
         cv_results[f"test_{scorers}"] = cv_results["test_score"]
 
+    breakpoint()
 
     cross_validation_item = CrossValidationItem.factory(cv_results, estimator, X, y)
 

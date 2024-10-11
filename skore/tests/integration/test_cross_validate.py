@@ -57,6 +57,27 @@ def test_cross_validate_2_extra_metrics(in_memory_project, lasso):
     assert all(len(v) == kwargs["cv"] for v in cv_results.values())
 
 
+def test_cross_validation_multi_class(in_memory_project):
+    from sklearn import datasets
+    from sklearn.multiclass import OneVsOneClassifier
+    from sklearn.svm import LinearSVC
+
+    X, y = datasets.load_iris(return_X_y=True)
+    model = OneVsOneClassifier(LinearSVC())
+
+    args = [model, X, y]
+    kwargs = {"cv": 3}
+
+    cv_results = cross_validate(*args, **kwargs, project=in_memory_project)
+    cv_results_sklearn = sklearn.model_selection.cross_validate(*args, **kwargs)
+
+    assert isinstance(
+        in_memory_project.get_item("cross_validation"), CrossValidationItem
+    )
+    assert cv_results.keys() == cv_results_sklearn.keys()
+    assert all(len(v) == kwargs["cv"] for v in cv_results.values())
+
+
 def test_plot_cross_validation():
     from numpy import array
 
