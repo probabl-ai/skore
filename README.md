@@ -65,7 +65,7 @@ Then, in the directory containing your project, run the following command in you
 ```bash
 python -m skore launch project.skore
 ```
-This will automatically open a browser at the UI's location.
+This will automatically open a browser at the UI's location:
 1. Create a new `View`.
 2. Then, you can add items into this view, by double-cliking on them or doing drag-and-drop. You can visualize the stored items in the `Elements` tab on the left.
 
