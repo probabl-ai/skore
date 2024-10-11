@@ -45,8 +45,8 @@ project.put("my int", 3)
 python -m skore launch project.skore
 ```
 This will automatically open a browser at the UI's location:
-1. Create a new `View`.
-2. Then, you can add items into this view, by double-cliking on them or doing drag-and-drop. You can visualize the available stored items in the `Elements` tab on the left.
+1. Create a new `View` on the top left.
+2. Then, from `Elements` section on the bottom left, you can add stored items into this view, by double-cliking on them or doing drag-and-drop.
 
 ## 👨‍💻 More examples
 
