@@ -428,18 +428,17 @@ const draggableListData = ref(
         </div>
       </TabsItem>
       <TabsItem :value="13">
-        <Simplebar class="draggable-list-container">
-          <DraggableList v-model:items="draggableListData">
-            <template #item="{ id, color, content }">
-              <div :style="{ backgroundColor: color, color: 'white' }">
-                <span>ID: {{ id }}</span>
-                <ul>
-                  <li v-for="(c, i) in content" :key="i">{{ c }}</li>
-                </ul>
-              </div>
-            </template>
-          </DraggableList>
-        </Simplebar>
+        <Simplebar class="draggable-list-container"> </Simplebar>
+        <DraggableList v-model:items="draggableListData">
+          <template #item="{ id, color, content }">
+            <div :style="{ backgroundColor: color, color: 'white' }">
+              <span>ID: {{ id }}</span>
+              <ul>
+                <li v-for="(c, i) in content" :key="i">{{ c }}</li>
+              </ul>
+            </div>
+          </template>
+        </DraggableList>
       </TabsItem>
     </Tabs>
   </main>

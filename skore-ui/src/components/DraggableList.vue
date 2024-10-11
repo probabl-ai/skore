@@ -217,16 +217,20 @@ onUnmounted(() => {
       position: absolute;
       top: 0;
       left: 0;
+      color: hsl(from var(--color-primary) h s calc(l * 1.5));
       cursor: move;
+      font-size: calc(var(--text-size-normal) * 1.5);
       opacity: 0;
       transition: opacity var(--transition-duration) var(--transition-easing);
     }
 
     & .content-wrapper {
+      width: calc(100% - var(--content-left-margin));
       margin-left: var(--content-left-margin);
     }
 
     & .content {
+      width: 100%;
       transition: opacity var(--transition-duration) var(--transition-easing);
 
       &.moving {

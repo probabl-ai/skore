@@ -44,13 +44,6 @@ const emit = defineEmits<{
   position: relative;
   overflow: auto;
   max-width: 100%;
-  padding: var(--spacing-padding-large);
-  border: solid 1px var(--background-color-normal);
-  border-radius: var(--border-radius);
-  background-color: var(--background-color-normal);
-  transition:
-    background-color var(--transition-duration) var(--transition-easing),
-    border var(--transition-duration) var(--transition-easing);
 
   & .header {
     display: flex;

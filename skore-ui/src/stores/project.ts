@@ -228,6 +228,56 @@ export const useProjectStore = defineStore("project", () => {
     await persistView(newName, views.value[newName]);
   }
 
+  /**
+   * Get the items in the current view as a presentable list.
+   * @returns a list of items with their metadata
+   */
+  function presentableItemsInView() {
+    const r = [];
+    let index = 0;
+    if (items.value !== null && currentView.value !== null) {
+      const v = views.value[currentView.value];
+      for (const key of v) {
+        const item = items.value[key];
+        if (item) {
+          const mediaType = item.media_type || "";
+          let data;
+          if (
+            [
+              "text/markdown",
+              "application/vnd.dataframe+json",
+              "application/vnd.sklearn.estimator+html",
+              "image/png",
+              "image/jpeg",
+              "image/webp",
+              "image/svg+xml",
+            ].includes(mediaType)
+          ) {
+            data = item.value;
+          } else {
+            data = atob(item.value);
+            if (mediaType.includes("json")) {
+              data = JSON.parse(data);
+            }
+          }
+          const createdAt = new Date(item.created_at);
+          const updatedAt = new Date(item.updated_at);
+          r.push({
+            id: key,
+            key,
+            mediaType,
+            data,
+            createdAt,
+            updatedAt,
+            index,
+          });
+          index++;
+        }
+      }
+    }
+    return r;
+  }
+
   return {
     items,
     views,
@@ -242,5 +292,6 @@ export const useProjectStore = defineStore("project", () => {
     duplicateView,
     deleteView,
     renameView,
+    presentableItemsInView,
   };
 });
