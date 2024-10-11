@@ -30,31 +30,25 @@ You can check `skore`'s latest version on
 
 ## 🚀 Quick start
 
-Initialize a `skore` Project called `project.skore` in your current working directory from your shell:
+1. From your shell, initialize a `skore` Project called `project.skore` that will be in your current working directory:
 ```bash
 python -m skore create 'project.skore'
 ```
-
-Run the following in your Python code (in the same working directory) to load the project:
+2. Then, from your Python code (in the same directory), load the project and store an integer for example:
 ```python
 from skore import load
 project = load("project.skore")
-```
-
-Store an item such as an integer:
-```python
 project.put("my int", 3)
 ```
-
-Then, in the directory containing your project, run the following command in your shell to start the UI locally:
+3. Finally, from your shell (in the same directory), start the UI locally:
 ```bash
 python -m skore launch project.skore
 ```
 This will automatically open a browser at the UI's location:
 1. Create a new `View`.
-2. Then, you can add items into this view, by double-cliking on them or doing drag-and-drop. You can visualize the stored items in the `Elements` tab on the left.
+2. Then, you can add items into this view, by double-cliking on them or doing drag-and-drop. You can visualize the available stored items in the `Elements` tab on the left.
 
-💡 Note that after launching the dashboard, you can keep modifying current items or store new ones, and the dashboard will automatically be refreshed.
+💡 Note that after launching the dashboard, you can keep modifying current items or store new ones from your python code, and the dashboard will automatically be refreshed.
 
 Store a `pandas` dataframe:
 ```python

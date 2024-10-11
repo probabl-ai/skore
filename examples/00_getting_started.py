@@ -39,13 +39,13 @@ from skore import load
 # %% [markdown]
 # ## Initialize a Project and launch the UI
 #
-# Initialize a `skore` Project called `project.skore` from your shell in your current working directory:
+# From your shell, initialize a `skore` Project called `project.skore` that will be in your current working directory:
 # ```bash
 # $ python -m skore create 'project.skore'
 # ```
 # This will create a skore project directory named `project.skore` in the current directory.
 #
-# Then, you can run the UI (in your project root i.e. where `project.skore` is) from your shell:
+# Then, from your Python code (in the same directory), load the project and store an integer for example:
 # ```bash
 # $ python -m skore launch project.skore
 # ```
