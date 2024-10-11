@@ -48,6 +48,8 @@ This will automatically open a browser at the UI's location:
 1. Create a new `View`.
 2. Then, you can add items into this view, by double-cliking on them or doing drag-and-drop. You can visualize the available stored items in the `Elements` tab on the left.
 
+## 👨‍💻 More examples
+
 💡 Note that after launching the dashboard, you can keep modifying current items or store new ones from your python code, and the dashboard will automatically be refreshed.
 
 Store a `pandas` dataframe:
