@@ -2,6 +2,7 @@
 
 import re
 from pathlib import Path
+from typing import Optional, Union
 
 from skore.cli import logger
 
@@ -25,7 +26,7 @@ class ImproperProjectName(Exception):
     """
 
 
-def validate_project_name(project_name: str) -> (bool, Exception | None):
+def validate_project_name(project_name: str) -> tuple[bool, Optional[Exception]]:
     """Validate the project name (the part before ".skore").
 
     Returns `(True, None)` if validation succeeded and `(False, Exception(...))`
@@ -78,7 +79,9 @@ class ProjectPermissionError(Exception):
     """Permissions in the directory do not allow creating a file."""
 
 
-def __create(project_name: str | Path, working_dir: Path | None = None) -> Path:
+def __create(
+    project_name: Union[str, Path], working_dir: Optional[Path] = None
+) -> Path:
     """Create a project file named according to `project_name`.
 
     Parameters

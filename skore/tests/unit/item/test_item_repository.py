@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 
 import pytest
 from skore.item import ItemRepository, MediaItem
@@ -6,7 +6,7 @@ from skore.item import ItemRepository, MediaItem
 
 class TestItemRepository:
     def test_get_item(self):
-        now = datetime.now(tz=UTC).isoformat()
+        now = datetime.now(tz=timezone.utc).isoformat()
         item_representation = dict(
             media_bytes=b"media",
             media_encoding="utf-8",
@@ -35,7 +35,7 @@ class TestItemRepository:
             repository.get_item("key2")
 
     def test_put_item(self):
-        now = datetime.now(tz=UTC).isoformat()
+        now = datetime.now(tz=timezone.utc).isoformat()
         item = MediaItem(
             media_bytes=b"media",
             media_encoding="utf-8",
@@ -61,7 +61,7 @@ class TestItemRepository:
             }
         }
 
-        now2 = datetime.now(tz=UTC).isoformat()
+        now2 = datetime.now(tz=timezone.utc).isoformat()
         item2 = MediaItem(
             media_bytes=b"media2",
             media_encoding="utf-8",
