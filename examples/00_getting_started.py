@@ -39,11 +39,11 @@ from skore import load
 # %% [markdown]
 # ## Initialize a Project and launch the UI
 #
-# Initialize a `skore` Project from your shell:
+# Initialize a `skore` Project called `project.skore` from your shell in your current working directory:
 # ```bash
 # $ python -m skore create 'project.skore'
 # ```
-# This will create a Skore project directory named `project.skore` in the current directory.
+# This will create a skore project directory named `project.skore` in the current directory.
 #
 # Then, you can run the UI (in your project root i.e. where `project.skore` is) from your shell:
 # ```bash
@@ -79,18 +79,9 @@ project.put("my_df", my_df)
 # for a `matplotlib` figure:
 
 # %%
-x = np.linspace(0, 2, 100)
-
-fig, ax = plt.subplots(figsize=(5, 2.7), layout="constrained")
-ax.plot(x, x, label="linear")
-ax.plot(x, x**2, label="quadratic")
-ax.plot(x, x**3, label="cubic")
-ax.set_xlabel("x label")
-ax.set_ylabel("y label")
-ax.set_title("Simple Plot")
-ax.legend()
-plt.show()
-
+x = [0, 1, 2, 3, 4, 5]
+fig, ax = plt.subplots(figsize=(5, 3), layout="constrained")
+ax.plot(x)
 project.put("my_figure", fig)
 
 # %% [markdown]
@@ -107,3 +98,5 @@ my_pipeline = Pipeline(
 my_pipeline.fit(X, y)
 
 project.put("my_fitted_pipeline", my_pipeline)
+
+# %%

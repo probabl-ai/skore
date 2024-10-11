@@ -30,35 +30,20 @@ You can check `skore`'s latest version on
 
 ## 🚀 Quick start
 
-In your shell, run the following to create a project file `project.skore` (the default) in your current working directory:
+Initialize a `skore` Project called `project.skore` in your current working directory from your shell:
 ```bash
 python -m skore create 'project.skore'
 ```
 
-Run the following in your Python code (in the same working directory) to load the project, store some objects, delete them, etc:
+Run the following in your Python code (in the same working directory) to load the project:
 ```python
 from skore import load
-
-# load the project
 project = load("project.skore")
+```
 
-# save an item you need to track in your project
+Store an item such as an integer:
+```python
 project.put("my int", 3)
-
-# get an item's value
-project.get("my int")
-
-# by default, strings are assumed to be Markdown:
-project.put("my string", "Hello world!")
-
-# `put` overwrites previous data
-project.put("my string", "Hello again!")
-
-# list all the keys in a project
-print(project.list_item_keys())
-
-# delete an item
-project.delete_item("my int")
 ```
 
 Then, in the directory containing your project, run the following command in your shell to start the UI locally:
@@ -71,7 +56,42 @@ This will automatically open a browser at the UI's location:
 
 💡 Note that after launching the dashboard, you can keep modifying current items or store new ones, and the dashboard will automatically be refreshed.
 
-👨‍🏫 For a complete introductory example, see our [basic usage notebook](https://github.com/probabl-ai/skore/blob/main/examples/basic_usage.ipynb).
+Store a `pandas` dataframe:
+```python
+import pandas as pd
+
+my_df = pd.DataFrame(np.random.randn(3, 3))
+project.put("my_df", my_df)
+```
+
+Store a `matplotlib` figure:
+```python
+import matplotlib.pyplot as plt
+
+x = [0, 1, 2, 3, 4, 5]
+fig, ax = plt.subplots(figsize=(5, 3), layout="constrained")
+ax.plot(x)
+project.put("my_figure", fig)
+```
+
+Store a `scikit-learn` fitted pipeline:
+```python
+from sklearn.datasets import load_diabetes
+from sklearn.linear_model import Lasso
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+
+diabetes = load_diabetes()
+X = diabetes.data[:150]
+y = diabetes.target[:150]
+my_pipeline = Pipeline(
+    [("standard_scaler", StandardScaler()), ("lasso", Lasso(alpha=2))]
+)
+my_pipeline.fit(X, y)
+project.put("my_fitted_pipeline", my_pipeline)
+```
+
+👨‍🏫 For a complete introductory example, see our [basic usage notebook](https://github.com/probabl-ai/skore/blob/main/examples/01_basic_usage.ipynb).
 It shows you how to store all types of items: python lists and dictionaries, `numpy` arrays, `scikit-learn` fitted models, `matplotlib`, `altair`, and `plotly` figures, etc.
 The resulting `skore` report has been exported to [this HTML file](https://sylvaincom.github.io/files/probabl/skore/basic_usage.html).
 
