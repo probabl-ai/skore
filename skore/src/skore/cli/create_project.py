@@ -2,9 +2,9 @@
 
 import re
 from pathlib import Path
+from typing import Optional, Union
 
 from skore.cli import logger
-from typing import Optional, Union
 
 
 class ProjectNameTooLong(Exception):
@@ -26,7 +26,7 @@ class ImproperProjectName(Exception):
     """
 
 
-def validate_project_name(project_name: str) -> Union[bool, Exception, None]:
+def validate_project_name(project_name: str) -> tuple[bool, Optional[Exception]]:
     """Validate the project name (the part before ".skore").
 
     Returns `(True, None)` if validation succeeded and `(False, Exception(...))`
