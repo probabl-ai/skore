@@ -22,21 +22,6 @@
 # 3. This dashboard can be exported into a HTML file.
 
 # %% [markdown]
-# ## Imports
-
-# %%
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-
-from sklearn.datasets import load_diabetes
-from sklearn.linear_model import Lasso
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
-
-from skore import load
-
-# %% [markdown]
 # ## Initialize a Project and launch the UI
 #
 # From your shell, initialize a `skore` Project called `project.skore` that will be in your current working directory:
@@ -53,10 +38,11 @@ from skore import load
 # Now that the project file exists, we can load it in our notebook so that we can read from and write to it:
 
 # %%
+from skore import load
 project = load("project.skore")
 
 # %% [markdown]
-# ## Storing an integer
+# ## Storing some items
 
 # %% [markdown]
 # Storing an integer:
@@ -71,14 +57,18 @@ project.put("my_int", 3)
 # For a `pandas` data frame:
 
 # %%
-my_df = pd.DataFrame(np.random.randn(3, 3))
+import numpy as np
+import pandas as pd
 
+my_df = pd.DataFrame(np.random.randn(3, 3))
 project.put("my_df", my_df)
 
 # %% [markdown]
 # for a `matplotlib` figure:
 
 # %%
+import matplotlib.pyplot as plt
+
 x = [0, 1, 2, 3, 4, 5]
 fig, ax = plt.subplots(figsize=(5, 3), layout="constrained")
 ax.plot(x)
@@ -88,15 +78,18 @@ project.put("my_figure", fig)
 # For a `scikit-learn` fitted pipeline:
 
 # %%
+from sklearn.datasets import load_diabetes
+from sklearn.linear_model import Lasso
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+
 diabetes = load_diabetes()
 X = diabetes.data[:150]
 y = diabetes.target[:150]
-
 my_pipeline = Pipeline(
     [("standard_scaler", StandardScaler()), ("lasso", Lasso(alpha=2))]
 )
 my_pipeline.fit(X, y)
-
 project.put("my_fitted_pipeline", my_pipeline)
 
 # %%

@@ -52,6 +52,7 @@ This will automatically open a browser at the UI's location:
 
 Store a `pandas` dataframe:
 ```python
+import numpy as np
 import pandas as pd
 
 my_df = pd.DataFrame(np.random.randn(3, 3))
