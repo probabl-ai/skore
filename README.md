@@ -30,7 +30,7 @@ You can check `skore`'s latest version on
 
 ## 🚀 Quick start
 
-1. From your shell, initialize a `skore` project, here named `'project.skore'`, that will be in your current working directory:
+1. From your shell, initialize a `skore` project, here named `project.skore`, that will be in your current working directory:
 ```bash
 python -m skore create "project.skore"
 ```
@@ -89,7 +89,7 @@ project.put("my_fitted_pipeline", my_pipeline)
 ```
 
 👨‍🏫 For a complete introductory example, see our [basic usage notebook](https://github.com/probabl-ai/skore/blob/main/examples/01_basic_usage.ipynb).
-It shows you how to store all types of items: python lists and dictionaries, `numpy` arrays, `scikit-learn` fitted models, figures (`matplotlib`, `altair`, and `plotly`), etc.
+It shows you how to store all types of items: python lists and dictionaries, `numpy` arrays, `pandas` dataframes, `scikit-learn` fitted models, figures (`matplotlib`, `altair`, and `plotly`), etc.
 The resulting `skore` report has been exported to [this HTML file](https://sylvaincom.github.io/files/probabl/skore/01_basic_usage.html).
 
 ## 🔨 Contributing
