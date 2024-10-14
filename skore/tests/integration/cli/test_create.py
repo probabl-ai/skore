@@ -2,10 +2,9 @@ import subprocess
 
 import pytest
 from skore.cli.create_project import (
-    ImproperProjectName,
-    ProjectAlreadyExists,
+    InvalidProjectNameError,
+    ProjectAlreadyExistsError,
     ProjectCreationError,
-    ProjectNameTooLong,
     __create,
     validate_project_name,
 )
@@ -13,15 +12,15 @@ from skore.cli.create_project import (
 test_cases = [
     (
         "a" * 250,
-        (False, ProjectNameTooLong()),
+        (False, InvalidProjectNameError()),
     ),
     (
         "%",
-        (False, ImproperProjectName()),
+        (False, InvalidProjectNameError()),
     ),
     (
         "hello world",
-        (False, ImproperProjectName()),
+        (False, InvalidProjectNameError()),
     ),
 ]
 
@@ -50,7 +49,7 @@ def test_create_project_absolute_path(tmp_path):
 def test_create_project_fails_if_file_exists(tmp_path):
     __create(tmp_path / "hello")
     assert (tmp_path / "hello.skore").exists()
-    with pytest.raises(ProjectAlreadyExists):
+    with pytest.raises(ProjectAlreadyExistsError):
         __create(tmp_path / "hello")
 
 
@@ -89,4 +88,4 @@ def test_create_project_cli_invalid_name(tmp_path):
     )
     with pytest.raises(subprocess.CalledProcessError):
         completed_process.check_returncode()
-    assert b"ImproperProjectName" in completed_process.stderr
+    assert b"InvalidProjectNameError" in completed_process.stderr
