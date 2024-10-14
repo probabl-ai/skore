@@ -17,8 +17,7 @@ Stay tuned!
 
 Using: `raw.githubusercontent.com`
 <p align="center">
-    <img width="100%" src="https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_10_08_skore_demo.gif
-    "/>
+    <img width="100%" src="https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_10_08_skore_demo.gif"/>
 </p>
 
 ## ⚙️ Installation
