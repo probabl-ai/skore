@@ -11,7 +11,7 @@ With `skore`, data scientists can:
 These are only the first features: `skore` is a work in progress and aims to be an end-to-end library for data scientists.
 Stay tuned!
 
-![GIF: short demo of `skore`](https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_10_14_skore_demo_compressed.gif)
+![GIF: short demo of `skore`](https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_10_14_skore_demo.gif)
 
 ## ⚙️ Installation
 
