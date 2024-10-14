@@ -35,7 +35,7 @@ python -m skore create "project.skore"
 ```python
 from skore import load
 project = load("project.skore")
-project.put("my int", 3)
+project.put("my_int", 3)
 ```
 3. Finally, from your shell (in the same directory), start the UI locally:
 ```bash
