@@ -333,6 +333,20 @@ project.put("my_fitted_pipeline", my_pipeline)
 
 # %% [markdown]
 # ---
+# # Cross-validation with skore
+
+# %%
+from sklearn import datasets, linear_model
+from skore.cross_validate import cross_validate
+diabetes = datasets.load_diabetes()
+X = diabetes.data[:150]
+y = diabetes.target[:150]
+lasso = linear_model.Lasso()
+
+cv_results = cross_validate(lasso, X, y, cv=3)
+
+# %% [markdown]
+# ---
 # ## Manipulating the skore UI
 #
 # The following is just some `skore` strings that we generate in order to provide more context on the obtained report.
