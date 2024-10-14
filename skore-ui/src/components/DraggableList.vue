@@ -2,7 +2,10 @@
 import type { Interactable } from "@interactjs/types";
 import { toPng } from "html-to-image";
 import interact from "interactjs";
+import Simplebar from "simplebar-core";
 import { onMounted, onUnmounted, ref, useTemplateRef } from "vue";
+
+import CacheableComponent from "@/components/CacheableComponent.vue";
 
 interface Item {
   id: string;
@@ -10,6 +13,9 @@ interface Item {
 }
 
 const items = defineModel<Item[]>("items", { required: true });
+const props = defineProps<{
+  autoScrollContainerSelector?: string;
+}>();
 const dropIndicatorPosition = ref<number | null>(null);
 const movingItemIndex = ref(-1);
 const movingItemAsPngData = ref("");
@@ -18,6 +24,7 @@ const movingItemY = ref(0);
 const container = useTemplateRef("container");
 let interactable: Interactable;
 let direction: "up" | "down" | "none" = "none";
+let autoScrollContainer: HTMLElement = document.body;
 
 function topDropIndicatorStyles() {
   if (dropIndicatorPosition.value === -1) {
@@ -75,8 +82,30 @@ function makeModifier() {
 }
 
 onMounted(() => {
+  if (props.autoScrollContainerSelector !== undefined) {
+    const element = document.querySelector(props.autoScrollContainerSelector);
+    if (element) {
+      const isSimplebar = element.hasAttribute("data-simplebar");
+      if (isSimplebar) {
+        const sb = new Simplebar(element as HTMLElement);
+        const scrollElement = sb.getScrollElement();
+        sb.unMount();
+        if (scrollElement) {
+          autoScrollContainer = scrollElement;
+        }
+      } else {
+        autoScrollContainer = element as HTMLElement;
+      }
+    }
+  } else {
+    autoScrollContainer = container.value!.parentElement ?? document.body;
+  }
+
   interactable = interact(".handle").draggable({
-    autoScroll: true,
+    autoScroll: {
+      enabled: true,
+      container: autoScrollContainer,
+    },
     startAxis: "y",
     lockAxis: "y",
     modifiers: [makeModifier()],
@@ -106,7 +135,10 @@ onMounted(() => {
         direction = event.dy >= 0 ? "down" : "up";
 
         // move the rasterized copy
-        movingItemY.value += event.dy;
+        const paddingTop = parseInt(getComputedStyle(autoScrollContainer!).paddingTop);
+        const containerY = autoScrollContainer?.getBoundingClientRect().y ?? 0;
+        movingItemY.value =
+          event.clientY + autoScrollContainer!.scrollTop - paddingTop - containerY;
 
         // set the drop indicator item index
         const itemBounds = Array.from(container.value!.querySelectorAll(".item")).map(
@@ -182,7 +214,9 @@ onUnmounted(() => {
           :style="topDropIndicatorStyles()"
         />
         <div class="content" :class="{ moving: movingItemIndex === index }">
-          <slot name="item" v-bind="item"></slot>
+          <CacheableComponent :is-cached="movingItemIndex !== -1">
+            <slot name="item" v-bind="item"></slot>
+          </CacheableComponent>
         </div>
         <div
           class="drop-indicator bottom"
@@ -253,10 +287,6 @@ onUnmounted(() => {
       border-radius: 3px;
       background-color: var(--color-primary);
       opacity: 0;
-      transition:
-        opacity var(--transition-duration) var(--transition-easing),
-        height var(--transition-duration) var(--transition-easing),
-        margin var(--transition-duration) var(--transition-easing);
 
       &.visible {
         height: 3px;
@@ -288,6 +318,13 @@ onUnmounted(() => {
       touch-action: none;
       transition: none;
       user-select: none;
+    }
+
+    & .drop-indicator {
+      transition:
+        opacity var(--transition-duration) var(--transition-easing),
+        height var(--transition-duration) var(--transition-easing),
+        margin var(--transition-duration) var(--transition-easing);
     }
   }
 }

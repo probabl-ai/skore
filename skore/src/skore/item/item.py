@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import inspect
 from abc import ABC, abstractmethod
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from functools import cached_property
-from typing import Any
+from typing import Any, Optional
 
 
 class Item(ABC):
@@ -33,10 +33,10 @@ class Item(ABC):
 
     def __init__(
         self,
-        created_at: str | None = None,
-        updated_at: str | None = None,
+        created_at: Optional[str] = None,
+        updated_at: Optional[str] = None,
     ):
-        now = datetime.now(tz=UTC).isoformat()
+        now = datetime.now(tz=timezone.utc).isoformat()
 
         self.created_at = created_at or now
         self.updated_at = updated_at or now

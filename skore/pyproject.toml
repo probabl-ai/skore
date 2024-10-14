@@ -6,10 +6,8 @@ dynamic = [
   "readme",
   "version"
 ]
-requires-python = ">=3.11"
-maintainers = [
-    {name = "skore developers", email="skore@signal.probabl.ai"},
-]
+requires-python = ">=3.9, <3.13"
+maintainers = [{name = "skore developers", email="skore@signal.probabl.ai"}]
 dependencies = [
   "diskcache",
   "fastapi",
@@ -30,8 +28,10 @@ classifiers=[
   "Operating System :: Unix",
   "Operating System :: MacOS",
   "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12"
+  "Programming Language :: Python :: 3.12",
 ]
 
 [project.urls]
@@ -74,10 +74,6 @@ test = [
   "pytest-randomly",
   "ruff",
   "scikit-learn",
-]
-
-tools = [
-  "pip-tools",
 ]
 
 [tool.pytest.ini_options]
