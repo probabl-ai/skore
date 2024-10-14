@@ -4,15 +4,18 @@ import type { VisualizationSpec } from "vega-embed";
 import { ref } from "vue";
 
 import datatable from "@/assets/fixtures/datatable.json";
+import htmlSnippet from "@/assets/fixtures/html-snippet.html?raw";
 import markdownString from "@/assets/fixtures/markdown.md?raw";
 import spec from "@/assets/fixtures/vega.json";
 
+import CacheableComponent from "@/components/CacheableComponent.vue";
 import CrossValidationResultsWidget from "@/components/CrossValidationResultsWidget.vue";
 import DataFrameWidget from "@/components/DataFrameWidget.vue";
 import DraggableList from "@/components/DraggableList.vue";
 import DropdownButton from "@/components/DropdownButton.vue";
 import DropdownButtonItem from "@/components/DropdownButtonItem.vue";
 import EditableList, { type EditableListItemModel } from "@/components/EditableList.vue";
+import HtmlSnippetWidget from "@/components/HtmlSnippetWidget.vue";
 import ImageWidget from "@/components/ImageWidget.vue";
 import MarkdownWidget from "@/components/MarkdownWidget.vue";
 import SectionHeader from "@/components/SectionHeader.vue";
@@ -152,6 +155,8 @@ const draggableListData = ref(
     ),
   }))
 );
+
+const isCached = ref(false);
 </script>
 
 <template>
@@ -173,6 +178,7 @@ const draggableListData = ref(
         'editable list',
         'icons',
         'draggable list',
+        'cacheable component',
       ]"
     >
       <TabsItem :value="0">
@@ -429,7 +435,10 @@ const draggableListData = ref(
       </TabsItem>
       <TabsItem :value="13">
         <Simplebar class="draggable-list-container">
-          <DraggableList v-model:items="draggableListData">
+          <DraggableList
+            v-model:items="draggableListData"
+            auto-scroll-container-selector=".draggable-list-container"
+          >
             <template #item="{ id, color, content }">
               <div :style="{ backgroundColor: color, color: 'white' }">
                 <span>ID: {{ id }}</span>
@@ -440,6 +449,16 @@ const draggableListData = ref(
             </template>
           </DraggableList>
         </Simplebar>
+      </TabsItem>
+      <TabsItem :value="14">
+        <label>
+          Cache the following widget
+          <input type="checkbox" v-model="isCached" />
+        </label>
+        <CacheableComponent :is-cached="isCached">
+          <div>lorem ipsum dolor sit amet</div>
+          <HtmlSnippetWidget :src="htmlSnippet" />
+        </CacheableComponent>
       </TabsItem>
     </Tabs>
   </main>

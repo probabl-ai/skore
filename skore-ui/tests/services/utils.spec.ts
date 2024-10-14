@@ -1,4 +1,5 @@
 import {
+  debounce,
   generateRandomId,
   generateRandomMultiple,
   isDeepEqual,
@@ -98,5 +99,21 @@ describe("utils", () => {
 
   it("Can generate a random id", () => {
     expect(generateRandomId()).toBeTypeOf("string");
+  });
+
+  it("Can debounce a function", async () => {
+    const f = vi.fn();
+    const debounced = debounce(f, 10, false);
+    debounced();
+    expect(f).toBeCalledTimes(0);
+    await sleep(11);
+    expect(f).toBeCalledTimes(1);
+  });
+
+  it("Can debounce a function but call it immediately if immediate is true", async () => {
+    const f = vi.fn();
+    const debounced = debounce(f, 10, true);
+    debounced();
+    expect(f).toBeCalledTimes(1);
   });
 });

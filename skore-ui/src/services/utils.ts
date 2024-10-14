@@ -154,3 +154,24 @@ export function generateRandomMultiple(baseNumber: number, min: number, max: num
 export function generateRandomId() {
   return crypto.randomUUID();
 }
+
+/**
+ * Debounce a function.
+ *
+ * Ported to TS from [You-Dont-Need-Lodash](https://github.com/you-dont-need/You-Dont-Need-Lodash-Underscore?tab=readme-ov-file#_debounce)
+ * @param func the function to debounce
+ * @param wait the delay in ms
+ * @param immediate if true the function will be called immediately
+ * @returns the debounced function
+ */
+export function debounce(func: Function, wait: number, immediate: boolean) {
+  let timeout: ReturnType<typeof setTimeout> | null = null;
+  return function (this: any, ...args: any[]) {
+    if (timeout) clearTimeout(timeout);
+    if (immediate && !timeout) func.apply(this, [...args]);
+    timeout = setTimeout(function (this: any) {
+      timeout = null;
+      if (!immediate) func.apply(this, [...args]);
+    }, wait);
+  };
+}
