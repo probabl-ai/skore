@@ -13,7 +13,13 @@ from skore.project import Project
 
 def _find_ml_task(
     estimator, y
-) -> Literal["classification", "regression", "clustering", "unknown"]:
+) -> Literal[
+    "binary-classification",
+    "multiclass-classification",
+    "regression",
+    "clustering",
+    "unknown",
+]:
     """Guess the ML task being addressed based on an estimator and a target array.
 
     Parameters
@@ -35,13 +41,17 @@ def _find_ml_task(
         # NOTE: The task might not be clustering
         return "clustering"
 
-    if is_classifier(estimator):
-        return "classification"
-
     if is_regressor(estimator):
         return "regression"
 
     type_of_target = sklearn.utils.multiclass.type_of_target(y)
+
+    if is_classifier(estimator):
+        if type_of_target == "binary":
+            return "binary-classification"
+
+        if type_of_target == "multiclass":
+            return "multiclass-classification"
 
     if type_of_target == "unknown":
         return "unknown"
@@ -77,8 +87,13 @@ def _add_scorers(estimator, y, scorers):
     # Add scorers based on the ML task
     if ml_task == "regression":
         scorers_to_add = ["r2", "neg_mean_squared_error"]
-    elif ml_task == "classification":
+    elif ml_task == "binary-classification":
         scorers_to_add = ["roc_auc", "neg_brier_score", "recall", "precision"]
+    elif ml_task == "multiclass-classification":
+        scorers_to_add = ["recall_weighted", "precision_weighted"]
+
+        if hasattr(estimator, "predict_proba"):
+            scorers_to_add += ["roc_auc_ovr_weighted", "neg_log_loss"]
     else:
         scorers_to_add = []
 
@@ -201,8 +216,6 @@ def cross_validate(
         if kwargs.get("return_train_score") is not None:
             cv_results[f"train_{scorers}"] = cv_results["train_score"]
         cv_results[f"test_{scorers}"] = cv_results["test_score"]
-
-    breakpoint()
 
     cross_validation_item = CrossValidationItem.factory(cv_results, estimator, X, y)
 
