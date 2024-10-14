@@ -5,7 +5,7 @@ function in order to enrich it with more information and enable more analysis.
 """
 
 import contextlib
-from typing import Literal
+from typing import Literal, Optional
 
 from skore.item.cross_validate_item import CrossValidationItem
 from skore.project import Project
@@ -156,7 +156,7 @@ def _strip_cv_results_scores(cv_results: dict, added_scorers: list[str]) -> dict
 
 
 def cross_validate(
-    *args, project: Project | None = None, **kwargs
+    *args, project: Optional[Project] = None, **kwargs
 ) -> CrossValidationItem:
     """Evaluate estimator by cross-validation and output UI-friendly object.
 
