@@ -6,7 +6,7 @@ from sklearn import datasets, linear_model
 from sklearn.cluster import KMeans
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.multiclass import OneVsOneClassifier
-from sklearn.svm import LinearSVC
+from sklearn.svm import SVC
 from skore.cross_validate import cross_validate
 from skore.item.cross_validate_item import CrossValidationItem, plot_cross_validation
 
@@ -62,9 +62,26 @@ def test_cross_validate_2_extra_metrics(in_memory_project, lasso):
     assert all(len(v) == kwargs["cv"] for v in cv_results.values())
 
 
+def test_cross_validation_binary_classification_no_predict_proba(in_memory_project):
+    X, y = datasets.load_iris(return_X_y=True)
+    model = SVC()
+
+    args = [model, X, y]
+    kwargs = {"cv": 3}
+
+    cv_results = cross_validate(*args, **kwargs, project=in_memory_project)
+    cv_results_sklearn = sklearn.model_selection.cross_validate(*args, **kwargs)
+
+    assert isinstance(
+        in_memory_project.get_item("cross_validation"), CrossValidationItem
+    )
+    assert cv_results.keys() == cv_results_sklearn.keys()
+    assert all(len(v) == kwargs["cv"] for v in cv_results.values())
+
+
 def test_cross_validation_multi_class_classification_sub_estimator(in_memory_project):
     X, y = datasets.load_iris(return_X_y=True)
-    model = OneVsOneClassifier(LinearSVC())
+    model = OneVsOneClassifier(SVC())
 
     args = [model, X, y]
     kwargs = {"cv": 3}
