@@ -164,6 +164,10 @@ cython_debug/
 .DS_Store
 *.datamander
 
+# Sphinx documentation
+doc/_build/
+doc/auto_examples/
+
 # Visual studio code
 .vscode
 

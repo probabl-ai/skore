@@ -1,0 +1,54 @@
+name: Build documentation
+
+on:
+  push:
+    branches:
+      - main
+      - test-ci*
+  pull_request:
+    branches:
+      - '**'
+
+permissions:
+  contents: write
+
+jobs:
+  push_doc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - run: pip install .[doc]
+
+      - name: Sphinx build
+        run: sphinx-build doc build
+
+      - name: Save the PR number
+        env:
+          GITHUB_PULL_REQUEST_NUMBER: ${{github.event.number}}
+        run: |
+          echo "Storing PR number ${{github.event.number}} to 'pull_request_number' file"
+          echo ${{github.event.number}} > pull_request_number
+
+      - name: Upload doc preview
+        # The publication of the preview itself happens in pr-doc-preview.yml
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: doc-preview
+          path: |
+            ./build
+            pull_request_number
+
+      - name: Deploy
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          publish_branch: gh-pages
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build
+          commit_message: "[ci skip] ${{ github.event.head_commit.message }}"

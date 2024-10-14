@@ -72,6 +72,16 @@ test = [
   "scikit-learn",
 ]
 
+doc = [
+  "sphinx",
+  "pydata-sphinx-theme",
+  "sphinx-gallery",
+  "sphinx-design",
+  "matplotlib",
+  "scikit-learn",
+  "numpydoc",
+]
+
 tools = [
   "pip-tools",
 ]
