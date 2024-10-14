@@ -1,4 +1,5 @@
 import numpy
+import pandas
 import pytest
 import sklearn.model_selection
 from numpy import array
@@ -22,6 +23,36 @@ def lasso():
 
 def test_cross_validate_regression(in_memory_project, lasso):
     args = lasso
+    kwargs = {"cv": 3}
+
+    cv_results = cross_validate(*args, **kwargs, project=in_memory_project)
+    cv_results_sklearn = sklearn.model_selection.cross_validate(*args, **kwargs)
+
+    assert isinstance(
+        in_memory_project.get_item("cross_validation"), CrossValidationItem
+    )
+    assert cv_results.keys() == cv_results_sklearn.keys()
+    assert all(len(v) == kwargs["cv"] for v in cv_results.values())
+
+
+def test_cross_validate_regression_data_is_list(in_memory_project, lasso):
+    model, X, y = lasso
+    args = [model, X.tolist(), y.tolist()]
+    kwargs = {"cv": 3}
+
+    cv_results = cross_validate(*args, **kwargs, project=in_memory_project)
+    cv_results_sklearn = sklearn.model_selection.cross_validate(*args, **kwargs)
+
+    assert isinstance(
+        in_memory_project.get_item("cross_validation"), CrossValidationItem
+    )
+    assert cv_results.keys() == cv_results_sklearn.keys()
+    assert all(len(v) == kwargs["cv"] for v in cv_results.values())
+
+
+def test_cross_validate_regression_data_is_pandas(in_memory_project, lasso):
+    model, X, y = lasso
+    args = [model, pandas.DataFrame(X), pandas.Series(y)]
     kwargs = {"cv": 3}
 
     cv_results = cross_validate(*args, **kwargs, project=in_memory_project)

@@ -16,7 +16,6 @@ from skore.item.item import Item
 from skore.item.media_item import MediaItem
 
 if TYPE_CHECKING:
-    import numpy
     import sklearn.base
 
 
@@ -85,12 +84,12 @@ def plot_cross_validation(cv_results: dict) -> altair.Chart:
     )
 
 
-def _hash_numpy(array: numpy.ndarray) -> str:
+def _hash_numpy(arr: numpy.ndarray) -> str:
     """Compute a hash string from a numpy array.
 
     Parameters
     ----------
-    array : numpy array
+    arr : numpy array
         The numpy array whose hash will be computed.
 
     Returns
@@ -98,7 +97,7 @@ def _hash_numpy(array: numpy.ndarray) -> str:
     hash : str
         A hash corresponding to the input array.
     """
-    return hashlib.sha256(array.tobytes()).hexdigest()
+    return hashlib.sha256(bytes(memoryview(arr))).hexdigest()
 
 
 # Data used for training, passed as input to scikit-learn
@@ -201,12 +200,14 @@ class CrossValidationItem(Item):
             "params": repr(estimator.get_params()),
         }
 
-        y_info = None if y is None else {"hash": _hash_numpy(y)}
+        y_array = y if isinstance(y, numpy.ndarray) else numpy.array(y)
+        y_info = None if y is None else {"hash": _hash_numpy(y_array)}
 
+        X_array = X if isinstance(X, numpy.ndarray) else numpy.array(X)
         X_info = {
-            "nb_rows": X.shape[0],
-            "nb_cols": X.shape[1],
-            "hash": _hash_numpy(X),
+            "nb_rows": X_array.shape[0],
+            "nb_cols": X_array.shape[1],
+            "hash": _hash_numpy(X_array),
         }
 
         plot_bytes = MediaItem.factory(plot_cross_validation(cv_results)).media_bytes
