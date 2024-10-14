@@ -15,6 +15,12 @@ Stay tuned!
     <img width="100%" src="https://github.com/sylvaincom/sylvaincom.github.io/blob/master/files/probabl/skore/2024_10_08_skore_demo.gif"/>
 </p>
 
+Using: `raw.githubusercontent.com`
+<p align="center">
+    <img width="100%" src="https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_10_08_skore_demo.gif
+    "/>
+</p>
+
 ## ⚙️ Installation
 
 First of all, we recommended using a [virtual environment (venv)](https://docs.python.org/3/tutorial/venv.html). You need `python>=3.9`.
