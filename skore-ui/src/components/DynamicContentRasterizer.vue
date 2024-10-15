@@ -4,15 +4,15 @@ import { toPng } from "html-to-image";
 import { computed, onBeforeUnmount, ref, useTemplateRef, watch } from "vue";
 
 const props = defineProps<{
-  isCached: boolean;
+  isRasterized: boolean;
 }>();
 
-const cachedSrc = ref("");
+const rasterizedSrc = ref("");
 const realContent = useTemplateRef("realContent");
-const cacheHeight = ref(0);
+const contentHeight = ref(0);
 
 const styles = computed(() => {
-  const h = cacheHeight.value !== 0 ? `${cacheHeight.value}px` : "auto";
+  const h = contentHeight.value !== 0 ? `${contentHeight.value}px` : "auto";
   return {
     height: h,
   };
@@ -21,7 +21,7 @@ const styles = computed(() => {
 const updateCache = debounce(
   async () => {
     if (realContent.value) {
-      cachedSrc.value = await toPng(realContent.value as HTMLElement);
+      rasterizedSrc.value = await toPng(realContent.value as HTMLElement);
     }
   },
   100,
@@ -29,9 +29,9 @@ const updateCache = debounce(
 );
 
 const resizeObserver = new ResizeObserver(async (entries) => {
-  if (entries.length == 1 && !props.isCached) {
+  if (entries.length == 1 && !props.isRasterized) {
     const content = entries[0];
-    cacheHeight.value = content.contentRect.height;
+    contentHeight.value = content.contentRect.height;
     updateCache();
   }
 });
@@ -51,23 +51,23 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="cacheable" :style="styles">
-    <div class="real-content" v-if="!isCached" ref="realContent">
+  <div class="dynamic-content-rasterizer" :style="styles">
+    <div class="real-content" v-if="!isRasterized" ref="realContent">
       <slot />
     </div>
     <div class="cached-content" v-else>
-      <img :src="cachedSrc" />
+      <img :src="rasterizedSrc" />
     </div>
   </div>
 </template>
 
 <style scoped>
-.cacheable {
+.dynamic-content-rasterizer {
   position: relative;
   padding: 0;
   margin: 0;
 
-  & .cached-content {
+  & .rasterized-content {
     position: absolute;
     top: 0;
     left: 0;

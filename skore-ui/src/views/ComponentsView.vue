@@ -8,12 +8,12 @@ import htmlSnippet from "@/assets/fixtures/html-snippet.html?raw";
 import markdownString from "@/assets/fixtures/markdown.md?raw";
 import spec from "@/assets/fixtures/vega.json";
 
-import CacheableComponent from "@/components/CacheableComponent.vue";
 import CrossValidationResultsWidget from "@/components/CrossValidationResultsWidget.vue";
 import DataFrameWidget from "@/components/DataFrameWidget.vue";
 import DraggableList from "@/components/DraggableList.vue";
 import DropdownButton from "@/components/DropdownButton.vue";
 import DropdownButtonItem from "@/components/DropdownButtonItem.vue";
+import DynamicContentRasterizer from "@/components/DynamicContentRasterizer.vue";
 import EditableList, { type EditableListItemModel } from "@/components/EditableList.vue";
 import HtmlSnippetWidget from "@/components/HtmlSnippetWidget.vue";
 import ImageWidget from "@/components/ImageWidget.vue";
@@ -455,10 +455,10 @@ const isCached = ref(false);
           Cache the following widget
           <input type="checkbox" v-model="isCached" />
         </label>
-        <CacheableComponent :is-cached="isCached">
+        <DynamicContentRasterizer :isRasterized="isCached">
           <div>lorem ipsum dolor sit amet</div>
           <HtmlSnippetWidget :src="htmlSnippet" />
-        </CacheableComponent>
+        </DynamicContentRasterizer>
       </TabsItem>
     </Tabs>
   </main>

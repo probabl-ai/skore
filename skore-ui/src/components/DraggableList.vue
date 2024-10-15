@@ -5,7 +5,7 @@ import interact from "interactjs";
 import Simplebar from "simplebar-core";
 import { onMounted, onUnmounted, ref, useTemplateRef } from "vue";
 
-import CacheableComponent from "@/components/CacheableComponent.vue";
+import DynamicContentRasterizer from "@/components/DynamicContentRasterizer.vue";
 
 interface Item {
   id: string;
@@ -205,9 +205,9 @@ onUnmounted(() => {
           :style="topDropIndicatorStyles()"
         />
         <div class="content" :class="{ moving: movingItemIndex === index }">
-          <CacheableComponent :is-cached="movingItemIndex !== -1">
+          <DynamicContentRasterizer :isRasterized="movingItemIndex !== -1">
             <slot name="item" v-bind="item"></slot>
-          </CacheableComponent>
+          </DynamicContentRasterizer>
         </div>
         <div
           class="drop-indicator bottom"
