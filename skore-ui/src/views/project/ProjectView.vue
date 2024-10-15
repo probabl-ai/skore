@@ -57,20 +57,10 @@ function getItemSubtitle(created_at: Date, updated_at: Date) {
 onMounted(async () => {
   await projectStore.startBackendPolling();
 });
+
 onBeforeUnmount(() => {
   projectStore.stopBackendPolling();
 });
-
-const items = ref(
-  Array.from({ length: 20 }, (_, i) => ({
-    id: `plip-${i}`,
-    key: `plip-${i}`,
-    mediaType: "text/markdown",
-    data: "# data\ncoucou",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  }))
-);
 </script>
 
 <template>
@@ -101,7 +91,10 @@ const items = ref(
           </div>
         </div>
         <Simplebar class="editor-wrapper" v-else>
-          <DraggableList v-model:items="projectStore.currentViewItems">
+          <DraggableList
+            v-model:items="projectStore.currentViewItems"
+            auto-scroll-container-selector=".editor-wrapper"
+          >
             <template #item="{ key, mediaType, data, createdAt, updatedAt }">
               <ProjectViewCard
                 :key="key"
@@ -187,7 +180,7 @@ main {
       & .key-list {
         z-index: 1;
         height: 0;
-        flex-grow: 1;
+        flex: 1;
       }
     }
 

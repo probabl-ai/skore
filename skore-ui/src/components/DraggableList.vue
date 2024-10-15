@@ -121,13 +121,6 @@ onMounted(() => {
           movingItemIndex.value = parseInt(event.target.dataset.index);
           movingItemY.value = bounds.top - parentBounds.top;
           movingItemHeight.value = bounds.height;
-
-          console.log(
-            `start drag done`,
-            movingItemIndex.value,
-            movingItemY.value,
-            movingItemHeight.value
-          );
         }
       },
       move(event) {
@@ -139,6 +132,8 @@ onMounted(() => {
         const containerY = autoScrollContainer?.getBoundingClientRect().y ?? 0;
         movingItemY.value =
           event.clientY + autoScrollContainer!.scrollTop - paddingTop - containerY;
+
+        console.log(paddingTop, containerY, event.clientY);
 
         // set the drop indicator item index
         const itemBounds = Array.from(container.value!.querySelectorAll(".item")).map(
@@ -169,8 +164,6 @@ onMounted(() => {
         } else {
           dropIndicatorPosition.value = closestItemBelow.index;
         }
-
-        console.log(`move drag done`, dropIndicatorPosition.value, closestItemBelow.index);
       },
       end() {
         // change the model order
@@ -195,6 +188,8 @@ onMounted(() => {
       },
     },
   });
+
+  console.log("interactable", interactable);
 });
 
 onUnmounted(() => {
@@ -204,6 +199,10 @@ onUnmounted(() => {
 
 <template>
   <div class="draggable" :class="{ dragging: movingItemIndex !== -1 }" ref="container">
+    <div style="position: fixed; top: 0; right: 0; background: black; color: antiquewhite">
+      movingItemY: {{ movingItemY }} movingItemIndex: {{ movingItemIndex }} dropIndicatorPosition:
+      {{ dropIndicatorPosition }} movingItemHeight: {{ movingItemHeight }}
+    </div>
     <div v-for="(item, index) in items" class="item" :key="item.id">
       <div class="handle" :data-index="index"><span class="icon-handle" /></div>
       <div class="content-wrapper">

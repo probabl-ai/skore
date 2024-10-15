@@ -145,6 +145,17 @@ function onEditableListAction(action: string, item: EditableListItemModel) {
 
 const lastSelectedItem = ref<string | null>(null);
 
+function addItemToDraggableList(i: number) {
+  draggableListData.value.push({
+    id: `${i}`,
+    color: `hsl(${(360 / 25) * i}deg, 90%, 50%)`,
+    content: Array.from(
+      { length: Math.floor(Math.random() * 10) + 1 }, // Random number of items between 1 and 10
+      () => String.fromCharCode(97 + Math.floor(Math.random() * 26)) // Random lowercase letter
+    ),
+  });
+}
+
 const draggableListData = ref(
   Array.from({ length: 25 }, (v, i) => ({
     id: `${i}`,
@@ -435,6 +446,13 @@ const isCached = ref(false);
       </TabsItem>
       <TabsItem :value="13">
         <div>Item order: {{ draggableListData.map((item) => item.id).join(", ") }}</div>
+        <div>
+          <SimpleButton
+            label="add item"
+            :is-primary="true"
+            @click="addItemToDraggableList(draggableListData.length + 1)"
+          />
+        </div>
         <Simplebar class="draggable-list-container">
           <DraggableList
             v-model:items="draggableListData"

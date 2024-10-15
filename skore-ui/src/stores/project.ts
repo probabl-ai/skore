@@ -19,11 +19,11 @@ export interface PresentableItem {
 }
 
 export const useProjectStore = defineStore("project", () => {
-  // this object is not deeply reactive as it may be very large
+  // this objects is not deeply reactive as it may be very large
   const items = shallowRef<{ [key: string]: ProjectItem } | null>(null);
+  const currentViewItems = shallowRef<PresentableItem[]>([]);
   const views = ref<{ [key: string]: Layout }>({});
   const currentView = ref<string | null>(null);
-  const currentViewItems = ref<PresentableItem[]>([]);
 
   /**
    * Return true if the the given key is in the list of displayed keys, false otherwise.
@@ -295,25 +295,23 @@ export const useProjectStore = defineStore("project", () => {
     currentViewItems.value = r;
   }
 
-  // watch(currentViewItems, (toto) => {
-  //   console.log("currentViewItems changed", toto);
-  // });
-
   return {
-    items,
-    views,
+    // refs
     currentView,
     currentViewItems,
+    items,
+    views,
+    // actions
+    createView,
+    deleteView,
     displayKey,
+    duplicateView,
     hideKey,
+    keysAsTree,
+    setCurrentView,
+    setProject,
+    renameView,
     startBackendPolling,
     stopBackendPolling,
-    setProject,
-    keysAsTree,
-    createView,
-    duplicateView,
-    deleteView,
-    renameView,
-    setCurrentView,
   };
 });
