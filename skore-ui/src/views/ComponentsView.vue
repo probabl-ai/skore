@@ -6,7 +6,6 @@ import datatable from "@/assets/fixtures/datatable.json";
 import markdownString from "@/assets/fixtures/markdown.md?raw";
 import spec from "@/assets/fixtures/vega.json";
 
-import CrossValidationResultsWidget from "@/components/CrossValidationResultsWidget.vue";
 import DataFrameWidget from "@/components/DataFrameWidget.vue";
 import DropdownButton from "@/components/DropdownButton.vue";
 import DropdownButtonItem from "@/components/DropdownButtonItem.vue";
@@ -151,7 +150,6 @@ const lastSelectedItem = ref<string | null>(null);
         'vega',
         'DataFrame',
         'Image',
-        'CV Results',
         'buttons',
         'toast',
         'inputs',
@@ -211,15 +209,6 @@ const lastSelectedItem = ref<string | null>(null);
         </div>
       </TabsItem>
       <TabsItem :value="4">
-        <CrossValidationResultsWidget
-          :roc_curve_spec="spec as VisualizationSpec"
-          :cv_results_table="{
-            columns: ['id', 'first_name', 'last_name', 'email', 'gender', 'ip_address'],
-            data: datatable,
-          }"
-        />
-      </TabsItem>
-      <TabsItem :value="5">
         <div class="buttons">
           <p>
             <SimpleButton label="hey ho" :is-primary="true" />
@@ -309,7 +298,7 @@ const lastSelectedItem = ref<string | null>(null);
           </p>
         </div>
       </TabsItem>
-      <TabsItem :value="6">
+      <TabsItem :value="5">
         <div class="toasts">
           <ToastNotification message="Info toast" type="info" id="info-toast" />
           <ToastNotification message="Success toast" type="success" id="success-toast" />
@@ -319,7 +308,7 @@ const lastSelectedItem = ref<string | null>(null);
         <SimpleButton label="Show unique toast" @click="showToast" />
         <SimpleButton label="Show toast" @click="showToastWithCount" />
       </TabsItem>
-      <TabsItem :value="7">
+      <TabsItem :value="6">
         <div class="text-inputs">
           <p>
             Regular text input
@@ -341,12 +330,12 @@ const lastSelectedItem = ref<string | null>(null);
           </p>
         </div>
       </TabsItem>
-      <TabsItem :value="8">
+      <TabsItem :value="7">
         <SimpleButton label="Show alert modal" @click="showAlertModal" />
         <SimpleButton label="Show confirm modal" @click="showConfirmModal" />
         <SimpleButton label="Show prompt modal" @click="showPromptModal" />
       </TabsItem>
-      <TabsItem :value="9">
+      <TabsItem :value="8">
         <SectionHeader title="Section header" />
         <SectionHeader
           title="Section header with action"
@@ -354,10 +343,10 @@ const lastSelectedItem = ref<string | null>(null);
           @action="onSectionHeaderAction"
         />
       </TabsItem>
-      <TabsItem :value="10">
+      <TabsItem :value="9">
         <TreeAccordion :nodes="fileTreeNodes" />
       </TabsItem>
-      <TabsItem :value="11" class="editable-list-tab">
+      <TabsItem :value="10" class="editable-list-tab">
         <div class="header">
           Editable List as 2 way data binding... item list is:
           <ul>
@@ -385,7 +374,7 @@ const lastSelectedItem = ref<string | null>(null);
           </Simplebar>
         </div>
       </TabsItem>
-      <TabsItem :value="12">
+      <TabsItem :value="11">
         <div class="icons">
           <div>icon-trash <span class="icon-trash"></span></div>
           <div>icon-more <span class="icon-more"></span></div>
