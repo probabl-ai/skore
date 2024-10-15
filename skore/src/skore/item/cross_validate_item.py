@@ -14,7 +14,6 @@ import altair
 import numpy
 
 from skore.item.item import Item
-from skore.item.media_item import MediaItem
 
 if TYPE_CHECKING:
     import sklearn.base
@@ -211,7 +210,9 @@ class CrossValidationItem(Item):
             "hash": _hash_numpy(X_array),
         }
 
-        plot_bytes = MediaItem.factory(plot_cross_validation(cv_results)).media_bytes
+        # Keep plot itself as well as bytes so we can cache it
+        plot = plot_cross_validation(cv_results)
+        plot_bytes = plot.to_json().encode("utf-8")
 
         instance = cls(
             cv_results_serialized=cv_results_serialized,
