@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import contextlib
 import hashlib
+from functools import cached_property
 from typing import TYPE_CHECKING, Any
 
 import altair
@@ -222,7 +223,7 @@ class CrossValidationItem(Item):
 
         return instance
 
-    @property
+    @cached_property
     def plot(self):
         """A plot of the cross-validation results."""
         return altair.Chart.from_json(self.plot_bytes.decode("utf-8"))
