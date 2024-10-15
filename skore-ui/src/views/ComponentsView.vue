@@ -150,7 +150,6 @@ const lastSelectedItem = ref<string | null>(null);
         'vega',
         'DataFrame',
         'Image',
-        'CV Results',
         'buttons',
         'toast',
         'inputs',
