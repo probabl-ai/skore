@@ -222,6 +222,9 @@ class CrossValidationItem(Item):
             plot_bytes=plot_bytes,
         )
 
+        # Cache plot
+        instance.plot = plot
+
         return instance
 
     @cached_property
