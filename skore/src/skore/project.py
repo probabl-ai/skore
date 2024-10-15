@@ -127,7 +127,7 @@ class Project:
         elif isinstance(item, SklearnBaseEstimatorItem):
             return item.estimator
         elif isinstance(item, CrossValidationItem):
-            return item.cv_results
+            return item.cv_results_serialized
         elif isinstance(item, MediaItem):
             return item.media_bytes
         else:
