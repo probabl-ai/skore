@@ -5,7 +5,8 @@ import { computed, ref, toValue, watch } from "vue";
 import TextInput from "@/components/TextInput.vue";
 
 export interface DataFrameWidgetProps {
-  columns: string[];
+  index: any[];
+  columns: any[];
   data: any[][];
 }
 const props = defineProps<DataFrameWidgetProps>();
@@ -41,6 +42,15 @@ const visibleRows = computed(() => {
   return rows.value.slice(pageStart.value, pageEnd.value);
 });
 
+const visibleIndexes = computed(() => {
+  return props.index.slice(pageStart.value, pageEnd.value).map((value) => {
+    if (value instanceof Array) {
+      return value.join(", ");
+    }
+    return value;
+  });
+});
+
 function nextPage() {
   if (currentPage.value < totalPages.value - 1) {
     currentPage.value++;
@@ -70,12 +80,14 @@ watch([() => toValue(props.data), () => toValue(props.columns)], () => {
       <table>
         <thead>
           <tr>
-            <th v-for="(name, index) in props.columns" :key="index">{{ name }}</th>
+            <th class="index">index</th>
+            <th v-for="(name, i) in props.columns" :key="i">{{ name }}</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(row, index) in visibleRows" :key="index">
-            <td v-for="(value, index) in row" :key="index">{{ value }}</td>
+          <tr v-for="(row, i) in visibleRows" :key="i">
+            <td class="index">{{ visibleIndexes[i] }}</td>
+            <td v-for="(value, i) in row" :key="i">{{ value }}</td>
           </tr>
         </tbody>
       </table>
@@ -134,6 +146,13 @@ watch([() => toValue(props.data), () => toValue(props.columns)], () => {
       & tr {
         & th {
           padding: var(--spacing-padding-small);
+
+          &.index {
+            position: sticky;
+            left: 0;
+            background-color: var(--background-color-elevated);
+            text-align: left;
+          }
         }
       }
     }
@@ -147,6 +166,18 @@ watch([() => toValue(props.data), () => toValue(props.columns)], () => {
           color: var(--text-color-highlight);
           font-size: var(--text-size-highlight);
           font-weight: var(--text-weight-highlight);
+
+          &.index {
+            position: sticky;
+            left: 0;
+            width: auto;
+            background-color: var(--background-color-elevated);
+            color: var(--text-color-normal);
+            font-size: var(--text-size-normal);
+            font-weight: var(--text-weight-normal);
+            text-align: left;
+            white-space: nowrap;
+          }
         }
 
         &:last-child {

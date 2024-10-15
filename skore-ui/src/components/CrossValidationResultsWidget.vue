@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { VisualizationSpec } from "vega-embed";
 import type { DataFrameWidgetProps } from "@/components/DataFrameWidget.vue";
 import DataFrameWidget from "@/components/DataFrameWidget.vue";
 import VegaWidget from "@/components/VegaWidget.vue";
+import type { VisualizationSpec } from "vega-embed";
 
 const props = defineProps<{
   roc_curve_spec: VisualizationSpec;
@@ -14,6 +14,7 @@ const props = defineProps<{
   <div class="content">
     <VegaWidget :spec="props.roc_curve_spec" />
     <DataFrameWidget
+      :index="props.cv_results_table.index"
       :columns="props.cv_results_table.columns"
       :data="props.cv_results_table.data"
     />

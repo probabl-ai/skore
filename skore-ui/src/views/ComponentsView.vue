@@ -4,9 +4,9 @@ import type { VisualizationSpec } from "vega-embed";
 
 import datatable from "@/assets/fixtures/datatable.json";
 import markdownString from "@/assets/fixtures/markdown.md?raw";
+import multiIndexDatatable from "@/assets/fixtures/multi-index-datatable.json";
 import spec from "@/assets/fixtures/vega.json";
 
-import CrossValidationResultsWidget from "@/components/CrossValidationResultsWidget.vue";
 import DataFrameWidget from "@/components/DataFrameWidget.vue";
 import DropdownButton from "@/components/DropdownButton.vue";
 import DropdownButtonItem from "@/components/DropdownButtonItem.vue";
@@ -169,9 +169,17 @@ const lastSelectedItem = ref<string | null>(null);
         <VegaWidget :spec="spec as VisualizationSpec" />
       </TabsItem>
       <TabsItem :value="2" class="dataframe">
+        <div>Simple index</div>
         <DataFrameWidget
-          :columns="['id', 'first_name', 'last_name', 'email', 'gender', 'ip_address']"
-          :data="datatable"
+          :index="datatable.index"
+          :columns="datatable.columns"
+          :data="datatable.data"
+        />
+        <div>multi index</div>
+        <DataFrameWidget
+          :index="multiIndexDatatable.index"
+          :columns="multiIndexDatatable.columns"
+          :data="multiIndexDatatable.data"
         />
       </TabsItem>
       <TabsItem :value="3">
@@ -211,13 +219,13 @@ const lastSelectedItem = ref<string | null>(null);
         </div>
       </TabsItem>
       <TabsItem :value="4">
-        <CrossValidationResultsWidget
+        <!-- <CrossValidationResultsWidget
           :roc_curve_spec="spec as VisualizationSpec"
           :cv_results_table="{
             columns: ['id', 'first_name', 'last_name', 'email', 'gender', 'ip_address'],
             data: datatable,
           }"
-        />
+        /> -->
       </TabsItem>
       <TabsItem :value="5">
         <div class="buttons">
