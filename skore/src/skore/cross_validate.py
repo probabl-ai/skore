@@ -99,35 +99,15 @@ def _add_scorers(estimator, y, scorers):
 
     added_scorers = []
 
-    if scorers is None:
-        new_scorers = {"score": None}
-        for s in scorers_to_add:
-            new_scorers[s] = s
-            added_scorers.append(s)
-    elif isinstance(scorers, str):
-        new_scorers = {"score": scorers}
-        for s in scorers_to_add:
-            if s == scorers:
-                continue
-            new_scorers[s] = s
-            added_scorers.append(s)
+    if scorers is None or isinstance(scorers, str):
+        new_scorers, added_scorers = _add_scorers({"score": scorers}, scorers_to_add)
+    elif isinstance(scorers, (list, tuple)):
+        new_scorers, added_scorers = _add_scorers(
+            {s: s for s in scorers}, scorers_to_add
+        )
     elif isinstance(scorers, dict):
-        new_scorers = scorers.copy()
-        for s in scorers_to_add:
-            if s in scorers:
-                continue
-            new_scorers[s] = s
-            added_scorers.append(s)
-    elif isinstance(scorers, list):
-        new_scorers = scorers.copy()
-        for s in scorers_to_add:
-            if s in scorers:
-                continue
-            new_scorers.append(s)
-            added_scorers.append(s)
-    elif isinstance(scorers, tuple):
-        scorers = list(scorers)
-        new_scorers, added_scorers = _add_scorers(scorers, scorers_to_add)
+        new_scorers = {s: s for s in scorers_to_add} | scorers
+        added_scorers = set(scorers_to_add) - set(scorers)
 
     return new_scorers, added_scorers
 
