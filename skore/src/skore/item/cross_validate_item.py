@@ -231,8 +231,3 @@ class CrossValidationItem(Item):
     def plot(self):
         """A plot of the cross-validation results."""
         return altair.Chart.from_json(self.plot_bytes.decode("utf-8"))
-
-    @property
-    def cv_results(self):
-        """The cross-validation results."""
-        return self.cv_results_serialized
