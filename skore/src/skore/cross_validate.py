@@ -118,9 +118,9 @@ def _add_scorers(scorers, scorers_to_add):
 
     Returns
     -------
-    new_scorers : dict, list or callable
+    new_scorers : dict or callable
         The scorers after adding `scorers_to_add`.
-    added_scorers : list[str]
+    added_scorers : Iterable[str]
         The scorers that were actually added (i.e. the ones that were not already
         in `scorers`).
     """
