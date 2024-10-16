@@ -90,6 +90,7 @@ function getItemSubtitle(created_at: Date, updated_at: Date) {
     >
       <DataFrameWidget
         v-if="mediaType === 'application/vnd.dataframe+json'"
+        :index="data.index"
         :columns="data.columns"
         :data="data.data"
       />

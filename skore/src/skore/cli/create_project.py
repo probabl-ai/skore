@@ -2,31 +2,23 @@
 
 import re
 from pathlib import Path
-
-from skore.cli import logger
 from typing import Optional, Union
 
-
-class ProjectNameTooLong(Exception):
-    """The project name must be at most 255 characters long (including ".skore")."""
+from skore.cli import logger
 
 
-class ReservedProjectName(Exception):
-    """The project name must not be a reserved OS file name.
+class InvalidProjectNameError(Exception):
+    """The project name does not fit with one or more of the project name rules.
 
+    - The project name must start with an alphanumeric character, and must not contain
+    special characters other than '_' (underscore) and '-' (hyphen).
+    - The project name must be at most 255 characters long (including ".skore").
+    - The project name must not be a reserved OS file name.
     For example, CON, AUX, NUL... on Windows.
     """
 
 
-class ImproperProjectName(Exception):
-    """The project name must contain only the allowed characters.
-
-    The project name must start with an alphanumeric character, and must not contain
-    special characters other than '_' (underscore) and '-' (hyphen).
-    """
-
-
-def validate_project_name(project_name: str) -> Union[bool, Exception, None]:
+def validate_project_name(project_name: str) -> tuple[bool, Optional[Exception]]:
     """Validate the project name (the part before ".skore").
 
     Returns `(True, None)` if validation succeeded and `(False, Exception(...))`
@@ -36,7 +28,7 @@ def validate_project_name(project_name: str) -> Union[bool, Exception, None]:
     # characters long.
     # FIXME: On Linux the OS already checks filename lengths
     if len(project_name) + len(".skore") > 255:
-        return False, ProjectNameTooLong(
+        return False, InvalidProjectNameError(
             "Project name length cannot exceed 255 characters."
         )
 
@@ -46,7 +38,7 @@ def validate_project_name(project_name: str) -> Union[bool, Exception, None]:
     # LPT1, LPT2, LPT3, LPT4, LPT5, LPT6, LPT7, LPT8, LPT9
     reserved_patterns = "|".join(["CON", "PRN", "AUX", "NUL", r"COM\d+", r"LPT\d+"])
     if re.fullmatch(f"^({reserved_patterns})$", project_name):
-        return False, ReservedProjectName(
+        return False, InvalidProjectNameError(
             "Project name must not be a reserved OS filename."
         )
 
@@ -56,7 +48,7 @@ def validate_project_name(project_name: str) -> Union[bool, Exception, None]:
     # Hyphen (-)
     # Starting Character: The project name must start with an alphanumeric character.
     if not re.fullmatch(r"^[a-zA-Z0-9][a-zA-Z0-9_-]*$", project_name):
-        return False, ImproperProjectName(
+        return False, InvalidProjectNameError(
             "Project name must contain only alphanumeric characters, '_' and '-'."
         )
 
@@ -71,7 +63,7 @@ class ProjectCreationError(Exception):
     """Project creation failed."""
 
 
-class ProjectAlreadyExists(Exception):
+class ProjectAlreadyExistsError(Exception):
     """A project with this name already exists."""
 
 
@@ -123,7 +115,7 @@ def __create(
     try:
         project_directory.mkdir()
     except FileExistsError as e:
-        raise ProjectAlreadyExists(
+        raise ProjectAlreadyExistsError(
             f"Unable to create project file '{project_directory}' because a file "
             "with that name already exists. Please choose a different name or delete "
             "the existing file."
