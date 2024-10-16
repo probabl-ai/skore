@@ -16,14 +16,33 @@ const currentPage = ref(0);
 const search = defineModel<string>("search");
 
 const rows = computed(() => {
+  let filteredRowIndexes: number[];
   if (search.value !== undefined && search.value.length > 0) {
     const searchToken = search.value.toLowerCase();
-    return props.data.filter((row) => {
+    filteredRowIndexes = props.data.reduce((acc, row, i) => {
+      let index = props.index[i];
+      if (index instanceof Array) {
+        index = index.join(" ");
+      } else {
+        index = index.toString();
+      }
       const text = row.join(" ").toLowerCase();
-      return text.includes(searchToken);
-    });
+      if (text.includes(searchToken) || index.includes(searchToken)) {
+        acc.push(i);
+      }
+      return acc;
+    }, []);
+  } else {
+    filteredRowIndexes = props.data.map((_, i) => i);
   }
-  return props.data;
+
+  return filteredRowIndexes.map((i) => {
+    const index = props.index[i];
+    if (index instanceof Array) {
+      return [index.join(", "), ...props.data[i]];
+    }
+    return [index, ...props.data[i]];
+  });
 });
 
 const totalPages = computed(() => {
@@ -40,15 +59,6 @@ const pageEnd = computed(() => {
 
 const visibleRows = computed(() => {
   return rows.value.slice(pageStart.value, pageEnd.value);
-});
-
-const visibleIndexes = computed(() => {
-  return props.index.slice(pageStart.value, pageEnd.value).map((value) => {
-    if (value instanceof Array) {
-      return value.join(", ");
-    }
-    return value;
-  });
 });
 
 function nextPage() {
@@ -80,13 +90,12 @@ watch([() => toValue(props.data), () => toValue(props.columns)], () => {
       <table>
         <thead>
           <tr>
-            <th class="index">index</th>
+            <th>index</th>
             <th v-for="(name, i) in props.columns" :key="i">{{ name }}</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="(row, i) in visibleRows" :key="i">
-            <td class="index">{{ visibleIndexes[i] }}</td>
             <td v-for="(value, i) in row" :key="i">{{ value }}</td>
           </tr>
         </tbody>
@@ -147,7 +156,7 @@ watch([() => toValue(props.data), () => toValue(props.columns)], () => {
         & th {
           padding: var(--spacing-padding-small);
 
-          &.index {
+          &:first-child {
             position: sticky;
             left: 0;
             background-color: var(--background-color-elevated);
@@ -167,7 +176,7 @@ watch([() => toValue(props.data), () => toValue(props.columns)], () => {
           font-size: var(--text-size-highlight);
           font-weight: var(--text-weight-highlight);
 
-          &.index {
+          &:first-child {
             position: sticky;
             left: 0;
             width: auto;
