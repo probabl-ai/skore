@@ -16,29 +16,31 @@
 # %% [markdown]
 # # Getting started with `skore`
 #
-# This guide showcases the features of `skrub`, an open-source package that aims at enable data scientist to:
-# 1. Store objects of different types from their Python code: from python lists to scikit-learn fitted pipelines and plotly figures.
-# 2. They can track and visualize these stored objects on a dashboard.
-# 3. This dashboard can be exported into a HTML file.
+# This guide provides a quick start to `skore`, an open-source package that aims at enable data scientist to:
+# 1. Store objects of different types from their Python code: python lists, `scikit-learn` fitted pipelines, `plotly` figures, and more.
+# 2. **Track** and  **visualize** these stored objects on a user-friendly dashboard.
+# 3. Export the dashboard to a HTML file.
 
 # %% [markdown]
 # ## Initialize a Project and launch the UI
 #
-# From your shell, initialize a `skore` Project called `project.skore` that will be in your current working directory:
+# From your shell, initialize a `skore` project, here named `project.skore`, that will be in your current working directory:
 # ```bash
-# $ python -m skore create 'project.skore'
+# python -m skore create "project.skore"
 # ```
 # This will create a skore project directory named `project.skore` in the current directory.
 #
-# Then, from your Python code (in the same directory), load the project and store an integer for example:
+# From your shell (in the same directory), start the UI locally:
 # ```bash
-# $ python -m skore launch project.skore
+# python -m skore launch project.skore
 # ```
+# This will automatically open a browser at the UI's location.
 #
 # Now that the project file exists, we can load it in our notebook so that we can read from and write to it:
 
 # %%
 from skore import load
+
 project = load("project.skore")
 
 # %% [markdown]
@@ -92,4 +94,8 @@ my_pipeline = Pipeline(
 my_pipeline.fit(X, y)
 project.put("my_fitted_pipeline", my_pipeline)
 
-# %%
+# %% [markdown]
+# # Back to the dashboard
+#
+# 1. On the top left, create a new `View`.
+# 2. From the `Elements` section on the bottom left, you can add stored items to this view, either by double-cliking on them or by doing drag-and-drop.

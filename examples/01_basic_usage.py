@@ -14,19 +14,17 @@
 # ---
 
 # %% [markdown]
-# # Getting started with `skore`
+# # Basic usage of `skore`
 
 # %% [markdown]
 # # Introduction
 #
-# The purpose of this guide is to illustrate some of the main features that `skore` currently provides.
+# This guide is to illustrate some of the main features that `skore` currently provides. `skore` an open-source package that aims at enable data scientist to:
+# 1. Store objects of different types from their Python code: python lists and dictionaries, `numpy` arrays, `pandas` dataframes, `scikit-learn` fitted pipelines, `matplotlib` / `plotly` / `altair` figures, and more.
+# 2. **Track** and  **visualize** these stored objects on a user-friendly dashboard.
+# 3. Export the dashboard to a HTML file.
 #
-# `skore` allows data scientists to create tracking and visualizations from their Python code:
-# 1. Users can store objects of different types (python lists and dictionaries, `numpy` arrays, `scikit-learn` fitted models, `matplotlib`, `altair`, and `plotly` figures, etc). Storing some values over time allows one to perform **tracking** and also to **visualize** them:
-# 2. They can visualize these stored objects on a dashboard. The dashboard is user-friendly: objects can easily be organized.
-# 3. This dashboard can be exported into a HTML file.
-#
-# This notebook will store some items that have been used to generated a skore report available at [this link](https://sylvaincom.github.io/files/probabl/skore/basic_usage.html): download this HTML file and open it in your browser to visualize it.
+# This notebook stores some items that have been used to generated a `skore` report available at [this link](https://sylvaincom.github.io/files/probabl/skore/01_basic_usage.html).
 
 # %% [markdown]
 # ## Imports
@@ -51,26 +49,32 @@ from skore.item import MediaItem
 # %% [markdown]
 # # Initialize and use a Project
 #
-# To initialize a Project, we need to give it a name, or equivalently a file path. In your shell, run:
+# From your shell, initialize a `skore` project, here named `project.skore`, that will be in your current working directory:
 # ```bash
-# $ python -m skore create 'project.skore'
+# python -m skore create "project.skore"
 # ```
-# This will create a Skore project directory named "project.skore" in the current directory.
+# This will create a skore project directory named `project.skore` in the current directory.
 #
-# Now that you have created the `project.skore` folder (even though nothing has yet been stored), you can run the UI (in your project root i.e. where `project.skore` is) from your shell:
-# ```python3
-# $ python -m skore launch project.skore
+# Now that you have created the `project.skore` folder (even though nothing has yet been stored), you can launch the UI.
+#
+# From your shell (in the same directory), start the UI locally:
+# ```bash
+# python -m skore launch project.skore
 # ```
+# This will automatically open a browser at the UI's location.
 #
-# >*Note*: If you already had a `project.skore` directory from a previous run -- you can check for that in your shell by using:
-# >```python3
-# >$ ls
-# >```
-# >and if you no longer need it, we recommend deleting this folder by running `rm` in your shell:
-# >```python3
-# >$ rm -r project.skore
-# >```
-# >This deletion needs to be done before the cells above: before initializing the store and before launching the UI!
+# ---
+# **NOTE**: If you already had a `project.skore` directory from a previous run -- you can check for that using your shell:
+# ```bash
+# ls
+# ```
+# and if you no longer need it, we recommend deleting this folder using your shell:
+# ```bash
+# rm -r project.skore
+# ```
+# This deletion needs to be done before the cells above: before initializing the store and before launching the UI!
+#
+# ---
 
 # %% [markdown]
 # Now that the project file exists, we can load it in our notebook so that we can read from and write to it:
@@ -258,19 +262,31 @@ project.put("my_altair_chart", my_altair_chart)
 # Plotly figures:
 
 # %%
-my_plotly_fig = px.bar(x=["a", "b", "c"], y=[1, 3, 2])
-my_plotly_fig.show()
-project.put("my_plotly_fig", my_plotly_fig)
+df = px.data.iris()
+fig = px.scatter(df, x=df.sepal_length, y=df.sepal_width, color=df.species, size=df.petal_length)
+fig.show()
+project.put("my_plotly_fig", fig)
+
+# %% [markdown]
+# Animated plotly figures:
+
+# %%
+df = px.data.gapminder()
+my_anim_plotly_fig = px.scatter(df, x="gdpPercap", y="lifeExp", animation_frame="year", animation_group="country",
+    size="pop", color="continent", hover_name="country",
+    log_x=True, size_max=55, range_x=[100,100000], range_y=[25,90])
+my_anim_plotly_fig.show()
+project.put("my_anim_plotly_fig", my_anim_plotly_fig)
 
 # %% [markdown]
 # PIL images:
 
 # %%
-pil_image = PIL.Image.new("RGB", (100, 100), color="red")
+my_pil_image = PIL.Image.new("RGB", (100, 100), color="red")
 with io.BytesIO() as output:
-    pil_image.save(output, format="png")
+    my_pil_image.save(output, format="png")
 
-project.put("pil_image", pil_image)
+project.put("my_pil_image", my_pil_image)
 
 # %% [markdown]
 # ## Scikit-learn models and pipelines
@@ -315,7 +331,7 @@ project.put("my_fitted_pipeline", my_pipeline)
 # %%
 project.put(
     "my_comment_1",
-    "<p><h1>Welcome to skore!</h1><p><code>skore</code> allows data scientists to create tracking and reports from their Python code. This HTML document is actually a skore report generated using the <code>basic_usage.ipynb</code> notebook and that has been exported (into HTML)!<p>",
+    "<p><h1>Welcome to skore!</h1><p><code>skore</code> allows data scientists to create tracking and visualizations from their Python code. This HTML document is actually a skore report generated using the <code>01_basic_usage.ipynb</code> example notebook then exported (into HTML)!<p>",
 )
 
 # %%
@@ -325,9 +341,7 @@ project.put(
 )
 
 # %%
-project.put(
-    "my_comment_3", "<p><h2>Strings</h1></p>"
-)
+project.put("my_comment_3", "<p><h2>Strings</h1></p>")
 
 # %%
 project.put(
@@ -342,9 +356,6 @@ project.put(
 )
 
 # %%
-project.put(
-    "my_comment_6",
-    "<p><h2>Scikit-learn models and pipelines</h1></p>"
-)
+project.put("my_comment_6", "<p><h2>Scikit-learn models and pipelines</h1></p>")
 
 # %%
