@@ -43,7 +43,7 @@ project.put("my_int", 3)
 ```
 3. Finally, from your shell (in the same directory), start the UI locally:
 ```bash
-python -m skore launch project.skore
+python -m skore launch "project.skore"
 ```
 This will automatically open a browser at the UI's location:
 1. On the top left, create a new `View`.

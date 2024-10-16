@@ -32,7 +32,7 @@
 #
 # From your shell (in the same directory), start the UI locally:
 # ```bash
-# python -m skore launch project.skore
+# python -m skore launch "project.skore"
 # ```
 # This will automatically open a browser at the UI's location.
 #
