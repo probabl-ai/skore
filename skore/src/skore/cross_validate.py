@@ -108,6 +108,8 @@ def _add_scorers(scorers, scorers_to_add):
     are added to the dict;
     - If `scorers` is a callable, then a new callable is created that
     returns a dict with the user-defined score as well as the scorers to add.
+    In case the user-defined dict contains a metric with a name conflicting with the
+    metrics we add, the user-defined metric always wins.
 
     Parameters
     ----------
