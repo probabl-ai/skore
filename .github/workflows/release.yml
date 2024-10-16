@@ -45,8 +45,6 @@ jobs:
 
       - name: Build package distributions
         run: |
-          cp --remove-destination LICENSE skore/LICENSE
-          cp --remove-destination README.md skore/README.md
           cd skore
 
           python -m pip install build
@@ -82,6 +80,33 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           verify-metadata: false
+
+      - name: Post to slack
+        continue-on-error: true
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          channel-id: "product-releases"
+          payload: |
+            {
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": ${{ toJSON(github.event.release.html_url) }}
+                        }
+                    },
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": ${{ toJSON(format('>>> {0}', github.event.release.body)) }}
+                        }
+                    }
+                ]
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
 
   clean:
     name: Delete package distributions artifacts

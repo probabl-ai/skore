@@ -36,7 +36,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        python-version: ['3.11', '3.12']
+        python-version: ['3.9', '3.10', '3.11', '3.12']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -59,17 +59,13 @@ jobs:
           pre-commit run --all-files ruff
 
           # Build
-          cp --remove-destination ../LICENSE ./LICENSE
-          cp --remove-destination ../README.md ./README.md
-
           python -m build
 
           # Install
-          python -m pip install dist/*.whl --no-dependencies
-          python -m pip install -r requirements.txt -r requirements-test.txt
+          wheel=(dist/*.whl); python -m pip install "${wheel}[test]"
 
           # Test
-          python -m pytest
+          python -m pytest src/ tests/
 
   cleanup:
     runs-on: ubuntu-latest
