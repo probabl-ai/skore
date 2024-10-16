@@ -54,23 +54,35 @@ def plot_cross_validation(cv_results: dict) -> altair.Chart:
         fields=["metric"], bind=input_dropdown, value="test_score"
     )
 
-    return (
-        altair.Chart(df, title="Cross-validation scores per split")
-        .mark_bar()
+    average_score_rule = (
+        altair.Chart(df)
+        .mark_rule(strokeWidth=2)
         .encode(
-            altair.X("split:N").axis(
-                title="Split number",
-                labelAngle=0,
-            ),
-            altair.Y("score:Q").axis(
-                title="Score",
-                titleAngle=0,
-                titleAlign="left",
-                titleX=0,
-                titleY=-5,
-                labelLimit=300,
-            ),
-            tooltip=["metric:N", "split:N", "score:Q"],
+            y="mean(score):Q",
+            tooltip=["mean(score):Q"],
+        )
+    )
+
+    return (
+        (
+            altair.Chart(df, title="Cross-validation scores per split")
+            .mark_bar()
+            .encode(
+                altair.X("split:N").axis(
+                    title="Split number",
+                    labelAngle=0,
+                ),
+                altair.Y("score:Q").axis(
+                    title="Score",
+                    titleAngle=0,
+                    titleAlign="left",
+                    titleX=0,
+                    titleY=-5,
+                    labelLimit=300,
+                ),
+                tooltip=["metric:N", "split:N", "score:Q"],
+            )
+            + average_score_rule
         )
         .add_params(selection)
         .transform_filter(selection)
