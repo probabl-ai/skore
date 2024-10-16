@@ -95,7 +95,10 @@ my_pipeline.fit(X, y)
 project.put("my_fitted_pipeline", my_pipeline)
 
 # %% [markdown]
-# # Back to the dashboard
+# ## Back to the dashboard
 #
 # 1. On the top left, create a new `View`.
 # 2. From the `Elements` section on the bottom left, you can add stored items to this view, either by double-cliking on them or by doing drag-and-drop.
+
+# %% [markdown]
+#

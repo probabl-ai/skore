@@ -17,7 +17,7 @@
 # # Basic usage of `skore`
 
 # %% [markdown]
-# # Introduction
+# ## Introduction
 #
 # This guide is to illustrate some of the main features that `skore` currently provides. `skore` an open-source package that aims at enable data scientist to:
 # 1. Store objects of different types from their Python code: python lists and dictionaries, `numpy` arrays, `pandas` dataframes, `scikit-learn` fitted pipelines, `matplotlib` / `plotly` / `altair` figures, and more.
@@ -27,7 +27,7 @@
 # This notebook stores some items that have been used to generated a `skore` report available at [this link](https://sylvaincom.github.io/files/probabl/skore/01_basic_usage.html).
 
 # %% [markdown]
-# ## Imports
+# Imports:
 
 # %%
 import altair as alt
@@ -47,7 +47,7 @@ from skore import load
 from skore.item import MediaItem
 
 # %% [markdown]
-# # Initialize and use a Project
+# ## Initialize and use a Project
 #
 # From your shell, initialize a `skore` project, here named `project.skore`, that will be in your current working directory:
 # ```bash
@@ -83,7 +83,7 @@ from skore.item import MediaItem
 project = load("project.skore")
 
 # %% [markdown]
-# ## Storing an integer
+# ### Storing an integer
 
 # %% [markdown]
 # Now, let us store our first object, for example an integer:
@@ -127,7 +127,7 @@ project.delete_item("my_int_2")
 project.list_item_keys()
 
 # %% [markdown]
-# ## Storing a string
+# ### Storing a string
 
 # %% [markdown]
 # We just stored a integer, now let us store some text using strings!
@@ -182,7 +182,7 @@ y = [1, 2, 3, 4]
 project.put("my_string_4", f"The value of `x` is {x} and the value of `y` is {y}.")
 
 # %% [markdown]
-# ## Storing many kinds of data
+# ### Storing many kinds of data
 
 # %% [markdown]
 # Python list:
@@ -216,7 +216,7 @@ my_df = pd.DataFrame(np.random.randn(3, 3))
 project.put("my_df", my_df)
 
 # %% [markdown]
-# ## Data visualization
+# ### Data visualization
 #
 # Note that, in the dashboard, the interactivity of plots is supported, for example for `altair` and `plotly`.
 
@@ -289,7 +289,7 @@ with io.BytesIO() as output:
 project.put("my_pil_image", my_pil_image)
 
 # %% [markdown]
-# ## Scikit-learn models and pipelines
+# ### Scikit-learn models and pipelines
 #
 # As `skore` is developed by :probabl., the spin-off of scikit-learn, `skore` treats scikit-learn models and pipelines as first-class citizens.
 #
@@ -324,7 +324,7 @@ project.put("my_fitted_pipeline", my_pipeline)
 
 # %% [markdown]
 # ---
-# # Manipulating the skore UI
+# ## Manipulating the skore UI
 #
 # The following is just some `skore` strings that we generate in order to provide more context on the obtained report.
 
