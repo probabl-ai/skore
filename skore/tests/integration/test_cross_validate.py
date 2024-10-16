@@ -12,23 +12,17 @@ from skore.cross_validate import cross_validate
 from skore.item.cross_validate_item import CrossValidationItem, plot_cross_validation
 
 
-@pytest.fixture()
-def lasso():
-    diabetes = datasets.load_diabetes()
-    X = diabetes.data[:150]
-    y = diabetes.target[:150]
-    lasso = linear_model.Lasso()
-    return lasso, X, y
+@pytest.fixture
+def rf():
+    iris = datasets.load_iris()
+    X = iris.data[:150]
+    y = numpy.random.randint(2, size=150)
+    rf = RandomForestClassifier()
+    return rf, X, y
 
 
 class TestInputScorers:
-    @pytest.fixture
-    def rf(self):
-        iris = datasets.load_iris()
-        X = iris.data[:150]
-        y = numpy.random.randint(2, size=150)
-        rf = RandomForestClassifier()
-        return rf, X, y
+    """Test that cross_validate works regardless of the scorers data type."""
 
     def confusion_matrix(clf, X, y):
         from sklearn.metrics import confusion_matrix
@@ -50,10 +44,10 @@ class TestInputScorers:
         [
             confusion_matrix,  # callable returning dict
             true_positive,  # callable returning float
-            {"true_positive": true_positive, "accuracy": "accuracy"}, # dict
+            {"true_positive": true_positive, "accuracy": "accuracy"},  # dict
             ["accuracy", "f1"],  # list of strings
             ("accuracy", "f1"),  # tuple of strings
-            "accuracy", # string
+            "accuracy",  # string
             None,
         ],
     )
@@ -70,166 +64,86 @@ class TestInputScorers:
         assert all(len(v) == 5 for v in cv_results.values())
 
 
-def test_cross_validate_regression(in_memory_project, lasso):
-    args = lasso
-    kwargs = {"cv": 3}
+class TestInputDataType:
+    """Test that cross_validate works regardless of the input data type."""
 
-    cv_results = cross_validate(*args, **kwargs, project=in_memory_project)
-    cv_results_sklearn = sklearn.model_selection.cross_validate(*args, **kwargs)
+    def data_is_list(model, X, y):
+        return model, X.tolist(), y.tolist()
 
-    assert isinstance(
-        in_memory_project.get_item("cross_validation"), CrossValidationItem
+    def data_is_pandas(model, X, y):
+        return model, pandas.DataFrame(X), pandas.Series(y)
+
+    @pytest.mark.parametrize("convert_args", [data_is_list, data_is_pandas])
+    def test_data_type(self, rf, in_memory_project, convert_args):
+        args = convert_args(*rf)
+
+        cv_results = cross_validate(*args, project=in_memory_project)
+        cv_results_sklearn = sklearn.model_selection.cross_validate(*args)
+
+        assert isinstance(
+            in_memory_project.get_item("cross_validation"), CrossValidationItem
+        )
+        assert set(cv_results.keys()).issuperset(cv_results_sklearn.keys())
+        assert all(len(v) == 5 for v in cv_results.values())
+
+
+class TestMLTask:
+    """Test that cross_validate works regardless of the ML task/estimator."""
+
+    def iris_X_y(self):
+        iris = datasets.load_iris()
+        X = iris.data[:150]
+        y = iris.target[:150]
+        return X, y
+
+    def binary_classification(self):
+        X, _ = self.iris_X_y()
+        y = numpy.random.randint(2, size=150)
+        return RandomForestClassifier(), X, y
+
+    def multiclass_classification(self):
+        X, y = self.iris_X_y()
+        return RandomForestClassifier(), X, y
+
+    def multiclass_classification_no_predict_proba(self):
+        X, y = self.iris_X_y()
+        return SVC(), X, y
+
+    def multiclass_classification_sub_estimator(self):
+        X, y = self.iris_X_y()
+        return OneVsOneClassifier(SVC()), X, y
+
+    def regression(self):
+        X, y = datasets.load_diabetes(return_X_y=True)
+        X = X[:150]
+        y = y[:150]
+        return linear_model.Lasso(), X, y
+
+    def clustering(self):
+        X, _ = self.iris_X_y()
+        return KMeans(), X
+
+    @pytest.mark.parametrize(
+        "get_args",
+        [
+            binary_classification,
+            multiclass_classification,
+            multiclass_classification_no_predict_proba,
+            multiclass_classification_sub_estimator,
+            regression,
+            clustering,
+        ],
     )
-    assert cv_results.keys() == cv_results_sklearn.keys()
-    assert all(len(v) == kwargs["cv"] for v in cv_results.values())
+    def test_cross_validate(self, in_memory_project, get_args):
+        args = get_args(self)
+        cv_results = cross_validate(*args, project=in_memory_project)
+        cv_results_sklearn = sklearn.model_selection.cross_validate(*args)
 
-
-def test_cross_validate_regression_data_is_list(in_memory_project, lasso):
-    model, X, y = lasso
-    args = [model, X.tolist(), y.tolist()]
-    kwargs = {"cv": 3}
-
-    cv_results = cross_validate(*args, **kwargs, project=in_memory_project)
-    cv_results_sklearn = sklearn.model_selection.cross_validate(*args, **kwargs)
-
-    assert isinstance(
-        in_memory_project.get_item("cross_validation"), CrossValidationItem
-    )
-    assert cv_results.keys() == cv_results_sklearn.keys()
-    assert all(len(v) == kwargs["cv"] for v in cv_results.values())
-
-
-def test_cross_validate_regression_data_is_pandas(in_memory_project, lasso):
-    model, X, y = lasso
-    args = [model, pandas.DataFrame(X), pandas.Series(y)]
-    kwargs = {"cv": 3}
-
-    cv_results = cross_validate(*args, **kwargs, project=in_memory_project)
-    cv_results_sklearn = sklearn.model_selection.cross_validate(*args, **kwargs)
-
-    assert isinstance(
-        in_memory_project.get_item("cross_validation"), CrossValidationItem
-    )
-    assert cv_results.keys() == cv_results_sklearn.keys()
-    assert all(len(v) == kwargs["cv"] for v in cv_results.values())
-
-
-def test_cross_validate_regression_extra_metrics(in_memory_project, lasso):
-    args = list(lasso)
-    kwargs = {"scoring": "r2", "cv": 3}
-
-    cv_results = cross_validate(*args, **kwargs, project=in_memory_project)
-    cv_results_sklearn = sklearn.model_selection.cross_validate(*args, **kwargs)
-
-    assert isinstance(
-        in_memory_project.get_item("cross_validation"), CrossValidationItem
-    )
-    assert set(cv_results.keys()).issuperset(cv_results_sklearn.keys())
-    assert all(len(v) == kwargs["cv"] for v in cv_results.values())
-
-
-def test_cross_validate_2_extra_metrics(in_memory_project, lasso):
-    args = list(lasso)
-    kwargs = {"scoring": ["r2", "neg_mean_squared_error"], "cv": 3}
-
-    cv_results = cross_validate(*args, **kwargs, project=in_memory_project)
-    cv_results_sklearn = sklearn.model_selection.cross_validate(*args, **kwargs)
-
-    assert isinstance(
-        in_memory_project.get_item("cross_validation"), CrossValidationItem
-    )
-    assert cv_results.keys() == cv_results_sklearn.keys()
-    assert all(len(v) == kwargs["cv"] for v in cv_results.values())
-
-
-def test_cross_validation_binary_classification_no_predict_proba(in_memory_project):
-    X, y = datasets.load_iris(return_X_y=True)
-    model = SVC()
-
-    args = [model, X, y]
-    kwargs = {"cv": 3}
-
-    cv_results = cross_validate(*args, **kwargs, project=in_memory_project)
-    cv_results_sklearn = sklearn.model_selection.cross_validate(*args, **kwargs)
-
-    assert isinstance(
-        in_memory_project.get_item("cross_validation"), CrossValidationItem
-    )
-    assert cv_results.keys() == cv_results_sklearn.keys()
-    assert all(len(v) == kwargs["cv"] for v in cv_results.values())
-
-
-def test_cross_validation_multi_class_classification_sub_estimator(in_memory_project):
-    X, y = datasets.load_iris(return_X_y=True)
-    model = OneVsOneClassifier(SVC())
-
-    args = [model, X, y]
-    kwargs = {"cv": 3}
-
-    cv_results = cross_validate(*args, **kwargs, project=in_memory_project)
-    cv_results_sklearn = sklearn.model_selection.cross_validate(*args, **kwargs)
-
-    assert isinstance(
-        in_memory_project.get_item("cross_validation"), CrossValidationItem
-    )
-    assert cv_results.keys() == cv_results_sklearn.keys()
-    assert all(len(v) == kwargs["cv"] for v in cv_results.values())
-
-
-def test_cross_validation_multi_class_classification(in_memory_project):
-    iris = datasets.load_iris()
-    X = iris.data[:250]
-    y = iris.target[:250]
-    rf = RandomForestClassifier()
-
-    args = [rf, X, y]
-    kwargs = {"cv": 3}
-
-    cv_results = cross_validate(*args, **kwargs, project=in_memory_project)
-    cv_results_sklearn = sklearn.model_selection.cross_validate(*args, **kwargs)
-
-    assert isinstance(
-        in_memory_project.get_item("cross_validation"), CrossValidationItem
-    )
-    assert cv_results.keys() == cv_results_sklearn.keys()
-    assert all(len(v) == kwargs["cv"] for v in cv_results.values())
-
-
-def test_cross_validation_binary_classification(in_memory_project):
-    iris = datasets.load_iris()
-    X = iris.data[:150]
-    y = numpy.random.randint(2, size=150)
-    rf = RandomForestClassifier()
-
-    args = [rf, X, y]
-    kwargs = {"cv": 3}
-
-    cv_results = cross_validate(*args, **kwargs, project=in_memory_project)
-    cv_results_sklearn = sklearn.model_selection.cross_validate(*args, **kwargs)
-
-    assert isinstance(
-        in_memory_project.get_item("cross_validation"), CrossValidationItem
-    )
-    assert cv_results.keys() == cv_results_sklearn.keys()
-    assert all(len(v) == kwargs["cv"] for v in cv_results.values())
-
-
-def test_cross_validation_clustering(in_memory_project):
-    iris = datasets.load_iris()
-    X = iris.data[:150]
-    kmeans = KMeans()
-
-    args = [kmeans, X]
-    kwargs = {"cv": 3}
-
-    cv_results = cross_validate(*args, **kwargs, project=in_memory_project)
-    cv_results_sklearn = sklearn.model_selection.cross_validate(*args, **kwargs)
-
-    assert isinstance(
-        in_memory_project.get_item("cross_validation"), CrossValidationItem
-    )
-    assert cv_results.keys() == cv_results_sklearn.keys()
-    assert all(len(v) == kwargs["cv"] for v in cv_results.values())
+        assert isinstance(
+            in_memory_project.get_item("cross_validation"), CrossValidationItem
+        )
+        assert set(cv_results.keys()).issuperset(cv_results_sklearn.keys())
+        assert all(len(v) == 5 for v in cv_results.values())
 
 
 def test_plot_cross_validation():
