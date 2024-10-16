@@ -7,7 +7,7 @@ function in order to enrich it with more information and enable more analysis.
 import contextlib
 from typing import Literal, Optional
 
-from skore.item.cross_validate_item import CrossValidationItem
+from skore.item.cross_validation_item import CrossValidationItem
 from skore.project import Project
 
 

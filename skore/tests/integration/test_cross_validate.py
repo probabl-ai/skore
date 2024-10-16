@@ -9,7 +9,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.multiclass import OneVsOneClassifier
 from sklearn.svm import SVC
 from skore.cross_validate import cross_validate
-from skore.item.cross_validate_item import CrossValidationItem, plot_cross_validation
+from skore.item.cross_validation_item import CrossValidationItem, plot_cross_validation
 
 
 @pytest.fixture

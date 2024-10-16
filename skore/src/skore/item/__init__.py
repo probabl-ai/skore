@@ -5,7 +5,7 @@ from __future__ import annotations
 from contextlib import suppress
 from typing import Any
 
-from skore.item.cross_validate_item import CrossValidationItem
+from skore.item.cross_validation_item import CrossValidationItem
 from skore.item.item import Item
 from skore.item.item_repository import ItemRepository
 from skore.item.media_item import MediaItem
