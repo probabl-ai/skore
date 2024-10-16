@@ -2,7 +2,7 @@
 
 ![ci](https://github.com/probabl-ai/skore/actions/workflows/ci.yml/badge.svg?event=push)
 ![python](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue?style=flat&logo=python)
-![pypi](https://img.shields.io/pypi/v/skore)
+[![pypi](https://img.shields.io/pypi/v/skore)](https://pypi.org/project/skore/)
 ![license](https://img.shields.io/pypi/l/skore)
 
 With `skore`, data scientists can:
@@ -23,9 +23,6 @@ Then, you can install `skore` by using `pip`:
 ```bash
 pip install -U skore
 ```
-
-You can check `skore`'s latest version on
-[PyPI](https://pypi.org/project/skore/).
 
 🚨 For Windows users, the encoding must be set to [UTF-8](https://docs.python.org/3/using/windows.html#utf-8-mode): see [PYTHONUTF8](https://docs.python.org/3/using/cmdline.html#envvar-PYTHONUTF8).
 
