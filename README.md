@@ -1,7 +1,8 @@
 # 👋 Welcome to skore
 
 ![ci](https://github.com/probabl-ai/skore/actions/workflows/ci.yml/badge.svg?event=push)
-![python](https://img.shields.io/badge/python-3.11%20|%203.12-blue?style=flat&logo=python)
+![python](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue?style=flat&logo=python)
+![pypi](https://img.shields.io/pypi/v/skore)
 
 With `skore`, data scientists can:
 1. Store objects of different types from their Python code: python lists, `scikit-learn` fitted pipelines, `plotly` figures, and more.
