@@ -211,7 +211,7 @@ class CrossValidationItem(Item):
         }
 
         # Keep plot itself as well as bytes so we can cache it
-        plot = plot_cross_validation(cv_results)
+        plot = plot_cross_validation(cv_results_serialized)
         plot_bytes = plot.to_json().encode("utf-8")
 
         instance = cls(
