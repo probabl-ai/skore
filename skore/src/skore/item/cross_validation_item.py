@@ -72,7 +72,6 @@ def plot_cross_validation(cv_results: dict) -> altair.Chart:
             ),
             tooltip=["metric:N", "split:N", "score:Q"],
         )
-        .interactive()
         .add_params(selection)
         .transform_filter(selection)
         .properties(
