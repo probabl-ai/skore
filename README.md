@@ -17,7 +17,7 @@ Stay tuned!
 
 ## ⚙️ Installation
 
-First of all, we recommended using a [virtual environment (venv)](https://docs.python.org/3/tutorial/venv.html). You need `python>=3.9`.
+First of all, we recommend using a [virtual environment (venv)](https://docs.python.org/3/tutorial/venv.html). You need `python>=3.9`.
 
 Then, you can install `skore` by using `pip`:
 ```bash
