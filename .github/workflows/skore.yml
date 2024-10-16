@@ -15,7 +15,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: skore-ui/package-lock.json
+          cache-dependency-path: 'skore-ui/package-lock.json'
       - shell: bash
         run: |
           npm install
@@ -43,6 +43,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
+          cache-dependency-path: 'skore/pyproject.toml'
       - name: Download package distributions
         uses: actions/download-artifact@v4
         with:
