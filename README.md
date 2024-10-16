@@ -24,7 +24,6 @@ pip install -U skore
 ```
 
 ## 🚀 Quick start
-=======
 
 In your shell, run the following to create a project file `project.skore` (the default) in your current working directory:
 ```bash

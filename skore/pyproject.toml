@@ -86,10 +86,6 @@ doc = [
   "numpydoc",
 ]
 
-tools = [
-  "pip-tools",
-]
-
 [tool.pytest.ini_options]
 addopts = [
   "--doctest-modules",
