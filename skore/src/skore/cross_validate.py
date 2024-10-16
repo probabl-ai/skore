@@ -133,6 +133,29 @@ def _add_scorers(scorers, scorers_to_add):
     elif isinstance(scorers, dict):
         new_scorers = {s: s for s in scorers_to_add} | scorers
         added_scorers = set(scorers_to_add) - set(scorers)
+    elif callable(scorers):
+        from sklearn.metrics import check_scoring
+        from sklearn.metrics._scorer import _MultimetricScorer
+
+        internal_scorer = _MultimetricScorer(
+            scorers={
+                s: check_scoring(estimator=None, scoring=s) for s in scorers_to_add
+            }
+        )
+
+        def new_scorer(estimator, X, y) -> dict:
+            scores = scorers(estimator, X, y)
+            if isinstance(scores, dict):
+                return internal_scorer(estimator, X, y) | scores
+            return internal_scorer(estimator, X, y) | {"score": scores}
+
+        new_scorers = new_scorer
+
+        # In this specific case, we can't know if there is overlap between the
+        # user-defined scores and ours, so we take the least risky option
+        # which is to say we added nothing; that way, we won't remove anything
+        # after cross-validation is computed
+        added_scorers = []
 
     return new_scorers, added_scorers
 
