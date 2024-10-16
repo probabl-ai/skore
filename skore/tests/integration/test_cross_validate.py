@@ -21,6 +21,55 @@ def lasso():
     return lasso, X, y
 
 
+class TestInputScorers:
+    @pytest.fixture
+    def rf(self):
+        iris = datasets.load_iris()
+        X = iris.data[:150]
+        y = numpy.random.randint(2, size=150)
+        rf = RandomForestClassifier()
+        return rf, X, y
+
+    def confusion_matrix(clf, X, y):
+        from sklearn.metrics import confusion_matrix
+
+        y_pred = clf.predict(X)
+        cm = confusion_matrix(y, y_pred)
+        return {"tn": cm[0, 0], "fp": cm[0, 1], "fn": cm[1, 0], "tp": cm[1, 1]}
+
+    def true_positive(clf, X, y):
+        from sklearn.metrics import confusion_matrix
+
+        y_pred = clf.predict(X)
+        cm = confusion_matrix(y, y_pred)
+        true_positive = cm[1, 1]
+        return true_positive
+
+    @pytest.mark.parametrize(
+        "scoring",
+        [
+            confusion_matrix,  # callable returning dict
+            true_positive,  # callable returning float
+            {"true_positive": true_positive, "accuracy": "accuracy"}, # dict
+            ["accuracy", "f1"],  # list of strings
+            ("accuracy", "f1"),  # tuple of strings
+            "accuracy", # string
+            None,
+        ],
+    )
+    def test_scorer(self, rf, in_memory_project, scoring):
+        cv_results = cross_validate(*rf, scoring=scoring, project=in_memory_project)
+        cv_results_sklearn = sklearn.model_selection.cross_validate(
+            *rf, scoring=scoring
+        )
+
+        assert isinstance(
+            in_memory_project.get_item("cross_validation"), CrossValidationItem
+        )
+        assert set(cv_results.keys()).issuperset(cv_results_sklearn.keys())
+        assert all(len(v) == 5 for v in cv_results.values())
+
+
 def test_cross_validate_regression(in_memory_project, lasso):
     args = lasso
     kwargs = {"cv": 3}
