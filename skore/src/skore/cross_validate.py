@@ -62,43 +62,68 @@ def _find_ml_task(
     return "classification"
 
 
-def _add_scorers(estimator, y, scorers):
-    """Expand `scorers` with other scorers, based on `estimator` and `y`.
+def _get_scorers_to_add(estimator, y) -> list[str]:
+    """Get a list of scorers based on `estimator` and `y`.
 
     Parameters
     ----------
     estimator : sklearn.base.BaseEstimator
         An estimator.
-    scorers : any type that is accepted by scikit-learn's cross_validate
-        The scorer(s) to expand.
     y : numpy.ndarray
         A target vector.
 
     Returns
     -------
-    new_scorers : dict[str, str | None]
-        The scorers after adding `scorers_to_add`.
-    added_scorers : list[str]
-        The scorers that were actually added (i.e. the ones that were not already
-        in `scorers`).
+    scorers_to_add : list[str]
+        A list of scorers
     """
     ml_task = _find_ml_task(estimator, y)
 
     # Add scorers based on the ML task
     if ml_task == "regression":
-        scorers_to_add = ["r2", "neg_mean_squared_error"]
-    elif ml_task == "binary-classification":
-        scorers_to_add = ["roc_auc", "neg_brier_score", "recall", "precision"]
-    elif ml_task == "multiclass-classification":
-        scorers_to_add = ["recall_weighted", "precision_weighted"]
-
+        return ["r2", "neg_mean_squared_error"]
+    if ml_task == "binary-classification":
+        return ["roc_auc", "neg_brier_score", "recall", "precision"]
+    if ml_task == "multiclass-classification":
         if hasattr(estimator, "predict_proba"):
-            scorers_to_add += ["roc_auc_ovr_weighted", "neg_log_loss"]
-    else:
-        scorers_to_add = []
+            return [
+                "recall_weighted",
+                "precision_weighted",
+                "roc_auc_ovr_weighted",
+                "neg_log_loss",
+            ]
+        return ["recall_weighted", "precision_weighted"]
+    return []
 
-    added_scorers = []
 
+def _add_scorers(scorers, scorers_to_add):
+    """Expand `scorers` with more scorers.
+
+    The type of the resulting scorers object is dependent on the type of the input
+    scorers:
+    - If `scorers` is a dict, then extra scorers are added to the dict;
+    - If `scorers` is a string or None, then it is converted to a dict and extra scorers
+    are added to the dict;
+    - If `scorers` is a list or tuple, then it is converted to a dict and extra scorers
+    are added to the dict;
+    - If `scorers` is a callable, then a new callable is created that
+    returns a dict with the user-defined score as well as the scorers to add.
+
+    Parameters
+    ----------
+    scorers : any type that is accepted by scikit-learn's cross_validate
+        The scorer(s) to expand.
+    scorers_to_add : list[str]
+        The scorers to be added.
+
+    Returns
+    -------
+    new_scorers : dict, list or callable
+        The scorers after adding `scorers_to_add`.
+    added_scorers : list[str]
+        The scorers that were actually added (i.e. the ones that were not already
+        in `scorers`).
+    """
     if scorers is None or isinstance(scorers, str):
         new_scorers, added_scorers = _add_scorers({"score": scorers}, scorers_to_add)
     elif isinstance(scorers, (list, tuple)):
@@ -185,7 +210,8 @@ def cross_validate(
         scorers = None
 
     # Extend scorers with other relevant scorers
-    new_scorers, added_scorers = _add_scorers(estimator, y, scorers)
+    scorers_to_add = _get_scorers_to_add(estimator, y)
+    new_scorers, added_scorers = _add_scorers(scorers, scorers_to_add)
 
     cv_results = sklearn.model_selection.cross_validate(
         *args, **kwargs, scoring=new_scorers
