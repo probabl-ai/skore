@@ -17,34 +17,23 @@ const vegaConfig: Config = {
   background: "transparent",
 };
 let vegaView: VegaView | null = null;
-const resizeObserver = new ResizeObserver(async () => {
-  const w = container.value?.clientWidth || 0;
-  await vegaView?.width(w).runAsync();
-});
 
+async function makePlot(spec: VisualizationSpec) {
+  const mySpec = { ...spec, width: "container" } as VisualizationSpec;
+  const r = await embed(container.value!, mySpec, {
+    theme: isUserInDarkMode() ? "dark" : undefined,
+    config: vegaConfig,
+    actions: false,
+  });
+  vegaView = r.view;
+}
 onMounted(async () => {
   if (container.value) {
-    const r = await embed(
-      container.value,
-      {
-        width: container.value?.clientWidth || 0,
-        ...props.spec,
-      },
-      {
-        theme: isUserInDarkMode() ? "dark" : undefined,
-        config: vegaConfig,
-        actions: false,
-      }
-    );
-    vegaView = r.view;
-    resizeObserver.observe(container.value);
+    makePlot(props.spec);
   }
 });
 
 onBeforeUnmount(() => {
-  if (container.value) {
-    resizeObserver.unobserve(container.value);
-  }
   if (vegaView) {
     vegaView.finalize();
   }
@@ -53,24 +42,9 @@ onBeforeUnmount(() => {
 watch(
   () => props.spec,
   async (newSpec, oldSpec) => {
-    if (isDeepEqual(newSpec, oldSpec)) {
-      return;
+    if (!isDeepEqual(newSpec, oldSpec)) {
+      makePlot(newSpec);
     }
-    // Refresh view
-    // TODO: This perhaps could be done in a more fine-grained way
-    const r = await embed(
-      container.value!,
-      {
-        width: container.value?.clientWidth || 0,
-        ...newSpec,
-      },
-      {
-        theme: isUserInDarkMode() ? "dark" : undefined,
-        config: vegaConfig,
-        actions: false,
-      }
-    );
-    vegaView = r.view;
   }
 );
 </script>

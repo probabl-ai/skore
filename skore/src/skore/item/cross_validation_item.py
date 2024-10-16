@@ -77,9 +77,9 @@ def plot_cross_validation(cv_results: dict) -> altair.Chart:
         .transform_filter(selection)
         .properties(
             width=500,
-            height=200,
+            height=300,
             padding=15,
-            autosize=altair.AutoSizeParams(type="pad", contains="padding"),
+            autosize=altair.AutoSizeParams(type="fit", contains="padding"),
         )
     )
 
