@@ -112,5 +112,5 @@ See [CONTRIBUTING.md](https://github.com/probabl-ai/skore/blob/main/CONTRIBUTING
 Brought to you by:
 
 <a href="https://probabl.ai" target="_blank">
-    <img width="120" src="https://sylvaincom.github.io/files/probabl/logo_probabl.svg" alt="Probabl logo">
+    <img width="120" src="https://sylvaincom.github.io/files/probabl/Logo-orange.png" alt="Probabl logo">
 </a>
