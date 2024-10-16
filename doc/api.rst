@@ -1,11 +1,10 @@
 API
 ===
 
-This page lists all the public functions and classes of the `skore`
-package:
-
 .. currentmodule:: skore
 
+This page lists all the public functions and classes of the ``skore``
+package.
 
 Project
 -------

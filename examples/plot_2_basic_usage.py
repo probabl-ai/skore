@@ -1,9 +1,9 @@
 """
-======
-blabla
-======
+====================
+Basic usage of skore
+====================
 
-blabla
+This is work in progress.
 """
 
 # %%

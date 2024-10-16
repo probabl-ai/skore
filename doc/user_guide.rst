@@ -5,4 +5,5 @@ User guide
 
 .. currentmodule:: skore
 
-*The user guide is incoming.*
+*The User Guide is currently work in progress and will be released soon, thank
+you for your patience!*

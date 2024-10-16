@@ -1,52 +1,35 @@
 .. You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-skore
-=====
+Welcome to ``skore``
+====================
 
-Gradient-boosting survival analysis
------------------------------------
+#OwnYourDataScience
+-------------------
 
 .. container:: index-features
 
-   * survival and competing risks
+   * track and visualize your objects from a user-friendly dashboard
 
    * scikit-learn compatible
 
-   * scalable gradient boosting
+With ``skore``, data scientists can:
 
-A scalable **time-to-event and competing risk prediction model**
-implemented in Python.
+#. Store objects of different types from their Python code: python lists, ``scikit-learn`` fitted pipelines, ``plotly`` figures, and more.
+#. **Track** and **visualize** these stored objects on a user-friendly dashboard.
+#. Export the dashboard to a HTML file.
 
-.. container:: index-box sd-card
+These are only the first features: skore is a work in progress and aims to be
+an end-to-end library for data scientists.
+Stay tuned!
 
-   **Competing risks settings**
-
-   Predicting which event will happen first, and when, from data where some
-   events have not yet been observed:
-
-The model is **a gradient-boosting variant**, that offers prediction for
-survival and competing risks settings, fully compatible with
-`scikit-learn <https://scikit-learn.org>`_. It can be used with
-scikit-learn tools such as pipelines, column transformers,
-cross-validation, hyper-parameter search tools, etc.
-
-.. This package will also offer neural network based estimators by leveraging
-   `PyTorch <https://pytorch.org>`_ and `skorch
-   <https://skorch.readthedocs.io/>`_.
-
-This library puts a focus on predictive accuracy rather than on inference.
-Quantifying the statistical association or causal effect of covariates with/on
-the cumulated event incidence or instantaneous hazard rate is not in the scope
-of this library at this time.
-
-The theory behind the model is described in `this paper
-<https://arxiv.org/abs/2406.14085>`_.
-
-- License: MIT
-- GitHub repository: https://github.com/soda-inria/hazardous
-- Changelog: https://github.com/soda-inria/hazardous/blob/main/CHANGES.rst
+- License: BSD
+- GitHub repository: https://github.com/probabl-ai/skore
+- Discord: http://discord.probabl.ai
 - Status: under development, API is subject to change without notice.
+
+.. image:: https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_10_14_skore_demo.gif
+   :alt: Getting started with ``skore`` demo
 
 .. currentmodule:: skore
 
@@ -54,6 +37,8 @@ The theory behind the model is described in `this paper
    :maxdepth: 2
    :caption: Contents:
 
-   api
+   install
+   getting_started
    auto_examples/index
    user_guide
+   api
