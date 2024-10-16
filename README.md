@@ -27,6 +27,8 @@ pip install -U skore
 You can check `skore`'s latest version on
 [PyPI](https://pypi.org/project/skore/).
 
+🚨 For Windows users, the encoding must be set to [UTF-8](https://docs.python.org/3/using/windows.html#utf-8-mode): see [PYTHONUTF8](https://docs.python.org/3/using/cmdline.html#envvar-PYTHONUTF8).
+
 ## 🚀 Quick start
 
 1. From your shell, initialize a `skore` project, here named `project.skore`, that will be in your current working directory:
