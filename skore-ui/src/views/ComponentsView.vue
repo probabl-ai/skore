@@ -15,6 +15,7 @@ import DropdownButton from "@/components/DropdownButton.vue";
 import DropdownButtonItem from "@/components/DropdownButtonItem.vue";
 import DynamicContentRasterizer from "@/components/DynamicContentRasterizer.vue";
 import EditableList, { type EditableListItemModel } from "@/components/EditableList.vue";
+import FloatingTooltip from "@/components/FloatingTooltip.vue";
 import HtmlSnippetWidget from "@/components/HtmlSnippetWidget.vue";
 import ImageWidget from "@/components/ImageWidget.vue";
 import MarkdownWidget from "@/components/MarkdownWidget.vue";
@@ -178,6 +179,7 @@ const isCached = ref(false);
         'icons',
         'draggable list',
         'cacheable component',
+        'tooltip',
       ]"
     >
       <TabsItem :value="0">
@@ -431,7 +433,7 @@ const isCached = ref(false);
           <div>icon-handle <span class="icon-handle"></span></div>
         </div>
       </TabsItem>
-      <TabsItem :value="13">
+      <TabsItem :value="12">
         <Simplebar class="draggable-list-container">
           <DraggableList
             v-model:items="draggableListData"
@@ -448,7 +450,7 @@ const isCached = ref(false);
           </DraggableList>
         </Simplebar>
       </TabsItem>
-      <TabsItem :value="14">
+      <TabsItem :value="13">
         <label>
           Cache the following widget
           <input type="checkbox" v-model="isCached" />
@@ -457,6 +459,28 @@ const isCached = ref(false);
           <div>lorem ipsum dolor sit amet</div>
           <HtmlSnippetWidget :src="htmlSnippet" />
         </DynamicContentRasterizer>
+      </TabsItem>
+      <TabsItem :value="14" class="floating-tooltip-tab">
+        <div>
+          <FloatingTooltip text="Tooltip on div">bottom tooltip</FloatingTooltip>
+        </div>
+        <div>
+          <FloatingTooltip text="Tooltip on div" placement="top">top tooltip</FloatingTooltip>
+        </div>
+        <div>
+          <FloatingTooltip text="Tooltip on div" placement="left">left tooltip</FloatingTooltip>
+        </div>
+        <div>
+          <FloatingTooltip text="Tooltip on div" placement="right">right tooltip</FloatingTooltip>
+        </div>
+        <div>
+          <FloatingTooltip placement="right">
+            html tooltip
+            <template #tooltipContent>
+              <span style="color: red">red content</span>
+            </template>
+          </FloatingTooltip>
+        </div>
       </TabsItem>
     </Tabs>
   </main>
@@ -536,5 +560,12 @@ main {
 .draggable-list-container {
   max-height: 80vh;
   margin-top: 10px;
+}
+
+.floating-tooltip-tab {
+  display: grid;
+  padding: 40px;
+  gap: 40px;
+  grid-template-columns: 1fr 1fr 1fr;
 }
 </style>
