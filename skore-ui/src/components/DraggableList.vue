@@ -22,6 +22,7 @@ const movingItemAsPngData = ref("");
 const movingItemHeight = ref(0);
 const movingItemY = ref(0);
 const container = useTemplateRef("container");
+const debug = ref("");
 let interactable: Interactable;
 let direction: "up" | "down" | "none" = "none";
 let autoScrollContainer: HTMLElement = document.body;
@@ -64,23 +65,6 @@ function capturedStyles() {
   };
 }
 
-function makeModifier() {
-  const containerBounds = container.value!.getBoundingClientRect();
-
-  return interact.modifiers.restrict({
-    restriction: (x, y, { element }) => {
-      const content = element?.parentElement?.parentElement?.querySelector(".content");
-      const { height } = content?.getBoundingClientRect() ?? { height: 0 };
-      return {
-        top: containerBounds?.top - height,
-        right: containerBounds?.right,
-        bottom: containerBounds?.bottom + height,
-        left: containerBounds?.left,
-      };
-    },
-  });
-}
-
 onMounted(() => {
   if (props.autoScrollContainerSelector !== undefined) {
     const element = document.querySelector(props.autoScrollContainerSelector);
@@ -105,10 +89,10 @@ onMounted(() => {
     autoScroll: {
       enabled: true,
       container: autoScrollContainer,
+      speed: 900,
     },
     startAxis: "y",
     lockAxis: "y",
-    modifiers: [makeModifier()],
     listeners: {
       async start(event) {
         // make a rasterized copy of the moving element
@@ -132,6 +116,8 @@ onMounted(() => {
         const containerY = autoScrollContainer?.getBoundingClientRect().y ?? 0;
         movingItemY.value =
           event.clientY + autoScrollContainer!.scrollTop - paddingTop - containerY;
+
+        debug.value = `${event.clientY} ${autoScrollContainer!.scrollTop} ${paddingTop} ${containerY}`;
 
         // set the drop indicator item index
         const itemBounds = Array.from(container.value!.querySelectorAll(".item")).map(
@@ -186,8 +172,6 @@ onMounted(() => {
       },
     },
   });
-
-  console.log("interactable", interactable);
 });
 
 onUnmounted(() => {
@@ -197,10 +181,12 @@ onUnmounted(() => {
 
 <template>
   <div class="draggable" :class="{ dragging: movingItemIndex !== -1 }" ref="container">
-    <div style="position: fixed; top: 0; right: 0; background: black; color: antiquewhite">
-      movingItemY: {{ movingItemY }} movingItemIndex: {{ movingItemIndex }} dropIndicatorPosition:
+    <!-- <div style="position: fixed; top: 0; right: 0; background: black; color: antiquewhite">
+      > movingItemY: {{ movingItemY }} movingItemIndex: {{ movingItemIndex }} dropIndicatorPosition:
       {{ dropIndicatorPosition }} movingItemHeight: {{ movingItemHeight }}
-    </div>
+      <hr />
+      {{ debug }}
+    </div> -->
     <div v-for="(item, index) in items" class="item" :key="item.id">
       <div class="handle" :data-index="index"><span class="icon-handle" /></div>
       <div class="content-wrapper">

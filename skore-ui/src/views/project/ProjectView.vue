@@ -90,10 +90,10 @@ onBeforeUnmount(() => {
             on the left.
           </div>
         </div>
-        <Simplebar class="editor-wrapper" v-else>
+        <Simplebar class="editor-container" v-else>
           <DraggableList
             v-model:items="projectStore.currentViewItems"
-            auto-scroll-container-selector=".editor-wrapper"
+            auto-scroll-container-selector=".editor-container"
           >
             <template #item="{ key, mediaType, data, createdAt, updatedAt }">
               <ProjectViewCard
@@ -242,12 +242,12 @@ main {
         }
       }
 
-      & .editor-wrapper {
-        height: 0;
-        flex-grow: 1;
+      & .editor-container {
+        flex: 1;
         padding: var(--spacing-padding-large);
 
         & .draggable {
+          min-height: 100%;
           gap: var(--spacing-gap-large);
         }
       }

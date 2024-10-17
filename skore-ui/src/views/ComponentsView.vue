@@ -442,7 +442,7 @@ const isCached = ref(false);
           <div>icon-handle <span class="icon-handle"></span></div>
         </div>
       </TabsItem>
-      <TabsItem :value="13">
+      <TabsItem :value="12">
         <div>Item order: {{ draggableListData.map((item) => item.id).join(", ") }}</div>
         <div>
           <SimpleButton
@@ -467,7 +467,7 @@ const isCached = ref(false);
           </DraggableList>
         </Simplebar>
       </TabsItem>
-      <TabsItem :value="14">
+      <TabsItem :value="13">
         <label>
           Cache the following widget
           <input type="checkbox" v-model="isCached" />
