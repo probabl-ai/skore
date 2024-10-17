@@ -1,7 +1,7 @@
 """
-==========================
-Getting started with skore
-==========================
+==============================
+Getting started with ``skore``
+==============================
 
 `This is work in progress.`
 
