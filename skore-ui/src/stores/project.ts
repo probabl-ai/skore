@@ -3,16 +3,25 @@ import { ref, shallowRef } from "vue";
 
 import { type Layout, type Project, type ProjectItem } from "@/models";
 import { deleteView as deleteViewApi, fetchProject, putView } from "@/services/api";
-import { poll } from "@/services/utils";
 
 export interface TreeNode {
   name: string;
   children: TreeNode[];
 }
 
+export interface PresentableItem {
+  id: string;
+  key: string;
+  mediaType: string;
+  data: any;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export const useProjectStore = defineStore("project", () => {
-  // this object is not deeply reactive as it may be very large
+  // this objects is not deeply reactive as it may be very large
   const items = shallowRef<{ [key: string]: ProjectItem } | null>(null);
+  const currentViewItems = shallowRef<PresentableItem[]>([]);
   const views = ref<{ [key: string]: Layout }>({});
   const currentView = ref<string | null>(null);
 
@@ -31,12 +40,22 @@ export const useProjectStore = defineStore("project", () => {
    * Add the value of a key to the view.
    * @param view the view to add the key to
    * @param key the key to add to the view
+   * @param position the position to add the key at, default to the end of the list
    */
-  async function displayKey(view: string, key: string) {
+  async function displayKey(view: string, key: string, position: number = -1) {
     stopBackendPolling();
     const realKey = key.replace(" (self)", "");
     if (!isKeyDisplayed(view, realKey)) {
-      views.value[view] = [...views.value[view], realKey];
+      if (position === -1) {
+        views.value[view] = [...views.value[view], realKey];
+      } else {
+        views.value[view] = [
+          ...views.value[view].slice(0, position),
+          realKey,
+          ...views.value[view].slice(position),
+        ];
+      }
+      _updatePresentableItemsInView();
       await persistView(view, views.value[view]);
     }
     await startBackendPolling();
@@ -52,6 +71,7 @@ export const useProjectStore = defineStore("project", () => {
     if (isKeyDisplayed(view, key)) {
       const v = views.value[view];
       views.value[view] = v.filter((k) => k !== key);
+      _updatePresentableItemsInView();
       await persistView(view, views.value[view]);
     }
     await startBackendPolling();
@@ -76,7 +96,7 @@ export const useProjectStore = defineStore("project", () => {
   async function startBackendPolling() {
     _isCanceledCall = false;
     await fetch();
-    _stopBackendPolling = await poll(fetch, 1500);
+    _stopBackendPolling = () => {}; // await poll(fetch, 1500);
   }
 
   /**
@@ -108,6 +128,7 @@ export const useProjectStore = defineStore("project", () => {
   async function setProject(r: Project) {
     items.value = r.items;
     views.value = r.views;
+    _updatePresentableItemsInView();
   }
 
   /**
@@ -228,19 +249,78 @@ export const useProjectStore = defineStore("project", () => {
     await persistView(newName, views.value[newName]);
   }
 
+  /**
+   * Set the current view
+   */
+  function setCurrentView(view: string) {
+    currentView.value = view;
+    _updatePresentableItemsInView();
+  }
+
+  /**
+   * Get the items in the current view as a presentable list.
+   * @returns a list of items with their metadata
+   */
+  function _updatePresentableItemsInView() {
+    const r: PresentableItem[] = [];
+    if (items.value !== null && currentView.value !== null) {
+      const v = views.value[currentView.value];
+      for (const key of v) {
+        const item = items.value[key];
+        if (item) {
+          const mediaType = item.media_type || "";
+          let data;
+          if (
+            [
+              "text/markdown",
+              "application/vnd.dataframe+json",
+              "application/vnd.sklearn.estimator+html",
+              "image/png",
+              "image/jpeg",
+              "image/webp",
+              "image/svg+xml",
+            ].includes(mediaType)
+          ) {
+            data = item.value;
+          } else {
+            data = atob(item.value);
+            if (mediaType.includes("json")) {
+              data = JSON.parse(data);
+            }
+          }
+          const createdAt = new Date(item.created_at);
+          const updatedAt = new Date(item.updated_at);
+          r.push({
+            id: key,
+            key,
+            mediaType,
+            data,
+            createdAt,
+            updatedAt,
+          });
+        }
+      }
+    }
+    currentViewItems.value = r;
+  }
+
   return {
+    // refs
+    currentView,
+    currentViewItems,
     items,
     views,
-    currentView,
+    // actions
+    createView,
+    deleteView,
     displayKey,
+    duplicateView,
     hideKey,
+    keysAsTree,
+    setCurrentView,
+    setProject,
+    renameView,
     startBackendPolling,
     stopBackendPolling,
-    setProject,
-    keysAsTree,
-    createView,
-    duplicateView,
-    deleteView,
-    renameView,
   };
 });

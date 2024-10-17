@@ -1,6 +1,6 @@
 import { createRouter, createWebHashHistory } from "vue-router";
 
-import ProjectView from "./views/ProjectView.vue";
+import ProjectView from "./views/project/ProjectView.vue";
 
 export enum ROUTE_NAMES {
   VIEW_BUILDER = "view-builder",

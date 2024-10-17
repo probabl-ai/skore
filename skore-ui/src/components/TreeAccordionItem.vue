@@ -36,7 +36,7 @@ const totalChildrenCount = computed(() => {
 
 function onDragStart(event: DragEvent) {
   if (event.dataTransfer) {
-    event.dataTransfer.setData("key", props.name);
+    event.dataTransfer.setData("application/x-skore-item-name", props.name);
   }
 }
 </script>

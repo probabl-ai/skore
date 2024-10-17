@@ -5,7 +5,7 @@ import { createApp } from "vue";
 import { useRoute } from "vue-router";
 
 import { ROUTE_NAMES } from "@/router";
-import ProjectView from "@/views/ProjectView.vue";
+import ProjectView from "@/views/project/ProjectView.vue";
 import { mountSuspense } from "../test.utils";
 
 vi.mock("@/services/api", () => {
