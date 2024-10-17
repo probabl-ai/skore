@@ -3,6 +3,7 @@
 import webbrowser
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Union
 
 import uvicorn
 from fastapi import FastAPI
@@ -10,7 +11,6 @@ from fastapi import FastAPI
 from skore.cli import logger
 from skore.project import load
 from skore.ui.app import create_app
-from typing import Union
 
 
 class ProjectNotFound(Exception):
