@@ -19,15 +19,25 @@ function onItemSelected(key: string) {
 </script>
 
 <template>
-  <SectionHeader title="Elements" icon="icon-pie-chart" />
-  <Simplebar class="key-list">
-    <TreeAccordion :nodes="projectStore.keysAsTree()" @item-selected="onItemSelected" />
-  </Simplebar>
+  <div class="keys-list">
+    <SectionHeader title="Elements" icon="icon-pie-chart" />
+    <Simplebar class="scrollable">
+      <TreeAccordion :nodes="projectStore.keysAsTree()" @item-selected="onItemSelected" />
+    </Simplebar>
+  </div>
 </template>
 
 <style scoped>
-.key-list {
-  padding: var(--spacing-padding-large);
-  background-color: var(--background-color-elevated-high);
+.keys-list {
+  display: flex;
+  max-height: 100%;
+  flex-direction: column;
+
+  & .scrollable {
+    height: 0;
+    flex: 1;
+    padding: var(--spacing-padding-large);
+    background-color: var(--background-color-elevated-high);
+  }
 }
 </style>

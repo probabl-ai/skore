@@ -15,6 +15,7 @@ import VegaWidget from "@/components/VegaWidget.vue";
 import { fetchShareableBlob } from "@/services/api";
 import { saveBlob } from "@/services/utils";
 import { useProjectStore } from "@/stores/project";
+import { useToastsStore } from "@/stores/toasts";
 import ProjectElementList from "@/views/project/ProjectElementList.vue";
 import ProjectViewList from "@/views/project/ProjectViewList.vue";
 
@@ -27,6 +28,8 @@ const props = defineProps({
 
 const projectStore = useProjectStore();
 const isInFocusMode = ref(false);
+const currentDropPosition = ref<number>();
+const toastsStore = useToastsStore();
 
 async function onShareView() {
   const currentView = projectStore.currentView;
@@ -46,6 +49,19 @@ function onFocusMode() {
 function onCardRemoved(key: string) {
   if (projectStore.currentView) {
     projectStore.hideKey(projectStore.currentView, key);
+  }
+}
+
+function onItemDrop(event: DragEvent) {
+  if (projectStore.currentView) {
+    if (event.dataTransfer) {
+      const itemName = event.dataTransfer.getData("application/x-skore-item-name");
+      if (currentDropPosition.value !== undefined) {
+        projectStore.displayKey(projectStore.currentView, itemName, currentDropPosition.value);
+      }
+    }
+  } else {
+    toastsStore.addToast("No view selected", "error");
   }
 }
 
@@ -94,6 +110,9 @@ onBeforeUnmount(() => {
           <DraggableList
             v-model:items="projectStore.currentViewItems"
             auto-scroll-container-selector=".editor-container"
+            v-model:current-drop-position="currentDropPosition"
+            @drop="onItemDrop($event)"
+            @dragover.prevent
           >
             <template #item="{ key, mediaType, data, createdAt, updatedAt }">
               <ProjectViewCard
@@ -178,7 +197,7 @@ main {
         z-index: 2;
       }
 
-      & .key-list {
+      & .keys-list {
         z-index: 1;
         height: 0;
         flex: 1;
@@ -187,7 +206,6 @@ main {
 
     & .editor {
       display: flex;
-      overflow: hidden;
       min-width: 0;
       max-height: 100vh;
       flex: auto;
@@ -243,6 +261,7 @@ main {
       }
 
       & .editor-container {
+        height: 0;
         flex: 1;
         padding: var(--spacing-padding-large);
 

@@ -40,12 +40,21 @@ export const useProjectStore = defineStore("project", () => {
    * Add the value of a key to the view.
    * @param view the view to add the key to
    * @param key the key to add to the view
+   * @param position the position to add the key at, default to the end of the list
    */
-  async function displayKey(view: string, key: string) {
+  async function displayKey(view: string, key: string, position: number = -1) {
     stopBackendPolling();
     const realKey = key.replace(" (self)", "");
     if (!isKeyDisplayed(view, realKey)) {
-      views.value[view] = [...views.value[view], realKey];
+      if (position === -1) {
+        views.value[view] = [...views.value[view], realKey];
+      } else {
+        views.value[view] = [
+          ...views.value[view].slice(0, position),
+          realKey,
+          ...views.value[view].slice(position),
+        ];
+      }
       _updatePresentableItemsInView();
       await persistView(view, views.value[view]);
     }
