@@ -23,7 +23,6 @@ const movingItemAsPngData = ref("");
 const movingItemHeight = ref(0);
 const movingItemY = ref(0);
 const container = useTemplateRef("container");
-const debug = ref("");
 let draggable: Interactable;
 let direction: "up" | "down" | "none" = "none";
 let autoScrollContainer: HTMLElement = document.body;
@@ -91,11 +90,24 @@ function setDropIndicatorPosition(y: number) {
 }
 
 function onDragOver(event: DragEvent) {
+  // scroll the container if needed
+  const scrollBounds = autoScrollContainer.getBoundingClientRect();
+  const distanceToTop = Math.abs(event.pageY - scrollBounds.top);
+  const distanceToBottom = Math.abs(event.pageY - scrollBounds.bottom);
+  const threshold = 150;
+  const speed = 5;
+  if (distanceToTop < threshold) {
+    autoScrollContainer.scrollTop -= speed;
+  } else if (distanceToBottom < threshold) {
+    const maxScroll = autoScrollContainer.scrollHeight - scrollBounds.height;
+    autoScrollContainer.scrollTop = Math.min(maxScroll, autoScrollContainer.scrollTop + speed);
+  }
+
   // show drop indicator to the closest item
   setDropIndicatorPosition(event.pageY);
 
   if (dropIndicatorPosition.value !== null) {
-    currentDropPosition.value = dropIndicatorPosition.value;
+    currentDropPosition.value = dropIndicatorPosition.value + 1;
   }
 }
 
@@ -198,12 +210,6 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="draggable" :class="{ dragging: movingItemIndex !== -1 }" ref="container">
-    <!-- <div style="position: fixed; top: 0; right: 0; background: black; color: antiquewhite">
-      > movingItemY: {{ movingItemY }} movingItemIndex: {{ movingItemIndex }} dropIndicatorPosition:
-      {{ dropIndicatorPosition }} movingItemHeight: {{ movingItemHeight }}
-      <hr />
-      {{ debug }}
-    </div> -->
     <div v-for="(item, index) in items" class="item" :key="item.id">
       <div class="handle" :data-index="index"><span class="icon-handle" /></div>
       <div class="content-wrapper">
