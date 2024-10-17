@@ -20,7 +20,7 @@ function generateFakeProps(numItems: number) {
     ]);
   }
 
-  return { index, columns, data };
+  return { index, columns, data, indexNames: [] };
 }
 
 function mountComponent(props: any) {
