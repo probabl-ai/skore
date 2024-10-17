@@ -10,7 +10,7 @@
 
 These are only the first features of `skore`'s roadmap.
 `skore` is a work in progress and, on the long run, it aims to be an all-inclusive library for data scientists.
-Stay tuned!
+Stay tuned, and join [our Discord](https://discord.probabl.ai) if you want to give us feedback!
 
 <p align="center">
     <img width="100%" src="https://github.com/sylvaincom/sylvaincom.github.io/blob/master/files/probabl/skore/2024_10_08_skore_demo.gif"/>
