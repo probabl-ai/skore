@@ -56,9 +56,7 @@ function onItemDrop(event: DragEvent) {
   if (projectStore.currentView) {
     if (event.dataTransfer) {
       const itemName = event.dataTransfer.getData("application/x-skore-item-name");
-      if (currentDropPosition.value !== undefined) {
-        projectStore.displayKey(projectStore.currentView, itemName, currentDropPosition.value);
-      }
+      projectStore.displayKey(projectStore.currentView, itemName, currentDropPosition.value ?? 0);
     }
   } else {
     toastsStore.addToast("No view selected", "error");
@@ -99,6 +97,8 @@ onBeforeUnmount(() => {
             projectStore.views[projectStore.currentView]?.length === 0
           "
           class="placeholder"
+          @drop="onItemDrop($event)"
+          @dragover.prevent
         >
           <div class="wrapper" v-if="projectStore.currentView === null">No view selected.</div>
           <div class="wrapper" v-else>
