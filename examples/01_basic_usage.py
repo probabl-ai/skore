@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.16.2
 #   kernelspec:
 #     display_name: .venv
 #     language: python
@@ -260,6 +260,15 @@ project.put("my_altair_chart", my_altair_chart)
 
 # %% [markdown]
 # Plotly figures:
+#
+# > NOTE: Some users reported the following error when running the Plotly cells:
+# > ```
+# > ValueError: Mime type rendering requires nbformat>=4.2.0 but it is not installed
+# > ```
+# > This is a Plotly issue which is documented [here](https://github.com/plotly/plotly.py/issues/3285); to solve it, we recommend installing nbformat in your environment, e.g. with
+# > ```sh
+# > pip install --upgrade nbformat
+# > ```
 
 # %%
 df = px.data.iris()
