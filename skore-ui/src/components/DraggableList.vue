@@ -133,8 +133,6 @@ onMounted(() => {
         movingItemY.value =
           event.clientY + autoScrollContainer!.scrollTop - paddingTop - containerY;
 
-        console.log(paddingTop, containerY, event.clientY);
-
         // set the drop indicator item index
         const itemBounds = Array.from(container.value!.querySelectorAll(".item")).map(
           (item, index) => {

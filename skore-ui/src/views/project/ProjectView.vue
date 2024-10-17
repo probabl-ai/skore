@@ -107,6 +107,7 @@ onBeforeUnmount(() => {
                   v-if="mediaType === 'application/vnd.dataframe+json'"
                   :columns="data.columns"
                   :data="data.data"
+                  :index="data.index"
                 />
                 <ImageWidget
                   v-if="

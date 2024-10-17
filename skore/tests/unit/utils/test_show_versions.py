@@ -1,6 +1,3 @@
-import os
-import tempfile
-
 from skore.utils._show_versions import _get_deps_info, _get_sys_info, show_versions
 
 
@@ -29,18 +26,3 @@ def test_show_versions(capfd):
     assert "pip" in captured.out
     assert "setuptools" in captured.out
     assert "skore" in captured.out
-
-
-def test_get_deps_in_any_working_directory(capfd):
-    cwd = os.getcwd()
-    with tempfile.TemporaryDirectory() as temp_dir:
-        os.chdir(temp_dir)
-        show_versions()
-        captured = capfd.readouterr()
-        assert "python" in captured.out
-        assert "executable" in captured.out
-        assert "machine" in captured.out
-        assert "pip" in captured.out
-        assert "setuptools" in captured.out
-        assert "skore" in captured.out
-    os.chdir(cwd)

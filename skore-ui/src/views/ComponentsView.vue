@@ -6,9 +6,9 @@ import { ref } from "vue";
 import datatable from "@/assets/fixtures/datatable.json";
 import htmlSnippet from "@/assets/fixtures/html-snippet.html?raw";
 import markdownString from "@/assets/fixtures/markdown.md?raw";
+import multiIndexDatatable from "@/assets/fixtures/multi-index-datatable.json";
 import spec from "@/assets/fixtures/vega.json";
 
-import CrossValidationResultsWidget from "@/components/CrossValidationResultsWidget.vue";
 import DataFrameWidget from "@/components/DataFrameWidget.vue";
 import DraggableList from "@/components/DraggableList.vue";
 import DropdownButton from "@/components/DropdownButton.vue";
@@ -179,7 +179,6 @@ const isCached = ref(false);
         'vega',
         'DataFrame',
         'Image',
-        'CV Results',
         'buttons',
         'toast',
         'inputs',
@@ -199,9 +198,17 @@ const isCached = ref(false);
         <VegaWidget :spec="spec as VisualizationSpec" />
       </TabsItem>
       <TabsItem :value="2" class="dataframe">
+        <div>Simple index</div>
         <DataFrameWidget
-          :columns="['id', 'first_name', 'last_name', 'email', 'gender', 'ip_address']"
-          :data="datatable"
+          :index="datatable.index"
+          :columns="datatable.columns"
+          :data="datatable.data"
+        />
+        <div>multi index</div>
+        <DataFrameWidget
+          :index="multiIndexDatatable.index"
+          :columns="multiIndexDatatable.columns"
+          :data="multiIndexDatatable.data"
         />
       </TabsItem>
       <TabsItem :value="3">
@@ -241,15 +248,6 @@ const isCached = ref(false);
         </div>
       </TabsItem>
       <TabsItem :value="4">
-        <CrossValidationResultsWidget
-          :roc_curve_spec="spec as VisualizationSpec"
-          :cv_results_table="{
-            columns: ['id', 'first_name', 'last_name', 'email', 'gender', 'ip_address'],
-            data: datatable,
-          }"
-        />
-      </TabsItem>
-      <TabsItem :value="5">
         <div class="buttons">
           <p>
             <SimpleButton label="hey ho" :is-primary="true" />
@@ -339,7 +337,7 @@ const isCached = ref(false);
           </p>
         </div>
       </TabsItem>
-      <TabsItem :value="6">
+      <TabsItem :value="5">
         <div class="toasts">
           <ToastNotification message="Info toast" type="info" id="info-toast" />
           <ToastNotification message="Success toast" type="success" id="success-toast" />
@@ -349,7 +347,7 @@ const isCached = ref(false);
         <SimpleButton label="Show unique toast" @click="showToast" />
         <SimpleButton label="Show toast" @click="showToastWithCount" />
       </TabsItem>
-      <TabsItem :value="7">
+      <TabsItem :value="6">
         <div class="text-inputs">
           <p>
             Regular text input
@@ -371,12 +369,12 @@ const isCached = ref(false);
           </p>
         </div>
       </TabsItem>
-      <TabsItem :value="8">
+      <TabsItem :value="7">
         <SimpleButton label="Show alert modal" @click="showAlertModal" />
         <SimpleButton label="Show confirm modal" @click="showConfirmModal" />
         <SimpleButton label="Show prompt modal" @click="showPromptModal" />
       </TabsItem>
-      <TabsItem :value="9">
+      <TabsItem :value="8">
         <SectionHeader title="Section header" />
         <SectionHeader
           title="Section header with action"
@@ -384,10 +382,10 @@ const isCached = ref(false);
           @action="onSectionHeaderAction"
         />
       </TabsItem>
-      <TabsItem :value="10">
+      <TabsItem :value="9">
         <TreeAccordion :nodes="fileTreeNodes" />
       </TabsItem>
-      <TabsItem :value="11" class="editable-list-tab">
+      <TabsItem :value="10" class="editable-list-tab">
         <div class="header">
           Editable List as 2 way data binding... item list is:
           <ul>
@@ -415,7 +413,7 @@ const isCached = ref(false);
           </Simplebar>
         </div>
       </TabsItem>
-      <TabsItem :value="12">
+      <TabsItem :value="11">
         <div class="icons">
           <div>icon-trash <span class="icon-trash"></span></div>
           <div>icon-more <span class="icon-more"></span></div>

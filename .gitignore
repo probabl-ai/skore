@@ -176,3 +176,7 @@ cython_debug/
 auto-save-list
 tramp
 .\#*
+
+# Sphinx documentation
+doc/_build/
+doc/auto_examples/

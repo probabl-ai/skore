@@ -4,10 +4,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import DataFrameWidget from "@/components/DataFrameWidget.vue";
 
 function generateFakeProps(numItems: number) {
+  const index = [];
   const columns = ["id", "first_name", "last_name", "email", "gender", "ip_address"];
   const data = [];
 
   for (let i = 1; i <= numItems; i++) {
+    index.push([i, `Index${i}`]);
     data.push([
       i,
       `FirstName${i}`,
@@ -18,7 +20,7 @@ function generateFakeProps(numItems: number) {
     ]);
   }
 
-  return { columns, data };
+  return { index, columns, data };
 }
 
 function mountComponent(props: any) {
@@ -47,7 +49,7 @@ describe("DataFrameWidget", () => {
   it("Renders properly.", () => {
     const props = generateFakeProps(10);
     const wrapper = mountComponent(props);
-    expect(wrapper.findAll("thead > tr > th").length).toBe(props.columns.length);
+    expect(wrapper.findAll("thead > tr > th").length).toBe(props.columns.length + 1);
     expect(wrapper.findAll("tbody > tr").length).toBe(props.data.length);
   });
 
