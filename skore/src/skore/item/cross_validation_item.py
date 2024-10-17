@@ -65,7 +65,7 @@ def plot_cross_validation(cv_results: dict) -> altair.Chart:
 
     return (
         (
-            altair.Chart(df, title="Cross-validation scores per split")
+            altair.Chart(df, title="Cross-validation results per split")
             .mark_bar()
             .encode(
                 altair.X("split:N").axis(
@@ -73,7 +73,7 @@ def plot_cross_validation(cv_results: dict) -> altair.Chart:
                     labelAngle=0,
                 ),
                 altair.Y("score:Q").axis(
-                    title="Score",
+                    title="Value",
                     titleAngle=0,
                     titleAlign="left",
                     titleX=0,
