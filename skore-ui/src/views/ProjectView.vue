@@ -28,7 +28,7 @@ const itemsAsTree = computed(() => {
   // add actions to the leaf nodes
   function addActions(node: TreeAccordionNode) {
     if (node.children?.length === 0) {
-      node.actions = [{ icon: "icon-plus-circle", actionName: "add" }];
+      node.actions = [{ icon: "icon-plus", actionName: "add" }];
     }
     for (const child of node.children ?? []) {
       addActions(child);

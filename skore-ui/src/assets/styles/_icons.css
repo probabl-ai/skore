@@ -27,7 +27,7 @@
   text-transform: none;
 }
 
-.icon-edit::before {
+.icon-more::before {
   content: "\e900";
 }
 
@@ -35,15 +35,15 @@
   content: "\e901";
 }
 
-.icon-more::before {
+.icon-branch::before {
   content: "\e902";
 }
 
-.icon-branch::before {
+.icon-trash::before {
   content: "\e903";
 }
 
-.icon-trash::before {
+.icon-edit::before {
   content: "\e904";
 }
 
@@ -63,66 +63,70 @@
   content: "\e908";
 }
 
-.icon-plus-circle::before {
+.icon-plus::before {
   content: "\e909";
 }
 
-.icon-warning::before {
+.icon-plus-circle::before {
   content: "\e90a";
 }
 
-.icon-info::before {
+.icon-warning::before {
   content: "\e90b";
 }
 
-.icon-error::before {
+.icon-info::before {
   content: "\e90c";
 }
 
-.icon-success::before {
+.icon-error::before {
   content: "\e90d";
 }
 
-.icon-search::before {
+.icon-success::before {
   content: "\e90e";
 }
 
-.icon-maximize::before {
+.icon-search::before {
   content: "\e90f";
 }
 
-.icon-folder::before {
+.icon-maximize::before {
   content: "\e910";
 }
 
-.icon-plot::before {
+.icon-folder::before {
   content: "\e911";
 }
 
-.icon-text::before {
+.icon-plot::before {
   content: "\e912";
 }
 
-.icon-gift::before {
+.icon-text::before {
   content: "\e913";
 }
 
-.icon-pie-chart::before {
+.icon-gift::before {
   content: "\e914";
 }
 
-.icon-chevron-left::before {
+.icon-pie-chart::before {
   content: "\e915";
 }
 
-.icon-chevron-down::before {
+.icon-chevron-left::before {
   content: "\e916";
 }
 
-.icon-chevron-right::before {
+.icon-chevron-down::before {
   content: "\e917";
 }
 
-.icon-chevron-up::before {
+.icon-chevron-right::before {
   content: "\e918";
+}
+
+.icon-chevron-up::before {
+  content: "\e919";
 }
