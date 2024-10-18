@@ -37,7 +37,6 @@ class Project:
     ):
         self.item_repository = item_repository
         self.view_repository = view_repository
-        self.put_view("default", View(layout=[]))
 
     @singledispatchmethod
     def put(self, key: str, value: Any, on_error: Literal["warn", "raise"] = "warn"):

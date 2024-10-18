@@ -166,7 +166,7 @@ onBeforeUnmount(() => {
             @rename="onViewRenamed"
           />
         </Simplebar>
-        <SectionHeader title="Elements" icon="icon-pie-chart" subtitle="Drag them into canvas" />
+        <SectionHeader title="Elements" icon="icon-pie-chart" subtitle="Drag them into the view" />
         <Simplebar class="key-list">
           <TreeAccordion :nodes="projectStore.keysAsTree()" @item-selected="onItemSelected" />
         </Simplebar>
@@ -197,7 +197,7 @@ onBeforeUnmount(() => {
           >
             <div class="wrapper" v-if="projectStore.currentView === null">No view selected.</div>
             <div class="dropzone" v-else>
-              <div class="wrapper">No item selected yet, start by dragging one element.</div>
+              <div class="wrapper">The view is empty, start by dropping an element.</div>
             </div>
           </div>
           <Simplebar class="canvas-wrapper" v-else>

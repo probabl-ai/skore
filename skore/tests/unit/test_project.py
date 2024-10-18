@@ -187,7 +187,7 @@ def test_list_view_keys(project):
     view = View(layout=[])
 
     project.put_view("view", view)
-    assert project.list_view_keys() == ["default", "view"]
+    assert project.list_view_keys() == ["view"]
 
 
 def test_put_several_happy_path(project):
