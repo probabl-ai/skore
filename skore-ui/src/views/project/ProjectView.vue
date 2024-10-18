@@ -205,6 +205,8 @@ main {
     }
 
     & .editor {
+      --editor-height: 44px;
+
       display: flex;
       min-width: 0;
       max-height: 100vh;
@@ -213,7 +215,7 @@ main {
 
       & .editor-header {
         display: flex;
-        height: 44px;
+        height: var(--editor-height);
         align-items: center;
         padding: var(--spacing-padding-large);
         border-right: solid var(--border-width-normal) var(--border-color-normal);
@@ -266,7 +268,7 @@ main {
         padding: var(--spacing-padding-large);
 
         & .draggable {
-          min-height: 100%;
+          min-height: calc(100dvh - var(--editor-height) - var(--spacing-padding-large) * 2);
           gap: var(--spacing-gap-large);
         }
       }
