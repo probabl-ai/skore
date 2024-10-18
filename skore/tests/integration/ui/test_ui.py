@@ -38,7 +38,7 @@ def test_get_items(client, project):
     response = client.get("/api/project/items")
 
     assert response.status_code == 200
-    assert response.json() == {"views": {}, "items": {}}
+    assert response.json() == {"views": {"default": []}, "items": {}}
 
     project.put("test", "test")
     item = project.get_item("test")
@@ -46,7 +46,7 @@ def test_get_items(client, project):
     response = client.get("/api/project/items")
     assert response.status_code == 200
     assert response.json() == {
-        "views": {},
+        "views": {"default": []},
         "items": {
             "test": {
                 "media_type": "text/markdown",
