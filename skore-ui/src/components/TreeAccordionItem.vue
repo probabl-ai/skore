@@ -168,6 +168,13 @@ function onAction(action: string) {
     }
 
     .actions {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: var(--spacing-gap-small);
+      opacity: 0;
+      transition: opacity var(--transition-duration) var(--transition-easing);
+
       & button {
         padding: 0;
         border: none;
@@ -195,6 +202,12 @@ function onAction(action: string) {
 
       &.collapsed {
         transform: rotate(90deg);
+      }
+    }
+
+    &:hover {
+      .actions {
+        opacity: 1;
       }
     }
   }

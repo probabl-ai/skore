@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { format } from "date-fns";
 import Simplebar from "simplebar-vue";
-import { onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 
 import EditableList, { type EditableListItemModel } from "@/components/EditableList.vue";
 import ProjectViewCanvas from "@/components/ProjectViewCanvas.vue";
 import SectionHeader from "@/components/SectionHeader.vue";
 import SimpleButton from "@/components/SimpleButton.vue";
-import TreeAccordion from "@/components/TreeAccordion.vue";
+import TreeAccordion, { type TreeAccordionNode } from "@/components/TreeAccordion.vue";
 import { fetchShareableBlob } from "@/services/api";
 import { generateRandomId, saveBlob } from "@/services/utils";
 import { useProjectStore } from "@/stores/project";
@@ -20,6 +20,27 @@ const editor = ref<HTMLDivElement>();
 const isInFocusMode = ref(false);
 const views = ref<EditableListItemModel[]>([]);
 let unsavedViewsId: string = "";
+
+const itemsAsTree = computed(() => {
+  const source = projectStore.keysAsTree();
+  const tree = structuredClone(source) as unknown as TreeAccordionNode[];
+
+  // add actions to the leaf nodes
+  function addActions(node: TreeAccordionNode) {
+    if (node.children?.length === 0) {
+      node.actions = [{ icon: "icon-plus-circle", actionName: "add" }];
+    }
+    for (const child of node.children ?? []) {
+      addActions(child);
+    }
+  }
+
+  for (const node of tree) {
+    addActions(node);
+  }
+
+  return tree;
+});
 
 async function onShareView() {
   const currentView = projectStore.currentView;
@@ -64,7 +85,7 @@ function onDragLeave(event: DragEvent) {
   }
 }
 
-function onItemSelected(key: string) {
+function onItemAction(action: string, key: string) {
   displayItem(key);
 }
 
@@ -168,7 +189,7 @@ onBeforeUnmount(() => {
         </Simplebar>
         <SectionHeader title="Elements" icon="icon-pie-chart" />
         <Simplebar class="key-list">
-          <TreeAccordion :nodes="projectStore.keysAsTree()" @item-selected="onItemSelected" />
+          <TreeAccordion :nodes="itemsAsTree" @item-action="onItemAction" />
         </Simplebar>
       </div>
 
