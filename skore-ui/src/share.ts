@@ -15,5 +15,5 @@ export default async function share(selectedView: string) {
   const m = JSON.parse(document.getElementById("project-data")?.innerText || "{}");
   const projectStore = useProjectStore();
   await projectStore.setProject(m);
-  projectStore.currentView = selectedView;
+  projectStore.setCurrentView(selectedView);
 }
