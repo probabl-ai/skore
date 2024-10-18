@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import Simplebar from "simplebar-vue";
 import type { VisualizationSpec } from "vega-embed";
 import { ref } from "vue";
 
@@ -10,12 +9,9 @@ import multiIndexDatatable from "@/assets/fixtures/multi-index-datatable.json";
 import spec from "@/assets/fixtures/vega.json";
 
 import DataFrameWidget from "@/components/DataFrameWidget.vue";
-import DraggableList from "@/components/DraggableList.vue";
 import DropdownButton from "@/components/DropdownButton.vue";
 import DropdownButtonItem from "@/components/DropdownButtonItem.vue";
-import DynamicContentRasterizer from "@/components/DynamicContentRasterizer.vue";
-import EditableList, { type EditableListItemModel } from "@/components/EditableList.vue";
-import FloatingTooltip from "@/components/FloatingTooltip.vue";
+import { type EditableListItemModel } from "@/components/EditableList.vue";
 import HtmlSnippetWidget from "@/components/HtmlSnippetWidget.vue";
 import ImageWidget from "@/components/ImageWidget.vue";
 import MarkdownWidget from "@/components/MarkdownWidget.vue";
@@ -94,6 +90,29 @@ const fileTreeNodes: TreeAccordionNode[] = [
         ],
       },
       { name: "nested/fraud2/accuracy3", children: [] },
+    ],
+  },
+];
+
+const lastAction = ref<string | null>(null);
+const fileTreeItemWithActions: TreeAccordionNode[] = [
+  {
+    name: "fraud",
+    children: [
+      {
+        name: "fraud/accuracy",
+        actions: [
+          { icon: "icon-plus-circle", actionName: "add" },
+          { icon: "icon-trash", actionName: "delete" },
+        ],
+      },
+      {
+        name: "fraud/accuracy3",
+        actions: [
+          { icon: "icon-plus-circle", actionName: "add" },
+          { icon: "icon-trash", actionName: "delete" },
+        ],
+      },
     ],
   },
 ];
@@ -375,6 +394,11 @@ const isCached = ref(false);
       </TabsItem>
       <TabsItem :value="9">
         <TreeAccordion :nodes="fileTreeNodes" />
+        <div style="margin-top: 20px">last item action {{ lastAction }}</div>
+        <TreeAccordion
+          :nodes="fileTreeItemWithActions"
+          @item-action="(action, itemName) => (lastAction = `${action} ${itemName}`)"
+        />
       </TabsItem>
       <TabsItem :value="10" class="editable-list-tab">
         <div class="header">
