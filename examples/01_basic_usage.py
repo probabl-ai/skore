@@ -329,6 +329,20 @@ my_pipeline.fit(X, y)
 project.put("my_fitted_pipeline", my_pipeline)
 
 # %% [markdown]
+# ---
+# ## Cross-validation with skore
+
+# %%
+from sklearn import datasets, linear_model
+from skore.cross_validate import cross_validate
+diabetes = datasets.load_diabetes()
+X = diabetes.data[:150]
+y = diabetes.target[:150]
+lasso = linear_model.Lasso()
+
+cv_results = cross_validate(lasso, X, y, cv=3, project=project)
+
+# %% [markdown]
 # _Stay tuned for some new features!_
 
 # %% [markdown]

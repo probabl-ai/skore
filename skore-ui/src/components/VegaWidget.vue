@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { isUserInDarkMode } from "@/services/utils";
+import { isDeepEqual, isUserInDarkMode } from "@/services/utils";
 import { View as VegaView } from "vega";
 import embed, { type Config, type VisualizationSpec } from "vega-embed";
-import { onBeforeUnmount, onMounted, ref } from "vue";
+import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 
 const props = defineProps<{ spec: VisualizationSpec }>();
 
@@ -17,38 +17,36 @@ const vegaConfig: Config = {
   background: "transparent",
 };
 let vegaView: VegaView | null = null;
-const resizeObserver = new ResizeObserver(async () => {
-  const w = container.value?.clientWidth || 0;
-  await vegaView?.width(w).runAsync();
-});
 
+async function makePlot(spec: VisualizationSpec) {
+  const mySpec = { ...spec, width: "container" } as VisualizationSpec;
+  const r = await embed(container.value!, mySpec, {
+    theme: isUserInDarkMode() ? "dark" : undefined,
+    config: vegaConfig,
+    actions: false,
+  });
+  vegaView = r.view;
+}
 onMounted(async () => {
   if (container.value) {
-    const r = await embed(
-      container.value,
-      {
-        width: container.value?.clientWidth || 0,
-        ...props.spec,
-      },
-      {
-        theme: isUserInDarkMode() ? "dark" : undefined,
-        config: vegaConfig,
-        actions: false,
-      }
-    );
-    vegaView = r.view;
-    resizeObserver.observe(container.value);
+    makePlot(props.spec);
   }
 });
 
 onBeforeUnmount(() => {
-  if (container.value) {
-    resizeObserver.unobserve(container.value);
-  }
   if (vegaView) {
     vegaView.finalize();
   }
 });
+
+watch(
+  () => props.spec,
+  async (newSpec, oldSpec) => {
+    if (!isDeepEqual(newSpec, oldSpec)) {
+      makePlot(newSpec);
+    }
+  }
+);
 </script>
 
 <template>
