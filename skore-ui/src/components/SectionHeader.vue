@@ -3,6 +3,7 @@ import SimpleButton from "@/components/SimpleButton.vue";
 
 const props = defineProps<{
   title: string;
+  subtitle?: string;
   icon?: string;
   actionIcon?: string;
 }>();
@@ -12,7 +13,13 @@ const emit = defineEmits(["action"]);
 
 <template>
   <div class="header">
-    <h1><span v-if="props.icon" class="icon" :class="props.icon"></span>{{ title }}</h1>
+    <h1>
+      <span v-if="props.icon" class="icon" :class="props.icon"></span>{{ title }}
+      <span v-if="props.subtitle" class="subtitle">
+        <span class="separator">-</span>
+        {{ props.subtitle }}
+      </span>
+    </h1>
     <div class="action" v-if="props.actionIcon">
       <SimpleButton :icon="props.actionIcon" @click="emit('action')" />
     </div>
@@ -38,6 +45,16 @@ const emit = defineEmits(["action"]);
 
   & .icon {
     padding-right: 4px;
+  }
+
+  & .subtitle {
+    color: var(--text-color-low);
+    font-size: var(--text-size-normal);
+    font-weight: var(--text-weight-normal);
+
+    & .separator {
+      margin: 0 var(--spacing-gap-small);
+    }
   }
 }
 </style>
