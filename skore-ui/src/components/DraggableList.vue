@@ -175,7 +175,7 @@ onMounted(() => {
         // change the model order
         if (items.value && movingItemIndex.value !== null && dropIndicatorPosition.value !== null) {
           // did user dropped the item in its previous position ?
-          if (Math.abs(dropIndicatorPosition.value - movingItemIndex.value) > 1) {
+          if (Math.abs(dropIndicatorPosition.value - movingItemIndex.value) >= 1) {
             // move the item to its new position
             const destinationIndex =
               dropIndicatorPosition.value > movingItemIndex.value
