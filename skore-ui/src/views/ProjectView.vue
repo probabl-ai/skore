@@ -166,7 +166,7 @@ onBeforeUnmount(() => {
             @rename="onViewRenamed"
           />
         </Simplebar>
-        <SectionHeader title="Elements" icon="icon-pie-chart" />
+        <SectionHeader title="Items" icon="icon-pie-chart" />
         <Simplebar class="key-list">
           <TreeAccordion :nodes="projectStore.keysAsTree()" @item-selected="onItemSelected" />
         </Simplebar>
