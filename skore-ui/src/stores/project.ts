@@ -122,12 +122,21 @@ export const useProjectStore = defineStore("project", () => {
   }
 
   /**
-   * Set the current view and populate the layout
+   * Set the current views and items
+   * Autoselect the first view if no view is selected
    * @param r data received from the backend
    */
   async function setProject(r: Project) {
     items.value = r.items;
     views.value = r.views;
+    const viewNames = Object.keys(views.value);
+    if (currentView.value === null) {
+      if (viewNames.length > 0) {
+        currentView.value = viewNames[0];
+      }
+    } else if (!viewNames.includes(currentView.value)) {
+      currentView.value = null;
+    }
     _updatePresentableItemsInView();
   }
 

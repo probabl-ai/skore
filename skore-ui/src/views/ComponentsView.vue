@@ -399,6 +399,7 @@ const isCached = ref(false);
           action-icon="icon-search"
           @action="onSectionHeaderAction"
         />
+        <SectionHeader title="Section header with subtitle" subtitle="Subtitle" />
       </TabsItem>
       <TabsItem :value="9">
         <TreeAccordion :nodes="fileTreeNodes" />
