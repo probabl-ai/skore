@@ -166,7 +166,7 @@ onBeforeUnmount(() => {
             @rename="onViewRenamed"
           />
         </Simplebar>
-        <SectionHeader title="Elements" icon="icon-pie-chart" />
+        <SectionHeader title="Elements" icon="icon-pie-chart" subtitle="Drag them into canvas" />
         <Simplebar class="key-list">
           <TreeAccordion :nodes="projectStore.keysAsTree()" @item-selected="onItemSelected" />
         </Simplebar>
@@ -196,9 +196,8 @@ onBeforeUnmount(() => {
             class="placeholder"
           >
             <div class="wrapper" v-if="projectStore.currentView === null">No view selected.</div>
-            <div class="wrapper" v-else>
-              No elements in this view, start by dragging or double clicking an element from the
-              tree on the left.
+            <div class="dropzone" v-else>
+              <div class="wrapper">No item selected yet, start by dragging one element.</div>
             </div>
           </div>
           <Simplebar class="canvas-wrapper" v-else>
@@ -314,22 +313,27 @@ main {
         height: 100%;
         flex-direction: column;
         justify-content: center;
-        background-color: var(--background-color-normal);
-        background-image: radial-gradient(
-            circle at center,
-            transparent 0,
-            transparent 60%,
-            var(--background-color-normal) 100%
-          ),
-          linear-gradient(to right, var(--border-color-lower) 1px, transparent 1px),
-          linear-gradient(to bottom, var(--border-color-lower) 1px, transparent 1px);
-        background-size:
-          auto,
-          76px 76px,
-          76px 76px;
+        background-color: var(--background-color-elevated-high);
+
+        &:not(:has(.dropzone)) {
+          background-color: var(--background-color-normal);
+          background-image: radial-gradient(
+              circle at center,
+              transparent 0,
+              transparent 60%,
+              var(--background-color-normal) 100%
+            ),
+            linear-gradient(to right, var(--border-color-lower) 1px, transparent 1px),
+            linear-gradient(to bottom, var(--border-color-lower) 1px, transparent 1px);
+          background-size:
+            auto,
+            76px 76px,
+            76px 76px;
+        }
 
         & .wrapper {
-          padding-top: 192px;
+          padding-top: 225px;
+          margin: var(--spacing-padding-large);
           background-image: var(--editor-placeholder-image);
           background-position: 50% 0;
           background-repeat: no-repeat;
@@ -337,6 +341,19 @@ main {
           color: var(--text-color-normal);
           font-size: var(--text-size-normal);
           text-align: center;
+        }
+
+        & .dropzone {
+          display: flex;
+          height: 100%;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          border-radius: 17px;
+          margin: var(--spacing-padding-large);
+          background: var(--background-color-normal);
+          background-color: var(--background-color-elevated);
+          background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='17' ry='17' stroke='%23BABBBDFF' stroke-width='1' stroke-dasharray='11%2c11' stroke-dashoffset='0' stroke-linecap='square'/%3e%3c/svg%3e");
         }
       }
 

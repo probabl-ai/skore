@@ -49,6 +49,7 @@
     --color-secondary: #2329ff;
 
     /* typography */
+    --text-color-low: rgb(99 99 99);
     --text-color-normal: #a2a2a2;
     --text-color-highlight: #fff;
 
@@ -84,6 +85,7 @@
     --color-secondary: #f08b30;
 
     /* typography */
+    --text-color-low: #babbbd;
     --text-color-normal: #616271;
     --text-color-highlight: #2f3037;
 
