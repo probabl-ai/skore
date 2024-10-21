@@ -1,5 +1,7 @@
 """FastAPI factory used to create the API to interact with stores."""
 
+from typing import Optional
+
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -8,7 +10,6 @@ from starlette.types import Lifespan
 from skore.project import Project, load
 from skore.ui.dependencies import get_static_path
 from skore.ui.project_routes import router as project_router
-from typing import Optional
 
 
 def create_app(
