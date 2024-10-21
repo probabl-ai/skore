@@ -50,8 +50,8 @@ class Project:
         the Project.
         If `key` is a dict, it is interpreted as multiple key-value pairs to add to
         the Project.
-        
-        If an item with the same key already exists, its value is replaced by the new one.
+        If an item with the same key already exists, its value is replaced by the new
+        one.
         If `on_error` is "raise", any error stops the execution. If `on_error`
         is "warn" (or anything other than "raise"), a warning is shown instead.
 
@@ -82,7 +82,7 @@ class Project:
         self, key: str, value: Any, on_error: Literal["warn", "raise"] = "warn"
     ):
         """Add a key-value pair to the Project.
-        
+
         If `on_error` is "raise", any error stops the execution. If `on_error`
         is "warn" (or anything other than "raise"), a warning is shown instead.
 
@@ -192,7 +192,7 @@ class Project:
             The key corresponding to the item to get.
 
         Returns
-        ----------
+        -------
         item : Item
             The Item corresponding to key `key`.
 
