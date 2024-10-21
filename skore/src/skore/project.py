@@ -150,14 +150,10 @@ class Project:
         key: str
             The key corresponding to the item to get.
 
-        Attributes
+        Returns
         ----------
-        created_at : datetime
-            datetime of item creation.
-        updated_at : datetime
-            datetime of item's last modification.
-        primitive : Any
-            Value corresponding to the item.
+        item : Item
+            The Item corresponding to key `key`.
 
         Raises
         ------
