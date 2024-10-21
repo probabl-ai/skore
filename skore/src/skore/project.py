@@ -113,7 +113,7 @@ class Project:
         self.item_repository.put_item(key, item)
 
     def get(self, key: str) -> Any:
-        """Returns the value corresponding to `key` from the Project..
+        """Returns the value corresponding to `key` from the Project.
         Parameters
         ----------
         key : str
