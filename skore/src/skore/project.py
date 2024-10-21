@@ -151,10 +151,10 @@ class Project:
 
         Attributes
         ----------
-        created_at : DateTime
-            DateTime when the item was created.
-        updated_at : DateTime
-            DateTime of the last modification.
+        created_at : datetime
+            datetime of item creation.
+        updated_at : datetime
+            datetime of item's last modification.
         primitive : Any
             Value corresponding to the item.
 
