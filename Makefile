@@ -11,7 +11,6 @@ build-skore-ui:
 		cd skore-ui; \
 		npm install; \
 		npm run build; \
-		npm run build:lib -- --emptyOutDir false; \
 	)
 	# move
 	mv skore-ui/dist/ skore/src/skore/ui/static
