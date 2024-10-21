@@ -38,6 +38,7 @@ function getItemSubtitle(created_at: Date, updated_at: Date) {
             :columns="data.columns"
             :data="data.data"
             :index="data.index"
+            :indexNames="data.indexNames"
           />
           <ImageWidget
             v-if="['image/svg+xml', 'image/png', 'image/jpeg', 'image/webp'].includes(mediaType)"
