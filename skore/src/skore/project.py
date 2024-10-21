@@ -167,11 +167,11 @@ class Project:
 
     def list_item_keys(self) -> list[str]:
         """List all item keys in the Project.
+
         Returns
         -------
-        List
-            Returns the list of items keys. Each key is a string.
-            If the project contains no item, returns an empty list.
+        list[str]
+            The list of item keys. The list is empty is there is no item.
         """
         return self.item_repository.keys()
 
@@ -231,11 +231,11 @@ class Project:
 
     def list_view_keys(self) -> list[str]:
         """List all view keys in the Project.
+
         Returns
         -------
-        List
-            Returns the list of view keys. Each key is a string.
-            If the project contains no view, returns an empty list.
+        list[str]
+            The list of view keys. The list is empty is there is no view.
         """
         return self.view_repository.keys()
 
