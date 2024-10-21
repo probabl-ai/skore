@@ -1,0 +1,13 @@
+{
+  "index": [["france", "paris", "1"]],
+  "columns": ["age", "number", "gender"],
+  "data": [
+    [
+      ">70",
+      "loremipsumdolorsitametloremipsumdolorsitametloremipsumdolorsitametloremipsumdolorsitametloremipsumdolorsitametloremipsumdolorsitametloremipsumdolorsitametloremipsumdolorsitametloremipsumdolorsitametloremipsumdolorsitametloremipsumdolorsitametloremipsumdolorsitamet loremipsumdolorsitamet loremipsumdolorsitamet",
+      "M"
+    ]
+  ],
+  "index_names": ["country", "city", "district"],
+  "column_names": [null]
+}
