@@ -1,9 +1,8 @@
 """Define a Project."""
 
 import logging
-from functools import singledispatchmethod
 from pathlib import Path
-from typing import Any, Literal, Union
+from typing import Any, Literal, Optional, Union
 
 from skore.item import (
     CrossValidationItem,
@@ -39,19 +38,30 @@ class Project:
         self.item_repository = item_repository
         self.view_repository = view_repository
 
-    @singledispatchmethod
-    def put(self, key: str, value: Any, on_error: Literal["warn", "raise"] = "warn"):
-        """Add a value to the Project.
+    def put(
+        self,
+        key: Union[str, dict[str, Any]],
+        value: Optional[Any] = None,
+        on_error: Literal["warn", "raise"] = "warn",
+    ):
+        """Add one or more key-value pairs to the Project.
+
+        If `key` is a string, then `put` adds the single `key`-`value` pair mapping to
+        the Project.
+        If `key` is a dict, it is interpreted as multiple key-value pairs to add to
+        the Project.
 
         If `on_error` is "raise", any error stops the execution. If `on_error`
         is "warn" (or anything other than "raise"), a warning is shown instead.
 
         Parameters
         ----------
-        key : str
-            The key to associate with `value` in the Project. Must be a string.
-        value : Any
+        key : str | dict[str, Any]
+            The key to associate with `value` in the Project,
+            or dict of key-value pairs to add to the Project.
+        value : Any | None
             The value to associate with `key` in the Project.
+            If `key` is a dict, this argument is ignored.
         on_error : "warn" or "raise", optional
             Upon error (e.g. if the key is not a string), whether to raise an error or
             to print a warning. Default is "warn".
@@ -59,9 +69,13 @@ class Project:
         Raises
         ------
         ProjectPutError
-            If the key-value pair cannot be saved properly, and `on_error` is "raise".
+            If the key-value pair(s) cannot be saved properly,
+            and `on_error` is "raise".
         """
-        self.put_one(key, value, on_error=on_error)
+        if isinstance(key, dict):
+            self.put_several(key, on_error=on_error)
+        else:
+            self.put_one(key, value, on_error=on_error)
 
     def put_one(
         self, key: str, value: Any, on_error: Literal["warn", "raise"] = "warn"
@@ -100,7 +114,6 @@ class Project:
                 f"due to the following error: {e}"
             )
 
-    @put.register
     def put_several(
         self, key_to_value: dict, on_error: Literal["warn", "raise"] = "warn"
     ):
@@ -126,7 +139,7 @@ class Project:
             and `on_error` is "raise".
         """
         for key, value in key_to_value.items():
-            self.put(key, value, on_error=on_error)
+            self.put_one(key, value, on_error=on_error)
 
     def put_item(self, key: str, item: Item):
         """Add an Item to the Project."""
