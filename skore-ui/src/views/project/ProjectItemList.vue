@@ -39,7 +39,7 @@ function onItemAction(action: string, key: string) {
 
 <template>
   <div class="keys-list">
-    <SectionHeader title="Elements" icon="icon-pie-chart" />
+    <SectionHeader title="Items" icon="icon-pie-chart" />
     <Simplebar class="scrollable">
       <TreeAccordion :nodes="itemsAsTree" @item-action="onItemAction" />
     </Simplebar>
