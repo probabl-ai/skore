@@ -76,7 +76,7 @@ onBeforeMount(() => {
     background: var(--border-color-lower);
     box-shadow: inset 0 0 3.24px 2.4px rgb(var(--text-color-highlight) 0.5);
     color: var(--text-color-normal);
-    font-size: var(--text-size-small);
+    font-size: var(--text-size-normal);
     font-weight: var(--text-weight-normal);
   }
 
