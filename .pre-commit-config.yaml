@@ -25,10 +25,10 @@ repos:
     rev: v0.6.9
     hooks:
       - id: ruff
-        files: ^(src|tests)/
+        files: ^skore/(src|tests)/
         args: [--fix]
       - id: ruff-format
-        files: ^(src|tests)/
+        files: ^skore/(src|tests)/
 
   - repo: local
     hooks:
