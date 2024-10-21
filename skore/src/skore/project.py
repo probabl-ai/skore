@@ -61,6 +61,31 @@ class Project:
         ProjectPutError
             If the key-value pair cannot be saved properly, and `on_error` is "raise".
         """
+        self.put_one(key, value, on_error=on_error)
+
+    def put_one(
+        self, key: str, value: Any, on_error: Literal["warn", "raise"] = "warn"
+    ):
+        """Add a key-value pair to the Project.
+
+        If `on_error` is "raise", any error stops the execution. If `on_error`
+        is "warn" (or anything other than "raise"), a warning is shown instead.
+
+        Parameters
+        ----------
+        key : str
+            The key to associate with `value` in the Project. Must be a string.
+        value : Any
+            The value to associate with `key` in the Project.
+        on_error : "warn" or "raise", optional
+            Upon error (e.g. if the key is not a string), whether to raise an error or
+            to print a warning. Default is "warn".
+
+        Raises
+        ------
+        ProjectPutError
+            If the key-value pair cannot be saved properly, and `on_error` is "raise".
+        """
         try:
             item = object_to_item(value)
             self.put_item(key, item)
