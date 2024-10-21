@@ -195,21 +195,22 @@ class Project:
         self.view_repository.put_view(key, view)
 
     def get_view(self, key: str) -> View:
-        """Returns the view corresponding to `key` from the Project.
+        """Get the view corresponding to `key` from the Project.
+        
         Parameters
         ----------
         key : str
-            The key corresponding to the item to get.
+            The key of the item to get.
 
-        Attributes
-        ----------
-        layout : List[str]
-            A list of the keys of items, in the same order as displayed.
+        Returns
+        -------
+        View
+            The view corresponding to `key`.
 
         Raises
         ------
         KeyError
-            Raises a KeyError if the key does not correspond to any view.
+            If the key does not correspond to any view.
         """
         return self.view_repository.get_view(key)
 
