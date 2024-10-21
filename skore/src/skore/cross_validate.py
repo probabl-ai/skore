@@ -194,6 +194,9 @@ def cross_validate(
     function, to provide more context and facilitate the analysis.
     As such, the arguments are the same as scikit-learn's cross_validate function.
 
+    The dict returned by this function is a strict super-set of the one returned by
+    scikit-learn's `cross_validate`.
+
     Parameters
     ----------
     The same parameters as scikit-learn's cross_validate function, except for
