@@ -167,7 +167,7 @@ class Project:
         Returns
         -------
         list[str]
-            The list of item keys. The list is empty is there is no item.
+            The list of item keys. The list is empty if there is no item.
         """
         return self.item_repository.keys()
 
