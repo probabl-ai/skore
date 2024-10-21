@@ -213,6 +213,7 @@ class Project:
 
     def delete_view(self, key: str):
         """Delete the view corresponding to `key` from the Project.
+        
         Parameters
         ----------
         key : str
@@ -221,7 +222,7 @@ class Project:
         Raises
         ------
         KeyError
-            Raises a KeyError if the key does not correspond to any view.
+            If the key does not correspond to any view.
         """
         return self.view_repository.delete_view(key)
 
