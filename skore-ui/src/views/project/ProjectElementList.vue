@@ -20,7 +20,7 @@ function onItemSelected(key: string) {
 
 <template>
   <div class="keys-list">
-    <SectionHeader title="Elements" icon="icon-pie-chart" />
+    <SectionHeader title="Items" icon="icon-pie-chart" />
     <Simplebar class="scrollable">
       <TreeAccordion :nodes="projectStore.keysAsTree()" @item-selected="onItemSelected" />
     </Simplebar>
