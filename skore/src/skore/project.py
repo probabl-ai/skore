@@ -143,7 +143,8 @@ class Project:
             raise ValueError(f"Item {item} is not a known item type.")
 
     def get_item(self, key: str) -> Item:
-        """Returns the item corresponding to key from the Project.
+        """Get the item corresponding to `key` from the Project.
+        
         Parameters
         ----------
         key: str
