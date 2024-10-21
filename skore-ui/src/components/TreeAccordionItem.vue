@@ -7,6 +7,8 @@ const props = defineProps<TreeAccordionNode>();
 
 const isCollapsed = ref(false);
 const isDraggable = ref(false);
+const lastItemAction = defineModel<string | null>("lastItemAction");
+const lastItemName = defineModel<string | null>("lastItemName");
 
 const hasChildren = computed(() => props.children?.length);
 const label = computed(() => {
@@ -39,6 +41,11 @@ function onDragStart(event: DragEvent) {
     event.dataTransfer.setData("application/x-skore-item-name", props.name);
   }
 }
+
+function onAction(action: string) {
+  lastItemAction.value = action;
+  lastItemName.value = props.name;
+}
 </script>
 
 <template>
@@ -62,6 +69,15 @@ function onDragStart(event: DragEvent) {
         <span class="icon icon-pill" />
         <span class="text">{{ label }}</span>
       </div>
+      <div class="actions">
+        <button
+          v-for="(action, index) in props.actions"
+          :key="index"
+          @click="onAction(action.actionName)"
+        >
+          <span :class="action.icon" />
+        </button>
+      </div>
       <button
         class="collapse"
         :class="{ collapsed: isCollapsed }"
@@ -79,6 +95,9 @@ function onDragStart(event: DragEvent) {
           :name="child.name"
           :children="child.children"
           :is-root="false"
+          :actions="child.actions"
+          v-model:last-item-action="lastItemAction"
+          v-model:last-item-name="lastItemName"
         />
       </div>
     </Transition>
@@ -147,6 +166,30 @@ function onDragStart(event: DragEvent) {
       }
     }
 
+    .actions {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: var(--spacing-gap-small);
+      opacity: 0;
+      transition: opacity var(--transition-duration) var(--transition-easing);
+
+      & button {
+        padding: 0;
+        border: none;
+        margin: 0;
+        background-color: transparent;
+        color: var(--text-color-normal);
+        cursor: pointer;
+        font-size: var(--text-size-normal);
+        transition: color var(--transition-duration) var(--transition-easing);
+
+        &:hover {
+          color: var(--color-primary);
+        }
+      }
+    }
+
     .collapse {
       padding: 0;
       border: none;
@@ -158,6 +201,12 @@ function onDragStart(event: DragEvent) {
 
       &.collapsed {
         transform: rotate(90deg);
+      }
+    }
+
+    &:hover {
+      .actions {
+        opacity: 1;
       }
     }
   }
