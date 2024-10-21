@@ -1,5 +1,6 @@
 """Test CLI properly calls the app."""
 
+import pytest
 from skore.cli.cli import cli
 
 
@@ -24,3 +25,8 @@ def test_cli_launch(monkeypatch):
     assert launch_project_name == "project.skore"
     assert launch_port == 0
     assert not launch_open_browser
+
+
+def test_cli_launch_no_project_name(monkeypatch):
+    with pytest.raises(SystemExit):
+        cli(["launch", "--port", 0, "--no-open-browser"])
