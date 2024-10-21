@@ -11,6 +11,7 @@ maintainers = [{name = "skore developers", email="skore@signal.probabl.ai"}]
 dependencies = [
   "diskcache",
   "fastapi",
+  "plotly>=5,<6",
   "rich",
   "skops",
   "uvicorn",
@@ -61,7 +62,7 @@ artifacts = ["src/skore/ui/static/"]
 
 [project.optional-dependencies]
 test = [
-  "altair",
+  "altair>=5,<6",
   "httpx",
   "matplotlib",
   "pandas",

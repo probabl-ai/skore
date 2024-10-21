@@ -9,6 +9,7 @@ from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.params import Depends
 from fastapi.templating import Jinja2Templates
 
+from skore.item.cross_validation_item import CrossValidationItem
 from skore.item.media_item import MediaItem
 from skore.item.numpy_array_item import NumpyArrayItem
 from skore.item.pandas_dataframe_item import PandasDataFrameItem
@@ -67,6 +68,11 @@ def __serialize_project(project: Project) -> SerializedProject:
             value = item.estimator_html_repr
             media_type = "application/vnd.sklearn.estimator+html"
         elif isinstance(item, MediaItem):
+            value = base64.b64encode(item.media_bytes).decode()
+            media_type = item.media_type
+        elif isinstance(item, CrossValidationItem):
+            # Convert plot to MediaItem
+            item = MediaItem.factory(item.plot)
             value = base64.b64encode(item.media_bytes).decode()
             media_type = item.media_type
         else:
