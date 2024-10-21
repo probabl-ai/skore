@@ -16,7 +16,7 @@ import { fetchShareableBlob } from "@/services/api";
 import { saveBlob } from "@/services/utils";
 import { useProjectStore } from "@/stores/project";
 import { useToastsStore } from "@/stores/toasts";
-import ProjectElementList from "@/views/project/ProjectElementList.vue";
+import ProjectItemList from "@/views/project/ProjectItemList.vue";
 import ProjectViewList from "@/views/project/ProjectViewList.vue";
 
 const props = defineProps({
@@ -81,7 +81,7 @@ onBeforeUnmount(() => {
   <main class="project-view" v-if="projectStore.items !== null">
     <div class="left-panel" v-if="projectStore.items && !isInFocusMode">
       <ProjectViewList />
-      <ProjectElementList />
+      <ProjectItemList />
     </div>
     <div ref="editor" class="editor">
       <div class="editor-header">

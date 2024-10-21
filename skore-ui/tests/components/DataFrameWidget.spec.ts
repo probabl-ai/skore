@@ -53,7 +53,7 @@ describe("DataFrameWidget", () => {
     expect(wrapper.findAll("tbody > tr").length).toBe(props.data.length);
   });
 
-  it("Computes elements correctly.", () => {
+  it("Computes rows correctly.", () => {
     const props = generateFakeProps(500);
     const wrapper = mountComponent(props);
 
