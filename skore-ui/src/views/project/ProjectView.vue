@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { formatDistance } from "date-fns";
 import Simplebar from "simplebar-vue";
-import { onBeforeUnmount, onMounted, ref } from "vue";
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 
 import DataFrameWidget from "@/components/DataFrameWidget.vue";
 import DraggableList from "@/components/DraggableList.vue";
@@ -54,6 +54,21 @@ function getItemSubtitle(created_at: Date, updated_at: Date) {
   const now = new Date();
   return `Created ${formatDistance(created_at, now)} ago, updated ${formatDistance(updated_at, now)} ago`;
 }
+
+watch(
+  () => projectStore.currentViewItems,
+  async (newItems, oldItems) => {
+    // when the item list is updated ensure that scroll let the latest added item be visible
+    if (newItems.length > oldItems.length) {
+      nextTick(() => {
+        const lastItemElement = document.querySelector(".editor-container .item:last-child");
+        if (lastItemElement) {
+          lastItemElement.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      });
+    }
+  }
+);
 
 onMounted(async () => {
   await projectStore.startBackendPolling();
