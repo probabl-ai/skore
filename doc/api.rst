@@ -9,8 +9,10 @@ your patience!*
 This page lists all the public functions and classes of the ``skore``
 package.
 
-Project
--------
+The User Interface
+------------------
+
+These classes are meant for ``skore``'s UI.
 
 .. autosummary::
     :toctree: generated/
@@ -18,3 +20,13 @@ Project
     :nosignatures:
 
     Project
+
+``scikit-learn`` enhancement
+----------------------------
+
+These classes enhance ``scikit-learn``'s ones.
+
+.. autosummary::
+    :toctree: generated/
+    :template: class.rst
+    :nosignatures:

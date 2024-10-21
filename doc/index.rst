@@ -7,10 +7,6 @@ Welcome to ``skore``
 #OwnYourDataScience
 -------------------
 
-Some Markdown
-- item
-- item
-
 .. container:: index-features
 
    * track and visualize your objects from a user-friendly dashboard
