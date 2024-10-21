@@ -176,7 +176,8 @@ class Project:
         return self.item_repository.keys()
 
     def delete_item(self, key: str):
-        """Deletes the item corresponding to `key` from the Project.
+        """Delete the item corresponding to `key` from the Project.
+        
         Parameters
         ----------
         key : str
@@ -185,7 +186,7 @@ class Project:
         Raises
         ------
         KeyError
-            Raises a KeyError if the key does not correspond to any item.
+            If the key does not correspond to any item.
         """
         self.item_repository.delete_item(key)
 
