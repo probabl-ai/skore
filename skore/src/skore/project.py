@@ -41,7 +41,7 @@ class Project:
     @singledispatchmethod
     def put(self, key: str, value: Any, on_error: Literal["warn", "raise"] = "warn"):
         """Add a value to the Project.
-        If an item with the same key already exists, it replaces the value with the new one.
+        If an item with the same key already exists, its value is replaced by the new one.
 
         If `on_error` is "raise", any error stops the execution. If `on_error`
         is "warn" (or anything other than "raise"), a warning is shown instead.
@@ -52,7 +52,7 @@ class Project:
             The key to associate with `value` in the Project. Must be a string.
         value : Any
             The value to associate with `key` in the Project.
-        on_error : "warn" or "raise", optional
+        on_error : {"warn", "raise"}, optional
             Upon error (e.g. if the key is not a string), whether to raise an error or
             to print a warning. Default is "warn".
 
@@ -88,9 +88,9 @@ class Project:
 
         Parameters
         ----------
-        key_to_value: dict[str, Any]
+        key_to_value : dict[str, Any]
             The key-value pairs to put in the Project. Keys must be strings.
-        on_error: "warn" or "raise", optional
+        on_error : {"warn", "raise"}, optional
             Upon error (e.g. if a key is not a string), whether to raise an error or
             to print a warning. Default is "warn".
 
@@ -113,16 +113,16 @@ class Project:
         self.item_repository.put_item(key, item)
 
     def get(self, key: str) -> Any:
-        """Get and returns the value corresponding to `key` from the Project.
+        """Returns the value corresponding to `key` from the Project..
         Parameters
         ----------
-        key: str
+        key : str
             The key corresponding to the item to get.
 
         Raises
         ------
         KeyError
-            Renders KeyError if the input key doesn't correspond to any item.
+            Raises a KeyError if the key does not correspond to any item.
         """
         item = self.get_item(key)
 
@@ -142,7 +142,7 @@ class Project:
             raise ValueError(f"Item {item} is not a known item type.")
 
     def get_item(self, key: str) -> Item:
-        """Get and returns the Item corresponding to `key` from the Project.
+        """Returns the item corresponding to key from the Project.
         Parameters
         ----------
         key: str
@@ -150,40 +150,40 @@ class Project:
 
         Attributes
         ----------
-        created_at: DateTime
+        created_at : DateTime
             DateTime when the item was created.
-        updated_at: DateTime
+        updated_at : DateTime
             DateTime of the last modification.
-        primitive: Any
+        primitive : Any
             Value corresponding to the item.
 
         Raises
         ------
         KeyError
-            Renders KeyError if the input key doesn't correspond to any item."""
+            Raises a KeyError if the key does not correspond to any item."""
         return self.item_repository.get_item(key)
 
     def list_item_keys(self) -> list[str]:
         """List all item keys in the Project.
         Returns
         -------
-        List:
+        List
             Returns the list of items keys. Each key is a string.
             If the project contains no item, returns an empty list.
         """
         return self.item_repository.keys()
 
     def delete_item(self, key: str):
-        """Delete an item from the Project.
+        """Deletes the item corresponding to `key` from the Project.
         Parameters
         ----------
-        key: str
+        key : str
             The key corresponding to the item to delete.
 
         Raises
         ------
         KeyError
-            Renders KeyError if the input key doesn't correspond to any item.
+            Raises a KeyError if the key does not correspond to any item.
         """
         self.item_repository.delete_item(key)
 
@@ -192,21 +192,21 @@ class Project:
         self.view_repository.put_view(key, view)
 
     def get_view(self, key: str) -> View:
-        """Get the view corresponding to `key` from the Project.
+        """Returns the view corresponding to `key` from the Project.
         Parameters
         ----------
-        key: str
+        key : str
             The key corresponding to the item to get.
 
         Attributes
         ----------
-        layout: List[str]
+        layout : List[str]
             A list of the keys of items, in the same order as displayed.
 
         Raises
         ------
         KeyError
-            Renders KeyError if the input key doesn't correspond to any item.
+            Raises a KeyError if the key does not correspond to any view.
         """
         return self.view_repository.get_view(key)
 
@@ -214,13 +214,13 @@ class Project:
         """Delete the view corresponding to `key` from the Project.
         Parameters
         ----------
-        key: str
+        key : str
             The key corresponding to the view to delete.
 
         Raises
         ------
         KeyError
-            Renders KeyError if the input key doesn't correspond to any view.
+            Raises a KeyError if the key does not correspond to any view.
         """
         return self.view_repository.delete_view(key)
 
@@ -228,7 +228,7 @@ class Project:
         """List all view keys in the Project.
         Returns
         -------
-        List:
+        List
             Returns the list of view keys. Each key is a string.
             If the project contains no view, returns an empty list.
         """
