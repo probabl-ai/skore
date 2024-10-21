@@ -231,7 +231,7 @@ class Project:
         Returns
         -------
         list[str]
-            The list of view keys. The list is empty is there is no view.
+            The list of view keys. The list is empty if there is no view.
         """
         return self.view_repository.keys()
 
