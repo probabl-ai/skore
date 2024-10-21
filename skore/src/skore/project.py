@@ -114,6 +114,7 @@ class Project:
 
     def get(self, key: str) -> Any:
         """Returns the value corresponding to `key` from the Project.
+
         Parameters
         ----------
         key : str
