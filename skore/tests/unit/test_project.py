@@ -1,4 +1,3 @@
-import contextlib
 import os
 from io import BytesIO
 
@@ -120,9 +119,9 @@ def test_load(tmp_path):
     assert isinstance(p, Project)
 
     # Test without `.skore`
-    with contextlib.chdir(tmp_path.parent):
-        p = load(tmp_path.name)
-        assert isinstance(p, Project)
+    os.chdir(tmp_path.parent)
+    p = load(tmp_path.name)
+    assert isinstance(p, Project)
 
 
 def test_put(in_memory_project):
