@@ -20,6 +20,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "numpydoc",
     "sphinx_design",
+    "myst_parser",  # added by sylvaincom
 ]
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
