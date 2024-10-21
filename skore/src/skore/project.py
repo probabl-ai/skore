@@ -161,7 +161,7 @@ class Project:
         Raises
         ------
         KeyError
-            Raises a KeyError if the key does not correspond to any item."""
+            If the key does not correspond to any item."""
         return self.item_repository.get_item(key)
 
     def list_item_keys(self) -> list[str]:
