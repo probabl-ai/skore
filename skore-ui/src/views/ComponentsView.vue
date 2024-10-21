@@ -7,6 +7,7 @@ import datatable from "@/assets/fixtures/datatable.json";
 import htmlSnippet from "@/assets/fixtures/html-snippet.html?raw";
 import markdownString from "@/assets/fixtures/markdown.md?raw";
 import multiIndexDatatable from "@/assets/fixtures/multi-index-datatable.json";
+import namedIndexDatatable from "@/assets/fixtures/named-index-datatable.json";
 import spec from "@/assets/fixtures/vega.json";
 
 import DataFrameWidget from "@/components/DataFrameWidget.vue";
@@ -221,12 +222,21 @@ const isCached = ref(false);
           :index="datatable.index"
           :columns="datatable.columns"
           :data="datatable.data"
+          :index-names="datatable.index_names"
         />
         <div>multi index</div>
         <DataFrameWidget
           :index="multiIndexDatatable.index"
           :columns="multiIndexDatatable.columns"
           :data="multiIndexDatatable.data"
+          :index-names="multiIndexDatatable.index_names"
+        />
+        <div>named index</div>
+        <DataFrameWidget
+          :index="namedIndexDatatable.index"
+          :columns="namedIndexDatatable.columns"
+          :data="namedIndexDatatable.data"
+          :index-names="namedIndexDatatable.index_names"
         />
       </TabsItem>
       <TabsItem :value="3">
