@@ -8,6 +8,7 @@ export interface DataFrameWidgetProps {
   index: any[];
   columns: any[];
   data: any[][];
+  indexNames: any[];
 }
 const props = defineProps<DataFrameWidgetProps>();
 
@@ -61,6 +62,14 @@ const visibleRows = computed(() => {
   return rows.value.slice(pageStart.value, pageEnd.value);
 });
 
+const indexNamesColSpan = computed(() => {
+  const hasIndexNames = props.indexNames.some((name) => name !== null);
+  if (hasIndexNames) {
+    return props.indexNames.length;
+  }
+  return 1;
+});
+
 function nextPage() {
   if (currentPage.value < totalPages.value - 1) {
     currentPage.value++;
@@ -90,13 +99,31 @@ watch([() => toValue(props.data), () => toValue(props.columns)], () => {
       <table>
         <thead>
           <tr>
-            <th>index</th>
+            <th :colspan="indexNamesColSpan">index</th>
             <th v-for="(name, i) in props.columns" :key="i">{{ name }}</th>
+          </tr>
+          <tr v-if="indexNamesColSpan > 1">
+            <th v-for="(name, i) in props.indexNames" :key="i" class="named-index">
+              {{ name }}
+            </th>
+            <th v-for="(name, i) in props.columns" :key="i"></th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="(row, i) in visibleRows" :key="i">
-            <td v-for="(value, i) in row" :key="i">{{ value }}</td>
+            <template v-if="indexNamesColSpan === 1">
+              <td v-for="(value, i) in row" :key="i" :colspan="i === 0 ? indexNamesColSpan : 1">
+                {{ value }}
+              </td>
+            </template>
+            <template v-else>
+              <td v-for="(value, i) in row[0].split(', ')" :key="i" class="named-index">
+                {{ value }}
+              </td>
+              <td v-for="(value, i) in row.slice(1)" :key="i">
+                {{ value }}
+              </td>
+            </template>
           </tr>
         </tbody>
       </table>
@@ -155,12 +182,16 @@ watch([() => toValue(props.data), () => toValue(props.columns)], () => {
       & tr {
         & th {
           padding: var(--spacing-padding-small);
+          text-align: right;
 
-          &:first-child {
+          &:first-child,
+          &.named-index {
+            background-color: var(--background-color-elevated);
+          }
+
+          &[colspan="1"]:first-child:not(.named-index) {
             position: sticky;
             left: 0;
-            background-color: var(--background-color-elevated);
-            text-align: left;
           }
         }
       }
@@ -168,6 +199,7 @@ watch([() => toValue(props.data), () => toValue(props.columns)], () => {
 
     & tbody {
       & tr {
+        position: relative;
         padding: var(--spacing-padding-small);
 
         & td {
@@ -176,16 +208,18 @@ watch([() => toValue(props.data), () => toValue(props.columns)], () => {
           font-size: var(--text-size-highlight);
           font-weight: var(--text-weight-highlight);
 
-          &:first-child {
-            position: sticky;
-            left: 0;
-            width: auto;
+          &:first-child,
+          &.named-index {
             background-color: var(--background-color-elevated);
             color: var(--text-color-normal);
             font-size: var(--text-size-normal);
             font-weight: var(--text-weight-normal);
             text-align: left;
-            white-space: nowrap;
+          }
+
+          &:first-child:not(.named-index) {
+            position: sticky;
+            left: 0;
           }
         }
 
@@ -195,6 +229,7 @@ watch([() => toValue(props.data), () => toValue(props.columns)], () => {
       }
     }
 
+    /* stylelint-disable no-descending-specificity */
     & > thead > tr:not(:last-child) > th,
     & > thead > tr:not(:last-child) > td,
     & > tbody > tr:not(:last-child) > th,

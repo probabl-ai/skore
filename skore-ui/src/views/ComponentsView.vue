@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import Simplebar from "simplebar-vue";
 import type { VisualizationSpec } from "vega-embed";
 import { ref } from "vue";
 
@@ -7,15 +6,13 @@ import datatable from "@/assets/fixtures/datatable.json";
 import htmlSnippet from "@/assets/fixtures/html-snippet.html?raw";
 import markdownString from "@/assets/fixtures/markdown.md?raw";
 import multiIndexDatatable from "@/assets/fixtures/multi-index-datatable.json";
+import namedIndexDatatable from "@/assets/fixtures/named-index-datatable.json";
 import spec from "@/assets/fixtures/vega.json";
 
 import DataFrameWidget from "@/components/DataFrameWidget.vue";
-import DraggableList from "@/components/DraggableList.vue";
 import DropdownButton from "@/components/DropdownButton.vue";
 import DropdownButtonItem from "@/components/DropdownButtonItem.vue";
-import DynamicContentRasterizer from "@/components/DynamicContentRasterizer.vue";
-import EditableList, { type EditableListItemModel } from "@/components/EditableList.vue";
-import FloatingTooltip from "@/components/FloatingTooltip.vue";
+import { type EditableListItemModel } from "@/components/EditableList.vue";
 import HtmlSnippetWidget from "@/components/HtmlSnippetWidget.vue";
 import ImageWidget from "@/components/ImageWidget.vue";
 import MarkdownWidget from "@/components/MarkdownWidget.vue";
@@ -94,6 +91,29 @@ const fileTreeNodes: TreeAccordionNode[] = [
         ],
       },
       { name: "nested/fraud2/accuracy3", children: [] },
+    ],
+  },
+];
+
+const lastAction = ref<string | null>(null);
+const fileTreeItemWithActions: TreeAccordionNode[] = [
+  {
+    name: "fraud",
+    children: [
+      {
+        name: "fraud/accuracy",
+        actions: [
+          { icon: "icon-plus-circle", actionName: "add" },
+          { icon: "icon-trash", actionName: "delete" },
+        ],
+      },
+      {
+        name: "fraud/accuracy3",
+        actions: [
+          { icon: "icon-plus-circle", actionName: "add" },
+          { icon: "icon-trash", actionName: "delete" },
+        ],
+      },
     ],
   },
 ];
@@ -221,12 +241,21 @@ const isCached = ref(false);
           :index="datatable.index"
           :columns="datatable.columns"
           :data="datatable.data"
+          :index-names="datatable.index_names"
         />
         <div>multi index</div>
         <DataFrameWidget
           :index="multiIndexDatatable.index"
           :columns="multiIndexDatatable.columns"
           :data="multiIndexDatatable.data"
+          :index-names="multiIndexDatatable.index_names"
+        />
+        <div>named index</div>
+        <DataFrameWidget
+          :index="namedIndexDatatable.index"
+          :columns="namedIndexDatatable.columns"
+          :data="namedIndexDatatable.data"
+          :index-names="namedIndexDatatable.index_names"
         />
       </TabsItem>
       <TabsItem :value="3">
@@ -399,9 +428,15 @@ const isCached = ref(false);
           action-icon="icon-search"
           @action="onSectionHeaderAction"
         />
+        <SectionHeader title="Section header with subtitle" subtitle="Subtitle" />
       </TabsItem>
       <TabsItem :value="9">
         <TreeAccordion :nodes="fileTreeNodes" />
+        <div style="margin-top: 20px">last item action {{ lastAction }}</div>
+        <TreeAccordion
+          :nodes="fileTreeItemWithActions"
+          @item-action="(action, itemName) => (lastAction = `${action} ${itemName}`)"
+        />
       </TabsItem>
       <TabsItem :value="10" class="editable-list-tab">
         <div class="header">

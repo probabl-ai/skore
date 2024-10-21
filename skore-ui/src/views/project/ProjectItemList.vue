@@ -2,14 +2,33 @@
 import Simplebar from "simplebar-vue";
 
 import SectionHeader from "@/components/SectionHeader.vue";
-import TreeAccordion from "@/components/TreeAccordion.vue";
+import TreeAccordion, { type TreeAccordionNode } from "@/components/TreeAccordion.vue";
 import { useProjectStore } from "@/stores/project";
 import { useToastsStore } from "@/stores/toasts";
+import { computed } from "vue";
 
 const projectStore = useProjectStore();
 const toastsStore = useToastsStore();
 
-function onItemSelected(key: string) {
+const itemsAsTree = computed(() => {
+  const source = projectStore.keysAsTree();
+  const tree = structuredClone(source) as unknown as TreeAccordionNode[];
+  // add actions to the leaf nodes
+  function addActions(node: TreeAccordionNode) {
+    if (node.children?.length === 0) {
+      node.actions = [{ icon: "icon-plus", actionName: "add" }];
+    }
+    for (const child of node.children ?? []) {
+      addActions(child);
+    }
+  }
+  for (const node of tree) {
+    addActions(node);
+  }
+  return tree;
+});
+
+function onItemAction(action: string, key: string) {
   if (projectStore.currentView) {
     projectStore.displayKey(projectStore.currentView, key);
   } else {
@@ -20,9 +39,9 @@ function onItemSelected(key: string) {
 
 <template>
   <div class="keys-list">
-    <SectionHeader title="Elements" icon="icon-pie-chart" />
+    <SectionHeader title="Items" icon="icon-pie-chart" />
     <Simplebar class="scrollable">
-      <TreeAccordion :nodes="projectStore.keysAsTree()" @item-selected="onItemSelected" />
+      <TreeAccordion :nodes="itemsAsTree" @item-action="onItemAction" />
     </Simplebar>
   </div>
 </template>

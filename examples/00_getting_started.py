@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.16.2
 #   kernelspec:
 #     display_name: .venv
 #     language: python
@@ -24,15 +24,15 @@
 # %% [markdown]
 # ## Initialize a Project and launch the UI
 #
-# From your shell, initialize a `skore` project, here named `project.skore`, that will be in your current working directory:
+# From your shell, initialize a `skore` project, here named `project`, that will be in your current working directory:
 # ```bash
-# python -m skore create "project.skore"
+# python -m skore create "project"
 # ```
 # This will create a skore project directory named `project.skore` in the current directory.
 #
 # From your shell (in the same directory), start the UI locally:
 # ```bash
-# python -m skore launch "project.skore"
+# python -m skore launch "project"
 # ```
 # This will automatically open a browser at the UI's location.
 #
@@ -41,7 +41,7 @@
 # %%
 from skore import load
 
-project = load("project.skore")
+project = load("project")
 
 # %% [markdown]
 # ## Storing some items
@@ -98,7 +98,7 @@ project.put("my_fitted_pipeline", my_pipeline)
 # ## Back to the dashboard
 #
 # 1. On the top left, create a new `View`.
-# 2. From the `Elements` section on the bottom left, you can add stored items to this view, either by double-cliking on them or by doing drag-and-drop.
+# 2. From the `Items` section on the bottom left, you can add stored items to this view, either by double-cliking on them or by doing drag-and-drop.
 
 # %% [markdown]
 #

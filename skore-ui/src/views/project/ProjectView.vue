@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { format, formatDistance } from "date-fns";
+import { formatDistance } from "date-fns";
 import Simplebar from "simplebar-vue";
 import { onBeforeUnmount, onMounted, ref } from "vue";
 
@@ -12,11 +12,9 @@ import PlotlyWidget from "@/components/PlotlyWidget.vue";
 import ProjectViewCard from "@/components/ProjectViewCard.vue";
 import SimpleButton from "@/components/SimpleButton.vue";
 import VegaWidget from "@/components/VegaWidget.vue";
-import { fetchShareableBlob } from "@/services/api";
-import { saveBlob } from "@/services/utils";
 import { useProjectStore } from "@/stores/project";
 import { useToastsStore } from "@/stores/toasts";
-import ProjectElementList from "@/views/project/ProjectElementList.vue";
+import ProjectItemList from "@/views/project/ProjectItemList.vue";
 import ProjectViewList from "@/views/project/ProjectViewList.vue";
 
 const props = defineProps({
@@ -30,17 +28,6 @@ const projectStore = useProjectStore();
 const isInFocusMode = ref(false);
 const currentDropPosition = ref<number>();
 const toastsStore = useToastsStore();
-
-async function onShareView() {
-  const currentView = projectStore.currentView;
-  if (currentView) {
-    const shareable = await fetchShareableBlob(currentView);
-    if (shareable) {
-      const formattedDate = format(new Date(), "yyyy-MM-dd-HH-mm");
-      saveBlob(shareable, `${formattedDate}-${currentView}.html`);
-    }
-  }
-}
 
 function onFocusMode() {
   isInFocusMode.value = !isInFocusMode.value;
@@ -81,13 +68,12 @@ onBeforeUnmount(() => {
   <main class="project-view" v-if="projectStore.items !== null">
     <div class="left-panel" v-if="projectStore.items && !isInFocusMode">
       <ProjectViewList />
-      <ProjectElementList />
+      <ProjectItemList />
     </div>
     <div ref="editor" class="editor">
       <div class="editor-header">
         <SimpleButton icon="icon-maximize" @click="onFocusMode" />
         <h1>{{ projectStore.currentView }}</h1>
-        <SimpleButton label="Share view" @click="onShareView" :is-primary="true" />
       </div>
       <Transition name="fade">
         <div
@@ -101,9 +87,8 @@ onBeforeUnmount(() => {
           @dragover.prevent
         >
           <div class="wrapper" v-if="projectStore.currentView === null">No view selected.</div>
-          <div class="wrapper" v-else>
-            No elements in this view, start by dragging or double clicking an element from the tree
-            on the left.
+          <div class="dropzone" v-else>
+            <div class="wrapper">The view is empty, start by dropping an element.</div>
           </div>
         </div>
         <Simplebar class="editor-container" v-else>
@@ -127,6 +112,7 @@ onBeforeUnmount(() => {
                   :columns="data.columns"
                   :data="data.data"
                   :index="data.index"
+                  :index-names="data.index_names"
                 />
                 <ImageWidget
                   v-if="
@@ -236,22 +222,27 @@ main {
         height: 100%;
         flex-direction: column;
         justify-content: center;
-        background-color: var(--background-color-normal);
-        background-image: radial-gradient(
-            circle at center,
-            transparent 0,
-            transparent 60%,
-            var(--background-color-normal) 100%
-          ),
-          linear-gradient(to right, var(--border-color-lower) 1px, transparent 1px),
-          linear-gradient(to bottom, var(--border-color-lower) 1px, transparent 1px);
-        background-size:
-          auto,
-          76px 76px,
-          76px 76px;
+        background-color: var(--background-color-elevated-high);
+
+        &:not(:has(.dropzone)) {
+          background-color: var(--background-color-normal);
+          background-image: radial-gradient(
+              circle at center,
+              transparent 0,
+              transparent 60%,
+              var(--background-color-normal) 100%
+            ),
+            linear-gradient(to right, var(--border-color-lower) 1px, transparent 1px),
+            linear-gradient(to bottom, var(--border-color-lower) 1px, transparent 1px);
+          background-size:
+            auto,
+            76px 76px,
+            76px 76px;
+        }
 
         & .wrapper {
-          padding-top: 192px;
+          padding-top: 225px;
+          margin: var(--spacing-padding-large);
           background-image: var(--editor-placeholder-image);
           background-position: 50% 0;
           background-repeat: no-repeat;
@@ -259,6 +250,19 @@ main {
           color: var(--text-color-normal);
           font-size: var(--text-size-normal);
           text-align: center;
+        }
+
+        & .dropzone {
+          display: flex;
+          height: 100%;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          border-radius: 17px;
+          margin: var(--spacing-padding-large);
+          background: var(--background-color-normal);
+          background-color: var(--background-color-elevated);
+          background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='17' ry='17' stroke='%23BABBBDFF' stroke-width='1' stroke-dasharray='11%2c11' stroke-dashoffset='0' stroke-linecap='square'/%3e%3c/svg%3e");
         }
       }
 

@@ -49,9 +49,9 @@ from skore.item import MediaItem
 # %% [markdown]
 # ## Initialize and use a Project
 #
-# From your shell, initialize a `skore` project, here named `project.skore`, that will be in your current working directory:
+# From your shell, initialize a `skore` project, here named `project`, that will be in your current working directory:
 # ```bash
-# python -m skore create "project.skore"
+# python -m skore create "project"
 # ```
 # This will create a skore project directory named `project.skore` in the current directory.
 #
@@ -59,7 +59,7 @@ from skore.item import MediaItem
 #
 # From your shell (in the same directory), start the UI locally:
 # ```bash
-# python -m skore launch project.skore
+# python -m skore launch project
 # ```
 # This will automatically open a browser at the UI's location.
 #
@@ -80,7 +80,7 @@ from skore.item import MediaItem
 # Now that the project file exists, we can load it in our notebook so that we can read from and write to it:
 
 # %%
-project = load("project.skore")
+project = load("project")
 
 # %% [markdown]
 # ### Storing an integer
@@ -327,6 +327,20 @@ y = diabetes.target[:150]
 my_pipeline.fit(X, y)
 
 project.put("my_fitted_pipeline", my_pipeline)
+
+# %% [markdown]
+# ---
+# ## Cross-validation with skore
+
+# %%
+from sklearn import datasets, linear_model
+from skore.cross_validate import cross_validate
+diabetes = datasets.load_diabetes()
+X = diabetes.data[:150]
+y = diabetes.target[:150]
+lasso = linear_model.Lasso()
+
+cv_results = cross_validate(lasso, X, y, cv=3, project=project)
 
 # %% [markdown]
 # _Stay tuned for some new features!_

@@ -4,11 +4,13 @@ import logging
 
 import rich.logging
 
+from skore.cross_validate import cross_validate
 from skore.project import Project, load
 
 from .utils._show_versions import show_versions
 
 __all__ = [
+    "cross_validate",
     "load",
     "show_versions",
     "Project",
