@@ -22,9 +22,7 @@ def cli(args: list[str]):
     parser_launch = subparsers.add_parser("launch", help="Launch the web UI")
     parser_launch.add_argument(
         "project_name",
-        nargs="?",
-        help="the name or path of the project to open (default: %(default)s)",
-        default="project.skore",
+        help="the name or path of the project to open",
     )
     parser_launch.add_argument(
         "--port",
