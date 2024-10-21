@@ -43,7 +43,6 @@ function onDragStart(event: DragEvent) {
 }
 
 function onAction(action: string) {
-  console.log("onAction", action, props.name);
   lastItemAction.value = action;
   lastItemName.value = props.name;
 }
