@@ -126,7 +126,7 @@ onBeforeUnmount(() => {
                   :columns="data.columns"
                   :data="data.data"
                   :index="data.index"
-                  :indexNames="data.indexNames"
+                  :index-names="data.index_names"
                 />
                 <ImageWidget
                   v-if="
