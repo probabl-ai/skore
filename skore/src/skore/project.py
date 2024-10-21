@@ -122,7 +122,7 @@ class Project:
         Raises
         ------
         KeyError
-            Raises a KeyError if the key does not correspond to any item.
+            If the key does not correspond to any item.
         """
         item = self.get_item(key)
 
