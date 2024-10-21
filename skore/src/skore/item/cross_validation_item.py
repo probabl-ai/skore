@@ -10,8 +10,9 @@ import hashlib
 from functools import cached_property
 from typing import TYPE_CHECKING, Any
 
-import altair
 import numpy
+import plotly.graph_objects
+import plotly.io
 
 from skore.item.item import Item
 
@@ -19,7 +20,7 @@ if TYPE_CHECKING:
     import sklearn.base
 
 
-def plot_cross_validation(cv_results: dict) -> altair.Chart:
+def plot_cross_validation(cv_results: dict) -> plotly.graph_objects.Figure:
     """Plot the result of a cross-validation run.
 
     Parameters
@@ -29,11 +30,11 @@ def plot_cross_validation(cv_results: dict) -> altair.Chart:
 
     Returns
     -------
-    altair.Chart
+    plotly.graph_objects.Figure
         A plot of the cross-validation results
     """
-    import altair
     import pandas
+    import plotly.graph_objects as go
 
     _cv_results = cv_results.copy()
 
@@ -41,58 +42,32 @@ def plot_cross_validation(cv_results: dict) -> altair.Chart:
         del _cv_results["indices"]
         del _cv_results["estimator"]
 
-    df = (
-        pandas.DataFrame(_cv_results)
-        .reset_index(names="split")
-        .melt(id_vars="split", var_name="metric", value_name="score")
-    )
+    df = pandas.DataFrame(_cv_results)
 
-    input_dropdown = altair.binding_select(
-        options=df["metric"].unique().tolist(), name="Metric: "
-    )
-    selection = altair.selection_point(
-        fields=["metric"], bind=input_dropdown, value="test_score"
-    )
+    # df['fit_time'] = pd.to_timedelta(df['fit_time'], unit='s')
 
-    average_score_rule = (
-        altair.Chart(df)
-        .mark_rule(strokeWidth=2)
-        .encode(
-            y="mean(score):Q",
-            tooltip=["mean(score):Q"],
-        )
-    )
+    dict_labels = {
+        "fit_time": "fit_time (seconds)",
+        "score_time": "score_time (seconds)",
+    }
 
-    return (
-        (
-            altair.Chart(df, title="Cross-validation results per split")
-            .mark_bar()
-            .encode(
-                altair.X("split:N").axis(
-                    title="Split number",
-                    labelAngle=0,
-                ),
-                altair.Y("score:Q").axis(
-                    title="Value",
-                    titleAngle=0,
-                    titleAlign="left",
-                    titleX=0,
-                    titleY=-5,
-                    labelLimit=300,
-                ),
-                tooltip=["metric:N", "split:N", "score:Q"],
+    fig = go.Figure()
+
+    for col_i, col_name in enumerate(df.columns):
+        fig.add_trace(
+            go.Bar(
+                x=df.index,
+                y=df[col_name].values,
+                name=dict_labels.get(col_name, col_name),
+                visible=True if col_i == 0 else "legendonly",
             )
-            + average_score_rule
         )
-        .add_params(selection)
-        .transform_filter(selection)
-        .properties(
-            width=500,
-            height=300,
-            padding=15,
-            autosize=altair.AutoSizeParams(type="fit", contains="padding"),
-        )
-    )
+
+    fig.update_xaxes(tickmode="linear", dtick=1, title_text="Split number")
+    fig.update_yaxes(title_text="Value")
+    fig.update_layout(title_text="Cross-validation results for each split")
+
+    return fig
 
 
 def _hash_numpy(arr: numpy.ndarray) -> str:
@@ -223,7 +198,7 @@ class CrossValidationItem(Item):
 
         # Keep plot itself as well as bytes so we can cache it
         plot = plot_cross_validation(cv_results_serialized)
-        plot_bytes = plot.to_json().encode("utf-8")
+        plot_bytes = plotly.io.to_json(plot, engine="json").encode("utf-8")
 
         instance = cls(
             cv_results_serialized=cv_results_serialized,
@@ -241,4 +216,4 @@ class CrossValidationItem(Item):
     @cached_property
     def plot(self):
         """A plot of the cross-validation results."""
-        return altair.Chart.from_json(self.plot_bytes.decode("utf-8"))
+        return plotly.io.from_json(self.plot_bytes.decode("utf-8"))

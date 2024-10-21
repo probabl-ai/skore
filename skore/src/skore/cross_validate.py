@@ -219,7 +219,6 @@ def cross_validate(
     >>> project = skore.load("project.skore")  # doctest: +SKIP
     >>> lasso, X, y = prepare_cv()  # doctest: +SKIP
     >>> cross_validate(lasso, X, y, cv=3, project=project)  # doctest: +SKIP
-    alt.Chart(...)
     {'fit_time': array(...), 'score_time': array(...), 'test_score': array(...)}
     """
     import sklearn.model_selection
