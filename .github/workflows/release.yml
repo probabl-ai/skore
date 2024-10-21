@@ -31,7 +31,7 @@ jobs:
         with:
           node-version: 20
 
-      - name: Build skore-ui and share library
+      - name: Build skore-ui
         shell: bash
         run: make build-skore-ui
 
