@@ -44,19 +44,6 @@ def test_get_items(client, in_memory_project):
     }
 
 
-def test_share_view(client, in_memory_project):
-    in_memory_project.put_view("hello", View(layout=[]))
-
-    response = client.post("/api/project/views/share?key=hello")
-    assert response.status_code == 200
-    assert b"<!DOCTYPE html>" in response.content
-
-
-def test_share_view_not_found(client):
-    response = client.post("/api/project/views/share?key=hello")
-    assert response.status_code == 404
-
-
 def test_put_view_layout(client):
     response = client.put("/api/project/views?key=hello", json=["test"])
     assert response.status_code == 201

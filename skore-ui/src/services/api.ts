@@ -61,20 +61,3 @@ export async function deleteView(view: string) {
     reportError(getErrorMessage(error));
   }
 }
-
-export async function fetchShareableBlob(view: string) {
-  try {
-    const r = await fetch(`${BASE_URL}/project/views/share?key=${view}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-    if (r.status == 200) {
-      return await r.blob();
-    }
-  } catch (error) {
-    reportError(getErrorMessage(error));
-  }
-  return null;
-}
