@@ -47,6 +47,8 @@ Storing some items
 
 This will automatically open a browser at the UI's location:
 
+**CONTINUE WORKING HERE**
+
 #. On the top left, create a new ``View``.
 #. From the ``Elements`` section on the bottom left, you can add stored items to this view, either by double-cliking on them or by doing drag-and-drop.
 
