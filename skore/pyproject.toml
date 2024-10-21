@@ -123,13 +123,11 @@ select = [
 convention = "numpy"
 
 [tool.ruff.lint.per-file-ignores]
+"src/*" = ["UP007"]
 "tests/*" = ["D"]
 "examples/*" = [
   "D",
-  # It's fine not to put the import at the top of the file in the examples
-  # folder.
   "E402",
-  # Useless expressions are useful!
   "B018",
 ]
 
