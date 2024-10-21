@@ -113,7 +113,7 @@ class Project:
         self.item_repository.put_item(key, item)
 
     def get(self, key: str) -> Any:
-        """Returns the value corresponding to `key` from the Project.
+        """Get the value corresponding to `key` from the Project.
 
         Parameters
         ----------
@@ -144,7 +144,7 @@ class Project:
 
     def get_item(self, key: str) -> Item:
         """Get the item corresponding to `key` from the Project.
-        
+
         Parameters
         ----------
         key: str
@@ -177,7 +177,7 @@ class Project:
 
     def delete_item(self, key: str):
         """Delete the item corresponding to `key` from the Project.
-        
+
         Parameters
         ----------
         key : str
@@ -196,7 +196,7 @@ class Project:
 
     def get_view(self, key: str) -> View:
         """Get the view corresponding to `key` from the Project.
-        
+
         Parameters
         ----------
         key : str
@@ -216,7 +216,7 @@ class Project:
 
     def delete_view(self, key: str):
         """Delete the view corresponding to `key` from the Project.
-        
+
         Parameters
         ----------
         key : str
