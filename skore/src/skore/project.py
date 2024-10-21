@@ -41,8 +41,8 @@ class Project:
     @singledispatchmethod
     def put(self, key: str, value: Any, on_error: Literal["warn", "raise"] = "warn"):
         """Add a value to the Project.
+        
         If an item with the same key already exists, its value is replaced by the new one.
-
         If `on_error` is "raise", any error stops the execution. If `on_error`
         is "warn" (or anything other than "raise"), a warning is shown instead.
 
