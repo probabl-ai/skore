@@ -1,10 +1,22 @@
 <script setup lang="ts">
+import { formatDistance } from "date-fns";
 import Simplebar from "simplebar-vue";
 
-import ProjectViewCanvas from "@/components/ProjectViewCanvas.vue";
+import DataFrameWidget from "@/components/DataFrameWidget.vue";
+import HtmlSnippetWidget from "@/components/HtmlSnippetWidget.vue";
+import ImageWidget from "@/components/ImageWidget.vue";
+import MarkdownWidget from "@/components/MarkdownWidget.vue";
+import PlotlyWidget from "@/components/PlotlyWidget.vue";
+import ProjectViewCard from "@/components/ProjectViewCard.vue";
+import VegaWidget from "@/components/VegaWidget.vue";
 import { useProjectStore } from "@/stores/project";
 
 const projectStore = useProjectStore();
+
+function getItemSubtitle(created_at: Date, updated_at: Date) {
+  const now = new Date();
+  return `Created ${formatDistance(created_at, now)} ago, updated ${formatDistance(updated_at, now)} ago`;
+}
 </script>
 
 <template>
@@ -12,8 +24,37 @@ const projectStore = useProjectStore();
     <div class="share-header">
       <h1>{{ projectStore.currentView }}</h1>
     </div>
-    <Simplebar class="canvas-wrapper">
-      <ProjectViewCanvas :showCardActions="false" />
+    <Simplebar class="cards">
+      <div class="inner">
+        <ProjectViewCard
+          v-for="{ key, mediaType, data, createdAt, updatedAt } in projectStore.currentViewItems"
+          :key="key"
+          :title="key.toString()"
+          :subtitle="getItemSubtitle(createdAt, updatedAt)"
+          :showActions="false"
+        >
+          <DataFrameWidget
+            v-if="mediaType === 'application/vnd.dataframe+json'"
+            :columns="data.columns"
+            :data="data.data"
+            :index="data.index"
+          />
+          <ImageWidget
+            v-if="['image/svg+xml', 'image/png', 'image/jpeg', 'image/webp'].includes(mediaType)"
+            :mediaType="mediaType"
+            :base64-src="data"
+            :alt="key.toString()"
+          />
+          <MarkdownWidget v-if="mediaType === 'text/markdown'" :source="data" />
+          <VegaWidget v-if="mediaType === 'application/vnd.vega.v5+json'" :spec="data" />
+          <PlotlyWidget v-if="mediaType === 'application/vnd.plotly.v1+json'" :spec="data" />
+          <HtmlSnippetWidget
+            v-if="mediaType === 'application/vnd.sklearn.estimator+html'"
+            :src="data"
+          />
+          <HtmlSnippetWidget v-if="mediaType === 'text/html'" :src="data" />
+        </ProjectViewCard>
+      </div>
     </Simplebar>
   </div>
 </template>
@@ -56,35 +97,16 @@ const projectStore = useProjectStore();
     }
   }
 
-  & .drop-indicator {
-    height: 3px;
-    border-radius: 8px;
-    margin: 0 10%;
-    background-color: var(--text-color-title);
-    opacity: 0;
-    transition: opacity var(--transition-duration) var(--transition-easing);
-
-    &.visible {
-      opacity: 1;
-    }
-  }
-
-  & .placeholder {
-    height: 100%;
-    padding-top: calc((100vh - var(--header-height)) * 476 / 730);
-    background-image: var(--editor-placeholder-image);
-    background-position: 50%;
-    background-repeat: no-repeat;
-    background-size: contain;
-    color: var(--text-color-normal);
-    font-size: var(--text-size-normal);
-    text-align: center;
-  }
-
-  & .canvas-wrapper {
+  & .cards {
     height: 0;
     flex-grow: 1;
     padding: var(--spacing-padding-large);
+
+    & .inner {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-gap-large);
+    }
   }
 }
 </style>

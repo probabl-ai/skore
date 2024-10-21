@@ -12,7 +12,7 @@ const realContent = useTemplateRef("realContent");
 const contentHeight = ref(0);
 
 const styles = computed(() => {
-  const h = contentHeight.value !== 0 ? `${contentHeight.value}px` : "auto";
+  const h = contentHeight.value !== 0 && props.isRasterized ? `${contentHeight.value}px` : "auto";
   return {
     height: h,
   };
@@ -64,6 +64,7 @@ onBeforeUnmount(() => {
 <style scoped>
 .dynamic-content-rasterizer {
   position: relative;
+  overflow: hidden;
   padding: 0;
   margin: 0;
 
