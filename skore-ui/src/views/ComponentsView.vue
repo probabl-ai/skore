@@ -165,6 +165,17 @@ function onEditableListAction(action: string, item: EditableListItemModel) {
 
 const lastSelectedItem = ref<string | null>(null);
 
+function addItemToDraggableList(i: number) {
+  draggableListData.value.splice(i, 0, {
+    id: `${i}`,
+    color: `hsl(${(360 / 25) * i}deg, 90%, 50%)`,
+    content: Array.from(
+      { length: Math.floor(Math.random() * 10) + 1 }, // Random number of items between 1 and 10
+      () => String.fromCharCode(97 + Math.floor(Math.random() * 26)) // Random lowercase letter
+    ),
+  });
+}
+
 const draggableListData = ref(
   Array.from({ length: 25 }, (v, i) => ({
     id: `${i}`,
@@ -175,6 +186,22 @@ const draggableListData = ref(
     ),
   }))
 );
+
+function onDragStart(event: DragEvent) {
+  if (event.dataTransfer) {
+    event.dataTransfer.setData("application/x-skore-item-name", "drag-me");
+  }
+}
+
+const currentDropPosition = ref<number>();
+
+function onItemDrop(event: DragEvent) {
+  if (event.dataTransfer) {
+    if (currentDropPosition.value !== undefined) {
+      addItemToDraggableList(currentDropPosition.value);
+    }
+  }
+}
 
 const isCached = ref(false);
 </script>
@@ -391,6 +418,7 @@ const isCached = ref(false);
           action-icon="icon-search"
           @action="onSectionHeaderAction"
         />
+        <SectionHeader title="Section header with subtitle" subtitle="Subtitle" />
       </TabsItem>
       <TabsItem :value="9">
         <TreeAccordion :nodes="fileTreeNodes" />
@@ -458,10 +486,25 @@ const isCached = ref(false);
         </div>
       </TabsItem>
       <TabsItem :value="12">
+        <div>Item order: {{ draggableListData.map((item) => item.id).join(", ") }}</div>
+        <div>Drop position: {{ currentDropPosition }}</div>
+        <div>
+          <SimpleButton
+            label="add item"
+            :is-primary="true"
+            @click="addItemToDraggableList(draggableListData.length + 1)"
+          />
+          <div class="drag-me" draggable="true" @dragstart="onDragStart($event)">
+            drag me to the list
+          </div>
+        </div>
         <Simplebar class="draggable-list-container">
           <DraggableList
             v-model:items="draggableListData"
             auto-scroll-container-selector=".draggable-list-container"
+            v-model:current-drop-position="currentDropPosition"
+            @drop="onItemDrop($event)"
+            @dragover.prevent
           >
             <template #item="{ id, color, content }">
               <div :style="{ backgroundColor: color, color: 'white' }">
@@ -584,6 +627,15 @@ main {
 .draggable-list-container {
   max-height: 80vh;
   margin-top: 10px;
+}
+
+.drag-me {
+  width: 200px;
+  padding: 10px;
+  margin-top: 10px;
+  background-color: var(--background-color-elevated-high);
+  cursor: move;
+  user-select: none;
 }
 
 .floating-tooltip-tab {

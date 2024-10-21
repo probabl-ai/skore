@@ -5,6 +5,8 @@ from pathlib import Path
 from typing import Optional, Union
 
 from skore.cli import logger
+from skore.project import load
+from skore.view.view import View
 
 
 class InvalidProjectNameError(Exception):
@@ -148,5 +150,8 @@ def __create(
             f"Unable to create project file '{views_dir}'."
         ) from e
 
+    p = load(project_directory)
+    p.put_view("default", View(layout=[]))
+
     logger.info(f"Project file '{project_directory}' was successfully created.")
-    return project_directory
+    return p
