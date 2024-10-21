@@ -133,6 +133,11 @@ def test_put(in_memory_project):
     assert in_memory_project.list_item_keys() == ["key1", "key2", "key3", "key4"]
 
 
+def test_put_kwargs(in_memory_project):
+    in_memory_project.put(key="key1", value=1)
+    assert in_memory_project.list_item_keys() == ["key1"]
+
+
 def test_put_twice(in_memory_project):
     in_memory_project.put("key2", 2)
     in_memory_project.put("key2", 5)
