@@ -49,6 +49,7 @@
     --color-secondary: #2329ff;
 
     /* typography */
+    --text-color-low: rgb(99 99 99);
     --text-color-normal: #a2a2a2;
     --text-color-highlight: #fff;
 
@@ -73,7 +74,7 @@
     --toast-border-color: rgb(255 255 255);
     --toast-text-color: rgb(0 0 0);
     --toast-dismiss-color: hsl(0deg 0% 35%);
-    --toast-shadow-elevation: rgb(255 255 255 / 48%);
+    --toast-shadow-elevation: rgb(0 0 0 / 48%);
     --toast-shadow-inset: inset 0 0 1.1px 2px rgb(0 0 0 / 13%);
   }
 }
@@ -84,6 +85,7 @@
     --color-secondary: #f08b30;
 
     /* typography */
+    --text-color-low: #babbbd;
     --text-color-normal: #616271;
     --text-color-highlight: #2f3037;
 

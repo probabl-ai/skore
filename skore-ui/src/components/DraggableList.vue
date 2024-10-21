@@ -3,7 +3,7 @@ import type { Interactable } from "@interactjs/types";
 import { toPng } from "html-to-image";
 import interact from "interactjs";
 import Simplebar from "simplebar-core";
-import { onMounted, onUnmounted, ref, useTemplateRef } from "vue";
+import { onBeforeUnmount, onMounted, ref, useTemplateRef } from "vue";
 
 import DynamicContentRasterizer from "@/components/DynamicContentRasterizer.vue";
 
@@ -13,6 +13,7 @@ interface Item {
 }
 
 const items = defineModel<Item[]>("items", { required: true });
+const currentDropPosition = defineModel<number>("currentDropPosition");
 const props = defineProps<{
   autoScrollContainerSelector?: string;
 }>();
@@ -22,7 +23,7 @@ const movingItemAsPngData = ref("");
 const movingItemHeight = ref(0);
 const movingItemY = ref(0);
 const container = useTemplateRef("container");
-let interactable: Interactable;
+let draggable: Interactable;
 let direction: "up" | "down" | "none" = "none";
 let autoScrollContainer: HTMLElement = document.body;
 
@@ -64,21 +65,55 @@ function capturedStyles() {
   };
 }
 
-function makeModifier() {
-  const containerBounds = container.value!.getBoundingClientRect();
-
-  return interact.modifiers.restrict({
-    restriction: (x, y, { element }) => {
-      const content = element?.parentElement?.parentElement?.querySelector(".content");
-      const { height } = content?.getBoundingClientRect() ?? { height: 0 };
-      return {
-        top: containerBounds?.top - height,
-        right: containerBounds?.right,
-        bottom: containerBounds?.bottom + height,
-        left: containerBounds?.left,
-      };
-    },
+function setDropIndicatorPosition(y: number) {
+  const itemBounds = Array.from(container.value!.querySelectorAll(".item")).map((item, index) => {
+    const { top, height } = item.getBoundingClientRect();
+    const center = top + height / 2;
+    return {
+      index,
+      distance: Math.abs(y - center),
+      center,
+    };
   });
+  const closestItemBelow = itemBounds.reduce((closest, item) => {
+    if (item.distance < closest.distance) {
+      return item;
+    }
+    return closest;
+  }, itemBounds[0]);
+
+  if (y > closestItemBelow.center) {
+    dropIndicatorPosition.value = closestItemBelow.index;
+  } else {
+    dropIndicatorPosition.value = closestItemBelow.index - 1;
+  }
+}
+
+function onDragOver(event: DragEvent) {
+  // scroll the container if needed
+  const scrollBounds = autoScrollContainer.getBoundingClientRect();
+  const distanceToTop = Math.abs(event.pageY - scrollBounds.top);
+  const distanceToBottom = Math.abs(event.pageY - scrollBounds.bottom);
+  const threshold = 150;
+  const speed = 5;
+  if (distanceToTop < threshold) {
+    autoScrollContainer.scrollTop -= speed;
+  } else if (distanceToBottom < threshold) {
+    const maxScroll = autoScrollContainer.scrollHeight - scrollBounds.height;
+    autoScrollContainer.scrollTop = Math.min(maxScroll, autoScrollContainer.scrollTop + speed);
+  }
+
+  // show drop indicator to the closest item
+  setDropIndicatorPosition(event.pageY);
+
+  if (dropIndicatorPosition.value !== null) {
+    currentDropPosition.value = dropIndicatorPosition.value + 1;
+  }
+}
+
+function onDragLeave() {
+  currentDropPosition.value = -1;
+  dropIndicatorPosition.value = null;
 }
 
 onMounted(() => {
@@ -101,14 +136,14 @@ onMounted(() => {
     autoScrollContainer = container.value!.parentElement ?? document.body;
   }
 
-  interactable = interact(".handle").draggable({
+  draggable = interact(".handle").draggable({
     autoScroll: {
       enabled: true,
       container: autoScrollContainer,
+      speed: 900,
     },
     startAxis: "y",
     lockAxis: "y",
-    modifiers: [makeModifier()],
     listeners: {
       async start(event) {
         // make a rasterized copy of the moving element
@@ -134,40 +169,13 @@ onMounted(() => {
           event.clientY + autoScrollContainer!.scrollTop - paddingTop - containerY;
 
         // set the drop indicator item index
-        const itemBounds = Array.from(container.value!.querySelectorAll(".item")).map(
-          (item, index) => {
-            const { top, height } = item.getBoundingClientRect();
-            const center = top + height / 2;
-            return {
-              index,
-              distance: Math.abs(event.pageY - center),
-            };
-          }
-        );
-        const closestItemBelow = itemBounds.reduce((closest, item) => {
-          if (item.distance < closest.distance) {
-            return item;
-          }
-          return closest;
-        }, itemBounds[0]);
-        // if the first item is the closest we may need to move the drop indicator up
-        if (closestItemBelow.index === 0) {
-          // does the user want to move the item to the top?
-          const bounds = container.value!.getBoundingClientRect();
-          if (event.pageY < bounds.top) {
-            dropIndicatorPosition.value = -1;
-          } else {
-            dropIndicatorPosition.value = 0;
-          }
-        } else {
-          dropIndicatorPosition.value = closestItemBelow.index;
-        }
+        setDropIndicatorPosition(event.pageY);
       },
       end() {
         // change the model order
         if (items.value && movingItemIndex.value !== null && dropIndicatorPosition.value !== null) {
           // did user dropped the item in its previous position ?
-          if (Math.abs(dropIndicatorPosition.value - movingItemIndex.value) > 1) {
+          if (Math.abs(dropIndicatorPosition.value - movingItemIndex.value) >= 1) {
             // move the item to its new position
             const destinationIndex =
               dropIndicatorPosition.value > movingItemIndex.value
@@ -186,10 +194,17 @@ onMounted(() => {
       },
     },
   });
+
+  container.value!.addEventListener("dragover", onDragOver);
+  container.value!.addEventListener("dragleave", onDragLeave);
+  window.addEventListener("dragend", onDragLeave);
 });
 
-onUnmounted(() => {
-  interactable.unset();
+onBeforeUnmount(() => {
+  container.value!.removeEventListener("dragover", onDragOver);
+  container.value!.removeEventListener("dragleave", onDragLeave);
+  window.removeEventListener("dragend", onDragLeave);
+  draggable.unset();
 });
 </script>
 
@@ -236,7 +251,7 @@ onUnmounted(() => {
 }
 
 .draggable {
-  --content-left-margin: 15px;
+  --content-left-margin: 18px;
 
   position: relative;
   display: flex;
@@ -249,18 +264,23 @@ onUnmounted(() => {
 
     & .handle {
       position: absolute;
-      top: 0;
+      top: -4px;
       left: 0;
+      display: flex;
+      color: hsl(from var(--color-primary) h s calc(l * 1.5));
       cursor: move;
+      font-size: calc(var(--text-size-normal) * 1.7);
       opacity: 0;
       transition: opacity var(--transition-duration) var(--transition-easing);
     }
 
     & .content-wrapper {
+      width: calc(100% - var(--content-left-margin));
       margin-left: var(--content-left-margin);
     }
 
     & .content {
+      width: 100%;
       transition: opacity var(--transition-duration) var(--transition-easing);
 
       &.moving {
