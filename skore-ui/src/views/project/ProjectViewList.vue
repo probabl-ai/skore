@@ -90,7 +90,8 @@ onMounted(async () => {
     <SectionHeader
       title="Views"
       icon="icon-recent-document"
-      action-icon="icon-plus-circle"
+      action-icon="icon-plus"
+      action-tooltip="Add a new view"
       @action="onAddView"
     />
     <Simplebar class="list">
