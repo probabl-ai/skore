@@ -78,7 +78,8 @@ class Project:
             If the key-value pair(s) cannot be saved properly.
         """
         if isinstance(key, dict):
-            self.put_several(key)
+            for key_, value in key.items():
+                self.put_one(key_, value)
         else:
             self.put_one(key, value)
 
@@ -104,22 +105,6 @@ class Project:
             raise ProjectPutError(
                 "Key-value pair could not be inserted in the Project"
             ) from e
-
-    def put_several(self, key_to_value: dict):
-        """Add several values to the Project.
-
-        Parameters
-        ----------
-        key_to_value : dict[str, Any]
-            The key-value pairs to put in the Project. Keys must be strings.
-
-        Raises
-        ------
-        ProjectPutError
-            If a key-value pair in `key_to_value` cannot be saved properly.
-        """
-        for key, value in key_to_value.items():
-            self.put_one(key, value)
 
     def put_item(self, key: str, item: Item):
         """Add an Item to the Project."""

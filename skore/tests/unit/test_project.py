@@ -196,12 +196,6 @@ def test_put_several_happy_path(in_memory_project):
     assert in_memory_project.list_item_keys() == ["a", "b"]
 
 
-def test_put_several_canonical(in_memory_project):
-    """Use `put_several` instead of the `put` alias."""
-    in_memory_project.put_several({"a": "foo", "b": "bar"})
-    assert in_memory_project.list_item_keys() == ["a", "b"]
-
-
 def test_put_several_some_errors(in_memory_project):
     with pytest.raises(ProjectPutError):
         in_memory_project.put({0: "hello", 1: "hello", 2: "hello"})
