@@ -30,7 +30,7 @@ async function onViewRenamed(oldName: string, newName: string, item: EditableLis
   if (unsavedViewsId == item.id) {
     await projectStore.createView(newName);
     unsavedViewsId = "";
-    toastsStore.addToast("View added successfully", "success");
+    toastsStore.addToast("View added successfully", "success", { duration: 20 });
   } else {
     await projectStore.renameView(oldName, newName);
   }
@@ -60,7 +60,7 @@ async function onViewsListAction(action: string, item: EditableListItemModel) {
     case "delete": {
       views.value.splice(views.value.indexOf(item), 1);
       await projectStore.deleteView(item.name);
-      toastsStore.addToast("View deleted successfully", "success");
+      toastsStore.addToast("View deleted successfully", "success", { duration: 20 });
       break;
     }
   }
