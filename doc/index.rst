@@ -4,34 +4,27 @@
 Welcome to ``skore``
 ====================
 
-.. container:: index-features
+With skore, data scientists can:
 
-   * ``skore`` UI: track and visualize your objects from a user-friendly dashboard
+#. Track and visualize their ML/DS results.
+#. Get assistance when developing their ML/DS projects.
 
-   * ``skore`` machine learning programming assistant: enhancing ``scikit-learn`` classes and functions
+   - Scikit-learn compatible :func:`~skore.cross_validate` provides insights and checks on cross-validation.
 
-With the ``skore`` UI, data scientists can:
-
-#. Store objects of different types from their Python code: python lists, ``scikit-learn`` fitted pipelines, ``plotly`` figures, and more.
-#. **Track** and **visualize** these stored objects on a user-friendly dashboard.
-#. Export the dashboard to a HTML file.
-
-With the ``skore`` machine learning programming assistant, data scientists can:
-
-* Use an enhanced version of ``sklearn.model_selection.cross_validate`` with ``skore``'s :func:`~skore.cross_validate`.
-
-These are only the first features: skore is a work in progress and aims to be
+These are only the initial features: skore is a work in progress and aims to be
 an end-to-end library for data scientists.
 Stay tuned!
+Feedbacks are welcome: please feel free to join our `Discord <http://discord.probabl.ai>`_ or `create an issue <https://github.com/probabl-ai/skore/issues>`_.
+
 We are a product team working at `Probabl <https://probabl.ai>`_ and our motto is #OwnYourDataScience.
 
 - License: BSD
 - GitHub repository: https://github.com/probabl-ai/skore
 - Discord: http://discord.probabl.ai
-- Status: under development, API is subject to change without notice.
+- Status: under development, API is subject to change.
 
 .. image:: https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_10_14_skore_demo.gif
-   :alt: Getting started with ``skore`` demo
+   :alt: Getting started with skore demo
 
 .. currentmodule:: skore
 
