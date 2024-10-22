@@ -20,6 +20,8 @@ function onBeforeLeave(el: Element) {
           :message="toast.message"
           :type="toast.type"
           :count="toast.count"
+          :dismissible="toast.dismissible"
+          :duration="toast.duration"
         />
       </div>
     </TransitionGroup>

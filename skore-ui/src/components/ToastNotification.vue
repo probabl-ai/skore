@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { useToastsStore, type Toast } from "@/stores/toasts";
-import { computed } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 
 const props = defineProps<Toast>();
 const toastsStore = useToastsStore();
+let durationTimer = -1;
+let animationPlayState = ref("paused");
 
 const icon = computed(() => {
   switch (props.type) {
@@ -21,18 +23,52 @@ const icon = computed(() => {
 });
 
 function onDismiss() {
+  cancelDurationTimer();
   toastsStore.dismissToast(props.id);
 }
+
+function cancelDurationTimer() {
+  if (durationTimer !== -1) {
+    clearInterval(durationTimer);
+  }
+}
+
+onMounted(() => {
+  if (props.duration && props.duration !== Infinity) {
+    durationTimer = window.setInterval(() => {
+      onDismiss();
+    }, props.duration * 1000);
+    animationPlayState.value = "running";
+  }
+});
+
+onBeforeUnmount(() => {
+  cancelDurationTimer();
+});
 </script>
 
 <template>
   <div class="toast" :class="props.type">
     <div class="message">
-      <span class="icon" :class="icon"></span>
+      <div class="icon-wrapper">
+        <div class="countdown" v-if="props.duration && props.duration !== Infinity">
+          <div class="background" />
+          <div
+            class="foreground"
+            :style="{
+              animationPlayState,
+              animationDuration: `${props.duration ?? 0}s`,
+            }"
+          />
+        </div>
+        <div class="icon">
+          <span :class="icon"></span>
+        </div>
+      </div>
       {{ props.message }}
       <span class="count" v-if="props.count && props.count > 1">(x{{ props.count }})</span>
     </div>
-    <div class="actions">
+    <div class="actions" v-if="props.dismissible">
       <button @click="onDismiss">dismiss</button>
     </div>
   </div>
@@ -68,24 +104,74 @@ function onDismiss() {
   }
 
   &.error .icon {
-    color: #f05454;
+    color: #d63232;
   }
 
   &.info .icon {
-    color: #3f72af;
+    color: #4b44ff;
   }
 
   &.warning .icon {
-    color: #f08b30;
+    color: #ff9f0a;
   }
 
   & .message {
+    z-index: 2;
     display: flex;
     align-items: center;
     color: var(--toast-text-color);
     font-size: var(--text-size-highlight);
     font-weight: var(--text-weight-highlight);
     gap: var(--spacing-gap-normal);
+
+    & .icon-wrapper {
+      & .icon {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        width: 20px;
+        height: 20px;
+      }
+
+      & .countdown {
+        position: relative;
+        z-index: 1;
+
+        & .background,
+        & .foreground {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 19px;
+          height: 19px;
+          box-sizing: border-box;
+          padding: 3px; /* the boder thickness */
+          border-radius: 50%;
+          aspect-ratio: 1;
+        }
+
+        & .background {
+          background-color: #2f3037;
+          mask:
+            linear-gradient(#0000 0 0) content-box intersect,
+            conic-gradient(#000 360deg, #0000 0);
+        }
+
+        & .foreground {
+          animation-duration: 10s;
+          animation-iteration-count: 1;
+          animation-name: countdown;
+          animation-play-state: paused;
+          animation-timing-function: linear;
+          background-color: white;
+          mask:
+            linear-gradient(#0000 0 0) content-box intersect,
+            conic-gradient(#000 var(--progress), #0000 0);
+
+          --progress: 0deg; /* control the progression */
+        }
+      }
+    }
   }
 
   & .actions {
@@ -101,6 +187,22 @@ function onDismiss() {
       font-size: var(--text-size-normal);
       font-weight: var(--text-weight-normal);
     }
+  }
+}
+
+@property --progress {
+  inherits: false;
+  initial-value: 0deg;
+  syntax: "<angle>";
+}
+
+@keyframes countdown {
+  from {
+    --progress: 0deg;
+  }
+
+  to {
+    --progress: 360deg;
   }
 }
 </style>
