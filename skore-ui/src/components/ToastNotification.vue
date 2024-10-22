@@ -76,6 +76,15 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .toast {
+  /* toast */
+  --toast-background-color: #151517;
+  --toast-stripe-color: hsl(240deg 5% 13%);
+  --toast-border-color: black;
+  --toast-text-color: white;
+  --toast-dismiss-color: #a7a7a7;
+  --toast-shadow-elevation: rgb(0 0 0 / 48%);
+  --toast-shadow-inset: inset 0 0 1.1px 2px rgb(255 255 255 / 13%);
+
   display: flex;
   align-items: center;
   justify-content: space-between;
