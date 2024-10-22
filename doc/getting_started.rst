@@ -3,6 +3,9 @@
 Getting started
 ===============
 
+``skore`` UI
+------------
+
 .. currentmodule:: skore
 
 From your shell, initialize a skore project, here named ``project.skore``, that

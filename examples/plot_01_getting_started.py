@@ -5,15 +5,17 @@ Getting started with ``skore``
 
 This example builds on top of the :ref:`getting_started` guide.
 
-This guide provides a quick start to ``skore``, an open-source package that aims to enable data scientists to:
+``skore`` UI
+------------
+
+This section provides a quick start to the ``skore`` UI, an open-source package that aims to enable data scientists to:
 
 #. Store objects of different types from their Python code: python lists, ``scikit-learn`` fitted pipelines, ``plotly`` figures, and more.
 #. Track and visualize these stored objects on a user-friendly dashboard.
 #. Export the dashboard to a HTML file.
 
-
 Initialize a Project and launch the UI
---------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 From your shell, initialize a skore project, here named ``project``, that will be
 in your current working directory:
@@ -35,7 +37,6 @@ This will automatically open a browser at the UI's location.
 
 Now that the project file exists, we can load it in our notebook so that we can
 read from and write to it:
-
 """
 
 # %%
@@ -110,7 +111,7 @@ my_pipeline.fit(X, y)
 #     project.put("my_fitted_pipeline", my_pipeline)
 #
 # Back to the dashboard
-# ---------------------
+# ^^^^^^^^^^^^^^^^^^^^^
 #
 # #. On the top left, create a new ``View``.
 # #. From the ``Elements`` section on the bottom left, you can add stored items to this view, either by double-cliking on them or by doing drag-and-drop.
