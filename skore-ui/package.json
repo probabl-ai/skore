@@ -6,7 +6,6 @@
   "scripts": {
     "dev": "vite --host",
     "build": "vite build",
-    "build:lib": "vite build -c vite.config.lib.ts",
     "preview": "vite preview",
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { format, formatDistance } from "date-fns";
+import { formatDistance } from "date-fns";
 import Simplebar from "simplebar-vue";
 import { onBeforeUnmount, onMounted, ref } from "vue";
 
@@ -12,8 +12,6 @@ import PlotlyWidget from "@/components/PlotlyWidget.vue";
 import ProjectViewCard from "@/components/ProjectViewCard.vue";
 import SimpleButton from "@/components/SimpleButton.vue";
 import VegaWidget from "@/components/VegaWidget.vue";
-import { fetchShareableBlob } from "@/services/api";
-import { saveBlob } from "@/services/utils";
 import { useProjectStore } from "@/stores/project";
 import { useToastsStore } from "@/stores/toasts";
 import ProjectItemList from "@/views/project/ProjectItemList.vue";
@@ -30,17 +28,6 @@ const projectStore = useProjectStore();
 const isInFocusMode = ref(false);
 const currentDropPosition = ref<number>();
 const toastsStore = useToastsStore();
-
-async function onShareView() {
-  const currentView = projectStore.currentView;
-  if (currentView) {
-    const shareable = await fetchShareableBlob(currentView);
-    if (shareable) {
-      const formattedDate = format(new Date(), "yyyy-MM-dd-HH-mm");
-      saveBlob(shareable, `${formattedDate}-${currentView}.html`);
-    }
-  }
-}
 
 function onFocusMode() {
   isInFocusMode.value = !isInFocusMode.value;
@@ -87,7 +74,6 @@ onBeforeUnmount(() => {
       <div class="editor-header">
         <SimpleButton icon="icon-maximize" @click="onFocusMode" />
         <h1>{{ projectStore.currentView }}</h1>
-        <SimpleButton label="Share view" @click="onShareView" :is-primary="true" />
       </div>
       <Transition name="fade">
         <div
@@ -126,7 +112,7 @@ onBeforeUnmount(() => {
                   :columns="data.columns"
                   :data="data.data"
                   :index="data.index"
-                  :indexNames="data.indexNames"
+                  :index-names="data.index_names"
                 />
                 <ImageWidget
                   v-if="

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import FloatingTooltip from "@/components/FloatingTooltip.vue";
 import SimpleButton from "@/components/SimpleButton.vue";
 
 const props = defineProps<{
@@ -6,6 +7,7 @@ const props = defineProps<{
   subtitle?: string;
   icon?: string;
   actionIcon?: string;
+  actionTooltip?: string;
 }>();
 
 const emit = defineEmits(["action"]);
@@ -21,7 +23,10 @@ const emit = defineEmits(["action"]);
       </span>
     </h1>
     <div class="action" v-if="props.actionIcon">
-      <SimpleButton :icon="props.actionIcon" @click="emit('action')" />
+      <FloatingTooltip :text="props.actionTooltip" v-if="props.actionTooltip">
+        <SimpleButton :icon="props.actionIcon" @click="emit('action')" />
+      </FloatingTooltip>
+      <SimpleButton v-else :icon="props.actionIcon" @click="emit('action')" />
     </div>
   </div>
 </template>
