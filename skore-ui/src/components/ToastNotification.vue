@@ -34,7 +34,7 @@ function cancelDurationTimer() {
 }
 
 onMounted(() => {
-  if (props.duration && props.duration !== Infinity) {
+  if (props.duration !== undefined && props.duration !== Infinity) {
     durationTimer = window.setInterval(() => {
       onDismiss();
     }, props.duration * 1000);
@@ -51,7 +51,7 @@ onBeforeUnmount(() => {
   <div class="toast" :class="props.type">
     <div class="message">
       <div class="icon-wrapper">
-        <div class="countdown" v-if="props.duration && props.duration !== Infinity">
+        <div class="countdown" v-if="props.duration !== undefined && props.duration !== Infinity">
           <div class="background" />
           <div
             class="foreground"
