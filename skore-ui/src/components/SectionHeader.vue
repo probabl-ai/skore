@@ -45,7 +45,7 @@ const emit = defineEmits(["action"]);
   & h1 {
     color: var(--text-color-normal);
     font-size: var(--text-size-title);
-    font-weight: var(--text-weight-title);
+    font-weight: var(--text-weight-highlight);
   }
 
   & .icon {

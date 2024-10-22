@@ -52,7 +52,7 @@ const emit = defineEmits<{
     justify-content: space-between;
     color: var(--text-color-highlight);
     font-size: var(--text-size-normal);
-    font-weight: var(--text-weight-title);
+    font-weight: var(--text-weight-highlight);
 
     & .titles {
       position: relative;
@@ -61,7 +61,7 @@ const emit = defineEmits<{
       & .title {
         color: var(--text-color-highlight);
         font-size: var(--text-size-highlight);
-        font-weight: var(--text-weight-title);
+        font-weight: var(--text-weight-highlight);
       }
 
       & .subtitle {
