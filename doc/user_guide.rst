@@ -7,3 +7,5 @@ User guide
 
 *The User Guide is currently work in progress and will be released soon, thank
 you for your patience!*
+
+For now, please look into the ``Getting Started`` and ``Examples`` tab.
