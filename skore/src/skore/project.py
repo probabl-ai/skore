@@ -68,7 +68,7 @@ class Project:
         key : str | dict[str, Any]
             The key to associate with `value` in the Project,
             or dict of key-value pairs to add to the Project.
-        value : Any | None, default: None
+        value : Any, optional
             The value to associate with `key` in the Project.
             If `key` is a dict, this argument is ignored.
 
