@@ -49,7 +49,7 @@ onMounted(() => {
   border: 1px solid var(--border-color-normal);
   border-radius: var(--border-radius);
   background-color: var(--background-color-normal);
-  box-shadow: 0 1px 2px var(--background-color-selected);
+  box-shadow: 0 1px 2px var(--shadow-color);
   color: var(--text-color-normal);
   transition: all var(--transition-duration) var(--transition-easing);
 

@@ -102,7 +102,7 @@ onUnmounted(() => {
         calc(var(--spacing-padding-normal) * 2) var(--spacing-padding-normal);
       border: solid 1px var(--border-color-normal);
       border-radius: var(--modal-border-radius);
-      background-color: var(--background-color-elevated-high);
+      background-color: var(--background-color-elevated);
       gap: 24px;
 
       & h2 {
@@ -126,7 +126,7 @@ onUnmounted(() => {
         gap: var(--spacing-gap-normal);
 
         & .text-input {
-          background-color: var(--background-color-elevated-high);
+          background-color: var(--background-color-elevated);
         }
       }
     }
@@ -145,7 +145,7 @@ onUnmounted(() => {
       gap: var(--spacing-gap-normal);
 
       & button.regular {
-        background-color: var(--background-color-elevated-high);
+        background-color: var(--background-color-elevated);
       }
 
       &.alert button {
