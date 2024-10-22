@@ -1,9 +1,9 @@
 """
-==============================
-Getting started with ``skore``
-==============================
+=================================
+1) Getting started with ``skore``
+=================================
 
-This example runs the `Getting started` guide.
+This example runs the :ref:`getting_started` guide.
 
 ``skore`` UI
 ------------

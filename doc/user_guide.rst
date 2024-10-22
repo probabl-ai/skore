@@ -8,4 +8,13 @@ User guide
 *The User Guide is currently work in progress and will be released soon, thank
 you for your patience!*
 
-For now, please look into the ``Getting Started`` and ``Examples`` tab.
+For now, please look into:
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
+
+   install
+   getting_started
+   auto_examples/index
+   api

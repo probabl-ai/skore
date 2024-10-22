@@ -10,9 +10,6 @@ Welcome to ``skore``
 
    * ``skore`` machine learning programming assistant: enhancing ``scikit-learn`` classes and functions
 
-#OwnYourDataScience
--------------------
-
 With the ``skore`` UI, data scientists can:
 
 #. Store objects of different types from their Python code: python lists, ``scikit-learn`` fitted pipelines, ``plotly`` figures, and more.
@@ -21,11 +18,12 @@ With the ``skore`` UI, data scientists can:
 
 With the ``skore`` machine learning programming assistant, data scientists can:
 
-* Use an enhanced version of ``sklearn.model_selection.cross_validate`` with ``skore.cross_validate``.
+* Use an enhanced version of ``sklearn.model_selection.cross_validate`` with ``skore``'s :func:`~skore.cross_validate`.
 
 These are only the first features: skore is a work in progress and aims to be
 an end-to-end library for data scientists.
 Stay tuned!
+We are a product team working at `Probabl <https://probabl.ai>`_ and our motto is #OwnYourDataScience.
 
 - License: BSD
 - GitHub repository: https://github.com/probabl-ai/skore
