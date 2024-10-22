@@ -48,6 +48,21 @@ class Project:
         If an item with the same key already exists, its value is replaced by the new
         one.
 
+        The dict format is the same as equivalent to running `put` for each individual
+        key-value pair. In other words,
+        ```python
+        project.put({"hello": 1, "goodbye": 2})
+        ```
+        is equivalent to
+        ```python
+        project.put("hello", 1)
+        project.put("goodbye", 2)
+        ```
+        In particular, this means that if some key-value pair is invalid
+        (e.g. if a key is not a string, or a value's type is not supported),
+        then all the key-value pairs up to the first offending key-value pair will
+        be successfully inserted, *and then* an error will be raised.
+
         Parameters
         ----------
         key : str | dict[str, Any]
