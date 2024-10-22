@@ -50,7 +50,8 @@ class Project:
         the Project.
         If `key` is a dict, it is interpreted as multiple key-value pairs to add to
         the Project.
-
+        If an item with the same key already exists, its value is replaced by the new
+        one.
         If `on_error` is "raise", any error stops the execution. If `on_error`
         is "warn" (or anything other than "raise"), a warning is shown instead.
 
@@ -91,7 +92,7 @@ class Project:
             The key to associate with `value` in the Project. Must be a string.
         value : Any
             The value to associate with `key` in the Project.
-        on_error : "warn" or "raise", optional
+        on_error : {"warn", "raise"}, optional
             Upon error (e.g. if the key is not a string), whether to raise an error or
             to print a warning. Default is "warn".
 
@@ -128,7 +129,7 @@ class Project:
         ----------
         key_to_value : dict[str, Any]
             The key-value pairs to put in the Project. Keys must be strings.
-        on_error : "warn" or "raise", optional
+        on_error : {"warn", "raise"}, optional
             Upon error (e.g. if a key is not a string), whether to raise an error or
             to print a warning. Default is "warn".
 
@@ -151,7 +152,18 @@ class Project:
         self.item_repository.put_item(key, item)
 
     def get(self, key: str) -> Any:
-        """Get the value corresponding to `key` from the Project."""
+        """Get the value corresponding to `key` from the Project.
+
+        Parameters
+        ----------
+        key : str
+            The key corresponding to the item to get.
+
+        Raises
+        ------
+        KeyError
+            If the key does not correspond to any item.
+        """
         item = self.get_item(key)
 
         if isinstance(item, PrimitiveItem):
@@ -172,15 +184,48 @@ class Project:
             raise ValueError(f"Item {item} is not a known item type.")
 
     def get_item(self, key: str) -> Item:
-        """Add the Item corresponding to `key` from the Project."""
+        """Get the item corresponding to `key` from the Project.
+
+        Parameters
+        ----------
+        key: str
+            The key corresponding to the item to get.
+
+        Returns
+        -------
+        item : Item
+            The Item corresponding to key `key`.
+
+        Raises
+        ------
+        KeyError
+            If the key does not correspond to any item.
+        """
         return self.item_repository.get_item(key)
 
     def list_item_keys(self) -> list[str]:
-        """List all item keys in the Project."""
+        """List all item keys in the Project.
+
+        Returns
+        -------
+        list[str]
+            The list of item keys. The list is empty if there is no item.
+        """
         return self.item_repository.keys()
 
     def delete_item(self, key: str):
-        """Delete an item from the Project."""
+        """Delete the item corresponding to `key` from the Project.
+
+        Parameters
+        ----------
+        key : str
+            The key corresponding to the item to delete.
+
+        Raises
+        ------
+        KeyError
+            If the key does not correspond to any item.
+        """
         self.item_repository.delete_item(key)
 
     def put_view(self, key: str, view: View):
@@ -188,15 +233,48 @@ class Project:
         self.view_repository.put_view(key, view)
 
     def get_view(self, key: str) -> View:
-        """Get the view corresponding to `key` from the Project."""
+        """Get the view corresponding to `key` from the Project.
+
+        Parameters
+        ----------
+        key : str
+            The key of the item to get.
+
+        Returns
+        -------
+        View
+            The view corresponding to `key`.
+
+        Raises
+        ------
+        KeyError
+            If the key does not correspond to any view.
+        """
         return self.view_repository.get_view(key)
 
     def delete_view(self, key: str):
-        """Delete the view corresponding to `key` from the Project."""
+        """Delete the view corresponding to `key` from the Project.
+
+        Parameters
+        ----------
+        key : str
+            The key corresponding to the view to delete.
+
+        Raises
+        ------
+        KeyError
+            If the key does not correspond to any view.
+        """
         return self.view_repository.delete_view(key)
 
     def list_view_keys(self) -> list[str]:
-        """List all view keys in the Project."""
+        """List all view keys in the Project.
+
+        Returns
+        -------
+        list[str]
+            The list of view keys. The list is empty if there is no view.
+        """
         return self.view_repository.keys()
 
 
