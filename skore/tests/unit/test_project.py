@@ -140,7 +140,7 @@ def test_put_kwargs(in_memory_project):
 
 def test_put_wrong_key_type(in_memory_project):
     with pytest.raises(ProjectPutError):
-        in_memory_project.put(key=2, value=1, on_error="raise")
+        in_memory_project.put(key=2, value=1)
     assert in_memory_project.list_item_keys() == []
 
 
@@ -149,13 +149,6 @@ def test_put_twice(in_memory_project):
     in_memory_project.put("key2", 5)
 
     assert in_memory_project.get("key2") == 5
-
-
-def test_put_int_key(in_memory_project, caplog):
-    # Warns that 0 is not a string, but doesn't raise
-    in_memory_project.put(0, "hello")
-    assert len(caplog.record_tuples) == 1
-    assert in_memory_project.list_item_keys() == []
 
 
 def test_get(in_memory_project):
@@ -235,17 +228,18 @@ def test_put_several_error(in_memory_project):
 
 def test_put_key_is_a_tuple(in_memory_project):
     """If key is not a string, warn."""
-    in_memory_project.put(("a", "foo"), ("b", "bar"))
+    with pytest.raises(ProjectPutError):
+        in_memory_project.put(("a", "foo"), ("b", "bar"))
     assert in_memory_project.list_item_keys() == []
 
 
 def test_put_key_is_a_set(in_memory_project):
     """Cannot use an unhashable type as a key."""
     with pytest.raises(ProjectPutError):
-        in_memory_project.put(set(), "hello", on_error="raise")
+        in_memory_project.put(set(), "hello")
 
 
 def test_put_wrong_key_and_value_raise(in_memory_project):
     """When `on_error` is "raise", raise the first error that occurs."""
     with pytest.raises(ProjectPutError):
-        in_memory_project.put(0, (lambda: "unsupported object"), on_error="raise")
+        in_memory_project.put(0, (lambda: "unsupported object"))
