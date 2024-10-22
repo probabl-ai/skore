@@ -137,10 +137,7 @@ onBeforeUnmount(() => {
       </Transition>
     </div>
   </main>
-  <main class="not-found" v-else>
-    <div class="not-found-header">Empty workspace.</div>
-    <p>No Skore has been created, this worskpace is empty.</p>
-  </main>
+  <main class="not-found" v-else>No Skore has been created, this worskpace is empty.</main>
 </template>
 
 <style scoped>
@@ -212,7 +209,7 @@ main {
           flex-grow: 1;
           color: var(--text-color-normal);
           font-size: var(--text-size-title);
-          font-weight: var(--text-weight-title);
+          font-weight: var(--text-weight-highlight);
           text-align: center;
         }
       }
@@ -279,23 +276,14 @@ main {
     }
   }
 
-  .not-found {
+  &.not-found {
+    display: flex;
     height: 100vh;
     flex-direction: column;
+    align-items: center;
     justify-content: center;
-    background-image: var(--not-found-image);
-    background-position: 50% calc(50% - 62px);
-    background-repeat: no-repeat;
-    background-size: 109px 82px;
     color: var(--text-color-normal);
-    font-size: var(--text-size-small);
-    text-align: center;
-
-    & .not-found-header {
-      margin-bottom: var(--spacing-padding-small);
-      color: var(--text-color-highlight);
-      font-size: var(--text-size-large);
-    }
+    font-size: var(--text-size-normal);
   }
 }
 </style>
