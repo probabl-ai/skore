@@ -202,15 +202,9 @@ def test_put_several_canonical(in_memory_project):
     assert in_memory_project.list_item_keys() == ["a", "b"]
 
 
-def test_put_several_some_errors(in_memory_project, caplog):
-    in_memory_project.put(
-        {
-            0: "hello",
-            1: "hello",
-            2: "hello",
-        }
-    )
-    assert len(caplog.record_tuples) == 3
+def test_put_several_some_errors(in_memory_project):
+    with pytest.raises(ProjectPutError):
+        in_memory_project.put({0: "hello", 1: "hello", 2: "hello"})
     assert in_memory_project.list_item_keys() == []
 
 
@@ -222,7 +216,8 @@ def test_put_several_nested(in_memory_project):
 
 def test_put_several_error(in_memory_project):
     """If some key-value pairs are wrong, add all that are valid and print a warning."""
-    in_memory_project.put({"a": "foo", "b": (lambda: "unsupported object")})
+    with pytest.raises(ProjectPutError):
+        in_memory_project.put({"a": "foo", "b": (lambda: "unsupported object")})
     assert in_memory_project.list_item_keys() == ["a"]
 
 
