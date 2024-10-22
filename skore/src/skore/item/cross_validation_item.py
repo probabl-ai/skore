@@ -44,8 +44,6 @@ def plot_cross_validation(cv_results: dict) -> plotly.graph_objects.Figure:
 
     df = pandas.DataFrame(_cv_results)
 
-    # df['fit_time'] = pd.to_timedelta(df['fit_time'], unit='s')
-
     dict_labels = {
         "fit_time": "fit_time (seconds)",
         "score_time": "score_time (seconds)",
@@ -54,13 +52,49 @@ def plot_cross_validation(cv_results: dict) -> plotly.graph_objects.Figure:
     fig = go.Figure()
 
     for col_i, col_name in enumerate(df.columns):
+        visible = True if col_i == 0 else "legendonly"
+        metric_name = dict_labels.get(col_name, col_name)
+        bar_color = plotly.colors.qualitative.Plotly[
+            col_i % len(plotly.colors.qualitative.Plotly)
+        ]
         fig.add_trace(
             go.Bar(
                 x=df.index,
                 y=df[col_name].values,
-                name=dict_labels.get(col_name, col_name),
-                visible=True if col_i == 0 else "legendonly",
+                name=metric_name,
+                visible=visible,
+                marker_color=bar_color,
             )
+        )
+
+        # Add average line for each metric
+        avg_value = df[col_name].mean()
+        std_value = df[col_name].std()
+
+        fig.add_hline(
+            y=avg_value,
+            name=f"Average {metric_name}",
+            line=dict(dash="dash", color=bar_color),
+            visible=visible,
+            showlegend=True,
+        )
+
+        fig.add_hline(
+            y=avg_value + std_value,
+            name=f"Average + 1 std. dev. {metric_name}",
+            line=dict(dash="dot", color=bar_color),
+            visible=visible,
+            legendgroup=f"std {col_i}",
+            showlegend=True,
+        )
+
+        fig.add_hline(
+            y=avg_value - std_value,
+            name=f"Average - 1 std. dev. {metric_name}",
+            line=dict(dash="dot", color=bar_color),
+            visible=visible,
+            legendgroup=f"std {col_i}",
+            showlegend=True,
         )
 
     fig.update_xaxes(tickmode="linear", dtick=1, title_text="Split number")
