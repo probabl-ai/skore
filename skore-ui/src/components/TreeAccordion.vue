@@ -52,7 +52,7 @@ watch([lastItemAction, lastItemName], () => {
 .accordion {
   display: flex;
   flex-direction: column;
-  background-color: var(--background-color-elevated-high);
+  background-color: var(--background-color-elevated);
   gap: var(--spacing-gap-large);
 }
 </style>

@@ -644,7 +644,7 @@ main {
   width: 200px;
   padding: 10px;
   margin-top: 10px;
-  background-color: var(--background-color-elevated-high);
+  background-color: var(--background-color-elevated);
   cursor: move;
   user-select: none;
 }

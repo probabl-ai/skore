@@ -39,12 +39,16 @@
   /* misc */
   --transition-duration: 0.3s;
   --transition-easing: ease;
+
+  /* brand colors */
+  --color-blue: #2329ff;
+  --color-orange: #f08b30;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-primary: #f08b30;
-    --color-secondary: #2329ff;
+    --color-primary: var(--color-orange);
+    --color-secondary: var(--color-blue);
 
     /* typography */
     --text-color-low: rgb(99 99 99);
@@ -54,8 +58,6 @@
     /* backgrounds */
     --background-color-normal: #121212;
     --background-color-elevated: #222;
-    --background-color-elevated-high: #2f2f2f;
-    --background-color-selected: rgb(191 191 191 / 25%);
 
     /* buttons */
     --button-color: #fff;
@@ -65,6 +67,9 @@
     --border-color-lower: #171717;
     --border-color-normal: #292a2a;
     --border-color-elevated: #3f3f3f;
+
+    /* shadows */
+    --shadow-color: rgb(0 0 0 / 58%);
 
     /* toast */
     --toast-background-color: hsl(240deg 5% 91%);
@@ -79,8 +84,8 @@
 
 @media (prefers-color-scheme: light) {
   :root {
-    --color-primary: #2329ff;
-    --color-secondary: #f08b30;
+    --color-primary: var(--color-blue);
+    --color-secondary: var(--color-orange);
 
     /* typography */
     --text-color-low: #babbbd;
@@ -90,8 +95,6 @@
     /* backgrounds */
     --background-color-normal: #fafafb;
     --background-color-elevated: #f3f3f6;
-    --background-color-elevated-high: #fff;
-    --background-color-selected: rgb(101 106 255 / 8%);
 
     /* buttons */
     --button-color: #fff;
@@ -101,6 +104,9 @@
     --border-color-lower: #f0f0f0;
     --border-color-normal: #eeeef0;
     --border-color-elevated: #dadada;
+
+    /* shadows */
+    --shadow-color: rgb(0 0 0 /19%);
 
     /* toast */
     --toast-background-color: #151517;

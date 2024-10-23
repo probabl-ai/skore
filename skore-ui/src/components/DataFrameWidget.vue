@@ -271,8 +271,8 @@ watch([() => toValue(props.data), () => toValue(props.columns)], () => {
       border: 1px solid var(--border-color-lower);
       border-radius: var(--border-radius);
       margin-left: var(--spacing-gap-normal);
-      background-color: var(--background-color-elevated-high);
-      box-shadow: 0 1px 2px var(--background-color-selected);
+      background-color: var(--background-color-elevated);
+      box-shadow: 0 1px 2px var(--shadow-color);
       color: var(--text-color-highlight);
       cursor: pointer;
       font-size: var(--text-size-highlight);
