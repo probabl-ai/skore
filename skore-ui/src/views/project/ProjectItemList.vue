@@ -31,7 +31,6 @@ const itemsAsTree = computed(() => {
 async function onItemAction(action: string, key: string) {
   if (projectStore.currentView) {
     const success = await projectStore.displayKey(projectStore.currentView, key);
-    console.log(success);
 
     if (success) {
       // Scroll to last element
