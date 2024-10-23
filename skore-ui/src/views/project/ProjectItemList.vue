@@ -28,9 +28,18 @@ const itemsAsTree = computed(() => {
   return tree;
 });
 
-function onItemAction(action: string, key: string) {
+async function onItemAction(action: string, key: string) {
   if (projectStore.currentView) {
-    projectStore.displayKey(projectStore.currentView, key);
+    const success = await projectStore.displayKey(projectStore.currentView, key);
+    console.log(success);
+
+    if (success) {
+      // Scroll to last element
+      const lastItemElement = document.querySelector(".editor-container .item:last-child");
+      if (lastItemElement) {
+        lastItemElement.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
   } else {
     toastsStore.addToast("No view selected", "error");
   }
