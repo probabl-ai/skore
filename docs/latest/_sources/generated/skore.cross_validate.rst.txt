@@ -1,0 +1,10 @@
+﻿:mod:`skore`.cross_validate
+========================================
+
+.. currentmodule:: skore
+
+.. autofunction:: cross_validate
+
+.. raw:: html
+
+    <div class="clearer"></div>
