@@ -77,6 +77,16 @@ test = [
   "scikit-learn",
 ]
 
+sphinx = [
+  "sphinx",
+  "pydata-sphinx-theme",
+  "sphinx-gallery",
+  "sphinx-design",
+  "matplotlib",
+  "scikit-learn",
+  "numpydoc",
+]
+
 [tool.pytest.ini_options]
 addopts = [
   "--doctest-modules",
