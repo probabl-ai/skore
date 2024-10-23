@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { formatDistance } from "date-fns";
 import Simplebar from "simplebar-vue";
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { onBeforeUnmount, onMounted, ref } from "vue";
 
 import DataFrameWidget from "@/components/DataFrameWidget.vue";
 import DraggableList from "@/components/DraggableList.vue";
