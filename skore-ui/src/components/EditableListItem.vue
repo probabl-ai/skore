@@ -101,7 +101,7 @@ onMounted(() => {
   transition: background-color var(--transition-duration) var(--transition-easing);
 
   .icon {
-    color: var(--color-secondary);
+    color: var(--color-orange);
   }
 
   .label {

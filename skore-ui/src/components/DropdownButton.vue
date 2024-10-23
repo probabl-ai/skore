@@ -110,7 +110,7 @@ onBeforeUnmount(() => {
     border: solid 1px var(--border-color-normal);
     border-radius: var(--border-radius);
     background-color: var(--background-color-normal);
-    box-shadow: 4px 10px 20px var(--background-color-selected);
+    box-shadow: 4px 10px 20px var(--shadow-color);
   }
 }
 </style>
