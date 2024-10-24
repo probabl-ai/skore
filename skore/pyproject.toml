@@ -78,13 +78,16 @@ test = [
 ]
 
 sphinx = [
-  "sphinx",
-  "pydata-sphinx-theme",
-  "sphinx-gallery",
-  "sphinx-design",
+  "IPython",
+  "altair",
   "matplotlib",
-  "scikit-learn",
   "numpydoc",
+  "pandas",
+  "pydata-sphinx-theme",
+  "scikit-learn",
+  "sphinx",
+  "sphinx-design",
+  "sphinx-gallery",
 ]
 
 [tool.pytest.ini_options]
