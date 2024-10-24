@@ -44,6 +44,8 @@ html_js_files = []
 sphinx_gallery_conf = {
     "examples_dirs": "../examples",  # path to example scripts
     "gallery_dirs": "auto_examples",  # path to gallery generated output
+    "show_memory": False,
+    "write_computation_times": False,
 }
 
 # intersphinx configuration

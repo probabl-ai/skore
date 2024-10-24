@@ -470,7 +470,7 @@ Note that, in the dashboard, the interactivity of plots is supported, for exampl
 
 ``matplotlib`` figures:
 
-.. GENERATED FROM PYTHON SOURCE LINES 196-210
+.. GENERATED FROM PYTHON SOURCE LINES 196-209
 
 .. code-block:: Python
 
@@ -484,7 +484,6 @@ Note that, in the dashboard, the interactivity of plots is supported, for exampl
     ax.set_ylabel("y label")
     ax.set_title("Simple Plot")
     ax.legend()
-    plt.show()
 
     my_project_gs.put("my_figure", fig)
 
@@ -500,11 +499,11 @@ Note that, in the dashboard, the interactivity of plots is supported, for exampl
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 211-212
+.. GENERATED FROM PYTHON SOURCE LINES 210-211
 
 ``altair`` charts:
 
-.. GENERATED FROM PYTHON SOURCE LINES 214-230
+.. GENERATED FROM PYTHON SOURCE LINES 213-228
 
 .. code-block:: Python
 
@@ -520,7 +519,6 @@ Note that, in the dashboard, the interactivity of plots is supported, for exampl
         .interactive()
         .properties(title="My title")
     )
-    my_altair_chart.show()
 
     my_project_gs.put("my_altair_chart", my_altair_chart)
 
@@ -528,16 +526,10 @@ Note that, in the dashboard, the interactivity of plots is supported, for exampl
 
 
 
-.. rst-class:: sphx-glr-script-out
-
- .. code-block:: none
-
-    alt.Chart(...)
 
 
 
-
-.. GENERATED FROM PYTHON SOURCE LINES 231-242
+.. GENERATED FROM PYTHON SOURCE LINES 229-240
 
 Plotly figures:
 
@@ -551,7 +543,7 @@ This is a Plotly issue which is documented `here <https://github.com/plotly/plot
 
    pip install --upgrade nbformat
 
-.. GENERATED FROM PYTHON SOURCE LINES 244-251
+.. GENERATED FROM PYTHON SOURCE LINES 242-249
 
 .. code-block:: Python
 
@@ -559,7 +551,7 @@ This is a Plotly issue which is documented `here <https://github.com/plotly/plot
     fig = px.scatter(
         df, x=df.sepal_length, y=df.sepal_width, color=df.species, size=df.petal_length
     )
-    fig.show()
+
     my_project_gs.put("my_plotly_fig", fig)
 
 
@@ -569,11 +561,11 @@ This is a Plotly issue which is documented `here <https://github.com/plotly/plot
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 252-253
+.. GENERATED FROM PYTHON SOURCE LINES 250-251
 
 Animated ``plotly`` figures:
 
-.. GENERATED FROM PYTHON SOURCE LINES 255-273
+.. GENERATED FROM PYTHON SOURCE LINES 253-271
 
 .. code-block:: Python
 
@@ -592,7 +584,7 @@ Animated ``plotly`` figures:
         range_x=[100, 100000],
         range_y=[25, 90],
     )
-    my_anim_plotly_fig.show()
+
     my_project_gs.put("my_anim_plotly_fig", my_anim_plotly_fig)
 
 
@@ -602,11 +594,11 @@ Animated ``plotly`` figures:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 274-275
+.. GENERATED FROM PYTHON SOURCE LINES 272-273
 
 PIL images:
 
-.. GENERATED FROM PYTHON SOURCE LINES 277-283
+.. GENERATED FROM PYTHON SOURCE LINES 275-281
 
 .. code-block:: Python
 
@@ -623,7 +615,7 @@ PIL images:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 284-290
+.. GENERATED FROM PYTHON SOURCE LINES 282-288
 
 Scikit-learn models and pipelines
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -632,7 +624,7 @@ As ``skore`` is developed by `Probabl <https://probabl.ai>`_, the spin-off of sc
 
 First of all, you can store a scikit-learn model:
 
-.. GENERATED FROM PYTHON SOURCE LINES 292-295
+.. GENERATED FROM PYTHON SOURCE LINES 290-293
 
 .. code-block:: Python
 
@@ -646,11 +638,11 @@ First of all, you can store a scikit-learn model:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 296-297
+.. GENERATED FROM PYTHON SOURCE LINES 294-295
 
 You can also store ``scikit-learn`` pipelines:
 
-.. GENERATED FROM PYTHON SOURCE LINES 299-304
+.. GENERATED FROM PYTHON SOURCE LINES 297-302
 
 .. code-block:: Python
 
@@ -666,11 +658,11 @@ You can also store ``scikit-learn`` pipelines:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 305-306
+.. GENERATED FROM PYTHON SOURCE LINES 303-304
 
 Moreover, you can store fitted ``scikit-learn`` pipelines:
 
-.. GENERATED FROM PYTHON SOURCE LINES 308-315
+.. GENERATED FROM PYTHON SOURCE LINES 306-313
 
 .. code-block:: Python
 
@@ -688,18 +680,18 @@ Moreover, you can store fitted ``scikit-learn`` pipelines:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 316-317
+.. GENERATED FROM PYTHON SOURCE LINES 314-315
 
 *Stay tuned for some new features!*
 
-.. GENERATED FROM PYTHON SOURCE LINES 319-323
+.. GENERATED FROM PYTHON SOURCE LINES 317-321
 
 Manipulating the skore UI
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The following is just some ``skore`` strings that we generate in order to provide more context on the obtained report.
 
-.. GENERATED FROM PYTHON SOURCE LINES 325-330
+.. GENERATED FROM PYTHON SOURCE LINES 323-328
 
 .. code-block:: Python
 
@@ -715,7 +707,7 @@ The following is just some ``skore`` strings that we generate in order to provid
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 331-336
+.. GENERATED FROM PYTHON SOURCE LINES 329-334
 
 .. code-block:: Python
 
@@ -731,7 +723,7 @@ The following is just some ``skore`` strings that we generate in order to provid
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 337-339
+.. GENERATED FROM PYTHON SOURCE LINES 335-337
 
 .. code-block:: Python
 
@@ -744,7 +736,7 @@ The following is just some ``skore`` strings that we generate in order to provid
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 340-345
+.. GENERATED FROM PYTHON SOURCE LINES 338-343
 
 .. code-block:: Python
 
@@ -760,7 +752,7 @@ The following is just some ``skore`` strings that we generate in order to provid
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 346-351
+.. GENERATED FROM PYTHON SOURCE LINES 344-349
 
 .. code-block:: Python
 
@@ -776,7 +768,7 @@ The following is just some ``skore`` strings that we generate in order to provid
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 352-353
+.. GENERATED FROM PYTHON SOURCE LINES 350-351
 
 .. code-block:: Python
 
@@ -791,7 +783,7 @@ The following is just some ``skore`` strings that we generate in order to provid
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 1.824 seconds)
+   **Total running time of the script:** (0 minutes 1.109 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_02_basic_usage.py:
