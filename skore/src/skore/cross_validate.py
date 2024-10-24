@@ -1,6 +1,6 @@
 """cross_validate function.
 
-This function implements a wrapper over scikit-learn's [cross_validate](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate)
+This function implements a wrapper over scikit-learn's `cross_validate <https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate>`_
 function in order to enrich it with more information and enable more analysis.
 """
 
@@ -190,7 +190,7 @@ def cross_validate(
 ) -> CrossValidationItem:
     """Evaluate estimator by cross-validation and output UI-friendly object.
 
-    This function wraps scikit-learn's [cross_validate](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate)
+    This function wraps scikit-learn's `cross_validate <https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate>`_
     function, to provide more context and facilitate the analysis.
     As such, the arguments are the same as scikit-learn's cross_validate function.
 
