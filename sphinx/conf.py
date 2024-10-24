@@ -44,6 +44,7 @@ html_js_files = []
 sphinx_gallery_conf = {
     "examples_dirs": "../examples",  # path to example scripts
     "gallery_dirs": "auto_examples",  # path to gallery generated output
+    "within_subsection_order": "FileNameSortKey", # See https://sphinx-gallery.github.io/stable/configuration.html#sorting-gallery-examples for alternatives
     "show_memory": False,
     "write_computation_times": False,
 }
