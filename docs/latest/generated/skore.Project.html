@@ -409,73 +409,181 @@ document.write(`
 <dl class="py method">
 <dt class="sig sig-object py" id="skore.Project.delete_item">
 <span class="sig-name descname"><span class="pre">delete_item</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skore.Project.delete_item" title="Link to this definition">#</a></dt>
-<dd><p>Delete an item from the Project.</p>
+<dd><p>Delete the item corresponding to <cite>key</cite> from the Project.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>key</strong><span class="classifier">str</span></dt><dd><p>The key corresponding to the item to delete.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt>KeyError</dt><dd><p>If the key does not correspond to any item.</p>
+</dd>
+</dl>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="skore.Project.delete_view">
 <span class="sig-name descname"><span class="pre">delete_view</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skore.Project.delete_view" title="Link to this definition">#</a></dt>
 <dd><p>Delete the view corresponding to <cite>key</cite> from the Project.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>key</strong><span class="classifier">str</span></dt><dd><p>The key corresponding to the view to delete.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt>KeyError</dt><dd><p>If the key does not correspond to any view.</p>
+</dd>
+</dl>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="skore.Project.get">
 <span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#skore.Project.get" title="Link to this definition">#</a></dt>
 <dd><p>Get the value corresponding to <cite>key</cite> from the Project.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>key</strong><span class="classifier">str</span></dt><dd><p>The key corresponding to the item to get.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt>KeyError</dt><dd><p>If the key does not correspond to any item.</p>
+</dd>
+</dl>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="skore.Project.get_item">
 <span class="sig-name descname"><span class="pre">get_item</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Item</span></span></span><a class="headerlink" href="#skore.Project.get_item" title="Link to this definition">#</a></dt>
-<dd><p>Add the Item corresponding to <cite>key</cite> from the Project.</p>
+<dd><p>Get the item corresponding to <cite>key</cite> from the Project.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>key: str</strong></dt><dd><p>The key corresponding to the item to get.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>item</strong><span class="classifier">Item</span></dt><dd><p>The Item corresponding to key <cite>key</cite>.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt>KeyError</dt><dd><p>If the key does not correspond to any item.</p>
+</dd>
+</dl>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="skore.Project.get_view">
 <span class="sig-name descname"><span class="pre">get_view</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">View</span></span></span><a class="headerlink" href="#skore.Project.get_view" title="Link to this definition">#</a></dt>
 <dd><p>Get the view corresponding to <cite>key</cite> from the Project.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>key</strong><span class="classifier">str</span></dt><dd><p>The key of the item to get.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt>View</dt><dd><p>The view corresponding to <cite>key</cite>.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt>KeyError</dt><dd><p>If the key does not correspond to any view.</p>
+</dd>
+</dl>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="skore.Project.list_item_keys">
 <span class="sig-name descname"><span class="pre">list_item_keys</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#skore.Project.list_item_keys" title="Link to this definition">#</a></dt>
 <dd><p>List all item keys in the Project.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt>list[str]</dt><dd><p>The list of item keys. The list is empty if there is no item.</p>
+</dd>
+</dl>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="skore.Project.list_view_keys">
 <span class="sig-name descname"><span class="pre">list_view_keys</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#skore.Project.list_view_keys" title="Link to this definition">#</a></dt>
 <dd><p>List all view keys in the Project.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt>list[str]</dt><dd><p>The list of view keys. The list is empty if there is no view.</p>
+</dd>
+</dl>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="skore.Project.put">
-<span class="sig-name descname"><span class="pre">put</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">on_error</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'warn'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'raise'</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'warn'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skore.Project.put" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">put</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skore.Project.put" title="Link to this definition">#</a></dt>
 <dd><p>Add one or more key-value pairs to the Project.</p>
 <p>If <cite>key</cite> is a string, then <cite>put</cite> adds the single <cite>key</cite>-<cite>value</cite> pair mapping to
 the Project.
 If <cite>key</cite> is a dict, it is interpreted as multiple key-value pairs to add to
-the Project.</p>
-<p>If <cite>on_error</cite> is “raise”, any error stops the execution. If <cite>on_error</cite>
-is “warn” (or anything other than “raise”), a warning is shown instead.</p>
+the Project.
+If an item with the same key already exists, its value is replaced by the new
+one.</p>
+<p>The dict format is the same as equivalent to running <cite>put</cite> for each individual
+key-value pair. In other words,
+<code class="docutils literal notranslate"><span class="pre">`python</span>
+<span class="pre">project.put({&quot;hello&quot;:</span> <span class="pre">1,</span> <span class="pre">&quot;goodbye&quot;:</span> <span class="pre">2})</span>
+<span class="pre">`</span></code>
+is equivalent to
+<code class="docutils literal notranslate"><span class="pre">`python</span>
+<span class="pre">project.put(&quot;hello&quot;,</span> <span class="pre">1)</span>
+<span class="pre">project.put(&quot;goodbye&quot;,</span> <span class="pre">2)</span>
+<span class="pre">`</span></code>
+In particular, this means that if some key-value pair is invalid
+(e.g. if a key is not a string, or a value’s type is not supported),
+then all the key-value pairs up to the first offending key-value pair will
+be successfully inserted, <em>and then</em> an error will be raised.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
 <dt><strong>key</strong><span class="classifier">str | dict[str, Any]</span></dt><dd><p>The key to associate with <cite>value</cite> in the Project,
 or dict of key-value pairs to add to the Project.</p>
 </dd>
-<dt><strong>value</strong><span class="classifier">Any | None</span></dt><dd><p>The value to associate with <cite>key</cite> in the Project.
+<dt><strong>value</strong><span class="classifier">Any, optional</span></dt><dd><p>The value to associate with <cite>key</cite> in the Project.
 If <cite>key</cite> is a dict, this argument is ignored.</p>
-</dd>
-<dt><strong>on_error</strong><span class="classifier">“warn” or “raise”, optional</span></dt><dd><p>Upon error (e.g. if the key is not a string), whether to raise an error or
-to print a warning. Default is “warn”.</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><dl class="simple">
-<dt>ProjectPutError</dt><dd><p>If the key-value pair(s) cannot be saved properly,
-and <cite>on_error</cite> is “raise”.</p>
+<dt>ProjectPutError</dt><dd><p>If the key-value pair(s) cannot be saved properly.</p>
 </dd>
 </dl>
 </dd>
@@ -490,10 +598,8 @@ and <cite>on_error</cite> is “raise”.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="skore.Project.put_one">
-<span class="sig-name descname"><span class="pre">put_one</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">on_error</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'warn'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'raise'</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'warn'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skore.Project.put_one" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">put_one</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skore.Project.put_one" title="Link to this definition">#</a></dt>
 <dd><p>Add a key-value pair to the Project.</p>
-<p>If <cite>on_error</cite> is “raise”, any error stops the execution. If <cite>on_error</cite>
-is “warn” (or anything other than “raise”), a warning is shown instead.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
@@ -501,42 +607,11 @@ is “warn” (or anything other than “raise”), a warning is shown instead.<
 </dd>
 <dt><strong>value</strong><span class="classifier">Any</span></dt><dd><p>The value to associate with <cite>key</cite> in the Project.</p>
 </dd>
-<dt><strong>on_error</strong><span class="classifier">“warn” or “raise”, optional</span></dt><dd><p>Upon error (e.g. if the key is not a string), whether to raise an error or
-to print a warning. Default is “warn”.</p>
-</dd>
 </dl>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><dl class="simple">
-<dt>ProjectPutError</dt><dd><p>If the key-value pair cannot be saved properly, and <cite>on_error</cite> is “raise”.</p>
-</dd>
-</dl>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="skore.Project.put_several">
-<span class="sig-name descname"><span class="pre">put_several</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key_to_value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">on_error</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'warn'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'raise'</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'warn'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skore.Project.put_several" title="Link to this definition">#</a></dt>
-<dd><p>Add several values to the Project.</p>
-<p>If <cite>on_error</cite> is “raise”, the first error stops the execution (so the
-later key-value pairs will not be inserted). If <cite>on_error</cite> is “warn” (or
-anything other than “raise”), errors do not stop the execution, and are
-shown as they come as warnings; all the valid key-value pairs are inserted.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>key_to_value</strong><span class="classifier">dict[str, Any]</span></dt><dd><p>The key-value pairs to put in the Project. Keys must be strings.</p>
-</dd>
-<dt><strong>on_error</strong><span class="classifier">“warn” or “raise”, optional</span></dt><dd><p>Upon error (e.g. if a key is not a string), whether to raise an error or
-to print a warning. Default is “warn”.</p>
-</dd>
-</dl>
-</dd>
-<dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><dl class="simple">
-<dt>ProjectPutError</dt><dd><p>If a key-value pair in <cite>key_to_value</cite> cannot be saved properly,
-and <cite>on_error</cite> is “raise”.</p>
+<dt>ProjectPutError</dt><dd><p>If the key-value pair cannot be saved properly.</p>
 </dd>
 </dl>
 </dd>
@@ -610,7 +685,6 @@ and <cite>on_error</cite> is “raise”.</p>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#skore.Project.put"><code class="docutils literal notranslate"><span class="pre">Project.put()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#skore.Project.put_item"><code class="docutils literal notranslate"><span class="pre">Project.put_item()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#skore.Project.put_one"><code class="docutils literal notranslate"><span class="pre">Project.put_one()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#skore.Project.put_several"><code class="docutils literal notranslate"><span class="pre">Project.put_several()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#skore.Project.put_view"><code class="docutils literal notranslate"><span class="pre">Project.put_view()</span></code></a></li>
 </ul>
 </li>

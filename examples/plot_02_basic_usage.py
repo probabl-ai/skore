@@ -203,7 +203,6 @@ ax.set_xlabel("x label")
 ax.set_ylabel("y label")
 ax.set_title("Simple Plot")
 ax.legend()
-plt.show()
 
 my_project_gs.put("my_figure", fig)
 
@@ -223,7 +222,6 @@ my_altair_chart = (
     .interactive()
     .properties(title="My title")
 )
-my_altair_chart.show()
 
 my_project_gs.put("my_altair_chart", my_altair_chart)
 
@@ -245,7 +243,7 @@ df = px.data.iris()
 fig = px.scatter(
     df, x=df.sepal_length, y=df.sepal_width, color=df.species, size=df.petal_length
 )
-fig.show()
+
 my_project_gs.put("my_plotly_fig", fig)
 
 # %%
@@ -267,7 +265,7 @@ my_anim_plotly_fig = px.scatter(
     range_x=[100, 100000],
     range_y=[25, 90],
 )
-my_anim_plotly_fig.show()
+
 my_project_gs.put("my_anim_plotly_fig", my_anim_plotly_fig)
 
 # %%
