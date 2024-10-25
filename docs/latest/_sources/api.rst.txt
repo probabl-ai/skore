@@ -3,14 +3,16 @@ API
 
 .. currentmodule:: skore
 
-This page lists all the public functions and classes of the ``skore``
-package.
+.. warning::
 
+    This code is still in development. **The API is subject to change**.
 
-The ``skore`` UI
-----------------
+This page lists all the public functions and classes of the skore package.
 
-These classes are meant for ``skore``'s user interface.
+Project
+-------
+
+These classes are meant for managing a Project.
 
 .. autosummary::
     :toctree: generated/
@@ -26,10 +28,10 @@ These classes are meant for ``skore``'s user interface.
 
     load
 
-The ``skore`` machine learning programming assistant
-----------------------------------------------------
+Get assistance when developing ML/DS projects
+---------------------------------------------
 
-These functions and classes enhance ``scikit-learn``'s ones.
+These functions and classes enhance scikit-learn's ones.
 
 .. autosummary::
     :toctree: generated/

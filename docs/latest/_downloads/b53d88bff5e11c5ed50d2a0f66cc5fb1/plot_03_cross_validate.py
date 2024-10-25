@@ -1,9 +1,12 @@
 """
-===================================
-3) Using ``skore``'s cross validate
-===================================
+.. _example_cross_validate:
 
-This example illustrates the use of :func:`~skore.cross_validate`.
+==========================
+Enhancing cross-validation
+==========================
+
+This example illustrates the use of :func:`~skore.cross_validate` to get
+assistance when developing your ML/DS projects.
 """
 
 # %%

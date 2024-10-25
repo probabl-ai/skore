@@ -18,28 +18,29 @@
 .. _sphx_glr_auto_examples_plot_01_getting_started.py:
 
 
-=================================
-1) Getting started with ``skore``
-=================================
+.. _example_getting_started:
 
-This example runs the :ref:`getting_started` guide.
+===============
+Getting started
+===============
 
-``skore`` UI
-------------
+This example runs the :ref:`getting_started` guide and adds examples a more
+types that can be stored.
 
-This section provides a quick start to the ``skore`` UI, an open-source package that aims to enable data scientists to:
+``skore``'s Project and UI
+--------------------------
 
-#. Store objects of different types from their Python code: python lists, ``scikit-learn`` fitted pipelines, ``plotly`` figures, and more.
+This section provides a quick start to skore's Project and UI, an open-source package that aims to enable data scientists to:
+
+#. Store objects of different types from their Python code: python lists, scikit-learn fitted pipelines, plotly figures, and more.
 #. Track and visualize these stored objects on a user-friendly dashboard.
-#. Export the dashboard to a HTML file.
 
 Initialize a Project and launch the UI
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-From your shell, initialize a skore project, here named ``my_project_gs``, that
-will be in your current working directory:
+From your shell, initialize a skore project, here named ``my_project_gs``:
 
-.. GENERATED FROM PYTHON SOURCE LINES 25-33
+.. GENERATED FROM PYTHON SOURCE LINES 26-34
 
 .. code-block:: Python
 
@@ -64,9 +65,9 @@ will be in your current working directory:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 34-47
+.. GENERATED FROM PYTHON SOURCE LINES 35-48
 
-This will create a ``skore`` project directory named ``my_project_gs`` in the
+This will create a skore project directory named ``my_project_gs.skore`` in your
 current directory.
 
 From your shell (in the same directory), start the UI locally:
@@ -77,10 +78,10 @@ From your shell (in the same directory), start the UI locally:
 
 This will automatically open a browser at the UI's location.
 
-Now that the project file exists, we can load it in our notebook so that we can
-read from and write to it:
+Now that the project file exists, from your Python code (in the same
+directory), load the project so that you can read from and write to it:
 
-.. GENERATED FROM PYTHON SOURCE LINES 49-53
+.. GENERATED FROM PYTHON SOURCE LINES 50-54
 
 .. code-block:: Python
 
@@ -95,14 +96,14 @@ read from and write to it:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 54-58
+.. GENERATED FROM PYTHON SOURCE LINES 55-59
 
 Storing some items
 ^^^^^^^^^^^^^^^^^^
 
 Storing an integer:
 
-.. GENERATED FROM PYTHON SOURCE LINES 60-62
+.. GENERATED FROM PYTHON SOURCE LINES 61-63
 
 .. code-block:: Python
 
@@ -115,11 +116,11 @@ Storing an integer:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 63-64
+.. GENERATED FROM PYTHON SOURCE LINES 64-65
 
-Here, the name of my stored item is ``my_int`` and the integer value is 3.
+Here, the name of the stored item is ``my_int`` and the integer value is 3.
 
-.. GENERATED FROM PYTHON SOURCE LINES 66-68
+.. GENERATED FROM PYTHON SOURCE LINES 67-69
 
 .. code-block:: Python
 
@@ -138,11 +139,11 @@ Here, the name of my stored item is ``my_int`` and the integer value is 3.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 69-70
+.. GENERATED FROM PYTHON SOURCE LINES 70-71
 
-For a ``pandas`` data frame:
+For a pandas data frame:
 
-.. GENERATED FROM PYTHON SOURCE LINES 72-79
+.. GENERATED FROM PYTHON SOURCE LINES 73-80
 
 .. code-block:: Python
 
@@ -160,7 +161,7 @@ For a ``pandas`` data frame:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 80-82
+.. GENERATED FROM PYTHON SOURCE LINES 81-83
 
 .. code-block:: Python
 
@@ -200,21 +201,21 @@ For a ``pandas`` data frame:
       <tbody>
         <tr>
           <th>0</th>
-          <td>-0.519582</td>
-          <td>1.352981</td>
-          <td>-0.672440</td>
+          <td>-1.033967</td>
+          <td>-1.859741</td>
+          <td>2.076323</td>
         </tr>
         <tr>
           <th>1</th>
-          <td>1.200097</td>
-          <td>0.835062</td>
-          <td>-1.012400</td>
+          <td>1.528491</td>
+          <td>0.772343</td>
+          <td>-1.157348</td>
         </tr>
         <tr>
           <th>2</th>
-          <td>1.186386</td>
-          <td>-0.552692</td>
-          <td>-2.050062</td>
+          <td>0.194281</td>
+          <td>-0.877849</td>
+          <td>0.300856</td>
         </tr>
       </tbody>
     </table>
@@ -223,11 +224,11 @@ For a ``pandas`` data frame:
     <br />
     <br />
 
-.. GENERATED FROM PYTHON SOURCE LINES 83-84
+.. GENERATED FROM PYTHON SOURCE LINES 84-85
 
-For a ``matplotlib`` figure:
+For a matplotlib figure:
 
-.. GENERATED FROM PYTHON SOURCE LINES 86-94
+.. GENERATED FROM PYTHON SOURCE LINES 87-95
 
 .. code-block:: Python
 
@@ -251,11 +252,11 @@ For a ``matplotlib`` figure:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 95-96
+.. GENERATED FROM PYTHON SOURCE LINES 96-97
 
-For a ``scikit-learn`` fitted pipeline:
+For a scikit-learn fitted pipeline:
 
-.. GENERATED FROM PYTHON SOURCE LINES 98-113
+.. GENERATED FROM PYTHON SOURCE LINES 99-114
 
 .. code-block:: Python
 
@@ -281,7 +282,7 @@ For a ``scikit-learn`` fitted pipeline:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 114-116
+.. GENERATED FROM PYTHON SOURCE LINES 115-117
 
 .. code-block:: Python
 
@@ -706,13 +707,13 @@ For a ``scikit-learn`` fitted pipeline:
     <br />
     <br />
 
-.. GENERATED FROM PYTHON SOURCE LINES 117-125
+.. GENERATED FROM PYTHON SOURCE LINES 118-126
 
 Back to the dashboard
 ^^^^^^^^^^^^^^^^^^^^^
 
-#. On the top left, create a new ``View``.
-#. From the ``Elements`` section on the bottom left, you can add stored items to this view, either by double-cliking on them or by doing drag-and-drop.
+#. On the top left, by default, you can observe that you are in a *View* called ``default``. You can rename this view or create another one.
+#. From the *Items* section on the bottom left, you can add stored items to this view, either by clicking on ``+`` or by doing drag-and-drop.
 
 .. image:: https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_10_14_skore_demo.gif
    :alt: Getting started with ``skore`` demo
@@ -720,7 +721,7 @@ Back to the dashboard
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 5.547 seconds)
+   **Total running time of the script:** (0 minutes 4.532 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_01_getting_started.py:

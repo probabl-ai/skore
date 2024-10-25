@@ -1,24 +1,25 @@
 """
-=================================
-1) Getting started with ``skore``
-=================================
+.. _example_getting_started:
 
-This example runs the :ref:`getting_started` guide.
+===============
+Getting started
+===============
 
-``skore`` UI
-------------
+This example runs the :ref:`getting_started` guide and adds examples a more
+types that can be stored.
 
-This section provides a quick start to the ``skore`` UI, an open-source package that aims to enable data scientists to:
+``skore``'s Project and UI
+--------------------------
 
-#. Store objects of different types from their Python code: python lists, ``scikit-learn`` fitted pipelines, ``plotly`` figures, and more.
+This section provides a quick start to skore's Project and UI, an open-source package that aims to enable data scientists to:
+
+#. Store objects of different types from their Python code: python lists, scikit-learn fitted pipelines, plotly figures, and more.
 #. Track and visualize these stored objects on a user-friendly dashboard.
-#. Export the dashboard to a HTML file.
 
 Initialize a Project and launch the UI
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-From your shell, initialize a skore project, here named ``my_project_gs``, that
-will be in your current working directory:
+From your shell, initialize a skore project, here named ``my_project_gs``:
 """
 
 # %%
@@ -31,7 +32,7 @@ subprocess.run("rm -rf my_project_gs.skore".split())
 subprocess.run("python3 -m skore create my_project_gs".split())
 
 # %%
-# This will create a ``skore`` project directory named ``my_project_gs`` in the
+# This will create a skore project directory named ``my_project_gs.skore`` in your
 # current directory.
 #
 # From your shell (in the same directory), start the UI locally:
@@ -42,8 +43,8 @@ subprocess.run("python3 -m skore create my_project_gs".split())
 #
 # This will automatically open a browser at the UI's location.
 #
-# Now that the project file exists, we can load it in our notebook so that we can
-# read from and write to it:
+# Now that the project file exists, from your Python code (in the same
+# directory), load the project so that you can read from and write to it:
 
 # %%
 from skore import load
@@ -60,13 +61,13 @@ my_project_gs = load("my_project_gs.skore")
 my_project_gs.put("my_int", 3)
 
 # %%
-# Here, the name of my stored item is ``my_int`` and the integer value is 3.
+# Here, the name of the stored item is ``my_int`` and the integer value is 3.
 
 # %%
 my_project_gs.get("my_int")
 
 # %%
-# For a ``pandas`` data frame:
+# For a pandas data frame:
 
 # %%
 import numpy as np
@@ -80,7 +81,7 @@ my_project_gs.put("my_df", my_df)
 my_project_gs.get("my_df")
 
 # %%
-# For a ``matplotlib`` figure:
+# For a matplotlib figure:
 
 # %%
 import matplotlib.pyplot as plt
@@ -92,7 +93,7 @@ _ = ax.plot(x)
 my_project_gs.put("my_figure", fig)
 
 # %%
-# For a ``scikit-learn`` fitted pipeline:
+# For a scikit-learn fitted pipeline:
 
 # %%
 from sklearn.datasets import load_diabetes
@@ -117,8 +118,8 @@ my_project_gs.get("my_fitted_pipeline")
 # Back to the dashboard
 # ^^^^^^^^^^^^^^^^^^^^^
 #
-# #. On the top left, create a new ``View``.
-# #. From the ``Elements`` section on the bottom left, you can add stored items to this view, either by double-cliking on them or by doing drag-and-drop.
+# #. On the top left, by default, you can observe that you are in a *View* called ``default``. You can rename this view or create another one.
+# #. From the *Items* section on the bottom left, you can add stored items to this view, either by clicking on ``+`` or by doing drag-and-drop.
 #
 # .. image:: https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_10_14_skore_demo.gif
 #    :alt: Getting started with ``skore`` demo

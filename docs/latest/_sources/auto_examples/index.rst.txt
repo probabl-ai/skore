@@ -5,7 +5,7 @@
 Examples
 ========
 
-Below is a gallery of examples on how to use ``skore``.
+Below is a gallery of examples on how to use skore.
 
 
 
@@ -17,7 +17,7 @@ Below is a gallery of examples on how to use ``skore``.
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This example runs the getting_started guide.">
+    <div class="sphx-glr-thumbcontainer" tooltip="This example runs the getting_started guide and adds examples a more types that can be stored.">
 
 .. only:: html
 
@@ -28,13 +28,13 @@ Below is a gallery of examples on how to use ``skore``.
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">1) Getting started with skore</div>
+      <div class="sphx-glr-thumbnail-title">Getting started</div>
     </div>
 
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This example complements the Getting started with skore example.">
+    <div class="sphx-glr-thumbcontainer" tooltip="This example complements the example_getting_started example and shows some more functionalities.">
 
 .. only:: html
 
@@ -45,13 +45,13 @@ Below is a gallery of examples on how to use ``skore``.
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">2) Basic usage of skore</div>
+      <div class="sphx-glr-thumbnail-title">Basic usage</div>
     </div>
 
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This example illustrates the use of cross_validate.">
+    <div class="sphx-glr-thumbcontainer" tooltip="This example illustrates the use of cross_validate to get assistance when developing your ML/DS projects.">
 
 .. only:: html
 
@@ -62,7 +62,7 @@ Below is a gallery of examples on how to use ``skore``.
 
 .. raw:: html
 
-      <div class="sphx-glr-thumbnail-title">3) Using skore's cross validate</div>
+      <div class="sphx-glr-thumbnail-title">Enhancing cross-validation</div>
     </div>
 
 

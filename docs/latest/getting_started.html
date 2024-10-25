@@ -92,7 +92,6 @@
 
   <div class="pst-async-banner-revealer d-none">
   <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
-  <aside class="bd-header-announcement d-print-none d-none" aria-label="Announcement" data-pst-announcement-url="https://raw.githubusercontent.com/soda-inria/hazardous/main/doc/announcement.html"></aside>
 </div>
 
   
@@ -139,7 +138,7 @@
 </li>
 
 
-<li class="nav-item ">
+<li class="nav-item current active">
   <a class="nav-link nav-internal" href="#">
     Getting started
   </a>
@@ -153,7 +152,7 @@
 </li>
 
 
-<li class="nav-item current active">
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="user_guide.html">
     User guide
   </a>
@@ -246,7 +245,7 @@
 </li>
 
 
-<li class="nav-item ">
+<li class="nav-item current active">
   <a class="nav-link nav-internal" href="#">
     Getting started
   </a>
@@ -260,7 +259,7 @@
 </li>
 
 
-<li class="nav-item current active">
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="user_guide.html">
     User guide
   </a>
@@ -300,24 +299,7 @@
 <nav class="bd-docs-nav bd-links"
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
-  <div class="bd-toc-item navbar-nav"><p aria-level="2" class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul class="current nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="install.html">Install</a></li>
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Getting started</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="auto_examples/index.html">Examples</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l2"><a class="reference internal" href="auto_examples/plot_01_getting_started.html">1) Getting started with <code class="docutils literal notranslate"><span class="pre">skore</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="auto_examples/plot_02_basic_usage.html">2) Basic usage of <code class="docutils literal notranslate"><span class="pre">skore</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="auto_examples/plot_03_cross_validate.html">3) Using <code class="docutils literal notranslate"><span class="pre">skore</span></code>’s cross validate</a></li>
-</ul>
-</details></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="api.html">API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l2"><a class="reference internal" href="generated/skore.Project.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore</span></code>.Project</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/skore.load.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore</span></code>.load</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/skore.cross_validate.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore</span></code>.cross_validate</a></li>
-</ul>
-</details></li>
-</ul>
-</div>
+  <div class="bd-toc-item navbar-nav"></div>
 </nav></div>
     </div>
   
@@ -370,32 +352,31 @@
                   
   <section id="getting-started">
 <span id="id1"></span><h1>Getting started<a class="headerlink" href="#getting-started" title="Link to this heading">#</a></h1>
-<section id="skore-ui">
-<h2><code class="docutils literal notranslate"><span class="pre">skore</span></code> UI<a class="headerlink" href="#skore-ui" title="Link to this heading">#</a></h2>
-<p>From your shell, initialize a skore project, here named <code class="docutils literal notranslate"><span class="pre">project.skore</span></code>, that
-will be in your current working directory:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">python -m skore create &quot;project.skore&quot;</span>
+<p>From your shell, initialize a skore project, here named <code class="docutils literal notranslate"><span class="pre">my_project</span></code>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">python -m skore create &quot;my_project&quot;</span>
 </pre></div>
 </div>
-<p>Then, from your Python code (in the same directory), load the project and store
-an integer for example:</p>
+<p>This will create a skore project directory named <code class="docutils literal notranslate"><span class="pre">my_project.skore</span></code> in your
+current working directory.</p>
+<p>Now that the project file exists, from your Python code (in the same directory),
+load the project so that you can read from and write to it, for example you can
+store an integer:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">skore</span> <span class="kn">import</span> <span class="n">load</span>
-<span class="n">project</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="s2">&quot;project.skore&quot;</span><span class="p">)</span>
+<span class="n">project</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="s2">&quot;my_project.skore&quot;</span><span class="p">)</span>
 <span class="n">project</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_int&quot;</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Finally, from your shell (in the same directory), start the UI locally:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">python -m skore launch project.skore</span>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">python -m skore launch &quot;my_project&quot;</span>
 </pre></div>
 </div>
 <p>This will automatically open a browser at the UI’s location:</p>
 <ol class="arabic simple">
-<li><p>On the top left, create a new <code class="docutils literal notranslate"><span class="pre">View</span></code>.</p></li>
-<li><p>From the <code class="docutils literal notranslate"><span class="pre">Elements</span></code> section on the bottom left, you can add stored items to this view, either by double-cliking on them or by doing drag-and-drop.</p></li>
+<li><p>On the top left, by default, you can observe that you are in a <em>View</em> called <code class="docutils literal notranslate"><span class="pre">default</span></code>. You can rename this view or create another one.</p></li>
+<li><p>From the <em>Items</em> section on the bottom left, you can add stored items to this view, either by clicking on <code class="docutils literal notranslate"><span class="pre">+</span></code> or by doing drag-and-drop.</p></li>
 </ol>
 <p>For more features, please look into <a class="reference internal" href="auto_examples/index.html#auto-examples"><span class="std std-ref">Examples</span></a>.</p>
 <img alt="Getting started with ``skore`` demo" src="https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_10_14_skore_demo.gif" />
-</section>
 </section>
 
 
@@ -438,18 +419,6 @@ an integer for example:</p>
 
 
   <div class="sidebar-secondary-item">
-<div
-    id="pst-page-navigation-heading-2"
-    class="page-toc tocsection onthispage">
-    <i class="fa-solid fa-list"></i> On this page
-  </div>
-  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
-    <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#skore-ui"><code class="docutils literal notranslate"><span class="pre">skore</span></code> UI</a></li>
-</ul>
-  </nav></div>
-
-  <div class="sidebar-secondary-item">
 
   <div class="tocsection sourcelink">
     <a href="_sources/getting_started.rst.txt">
@@ -483,7 +452,7 @@ an integer for example:</p>
 
   <p class="copyright">
     
-      © Copyright 2024, Probabl team.
+      © Copyright 2024, Probabl.
       <br/>
     
   </p>

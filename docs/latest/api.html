@@ -92,7 +92,6 @@
 
   <div class="pst-async-banner-revealer d-none">
   <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
-  <aside class="bd-header-announcement d-print-none d-none" aria-label="Announcement" data-pst-announcement-url="https://raw.githubusercontent.com/soda-inria/hazardous/main/doc/announcement.html"></aside>
 </div>
 
   
@@ -153,14 +152,14 @@
 </li>
 
 
-<li class="nav-item current active">
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="user_guide.html">
     User guide
   </a>
 </li>
 
 
-<li class="nav-item ">
+<li class="nav-item current active">
   <a class="nav-link nav-internal" href="#">
     API
   </a>
@@ -260,14 +259,14 @@
 </li>
 
 
-<li class="nav-item current active">
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="user_guide.html">
     User guide
   </a>
 </li>
 
 
-<li class="nav-item ">
+<li class="nav-item current active">
   <a class="nav-link nav-internal" href="#">
     API
   </a>
@@ -300,22 +299,14 @@
 <nav class="bd-docs-nav bd-links"
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
-  <div class="bd-toc-item navbar-nav"><p aria-level="2" class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul class="current nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="install.html">Install</a></li>
-<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting started</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="auto_examples/index.html">Examples</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l2"><a class="reference internal" href="auto_examples/plot_01_getting_started.html">1) Getting started with <code class="docutils literal notranslate"><span class="pre">skore</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="auto_examples/plot_02_basic_usage.html">2) Basic usage of <code class="docutils literal notranslate"><span class="pre">skore</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="auto_examples/plot_03_cross_validate.html">3) Using <code class="docutils literal notranslate"><span class="pre">skore</span></code>’s cross validate</a></li>
+  <div class="bd-toc-item navbar-nav"><ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="generated/skore.Project.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore</span></code>.Project</a></li>
 </ul>
-</details></li>
-<li class="toctree-l1 current active has-children"><a class="current reference internal" href="#">API</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l2"><a class="reference internal" href="generated/skore.Project.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore</span></code>.Project</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/skore.load.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore</span></code>.load</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/skore.cross_validate.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore</span></code>.cross_validate</a></li>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="generated/skore.load.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore</span></code>.load</a></li>
 </ul>
-</details></li>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="generated/skore.cross_validate.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore</span></code>.cross_validate</a></li>
 </ul>
 </div>
 </nav></div>
@@ -351,9 +342,6 @@
         <i class="fa-solid fa-home"></i>
       </a>
     </li>
-    
-    <li class="breadcrumb-item"><a href="user_guide.html" class="nav-link">User guide</a></li>
-    
     <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">API</span></li>
   </ul>
 </nav>
@@ -373,11 +361,14 @@
                   
   <section id="api">
 <h1>API<a class="headerlink" href="#api" title="Link to this heading">#</a></h1>
-<p>This page lists all the public functions and classes of the <code class="docutils literal notranslate"><span class="pre">skore</span></code>
-package.</p>
-<section id="the-skore-ui">
-<h2>The <code class="docutils literal notranslate"><span class="pre">skore</span></code> UI<a class="headerlink" href="#the-skore-ui" title="Link to this heading">#</a></h2>
-<p>These classes are meant for <code class="docutils literal notranslate"><span class="pre">skore</span></code>’s user interface.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>This code is still in development. <strong>The API is subject to change</strong>.</p>
+</div>
+<p>This page lists all the public functions and classes of the skore package.</p>
+<section id="project">
+<h2>Project<a class="headerlink" href="#project" title="Link to this heading">#</a></h2>
+<p>These classes are meant for managing a Project.</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/skore.Project.html#skore.Project" title="skore.Project"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Project</span></code></a></p></td>
@@ -395,9 +386,9 @@ package.</p>
 </table>
 </div>
 </section>
-<section id="the-skore-machine-learning-programming-assistant">
-<h2>The <code class="docutils literal notranslate"><span class="pre">skore</span></code> machine learning programming assistant<a class="headerlink" href="#the-skore-machine-learning-programming-assistant" title="Link to this heading">#</a></h2>
-<p>These functions and classes enhance <code class="docutils literal notranslate"><span class="pre">scikit-learn</span></code>’s ones.</p>
+<section id="get-assistance-when-developing-ml-ds-projects">
+<h2>Get assistance when developing ML/DS projects<a class="headerlink" href="#get-assistance-when-developing-ml-ds-projects" title="Link to this heading">#</a></h2>
+<p>These functions and classes enhance scikit-learn’s ones.</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="generated/skore.cross_validate.html#skore.cross_validate" title="skore.cross_validate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cross_validate</span></code></a></p></td>
@@ -456,10 +447,10 @@ package.</p>
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-skore-ui">The <code class="docutils literal notranslate"><span class="pre">skore</span></code> UI</a><ul class="nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#project">Project</a><ul class="nav section-nav flex-column">
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-skore-machine-learning-programming-assistant">The <code class="docutils literal notranslate"><span class="pre">skore</span></code> machine learning programming assistant</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#get-assistance-when-developing-ml-ds-projects">Get assistance when developing ML/DS projects</a></li>
 </ul>
   </nav></div>
 
@@ -497,7 +488,7 @@ package.</p>
 
   <p class="copyright">
     
-      © Copyright 2024, Probabl team.
+      © Copyright 2024, Probabl.
       <br/>
     
   </p>
