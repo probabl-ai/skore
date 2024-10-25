@@ -8,7 +8,7 @@
 
 With skore, data scientists can:
 1. Track and visualize their ML/DS results.
-1. Get assistance when developing their ML/DS projects.
+2. Get assistance when developing their ML/DS projects.
     - Scikit-learn compatible `cross_validate()` provides insights and checks on cross-validation.
 
 These are only the initial features: skore is a work in progress and aims to be an end-to-end library for data scientists. Stay tuned! Feedbacks are welcome: please feel free to join [our Discord](https://discord.probabl.ai) or [create an issue](https://github.com/probabl-ai/skore/issues).
@@ -47,7 +47,7 @@ python -m skore launch "my_project"
 ```
 This will automatically open a browser at the UI's location:
 1. On the top left, by default, you can observe that you are in a _View_ called `default`. You can rename this view or create another one.
-1. From the _Items_ section on the bottom left, you can add stored items to this view, either by clicking on `+` or by doing drag-and-drop.
+2. From the _Items_ section on the bottom left, you can add stored items to this view, either by clicking on `+` or by doing drag-and-drop.
 
 ## 👨‍🏫 More examples
 
