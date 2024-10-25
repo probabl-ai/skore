@@ -9,7 +9,6 @@
 With `skore`, data scientists can:
 1. Store objects of different types from their Python code: python lists, `scikit-learn` fitted pipelines, `plotly` figures, and more.
 2. **Track** and  **visualize** these stored objects on a user-friendly dashboard.
-3. Export the dashboard to a HTML file.
 
 These are only the first features: `skore` is a work in progress and aims to be an end-to-end library for data scientists.
 Stay tuned, and join [our Discord](https://discord.probabl.ai) if you want to give us feedback!
