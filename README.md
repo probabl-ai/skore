@@ -90,7 +90,7 @@ my_pipeline.fit(X, y)
 project.put("my_fitted_pipeline", my_pipeline)
 ```
 
-For examples, see our [documentation](https://probabl-ai.github.io/skore/latest/auto_examples/index.html).
+For more examples, see our [documentation](https://probabl-ai.github.io/skore/latest/auto_examples/index.html).
 
 ## 🔨 Contributing
 
