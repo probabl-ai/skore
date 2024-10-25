@@ -57,9 +57,3 @@ intersphinx_mapping = {
 numpydoc_show_class_members = False
 
 html_title = "skore"
-
-# html_theme_options = {
-#     "announcement": (
-#         "https://raw.githubusercontent.com/soda-inria/hazardous/main/doc/announcement.html"
-#     ),
-# }
