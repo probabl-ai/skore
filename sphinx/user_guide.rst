@@ -5,16 +5,9 @@ User guide
 
 .. currentmodule:: skore
 
-*The User Guide is currently work in progress and will be released soon, thank
-you for your patience!*
 
-For now, please look into:
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+.. note::
 
-   install
-   getting_started
-   auto_examples/index
-   api
+    The user guide is currently work in progress and will be released soon, thank you for your patience!
+    For now, please look into :ref:`getting_started` and the :ref:`auto_examples` section.
