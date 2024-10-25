@@ -17,23 +17,6 @@ Below is a gallery of examples on how to use ``skore``.
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This example illustrates the use of cross_validate.">
-
-.. only:: html
-
-  .. image:: /auto_examples/images/thumb/sphx_glr_plot_03_cross_validate_thumb.png
-    :alt:
-
-  :ref:`sphx_glr_auto_examples_plot_03_cross_validate.py`
-
-.. raw:: html
-
-      <div class="sphx-glr-thumbnail-title">3) Using skore's cross validate</div>
-    </div>
-
-
-.. raw:: html
-
     <div class="sphx-glr-thumbcontainer" tooltip="This example runs the getting_started guide.">
 
 .. only:: html
@@ -66,6 +49,23 @@ Below is a gallery of examples on how to use ``skore``.
     </div>
 
 
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="This example illustrates the use of cross_validate.">
+
+.. only:: html
+
+  .. image:: /auto_examples/images/thumb/sphx_glr_plot_03_cross_validate_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_examples_plot_03_cross_validate.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">3) Using skore's cross validate</div>
+    </div>
+
+
 .. thumbnail-parent-div-close
 
 .. raw:: html
@@ -76,9 +76,9 @@ Below is a gallery of examples on how to use ``skore``.
 .. toctree::
    :hidden:
 
-   /auto_examples/plot_03_cross_validate
    /auto_examples/plot_01_getting_started
    /auto_examples/plot_02_basic_usage
+   /auto_examples/plot_03_cross_validate
 
 
 .. only:: html

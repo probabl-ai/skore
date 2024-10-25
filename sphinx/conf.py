@@ -7,8 +7,8 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "skore"
-copyright = "2024, Probabl team"
-author = "Probabl team"
+copyright = "2024, Probabl"
+author = "Probabl"
 version = "0"
 release = "0"
 
@@ -44,7 +44,7 @@ html_js_files = []
 sphinx_gallery_conf = {
     "examples_dirs": "../examples",  # path to example scripts
     "gallery_dirs": "auto_examples",  # path to gallery generated output
-    "within_subsection_order": "FileNameSortKey", # See https://sphinx-gallery.github.io/stable/configuration.html#sorting-gallery-examples for alternatives
+    "within_subsection_order": "FileNameSortKey",  # See https://sphinx-gallery.github.io/stable/configuration.html#sorting-gallery-examples for alternatives
     "show_memory": False,
     "write_computation_times": False,
 }
@@ -57,9 +57,3 @@ intersphinx_mapping = {
 numpydoc_show_class_members = False
 
 html_title = "skore"
-
-html_theme_options = {
-    "announcement": (
-        "https://raw.githubusercontent.com/soda-inria/hazardous/main/doc/announcement.html"
-    ),
-}
