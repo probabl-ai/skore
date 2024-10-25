@@ -1,4 +1,4 @@
-"""cross_validate function.
+"""The cross_validate function.
 
 This function implements a wrapper over scikit-learn's `cross_validate <https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate>`_
 function in order to enrich it with more information and enable more analysis.
