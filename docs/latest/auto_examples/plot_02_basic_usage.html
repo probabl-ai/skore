@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>2) Basic usage of skore &#8212; skore</title>
+    <title>Basic usage &#8212; skore</title>
   
   
   
@@ -51,8 +51,8 @@
     <script>DOCUMENTATION_OPTIONS.pagename = 'auto_examples/plot_02_basic_usage';</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="3) Using skore’s cross validate" href="plot_03_cross_validate.html" />
-    <link rel="prev" title="1) Getting started with skore" href="plot_01_getting_started.html" />
+    <link rel="next" title="Enhancing cross-validation" href="plot_03_cross_validate.html" />
+    <link rel="prev" title="Getting started" href="plot_01_getting_started.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="0" />
@@ -92,7 +92,6 @@
 
   <div class="pst-async-banner-revealer d-none">
   <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
-  <aside class="bd-header-announcement d-print-none d-none" aria-label="Announcement" data-pst-announcement-url="https://raw.githubusercontent.com/soda-inria/hazardous/main/doc/announcement.html"></aside>
 </div>
 
   
@@ -146,14 +145,14 @@
 </li>
 
 
-<li class="nav-item ">
+<li class="nav-item current active">
   <a class="nav-link nav-internal" href="index.html">
     Examples
   </a>
 </li>
 
 
-<li class="nav-item current active">
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../user_guide.html">
     User guide
   </a>
@@ -253,14 +252,14 @@
 </li>
 
 
-<li class="nav-item ">
+<li class="nav-item current active">
   <a class="nav-link nav-internal" href="index.html">
     Examples
   </a>
 </li>
 
 
-<li class="nav-item current active">
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../user_guide.html">
     User guide
   </a>
@@ -300,22 +299,10 @@
 <nav class="bd-docs-nav bd-links"
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
-  <div class="bd-toc-item navbar-nav"><p aria-level="2" class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul class="current nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="../install.html">Install</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting started</a></li>
-<li class="toctree-l1 current active has-children"><a class="reference internal" href="index.html">Examples</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="plot_01_getting_started.html">1) Getting started with <code class="docutils literal notranslate"><span class="pre">skore</span></code></a></li>
-<li class="toctree-l2 current active"><a class="current reference internal" href="#">2) Basic usage of <code class="docutils literal notranslate"><span class="pre">skore</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="plot_03_cross_validate.html">3) Using <code class="docutils literal notranslate"><span class="pre">skore</span></code>’s cross validate</a></li>
-</ul>
-</details></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../api.html">API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l2"><a class="reference internal" href="../generated/skore.Project.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore</span></code>.Project</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../generated/skore.load.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore</span></code>.load</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../generated/skore.cross_validate.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore</span></code>.cross_validate</a></li>
-</ul>
-</details></li>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="plot_01_getting_started.html">Getting started</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Basic usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plot_03_cross_validate.html">Enhancing cross-validation</a></li>
 </ul>
 </div>
 </nav></div>
@@ -354,7 +341,7 @@
     
     <li class="breadcrumb-item"><a href="index.html" class="nav-link">Examples</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">2) Basic usage of <code class="docutils literal notranslate"><span class="pre">skore</span></code></span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Basic usage</span></li>
   </ul>
 </nav>
 </div>
@@ -376,11 +363,12 @@
 <p><a class="reference internal" href="#sphx-glr-download-auto-examples-plot-02-basic-usage-py"><span class="std std-ref">Go to the end</span></a>
 to download the full example code.</p>
 </div>
-<section class="sphx-glr-example-title" id="basic-usage-of-skore">
-<span id="sphx-glr-auto-examples-plot-02-basic-usage-py"></span><h1>2) Basic usage of <code class="docutils literal notranslate"><span class="pre">skore</span></code><a class="headerlink" href="#basic-usage-of-skore" title="Link to this heading">#</a></h1>
-<p>This example complements the <cite>Getting started with skore</cite> example.</p>
-<section id="skore-ui">
-<h2><code class="docutils literal notranslate"><span class="pre">skore</span></code> UI<a class="headerlink" href="#skore-ui" title="Link to this heading">#</a></h2>
+<section class="sphx-glr-example-title" id="basic-usage">
+<span id="example-basic-usage"></span><span id="sphx-glr-auto-examples-plot-02-basic-usage-py"></span><h1>Basic usage<a class="headerlink" href="#basic-usage" title="Link to this heading">#</a></h1>
+<p>This example complements the <a class="reference internal" href="plot_01_getting_started.html#example-getting-started"><span class="std std-ref">Getting started</span></a> example and shows
+some more functionalities.</p>
+<section id="project-and-ui">
+<h2>Project and UI<a class="headerlink" href="#project-and-ui" title="Link to this heading">#</a></h2>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">altair</span> <span class="k">as</span> <span class="nn">alt</span>
 <span class="kn">import</span> <span class="nn">io</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
@@ -414,62 +402,64 @@ to download the full example code.</p>
 </div>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">skore</span> <span class="kn">import</span> <span class="n">load</span>
 
-<span class="n">my_project_gs</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="s2">&quot;my_project_gs.skore&quot;</span><span class="p">)</span>
+<span class="n">my_project_bu</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="s2">&quot;my_project_bu.skore&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
 <section id="storing-an-integer">
 <h3>Storing an integer<a class="headerlink" href="#storing-an-integer" title="Link to this heading">#</a></h3>
 <p>Now, let us store our first object, for example an integer:</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_gs</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_int&quot;</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_bu</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_int&quot;</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Here, the name of my object is <code class="docutils literal notranslate"><span class="pre">my_int</span></code> and the integer value is 3.</p>
+<p>Here, the name of the object is <code class="docutils literal notranslate"><span class="pre">my_int</span></code> and the integer value is 3.</p>
 <p>You can read it from the project:</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_gs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;my_int&quot;</span><span class="p">)</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_bu</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;my_int&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>3
 </pre></div>
 </div>
-<p>Careful; like in a traditional Python dictionary, the <cite>put</cite> method will <em>overwrite</em> past data if you use a key which already exists!</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_gs</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_int&quot;</span><span class="p">,</span> <span class="mi">30_000</span><span class="p">)</span>
+<p>Careful; like in a traditional Python dictionary, the <code class="docutils literal notranslate"><span class="pre">put</span></code> method will <em>overwrite</em> past data if you use a key which already exists!</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_bu</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_int&quot;</span><span class="p">,</span> <span class="mi">30_000</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Let us check the updated value:</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_gs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;my_int&quot;</span><span class="p">)</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_bu</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;my_int&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>30000
 </pre></div>
 </div>
-<p>By using the <cite>delete_item</cite> method, you can also delete an object so that your <cite>skore</cite> UI does not become cluttered:</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_gs</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_int_2&quot;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<p>By using the <code class="docutils literal notranslate"><span class="pre">delete_item</span></code> method, you can also delete an object so that your skore UI does not become cluttered:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_bu</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_int_2&quot;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_gs</span><span class="o">.</span><span class="n">delete_item</span><span class="p">(</span><span class="s2">&quot;my_int_2&quot;</span><span class="p">)</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_bu</span><span class="o">.</span><span class="n">delete_item</span><span class="p">(</span><span class="s2">&quot;my_int_2&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>You can use <cite>my_project_gs.list_item_keys</cite> to display all the keys in your project:</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_gs</span><span class="o">.</span><span class="n">list_item_keys</span><span class="p">()</span>
+<p>You can display all the keys in your project:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_bu</span><span class="o">.</span><span class="n">list_item_keys</span><span class="p">()</span>
 </pre></div>
 </div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>[&#39;my_df&#39;, &#39;my_figure&#39;, &#39;my_fitted_pipeline&#39;, &#39;my_int&#39;]
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>[&#39;my_int&#39;]
 </pre></div>
 </div>
-<p>### Storing a string</p>
+</section>
+<section id="storing-a-string">
+<h3>Storing a string<a class="headerlink" href="#storing-a-string" title="Link to this heading">#</a></h3>
 <p>We just stored a integer, now let us store some text using strings!</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_gs</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_string&quot;</span><span class="p">,</span> <span class="s2">&quot;Hello world!&quot;</span><span class="p">)</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_bu</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_string&quot;</span><span class="p">,</span> <span class="s2">&quot;Hello world!&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_gs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;my_string&quot;</span><span class="p">)</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_bu</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;my_string&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>&#39;Hello world!&#39;
 </pre></div>
 </div>
-<p><code class="docutils literal notranslate"><span class="pre">my_project_gs.get</span></code> infers the type of the inserted object by default. For example, strings are assumed to be in Markdown format. Hence, you can customize the display of your text:</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_gs</span><span class="o">.</span><span class="n">put</span><span class="p">(</span>
+<p><code class="docutils literal notranslate"><span class="pre">my_project_bu.get</span></code> infers the type of the inserted object by default. For example, strings are assumed to be in Markdown format. Hence, you can customize the display of your text:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_bu</span><span class="o">.</span><span class="n">put</span><span class="p">(</span>
     <span class="s2">&quot;my_string_2&quot;</span><span class="p">,</span>
     <span class="p">(</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Hello world!, **bold**, *italic*, `code`</span>
@@ -485,7 +475,7 @@ to download the full example code.</p>
 </div>
 <p>Moreover, you can also explicitly tell <cite>skore</cite> the media type of an object, for example in HTML:</p>
 <p>Note: we use <code class="docutils literal notranslate"><span class="pre">put_item</span></code> instead of <code class="docutils literal notranslate"><span class="pre">put</span></code>:</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_gs</span><span class="o">.</span><span class="n">put_item</span><span class="p">(</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_bu</span><span class="o">.</span><span class="n">put_item</span><span class="p">(</span>
     <span class="s2">&quot;my_string_3&quot;</span><span class="p">,</span>
     <span class="n">MediaItem</span><span class="o">.</span><span class="n">factory</span><span class="p">(</span>
         <span class="s2">&quot;&lt;p&gt;&lt;h1&gt;Title&lt;/h1&gt; &lt;b&gt;bold&lt;/b&gt;, &lt;i&gt;italic&lt;/i&gt;, etc.&lt;/p&gt;&quot;</span><span class="p">,</span> <span class="n">media_type</span><span class="o">=</span><span class="s2">&quot;text/html&quot;</span>
@@ -494,16 +484,16 @@ to download the full example code.</p>
 </pre></div>
 </div>
 <p>Note that the media type is only used for the UI, and not in this notebook at hand:</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_gs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;my_string_3&quot;</span><span class="p">)</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_bu</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;my_string_3&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>b&#39;&lt;p&gt;&lt;h1&gt;Title&lt;/h1&gt; &lt;b&gt;bold&lt;/b&gt;, &lt;i&gt;italic&lt;/i&gt;, etc.&lt;/p&gt;&#39;
 </pre></div>
 </div>
-<p>You can also conveniently use Python f-strings:</p>
+<p>You can also conveniently use a Python f-string:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">x</span> <span class="o">=</span> <span class="mi">2</span>
 <span class="n">y</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]</span>
-<span class="n">my_project_gs</span><span class="o">.</span><span class="n">put</span><span class="p">(</span>
+<span class="n">my_project_bu</span><span class="o">.</span><span class="n">put</span><span class="p">(</span>
     <span class="s2">&quot;my_string_4&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;The value of `x` is </span><span class="si">{</span><span class="n">x</span><span class="si">}</span><span class="s2"> and the value of `y` is </span><span class="si">{</span><span class="n">y</span><span class="si">}</span><span class="s2">.&quot;</span>
 <span class="p">)</span>
 </pre></div>
@@ -513,7 +503,7 @@ to download the full example code.</p>
 <h3>Storing many kinds of data<a class="headerlink" href="#storing-many-kinds-of-data" title="Link to this heading">#</a></h3>
 <p>Python list:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_list</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]</span>
-<span class="n">my_project_gs</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_list&quot;</span><span class="p">,</span> <span class="n">my_list</span><span class="p">)</span>
+<span class="n">my_project_bu</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_list&quot;</span><span class="p">,</span> <span class="n">my_list</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Python dictionary:</p>
@@ -521,24 +511,24 @@ to download the full example code.</p>
     <span class="s2">&quot;company&quot;</span><span class="p">:</span> <span class="s2">&quot;probabl&quot;</span><span class="p">,</span>
     <span class="s2">&quot;year&quot;</span><span class="p">:</span> <span class="mi">2023</span><span class="p">,</span>
 <span class="p">}</span>
-<span class="n">my_project_gs</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_dict&quot;</span><span class="p">,</span> <span class="n">my_dict</span><span class="p">)</span>
+<span class="n">my_project_bu</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_dict&quot;</span><span class="p">,</span> <span class="n">my_dict</span><span class="p">)</span>
 </pre></div>
 </div>
-<p><code class="docutils literal notranslate"><span class="pre">numpy</span></code> array:</p>
+<p>Numpy array:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
-<span class="n">my_project_gs</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_arr&quot;</span><span class="p">,</span> <span class="n">my_arr</span><span class="p">)</span>
+<span class="n">my_project_bu</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_arr&quot;</span><span class="p">,</span> <span class="n">my_arr</span><span class="p">)</span>
 </pre></div>
 </div>
-<p><code class="docutils literal notranslate"><span class="pre">pandas</span></code> data frame:</p>
+<p>Pandas data frame:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
-<span class="n">my_project_gs</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_df&quot;</span><span class="p">,</span> <span class="n">my_df</span><span class="p">)</span>
+<span class="n">my_project_bu</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_df&quot;</span><span class="p">,</span> <span class="n">my_df</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
 <section id="data-visualization">
 <h3>Data visualization<a class="headerlink" href="#data-visualization" title="Link to this heading">#</a></h3>
-<p>Note that, in the dashboard, the interactivity of plots is supported, for example for <code class="docutils literal notranslate"><span class="pre">altair</span></code> and <code class="docutils literal notranslate"><span class="pre">plotly</span></code>.</p>
-<p><code class="docutils literal notranslate"><span class="pre">matplotlib</span></code> figures:</p>
+<p>Note that, in the dashboard, the interactivity of plots is supported, for example for Altair and Plotly.</p>
+<p>Matplotlib figure:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
 
 <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mf">2.7</span><span class="p">),</span> <span class="n">layout</span><span class="o">=</span><span class="s2">&quot;constrained&quot;</span><span class="p">)</span>
@@ -550,10 +540,10 @@ to download the full example code.</p>
 <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Simple Plot&quot;</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 
-<span class="n">my_project_gs</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_figure&quot;</span><span class="p">,</span> <span class="n">fig</span><span class="p">)</span>
+<span class="n">my_project_bu</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_figure&quot;</span><span class="p">,</span> <span class="n">fig</span><span class="p">)</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_02_basic_usage_001.png" srcset="../_images/sphx_glr_plot_02_basic_usage_001.png" alt="Simple Plot" class = "sphx-glr-single-img"/><p><code class="docutils literal notranslate"><span class="pre">altair</span></code> charts:</p>
+<img src="../_images/sphx_glr_plot_02_basic_usage_001.png" srcset="../_images/sphx_glr_plot_02_basic_usage_001.png" alt="Simple Plot" class = "sphx-glr-single-img"/><p>Altair chart:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">num_points</span> <span class="o">=</span> <span class="mi">100</span>
 <span class="n">df_plot</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
     <span class="p">{</span><span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">num_points</span><span class="p">),</span> <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">num_points</span><span class="p">)}</span>
@@ -567,11 +557,12 @@ to download the full example code.</p>
     <span class="o">.</span><span class="n">properties</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;My title&quot;</span><span class="p">)</span>
 <span class="p">)</span>
 
-<span class="n">my_project_gs</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_altair_chart&quot;</span><span class="p">,</span> <span class="n">my_altair_chart</span><span class="p">)</span>
+<span class="n">my_project_bu</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_altair_chart&quot;</span><span class="p">,</span> <span class="n">my_altair_chart</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Plotly figures:</p>
-<p>NOTE: Some users reported the following error when running the Plotly cells:
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For Plotly figures, some users reported the following error when running Plotly cells:
 <code class="docutils literal notranslate"><span class="pre">`</span>
 <span class="pre">ValueError:</span> <span class="pre">Mime</span> <span class="pre">type</span> <span class="pre">rendering</span> <span class="pre">requires</span> <span class="pre">nbformat&gt;=4.2.0</span> <span class="pre">but</span> <span class="pre">it</span> <span class="pre">is</span> <span class="pre">not</span> <span class="pre">installed</span>
 <span class="pre">`</span></code>
@@ -579,15 +570,21 @@ This is a Plotly issue which is documented <a class="reference external" href="h
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">pip install --upgrade nbformat</span>
 </pre></div>
 </div>
+</div>
+<p>Plotly figure:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="n">px</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">iris</span><span class="p">()</span>
 <span class="n">fig</span> <span class="o">=</span> <span class="n">px</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
-    <span class="n">df</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">df</span><span class="o">.</span><span class="n">sepal_length</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">df</span><span class="o">.</span><span class="n">sepal_width</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">df</span><span class="o">.</span><span class="n">species</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">df</span><span class="o">.</span><span class="n">petal_length</span>
+    <span class="n">df</span><span class="p">,</span>
+    <span class="n">x</span><span class="o">=</span><span class="n">df</span><span class="o">.</span><span class="n">sepal_length</span><span class="p">,</span>
+    <span class="n">y</span><span class="o">=</span><span class="n">df</span><span class="o">.</span><span class="n">sepal_width</span><span class="p">,</span>
+    <span class="n">color</span><span class="o">=</span><span class="n">df</span><span class="o">.</span><span class="n">species</span><span class="p">,</span>
+    <span class="n">size</span><span class="o">=</span><span class="n">df</span><span class="o">.</span><span class="n">petal_length</span>
 <span class="p">)</span>
 
-<span class="n">my_project_gs</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_plotly_fig&quot;</span><span class="p">,</span> <span class="n">fig</span><span class="p">)</span>
+<span class="n">my_project_bu</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_plotly_fig&quot;</span><span class="p">,</span> <span class="n">fig</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Animated <code class="docutils literal notranslate"><span class="pre">plotly</span></code> figures:</p>
+<p>Animated Plotly figure:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="n">px</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">gapminder</span><span class="p">()</span>
 <span class="n">my_anim_plotly_fig</span> <span class="o">=</span> <span class="n">px</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
     <span class="n">df</span><span class="p">,</span>
@@ -604,78 +601,44 @@ This is a Plotly issue which is documented <a class="reference external" href="h
     <span class="n">range_y</span><span class="o">=</span><span class="p">[</span><span class="mi">25</span><span class="p">,</span> <span class="mi">90</span><span class="p">],</span>
 <span class="p">)</span>
 
-<span class="n">my_project_gs</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_anim_plotly_fig&quot;</span><span class="p">,</span> <span class="n">my_anim_plotly_fig</span><span class="p">)</span>
+<span class="n">my_project_bu</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_anim_plotly_fig&quot;</span><span class="p">,</span> <span class="n">my_anim_plotly_fig</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>PIL images:</p>
+<p>PIL image:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_pil_image</span> <span class="o">=</span> <span class="n">PIL</span><span class="o">.</span><span class="n">Image</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="s2">&quot;RGB&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">),</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">)</span>
 <span class="k">with</span> <span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">()</span> <span class="k">as</span> <span class="n">output</span><span class="p">:</span>
     <span class="n">my_pil_image</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;png&quot;</span><span class="p">)</span>
 
-<span class="n">my_project_gs</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_pil_image&quot;</span><span class="p">,</span> <span class="n">my_pil_image</span><span class="p">)</span>
+<span class="n">my_project_bu</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_pil_image&quot;</span><span class="p">,</span> <span class="n">my_pil_image</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
 <section id="scikit-learn-models-and-pipelines">
 <h3>Scikit-learn models and pipelines<a class="headerlink" href="#scikit-learn-models-and-pipelines" title="Link to this heading">#</a></h3>
-<p>As <code class="docutils literal notranslate"><span class="pre">skore</span></code> is developed by <a class="reference external" href="https://probabl.ai">Probabl</a>, the spin-off of scikit-learn, <code class="docutils literal notranslate"><span class="pre">skore</span></code> treats scikit-learn models and pipelines as first-class citizens.</p>
+<p>As skore is developed by <a class="reference external" href="https://probabl.ai">Probabl</a>, the spin-off of scikit-learn, skore treats scikit-learn models and pipelines as first-class citizens.</p>
 <p>First of all, you can store a scikit-learn model:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html#sklearn.linear_model.Lasso" title="sklearn.linear_model.Lasso" class="sphx-glr-backref-module-sklearn-linear_model sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">my_model</span></a> <span class="o">=</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html#sklearn.linear_model.Lasso" title="sklearn.linear_model.Lasso" class="sphx-glr-backref-module-sklearn-linear_model sphx-glr-backref-type-py-class"><span class="n">Lasso</span></a><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-<span class="n">my_project_gs</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_model&quot;</span><span class="p">,</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html#sklearn.linear_model.Lasso" title="sklearn.linear_model.Lasso" class="sphx-glr-backref-module-sklearn-linear_model sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">my_model</span></a><span class="p">)</span>
+<span class="n">my_project_bu</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_model&quot;</span><span class="p">,</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html#sklearn.linear_model.Lasso" title="sklearn.linear_model.Lasso" class="sphx-glr-backref-module-sklearn-linear_model sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">my_model</span></a><span class="p">)</span>
 </pre></div>
 </div>
-<p>You can also store <code class="docutils literal notranslate"><span class="pre">scikit-learn</span></code> pipelines:</p>
+<p>You can also store scikit-learn pipelines:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html#sklearn.pipeline.Pipeline" title="sklearn.pipeline.Pipeline" class="sphx-glr-backref-module-sklearn-pipeline sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">my_pipeline</span></a> <span class="o">=</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html#sklearn.pipeline.Pipeline" title="sklearn.pipeline.Pipeline" class="sphx-glr-backref-module-sklearn-pipeline sphx-glr-backref-type-py-class"><span class="n">Pipeline</span></a><span class="p">(</span>
     <span class="p">[(</span><span class="s2">&quot;standard_scaler&quot;</span><span class="p">,</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.StandardScaler.html#sklearn.preprocessing.StandardScaler" title="sklearn.preprocessing.StandardScaler" class="sphx-glr-backref-module-sklearn-preprocessing sphx-glr-backref-type-py-class"><span class="n">StandardScaler</span></a><span class="p">()),</span> <span class="p">(</span><span class="s2">&quot;lasso&quot;</span><span class="p">,</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html#sklearn.linear_model.Lasso" title="sklearn.linear_model.Lasso" class="sphx-glr-backref-module-sklearn-linear_model sphx-glr-backref-type-py-class"><span class="n">Lasso</span></a><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mi">2</span><span class="p">))]</span>
 <span class="p">)</span>
-<span class="n">my_project_gs</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_pipeline&quot;</span><span class="p">,</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html#sklearn.pipeline.Pipeline" title="sklearn.pipeline.Pipeline" class="sphx-glr-backref-module-sklearn-pipeline sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">my_pipeline</span></a><span class="p">)</span>
+<span class="n">my_project_bu</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_pipeline&quot;</span><span class="p">,</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html#sklearn.pipeline.Pipeline" title="sklearn.pipeline.Pipeline" class="sphx-glr-backref-module-sklearn-pipeline sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">my_pipeline</span></a><span class="p">)</span>
 </pre></div>
 </div>
-<p>Moreover, you can store fitted <code class="docutils literal notranslate"><span class="pre">scikit-learn</span></code> pipelines:</p>
+<p>Moreover, you can store fitted scikit-learn pipelines:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://scikit-learn.org/stable/modules/generated/sklearn.utils.Bunch.html#sklearn.utils.Bunch" title="sklearn.utils.Bunch" class="sphx-glr-backref-module-sklearn-utils sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">diabetes</span></a> <span class="o">=</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_diabetes.html#sklearn.datasets.load_diabetes" title="sklearn.datasets.load_diabetes" class="sphx-glr-backref-module-sklearn-datasets sphx-glr-backref-type-py-function"><span class="n">load_diabetes</span></a><span class="p">()</span>
 <span class="n">X</span> <span class="o">=</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.utils.Bunch.html#sklearn.utils.Bunch" title="sklearn.utils.Bunch" class="sphx-glr-backref-module-sklearn-utils sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">diabetes</span></a><span class="o">.</span><span class="n">data</span><span class="p">[:</span><span class="mi">150</span><span class="p">]</span>
 <span class="n">y</span> <span class="o">=</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.utils.Bunch.html#sklearn.utils.Bunch" title="sklearn.utils.Bunch" class="sphx-glr-backref-module-sklearn-utils sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">diabetes</span></a><span class="o">.</span><span class="n">target</span><span class="p">[:</span><span class="mi">150</span><span class="p">]</span>
 <a href="https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html#sklearn.pipeline.Pipeline.fit" title="sklearn.pipeline.Pipeline.fit" class="sphx-glr-backref-module-sklearn-pipeline sphx-glr-backref-type-py-method"><span class="n">my_pipeline</span><span class="o">.</span><span class="n">fit</span></a><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
 
-<span class="n">my_project_gs</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_fitted_pipeline&quot;</span><span class="p">,</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html#sklearn.pipeline.Pipeline" title="sklearn.pipeline.Pipeline" class="sphx-glr-backref-module-sklearn-pipeline sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">my_pipeline</span></a><span class="p">)</span>
+<span class="n">my_project_bu</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_fitted_pipeline&quot;</span><span class="p">,</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html#sklearn.pipeline.Pipeline" title="sklearn.pipeline.Pipeline" class="sphx-glr-backref-module-sklearn-pipeline sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">my_pipeline</span></a><span class="p">)</span>
 </pre></div>
 </div>
 <p><em>Stay tuned for some new features!</em></p>
-</section>
-<section id="manipulating-the-skore-ui">
-<h3>Manipulating the skore UI<a class="headerlink" href="#manipulating-the-skore-ui" title="Link to this heading">#</a></h3>
-<p>The following is just some <code class="docutils literal notranslate"><span class="pre">skore</span></code> strings that we generate in order to provide more context on the obtained report.</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_gs</span><span class="o">.</span><span class="n">put</span><span class="p">(</span>
-    <span class="s2">&quot;my_comment_1&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;&lt;p&gt;&lt;h1&gt;Welcome to skore!&lt;/h1&gt;&lt;p&gt;&lt;code&gt;skore&lt;/code&gt; allows data scientists to create tracking and visualizations from their Python code. This HTML document is actually a skore report generated using the &lt;code&gt;01_basic_usage.ipynb&lt;/code&gt; example notebook then exported (into HTML)!&lt;p&gt;&quot;</span><span class="p">,</span>
-<span class="p">)</span>
-</pre></div>
-</div>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_gs</span><span class="o">.</span><span class="n">put</span><span class="p">(</span>
-    <span class="s2">&quot;my_comment_2&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;&lt;p&gt;&lt;h2&gt;Integers&lt;/h1&gt;&lt;/p&gt;&quot;</span><span class="p">,</span>
-<span class="p">)</span>
-</pre></div>
-</div>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_gs</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_comment_3&quot;</span><span class="p">,</span> <span class="s2">&quot;&lt;p&gt;&lt;h2&gt;Strings&lt;/h1&gt;&lt;/p&gt;&quot;</span><span class="p">)</span>
-</pre></div>
-</div>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_gs</span><span class="o">.</span><span class="n">put</span><span class="p">(</span>
-    <span class="s2">&quot;my_comment_4&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;&lt;p&gt;&lt;h2&gt;Many kinds of data&lt;/h1&gt;&lt;/p&gt;&quot;</span><span class="p">,</span>
-<span class="p">)</span>
-</pre></div>
-</div>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_gs</span><span class="o">.</span><span class="n">put</span><span class="p">(</span>
-    <span class="s2">&quot;my_comment_5&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;&lt;p&gt;&lt;h2&gt;Plots&lt;/h1&gt;&lt;/p&gt;&quot;</span><span class="p">,</span>
-<span class="p">)</span>
-</pre></div>
-</div>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_gs</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_comment_6&quot;</span><span class="p">,</span> <span class="s2">&quot;&lt;p&gt;&lt;h2&gt;Scikit-learn models and pipelines&lt;/h1&gt;&lt;/p&gt;&quot;</span><span class="p">)</span>
-</pre></div>
-</div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 2.340 seconds)</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 1.871 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-02-basic-usage-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/c1371f03d806c9b2f4a67995ee052139/plot_02_basic_usage.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_02_basic_usage.ipynb</span></code></a></p>
@@ -708,7 +671,7 @@ This is a Plotly issue which is documented <a class="reference external" href="h
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">1) Getting started with <code class="docutils literal notranslate"><span class="pre">skore</span></code></p>
+        <p class="prev-next-title">Getting started</p>
       </div>
     </a>
     <a class="right-next"
@@ -716,7 +679,7 @@ This is a Plotly issue which is documented <a class="reference external" href="h
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">3) Using <code class="docutils literal notranslate"><span class="pre">skore</span></code>’s cross validate</p>
+        <p class="prev-next-title">Enhancing cross-validation</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -739,13 +702,13 @@ This is a Plotly issue which is documented <a class="reference external" href="h
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#skore-ui"><code class="docutils literal notranslate"><span class="pre">skore</span></code> UI</a><ul class="nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#project-and-ui">Project and UI</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#initialize-a-project-and-launch-the-ui">Initialize a Project and launch the UI</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#storing-an-integer">Storing an integer</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#storing-a-string">Storing a string</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#storing-many-kinds-of-data">Storing many kinds of data</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data-visualization">Data visualization</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#scikit-learn-models-and-pipelines">Scikit-learn models and pipelines</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#manipulating-the-skore-ui">Manipulating the skore UI</a></li>
 </ul>
 </li>
 </ul>
@@ -785,7 +748,7 @@ This is a Plotly issue which is documented <a class="reference external" href="h
 
   <p class="copyright">
     
-      © Copyright 2024, Probabl team.
+      © Copyright 2024, Probabl.
       <br/>
     
   </p>
