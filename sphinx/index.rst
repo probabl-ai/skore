@@ -16,7 +16,7 @@ an end-to-end library for data scientists.
 Stay tuned!
 Feedbacks are welcome: please feel free to join our `Discord <http://discord.probabl.ai>`_ or `create an issue <https://github.com/probabl-ai/skore/issues>`_.
 
-We are a product team working at `Probabl <https://probabl.ai>`_ and our motto is OwnYourDataScience.
+We are a product team working at `Probabl <https://probabl.ai>`_ and our motto is *Own Your Data Science*.
 
 - License: BSD
 - GitHub repository: https://github.com/probabl-ai/skore
