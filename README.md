@@ -24,7 +24,7 @@ Then, you can install skore by using `pip`:
 pip install -U skore
 ```
 
-🚨 For Windows users, the encoding must be set to [UTF-8](https://docs.python.org/3/using/windows.html#utf-8-mode): see [PYTHONUTF8](https://docs.python.org/3/using/cmdline.html#envvar-PYTHONUTF8).
+**Warning:** For Windows users, the encoding must be set to [UTF-8](https://docs.python.org/3/using/windows.html#utf-8-mode): see [PYTHONUTF8](https://docs.python.org/3/using/cmdline.html#envvar-PYTHONUTF8).
 
 ## 🚀 Quick start
 
@@ -49,9 +49,9 @@ This will automatically open a browser at the UI's location:
 1. On the top left, by default, you can observe that you are in a _View_ called `default`. You can rename this view or create another one.
 1. From the Items section on the bottom left, you can add stored items to this view, either by clicking on `+` or by doing drag-and-drop.
 
-## 👨‍💻 More examples
+## 👨‍🏫 More examples
 
-💡 Note that after launching the dashboard, you can keep modifying the current items or store new ones from your python code, and the dashboard will automatically be refreshed.
+Note that after launching the dashboard, you can keep modifying the current items or store new ones from your python code, and the dashboard will automatically be refreshed.
 
 Storing a pandas dataframe:
 ```python
@@ -89,7 +89,7 @@ my_pipeline.fit(X, y)
 project.put("my_fitted_pipeline", my_pipeline)
 ```
 
-👨‍🏫 For examples, see our [documentation](https://probabl-ai.github.io/skore/latest/auto_examples/index.html).
+For examples, see our [documentation](https://probabl-ai.github.io/skore/latest/auto_examples/index.html).
 
 ## 🔨 Contributing
 
