@@ -91,7 +91,6 @@
 
   <div class="pst-async-banner-revealer d-none">
   <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
-  <aside class="bd-header-announcement d-print-none d-none" aria-label="Announcement" data-pst-announcement-url="https://raw.githubusercontent.com/soda-inria/hazardous/main/doc/announcement.html"></aside>
 </div>
 
   
@@ -152,14 +151,14 @@
 </li>
 
 
-<li class="nav-item current active">
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../user_guide.html">
     User guide
   </a>
 </li>
 
 
-<li class="nav-item ">
+<li class="nav-item current active">
   <a class="nav-link nav-internal" href="../api.html">
     API
   </a>
@@ -259,14 +258,14 @@
 </li>
 
 
-<li class="nav-item current active">
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../user_guide.html">
     User guide
   </a>
 </li>
 
 
-<li class="nav-item ">
+<li class="nav-item current active">
   <a class="nav-link nav-internal" href="../api.html">
     API
   </a>
@@ -299,22 +298,14 @@
 <nav class="bd-docs-nav bd-links"
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
-  <div class="bd-toc-item navbar-nav"><p aria-level="2" class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+  <div class="bd-toc-item navbar-nav"><ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="skore.Project.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore</span></code>.Project</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="skore.load.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore</span></code>.load</a></li>
+</ul>
 <ul class="current nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="../install.html">Install</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting started</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../auto_examples/index.html">Examples</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l2"><a class="reference internal" href="../auto_examples/plot_01_getting_started.html">1) Getting started with <code class="docutils literal notranslate"><span class="pre">skore</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="../auto_examples/plot_02_basic_usage.html">2) Basic usage of <code class="docutils literal notranslate"><span class="pre">skore</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="../auto_examples/plot_03_cross_validate.html">3) Using <code class="docutils literal notranslate"><span class="pre">skore</span></code>’s cross validate</a></li>
-</ul>
-</details></li>
-<li class="toctree-l1 current active has-children"><a class="reference internal" href="../api.html">API</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="skore.Project.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore</span></code>.Project</a></li>
-<li class="toctree-l2"><a class="reference internal" href="skore.load.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore</span></code>.load</a></li>
-<li class="toctree-l2 current active"><a class="current reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore</span></code>.cross_validate</a></li>
-</ul>
-</details></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore</span></code>.cross_validate</a></li>
 </ul>
 </div>
 </nav></div>
@@ -350,9 +341,6 @@
         <i class="fa-solid fa-home"></i>
       </a>
     </li>
-    
-    <li class="breadcrumb-item"><a href="../user_guide.html" class="nav-link">User guide</a></li>
-    
     
     <li class="breadcrumb-item"><a href="../api.html" class="nav-link">API</a></li>
     
@@ -499,7 +487,7 @@ such as <cite>estimator</cite>, and <cite>X</cite>.</p>
 
   <p class="copyright">
     
-      © Copyright 2024, Probabl team.
+      © Copyright 2024, Probabl.
       <br/>
     
   </p>

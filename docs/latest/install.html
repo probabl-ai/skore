@@ -92,7 +92,6 @@
 
   <div class="pst-async-banner-revealer d-none">
   <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
-  <aside class="bd-header-announcement d-print-none d-none" aria-label="Announcement" data-pst-announcement-url="https://raw.githubusercontent.com/soda-inria/hazardous/main/doc/announcement.html"></aside>
 </div>
 
   
@@ -132,7 +131,7 @@
 <nav>
   <ul class="bd-navbar-elements navbar-nav">
     
-<li class="nav-item ">
+<li class="nav-item current active">
   <a class="nav-link nav-internal" href="#">
     Install
   </a>
@@ -153,7 +152,7 @@
 </li>
 
 
-<li class="nav-item current active">
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="user_guide.html">
     User guide
   </a>
@@ -239,7 +238,7 @@
 <nav>
   <ul class="bd-navbar-elements navbar-nav">
     
-<li class="nav-item ">
+<li class="nav-item current active">
   <a class="nav-link nav-internal" href="#">
     Install
   </a>
@@ -260,7 +259,7 @@
 </li>
 
 
-<li class="nav-item current active">
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="user_guide.html">
     User guide
   </a>
@@ -300,24 +299,7 @@
 <nav class="bd-docs-nav bd-links"
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
-  <div class="bd-toc-item navbar-nav"><p aria-level="2" class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Install</a></li>
-<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting started</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="auto_examples/index.html">Examples</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l2"><a class="reference internal" href="auto_examples/plot_01_getting_started.html">1) Getting started with <code class="docutils literal notranslate"><span class="pre">skore</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="auto_examples/plot_02_basic_usage.html">2) Basic usage of <code class="docutils literal notranslate"><span class="pre">skore</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="auto_examples/plot_03_cross_validate.html">3) Using <code class="docutils literal notranslate"><span class="pre">skore</span></code>’s cross validate</a></li>
-</ul>
-</details></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="api.html">API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l2"><a class="reference internal" href="generated/skore.Project.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore</span></code>.Project</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/skore.load.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore</span></code>.load</a></li>
-<li class="toctree-l2"><a class="reference internal" href="generated/skore.cross_validate.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore</span></code>.cross_validate</a></li>
-</ul>
-</details></li>
-</ul>
-</div>
+  <div class="bd-toc-item navbar-nav"></div>
 </nav></div>
     </div>
   
@@ -372,14 +354,15 @@
 <span id="id1"></span><h1>Install<a class="headerlink" href="#install" title="Link to this heading">#</a></h1>
 <p>First of all, we recommend using a <a class="reference external" href="https://docs.python.org/3/tutorial/venv.html">virtual environment (venv)</a>.
 You need <code class="docutils literal notranslate"><span class="pre">python&gt;=3.9</span></code>.</p>
-<p>Then, you can install <code class="docutils literal notranslate"><span class="pre">skore</span></code> by using <code class="docutils literal notranslate"><span class="pre">pip</span></code>:</p>
+<p>Then, you can install skore by using <code class="docutils literal notranslate"><span class="pre">pip</span></code>:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">pip install -U skore</span>
 </pre></div>
 </div>
-<p>You can check <code class="docutils literal notranslate"><span class="pre">skore</span></code>’s latest version on <a class="reference external" href="https://pypi.org/project/skore/">PyPI</a>.</p>
-<p>🚨 For Windows users, the encoding must be set to
-<a class="reference external" href="https://docs.python.org/3/using/windows.html#utf-8-mode">UTF-8</a>:
-see <a class="reference external" href="https://docs.python.org/3/using/cmdline.html#envvar-PYTHONUTF8">PYTHONUTF8</a>.</p>
+<p>You can check skore’s latest version on <a class="reference external" href="https://pypi.org/project/skore/">PyPI</a>.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>For Windows users, the encoding must be set to <a class="reference external" href="https://docs.python.org/3/using/windows.html#utf-8-mode">UTF-8</a>: see <a class="reference external" href="https://docs.python.org/3/using/cmdline.html#envvar-PYTHONUTF8">PYTHONUTF8</a>.</p>
+</div>
 </section>
 
 
@@ -455,7 +438,7 @@ see <a class="reference external" href="https://docs.python.org/3/using/cmdline.
 
   <p class="copyright">
     
-      © Copyright 2024, Probabl team.
+      © Copyright 2024, Probabl.
       <br/>
     
   </p>

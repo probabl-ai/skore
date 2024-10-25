@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>1) Getting started with skore &#8212; skore</title>
+    <title>Getting started &#8212; skore</title>
   
   
   
@@ -51,7 +51,7 @@
     <script>DOCUMENTATION_OPTIONS.pagename = 'auto_examples/plot_01_getting_started';</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="2) Basic usage of skore" href="plot_02_basic_usage.html" />
+    <link rel="next" title="Basic usage" href="plot_02_basic_usage.html" />
     <link rel="prev" title="Examples" href="index.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -92,7 +92,6 @@
 
   <div class="pst-async-banner-revealer d-none">
   <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
-  <aside class="bd-header-announcement d-print-none d-none" aria-label="Announcement" data-pst-announcement-url="https://raw.githubusercontent.com/soda-inria/hazardous/main/doc/announcement.html"></aside>
 </div>
 
   
@@ -146,14 +145,14 @@
 </li>
 
 
-<li class="nav-item ">
+<li class="nav-item current active">
   <a class="nav-link nav-internal" href="index.html">
     Examples
   </a>
 </li>
 
 
-<li class="nav-item current active">
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../user_guide.html">
     User guide
   </a>
@@ -253,14 +252,14 @@
 </li>
 
 
-<li class="nav-item ">
+<li class="nav-item current active">
   <a class="nav-link nav-internal" href="index.html">
     Examples
   </a>
 </li>
 
 
-<li class="nav-item current active">
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../user_guide.html">
     User guide
   </a>
@@ -300,22 +299,10 @@
 <nav class="bd-docs-nav bd-links"
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
-  <div class="bd-toc-item navbar-nav"><p aria-level="2" class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul class="current nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="../install.html">Install</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting started</a></li>
-<li class="toctree-l1 current active has-children"><a class="reference internal" href="index.html">Examples</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
-<li class="toctree-l2 current active"><a class="current reference internal" href="#">1) Getting started with <code class="docutils literal notranslate"><span class="pre">skore</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="plot_02_basic_usage.html">2) Basic usage of <code class="docutils literal notranslate"><span class="pre">skore</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="plot_03_cross_validate.html">3) Using <code class="docutils literal notranslate"><span class="pre">skore</span></code>’s cross validate</a></li>
-</ul>
-</details></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../api.html">API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
-<li class="toctree-l2"><a class="reference internal" href="../generated/skore.Project.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore</span></code>.Project</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../generated/skore.load.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore</span></code>.load</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../generated/skore.cross_validate.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore</span></code>.cross_validate</a></li>
-</ul>
-</details></li>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plot_02_basic_usage.html">Basic usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plot_03_cross_validate.html">Enhancing cross-validation</a></li>
 </ul>
 </div>
 </nav></div>
@@ -354,7 +341,7 @@
     
     <li class="breadcrumb-item"><a href="index.html" class="nav-link">Examples</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">1) Getting started with <code class="docutils literal notranslate"><span class="pre">skore</span></code></span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Getting started</span></li>
   </ul>
 </nav>
 </div>
@@ -376,21 +363,20 @@
 <p><a class="reference internal" href="#sphx-glr-download-auto-examples-plot-01-getting-started-py"><span class="std std-ref">Go to the end</span></a>
 to download the full example code.</p>
 </div>
-<section class="sphx-glr-example-title" id="getting-started-with-skore">
-<span id="sphx-glr-auto-examples-plot-01-getting-started-py"></span><h1>1) Getting started with <code class="docutils literal notranslate"><span class="pre">skore</span></code><a class="headerlink" href="#getting-started-with-skore" title="Link to this heading">#</a></h1>
-<p>This example runs the <a class="reference internal" href="../user_guide/getting_started.html#getting-started"><span class="std std-ref">Getting started with skore</span></a> guide.</p>
-<section id="skore-ui">
-<h2><code class="docutils literal notranslate"><span class="pre">skore</span></code> UI<a class="headerlink" href="#skore-ui" title="Link to this heading">#</a></h2>
-<p>This section provides a quick start to the <code class="docutils literal notranslate"><span class="pre">skore</span></code> UI, an open-source package that aims to enable data scientists to:</p>
+<section class="sphx-glr-example-title" id="getting-started">
+<span id="example-getting-started"></span><span id="sphx-glr-auto-examples-plot-01-getting-started-py"></span><h1>Getting started<a class="headerlink" href="#getting-started" title="Link to this heading">#</a></h1>
+<p>This example runs the <a class="reference internal" href="../getting_started.html#getting-started"><span class="std std-ref">Getting started</span></a> guide and adds examples a more
+types that can be stored.</p>
+<section id="skore-s-project-and-ui">
+<h2><code class="docutils literal notranslate"><span class="pre">skore</span></code>’s Project and UI<a class="headerlink" href="#skore-s-project-and-ui" title="Link to this heading">#</a></h2>
+<p>This section provides a quick start to skore’s Project and UI, an open-source package that aims to enable data scientists to:</p>
 <ol class="arabic simple">
-<li><p>Store objects of different types from their Python code: python lists, <code class="docutils literal notranslate"><span class="pre">scikit-learn</span></code> fitted pipelines, <code class="docutils literal notranslate"><span class="pre">plotly</span></code> figures, and more.</p></li>
+<li><p>Store objects of different types from their Python code: python lists, scikit-learn fitted pipelines, plotly figures, and more.</p></li>
 <li><p>Track and visualize these stored objects on a user-friendly dashboard.</p></li>
-<li><p>Export the dashboard to a HTML file.</p></li>
 </ol>
 <section id="initialize-a-project-and-launch-the-ui">
 <h3>Initialize a Project and launch the UI<a class="headerlink" href="#initialize-a-project-and-launch-the-ui" title="Link to this heading">#</a></h3>
-<p>From your shell, initialize a skore project, here named <code class="docutils literal notranslate"><span class="pre">my_project_gs</span></code>, that
-will be in your current working directory:</p>
+<p>From your shell, initialize a skore project, here named <code class="docutils literal notranslate"><span class="pre">my_project_gs</span></code>:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">subprocess</span>
 
 <span class="c1"># remove the project if it already exists</span>
@@ -403,15 +389,15 @@ will be in your current working directory:</p>
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>CompletedProcess(args=[&#39;python3&#39;, &#39;-m&#39;, &#39;skore&#39;, &#39;create&#39;, &#39;my_project_gs&#39;], returncode=0)
 </pre></div>
 </div>
-<p>This will create a <code class="docutils literal notranslate"><span class="pre">skore</span></code> project directory named <code class="docutils literal notranslate"><span class="pre">my_project_gs</span></code> in the
+<p>This will create a skore project directory named <code class="docutils literal notranslate"><span class="pre">my_project_gs.skore</span></code> in your
 current directory.</p>
 <p>From your shell (in the same directory), start the UI locally:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">python -m skore launch &quot;my_project_gs&quot;</span>
 </pre></div>
 </div>
 <p>This will automatically open a browser at the UI’s location.</p>
-<p>Now that the project file exists, we can load it in our notebook so that we can
-read from and write to it:</p>
+<p>Now that the project file exists, from your Python code (in the same
+directory), load the project so that you can read from and write to it:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">skore</span> <span class="kn">import</span> <span class="n">load</span>
 
 <span class="n">my_project_gs</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="s2">&quot;my_project_gs.skore&quot;</span><span class="p">)</span>
@@ -424,14 +410,14 @@ read from and write to it:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_gs</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_int&quot;</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Here, the name of my stored item is <code class="docutils literal notranslate"><span class="pre">my_int</span></code> and the integer value is 3.</p>
+<p>Here, the name of the stored item is <code class="docutils literal notranslate"><span class="pre">my_int</span></code> and the integer value is 3.</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_gs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;my_int&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>3
 </pre></div>
 </div>
-<p>For a <code class="docutils literal notranslate"><span class="pre">pandas</span></code> data frame:</p>
+<p>For a pandas data frame:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 
@@ -470,28 +456,28 @@ read from and write to it:</p>
   <tbody>
     <tr>
       <th>0</th>
-      <td>-0.519582</td>
-      <td>1.352981</td>
-      <td>-0.672440</td>
+      <td>-1.033967</td>
+      <td>-1.859741</td>
+      <td>2.076323</td>
     </tr>
     <tr>
       <th>1</th>
-      <td>1.200097</td>
-      <td>0.835062</td>
-      <td>-1.012400</td>
+      <td>1.528491</td>
+      <td>0.772343</td>
+      <td>-1.157348</td>
     </tr>
     <tr>
       <th>2</th>
-      <td>1.186386</td>
-      <td>-0.552692</td>
-      <td>-2.050062</td>
+      <td>0.194281</td>
+      <td>-0.877849</td>
+      <td>0.300856</td>
     </tr>
   </tbody>
 </table>
 </div>
 </div>
 <br />
-<br /><p>For a <code class="docutils literal notranslate"><span class="pre">matplotlib</span></code> figure:</p>
+<br /><p>For a matplotlib figure:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 
 <span class="n">x</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">]</span>
@@ -501,7 +487,7 @@ read from and write to it:</p>
 <span class="n">my_project_gs</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_figure&quot;</span><span class="p">,</span> <span class="n">fig</span><span class="p">)</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_01_getting_started_001.png" srcset="../_images/sphx_glr_plot_01_getting_started_001.png" alt="plot 01 getting started" class = "sphx-glr-single-img"/><p>For a <code class="docutils literal notranslate"><span class="pre">scikit-learn</span></code> fitted pipeline:</p>
+<img src="../_images/sphx_glr_plot_01_getting_started_001.png" srcset="../_images/sphx_glr_plot_01_getting_started_001.png" alt="plot 01 getting started" class = "sphx-glr-single-img"/><p>For a scikit-learn fitted pipeline:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">sklearn.datasets</span> <span class="kn">import</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_diabetes.html#sklearn.datasets.load_diabetes" title="sklearn.datasets.load_diabetes" class="sphx-glr-backref-module-sklearn-datasets sphx-glr-backref-type-py-function"><span class="n">load_diabetes</span></a>
 <span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="kn">import</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html#sklearn.linear_model.Lasso" title="sklearn.linear_model.Lasso" class="sphx-glr-backref-module-sklearn-linear_model sphx-glr-backref-type-py-class"><span class="n">Lasso</span></a>
 <span class="kn">from</span> <span class="nn">sklearn.pipeline</span> <span class="kn">import</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html#sklearn.pipeline.Pipeline" title="sklearn.pipeline.Pipeline" class="sphx-glr-backref-module-sklearn-pipeline sphx-glr-backref-type-py-class"><span class="n">Pipeline</span></a>
@@ -935,11 +921,11 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
 <section id="back-to-the-dashboard">
 <h3>Back to the dashboard<a class="headerlink" href="#back-to-the-dashboard" title="Link to this heading">#</a></h3>
 <ol class="arabic simple">
-<li><p>On the top left, create a new <code class="docutils literal notranslate"><span class="pre">View</span></code>.</p></li>
-<li><p>From the <code class="docutils literal notranslate"><span class="pre">Elements</span></code> section on the bottom left, you can add stored items to this view, either by double-cliking on them or by doing drag-and-drop.</p></li>
+<li><p>On the top left, by default, you can observe that you are in a <em>View</em> called <code class="docutils literal notranslate"><span class="pre">default</span></code>. You can rename this view or create another one.</p></li>
+<li><p>From the <em>Items</em> section on the bottom left, you can add stored items to this view, either by clicking on <code class="docutils literal notranslate"><span class="pre">+</span></code> or by doing drag-and-drop.</p></li>
 </ol>
 <img alt="Getting started with ``skore`` demo" src="https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_10_14_skore_demo.gif" />
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 5.547 seconds)</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 4.532 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-01-getting-started-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/e97c5b0c37bdd66afd2a201f006613dd/plot_01_getting_started.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_01_getting_started.ipynb</span></code></a></p>
@@ -980,7 +966,7 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">2) Basic usage of <code class="docutils literal notranslate"><span class="pre">skore</span></code></p>
+        <p class="prev-next-title">Basic usage</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -1003,7 +989,7 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#skore-ui"><code class="docutils literal notranslate"><span class="pre">skore</span></code> UI</a><ul class="nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#skore-s-project-and-ui"><code class="docutils literal notranslate"><span class="pre">skore</span></code>’s Project and UI</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#initialize-a-project-and-launch-the-ui">Initialize a Project and launch the UI</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#storing-some-items">Storing some items</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#back-to-the-dashboard">Back to the dashboard</a></li>
@@ -1046,7 +1032,7 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
 
   <p class="copyright">
     
-      © Copyright 2024, Probabl team.
+      © Copyright 2024, Probabl.
       <br/>
     
   </p>

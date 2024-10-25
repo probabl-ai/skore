@@ -18,18 +18,21 @@
 .. _sphx_glr_auto_examples_plot_02_basic_usage.py:
 
 
-===========================
-2) Basic usage of ``skore``
-===========================
+.. _example_basic_usage:
 
-This example complements the `Getting started with skore` example.
+===========
+Basic usage
+===========
 
-.. GENERATED FROM PYTHON SOURCE LINES 10-12
+This example complements the :ref:`example_getting_started` example and shows
+some more functionalities.
 
-``skore`` UI
-------------
+.. GENERATED FROM PYTHON SOURCE LINES 13-15
 
-.. GENERATED FROM PYTHON SOURCE LINES 14-30
+Project and UI
+--------------
+
+.. GENERATED FROM PYTHON SOURCE LINES 17-33
 
 .. code-block:: Python
 
@@ -56,12 +59,12 @@ This example complements the `Getting started with skore` example.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 31-33
+.. GENERATED FROM PYTHON SOURCE LINES 34-36
 
 Initialize a Project and launch the UI
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. GENERATED FROM PYTHON SOURCE LINES 35-44
+.. GENERATED FROM PYTHON SOURCE LINES 38-47
 
 .. code-block:: Python
 
@@ -87,13 +90,13 @@ Initialize a Project and launch the UI
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 45-50
+.. GENERATED FROM PYTHON SOURCE LINES 48-53
 
 .. code-block:: Python
 
     from skore import load
 
-    my_project_gs = load("my_project_gs.skore")
+    my_project_bu = load("my_project_bu.skore")
 
 
 
@@ -103,18 +106,18 @@ Initialize a Project and launch the UI
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 51-55
+.. GENERATED FROM PYTHON SOURCE LINES 54-58
 
 Storing an integer
 ^^^^^^^^^^^^^^^^^^
 
 Now, let us store our first object, for example an integer:
 
-.. GENERATED FROM PYTHON SOURCE LINES 57-59
+.. GENERATED FROM PYTHON SOURCE LINES 60-62
 
 .. code-block:: Python
 
-    my_project_gs.put("my_int", 3)
+    my_project_bu.put("my_int", 3)
 
 
 
@@ -123,17 +126,17 @@ Now, let us store our first object, for example an integer:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 60-63
+.. GENERATED FROM PYTHON SOURCE LINES 63-66
 
-Here, the name of my object is ``my_int`` and the integer value is 3.
+Here, the name of the object is ``my_int`` and the integer value is 3.
 
 You can read it from the project:
 
-.. GENERATED FROM PYTHON SOURCE LINES 65-67
+.. GENERATED FROM PYTHON SOURCE LINES 68-70
 
 .. code-block:: Python
 
-    my_project_gs.get("my_int")
+    my_project_bu.get("my_int")
 
 
 
@@ -148,15 +151,15 @@ You can read it from the project:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 68-69
+.. GENERATED FROM PYTHON SOURCE LINES 71-72
 
-Careful; like in a traditional Python dictionary, the `put` method will *overwrite* past data if you use a key which already exists!
+Careful; like in a traditional Python dictionary, the ``put`` method will *overwrite* past data if you use a key which already exists!
 
-.. GENERATED FROM PYTHON SOURCE LINES 71-73
+.. GENERATED FROM PYTHON SOURCE LINES 74-76
 
 .. code-block:: Python
 
-    my_project_gs.put("my_int", 30_000)
+    my_project_bu.put("my_int", 30_000)
 
 
 
@@ -165,15 +168,15 @@ Careful; like in a traditional Python dictionary, the `put` method will *overwri
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 74-75
+.. GENERATED FROM PYTHON SOURCE LINES 77-78
 
 Let us check the updated value:
 
-.. GENERATED FROM PYTHON SOURCE LINES 77-79
+.. GENERATED FROM PYTHON SOURCE LINES 80-82
 
 .. code-block:: Python
 
-    my_project_gs.get("my_int")
+    my_project_bu.get("my_int")
 
 
 
@@ -188,28 +191,15 @@ Let us check the updated value:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 80-81
+.. GENERATED FROM PYTHON SOURCE LINES 83-84
 
-By using the `delete_item` method, you can also delete an object so that your `skore` UI does not become cluttered:
-
-.. GENERATED FROM PYTHON SOURCE LINES 83-85
-
-.. code-block:: Python
-
-    my_project_gs.put("my_int_2", 10)
-
-
-
-
-
-
-
+By using the ``delete_item`` method, you can also delete an object so that your skore UI does not become cluttered:
 
 .. GENERATED FROM PYTHON SOURCE LINES 86-88
 
 .. code-block:: Python
 
-    my_project_gs.delete_item("my_int_2")
+    my_project_bu.put("my_int_2", 10)
 
 
 
@@ -218,15 +208,28 @@ By using the `delete_item` method, you can also delete an object so that your `s
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 89-90
-
-You can use `my_project_gs.list_item_keys` to display all the keys in your project:
-
-.. GENERATED FROM PYTHON SOURCE LINES 92-94
+.. GENERATED FROM PYTHON SOURCE LINES 89-91
 
 .. code-block:: Python
 
-    my_project_gs.list_item_keys()
+    my_project_bu.delete_item("my_int_2")
+
+
+
+
+
+
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 92-93
+
+You can display all the keys in your project:
+
+.. GENERATED FROM PYTHON SOURCE LINES 95-97
+
+.. code-block:: Python
+
+    my_project_bu.list_item_keys()
 
 
 
@@ -237,23 +240,24 @@ You can use `my_project_gs.list_item_keys` to display all the keys in your proje
  .. code-block:: none
 
 
-    ['my_df', 'my_figure', 'my_fitted_pipeline', 'my_int']
+    ['my_int']
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 95-96
+.. GENERATED FROM PYTHON SOURCE LINES 98-100
 
-### Storing a string
+Storing a string
+^^^^^^^^^^^^^^^^
 
-.. GENERATED FROM PYTHON SOURCE LINES 98-99
+.. GENERATED FROM PYTHON SOURCE LINES 102-103
 
 We just stored a integer, now let us store some text using strings!
 
-.. GENERATED FROM PYTHON SOURCE LINES 101-103
+.. GENERATED FROM PYTHON SOURCE LINES 105-107
 
 .. code-block:: Python
 
-    my_project_gs.put("my_string", "Hello world!")
+    my_project_bu.put("my_string", "Hello world!")
 
 
 
@@ -262,11 +266,11 @@ We just stored a integer, now let us store some text using strings!
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 104-106
+.. GENERATED FROM PYTHON SOURCE LINES 108-110
 
 .. code-block:: Python
 
-    my_project_gs.get("my_string")
+    my_project_bu.get("my_string")
 
 
 
@@ -281,15 +285,15 @@ We just stored a integer, now let us store some text using strings!
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 107-108
+.. GENERATED FROM PYTHON SOURCE LINES 111-112
 
-``my_project_gs.get`` infers the type of the inserted object by default. For example, strings are assumed to be in Markdown format. Hence, you can customize the display of your text:
+``my_project_bu.get`` infers the type of the inserted object by default. For example, strings are assumed to be in Markdown format. Hence, you can customize the display of your text:
 
-.. GENERATED FROM PYTHON SOURCE LINES 110-123
+.. GENERATED FROM PYTHON SOURCE LINES 114-127
 
 .. code-block:: Python
 
-    my_project_gs.put(
+    my_project_bu.put(
         "my_string_2",
         (
             """Hello world!, **bold**, *italic*, `code`
@@ -309,19 +313,19 @@ We just stored a integer, now let us store some text using strings!
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 124-125
+.. GENERATED FROM PYTHON SOURCE LINES 128-129
 
 Moreover, you can also explicitly tell `skore` the media type of an object, for example in HTML:
 
-.. GENERATED FROM PYTHON SOURCE LINES 127-128
+.. GENERATED FROM PYTHON SOURCE LINES 131-132
 
 Note: we use ``put_item`` instead of ``put``:
 
-.. GENERATED FROM PYTHON SOURCE LINES 128-135
+.. GENERATED FROM PYTHON SOURCE LINES 132-139
 
 .. code-block:: Python
 
-    my_project_gs.put_item(
+    my_project_bu.put_item(
         "my_string_3",
         MediaItem.factory(
             "<p><h1>Title</h1> <b>bold</b>, <i>italic</i>, etc.</p>", media_type="text/html"
@@ -335,15 +339,15 @@ Note: we use ``put_item`` instead of ``put``:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 136-137
+.. GENERATED FROM PYTHON SOURCE LINES 140-141
 
 Note that the media type is only used for the UI, and not in this notebook at hand:
 
-.. GENERATED FROM PYTHON SOURCE LINES 139-141
+.. GENERATED FROM PYTHON SOURCE LINES 143-145
 
 .. code-block:: Python
 
-    my_project_gs.get("my_string_3")
+    my_project_bu.get("my_string_3")
 
 
 
@@ -358,17 +362,17 @@ Note that the media type is only used for the UI, and not in this notebook at ha
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 142-143
+.. GENERATED FROM PYTHON SOURCE LINES 146-147
 
-You can also conveniently use Python f-strings:
+You can also conveniently use a Python f-string:
 
-.. GENERATED FROM PYTHON SOURCE LINES 145-151
+.. GENERATED FROM PYTHON SOURCE LINES 149-155
 
 .. code-block:: Python
 
     x = 2
     y = [1, 2, 3, 4]
-    my_project_gs.put(
+    my_project_bu.put(
         "my_string_4", f"The value of `x` is {x} and the value of `y` is {y}."
     )
 
@@ -379,21 +383,21 @@ You can also conveniently use Python f-strings:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 152-154
+.. GENERATED FROM PYTHON SOURCE LINES 156-158
 
 Storing many kinds of data
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. GENERATED FROM PYTHON SOURCE LINES 156-157
+.. GENERATED FROM PYTHON SOURCE LINES 160-161
 
 Python list:
 
-.. GENERATED FROM PYTHON SOURCE LINES 159-162
+.. GENERATED FROM PYTHON SOURCE LINES 163-166
 
 .. code-block:: Python
 
     my_list = [1, 2, 3, 4]
-    my_project_gs.put("my_list", my_list)
+    my_project_bu.put("my_list", my_list)
 
 
 
@@ -402,11 +406,11 @@ Python list:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 163-164
+.. GENERATED FROM PYTHON SOURCE LINES 167-168
 
 Python dictionary:
 
-.. GENERATED FROM PYTHON SOURCE LINES 166-172
+.. GENERATED FROM PYTHON SOURCE LINES 170-176
 
 .. code-block:: Python
 
@@ -414,7 +418,7 @@ Python dictionary:
         "company": "probabl",
         "year": 2023,
     }
-    my_project_gs.put("my_dict", my_dict)
+    my_project_bu.put("my_dict", my_dict)
 
 
 
@@ -423,16 +427,16 @@ Python dictionary:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 173-174
+.. GENERATED FROM PYTHON SOURCE LINES 177-178
 
-``numpy`` array:
+Numpy array:
 
-.. GENERATED FROM PYTHON SOURCE LINES 176-179
+.. GENERATED FROM PYTHON SOURCE LINES 180-183
 
 .. code-block:: Python
 
     my_arr = np.random.randn(3, 3)
-    my_project_gs.put("my_arr", my_arr)
+    my_project_bu.put("my_arr", my_arr)
 
 
 
@@ -441,16 +445,16 @@ Python dictionary:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 180-181
+.. GENERATED FROM PYTHON SOURCE LINES 184-185
 
-``pandas`` data frame:
+Pandas data frame:
 
-.. GENERATED FROM PYTHON SOURCE LINES 183-186
+.. GENERATED FROM PYTHON SOURCE LINES 187-190
 
 .. code-block:: Python
 
     my_df = pd.DataFrame(np.random.randn(3, 3))
-    my_project_gs.put("my_df", my_df)
+    my_project_bu.put("my_df", my_df)
 
 
 
@@ -459,18 +463,18 @@ Python dictionary:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 187-191
+.. GENERATED FROM PYTHON SOURCE LINES 191-195
 
 Data visualization
 ^^^^^^^^^^^^^^^^^^
 
-Note that, in the dashboard, the interactivity of plots is supported, for example for ``altair`` and ``plotly``.
+Note that, in the dashboard, the interactivity of plots is supported, for example for Altair and Plotly.
 
-.. GENERATED FROM PYTHON SOURCE LINES 193-194
+.. GENERATED FROM PYTHON SOURCE LINES 197-198
 
-``matplotlib`` figures:
+Matplotlib figure:
 
-.. GENERATED FROM PYTHON SOURCE LINES 196-209
+.. GENERATED FROM PYTHON SOURCE LINES 200-213
 
 .. code-block:: Python
 
@@ -485,7 +489,7 @@ Note that, in the dashboard, the interactivity of plots is supported, for exampl
     ax.set_title("Simple Plot")
     ax.legend()
 
-    my_project_gs.put("my_figure", fig)
+    my_project_bu.put("my_figure", fig)
 
 
 
@@ -499,11 +503,11 @@ Note that, in the dashboard, the interactivity of plots is supported, for exampl
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 210-211
+.. GENERATED FROM PYTHON SOURCE LINES 214-215
 
-``altair`` charts:
+Altair chart:
 
-.. GENERATED FROM PYTHON SOURCE LINES 213-228
+.. GENERATED FROM PYTHON SOURCE LINES 217-232
 
 .. code-block:: Python
 
@@ -520,7 +524,7 @@ Note that, in the dashboard, the interactivity of plots is supported, for exampl
         .properties(title="My title")
     )
 
-    my_project_gs.put("my_altair_chart", my_altair_chart)
+    my_project_bu.put("my_altair_chart", my_altair_chart)
 
 
 
@@ -529,30 +533,37 @@ Note that, in the dashboard, the interactivity of plots is supported, for exampl
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 229-240
+.. GENERATED FROM PYTHON SOURCE LINES 233-243
 
-Plotly figures:
+.. note::
+    For Plotly figures, some users reported the following error when running Plotly cells:
+    ```
+    ValueError: Mime type rendering requires nbformat>=4.2.0 but it is not installed
+    ```
+    This is a Plotly issue which is documented `here <https://github.com/plotly/plotly.py/issues/3285>`_; to solve it, we recommend installing nbformat in your environment, e.g. with
 
-NOTE: Some users reported the following error when running the Plotly cells:
-```
-ValueError: Mime type rendering requires nbformat>=4.2.0 but it is not installed
-```
-This is a Plotly issue which is documented `here <https://github.com/plotly/plotly.py/issues/3285>`_; to solve it, we recommend installing nbformat in your environment, e.g. with
+    .. code:: console
 
-.. code:: console
+        pip install --upgrade nbformat
 
-   pip install --upgrade nbformat
+.. GENERATED FROM PYTHON SOURCE LINES 245-246
 
-.. GENERATED FROM PYTHON SOURCE LINES 242-249
+Plotly figure:
+
+.. GENERATED FROM PYTHON SOURCE LINES 248-259
 
 .. code-block:: Python
 
     df = px.data.iris()
     fig = px.scatter(
-        df, x=df.sepal_length, y=df.sepal_width, color=df.species, size=df.petal_length
+        df,
+        x=df.sepal_length,
+        y=df.sepal_width,
+        color=df.species,
+        size=df.petal_length
     )
 
-    my_project_gs.put("my_plotly_fig", fig)
+    my_project_bu.put("my_plotly_fig", fig)
 
 
 
@@ -561,11 +572,11 @@ This is a Plotly issue which is documented `here <https://github.com/plotly/plot
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 250-251
+.. GENERATED FROM PYTHON SOURCE LINES 260-261
 
-Animated ``plotly`` figures:
+Animated Plotly figure:
 
-.. GENERATED FROM PYTHON SOURCE LINES 253-271
+.. GENERATED FROM PYTHON SOURCE LINES 263-281
 
 .. code-block:: Python
 
@@ -585,7 +596,7 @@ Animated ``plotly`` figures:
         range_y=[25, 90],
     )
 
-    my_project_gs.put("my_anim_plotly_fig", my_anim_plotly_fig)
+    my_project_bu.put("my_anim_plotly_fig", my_anim_plotly_fig)
 
 
 
@@ -594,11 +605,11 @@ Animated ``plotly`` figures:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 272-273
+.. GENERATED FROM PYTHON SOURCE LINES 282-283
 
-PIL images:
+PIL image:
 
-.. GENERATED FROM PYTHON SOURCE LINES 275-281
+.. GENERATED FROM PYTHON SOURCE LINES 285-291
 
 .. code-block:: Python
 
@@ -606,7 +617,7 @@ PIL images:
     with io.BytesIO() as output:
         my_pil_image.save(output, format="png")
 
-    my_project_gs.put("my_pil_image", my_pil_image)
+    my_project_bu.put("my_pil_image", my_pil_image)
 
 
 
@@ -615,21 +626,21 @@ PIL images:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 282-288
+.. GENERATED FROM PYTHON SOURCE LINES 292-298
 
 Scikit-learn models and pipelines
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-As ``skore`` is developed by `Probabl <https://probabl.ai>`_, the spin-off of scikit-learn, ``skore`` treats scikit-learn models and pipelines as first-class citizens.
+As skore is developed by `Probabl <https://probabl.ai>`_, the spin-off of scikit-learn, skore treats scikit-learn models and pipelines as first-class citizens.
 
 First of all, you can store a scikit-learn model:
 
-.. GENERATED FROM PYTHON SOURCE LINES 290-293
+.. GENERATED FROM PYTHON SOURCE LINES 300-303
 
 .. code-block:: Python
 
     my_model = Lasso(alpha=2)
-    my_project_gs.put("my_model", my_model)
+    my_project_bu.put("my_model", my_model)
 
 
 
@@ -638,18 +649,18 @@ First of all, you can store a scikit-learn model:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 294-295
+.. GENERATED FROM PYTHON SOURCE LINES 304-305
 
-You can also store ``scikit-learn`` pipelines:
+You can also store scikit-learn pipelines:
 
-.. GENERATED FROM PYTHON SOURCE LINES 297-302
+.. GENERATED FROM PYTHON SOURCE LINES 307-312
 
 .. code-block:: Python
 
     my_pipeline = Pipeline(
         [("standard_scaler", StandardScaler()), ("lasso", Lasso(alpha=2))]
     )
-    my_project_gs.put("my_pipeline", my_pipeline)
+    my_project_bu.put("my_pipeline", my_pipeline)
 
 
 
@@ -658,11 +669,11 @@ You can also store ``scikit-learn`` pipelines:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 303-304
+.. GENERATED FROM PYTHON SOURCE LINES 313-314
 
-Moreover, you can store fitted ``scikit-learn`` pipelines:
+Moreover, you can store fitted scikit-learn pipelines:
 
-.. GENERATED FROM PYTHON SOURCE LINES 306-313
+.. GENERATED FROM PYTHON SOURCE LINES 316-323
 
 .. code-block:: Python
 
@@ -671,7 +682,7 @@ Moreover, you can store fitted ``scikit-learn`` pipelines:
     y = diabetes.target[:150]
     my_pipeline.fit(X, y)
 
-    my_project_gs.put("my_fitted_pipeline", my_pipeline)
+    my_project_bu.put("my_fitted_pipeline", my_pipeline)
 
 
 
@@ -680,110 +691,14 @@ Moreover, you can store fitted ``scikit-learn`` pipelines:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 314-315
+.. GENERATED FROM PYTHON SOURCE LINES 324-325
 
 *Stay tuned for some new features!*
-
-.. GENERATED FROM PYTHON SOURCE LINES 317-321
-
-Manipulating the skore UI
-^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The following is just some ``skore`` strings that we generate in order to provide more context on the obtained report.
-
-.. GENERATED FROM PYTHON SOURCE LINES 323-328
-
-.. code-block:: Python
-
-    my_project_gs.put(
-        "my_comment_1",
-        "<p><h1>Welcome to skore!</h1><p><code>skore</code> allows data scientists to create tracking and visualizations from their Python code. This HTML document is actually a skore report generated using the <code>01_basic_usage.ipynb</code> example notebook then exported (into HTML)!<p>",
-    )
-
-
-
-
-
-
-
-
-.. GENERATED FROM PYTHON SOURCE LINES 329-334
-
-.. code-block:: Python
-
-    my_project_gs.put(
-        "my_comment_2",
-        "<p><h2>Integers</h1></p>",
-    )
-
-
-
-
-
-
-
-
-.. GENERATED FROM PYTHON SOURCE LINES 335-337
-
-.. code-block:: Python
-
-    my_project_gs.put("my_comment_3", "<p><h2>Strings</h1></p>")
-
-
-
-
-
-
-
-
-.. GENERATED FROM PYTHON SOURCE LINES 338-343
-
-.. code-block:: Python
-
-    my_project_gs.put(
-        "my_comment_4",
-        "<p><h2>Many kinds of data</h1></p>",
-    )
-
-
-
-
-
-
-
-
-.. GENERATED FROM PYTHON SOURCE LINES 344-349
-
-.. code-block:: Python
-
-    my_project_gs.put(
-        "my_comment_5",
-        "<p><h2>Plots</h1></p>",
-    )
-
-
-
-
-
-
-
-
-.. GENERATED FROM PYTHON SOURCE LINES 350-351
-
-.. code-block:: Python
-
-    my_project_gs.put("my_comment_6", "<p><h2>Scikit-learn models and pipelines</h1></p>")
-
-
-
-
-
-
 
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 2.340 seconds)
+   **Total running time of the script:** (0 minutes 1.871 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_02_basic_usage.py:
