@@ -1,4 +1,4 @@
-# 👋 Welcome to skore
+# 👋 Welcome to `skore`
 
 ![ci](https://github.com/probabl-ai/skore/actions/workflows/ci.yml/badge.svg?event=push)
 ![python](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue?style=flat&logo=python)
@@ -6,7 +6,7 @@
 ![license](https://img.shields.io/pypi/l/skore)
 [![Discord](https://img.shields.io/badge/Discord-%235865F2.svg?logo=discord&logoColor=white)](https://discord.probabl.ai/)
 
-With `skore`, data scientists can:
+With skore, data scientists can:
 1. Store objects of different types from their Python code: python lists, `scikit-learn` fitted pipelines, `plotly` figures, and more.
 2. **Track** and  **visualize** these stored objects on a user-friendly dashboard.
 3. Export the dashboard to a HTML file.
