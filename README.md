@@ -47,7 +47,7 @@ python -m skore launch "my_project"
 ```
 This will automatically open a browser at the UI's location:
 1. On the top left, by default, you can observe that you are in a _View_ called `default`. You can rename this view or create another one.
-1. From the Items section on the bottom left, you can add stored items to this view, either by clicking on `+` or by doing drag-and-drop.
+1. From the _Items_ section on the bottom left, you can add stored items to this view, either by clicking on `+` or by doing drag-and-drop.
 
 ## 👨‍🏫 More examples
 
