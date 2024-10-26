@@ -57,3 +57,39 @@ intersphinx_mapping = {
 numpydoc_show_class_members = False
 
 html_title = "skore"
+
+# From skrub
+# Theme options are theme-specific and customize the look and feel of a theme
+# further.  For a list of options available for each theme, see the
+# documentation.
+html_theme_options = {
+    # "logo": {
+    #     "image_relative": "_static/skrub.svg",
+    #     "image_light": "_static/skrub.svg",
+    #     "image_dark": "_static/skrub.svg",
+    # },
+    "external_links": [
+        {
+            "url": "https://probabl.ai",
+            "name": "Probabl website",
+        },
+    ],
+    "header_links_before_dropdown": 4,
+    "icon_links": [
+        {
+            "name": "Twitter",
+            "url": "https://x.com/probabl_ai",
+            "icon": "fa-brands fa-twitter",
+        },
+        {
+            "name": "GitHub",
+            "url": "https://github.com/probabl-ai/skore/",
+            "icon": "fa-brands fa-github",
+        },
+        {
+            "name": "Discord",
+            "url": "https://discord.gg/scBZerAGwW",
+            "icon": "fa-brands fa-discord",
+        },
+    ],
+}
