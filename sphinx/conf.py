@@ -22,6 +22,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx_design",
     "sphinx_gallery.gen_gallery",
+    "sphinx_copybutton",
 ]
 templates_path = ["_templates"]
 exclude_patterns = ["build", "Thumbs.db", ".DS_Store"]
@@ -58,7 +59,6 @@ numpydoc_show_class_members = False
 
 html_title = "skore"
 
-# From skrub
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
@@ -94,3 +94,7 @@ html_theme_options = {
     ],
     "announcement": "This code is still in development. <strong>The API is subject to change.</strong>",
 }
+
+# Sphinx-Copybutton configuration
+copybutton_prompt_text = r">>> |\.\.\. |\$ "
+copybutton_prompt_is_regexp = True

@@ -37,7 +37,7 @@ subprocess.run("python3 -m skore create my_project_gs".split())
 #
 # From your shell (in the same directory), start the UI locally:
 #
-# .. code:: console
+# .. code-block:: bash
 #
 #     python -m skore launch "my_project_gs"
 #

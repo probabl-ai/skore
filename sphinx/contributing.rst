@@ -30,7 +30,7 @@ Quick start
 
 You'll need ``python >=3.9, <3.13`` to build the backend and ``Node>=20`` to build the skore-ui. Then, you can install dependencies and run the UI with:
 
-.. code:: console
+.. code-block:: bash
 
     make install-skore
     make build-skore-ui
@@ -44,14 +44,14 @@ Backend
 
 Install backend dependencies with:
 
-.. code:: console
+.. code-block:: bash
     
     make install-skore
 
 
 You can run the API server with:
 
-.. code:: console
+.. code-block:: bash
 
     make serve-api
 
@@ -60,7 +60,7 @@ skore-ui
 
 Install skore-ui dependencies with:
 
-.. code:: console
+.. code-block:: bash
     
     npm install
 
@@ -68,7 +68,7 @@ in the ``skore-ui`` directory.
 
 Run the skore-ui in dev mode (for hot-reloading) with
 
-.. code:: console
+.. code-block:: bash
 
     npm run dev
 
@@ -76,7 +76,7 @@ in the ``skore-ui`` directory
 
 Then, to use the skore-ui
 
-.. code:: console
+.. code-block:: bash
 
     make build-skore-ui
     make serve-ui
@@ -109,14 +109,14 @@ Our documentation uses `PyData Sphinx Theme <https://pydata-sphinx-theme.readthe
 
 To build the docs:
 
-.. code:: console
+.. code-block:: bash
 
     cd sphinx
     make html
 
 Then, you can access the local build via:
 
-.. code:: console
+.. code-block:: bash
 
     open build/html/index.html
 
@@ -128,6 +128,6 @@ Help for common issues
 
 Please check that your version of node is at least 20 using the following command:
 
-.. code:: console
+.. code-block:: bash
 
     node -v
