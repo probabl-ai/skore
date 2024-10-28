@@ -12,10 +12,10 @@ assistance when developing your ML/DS projects.
 # %%
 import subprocess
 
-# remove the project if it already exists
+# remove the skore project if it already exists
 subprocess.run("rm -rf my_project_cv.skore".split())
 
-# create the project
+# create the skore project
 subprocess.run("python3 -m skore create my_project_cv".split())
 
 
