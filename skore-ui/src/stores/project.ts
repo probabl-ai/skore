@@ -3,6 +3,7 @@ import { ref, shallowRef } from "vue";
 
 import { type Layout, type Project, type ProjectItem } from "@/models";
 import { deleteView as deleteViewApi, fetchProject, putView } from "@/services/api";
+import { poll } from "@/services/utils";
 
 export interface TreeNode {
   name: string;
@@ -41,6 +42,7 @@ export const useProjectStore = defineStore("project", () => {
    * @param view the view to add the key to
    * @param key the key to add to the view
    * @param position the position to add the key at, default to the end of the list
+   * @returns true if the key was successfully displayed, false otherwise (e.g. if it was already displayed)
    */
   async function displayKey(view: string, key: string, position: number = -1) {
     stopBackendPolling();
@@ -57,8 +59,11 @@ export const useProjectStore = defineStore("project", () => {
       }
       _updatePresentableItemsInView();
       await persistView(view, views.value[view]);
+      await startBackendPolling();
+      return true;
     }
     await startBackendPolling();
+    return false;
   }
 
   /**
@@ -96,7 +101,7 @@ export const useProjectStore = defineStore("project", () => {
   async function startBackendPolling() {
     _isCanceledCall = false;
     await fetch();
-    _stopBackendPolling = () => {}; // await poll(fetch, 1500);
+    _stopBackendPolling = await poll(fetch, 1500);
   }
 
   /**

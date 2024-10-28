@@ -57,44 +57,58 @@ def plot_cross_validation(cv_results: dict) -> plotly.graph_objects.Figure:
         bar_color = plotly.colors.qualitative.Plotly[
             col_i % len(plotly.colors.qualitative.Plotly)
         ]
-        fig.add_trace(
-            go.Bar(
-                x=df.index,
-                y=df[col_name].values,
-                name=metric_name,
-                visible=visible,
-                marker_color=bar_color,
-            )
-        )
-
-        # Add average line for each metric
+        bar_x = [min(df.index) - 0.5, max(df.index) + 0.5]
+        # Calculate statistics
         avg_value = df[col_name].mean()
         std_value = df[col_name].std()
 
-        fig.add_hline(
-            y=avg_value,
-            name=f"Average {metric_name}",
-            line=dict(dash="dash", color=bar_color),
-            visible=visible,
-            showlegend=True,
-        )
-
-        fig.add_hline(
-            y=avg_value + std_value,
-            name=f"Average + 1 std. dev. {metric_name}",
-            line=dict(dash="dot", color=bar_color),
-            visible=visible,
-            legendgroup=f"std {col_i}",
-            showlegend=True,
-        )
-
-        fig.add_hline(
-            y=avg_value - std_value,
-            name=f"Average - 1 std. dev. {metric_name}",
-            line=dict(dash="dot", color=bar_color),
-            visible=visible,
-            legendgroup=f"std {col_i}",
-            showlegend=True,
+        # Add all traces at once
+        fig.add_traces(
+            [
+                # Bar trace
+                go.Bar(
+                    x=df.index,
+                    y=df[col_name].values,
+                    name=metric_name,
+                    visible=visible,
+                    marker_color=bar_color,
+                    legendgroup=f"group{col_i}",
+                    showlegend=True,
+                ),
+                # Mean line
+                go.Scatter(
+                    x=bar_x,
+                    y=[avg_value, avg_value],
+                    name=f"Average {metric_name}",
+                    line=dict(dash="dash", color=bar_color),
+                    visible=visible,
+                    legendgroup=f"group{col_i}",
+                    showlegend=False,
+                    mode="lines",
+                ),
+                # +1 std line
+                go.Scatter(
+                    x=bar_x,
+                    y=[avg_value + std_value, avg_value + std_value],
+                    name=f"Average + 1 std. dev. {metric_name}",
+                    line=dict(dash="dot", color=bar_color),
+                    visible=visible,
+                    legendgroup=f"group{col_i}",
+                    showlegend=False,
+                    mode="lines",
+                ),
+                # -1 std line
+                go.Scatter(
+                    x=bar_x,
+                    y=[avg_value - std_value, avg_value - std_value],
+                    name=f"Average - 1 std. dev. {metric_name}",
+                    line=dict(dash="dot", color=bar_color),
+                    visible=visible,
+                    legendgroup=f"group{col_i}",
+                    showlegend=False,
+                    mode="lines",
+                ),
+            ]
         )
 
     fig.update_xaxes(tickmode="linear", dtick=1, title_text="Split number")

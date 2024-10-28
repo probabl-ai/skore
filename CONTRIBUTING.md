@@ -14,7 +14,7 @@ You'll need `python >=3.9, <3.13` to build the backend and Node>=20 to build the
 ```sh
 make install-skore
 make build-skore-ui
-make serve-ui
+make serve-skore-ui
 ```
 
 You are now all setup to run the library locally.
