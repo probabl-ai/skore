@@ -89,6 +89,8 @@ In particular, commits are "sentence case", meaning "fix: Fix issue" passes, whi
 
 Generally the description of a commit should start with a verb in the imperative voice, so that it would properly complete the sentence: "When applied, this commit will [...]".
 
+Example of correct commit: ``fix(docs): Add a contributor guide``.
+
 Contributing to the docstrings
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -106,6 +108,10 @@ Documentation
 -------------
 
 Our documentation uses `PyData Sphinx Theme <https://pydata-sphinx-theme.readthedocs.io/>`_.
+
+.. warning::
+
+    Modifications are to be done in the ``sphinx`` folder. The ``docs`` folder must *not* be touched!
 
 To build the docs:
 

@@ -237,7 +237,7 @@ my_project_bu.put("my_altair_chart", my_altair_chart)
 #     ```
 #     This is a Plotly issue which is documented `here <https://github.com/plotly/plotly.py/issues/3285>`_; to solve it, we recommend installing nbformat in your environment, e.g. with
 #
-#     .. code-block:: bash
+#     .. code:: console
 #
 #         pip install --upgrade nbformat
 
