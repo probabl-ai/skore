@@ -54,6 +54,7 @@ def plot_cross_validation(cv_results: dict) -> plotly.graph_objects.Figure:
     for col_i, col_name in enumerate(df.columns):
         visible = True if col_i == 0 else "legendonly"
         metric_name = dict_labels.get(col_name, col_name)
+        legendgroup = f"metric_{col_i}"
         bar_color = plotly.colors.qualitative.Plotly[
             col_i % len(plotly.colors.qualitative.Plotly)
         ]
@@ -64,6 +65,7 @@ def plot_cross_validation(cv_results: dict) -> plotly.graph_objects.Figure:
                 name=metric_name,
                 visible=visible,
                 marker_color=bar_color,
+                legendgroup=legendgroup,
             )
         )
 
@@ -76,7 +78,8 @@ def plot_cross_validation(cv_results: dict) -> plotly.graph_objects.Figure:
             name=f"Average {metric_name}",
             line=dict(dash="dash", color=bar_color),
             visible=visible,
-            showlegend=True,
+            legendgroup=legendgroup,
+            layer="above",
         )
 
         fig.add_hline(
@@ -84,8 +87,8 @@ def plot_cross_validation(cv_results: dict) -> plotly.graph_objects.Figure:
             name=f"Average + 1 std. dev. {metric_name}",
             line=dict(dash="dot", color=bar_color),
             visible=visible,
-            legendgroup=f"std {col_i}",
-            showlegend=True,
+            legendgroup=legendgroup,
+            layer="above",
         )
 
         fig.add_hline(
@@ -93,8 +96,8 @@ def plot_cross_validation(cv_results: dict) -> plotly.graph_objects.Figure:
             name=f"Average - 1 std. dev. {metric_name}",
             line=dict(dash="dot", color=bar_color),
             visible=visible,
-            legendgroup=f"std {col_i}",
-            showlegend=True,
+            legendgroup=legendgroup,
+            layer="above",
         )
 
     fig.update_xaxes(tickmode="linear", dtick=1, title_text="Split number")
