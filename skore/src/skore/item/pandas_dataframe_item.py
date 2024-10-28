@@ -23,9 +23,12 @@ class PandasDataFrameItem(Item):
     creation and update timestamps.
     """
 
+    ORIENT = "split"
+
     def __init__(
         self,
-        dataframe_dict: dict,
+        index_json: str,
+        dataframe_json: str,
         created_at: str | None = None,
         updated_at: str | None = None,
     ):
@@ -34,8 +37,10 @@ class PandasDataFrameItem(Item):
 
         Parameters
         ----------
-        dataframe_dict : dict
-            The dict representation of the dataframe.
+        index_json : json
+            The JSON representation of the dataframe's index.
+        dataframe_json : json
+            The JSON representation of the dataframe, without its index.
         created_at : str
             The creation timestamp in ISO format.
         updated_at : str
@@ -43,14 +48,26 @@ class PandasDataFrameItem(Item):
         """
         super().__init__(created_at, updated_at)
 
-        self.dataframe_dict = dataframe_dict
+        self.index_json = index_json
+        self.dataframe_json = dataframe_json
 
     @cached_property
     def dataframe(self) -> pandas.DataFrame:
         """The pandas DataFrame."""
+        import io
+
         import pandas
 
-        return pandas.DataFrame.from_dict(self.dataframe_dict, orient="tight")
+        with (
+            io.StringIO(self.index_json) as index_stream,
+            io.StringIO(self.dataframe_json) as df_stream,
+        ):
+            index = pandas.read_json(index_stream, orient=self.ORIENT, dtype=False)
+            index = index.set_index(list(index.columns))
+            dataframe = pandas.read_json(df_stream, orient=self.ORIENT, dtype=False)
+            dataframe.index = index.index
+
+            return dataframe
 
     @classmethod
     def factory(cls, dataframe: pandas.DataFrame) -> PandasDataFrameItem:
@@ -66,15 +83,21 @@ class PandasDataFrameItem(Item):
         -------
         PandasDataFrameItem
             A new PandasDataFrameItem instance.
+
+        Notes
+        -----
+        The dataframe must be JSON serializable.
         """
         import pandas
 
         if not isinstance(dataframe, pandas.DataFrame):
             raise TypeError(f"Type '{dataframe.__class__}' is not supported.")
 
-        instance = cls(dataframe_dict=dataframe.to_dict(orient="tight"))
-
-        # add dataframe as cached property
-        instance.dataframe = dataframe
+        index = dataframe.index.to_frame(index=False)
+        dataframe = dataframe.reset_index(drop=True)
+        instance = cls(
+            index_json=index.to_json(orient=PandasDataFrameItem.ORIENT),
+            dataframe_json=dataframe.to_json(orient=PandasDataFrameItem.ORIENT),
+        )
 
         return instance
