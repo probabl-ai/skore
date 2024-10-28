@@ -9,6 +9,8 @@ export interface Toast {
   message: string;
   type: ToastType;
   count?: number;
+  dismissible?: boolean;
+  duration?: number;
 }
 
 export const useToastsStore = defineStore("toasts", () => {
@@ -20,8 +22,15 @@ export const useToastsStore = defineStore("toasts", () => {
    * If the message is not in the array, add it.
    * @param message The message to add.
    * @param type The type of toast to add.
+   * @param options The options for the toas
+   * @param options.dismissible Whether the toast can be dismissed by the user. Default is true.
+   * @param options.duration The duration in seconds for which the toast should be displayed. Default is Infinity.
    */
-  function addToast(message: string, type: ToastType) {
+  function addToast(
+    message: string,
+    type: ToastType,
+    { dismissible = true, duration = Infinity } = {}
+  ) {
     // Check if the message is already in the toasts array
     const existingToast = toasts.value.find(
       (toast) => toast.message === message && toast.type === type
@@ -31,7 +40,7 @@ export const useToastsStore = defineStore("toasts", () => {
       existingToast.count = (existingToast.count || 1) + 1;
     } else {
       // If the message is not in the array, add it
-      toasts.value.push({ id: generateRandomId(), message, type, count: 1 });
+      toasts.value.push({ id: generateRandomId(), message, type, count: 1, dismissible, duration });
     }
   }
 
