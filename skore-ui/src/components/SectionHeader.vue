@@ -38,7 +38,6 @@ const emit = defineEmits(["action"]);
   align-items: center;
   justify-content: space-between;
   padding: var(--spacing-padding-large);
-  border-right: solid var(--border-width-normal) var(--border-color-normal);
   border-bottom: solid var(--border-width-normal) var(--border-color-normal);
   background-color: var(--background-color-elevated);
 
