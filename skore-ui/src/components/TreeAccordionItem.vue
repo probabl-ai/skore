@@ -124,7 +124,7 @@ function onAction(action: string) {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    background-color: var(--background-color-elevated-high);
+    background-color: var(--background-color-normal);
 
     .label {
       display: flex;
@@ -134,7 +134,7 @@ function onAction(action: string) {
       transition: background-color var(--transition-duration) var(--transition-easing);
 
       &:not(.has-children):hover {
-        background-color: var(--background-color-selected);
+        background-color: var(--background-color-elevated);
         color: var(--text-color-highlight);
       }
 
@@ -148,7 +148,7 @@ function onAction(action: string) {
 
       & .icon {
         margin-right: var(--spacing-gap-small);
-        color: var(--color-primary);
+        color: var(--color-blue);
       }
 
       & .text {

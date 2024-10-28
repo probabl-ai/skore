@@ -112,8 +112,6 @@ onMounted(async () => {
 
 <style scoped>
 .views-list {
-  background-color: var(--background-color-elevated-high);
-
   & .list {
     max-height: 20vh;
   }

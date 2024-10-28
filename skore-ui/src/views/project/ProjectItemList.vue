@@ -28,9 +28,17 @@ const itemsAsTree = computed(() => {
   return tree;
 });
 
-function onItemAction(action: string, key: string) {
+async function onItemAction(action: string, key: string) {
   if (projectStore.currentView) {
-    projectStore.displayKey(projectStore.currentView, key);
+    const success = await projectStore.displayKey(projectStore.currentView, key);
+
+    if (success) {
+      // Scroll to last element
+      const lastItemElement = document.querySelector(".editor-container .item:last-child");
+      if (lastItemElement) {
+        lastItemElement.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
   } else {
     toastsStore.addToast("No view selected", "error");
   }
@@ -56,7 +64,7 @@ function onItemAction(action: string, key: string) {
     height: 0;
     flex: 1;
     padding: var(--spacing-padding-large);
-    background-color: var(--background-color-elevated-high);
+    background-color: var(--background-color-normal);
   }
 }
 </style>

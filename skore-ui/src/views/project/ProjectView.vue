@@ -219,7 +219,7 @@ main {
         height: 100%;
         flex-direction: column;
         justify-content: center;
-        background-color: var(--background-color-elevated-high);
+        background-color: var(--background-color-normal);
 
         &:not(:has(.dropzone)) {
           background-color: var(--background-color-normal);

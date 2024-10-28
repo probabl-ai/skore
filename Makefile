@@ -1,5 +1,5 @@
 install-skore:
-	python -m pip install -e './skore[test]'
+	python -m pip install -e './skore[test,sphinx]'
 	pre-commit install
 
 build-skore-ui:
