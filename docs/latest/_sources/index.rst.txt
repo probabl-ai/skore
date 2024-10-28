@@ -28,12 +28,15 @@ We are a product team working at `Probabl <https://probabl.ai>`_ and our motto i
 
 .. currentmodule:: skore
 
+|
+
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Contents:
 
    install
    getting_started
    auto_examples/index
-   user_guide
    api
+   user_guide
+   contributing

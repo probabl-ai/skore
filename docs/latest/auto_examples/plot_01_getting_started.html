@@ -31,6 +31,7 @@
 <link href="../_static/styles/pydata-sphinx-theme.css?digest=26a4bc78f4c0ddb94549" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css?v=d2d258e8" />
     <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-binder.css?v=f4aeca0c" />
     <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-dataframe.css?v=2082cf3c" />
@@ -47,6 +48,8 @@
     <script src="../_static/documentation_options.js?v=8dde47fa"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=fd10adb8"></script>
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'auto_examples/plot_01_getting_started';</script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -93,6 +96,9 @@
   <div class="pst-async-banner-revealer d-none">
   <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
 </div>
+<aside class="bd-header-announcement" aria-label="Announcement">
+  <div class="bd-header-announcement__content">This code is still in development. <strong>The API is subject to change.</strong></div>
+</aside>
 
   
     <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
@@ -153,18 +159,40 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../user_guide.html">
-    User guide
-  </a>
-</li>
-
-
-<li class="nav-item ">
   <a class="nav-link nav-internal" href="../api.html">
     API
   </a>
 </li>
 
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../user_guide.html">
+    User guide
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../contributing.html">
+    Contributor guide
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://probabl.ai">
+    Probabl website
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
   </ul>
 </nav></div>
       
@@ -191,6 +219,46 @@
   <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
   <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
 </button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://x.com/probabl_ai" title="Twitter" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/probabl-ai/skore/" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://discord.gg/scBZerAGwW" title="Discord" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-discord fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Discord</span></a>
+        </li>
+</ul></div>
       
     </div>
     
@@ -260,6 +328,13 @@
 
 
 <li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api.html">
+    API
+  </a>
+</li>
+
+
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../user_guide.html">
     User guide
   </a>
@@ -267,8 +342,15 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../api.html">
-    API
+  <a class="nav-link nav-internal" href="../contributing.html">
+    Contributor guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://probabl.ai">
+    Probabl website
   </a>
 </li>
 
@@ -289,6 +371,46 @@
   <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
   <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
 </button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://x.com/probabl_ai" title="Twitter" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/probabl-ai/skore/" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://discord.gg/scBZerAGwW" title="Discord" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-discord fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Discord</span></a>
+        </li>
+</ul></div>
         
       </div>
     
@@ -379,10 +501,10 @@ types that can be stored.</p>
 <p>From your shell, initialize a skore project, here named <code class="docutils literal notranslate"><span class="pre">my_project_gs</span></code>:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">subprocess</span>
 
-<span class="c1"># remove the project if it already exists</span>
+<span class="c1"># remove the skore project if it already exists</span>
 <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">&quot;rm -rf my_project_gs.skore&quot;</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>
 
-<span class="c1"># create the project</span>
+<span class="c1"># create the skore project</span>
 <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">&quot;python3 -m skore create my_project_gs&quot;</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>
 </pre></div>
 </div>
@@ -392,7 +514,7 @@ types that can be stored.</p>
 <p>This will create a skore project directory named <code class="docutils literal notranslate"><span class="pre">my_project_gs.skore</span></code> in your
 current directory.</p>
 <p>From your shell (in the same directory), start the UI locally:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">python -m skore launch &quot;my_project_gs&quot;</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>skore<span class="w"> </span>launch<span class="w"> </span><span class="s2">&quot;my_project_gs&quot;</span>
 </pre></div>
 </div>
 <p>This will automatically open a browser at the UI’s location.</p>
@@ -456,21 +578,21 @@ directory), load the project so that you can read from and write to it:</p>
   <tbody>
     <tr>
       <th>0</th>
-      <td>-1.033967</td>
-      <td>-1.859741</td>
-      <td>2.076323</td>
+      <td>0.803478</td>
+      <td>0.921923</td>
+      <td>1.184670</td>
     </tr>
     <tr>
       <th>1</th>
-      <td>1.528491</td>
-      <td>0.772343</td>
-      <td>-1.157348</td>
+      <td>0.655528</td>
+      <td>1.518580</td>
+      <td>0.257796</td>
     </tr>
     <tr>
       <th>2</th>
-      <td>0.194281</td>
-      <td>-0.877849</td>
-      <td>0.300856</td>
+      <td>-1.420762</td>
+      <td>-0.043015</td>
+      <td>1.563348</td>
     </tr>
   </tbody>
 </table>
@@ -925,7 +1047,7 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
 <li><p>From the <em>Items</em> section on the bottom left, you can add stored items to this view, either by clicking on <code class="docutils literal notranslate"><span class="pre">+</span></code> or by doing drag-and-drop.</p></li>
 </ol>
 <img alt="Getting started with ``skore`` demo" src="https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_10_14_skore_demo.gif" />
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 4.532 seconds)</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 5.038 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-01-getting-started-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/e97c5b0c37bdd66afd2a201f006613dd/plot_01_getting_started.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_01_getting_started.ipynb</span></code></a></p>
