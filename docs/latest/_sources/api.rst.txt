@@ -3,10 +3,6 @@ API
 
 .. currentmodule:: skore
 
-.. warning::
-
-    This code is still in development. **The API is subject to change**.
-
 This page lists all the public functions and classes of the skore package.
 
 Project

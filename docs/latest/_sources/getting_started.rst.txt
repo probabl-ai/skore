@@ -7,7 +7,7 @@ Getting started
 
 From your shell, initialize a skore project, here named ``my_project``:
 
-.. code:: console
+.. code-block:: bash
 
     python -m skore create "my_project"
 
@@ -26,7 +26,7 @@ store an integer:
 
 Finally, from your shell (in the same directory), start the UI locally:
 
-.. code:: console
+.. code-block:: bash
 
     python -m skore launch "my_project"
 

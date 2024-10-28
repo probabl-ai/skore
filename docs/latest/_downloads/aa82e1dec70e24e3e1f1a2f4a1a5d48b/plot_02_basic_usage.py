@@ -37,10 +37,10 @@ from skore.item import MediaItem
 # %%
 import subprocess
 
-# remove the project if it already exists
+# remove the skore project if it already exists
 subprocess.run("rm -rf my_project_bu.skore".split())
 
-# create the project
+# create the skore project
 subprocess.run("python3 -m skore create my_project_bu".split())
 
 
