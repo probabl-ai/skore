@@ -126,14 +126,3 @@ Then, you can access the local build via:
 
     open build/html/index.html
 
-Help for common issues
-----------------------
-
-``make build-skore-ui`` doesn't work!
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Please check that your version of node is at least 20 using the following command:
-
-.. code-block:: bash
-
-    node -v
