@@ -100,3 +100,42 @@ class TestItemRepository:
                 },
             ]
         }
+
+    def test_get_items(self):
+        now = datetime.now(tz=timezone.utc).isoformat()
+        item = MediaItem(
+            media_bytes=b"media",
+            media_encoding="utf-8",
+            media_type="application/octet-stream",
+            created_at=now,
+            updated_at=now,
+        )
+
+        storage = {}
+        repository = ItemRepository(storage)
+        repository.put_item("key", item)
+
+        now2 = datetime.now(tz=timezone.utc).isoformat()
+        item2 = MediaItem(
+            media_bytes=b"media2",
+            media_encoding="utf-8",
+            media_type="application/octet-stream",
+            created_at=now2,
+            updated_at=now2,
+        )
+
+        repository.put_item("key", item2)
+
+        items = repository.get_items("key")
+
+        assert len(items) == 2
+        assert items[0].media_bytes == b"media"
+        assert items[0].media_encoding == "utf-8"
+        assert items[0].media_type == "application/octet-stream"
+        assert items[0].created_at == now
+        assert items[0].updated_at == now
+        assert items[1].media_bytes == b"media2"
+        assert items[1].media_encoding == "utf-8"
+        assert items[1].media_type == "application/octet-stream"
+        assert items[1].created_at == now
+        assert items[1].updated_at == now2
