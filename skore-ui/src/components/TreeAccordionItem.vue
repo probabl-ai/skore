@@ -153,13 +153,12 @@ function onAction(action: string) {
 
       & .text {
         border-radius: var(--border-radius);
-        color: var(--text-color-normal);
+        color: var(--text-color-highlight);
         font-size: var(--text-size-title);
         font-weight: var(--text-weight-normal);
       }
 
       &.has-children {
-        & .text,
         & .icon {
           opacity: 0.4;
         }

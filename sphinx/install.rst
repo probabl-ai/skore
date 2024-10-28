@@ -10,7 +10,7 @@ You need ``python>=3.9``.
 
 Then, you can install skore by using ``pip``:
 
-.. code:: console
+.. code-block:: bash
 
     pip install -U skore
 

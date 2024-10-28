@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Simplebar from "simplebar-vue";
 import type { VisualizationSpec } from "vega-embed";
 import { ref } from "vue";
 
@@ -10,8 +11,10 @@ import namedIndexDatatable from "@/assets/fixtures/named-index-datatable.json";
 import spec from "@/assets/fixtures/vega.json";
 
 import DataFrameWidget from "@/components/DataFrameWidget.vue";
+import DraggableList from "@/components/DraggableList.vue";
 import DropdownButton from "@/components/DropdownButton.vue";
 import DropdownButtonItem from "@/components/DropdownButtonItem.vue";
+import DynamicContentRasterizer from "@/components/DynamicContentRasterizer.vue";
 import { type EditableListItemModel } from "@/components/EditableList.vue";
 import FloatingTooltip from "@/components/FloatingTooltip.vue";
 import HtmlSnippetWidget from "@/components/HtmlSnippetWidget.vue";
@@ -38,6 +41,10 @@ function showToast() {
 
 function showToastWithCount() {
   toastsStore.addToast(`Info toast`, "info");
+}
+
+function showToastWithDuration() {
+  toastsStore.addToast(`Toast with duration`, "info", { duration: 5, dismissible: false });
 }
 
 const textInputValue = defineModel<string>("value");
@@ -393,7 +400,8 @@ const isCached = ref(false);
           <ToastNotification message="Error toast" type="error" id="error-toast" />
         </div>
         <SimpleButton label="Show unique toast" @click="showToast" />
-        <SimpleButton label="Show toast" @click="showToastWithCount" />
+        <SimpleButton label="Show toast with count" @click="showToastWithCount" />
+        <SimpleButton label="Show toast with duration" @click="showToastWithDuration" />
       </TabsItem>
       <TabsItem :value="6">
         <div class="text-inputs">
@@ -494,6 +502,8 @@ const isCached = ref(false);
           <div>icon-chevron-right <span class="icon-chevron-right"></span></div>
           <div>icon-chevron-up <span class="icon-chevron-up"></span></div>
           <div>icon-handle <span class="icon-handle"></span></div>
+          <div>icon-left-double-chevron <span class="icon-left-double-chevron"></span></div>
+          <div>icon-plus <span class="icon-plus"></span></div>
         </div>
       </TabsItem>
       <TabsItem :value="12">

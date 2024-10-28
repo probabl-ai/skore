@@ -70,15 +70,6 @@
 
     /* shadows */
     --shadow-color: rgb(0 0 0 / 58%);
-
-    /* toast */
-    --toast-background-color: hsl(240deg 5% 91%);
-    --toast-stripe-color: hsl(240deg 5% 87%);
-    --toast-border-color: rgb(255 255 255);
-    --toast-text-color: rgb(0 0 0);
-    --toast-dismiss-color: hsl(0deg 0% 35%);
-    --toast-shadow-elevation: rgb(0 0 0 / 48%);
-    --toast-shadow-inset: inset 0 0 1.1px 2px rgb(0 0 0 / 13%);
   }
 }
 
@@ -107,14 +98,5 @@
 
     /* shadows */
     --shadow-color: rgb(0 0 0 /19%);
-
-    /* toast */
-    --toast-background-color: #151517;
-    --toast-stripe-color: hsl(240deg 5% 13%);
-    --toast-border-color: black;
-    --toast-text-color: white;
-    --toast-dismiss-color: #a7a7a7;
-    --toast-shadow-elevation: rgb(0 0 0 / 48%);
-    --toast-shadow-inset: inset 0 0 1.1px 2px rgb(255 255 255 / 13%);
   }
 }
