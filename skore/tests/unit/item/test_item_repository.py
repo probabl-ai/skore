@@ -16,10 +16,12 @@ class TestItemRepository:
         )
 
         storage = {
-            "key": {
-                "item_class_name": "MediaItem",
-                "item": item_representation,
-            }
+            "key": [
+                {
+                    "item_class_name": "MediaItem",
+                    "item": item_representation,
+                }
+            ]
         }
 
         repository = ItemRepository(storage)
@@ -49,16 +51,18 @@ class TestItemRepository:
         repository.put_item("key", item)
 
         assert storage == {
-            "key": {
-                "item_class_name": "MediaItem",
-                "item": {
-                    "media_bytes": b"media",
-                    "media_encoding": "utf-8",
-                    "media_type": "application/octet-stream",
-                    "created_at": now,
-                    "updated_at": now,
-                },
-            }
+            "key": [
+                {
+                    "item_class_name": "MediaItem",
+                    "item": {
+                        "media_bytes": b"media",
+                        "media_encoding": "utf-8",
+                        "media_type": "application/octet-stream",
+                        "created_at": now,
+                        "updated_at": now,
+                    },
+                }
+            ]
         }
 
         now2 = datetime.now(tz=timezone.utc).isoformat()
@@ -73,14 +77,26 @@ class TestItemRepository:
         repository.put_item("key", item2)
 
         assert storage == {
-            "key": {
-                "item_class_name": "MediaItem",
-                "item": {
-                    "media_bytes": b"media2",
-                    "media_encoding": "utf-8",
-                    "media_type": "application/octet-stream",
-                    "created_at": now,
-                    "updated_at": now2,
+            "key": [
+                {
+                    "item_class_name": "MediaItem",
+                    "item": {
+                        "media_bytes": b"media",
+                        "media_encoding": "utf-8",
+                        "media_type": "application/octet-stream",
+                        "created_at": now,
+                        "updated_at": now,
+                    },
                 },
-            }
+                {
+                    "item_class_name": "MediaItem",
+                    "item": {
+                        "media_bytes": b"media2",
+                        "media_encoding": "utf-8",
+                        "media_type": "application/octet-stream",
+                        "created_at": now,
+                        "updated_at": now2,
+                    },
+                },
+            ]
         }

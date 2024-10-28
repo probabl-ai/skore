@@ -27,6 +27,9 @@ class ItemRepository:
     A repository for managing storage and retrieval of items.
 
     This class provides methods to get, put, and delete items from a storage system.
+
+    Additionally, it keeps a record of all previously inserted items, by treating the
+    storage as a map from keys to *lists of* values.
     """
 
     ITEM_CLASS_NAME_TO_ITEM_CLASS = {
@@ -54,6 +57,9 @@ class ItemRepository:
         """
         Retrieve an item from storage.
 
+        In practice, since each key is associated with a list of values,
+        this will return the latest one.
+
         Parameters
         ----------
         key : Any
@@ -64,7 +70,7 @@ class ItemRepository:
         Item
             The retrieved item.
         """
-        value = self.storage[key]
+        value = self.storage[key][-1]
         item_class_name = value["item_class_name"]
         item_class = ItemRepository.ITEM_CLASS_NAME_TO_ITEM_CLASS[item_class_name]
         item = value["item"]
@@ -74,6 +80,8 @@ class ItemRepository:
     def put_item(self, key, item: Item) -> None:
         """
         Store an item in storage.
+
+        This appends to a list of items previously associated with key `key`.
 
         Parameters
         ----------
@@ -85,12 +93,22 @@ class ItemRepository:
         item_parameters = item.__parameters__
 
         if key in self.storage:
-            item_parameters["created_at"] = self.storage[key]["item"]["created_at"]
+            items = self.storage[key]
+            item_parameters["created_at"] = items[0]["item"]["created_at"]
 
-        self.storage[key] = {
-            "item_class_name": item.__class__.__name__,
-            "item": item_parameters,
-        }
+            self.storage[key] = items + [
+                {
+                    "item_class_name": item.__class__.__name__,
+                    "item": item_parameters,
+                }
+            ]
+        else:
+            self.storage[key] = [
+                {
+                    "item_class_name": item.__class__.__name__,
+                    "item": item_parameters,
+                }
+            ]
 
     def delete_item(self, key):
         """
