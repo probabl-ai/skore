@@ -22,6 +22,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx_design",
     "sphinx_gallery.gen_gallery",
+    "sphinx_copybutton",
 ]
 templates_path = ["_templates"]
 exclude_patterns = ["build", "Thumbs.db", ".DS_Store"]
@@ -57,3 +58,51 @@ intersphinx_mapping = {
 numpydoc_show_class_members = False
 
 html_title = "skore"
+
+# Theme options are theme-specific and customize the look and feel of a theme
+# further.  For a list of options available for each theme, see the
+# documentation.
+html_theme_options = {
+    # "logo": {
+    #     "image_relative": "_static/skrub.svg",
+    #     "image_light": "_static/skrub.svg",
+    #     "image_dark": "_static/skrub.svg",
+    # },
+    "external_links": [
+        {
+            "url": "https://probabl.ai",
+            "name": "Probabl website",
+        },
+    ],
+    "header_links_before_dropdown": 4,
+    "icon_links": [
+        {
+            "name": "Twitter",
+            "url": "https://x.com/probabl_ai",
+            "icon": "fa-brands fa-twitter",
+        },
+        {
+            "name": "GitHub",
+            "url": "https://github.com/probabl-ai/skore/",
+            "icon": "fa-brands fa-github",
+        },
+        {
+            "name": "Discord",
+            "url": "https://discord.gg/scBZerAGwW",
+            "icon": "fa-brands fa-discord",
+        },
+    ],
+    "announcement": "This code is still in development. <strong>The API is subject to change.</strong>",
+}
+
+# Sphinx remove the sidebar from some pages
+html_sidebars = {
+  "install": [],
+  "getting_started": [],
+  "user_guide": [],
+  "contributing": [],
+}
+
+# Sphinx-Copybutton configuration
+copybutton_prompt_text = r">>> |\.\.\. |\$ "
+copybutton_prompt_is_regexp = True
