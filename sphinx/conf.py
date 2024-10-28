@@ -95,6 +95,14 @@ html_theme_options = {
     "announcement": "This code is still in development. <strong>The API is subject to change.</strong>",
 }
 
+# Sphinx remove the sidebar from some pages
+html_sidebars = {
+  "install": [],
+  "getting_started": [],
+  "user_guide": [],
+  "contributing": [],
+}
+
 # Sphinx-Copybutton configuration
 copybutton_prompt_text = r">>> |\.\.\. |\$ "
 copybutton_prompt_is_regexp = True
