@@ -72,7 +72,12 @@ onBeforeUnmount(() => {
     </div>
     <div ref="editor" class="editor">
       <div class="editor-header">
-        <SimpleButton icon="icon-maximize" @click="onFocusMode" />
+        <SimpleButton
+          icon="icon-left-double-chevron"
+          @click="onFocusMode"
+          class="focus-mode-button"
+          :class="{ flipped: isInFocusMode }"
+        />
         <h1>{{ projectStore.currentView }}</h1>
       </div>
       <Transition name="fade">
@@ -210,6 +215,14 @@ main {
           font-size: var(--text-size-title);
           font-weight: var(--text-weight-highlight);
           text-align: center;
+        }
+
+        & .focus-mode-button {
+          transform-origin: center;
+
+          &.flipped {
+            transform: scaleX(-1);
+          }
         }
       }
 
