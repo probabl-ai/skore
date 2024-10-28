@@ -20,6 +20,8 @@ function onBeforeLeave(el: Element) {
           :message="toast.message"
           :type="toast.type"
           :count="toast.count"
+          :dismissible="toast.dismissible"
+          :duration="toast.duration"
         />
       </div>
     </TransitionGroup>
@@ -30,19 +32,22 @@ function onBeforeLeave(el: Element) {
 .toast-notification-area {
   position: fixed;
   z-index: 9000;
+  top: 0;
   right: 0;
-  bottom: 0;
-  width: 60dvw;
+  width: 100dvw;
   padding: var(--spacing-padding-large);
+  pointer-events: none;
 
   & .toasts {
     position: relative;
     display: flex;
-    flex-direction: column;
+    flex-direction: column-reverse;
+    align-items: center;
     gap: var(--spacing-gap-normal);
 
     & > div {
       z-index: 2;
+      width: 40%;
     }
   }
 }
@@ -55,7 +60,7 @@ function onBeforeLeave(el: Element) {
 
 .toasts-enter-from {
   opacity: 0;
-  transform: translateY(30px);
+  transform: translateY(-30px);
 }
 
 .toasts-leave-to {

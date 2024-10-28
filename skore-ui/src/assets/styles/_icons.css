@@ -27,7 +27,7 @@
   text-transform: none;
 }
 
-.icon-more::before {
+.icon-trash::before {
   content: "\e900";
 }
 
@@ -35,11 +35,11 @@
   content: "\e901";
 }
 
-.icon-branch::before {
+.icon-more::before {
   content: "\e902";
 }
 
-.icon-trash::before {
+.icon-branch::before {
   content: "\e903";
 }
 
