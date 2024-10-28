@@ -36,6 +36,7 @@ function onBeforeLeave(el: Element) {
   right: 0;
   width: 100dvw;
   padding: var(--spacing-padding-large);
+  pointer-events: none;
 
   & .toasts {
     position: relative;

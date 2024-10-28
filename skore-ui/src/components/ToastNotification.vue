@@ -153,10 +153,9 @@ onBeforeUnmount(() => {
           left: 0;
           width: 19px;
           height: 19px;
-          box-sizing: border-box;
           padding: 3px; /* the boder thickness */
           border-radius: 50%;
-          aspect-ratio: 1;
+          transform: translate(0.5px, 0.5px);
         }
 
         & .background {
@@ -187,6 +186,7 @@ onBeforeUnmount(() => {
     display: flex;
     align-items: center;
     gap: var(--spacing-gap-normal);
+    pointer-events: auto;
 
     & button {
       border: none;
