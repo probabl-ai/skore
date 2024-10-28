@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Install &#8212; skore</title>
+    <title>Contributor guide &#8212; skore</title>
   
   
   
@@ -51,11 +51,10 @@
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="_static/copybutton.js?v=fd10adb8"></script>
     <script src="_static/design-tabs.js?v=f930bc37"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'install';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'contributing';</script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Getting started" href="getting_started.html" />
-    <link rel="prev" title="Welcome to skore" href="index.html" />
+    <link rel="prev" title="User guide" href="user_guide.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="0" />
@@ -137,8 +136,8 @@
 <nav>
   <ul class="bd-navbar-elements navbar-nav">
     
-<li class="nav-item current active">
-  <a class="nav-link nav-internal" href="#">
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="install.html">
     Install
   </a>
 </li>
@@ -177,8 +176,8 @@
 </li>
 
 
-<li class=" ">
-  <a class="nav-link dropdown-item nav-internal" href="contributing.html">
+<li class=" current active">
+  <a class="nav-link dropdown-item nav-internal" href="#">
     Contributor guide
   </a>
 </li>
@@ -306,8 +305,8 @@
 <nav>
   <ul class="bd-navbar-elements navbar-nav">
     
-<li class="nav-item current active">
-  <a class="nav-link nav-internal" href="#">
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="install.html">
     Install
   </a>
 </li>
@@ -341,8 +340,8 @@
 </li>
 
 
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="contributing.html">
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="#">
     Contributor guide
   </a>
 </li>
@@ -446,7 +445,7 @@
         <i class="fa-solid fa-home"></i>
       </a>
     </li>
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Install</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Contributor guide</span></li>
   </ul>
 </nav>
 </div>
@@ -463,19 +462,103 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="install">
-<span id="id1"></span><h1>Install<a class="headerlink" href="#install" title="Link to this heading">#</a></h1>
-<p>First of all, we recommend using a <a class="reference external" href="https://docs.python.org/3/tutorial/venv.html">virtual environment (venv)</a>.
-You need <code class="docutils literal notranslate"><span class="pre">python&gt;=3.9</span></code>.</p>
-<p>Then, you can install skore by using <code class="docutils literal notranslate"><span class="pre">pip</span></code>:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-U<span class="w"> </span>skore
+  <section id="contributor-guide">
+<span id="contributing"></span><h1>Contributor guide<a class="headerlink" href="#contributor-guide" title="Link to this heading">#</a></h1>
+<p>First off, thanks for taking the time to contribute!</p>
+<p>Below are some guidelines to help you get started.</p>
+<section id="have-a-question">
+<h2>Have a question?<a class="headerlink" href="#have-a-question" title="Link to this heading">#</a></h2>
+<p>If you have any questions, feel free to reach out:</p>
+<ul class="simple">
+<li><p>Join our community on <a class="reference external" href="https://discord.gg/scBZerAGwW">Discord</a> for general chat and Q&amp;A.</p></li>
+<li><p>Alternatively, you can <a class="reference external" href="https://github.com/probabl-ai/skore/discussions">start a discussion on GitHub</a>.</p></li>
+</ul>
+</section>
+<section id="bugs-and-feature-requests">
+<h2>Bugs and feature requests<a class="headerlink" href="#bugs-and-feature-requests" title="Link to this heading">#</a></h2>
+<p>Both bugs and feature requests can be filed in the <a class="reference external" href="https://github.com/probabl-ai/skore/issues">Github issue tracker</a>, as well as general questions and feedback.</p>
+<p>Bug reports are welcome, especially those reported with <a class="reference external" href="http://sscce.org/">short, self-contained, correct examples</a>.</p>
+</section>
+<section id="development">
+<h2>Development<a class="headerlink" href="#development" title="Link to this heading">#</a></h2>
+<section id="quick-start">
+<h3>Quick start<a class="headerlink" href="#quick-start" title="Link to this heading">#</a></h3>
+<p>You’ll need <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">&gt;=3.9,</span> <span class="pre">&lt;3.13</span></code> to build the backend and <code class="docutils literal notranslate"><span class="pre">Node&gt;=20</span></code> to build the skore-ui. Then, you can install dependencies and run the UI with:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>make<span class="w"> </span>install-skore
+make<span class="w"> </span>build-skore-ui
+make<span class="w"> </span>serve-skore-ui
 </pre></div>
 </div>
-<p>You can check skore’s latest version on <a class="reference external" href="https://pypi.org/project/skore/">PyPI</a>.</p>
+<p>You are now all setup to run the library locally.
+If you want to contribute, please continue with the three other sections.</p>
+</section>
+<section id="backend">
+<h3>Backend<a class="headerlink" href="#backend" title="Link to this heading">#</a></h3>
+<p>Install backend dependencies with:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>make<span class="w"> </span>install-skore
+</pre></div>
+</div>
+<p>You can run the API server with:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>make<span class="w"> </span>serve-api
+</pre></div>
+</div>
+</section>
+<section id="skore-ui">
+<h3>skore-ui<a class="headerlink" href="#skore-ui" title="Link to this heading">#</a></h3>
+<p>Install skore-ui dependencies with:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>npm<span class="w"> </span>install
+</pre></div>
+</div>
+<p>in the <code class="docutils literal notranslate"><span class="pre">skore-ui</span></code> directory.</p>
+<p>Run the skore-ui in dev mode (for hot-reloading) with</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>npm<span class="w"> </span>run<span class="w"> </span>dev
+</pre></div>
+</div>
+<p>in the <code class="docutils literal notranslate"><span class="pre">skore-ui</span></code> directory</p>
+<p>Then, to use the skore-ui</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>make<span class="w"> </span>build-skore-ui
+make<span class="w"> </span>serve-ui
+</pre></div>
+</div>
+</section>
+<section id="pr-format">
+<h3>PR format<a class="headerlink" href="#pr-format" title="Link to this heading">#</a></h3>
+<p>We use the <a class="reference external" href="https://www.conventionalcommits.org/en/v1.0.0/#summary">conventional commits</a> format, and we automatically check that the PR title fits this format.
+In particular, commits are “sentence case”, meaning “fix: Fix issue” passes, while “fix: fix issue” doesn’t.</p>
+<p>Generally the description of a commit should start with a verb in the imperative voice, so that it would properly complete the sentence: “When applied, this commit will […]”.</p>
+<p>Example of correct commit: <code class="docutils literal notranslate"><span class="pre">fix(docs):</span> <span class="pre">Add</span> <span class="pre">a</span> <span class="pre">contributor</span> <span class="pre">guide</span></code>.</p>
+</section>
+<section id="contributing-to-the-docstrings">
+<h3>Contributing to the docstrings<a class="headerlink" href="#contributing-to-the-docstrings" title="Link to this heading">#</a></h3>
+<p>When writing documentation, whether it be online, docstrings or help messages in the CLI and in the UI, we strive to follow some conventions that are listed below. These might be updated as time goes on.</p>
+<ol class="arabic simple">
+<li><p>The docstring will be compiled using Sphinx numpydoc so use <a class="reference external" href="https://docs.open-mpi.org/en/v5.0.x/developers/rst-for-markdown-expats.html">RST (ReStructured Text)</a> for bold, URLs, etc.</p></li>
+<li><p>Argument descriptions should be written so that the following sentence makes sense: <cite>Argument &lt;argument&gt; designates &lt;argument description&gt;</cite></p></li>
+<li><p>Argument descriptions start with lower case, and do not end with a period or other punctuation</p></li>
+<li><p>Argument descriptions start with “the” where relevant, and “whether” for booleans</p></li>
+<li><p>Text is written in US english (“visualize” rather than “visualise”)</p></li>
+<li><p>In the CLI, positional arguments are written in snake case (<code class="docutils literal notranslate"><span class="pre">snake_case</span></code>), keyword arguments in kebab case (<code class="docutils literal notranslate"><span class="pre">kebab-case</span></code>)</p></li>
+<li><p>When there is a default argument, it should be shown in the help message, typically with <code class="docutils literal notranslate"><span class="pre">(default:</span> <span class="pre">&lt;default</span> <span class="pre">value&gt;)</span></code> at the end of the message</p></li>
+</ol>
+</section>
+</section>
+<section id="documentation">
+<h2>Documentation<a class="headerlink" href="#documentation" title="Link to this heading">#</a></h2>
+<p>Our documentation uses <a class="reference external" href="https://pydata-sphinx-theme.readthedocs.io/">PyData Sphinx Theme</a>.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>For Windows users, the encoding must be set to <a class="reference external" href="https://docs.python.org/3/using/windows.html#utf-8-mode">UTF-8</a>: see <a class="reference external" href="https://docs.python.org/3/using/cmdline.html#envvar-PYTHONUTF8">PYTHONUTF8</a>.</p>
+<p>Modifications are to be done in the <code class="docutils literal notranslate"><span class="pre">sphinx</span></code> folder. The <code class="docutils literal notranslate"><span class="pre">docs</span></code> folder must <em>not</em> be touched!</p>
 </div>
+<p>To build the docs:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>sphinx
+make<span class="w"> </span>html
+</pre></div>
+</div>
+<p>Then, you can access the local build via:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>open<span class="w"> </span>build/html/index.html
+</pre></div>
+</div>
+</section>
 </section>
 
 
@@ -489,22 +572,13 @@ You need <code class="docutils literal notranslate"><span class="pre">python&gt;
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="index.html"
+       href="user_guide.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Welcome to <code class="docutils literal notranslate"><span class="pre">skore</span></code></p>
+        <p class="prev-next-title">User guide</p>
       </div>
-    </a>
-    <a class="right-next"
-       href="getting_started.html"
-       title="next page">
-      <div class="prev-next-info">
-        <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Getting started</p>
-      </div>
-      <i class="fa-solid fa-angle-right"></i>
     </a>
 </div>
                 </footer>
@@ -518,9 +592,31 @@ You need <code class="docutils literal notranslate"><span class="pre">python&gt;
 
 
   <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#have-a-question">Have a question?</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bugs-and-feature-requests">Bugs and feature requests</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#development">Development</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#quick-start">Quick start</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#backend">Backend</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#skore-ui">skore-ui</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pr-format">PR format</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#contributing-to-the-docstrings">Contributing to the docstrings</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#documentation">Documentation</a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
 
   <div class="tocsection sourcelink">
-    <a href="_sources/install.rst.txt">
+    <a href="_sources/contributing.rst.txt">
       <i class="fa-solid fa-file-lines"></i> Show Source
     </a>
   </div>

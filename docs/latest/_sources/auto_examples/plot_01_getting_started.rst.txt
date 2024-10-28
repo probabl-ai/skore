@@ -46,10 +46,10 @@ From your shell, initialize a skore project, here named ``my_project_gs``:
 
     import subprocess
 
-    # remove the project if it already exists
+    # remove the skore project if it already exists
     subprocess.run("rm -rf my_project_gs.skore".split())
 
-    # create the project
+    # create the skore project
     subprocess.run("python3 -m skore create my_project_gs".split())
 
 
@@ -72,7 +72,7 @@ current directory.
 
 From your shell (in the same directory), start the UI locally:
 
-.. code:: console
+.. code-block:: bash
 
     python -m skore launch "my_project_gs"
 
@@ -201,21 +201,21 @@ For a pandas data frame:
       <tbody>
         <tr>
           <th>0</th>
-          <td>-1.033967</td>
-          <td>-1.859741</td>
-          <td>2.076323</td>
+          <td>0.803478</td>
+          <td>0.921923</td>
+          <td>1.184670</td>
         </tr>
         <tr>
           <th>1</th>
-          <td>1.528491</td>
-          <td>0.772343</td>
-          <td>-1.157348</td>
+          <td>0.655528</td>
+          <td>1.518580</td>
+          <td>0.257796</td>
         </tr>
         <tr>
           <th>2</th>
-          <td>0.194281</td>
-          <td>-0.877849</td>
-          <td>0.300856</td>
+          <td>-1.420762</td>
+          <td>-0.043015</td>
+          <td>1.563348</td>
         </tr>
       </tbody>
     </table>
@@ -721,7 +721,7 @@ Back to the dashboard
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 4.532 seconds)
+   **Total running time of the script:** (0 minutes 5.038 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_01_getting_started.py:

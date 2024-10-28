@@ -70,10 +70,10 @@ Initialize a Project and launch the UI
 
     import subprocess
 
-    # remove the project if it already exists
+    # remove the skore project if it already exists
     subprocess.run("rm -rf my_project_bu.skore".split())
 
-    # create the project
+    # create the skore project
     subprocess.run("python3 -m skore create my_project_bu".split())
 
 
@@ -698,7 +698,7 @@ Moreover, you can store fitted scikit-learn pipelines:
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 1.871 seconds)
+   **Total running time of the script:** (0 minutes 2.190 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_02_basic_usage.py:
