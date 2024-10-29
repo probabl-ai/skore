@@ -57,7 +57,7 @@ my_project_gs = load("my_project_cv.skore")
 # Hence, in skore, we are more interested in the ``cross_validate`` function as
 # it allows to do more than the historical ``cross_val_score``.
 #
-# Let us illustrate cross-validation on a regression task.
+# Let us illustrate cross-validation on a multi-class classification task.
 
 # %%
 X, y = datasets.load_iris(return_X_y=True)
