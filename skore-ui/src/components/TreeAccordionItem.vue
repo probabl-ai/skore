@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, inject, ref } from "vue";
 
 import { type TreeAccordionNode } from "@/components/TreeAccordion.vue";
 
@@ -7,8 +7,7 @@ const props = defineProps<TreeAccordionNode>();
 
 const isCollapsed = ref(false);
 const isDraggable = ref(false);
-const lastItemAction = defineModel<string | null>("lastItemAction");
-const lastItemName = defineModel<string | null>("lastItemName");
+const emitItemAction = inject<(action: string, itemName: string) => void>("emitItemAction");
 
 const hasChildren = computed(() => props.children?.length);
 const label = computed(() => {
@@ -43,8 +42,7 @@ function onDragStart(event: DragEvent) {
 }
 
 function onAction(action: string) {
-  lastItemAction.value = action;
-  lastItemName.value = props.name;
+  emitItemAction && emitItemAction(action, props.name);
 }
 </script>
 
@@ -96,8 +94,6 @@ function onAction(action: string) {
           :children="child.children"
           :is-root="false"
           :actions="child.actions"
-          v-model:last-item-action="lastItemAction"
-          v-model:last-item-name="lastItemName"
         />
       </div>
     </Transition>
