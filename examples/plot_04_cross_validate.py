@@ -106,6 +106,11 @@ print(scores['test_precision_macro'])
 # Cross-validation in skore
 # =========================
 #
+# In order to assist its users when programming, skore has implemented a
+# :func:`~skore.cross_validate` function that wraps scikit-learn's
+# ``cross_validate`` function, to provide more context and facilitate the
+# analysis.
+#
 # Classification task
 # ^^^^^^^^^^^^^^^^^^^
 #
@@ -114,7 +119,8 @@ print(scores['test_precision_macro'])
 # %%
 cv_results = skore.cross_validate(clf, X, y, cv=5, project=my_project_gs)
 
-my_project_gs.get_item("cross_validation").plot
+fig_plotly_clf = my_project_gs.get_item("cross_validation").plot
+fig_plotly_clf
 
 # %%
 # Skore's ``cross_validate`` advantages are the following:
@@ -130,6 +136,24 @@ my_project_gs.get_item("cross_validation").plot
 # * The results and plots are automatically saved in your skore project, so that you can visualize them later in the UI for example.
 
 # %%
+# .. note::
+#   Because Plotly graphs currently do not properly render in our Sphinx
+#   auto-examples docs engine due to
+#   `a bug in Plotly <https://github.com/plotly/plotly.py/issues/4828>`_,
+#   we also display its static image below.
+#   Alternatively, if you zoom in or out in your browser window, the Plotly graph
+#   should display properly.
+
+# %%
+fig_plotly_clf.write_image("plot_04_cross_validate_clf.png")
+
+img = mpimg.imread("plot_04_cross_validate_clf.png")
+fig, ax = plt.subplots(layout="constrained")
+ax.axis("off")
+ax.imshow(img)
+plt.show()
+
+# %%
 # Regression task
 # ^^^^^^^^^^^^^^^
 
@@ -141,24 +165,5 @@ lasso = linear_model.Lasso()
 
 cv_results = skore.cross_validate(lasso, X, y, cv=5, project=my_project_gs)
 
-fig_plotly = my_project_gs.get_item("cross_validation").plot
-fig_plotly
-
-# %%
-# A short note on Plotly and Sphinx auto-examples
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-#
-# Because Plotly graphs currently do not properly render in our docs engine
-# due to `a bug in Plotly <https://github.com/plotly/plotly.py/issues/4828>`_,
-# we also display its static image below.
-# Alternatively, if you zoom in or out in your browser window, the Plotly graph
-# should display properly.
-
-# %%
-fig_plotly.write_image("plot_04_cross_validate.png")
-
-img = mpimg.imread("plot_04_cross_validate.png")
-fig, ax = plt.subplots(layout="constrained")
-ax.axis("off")
-ax.imshow(img)
-plt.show()
+fig_plotly_reg = my_project_gs.get_item("cross_validation").plot
+fig_plotly_reg

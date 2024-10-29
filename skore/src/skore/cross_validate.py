@@ -193,7 +193,7 @@ def cross_validate(*args, project: Optional[Project] = None, **kwargs) -> dict:
     As such, the arguments are the same as scikit-learn's cross_validate function.
 
     The dict returned by this function is a strict super-set of the one returned by
-    scikit-learn's `cross_validate`.
+    scikit-learn's ``cross_validate``.
 
     For a user guide and in-depth example, please check :ref:`example_cross_validate`.
 
