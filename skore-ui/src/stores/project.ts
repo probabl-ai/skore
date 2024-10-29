@@ -318,7 +318,7 @@ export const useProjectStore = defineStore("project", () => {
 
   /**
    * Persist the current view's layout when the items change.
-   * Useful when user reoganizes items in the current view.
+   * Useful when user reorganizes items in the current view.
    */
   watch(
     () => currentViewItems.value,
