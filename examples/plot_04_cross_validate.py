@@ -154,7 +154,7 @@ my_project_gs.get_item("cross_validation").plot
 # should display properly.
 
 # %%
-img = mpimg.imread("plot_03_cross_validate_plot_screenshot.png")
+img = mpimg.imread("plot_04_cross_validate_plot_screenshot.png")
 fig, ax = plt.subplots(layout="constrained")
 fig.subplots_adjust(left=0.01, right=0.99, bottom=0.01, top=0.99)
 ax.axis("off")

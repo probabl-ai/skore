@@ -1,12 +1,17 @@
 """
 .. _example_getting_started:
 
-===============
-Getting started
-===============
+===========================
+Quick start to the skore UI
+===========================
 
-This example runs the :ref:`getting_started` guide and adds examples a more
-types that can be stored.
+This is a (very) quick start to the skore UI: *how* to create a skore project,
+*how* to add some items in it, and *how* to launch the UI.
+
+Please look into the :ref:`getting_started` guide for a sneak peak of *why*
+you should use skore: for tracking and visualization with the skore UI, as well
+as getting assistance such as the :ref:`getting_started` with
+:func:`~skore.cross_validate`.
 
 ``skore``'s Project and UI
 --------------------------
@@ -19,27 +24,27 @@ This section provides a quick start to skore's Project and UI, an open-source pa
 Initialize a Project and launch the UI
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-From your shell, initialize a skore project, here named ``my_project_gs``:
+From your shell, initialize a skore project, here named ``my_project_gs_ui``:
 """
 
 # %%
 import subprocess
 
 # remove the skore project if it already exists
-subprocess.run("rm -rf my_project_gs.skore".split())
+subprocess.run("rm -rf my_project_gs_ui.skore".split())
 
 # create the skore project
-subprocess.run("python3 -m skore create my_project_gs".split())
+subprocess.run("python3 -m skore create my_project_gs_ui".split())
 
 # %%
-# This will create a skore project directory named ``my_project_gs.skore`` in your
+# This will create a skore project directory named ``my_project_gs_ui.skore`` in your
 # current directory.
 #
 # From your shell (in the same directory), start the UI locally:
 #
 # .. code-block:: bash
 #
-#     python -m skore launch "my_project_gs"
+#     python -m skore launch "my_project_gs_ui"
 #
 # This will automatically open a browser at the UI's location.
 #
@@ -49,7 +54,7 @@ subprocess.run("python3 -m skore create my_project_gs".split())
 # %%
 from skore import load
 
-my_project_gs = load("my_project_gs.skore")
+my_project_gs_ui = load("my_project_gs_ui.skore")
 
 # %%
 # Storing some items
@@ -58,13 +63,13 @@ my_project_gs = load("my_project_gs.skore")
 # Storing an integer:
 
 # %%
-my_project_gs.put("my_int", 3)
+my_project_gs_ui.put("my_int", 3)
 
 # %%
 # Here, the name of the stored item is ``my_int`` and the integer value is 3.
 
 # %%
-my_project_gs.get("my_int")
+my_project_gs_ui.get("my_int")
 
 # %%
 # For a pandas data frame:
@@ -75,10 +80,10 @@ import pandas as pd
 
 my_df = pd.DataFrame(np.random.randn(3, 3))
 
-my_project_gs.put("my_df", my_df)
+my_project_gs_ui.put("my_df", my_df)
 
 # %%
-my_project_gs.get("my_df")
+my_project_gs_ui.get("my_df")
 
 # %%
 # For a matplotlib figure:
@@ -90,7 +95,7 @@ x = [0, 1, 2, 3, 4, 5]
 fig, ax = plt.subplots(figsize=(5, 3), layout="constrained")
 _ = ax.plot(x)
 
-my_project_gs.put("my_figure", fig)
+my_project_gs_ui.put("my_figure", fig)
 
 # %%
 # For a scikit-learn fitted pipeline:
@@ -109,10 +114,10 @@ my_pipeline = Pipeline(
 )
 my_pipeline.fit(X, y)
 
-my_project_gs.put("my_fitted_pipeline", my_pipeline)
+my_project_gs_ui.put("my_fitted_pipeline", my_pipeline)
 
 # %%
-my_project_gs.get("my_fitted_pipeline")
+my_project_gs_ui.get("my_fitted_pipeline")
 
 # %%
 # Back to the dashboard
