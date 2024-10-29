@@ -47,9 +47,9 @@ my_project_gs = load("my_project_cv.skore")
 # * ``cross_val_score``: `link <https://scikit-learn.org/1.5/modules/generated/sklearn.model_selection.cross_val_score.html>`_
 # * ``cross_validate``: `link <https://scikit-learn.org/1.5/modules/generated/sklearn.model_selection.cross_validate.html>`_
 #
-# Basically, ``cross_val_score`` runs cross-validation for single metric
-# evaluation, while ``cross_validate`` runs cross-validation on multiple
-# metrics and also returns train scores, fit times, and score times.
+# Essentially, ``cross_val_score`` runs cross-validation for single metric
+# evaluation, while ``cross_validate`` runs cross-validation with multiple
+# metrics and can also return extra information such as train scores, fit times, and score times.
 #
 # Hence, in skore, we are more interested in the ``cross_validate`` function as
 # it allows to do more than the historical ``cross_val_score``.
@@ -65,7 +65,6 @@ clf = svm.SVC(kernel='linear', C=1, random_state=0)
 
 # %%
 cv_results = sklearn_cross_validate(clf, X, y, cv=5)
-sorted(cv_results.keys())
 cv_results['test_score']
 
 # %%
@@ -84,11 +83,11 @@ print(scores['test_precision_macro'])
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # Here, for the
-# `SVM <https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html>`_,
+# `SVC <https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html>`_,
 # the default score is the accuracy.
 # If the users want other scores to better understand their model such as the
 # precision and the recall, they can specify it which is very convenient.
-# Otherwise, they should have ran several ``cross_val_score`` with different
+# Otherwise, they would have to run several ``cross_val_score`` with different
 # ``scoring`` parameters each time, which leads to more unnecessary compute.
 #
 # Why do we recommend using skore's ``cross_validate`` over scikit-learn's?
@@ -125,7 +124,7 @@ my_project_gs.get_item("cross_validation").plot
 #
 #   * You can compare the accuracy, precision, and recall scores together for each split.
 #
-# * The results and plots are automatically saved in your skore project to be visualized in the UI for example.
+# * The results and plots are automatically saved in your skore project, so that you can visualize them later in the UI for example.
 
 # %%
 # Regression task
