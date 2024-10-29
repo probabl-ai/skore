@@ -24,14 +24,43 @@
 Enhancing cross-validation
 ==========================
 
-This example illustrates the use of :func:`~skore.cross_validate` to get
-assistance when developing your ML/DS projects.
+This example illustrates the motivation and the use of
+:func:`~skore.cross_validate` to get assistance when developing your
+ML/DS projects.
 
-.. GENERATED FROM PYTHON SOURCE LINES 13-22
+.. GENERATED FROM PYTHON SOURCE LINES 15-28
 
 .. code-block:: Python
 
     import subprocess
+
+    import matplotlib.pyplot as plt
+    import matplotlib.image as mpimg
+
+    from sklearn import datasets, linear_model
+    from sklearn import svm
+    from sklearn.model_selection import cross_validate as sklearn_cross_validate
+
+    from skore import load
+    import skore.cross_validate
+
+
+
+
+
+
+
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 29-31
+
+Creating and loading the skore project
+======================================
+
+.. GENERATED FROM PYTHON SOURCE LINES 33-41
+
+.. code-block:: Python
+
 
     # remove the skore project if it already exists
     subprocess.run("rm -rf my_project_cv.skore".split())
@@ -53,11 +82,9 @@ assistance when developing your ML/DS projects.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 23-27
+.. GENERATED FROM PYTHON SOURCE LINES 42-44
 
 .. code-block:: Python
-
-    from skore import load
 
     my_project_gs = load("my_project_cv.skore")
 
@@ -68,21 +95,132 @@ assistance when developing your ML/DS projects.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 28-39
+.. GENERATED FROM PYTHON SOURCE LINES 45-61
+
+Cross-validation in scikit-learn
+================================
+
+Scikit-learn holds two functions for cross-validation:
+
+* ``cross_val_score``: `link <https://scikit-learn.org/1.5/modules/generated/sklearn.model_selection.cross_val_score.html>`_
+* ``cross_validate``: `link <https://scikit-learn.org/1.5/modules/generated/sklearn.model_selection.cross_validate.html>`_
+
+Essentially, ``cross_val_score`` runs cross-validation for single metric
+evaluation, while ``cross_validate`` runs cross-validation with multiple
+metrics and can also return extra information such as train scores, fit times, and score times.
+
+Hence, in skore, we are more interested in the ``cross_validate`` function as
+it allows to do more than the historical ``cross_val_score``.
+
+Let us illustrate cross-validation on a multi-class classification task.
+
+.. GENERATED FROM PYTHON SOURCE LINES 63-66
 
 .. code-block:: Python
 
-    from sklearn import datasets, linear_model
-    from skore.cross_validate import cross_validate
+    X, y = datasets.load_iris(return_X_y=True)
+    clf = svm.SVC(kernel='linear', C=1, random_state=0)
 
-    diabetes = datasets.load_diabetes()
-    X = diabetes.data[:150]
-    y = diabetes.target[:150]
-    lasso = linear_model.Lasso()
 
-    cv_results = cross_validate(lasso, X, y, cv=3, project=my_project_gs)
+
+
+
+
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 67-68
+
+Single metric evaluation using ``cross_validate``:
+
+.. GENERATED FROM PYTHON SOURCE LINES 70-73
+
+.. code-block:: Python
+
+    cv_results = sklearn_cross_validate(clf, X, y, cv=5)
+    cv_results['test_score']
+
+
+
+
+
+.. rst-class:: sphx-glr-script-out
+
+ .. code-block:: none
+
+
+    array([0.96666667, 1.        , 0.96666667, 0.96666667, 1.        ])
+
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 74-75
+
+Multiple metric evaluation using ``cross_validate``:
+
+.. GENERATED FROM PYTHON SOURCE LINES 77-84
+
+.. code-block:: Python
+
+    scores = sklearn_cross_validate(
+        clf, X, y, cv=5,
+        scoring=['accuracy', 'precision_macro'],
+    )
+    print(scores['test_accuracy'])
+    print(scores['test_precision_macro'])
+
+
+
+
+
+.. rst-class:: sphx-glr-script-out
+
+ .. code-block:: none
+
+    [0.96666667 1.         0.96666667 0.96666667 1.        ]
+    [0.96969697 1.         0.96969697 0.96969697 1.        ]
+
+
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 85-104
+
+In scikit-learn, why do we recommend using ``cross_validate`` over ``cross_val_score``?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Here, for the
+`SVC <https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html>`_,
+the default score is the accuracy.
+If the users want other scores to better understand their model such as the
+precision and the recall, they can specify it which is very convenient.
+Otherwise, they would have to run several ``cross_val_score`` with different
+``scoring`` parameters each time, which leads to more unnecessary compute.
+
+Why do we recommend using skore's ``cross_validate`` over scikit-learn's?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In the example above, what if the users ran scikit-learn's ``cross_validate``
+but forgot to manually add a crucial score for their use case such as the
+recall?
+They would have to re-run all the cross-validation experiments by adding this
+crucial score, which leads to more compute.
+
+.. GENERATED FROM PYTHON SOURCE LINES 106-113
+
+Cross-validation in skore
+=========================
+
+Classification task
+^^^^^^^^^^^^^^^^^^^
+
+Let us continue with the same use case.
+
+.. GENERATED FROM PYTHON SOURCE LINES 115-119
+
+.. code-block:: Python
+
+    cv_results = skore.cross_validate(clf, X, y, cv=5, project=my_project_gs)
 
     my_project_gs.get_item("cross_validation").plot
+
 
 
 
@@ -98,8 +236,8 @@ assistance when developing your ML/DS projects.
                   'showlegend': True,
                   'type': 'bar',
                   'visible': True,
-                  'x': array([0, 1, 2]),
-                  'y': array([0.00077772, 0.00066304, 0.00060296])},
+                  'x': array([0, 1, 2, 3, 4]),
+                  'y': array([0.00086141, 0.00087667, 0.00079393, 0.00082541, 0.0008018 ])},
                  {'legendgroup': 'group0',
                   'line': {'color': '#636EFA', 'dash': 'dash'},
                   'mode': 'lines',
@@ -107,8 +245,8 @@ assistance when developing your ML/DS projects.
                   'showlegend': False,
                   'type': 'scatter',
                   'visible': True,
-                  'x': [-0.5, 2.5],
-                  'y': [0.0006812413533528646, 0.0006812413533528646]},
+                  'x': [-0.5, 4.5],
+                  'y': [0.0008318424224853516, 0.0008318424224853516]},
                  {'legendgroup': 'group0',
                   'line': {'color': '#636EFA', 'dash': 'dot'},
                   'mode': 'lines',
@@ -116,8 +254,8 @@ assistance when developing your ML/DS projects.
                   'showlegend': False,
                   'type': 'scatter',
                   'visible': True,
-                  'x': [-0.5, 2.5],
-                  'y': [0.0007700318167847528, 0.0007700318167847528]},
+                  'x': [-0.5, 4.5],
+                  'y': [0.0008681192802841742, 0.0008681192802841742]},
                  {'legendgroup': 'group0',
                   'line': {'color': '#636EFA', 'dash': 'dot'},
                   'mode': 'lines',
@@ -125,16 +263,16 @@ assistance when developing your ML/DS projects.
                   'showlegend': False,
                   'type': 'scatter',
                   'visible': True,
-                  'x': [-0.5, 2.5],
-                  'y': [0.0005924508899209764, 0.0005924508899209764]},
+                  'x': [-0.5, 4.5],
+                  'y': [0.0007955655646865289, 0.0007955655646865289]},
                  {'legendgroup': 'group1',
                   'marker': {'color': '#EF553B'},
                   'name': 'score_time (seconds)',
                   'showlegend': True,
                   'type': 'bar',
                   'visible': 'legendonly',
-                  'x': array([0, 1, 2]),
-                  'y': array([0.00127101, 0.00114465, 0.00111604])},
+                  'x': array([0, 1, 2, 3, 4]),
+                  'y': array([0.00275493, 0.00273705, 0.00270772, 0.00274134, 0.00273132])},
                  {'legendgroup': 'group1',
                   'line': {'color': '#EF553B', 'dash': 'dash'},
                   'mode': 'lines',
@@ -142,8 +280,8 @@ assistance when developing your ML/DS projects.
                   'showlegend': False,
                   'type': 'scatter',
                   'visible': 'legendonly',
-                  'x': [-0.5, 2.5],
-                  'y': [0.0011772314707438152, 0.0011772314707438152]},
+                  'x': [-0.5, 4.5],
+                  'y': [0.002734470367431641, 0.002734470367431641]},
                  {'legendgroup': 'group1',
                   'line': {'color': '#EF553B', 'dash': 'dot'},
                   'mode': 'lines',
@@ -151,8 +289,8 @@ assistance when developing your ML/DS projects.
                   'showlegend': False,
                   'type': 'scatter',
                   'visible': 'legendonly',
-                  'x': [-0.5, 2.5],
-                  'y': [0.0012596958125915578, 0.0012596958125915578]},
+                  'x': [-0.5, 4.5],
+                  'y': [0.002751774531021167, 0.002751774531021167]},
                  {'legendgroup': 'group1',
                   'line': {'color': '#EF553B', 'dash': 'dot'},
                   'mode': 'lines',
@@ -160,86 +298,86 @@ assistance when developing your ML/DS projects.
                   'showlegend': False,
                   'type': 'scatter',
                   'visible': 'legendonly',
-                  'x': [-0.5, 2.5],
-                  'y': [0.0010947671288960726, 0.0010947671288960726]},
+                  'x': [-0.5, 4.5],
+                  'y': [0.0027171662038421147, 0.0027171662038421147]},
                  {'legendgroup': 'group2',
                   'marker': {'color': '#00CC96'},
-                  'name': 'test_r2',
+                  'name': 'test_recall_weighted',
                   'showlegend': True,
                   'type': 'bar',
                   'visible': 'legendonly',
-                  'x': array([0, 1, 2]),
-                  'y': array([0.3315057 , 0.08022103, 0.03531816])},
+                  'x': array([0, 1, 2, 3, 4]),
+                  'y': array([0.96666667, 1.        , 0.96666667, 0.96666667, 1.        ])},
                  {'legendgroup': 'group2',
                   'line': {'color': '#00CC96', 'dash': 'dash'},
                   'mode': 'lines',
-                  'name': 'Average test_r2',
+                  'name': 'Average test_recall_weighted',
                   'showlegend': False,
                   'type': 'scatter',
                   'visible': 'legendonly',
-                  'x': [-0.5, 2.5],
-                  'y': [0.14901496176589216, 0.14901496176589216]},
+                  'x': [-0.5, 4.5],
+                  'y': [0.9800000000000001, 0.9800000000000001]},
                  {'legendgroup': 'group2',
                   'line': {'color': '#00CC96', 'dash': 'dot'},
                   'mode': 'lines',
-                  'name': 'Average + 1 std. dev. test_r2',
+                  'name': 'Average + 1 std. dev. test_recall_weighted',
                   'showlegend': False,
                   'type': 'scatter',
                   'visible': 'legendonly',
-                  'x': [-0.5, 2.5],
-                  'y': [0.3086433392301182, 0.3086433392301182]},
+                  'x': [-0.5, 4.5],
+                  'y': [0.9982574185835056, 0.9982574185835056]},
                  {'legendgroup': 'group2',
                   'line': {'color': '#00CC96', 'dash': 'dot'},
                   'mode': 'lines',
-                  'name': 'Average - 1 std. dev. test_r2',
+                  'name': 'Average - 1 std. dev. test_recall_weighted',
                   'showlegend': False,
                   'type': 'scatter',
                   'visible': 'legendonly',
-                  'x': [-0.5, 2.5],
-                  'y': [-0.010613415698333906, -0.010613415698333906]},
+                  'x': [-0.5, 4.5],
+                  'y': [0.9617425814164946, 0.9617425814164946]},
                  {'legendgroup': 'group3',
                   'marker': {'color': '#AB63FA'},
-                  'name': 'test_neg_mean_squared_error',
+                  'name': 'test_precision_weighted',
                   'showlegend': True,
                   'type': 'bar',
                   'visible': 'legendonly',
-                  'x': array([0, 1, 2]),
-                  'y': array([-3635.52042005, -3573.35050281, -6114.77901585])},
+                  'x': array([0, 1, 2, 3, 4]),
+                  'y': array([0.96969697, 1.        , 0.96969697, 0.96969697, 1.        ])},
                  {'legendgroup': 'group3',
                   'line': {'color': '#AB63FA', 'dash': 'dash'},
                   'mode': 'lines',
-                  'name': 'Average test_neg_mean_squared_error',
+                  'name': 'Average test_precision_weighted',
                   'showlegend': False,
                   'type': 'scatter',
                   'visible': 'legendonly',
-                  'x': [-0.5, 2.5],
-                  'y': [-4441.216646237895, -4441.216646237895]},
+                  'x': [-0.5, 4.5],
+                  'y': [0.9818181818181818, 0.9818181818181818]},
                  {'legendgroup': 'group3',
                   'line': {'color': '#AB63FA', 'dash': 'dot'},
                   'mode': 'lines',
-                  'name': 'Average + 1 std. dev. test_neg_mean_squared_error',
+                  'name': 'Average + 1 std. dev. test_precision_weighted',
                   'showlegend': False,
                   'type': 'scatter',
                   'visible': 'legendonly',
-                  'x': [-0.5, 2.5],
-                  'y': [-2991.5358095052034, -2991.5358095052034]},
+                  'x': [-0.5, 4.5],
+                  'y': [0.9984158350759141, 0.9984158350759141]},
                  {'legendgroup': 'group3',
                   'line': {'color': '#AB63FA', 'dash': 'dot'},
                   'mode': 'lines',
-                  'name': 'Average - 1 std. dev. test_neg_mean_squared_error',
+                  'name': 'Average - 1 std. dev. test_precision_weighted',
                   'showlegend': False,
                   'type': 'scatter',
                   'visible': 'legendonly',
-                  'x': [-0.5, 2.5],
-                  'y': [-5890.897482970586, -5890.897482970586]},
+                  'x': [-0.5, 4.5],
+                  'y': [0.9652205285604495, 0.9652205285604495]},
                  {'legendgroup': 'group4',
                   'marker': {'color': '#FFA15A'},
                   'name': 'test_score',
                   'showlegend': True,
                   'type': 'bar',
                   'visible': 'legendonly',
-                  'x': array([0, 1, 2]),
-                  'y': array([0.3315057 , 0.08022103, 0.03531816])},
+                  'x': array([0, 1, 2, 3, 4]),
+                  'y': array([0.96666667, 1.        , 0.96666667, 0.96666667, 1.        ])},
                  {'legendgroup': 'group4',
                   'line': {'color': '#FFA15A', 'dash': 'dash'},
                   'mode': 'lines',
@@ -247,8 +385,8 @@ assistance when developing your ML/DS projects.
                   'showlegend': False,
                   'type': 'scatter',
                   'visible': 'legendonly',
-                  'x': [-0.5, 2.5],
-                  'y': [0.14901496176589216, 0.14901496176589216]},
+                  'x': [-0.5, 4.5],
+                  'y': [0.9800000000000001, 0.9800000000000001]},
                  {'legendgroup': 'group4',
                   'line': {'color': '#FFA15A', 'dash': 'dot'},
                   'mode': 'lines',
@@ -256,8 +394,8 @@ assistance when developing your ML/DS projects.
                   'showlegend': False,
                   'type': 'scatter',
                   'visible': 'legendonly',
-                  'x': [-0.5, 2.5],
-                  'y': [0.3086433392301182, 0.3086433392301182]},
+                  'x': [-0.5, 4.5],
+                  'y': [0.9982574185835056, 0.9982574185835056]},
                  {'legendgroup': 'group4',
                   'line': {'color': '#FFA15A', 'dash': 'dot'},
                   'mode': 'lines',
@@ -265,8 +403,8 @@ assistance when developing your ML/DS projects.
                   'showlegend': False,
                   'type': 'scatter',
                   'visible': 'legendonly',
-                  'x': [-0.5, 2.5],
-                  'y': [-0.010613415698333906, -0.010613415698333906]}],
+                  'x': [-0.5, 4.5],
+                  'y': [0.9617425814164946, 0.9617425814164946]}],
         'layout': {'template': '...',
                    'title': {'text': 'Cross-validation results for each split'},
                    'xaxis': {'dtick': 1, 'tickmode': 'linear', 'title': {'text': 'Split number'}},
@@ -278,15 +416,290 @@ assistance when developing your ML/DS projects.
 
     <div class="output_subarea output_html rendered_html output_result">
     <div>                        <script type="text/javascript">window.PlotlyConfig = {MathJaxConfig: 'local'};</script>
-            <script charset="utf-8" src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>                <div id="f3de7e6d-6589-459d-8815-b68be440ec2f" class="plotly-graph-div" style="height:100%; width:100%;"></div>            <script type="text/javascript">                                    window.PLOTLYENV=window.PLOTLYENV || {};                                    if (document.getElementById("f3de7e6d-6589-459d-8815-b68be440ec2f")) {                    Plotly.newPlot(                        "f3de7e6d-6589-459d-8815-b68be440ec2f",                        [{"legendgroup":"group0","marker":{"color":"#636EFA"},"name":"fit_time (seconds)","showlegend":true,"visible":true,"x":[0,1,2],"y":[0.0007777214050292969,0.0006630420684814453,0.0006029605865478516],"type":"bar"},{"legendgroup":"group0","line":{"color":"#636EFA","dash":"dash"},"mode":"lines","name":"Average fit_time (seconds)","showlegend":false,"visible":true,"x":[-0.5,2.5],"y":[0.0006812413533528646,0.0006812413533528646],"type":"scatter"},{"legendgroup":"group0","line":{"color":"#636EFA","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. fit_time (seconds)","showlegend":false,"visible":true,"x":[-0.5,2.5],"y":[0.0007700318167847528,0.0007700318167847528],"type":"scatter"},{"legendgroup":"group0","line":{"color":"#636EFA","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. fit_time (seconds)","showlegend":false,"visible":true,"x":[-0.5,2.5],"y":[0.0005924508899209764,0.0005924508899209764],"type":"scatter"},{"legendgroup":"group1","marker":{"color":"#EF553B"},"name":"score_time (seconds)","showlegend":true,"visible":"legendonly","x":[0,1,2],"y":[0.0012710094451904297,0.0011446475982666016,0.001116037368774414],"type":"bar"},{"legendgroup":"group1","line":{"color":"#EF553B","dash":"dash"},"mode":"lines","name":"Average score_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,2.5],"y":[0.0011772314707438152,0.0011772314707438152],"type":"scatter"},{"legendgroup":"group1","line":{"color":"#EF553B","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. score_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,2.5],"y":[0.0012596958125915578,0.0012596958125915578],"type":"scatter"},{"legendgroup":"group1","line":{"color":"#EF553B","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. score_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,2.5],"y":[0.0010947671288960726,0.0010947671288960726],"type":"scatter"},{"legendgroup":"group2","marker":{"color":"#00CC96"},"name":"test_r2","showlegend":true,"visible":"legendonly","x":[0,1,2],"y":[0.3315056992326689,0.08022102830923838,0.035318157755769186],"type":"bar"},{"legendgroup":"group2","line":{"color":"#00CC96","dash":"dash"},"mode":"lines","name":"Average test_r2","showlegend":false,"visible":"legendonly","x":[-0.5,2.5],"y":[0.14901496176589216,0.14901496176589216],"type":"scatter"},{"legendgroup":"group2","line":{"color":"#00CC96","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. test_r2","showlegend":false,"visible":"legendonly","x":[-0.5,2.5],"y":[0.3086433392301182,0.3086433392301182],"type":"scatter"},{"legendgroup":"group2","line":{"color":"#00CC96","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. test_r2","showlegend":false,"visible":"legendonly","x":[-0.5,2.5],"y":[-0.010613415698333906,-0.010613415698333906],"type":"scatter"},{"legendgroup":"group3","marker":{"color":"#AB63FA"},"name":"test_neg_mean_squared_error","showlegend":true,"visible":"legendonly","x":[0,1,2],"y":[-3635.520420054913,-3573.3505028083255,-6114.779015850447],"type":"bar"},{"legendgroup":"group3","line":{"color":"#AB63FA","dash":"dash"},"mode":"lines","name":"Average test_neg_mean_squared_error","showlegend":false,"visible":"legendonly","x":[-0.5,2.5],"y":[-4441.216646237895,-4441.216646237895],"type":"scatter"},{"legendgroup":"group3","line":{"color":"#AB63FA","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. test_neg_mean_squared_error","showlegend":false,"visible":"legendonly","x":[-0.5,2.5],"y":[-2991.5358095052034,-2991.5358095052034],"type":"scatter"},{"legendgroup":"group3","line":{"color":"#AB63FA","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. test_neg_mean_squared_error","showlegend":false,"visible":"legendonly","x":[-0.5,2.5],"y":[-5890.897482970586,-5890.897482970586],"type":"scatter"},{"legendgroup":"group4","marker":{"color":"#FFA15A"},"name":"test_score","showlegend":true,"visible":"legendonly","x":[0,1,2],"y":[0.3315056992326689,0.08022102830923838,0.035318157755769186],"type":"bar"},{"legendgroup":"group4","line":{"color":"#FFA15A","dash":"dash"},"mode":"lines","name":"Average test_score","showlegend":false,"visible":"legendonly","x":[-0.5,2.5],"y":[0.14901496176589216,0.14901496176589216],"type":"scatter"},{"legendgroup":"group4","line":{"color":"#FFA15A","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. test_score","showlegend":false,"visible":"legendonly","x":[-0.5,2.5],"y":[0.3086433392301182,0.3086433392301182],"type":"scatter"},{"legendgroup":"group4","line":{"color":"#FFA15A","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. test_score","showlegend":false,"visible":"legendonly","x":[-0.5,2.5],"y":[-0.010613415698333906,-0.010613415698333906],"type":"scatter"}],                        {"template":{"data":{"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"heatmapgl":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmapgl"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"geo":{"bgcolor":"white","lakecolor":"white","landcolor":"#E5ECF6","showlakes":true,"showland":true,"subunitcolor":"white"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"light"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"bgcolor":"#E5ECF6","radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","gridwidth":2,"linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white"},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","gridwidth":2,"linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white"},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","gridwidth":2,"linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white"}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"ternary":{"aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"bgcolor":"#E5ECF6","caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"title":{"x":0.05},"xaxis":{"automargin":true,"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","zerolinewidth":2}}},"title":{"text":"Cross-validation results for each split"},"xaxis":{"dtick":1,"tickmode":"linear","title":{"text":"Split number"}},"yaxis":{"title":{"text":"Value"}}},                        {"responsive": true}                    )                };                            </script>        </div>
+            <script charset="utf-8" src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>                <div id="58dff103-09fc-42b1-b509-e62dcf54e30a" class="plotly-graph-div" style="height:100%; width:100%;"></div>            <script type="text/javascript">                                    window.PLOTLYENV=window.PLOTLYENV || {};                                    if (document.getElementById("58dff103-09fc-42b1-b509-e62dcf54e30a")) {                    Plotly.newPlot(                        "58dff103-09fc-42b1-b509-e62dcf54e30a",                        [{"legendgroup":"group0","marker":{"color":"#636EFA"},"name":"fit_time (seconds)","showlegend":true,"visible":true,"x":[0,1,2,3,4],"y":[0.0008614063262939453,0.0008766651153564453,0.0007939338684082031,0.0008254051208496094,0.0008018016815185547],"type":"bar"},{"legendgroup":"group0","line":{"color":"#636EFA","dash":"dash"},"mode":"lines","name":"Average fit_time (seconds)","showlegend":false,"visible":true,"x":[-0.5,4.5],"y":[0.0008318424224853516,0.0008318424224853516],"type":"scatter"},{"legendgroup":"group0","line":{"color":"#636EFA","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. fit_time (seconds)","showlegend":false,"visible":true,"x":[-0.5,4.5],"y":[0.0008681192802841742,0.0008681192802841742],"type":"scatter"},{"legendgroup":"group0","line":{"color":"#636EFA","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. fit_time (seconds)","showlegend":false,"visible":true,"x":[-0.5,4.5],"y":[0.0007955655646865289,0.0007955655646865289],"type":"scatter"},{"legendgroup":"group1","marker":{"color":"#EF553B"},"name":"score_time (seconds)","showlegend":true,"visible":"legendonly","x":[0,1,2,3,4],"y":[0.0027549266815185547,0.0027370452880859375,0.0027077198028564453,0.0027413368225097656,0.0027313232421875],"type":"bar"},{"legendgroup":"group1","line":{"color":"#EF553B","dash":"dash"},"mode":"lines","name":"Average score_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.002734470367431641,0.002734470367431641],"type":"scatter"},{"legendgroup":"group1","line":{"color":"#EF553B","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. score_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.002751774531021167,0.002751774531021167],"type":"scatter"},{"legendgroup":"group1","line":{"color":"#EF553B","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. score_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.0027171662038421147,0.0027171662038421147],"type":"scatter"},{"legendgroup":"group2","marker":{"color":"#00CC96"},"name":"test_recall_weighted","showlegend":true,"visible":"legendonly","x":[0,1,2,3,4],"y":[0.9666666666666667,1.0,0.9666666666666667,0.9666666666666667,1.0],"type":"bar"},{"legendgroup":"group2","line":{"color":"#00CC96","dash":"dash"},"mode":"lines","name":"Average test_recall_weighted","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.9800000000000001,0.9800000000000001],"type":"scatter"},{"legendgroup":"group2","line":{"color":"#00CC96","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. test_recall_weighted","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.9982574185835056,0.9982574185835056],"type":"scatter"},{"legendgroup":"group2","line":{"color":"#00CC96","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. test_recall_weighted","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.9617425814164946,0.9617425814164946],"type":"scatter"},{"legendgroup":"group3","marker":{"color":"#AB63FA"},"name":"test_precision_weighted","showlegend":true,"visible":"legendonly","x":[0,1,2,3,4],"y":[0.9696969696969696,1.0,0.9696969696969696,0.9696969696969696,1.0],"type":"bar"},{"legendgroup":"group3","line":{"color":"#AB63FA","dash":"dash"},"mode":"lines","name":"Average test_precision_weighted","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.9818181818181818,0.9818181818181818],"type":"scatter"},{"legendgroup":"group3","line":{"color":"#AB63FA","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. test_precision_weighted","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.9984158350759141,0.9984158350759141],"type":"scatter"},{"legendgroup":"group3","line":{"color":"#AB63FA","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. test_precision_weighted","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.9652205285604495,0.9652205285604495],"type":"scatter"},{"legendgroup":"group4","marker":{"color":"#FFA15A"},"name":"test_score","showlegend":true,"visible":"legendonly","x":[0,1,2,3,4],"y":[0.9666666666666667,1.0,0.9666666666666667,0.9666666666666667,1.0],"type":"bar"},{"legendgroup":"group4","line":{"color":"#FFA15A","dash":"dash"},"mode":"lines","name":"Average test_score","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.9800000000000001,0.9800000000000001],"type":"scatter"},{"legendgroup":"group4","line":{"color":"#FFA15A","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. test_score","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.9982574185835056,0.9982574185835056],"type":"scatter"},{"legendgroup":"group4","line":{"color":"#FFA15A","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. test_score","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.9617425814164946,0.9617425814164946],"type":"scatter"}],                        {"template":{"data":{"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"heatmapgl":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmapgl"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"geo":{"bgcolor":"white","lakecolor":"white","landcolor":"#E5ECF6","showlakes":true,"showland":true,"subunitcolor":"white"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"light"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"bgcolor":"#E5ECF6","radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","gridwidth":2,"linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white"},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","gridwidth":2,"linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white"},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","gridwidth":2,"linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white"}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"ternary":{"aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"bgcolor":"#E5ECF6","caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"title":{"x":0.05},"xaxis":{"automargin":true,"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","zerolinewidth":2}}},"title":{"text":"Cross-validation results for each split"},"xaxis":{"dtick":1,"tickmode":"linear","title":{"text":"Split number"}},"yaxis":{"title":{"text":"Value"}}},                        {"responsive": true}                    )                };                            </script>        </div>
     </div>
     <br />
     <br />
 
+.. GENERATED FROM PYTHON SOURCE LINES 120-131
+
+Skore's ``cross_validate`` advantages are the following:
+
+* By default, it computes several useful scores without the need for the user to specify it. For classification, you can observe that it computed the accuracy, the precision, and the recall.
+
+* You automatically get some interactive plots to better understand how your model behaves depending on the split. For example:
+
+  * You can compare the fitting and testing times together for each split.
+
+  * You can compare the accuracy, precision, and recall scores together for each split.
+
+* The results and plots are automatically saved in your skore project, so that you can visualize them later in the UI for example.
+
+.. GENERATED FROM PYTHON SOURCE LINES 133-135
+
+Regression task
+^^^^^^^^^^^^^^^
+
+.. GENERATED FROM PYTHON SOURCE LINES 137-146
+
+.. code-block:: Python
+
+    diabetes = datasets.load_diabetes()
+    X = diabetes.data[:150]
+    y = diabetes.target[:150]
+    lasso = linear_model.Lasso()
+
+    cv_results = skore.cross_validate(lasso, X, y, cv=5, project=my_project_gs)
+
+    my_project_gs.get_item("cross_validation").plot
+
+
+
+
+
+.. rst-class:: sphx-glr-script-out
+
+ .. code-block:: none
+
+    Figure({
+        'data': [{'legendgroup': 'group0',
+                  'marker': {'color': '#636EFA'},
+                  'name': 'fit_time (seconds)',
+                  'showlegend': True,
+                  'type': 'bar',
+                  'visible': True,
+                  'x': array([0, 1, 2, 3, 4]),
+                  'y': array([0.00071073, 0.00061035, 0.00060391, 0.00059986, 0.0005846 ])},
+                 {'legendgroup': 'group0',
+                  'line': {'color': '#636EFA', 'dash': 'dash'},
+                  'mode': 'lines',
+                  'name': 'Average fit_time (seconds)',
+                  'showlegend': False,
+                  'type': 'scatter',
+                  'visible': True,
+                  'x': [-0.5, 4.5],
+                  'y': [0.0006218910217285156, 0.0006218910217285156]},
+                 {'legendgroup': 'group0',
+                  'line': {'color': '#636EFA', 'dash': 'dot'},
+                  'mode': 'lines',
+                  'name': 'Average + 1 std. dev. fit_time (seconds)',
+                  'showlegend': False,
+                  'type': 'scatter',
+                  'visible': True,
+                  'x': [-0.5, 4.5],
+                  'y': [0.0006724471740611747, 0.0006724471740611747]},
+                 {'legendgroup': 'group0',
+                  'line': {'color': '#636EFA', 'dash': 'dot'},
+                  'mode': 'lines',
+                  'name': 'Average - 1 std. dev. fit_time (seconds)',
+                  'showlegend': False,
+                  'type': 'scatter',
+                  'visible': True,
+                  'x': [-0.5, 4.5],
+                  'y': [0.0005713348693958566, 0.0005713348693958566]},
+                 {'legendgroup': 'group1',
+                  'marker': {'color': '#EF553B'},
+                  'name': 'score_time (seconds)',
+                  'showlegend': True,
+                  'type': 'bar',
+                  'visible': 'legendonly',
+                  'x': array([0, 1, 2, 3, 4]),
+                  'y': array([0.00125408, 0.0011394 , 0.00111198, 0.00117135, 0.00112057])},
+                 {'legendgroup': 'group1',
+                  'line': {'color': '#EF553B', 'dash': 'dash'},
+                  'mode': 'lines',
+                  'name': 'Average score_time (seconds)',
+                  'showlegend': False,
+                  'type': 'scatter',
+                  'visible': 'legendonly',
+                  'x': [-0.5, 4.5],
+                  'y': [0.0011594772338867187, 0.0011594772338867187]},
+                 {'legendgroup': 'group1',
+                  'line': {'color': '#EF553B', 'dash': 'dot'},
+                  'mode': 'lines',
+                  'name': 'Average + 1 std. dev. score_time (seconds)',
+                  'showlegend': False,
+                  'type': 'scatter',
+                  'visible': 'legendonly',
+                  'x': [-0.5, 4.5],
+                  'y': [0.0012170609724141946, 0.0012170609724141946]},
+                 {'legendgroup': 'group1',
+                  'line': {'color': '#EF553B', 'dash': 'dot'},
+                  'mode': 'lines',
+                  'name': 'Average - 1 std. dev. score_time (seconds)',
+                  'showlegend': False,
+                  'type': 'scatter',
+                  'visible': 'legendonly',
+                  'x': [-0.5, 4.5],
+                  'y': [0.0011018934953592428, 0.0011018934953592428]},
+                 {'legendgroup': 'group2',
+                  'marker': {'color': '#00CC96'},
+                  'name': 'test_r2',
+                  'showlegend': True,
+                  'type': 'bar',
+                  'visible': 'legendonly',
+                  'x': array([0, 1, 2, 3, 4]),
+                  'y': array([0.29828675, 0.2241492 , 0.15480127, 0.25519733, 0.17108715])},
+                 {'legendgroup': 'group2',
+                  'line': {'color': '#00CC96', 'dash': 'dash'},
+                  'mode': 'lines',
+                  'name': 'Average test_r2',
+                  'showlegend': False,
+                  'type': 'scatter',
+                  'visible': 'legendonly',
+                  'x': [-0.5, 4.5],
+                  'y': [0.22070433908369935, 0.22070433908369935]},
+                 {'legendgroup': 'group2',
+                  'line': {'color': '#00CC96', 'dash': 'dot'},
+                  'mode': 'lines',
+                  'name': 'Average + 1 std. dev. test_r2',
+                  'showlegend': False,
+                  'type': 'scatter',
+                  'visible': 'legendonly',
+                  'x': [-0.5, 4.5],
+                  'y': [0.27991950413745326, 0.27991950413745326]},
+                 {'legendgroup': 'group2',
+                  'line': {'color': '#00CC96', 'dash': 'dot'},
+                  'mode': 'lines',
+                  'name': 'Average - 1 std. dev. test_r2',
+                  'showlegend': False,
+                  'type': 'scatter',
+                  'visible': 'legendonly',
+                  'x': [-0.5, 4.5],
+                  'y': [0.16148917402994548, 0.16148917402994548]},
+                 {'legendgroup': 'group3',
+                  'marker': {'color': '#AB63FA'},
+                  'name': 'test_neg_mean_squared_error',
+                  'showlegend': True,
+                  'type': 'bar',
+                  'visible': 'legendonly',
+                  'x': array([0, 1, 2, 3, 4]),
+                  'y': array([-2807.16799618, -4890.37813089, -3360.65006947, -4663.03492141,
+                              -5152.31964346])},
+                 {'legendgroup': 'group3',
+                  'line': {'color': '#AB63FA', 'dash': 'dash'},
+                  'mode': 'lines',
+                  'name': 'Average test_neg_mean_squared_error',
+                  'showlegend': False,
+                  'type': 'scatter',
+                  'visible': 'legendonly',
+                  'x': [-0.5, 4.5],
+                  'y': [-4174.7101522812645, -4174.7101522812645]},
+                 {'legendgroup': 'group3',
+                  'line': {'color': '#AB63FA', 'dash': 'dot'},
+                  'mode': 'lines',
+                  'name': 'Average + 1 std. dev. test_neg_mean_squared_error',
+                  'showlegend': False,
+                  'type': 'scatter',
+                  'visible': 'legendonly',
+                  'x': [-0.5, 4.5],
+                  'y': [-3145.240941942837, -3145.240941942837]},
+                 {'legendgroup': 'group3',
+                  'line': {'color': '#AB63FA', 'dash': 'dot'},
+                  'mode': 'lines',
+                  'name': 'Average - 1 std. dev. test_neg_mean_squared_error',
+                  'showlegend': False,
+                  'type': 'scatter',
+                  'visible': 'legendonly',
+                  'x': [-0.5, 4.5],
+                  'y': [-5204.179362619692, -5204.179362619692]},
+                 {'legendgroup': 'group4',
+                  'marker': {'color': '#FFA15A'},
+                  'name': 'test_score',
+                  'showlegend': True,
+                  'type': 'bar',
+                  'visible': 'legendonly',
+                  'x': array([0, 1, 2, 3, 4]),
+                  'y': array([0.29828675, 0.2241492 , 0.15480127, 0.25519733, 0.17108715])},
+                 {'legendgroup': 'group4',
+                  'line': {'color': '#FFA15A', 'dash': 'dash'},
+                  'mode': 'lines',
+                  'name': 'Average test_score',
+                  'showlegend': False,
+                  'type': 'scatter',
+                  'visible': 'legendonly',
+                  'x': [-0.5, 4.5],
+                  'y': [0.22070433908369935, 0.22070433908369935]},
+                 {'legendgroup': 'group4',
+                  'line': {'color': '#FFA15A', 'dash': 'dot'},
+                  'mode': 'lines',
+                  'name': 'Average + 1 std. dev. test_score',
+                  'showlegend': False,
+                  'type': 'scatter',
+                  'visible': 'legendonly',
+                  'x': [-0.5, 4.5],
+                  'y': [0.27991950413745326, 0.27991950413745326]},
+                 {'legendgroup': 'group4',
+                  'line': {'color': '#FFA15A', 'dash': 'dot'},
+                  'mode': 'lines',
+                  'name': 'Average - 1 std. dev. test_score',
+                  'showlegend': False,
+                  'type': 'scatter',
+                  'visible': 'legendonly',
+                  'x': [-0.5, 4.5],
+                  'y': [0.16148917402994548, 0.16148917402994548]}],
+        'layout': {'template': '...',
+                   'title': {'text': 'Cross-validation results for each split'},
+                   'xaxis': {'dtick': 1, 'tickmode': 'linear', 'title': {'text': 'Split number'}},
+                   'yaxis': {'title': {'text': 'Value'}}}
+    })
+
+
+.. raw:: html
+
+    <div class="output_subarea output_html rendered_html output_result">
+    <div>                        <script type="text/javascript">window.PlotlyConfig = {MathJaxConfig: 'local'};</script>
+            <script charset="utf-8" src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>                <div id="d8ed605a-5103-4b97-ae66-e084b4c2887f" class="plotly-graph-div" style="height:100%; width:100%;"></div>            <script type="text/javascript">                                    window.PLOTLYENV=window.PLOTLYENV || {};                                    if (document.getElementById("d8ed605a-5103-4b97-ae66-e084b4c2887f")) {                    Plotly.newPlot(                        "d8ed605a-5103-4b97-ae66-e084b4c2887f",                        [{"legendgroup":"group0","marker":{"color":"#636EFA"},"name":"fit_time (seconds)","showlegend":true,"visible":true,"x":[0,1,2,3,4],"y":[0.0007107257843017578,0.0006103515625,0.0006039142608642578,0.0005998611450195312,0.0005846023559570312],"type":"bar"},{"legendgroup":"group0","line":{"color":"#636EFA","dash":"dash"},"mode":"lines","name":"Average fit_time (seconds)","showlegend":false,"visible":true,"x":[-0.5,4.5],"y":[0.0006218910217285156,0.0006218910217285156],"type":"scatter"},{"legendgroup":"group0","line":{"color":"#636EFA","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. fit_time (seconds)","showlegend":false,"visible":true,"x":[-0.5,4.5],"y":[0.0006724471740611747,0.0006724471740611747],"type":"scatter"},{"legendgroup":"group0","line":{"color":"#636EFA","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. fit_time (seconds)","showlegend":false,"visible":true,"x":[-0.5,4.5],"y":[0.0005713348693958566,0.0005713348693958566],"type":"scatter"},{"legendgroup":"group1","marker":{"color":"#EF553B"},"name":"score_time (seconds)","showlegend":true,"visible":"legendonly","x":[0,1,2,3,4],"y":[0.0012540817260742188,0.0011394023895263672,0.0011119842529296875,0.0011713504791259766,0.0011205673217773438],"type":"bar"},{"legendgroup":"group1","line":{"color":"#EF553B","dash":"dash"},"mode":"lines","name":"Average score_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.0011594772338867187,0.0011594772338867187],"type":"scatter"},{"legendgroup":"group1","line":{"color":"#EF553B","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. score_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.0012170609724141946,0.0012170609724141946],"type":"scatter"},{"legendgroup":"group1","line":{"color":"#EF553B","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. score_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.0011018934953592428,0.0011018934953592428],"type":"scatter"},{"legendgroup":"group2","marker":{"color":"#00CC96"},"name":"test_r2","showlegend":true,"visible":"legendonly","x":[0,1,2,3,4],"y":[0.2982867487756391,0.22414919618930618,0.15480127210175387,0.2551973269039568,0.1710871514478407],"type":"bar"},{"legendgroup":"group2","line":{"color":"#00CC96","dash":"dash"},"mode":"lines","name":"Average test_r2","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.22070433908369935,0.22070433908369935],"type":"scatter"},{"legendgroup":"group2","line":{"color":"#00CC96","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. test_r2","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.27991950413745326,0.27991950413745326],"type":"scatter"},{"legendgroup":"group2","line":{"color":"#00CC96","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. test_r2","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.16148917402994548,0.16148917402994548],"type":"scatter"},{"legendgroup":"group3","marker":{"color":"#AB63FA"},"name":"test_neg_mean_squared_error","showlegend":true,"visible":"legendonly","x":[0,1,2,3,4],"y":[-2807.167996179104,-4890.3781308939615,-3360.650069468378,-4663.034921405411,-5152.319643459466],"type":"bar"},{"legendgroup":"group3","line":{"color":"#AB63FA","dash":"dash"},"mode":"lines","name":"Average test_neg_mean_squared_error","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[-4174.7101522812645,-4174.7101522812645],"type":"scatter"},{"legendgroup":"group3","line":{"color":"#AB63FA","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. test_neg_mean_squared_error","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[-3145.240941942837,-3145.240941942837],"type":"scatter"},{"legendgroup":"group3","line":{"color":"#AB63FA","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. test_neg_mean_squared_error","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[-5204.179362619692,-5204.179362619692],"type":"scatter"},{"legendgroup":"group4","marker":{"color":"#FFA15A"},"name":"test_score","showlegend":true,"visible":"legendonly","x":[0,1,2,3,4],"y":[0.2982867487756391,0.22414919618930618,0.15480127210175387,0.2551973269039568,0.1710871514478407],"type":"bar"},{"legendgroup":"group4","line":{"color":"#FFA15A","dash":"dash"},"mode":"lines","name":"Average test_score","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.22070433908369935,0.22070433908369935],"type":"scatter"},{"legendgroup":"group4","line":{"color":"#FFA15A","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. test_score","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.27991950413745326,0.27991950413745326],"type":"scatter"},{"legendgroup":"group4","line":{"color":"#FFA15A","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. test_score","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.16148917402994548,0.16148917402994548],"type":"scatter"}],                        {"template":{"data":{"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"heatmapgl":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmapgl"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"geo":{"bgcolor":"white","lakecolor":"white","landcolor":"#E5ECF6","showlakes":true,"showland":true,"subunitcolor":"white"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"light"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"bgcolor":"#E5ECF6","radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","gridwidth":2,"linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white"},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","gridwidth":2,"linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white"},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","gridwidth":2,"linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white"}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"ternary":{"aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"bgcolor":"#E5ECF6","caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"title":{"x":0.05},"xaxis":{"automargin":true,"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","zerolinewidth":2}}},"title":{"text":"Cross-validation results for each split"},"xaxis":{"dtick":1,"tickmode":"linear","title":{"text":"Split number"}},"yaxis":{"title":{"text":"Value"}}},                        {"responsive": true}                    )                };                            </script>        </div>
+    </div>
+    <br />
+    <br />
+
+.. GENERATED FROM PYTHON SOURCE LINES 147-155
+
+A short note on Plotly and Sphinx auto-examples
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Because Plotly graphs currently do not properly render in our docs engine
+due to `a bug in Plotly <https://github.com/plotly/plotly.py/issues/4828>`_,
+we also display a screenshot below (using 3 splits).
+Alternatively, if you zoom in or out in your browser window, the Plotly graph
+should display properly.
+
+.. GENERATED FROM PYTHON SOURCE LINES 157-163
+
+.. code-block:: Python
+
+    img = mpimg.imread("plot_03_cross_validate_plot_screenshot.png")
+    fig, ax = plt.subplots(layout="constrained")
+    fig.subplots_adjust(left=0.01, right=0.99, bottom=0.01, top=0.99)
+    ax.axis("off")
+    ax.imshow(img)
+    plt.show()
+
+
+
+.. image-sg:: /auto_examples/images/sphx_glr_plot_03_cross_validate_001.png
+   :alt: plot 03 cross validate
+   :srcset: /auto_examples/images/sphx_glr_plot_03_cross_validate_001.png
+   :class: sphx-glr-single-img
+
+
+.. rst-class:: sphx-glr-script-out
+
+ .. code-block:: none
+
+    /home/runner/work/skore/skore/examples/plot_03_cross_validate.py:159: UserWarning:
+
+    This figure was using a layout engine that is incompatible with subplots_adjust and/or tight_layout; not calling subplots_adjust.
+
+
+
+
+
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.908 seconds)
+   **Total running time of the script:** (0 minutes 1.085 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_03_cross_validate.py:

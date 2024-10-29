@@ -197,25 +197,31 @@ For a pandas data frame:
           <th>1</th>
           <th>2</th>
         </tr>
+        <tr>
+          <th>0</th>
+          <th></th>
+          <th></th>
+          <th></th>
+        </tr>
       </thead>
       <tbody>
         <tr>
           <th>0</th>
-          <td>0.294265</td>
-          <td>-0.906680</td>
-          <td>0.182126</td>
+          <td>-1.270300</td>
+          <td>0.893454</td>
+          <td>-0.351053</td>
         </tr>
         <tr>
           <th>1</th>
-          <td>0.071317</td>
-          <td>-1.339164</td>
-          <td>-1.833128</td>
+          <td>0.651804</td>
+          <td>0.429091</td>
+          <td>1.076950</td>
         </tr>
         <tr>
           <th>2</th>
-          <td>1.184324</td>
-          <td>-0.501872</td>
-          <td>-1.050320</td>
+          <td>0.604147</td>
+          <td>0.918375</td>
+          <td>1.597828</td>
         </tr>
       </tbody>
     </table>
@@ -721,7 +727,7 @@ Back to the dashboard
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 4.862 seconds)
+   **Total running time of the script:** (0 minutes 5.173 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_01_getting_started.py:
