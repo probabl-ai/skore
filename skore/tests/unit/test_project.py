@@ -167,6 +167,12 @@ def test_get(in_memory_project):
         in_memory_project.get("key2")
 
 
+def test_get_items(in_memory_project):
+    in_memory_project.put("key", 1)
+    in_memory_project.put("key", 2)
+    assert in_memory_project.get_items("key") == 1
+
+
 def test_delete(in_memory_project):
     in_memory_project.put("key1", 1)
     in_memory_project.delete_item("key1")
