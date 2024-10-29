@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 from pandas import DataFrame, Index, MultiIndex
 from pandas.testing import assert_frame_equal
@@ -42,6 +43,13 @@ class TestPandasDataFrameItem:
 
         assert_frame_equal(item1.dataframe, dataframe)
         assert_frame_equal(item2.dataframe, dataframe)
+
+    @pytest.mark.order(1)
+    def test_dataframe_with_complex_object(self, mock_nowstr):
+        dataframe = DataFrame([{"key": np.array([1])}], Index([0], name="myIndex"))
+        item = PandasDataFrameItem.factory(dataframe)
+
+        assert type(item.dataframe["key"].iloc[0]) is list
 
     @pytest.mark.order(1)
     def test_dataframe_with_integer_columns_name_and_multiindex(self, mock_nowstr):

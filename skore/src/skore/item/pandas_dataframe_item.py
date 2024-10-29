@@ -56,8 +56,9 @@ class PandasDataFrameItem(Item):
         """
         The pandas DataFrame from the persistence.
 
-        Its content can differ from the original dataframe because it has been serialize
-        using pandas `to_json` function and not pickled, to be environment independent.
+        Its content can differ from the original dataframe because it has been
+        serialized using pandas' `to_json` function and not pickled, in order to be
+        environment-independent.
         """
         import io
 
@@ -99,7 +100,7 @@ class PandasDataFrameItem(Item):
             raise TypeError(f"Type '{dataframe.__class__}' is not supported.")
 
         # Two native methods are available to serialize dataframe with multi-index,
-        # while keepping the index names:
+        # while keeping the index names:
         #
         # 1. Using table orientation with JSON serializer:
         #    ```python
@@ -107,7 +108,7 @@ class PandasDataFrameItem(Item):
         #    dataframe = pandas.read_json(json, orient="table", dtype=False)
         #    ```
         #
-        #    This method fails when columns name is an integer.
+        #    This method fails when a column name is an integer.
         #
         # 2. Using record orientation with indexes as columns:
         #    ```python
