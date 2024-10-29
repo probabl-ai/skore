@@ -95,7 +95,7 @@ For more examples, see our [documentation](https://probabl-ai.github.io/skore/la
 ## 🔨 Contributing
 
 Thank you for your interest!
-See [CONTRIBUTING.md](https://github.com/probabl-ai/skore/blob/main/CONTRIBUTING.md).
+See [our documentation](https://probabl-ai.github.io/skore/latest/contributing.html).
 
 ## 💬 Where to ask questions
 
