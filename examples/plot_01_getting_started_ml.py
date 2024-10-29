@@ -5,17 +5,157 @@
 Getting started with skore
 ==========================
 
-This example illustrates the motivation and the use of
-:func:`~skore.cross_validate` to get assistance when developing your
-ML/DS projects.
+This getting started guide illustrates how to use skore and why:
+
+#. Track and visualize your ML/DS results.
+#. Get assistance when developing your ML/DS projects.
+
+   - Scikit-learn compatible :func:`~skore.cross_validate` provides insights and checks on cross-validation.
+
+
+Initialize a skore project and launch the UI
+============================================
 """
 
+# %%
+# From your shell, initialize a skore project, here named ``my_project``:
 
 # %%
 import subprocess
 
 # remove the skore project if it already exists
-subprocess.run("rm -rf my_project_gs_ml.skore".split())
+subprocess.run("rm -rf my_project.skore".split())
 
 # create the skore project
-subprocess.run("python3 -m skore create my_project_gs_ml".split())
+subprocess.run("python3 -m skore create my_project".split())
+
+# %%
+# This will create a skore project directory named ``my_project.skore`` in your
+# current directory.
+#
+# From your shell (in the same directory), start the UI locally:
+#
+# .. code-block:: bash
+#
+#     python -m skore launch "my_project"
+#
+# This will automatically open a browser at the UI's location.
+#
+# Now that the project file exists, we can write some Python code to put some
+# useful things in it.
+# Let us load the project and add an integer to it for example:
+
+# %%
+from skore import load
+
+my_project = load("my_project.skore")
+my_project.put("my_int", 3)
+
+# %%
+# Example of machine learning usage: hyperparameter sweep
+# =======================================================
+#
+# As an illustration of skore's usage with a ML motivation, let us
+# perform a small hyperparameter sweep and store relevant information
+# in the skore project.
+
+
+# %%
+# Search for a hyperparameter ``alpha`` of Ridge regression on a the Diabetes
+# dataset:
+
+# %%
+import numpy as np
+from sklearn.datasets import load_diabetes
+from sklearn.model_selection import GridSearchCV
+from sklearn.linear_model import Ridge
+
+diabetes = load_diabetes()
+X = diabetes.data[:150]
+y = diabetes.target[:150]
+
+cv = GridSearchCV(
+    Ridge(),
+    param_grid={"alpha": np.logspace(-3, 5, 50)},
+    scoring="neg_root_mean_squared_error",
+)
+cv.fit(X, y)
+
+# %%
+# Store the hyperparameter's metrics in a dataframe and make a custom
+# chart:
+
+# %%
+import pandas as pd
+
+df = pd.DataFrame(cv.cv_results_)
+df.insert(len(df.columns), "rmse", -df["mean_test_score"].values)
+df[["param_alpha", "rmse"]].head()
+
+# %%
+import matplotlib.pyplot as plt
+
+fig = plt.figure(layout="constrained")
+plt.plot(df["param_alpha"], df["rmse"])
+plt.xscale("log")
+plt.xlabel("Alpha hyperparameter")
+plt.ylabel("RMSE")
+plt.title("Ridge regression")
+plt.show()
+
+# %%
+# |
+# Store relevant information into a skore project:
+
+# %%
+my_project.put("my_cv", cv)
+my_project.put("my_df", df)
+my_project.put("my_fig", fig)
+
+# %%
+# Cross-validation with skore
+# ===========================
+#
+# In order to assist its users when programming, skore has implemented a
+# :func:`~skore.cross_validate` function that wraps scikit-learn's
+# ``cross_validate`` function, to provide more context and facilitate the
+# analysis.
+#
+# For more information on the motivation behind skore's ,
+# see :ref:`example_cross_validate`.
+
+# %%
+from skore import cross_validate
+
+cv_results = cross_validate(cv, X, y, cv=5, project=my_project)
+
+# %%
+# From the above call, a ``cross_validation`` item with a plotly chart is
+# automatically added (``put``) in your project.
+
+# %%
+# Let us export the cross-validation into a .png file in order to visualize it
+# in this Sphinx example notebook:
+
+# %%
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
+
+fig_plotly = my_project.get_item("cross_validation").plot
+fig_plotly.write_image("plot_01_cross_validation.png")
+
+img = mpimg.imread("plot_01_cross_validation.png")
+fig, ax = plt.subplots(layout="constrained")
+ax.axis("off")
+ax.imshow(img)
+plt.show()
+
+# %%
+# Manipulating the skore UI
+# =========================
+#
+# The skore UI is a very efficient tool to track and visualize the items in your
+# project, such as grid search or cross-validation results.
+#
+# #. On the top left, by default, you can observe that you are in a *View* called ``default``. You can rename this view or create another one.
+# #. From the *Items* section on the bottom left, you can add stored items to this view, either by clicking on ``+`` or by doing drag-and-drop.
