@@ -487,11 +487,25 @@ to download the full example code.</p>
 </div>
 <section class="sphx-glr-example-title" id="enhancing-cross-validation">
 <span id="example-cross-validate"></span><span id="sphx-glr-auto-examples-plot-03-cross-validate-py"></span><h1>Enhancing cross-validation<a class="headerlink" href="#enhancing-cross-validation" title="Link to this heading">#</a></h1>
-<p>This example illustrates the use of <a class="reference internal" href="../generated/skore.cross_validate.html#skore.cross_validate" title="skore.cross_validate"><code class="xref py py-func docutils literal notranslate"><span class="pre">cross_validate()</span></code></a> to get
-assistance when developing your ML/DS projects.</p>
+<p>This example illustrates the motivation and the use of
+<a class="reference internal" href="../generated/skore.cross_validate.html#skore.cross_validate" title="skore.cross_validate"><code class="xref py py-func docutils literal notranslate"><span class="pre">cross_validate()</span></code></a> to get assistance when developing your
+ML/DS projects.</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">subprocess</span>
 
-<span class="c1"># remove the skore project if it already exists</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">matplotlib.image</span> <span class="k">as</span> <span class="nn">mpimg</span>
+
+<span class="kn">from</span> <span class="nn">sklearn</span> <span class="kn">import</span> <span class="n">datasets</span><span class="p">,</span> <span class="n">linear_model</span>
+<span class="kn">from</span> <span class="nn">sklearn</span> <span class="kn">import</span> <span class="n">svm</span>
+<span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">cross_validate</span> <span class="k">as</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="sklearn.model_selection.cross_validate" class="sphx-glr-backref-module-sklearn-model_selection sphx-glr-backref-type-py-function"><span class="n">sklearn_cross_validate</span></a>
+
+<span class="kn">from</span> <span class="nn">skore</span> <span class="kn">import</span> <span class="n">load</span>
+<span class="kn">import</span> <span class="nn">skore.cross_validate</span>
+</pre></div>
+</div>
+<section id="creating-and-loading-the-skore-project">
+<h2>Creating and loading the skore project<a class="headerlink" href="#creating-and-loading-the-skore-project" title="Link to this heading">#</a></h2>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># remove the skore project if it already exists</span>
 <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">&quot;rm -rf my_project_cv.skore&quot;</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>
 
 <span class="c1"># create the skore project</span>
@@ -501,20 +515,73 @@ assistance when developing your ML/DS projects.</p>
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>CompletedProcess(args=[&#39;python3&#39;, &#39;-m&#39;, &#39;skore&#39;, &#39;create&#39;, &#39;my_project_cv&#39;], returncode=0)
 </pre></div>
 </div>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">skore</span> <span class="kn">import</span> <span class="n">load</span>
-
-<span class="n">my_project_gs</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="s2">&quot;my_project_cv.skore&quot;</span><span class="p">)</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_gs</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="s2">&quot;my_project_cv.skore&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">sklearn</span> <span class="kn">import</span> <span class="n">datasets</span><span class="p">,</span> <span class="n">linear_model</span>
-<span class="kn">from</span> <span class="nn">skore.cross_validate</span> <span class="kn">import</span> <span class="n">cross_validate</span>
-
-<a href="https://scikit-learn.org/stable/modules/generated/sklearn.utils.Bunch.html#sklearn.utils.Bunch" title="sklearn.utils.Bunch" class="sphx-glr-backref-module-sklearn-utils sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">diabetes</span></a> <span class="o">=</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_diabetes.html#sklearn.datasets.load_diabetes" title="sklearn.datasets.load_diabetes" class="sphx-glr-backref-module-sklearn-datasets sphx-glr-backref-type-py-function"><span class="n">datasets</span><span class="o">.</span><span class="n">load_diabetes</span></a><span class="p">()</span>
-<span class="n">X</span> <span class="o">=</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.utils.Bunch.html#sklearn.utils.Bunch" title="sklearn.utils.Bunch" class="sphx-glr-backref-module-sklearn-utils sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">diabetes</span></a><span class="o">.</span><span class="n">data</span><span class="p">[:</span><span class="mi">150</span><span class="p">]</span>
-<span class="n">y</span> <span class="o">=</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.utils.Bunch.html#sklearn.utils.Bunch" title="sklearn.utils.Bunch" class="sphx-glr-backref-module-sklearn-utils sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">diabetes</span></a><span class="o">.</span><span class="n">target</span><span class="p">[:</span><span class="mi">150</span><span class="p">]</span>
-<a href="https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html#sklearn.linear_model.Lasso" title="sklearn.linear_model.Lasso" class="sphx-glr-backref-module-sklearn-linear_model sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">lasso</span></a> <span class="o">=</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html#sklearn.linear_model.Lasso" title="sklearn.linear_model.Lasso" class="sphx-glr-backref-module-sklearn-linear_model sphx-glr-backref-type-py-class"><span class="n">linear_model</span><span class="o">.</span><span class="n">Lasso</span></a><span class="p">()</span>
-
-<span class="n">cv_results</span> <span class="o">=</span> <span class="n">cross_validate</span><span class="p">(</span><a href="https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html#sklearn.linear_model.Lasso" title="sklearn.linear_model.Lasso" class="sphx-glr-backref-module-sklearn-linear_model sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">lasso</span></a><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">project</span><span class="o">=</span><span class="n">my_project_gs</span><span class="p">)</span>
+</section>
+<section id="cross-validation-in-scikit-learn">
+<h2>Cross-validation in scikit-learn<a class="headerlink" href="#cross-validation-in-scikit-learn" title="Link to this heading">#</a></h2>
+<p>Scikit-learn holds two functions for cross-validation:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">cross_val_score</span></code>: <a class="reference external" href="https://scikit-learn.org/1.5/modules/generated/sklearn.model_selection.cross_val_score.html">link</a></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cross_validate</span></code>: <a class="reference external" href="https://scikit-learn.org/1.5/modules/generated/sklearn.model_selection.cross_validate.html">link</a></p></li>
+</ul>
+<p>Essentially, <code class="docutils literal notranslate"><span class="pre">cross_val_score</span></code> runs cross-validation for single metric
+evaluation, while <code class="docutils literal notranslate"><span class="pre">cross_validate</span></code> runs cross-validation with multiple
+metrics and can also return extra information such as train scores, fit times, and score times.</p>
+<p>Hence, in skore, we are more interested in the <code class="docutils literal notranslate"><span class="pre">cross_validate</span></code> function as
+it allows to do more than the historical <code class="docutils literal notranslate"><span class="pre">cross_val_score</span></code>.</p>
+<p>Let us illustrate cross-validation on a multi-class classification task.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_iris.html#sklearn.datasets.load_iris" title="sklearn.datasets.load_iris" class="sphx-glr-backref-module-sklearn-datasets sphx-glr-backref-type-py-function"><span class="n">datasets</span><span class="o">.</span><span class="n">load_iris</span></a><span class="p">(</span><span class="n">return_X_y</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a href="https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html#sklearn.svm.SVC" title="sklearn.svm.SVC" class="sphx-glr-backref-module-sklearn-svm sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">clf</span></a> <span class="o">=</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html#sklearn.svm.SVC" title="sklearn.svm.SVC" class="sphx-glr-backref-module-sklearn-svm sphx-glr-backref-type-py-class"><span class="n">svm</span><span class="o">.</span><span class="n">SVC</span></a><span class="p">(</span><span class="n">kernel</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span> <span class="n">C</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Single metric evaluation using <code class="docutils literal notranslate"><span class="pre">cross_validate</span></code>:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">cv_results</span> <span class="o">=</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="sklearn.model_selection.cross_validate" class="sphx-glr-backref-module-sklearn-model_selection sphx-glr-backref-type-py-function"><span class="n">sklearn_cross_validate</span></a><span class="p">(</span><a href="https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html#sklearn.svm.SVC" title="sklearn.svm.SVC" class="sphx-glr-backref-module-sklearn-svm sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">clf</span></a><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+<span class="n">cv_results</span><span class="p">[</span><span class="s1">&#39;test_score&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>array([0.96666667, 1.        , 0.96666667, 0.96666667, 1.        ])
+</pre></div>
+</div>
+<p>Multiple metric evaluation using <code class="docutils literal notranslate"><span class="pre">cross_validate</span></code>:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">scores</span> <span class="o">=</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="sklearn.model_selection.cross_validate" class="sphx-glr-backref-module-sklearn-model_selection sphx-glr-backref-type-py-function"><span class="n">sklearn_cross_validate</span></a><span class="p">(</span>
+    <a href="https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html#sklearn.svm.SVC" title="sklearn.svm.SVC" class="sphx-glr-backref-module-sklearn-svm sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">clf</span></a><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">scoring</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;accuracy&#39;</span><span class="p">,</span> <span class="s1">&#39;precision_macro&#39;</span><span class="p">],</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">scores</span><span class="p">[</span><span class="s1">&#39;test_accuracy&#39;</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">scores</span><span class="p">[</span><span class="s1">&#39;test_precision_macro&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>[0.96666667 1.         0.96666667 0.96666667 1.        ]
+[0.96969697 1.         0.96969697 0.96969697 1.        ]
+</pre></div>
+</div>
+<section id="in-scikit-learn-why-do-we-recommend-using-cross-validate-over-cross-val-score">
+<h3>In scikit-learn, why do we recommend using <code class="docutils literal notranslate"><span class="pre">cross_validate</span></code> over <code class="docutils literal notranslate"><span class="pre">cross_val_score</span></code>?<a class="headerlink" href="#in-scikit-learn-why-do-we-recommend-using-cross-validate-over-cross-val-score" title="Link to this heading">#</a></h3>
+<p>Here, for the
+<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html">SVC</a>,
+the default score is the accuracy.
+If the users want other scores to better understand their model such as the
+precision and the recall, they can specify it which is very convenient.
+Otherwise, they would have to run several <code class="docutils literal notranslate"><span class="pre">cross_val_score</span></code> with different
+<code class="docutils literal notranslate"><span class="pre">scoring</span></code> parameters each time, which leads to more unnecessary compute.</p>
+</section>
+<section id="why-do-we-recommend-using-skore-s-cross-validate-over-scikit-learn-s">
+<h3>Why do we recommend using skore’s <code class="docutils literal notranslate"><span class="pre">cross_validate</span></code> over scikit-learn’s?<a class="headerlink" href="#why-do-we-recommend-using-skore-s-cross-validate-over-scikit-learn-s" title="Link to this heading">#</a></h3>
+<p>In the example above, what if the users ran scikit-learn’s <code class="docutils literal notranslate"><span class="pre">cross_validate</span></code>
+but forgot to manually add a crucial score for their use case such as the
+recall?
+They would have to re-run all the cross-validation experiments by adding this
+crucial score, which leads to more compute.</p>
+</section>
+</section>
+<section id="cross-validation-in-skore">
+<h2>Cross-validation in skore<a class="headerlink" href="#cross-validation-in-skore" title="Link to this heading">#</a></h2>
+<section id="classification-task">
+<h3>Classification task<a class="headerlink" href="#classification-task" title="Link to this heading">#</a></h3>
+<p>Let us continue with the same use case.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">cv_results</span> <span class="o">=</span> <span class="n">skore</span><span class="o">.</span><span class="n">cross_validate</span><span class="p">(</span><a href="https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html#sklearn.svm.SVC" title="sklearn.svm.SVC" class="sphx-glr-backref-module-sklearn-svm sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">clf</span></a><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">project</span><span class="o">=</span><span class="n">my_project_gs</span><span class="p">)</span>
 
 <span class="n">my_project_gs</span><span class="o">.</span><span class="n">get_item</span><span class="p">(</span><span class="s2">&quot;cross_validation&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span>
 </pre></div>
@@ -526,8 +593,8 @@ assistance when developing your ML/DS projects.</p>
               &#39;showlegend&#39;: True,
               &#39;type&#39;: &#39;bar&#39;,
               &#39;visible&#39;: True,
-              &#39;x&#39;: array([0, 1, 2]),
-              &#39;y&#39;: array([0.00076413, 0.00061345, 0.00059676])},
+              &#39;x&#39;: array([0, 1, 2, 3, 4]),
+              &#39;y&#39;: array([0.00086141, 0.00087667, 0.00079393, 0.00082541, 0.0008018 ])},
              {&#39;legendgroup&#39;: &#39;group0&#39;,
               &#39;line&#39;: {&#39;color&#39;: &#39;#636EFA&#39;, &#39;dash&#39;: &#39;dash&#39;},
               &#39;mode&#39;: &#39;lines&#39;,
@@ -535,8 +602,8 @@ assistance when developing your ML/DS projects.</p>
               &#39;showlegend&#39;: False,
               &#39;type&#39;: &#39;scatter&#39;,
               &#39;visible&#39;: True,
-              &#39;x&#39;: [-0.5, 2.5],
-              &#39;y&#39;: [0.0006581147511800131, 0.0006581147511800131]},
+              &#39;x&#39;: [-0.5, 4.5],
+              &#39;y&#39;: [0.0008318424224853516, 0.0008318424224853516]},
              {&#39;legendgroup&#39;: &#39;group0&#39;,
               &#39;line&#39;: {&#39;color&#39;: &#39;#636EFA&#39;, &#39;dash&#39;: &#39;dot&#39;},
               &#39;mode&#39;: &#39;lines&#39;,
@@ -544,8 +611,8 @@ assistance when developing your ML/DS projects.</p>
               &#39;showlegend&#39;: False,
               &#39;type&#39;: &#39;scatter&#39;,
               &#39;visible&#39;: True,
-              &#39;x&#39;: [-0.5, 2.5],
-              &#39;y&#39;: [0.0007503064198887047, 0.0007503064198887047]},
+              &#39;x&#39;: [-0.5, 4.5],
+              &#39;y&#39;: [0.0008681192802841742, 0.0008681192802841742]},
              {&#39;legendgroup&#39;: &#39;group0&#39;,
               &#39;line&#39;: {&#39;color&#39;: &#39;#636EFA&#39;, &#39;dash&#39;: &#39;dot&#39;},
               &#39;mode&#39;: &#39;lines&#39;,
@@ -553,16 +620,16 @@ assistance when developing your ML/DS projects.</p>
               &#39;showlegend&#39;: False,
               &#39;type&#39;: &#39;scatter&#39;,
               &#39;visible&#39;: True,
-              &#39;x&#39;: [-0.5, 2.5],
-              &#39;y&#39;: [0.0005659230824713214, 0.0005659230824713214]},
+              &#39;x&#39;: [-0.5, 4.5],
+              &#39;y&#39;: [0.0007955655646865289, 0.0007955655646865289]},
              {&#39;legendgroup&#39;: &#39;group1&#39;,
               &#39;marker&#39;: {&#39;color&#39;: &#39;#EF553B&#39;},
               &#39;name&#39;: &#39;score_time (seconds)&#39;,
               &#39;showlegend&#39;: True,
               &#39;type&#39;: &#39;bar&#39;,
               &#39;visible&#39;: &#39;legendonly&#39;,
-              &#39;x&#39;: array([0, 1, 2]),
-              &#39;y&#39;: array([0.0012691 , 0.00113177, 0.00110602])},
+              &#39;x&#39;: array([0, 1, 2, 3, 4]),
+              &#39;y&#39;: array([0.00275493, 0.00273705, 0.00270772, 0.00274134, 0.00273132])},
              {&#39;legendgroup&#39;: &#39;group1&#39;,
               &#39;line&#39;: {&#39;color&#39;: &#39;#EF553B&#39;, &#39;dash&#39;: &#39;dash&#39;},
               &#39;mode&#39;: &#39;lines&#39;,
@@ -570,8 +637,8 @@ assistance when developing your ML/DS projects.</p>
               &#39;showlegend&#39;: False,
               &#39;type&#39;: &#39;scatter&#39;,
               &#39;visible&#39;: &#39;legendonly&#39;,
-              &#39;x&#39;: [-0.5, 2.5],
-              &#39;y&#39;: [0.001168966293334961, 0.001168966293334961]},
+              &#39;x&#39;: [-0.5, 4.5],
+              &#39;y&#39;: [0.002734470367431641, 0.002734470367431641]},
              {&#39;legendgroup&#39;: &#39;group1&#39;,
               &#39;line&#39;: {&#39;color&#39;: &#39;#EF553B&#39;, &#39;dash&#39;: &#39;dot&#39;},
               &#39;mode&#39;: &#39;lines&#39;,
@@ -579,8 +646,8 @@ assistance when developing your ML/DS projects.</p>
               &#39;showlegend&#39;: False,
               &#39;type&#39;: &#39;scatter&#39;,
               &#39;visible&#39;: &#39;legendonly&#39;,
-              &#39;x&#39;: [-0.5, 2.5],
-              &#39;y&#39;: [0.0012566369253885913, 0.0012566369253885913]},
+              &#39;x&#39;: [-0.5, 4.5],
+              &#39;y&#39;: [0.002751774531021167, 0.002751774531021167]},
              {&#39;legendgroup&#39;: &#39;group1&#39;,
               &#39;line&#39;: {&#39;color&#39;: &#39;#EF553B&#39;, &#39;dash&#39;: &#39;dot&#39;},
               &#39;mode&#39;: &#39;lines&#39;,
@@ -588,86 +655,86 @@ assistance when developing your ML/DS projects.</p>
               &#39;showlegend&#39;: False,
               &#39;type&#39;: &#39;scatter&#39;,
               &#39;visible&#39;: &#39;legendonly&#39;,
-              &#39;x&#39;: [-0.5, 2.5],
-              &#39;y&#39;: [0.0010812956612813306, 0.0010812956612813306]},
+              &#39;x&#39;: [-0.5, 4.5],
+              &#39;y&#39;: [0.0027171662038421147, 0.0027171662038421147]},
              {&#39;legendgroup&#39;: &#39;group2&#39;,
               &#39;marker&#39;: {&#39;color&#39;: &#39;#00CC96&#39;},
-              &#39;name&#39;: &#39;test_r2&#39;,
+              &#39;name&#39;: &#39;test_recall_weighted&#39;,
               &#39;showlegend&#39;: True,
               &#39;type&#39;: &#39;bar&#39;,
               &#39;visible&#39;: &#39;legendonly&#39;,
-              &#39;x&#39;: array([0, 1, 2]),
-              &#39;y&#39;: array([0.3315057 , 0.08022103, 0.03531816])},
+              &#39;x&#39;: array([0, 1, 2, 3, 4]),
+              &#39;y&#39;: array([0.96666667, 1.        , 0.96666667, 0.96666667, 1.        ])},
              {&#39;legendgroup&#39;: &#39;group2&#39;,
               &#39;line&#39;: {&#39;color&#39;: &#39;#00CC96&#39;, &#39;dash&#39;: &#39;dash&#39;},
               &#39;mode&#39;: &#39;lines&#39;,
-              &#39;name&#39;: &#39;Average test_r2&#39;,
+              &#39;name&#39;: &#39;Average test_recall_weighted&#39;,
               &#39;showlegend&#39;: False,
               &#39;type&#39;: &#39;scatter&#39;,
               &#39;visible&#39;: &#39;legendonly&#39;,
-              &#39;x&#39;: [-0.5, 2.5],
-              &#39;y&#39;: [0.14901496176589216, 0.14901496176589216]},
+              &#39;x&#39;: [-0.5, 4.5],
+              &#39;y&#39;: [0.9800000000000001, 0.9800000000000001]},
              {&#39;legendgroup&#39;: &#39;group2&#39;,
               &#39;line&#39;: {&#39;color&#39;: &#39;#00CC96&#39;, &#39;dash&#39;: &#39;dot&#39;},
               &#39;mode&#39;: &#39;lines&#39;,
-              &#39;name&#39;: &#39;Average + 1 std. dev. test_r2&#39;,
+              &#39;name&#39;: &#39;Average + 1 std. dev. test_recall_weighted&#39;,
               &#39;showlegend&#39;: False,
               &#39;type&#39;: &#39;scatter&#39;,
               &#39;visible&#39;: &#39;legendonly&#39;,
-              &#39;x&#39;: [-0.5, 2.5],
-              &#39;y&#39;: [0.3086433392301182, 0.3086433392301182]},
+              &#39;x&#39;: [-0.5, 4.5],
+              &#39;y&#39;: [0.9982574185835056, 0.9982574185835056]},
              {&#39;legendgroup&#39;: &#39;group2&#39;,
               &#39;line&#39;: {&#39;color&#39;: &#39;#00CC96&#39;, &#39;dash&#39;: &#39;dot&#39;},
               &#39;mode&#39;: &#39;lines&#39;,
-              &#39;name&#39;: &#39;Average - 1 std. dev. test_r2&#39;,
+              &#39;name&#39;: &#39;Average - 1 std. dev. test_recall_weighted&#39;,
               &#39;showlegend&#39;: False,
               &#39;type&#39;: &#39;scatter&#39;,
               &#39;visible&#39;: &#39;legendonly&#39;,
-              &#39;x&#39;: [-0.5, 2.5],
-              &#39;y&#39;: [-0.010613415698333906, -0.010613415698333906]},
+              &#39;x&#39;: [-0.5, 4.5],
+              &#39;y&#39;: [0.9617425814164946, 0.9617425814164946]},
              {&#39;legendgroup&#39;: &#39;group3&#39;,
               &#39;marker&#39;: {&#39;color&#39;: &#39;#AB63FA&#39;},
-              &#39;name&#39;: &#39;test_neg_mean_squared_error&#39;,
+              &#39;name&#39;: &#39;test_precision_weighted&#39;,
               &#39;showlegend&#39;: True,
               &#39;type&#39;: &#39;bar&#39;,
               &#39;visible&#39;: &#39;legendonly&#39;,
-              &#39;x&#39;: array([0, 1, 2]),
-              &#39;y&#39;: array([-3635.52042005, -3573.35050281, -6114.77901585])},
+              &#39;x&#39;: array([0, 1, 2, 3, 4]),
+              &#39;y&#39;: array([0.96969697, 1.        , 0.96969697, 0.96969697, 1.        ])},
              {&#39;legendgroup&#39;: &#39;group3&#39;,
               &#39;line&#39;: {&#39;color&#39;: &#39;#AB63FA&#39;, &#39;dash&#39;: &#39;dash&#39;},
               &#39;mode&#39;: &#39;lines&#39;,
-              &#39;name&#39;: &#39;Average test_neg_mean_squared_error&#39;,
+              &#39;name&#39;: &#39;Average test_precision_weighted&#39;,
               &#39;showlegend&#39;: False,
               &#39;type&#39;: &#39;scatter&#39;,
               &#39;visible&#39;: &#39;legendonly&#39;,
-              &#39;x&#39;: [-0.5, 2.5],
-              &#39;y&#39;: [-4441.216646237895, -4441.216646237895]},
+              &#39;x&#39;: [-0.5, 4.5],
+              &#39;y&#39;: [0.9818181818181818, 0.9818181818181818]},
              {&#39;legendgroup&#39;: &#39;group3&#39;,
               &#39;line&#39;: {&#39;color&#39;: &#39;#AB63FA&#39;, &#39;dash&#39;: &#39;dot&#39;},
               &#39;mode&#39;: &#39;lines&#39;,
-              &#39;name&#39;: &#39;Average + 1 std. dev. test_neg_mean_squared_error&#39;,
+              &#39;name&#39;: &#39;Average + 1 std. dev. test_precision_weighted&#39;,
               &#39;showlegend&#39;: False,
               &#39;type&#39;: &#39;scatter&#39;,
               &#39;visible&#39;: &#39;legendonly&#39;,
-              &#39;x&#39;: [-0.5, 2.5],
-              &#39;y&#39;: [-2991.5358095052034, -2991.5358095052034]},
+              &#39;x&#39;: [-0.5, 4.5],
+              &#39;y&#39;: [0.9984158350759141, 0.9984158350759141]},
              {&#39;legendgroup&#39;: &#39;group3&#39;,
               &#39;line&#39;: {&#39;color&#39;: &#39;#AB63FA&#39;, &#39;dash&#39;: &#39;dot&#39;},
               &#39;mode&#39;: &#39;lines&#39;,
-              &#39;name&#39;: &#39;Average - 1 std. dev. test_neg_mean_squared_error&#39;,
+              &#39;name&#39;: &#39;Average - 1 std. dev. test_precision_weighted&#39;,
               &#39;showlegend&#39;: False,
               &#39;type&#39;: &#39;scatter&#39;,
               &#39;visible&#39;: &#39;legendonly&#39;,
-              &#39;x&#39;: [-0.5, 2.5],
-              &#39;y&#39;: [-5890.897482970586, -5890.897482970586]},
+              &#39;x&#39;: [-0.5, 4.5],
+              &#39;y&#39;: [0.9652205285604495, 0.9652205285604495]},
              {&#39;legendgroup&#39;: &#39;group4&#39;,
               &#39;marker&#39;: {&#39;color&#39;: &#39;#FFA15A&#39;},
               &#39;name&#39;: &#39;test_score&#39;,
               &#39;showlegend&#39;: True,
               &#39;type&#39;: &#39;bar&#39;,
               &#39;visible&#39;: &#39;legendonly&#39;,
-              &#39;x&#39;: array([0, 1, 2]),
-              &#39;y&#39;: array([0.3315057 , 0.08022103, 0.03531816])},
+              &#39;x&#39;: array([0, 1, 2, 3, 4]),
+              &#39;y&#39;: array([0.96666667, 1.        , 0.96666667, 0.96666667, 1.        ])},
              {&#39;legendgroup&#39;: &#39;group4&#39;,
               &#39;line&#39;: {&#39;color&#39;: &#39;#FFA15A&#39;, &#39;dash&#39;: &#39;dash&#39;},
               &#39;mode&#39;: &#39;lines&#39;,
@@ -675,8 +742,8 @@ assistance when developing your ML/DS projects.</p>
               &#39;showlegend&#39;: False,
               &#39;type&#39;: &#39;scatter&#39;,
               &#39;visible&#39;: &#39;legendonly&#39;,
-              &#39;x&#39;: [-0.5, 2.5],
-              &#39;y&#39;: [0.14901496176589216, 0.14901496176589216]},
+              &#39;x&#39;: [-0.5, 4.5],
+              &#39;y&#39;: [0.9800000000000001, 0.9800000000000001]},
              {&#39;legendgroup&#39;: &#39;group4&#39;,
               &#39;line&#39;: {&#39;color&#39;: &#39;#FFA15A&#39;, &#39;dash&#39;: &#39;dot&#39;},
               &#39;mode&#39;: &#39;lines&#39;,
@@ -684,8 +751,8 @@ assistance when developing your ML/DS projects.</p>
               &#39;showlegend&#39;: False,
               &#39;type&#39;: &#39;scatter&#39;,
               &#39;visible&#39;: &#39;legendonly&#39;,
-              &#39;x&#39;: [-0.5, 2.5],
-              &#39;y&#39;: [0.3086433392301182, 0.3086433392301182]},
+              &#39;x&#39;: [-0.5, 4.5],
+              &#39;y&#39;: [0.9982574185835056, 0.9982574185835056]},
              {&#39;legendgroup&#39;: &#39;group4&#39;,
               &#39;line&#39;: {&#39;color&#39;: &#39;#FFA15A&#39;, &#39;dash&#39;: &#39;dot&#39;},
               &#39;mode&#39;: &#39;lines&#39;,
@@ -693,8 +760,8 @@ assistance when developing your ML/DS projects.</p>
               &#39;showlegend&#39;: False,
               &#39;type&#39;: &#39;scatter&#39;,
               &#39;visible&#39;: &#39;legendonly&#39;,
-              &#39;x&#39;: [-0.5, 2.5],
-              &#39;y&#39;: [-0.010613415698333906, -0.010613415698333906]}],
+              &#39;x&#39;: [-0.5, 4.5],
+              &#39;y&#39;: [0.9617425814164946, 0.9617425814164946]}],
     &#39;layout&#39;: {&#39;template&#39;: &#39;...&#39;,
                &#39;title&#39;: {&#39;text&#39;: &#39;Cross-validation results for each split&#39;},
                &#39;xaxis&#39;: {&#39;dtick&#39;: 1, &#39;tickmode&#39;: &#39;linear&#39;, &#39;title&#39;: {&#39;text&#39;: &#39;Split number&#39;}},
@@ -704,27 +771,244 @@ assistance when developing your ML/DS projects.</p>
 </div>
 <div class="output_subarea output_html rendered_html output_result">
 <div>                        <script type="text/javascript">window.PlotlyConfig = {MathJaxConfig: 'local'};</script>
-        <script charset="utf-8" src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>                <div id="8661bd84-1ccd-4f3c-8ce5-50336ded3311" class="plotly-graph-div" style="height:100%; width:100%;"></div>            <script type="text/javascript">                                    window.PLOTLYENV=window.PLOTLYENV || {};                                    if (document.getElementById("8661bd84-1ccd-4f3c-8ce5-50336ded3311")) {                    Plotly.newPlot(                        "8661bd84-1ccd-4f3c-8ce5-50336ded3311",                        [{"legendgroup":"group0","marker":{"color":"#636EFA"},"name":"fit_time (seconds)","showlegend":true,"visible":true,"x":[0,1,2],"y":[0.0007641315460205078,0.0006134510040283203,0.0005967617034912109],"type":"bar"},{"legendgroup":"group0","line":{"color":"#636EFA","dash":"dash"},"mode":"lines","name":"Average fit_time (seconds)","showlegend":false,"visible":true,"x":[-0.5,2.5],"y":[0.0006581147511800131,0.0006581147511800131],"type":"scatter"},{"legendgroup":"group0","line":{"color":"#636EFA","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. fit_time (seconds)","showlegend":false,"visible":true,"x":[-0.5,2.5],"y":[0.0007503064198887047,0.0007503064198887047],"type":"scatter"},{"legendgroup":"group0","line":{"color":"#636EFA","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. fit_time (seconds)","showlegend":false,"visible":true,"x":[-0.5,2.5],"y":[0.0005659230824713214,0.0005659230824713214],"type":"scatter"},{"legendgroup":"group1","marker":{"color":"#EF553B"},"name":"score_time (seconds)","showlegend":true,"visible":"legendonly","x":[0,1,2],"y":[0.0012691020965576172,0.0011317729949951172,0.0011060237884521484],"type":"bar"},{"legendgroup":"group1","line":{"color":"#EF553B","dash":"dash"},"mode":"lines","name":"Average score_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,2.5],"y":[0.001168966293334961,0.001168966293334961],"type":"scatter"},{"legendgroup":"group1","line":{"color":"#EF553B","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. score_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,2.5],"y":[0.0012566369253885913,0.0012566369253885913],"type":"scatter"},{"legendgroup":"group1","line":{"color":"#EF553B","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. score_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,2.5],"y":[0.0010812956612813306,0.0010812956612813306],"type":"scatter"},{"legendgroup":"group2","marker":{"color":"#00CC96"},"name":"test_r2","showlegend":true,"visible":"legendonly","x":[0,1,2],"y":[0.3315056992326689,0.08022102830923838,0.035318157755769186],"type":"bar"},{"legendgroup":"group2","line":{"color":"#00CC96","dash":"dash"},"mode":"lines","name":"Average test_r2","showlegend":false,"visible":"legendonly","x":[-0.5,2.5],"y":[0.14901496176589216,0.14901496176589216],"type":"scatter"},{"legendgroup":"group2","line":{"color":"#00CC96","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. test_r2","showlegend":false,"visible":"legendonly","x":[-0.5,2.5],"y":[0.3086433392301182,0.3086433392301182],"type":"scatter"},{"legendgroup":"group2","line":{"color":"#00CC96","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. test_r2","showlegend":false,"visible":"legendonly","x":[-0.5,2.5],"y":[-0.010613415698333906,-0.010613415698333906],"type":"scatter"},{"legendgroup":"group3","marker":{"color":"#AB63FA"},"name":"test_neg_mean_squared_error","showlegend":true,"visible":"legendonly","x":[0,1,2],"y":[-3635.520420054913,-3573.3505028083255,-6114.779015850447],"type":"bar"},{"legendgroup":"group3","line":{"color":"#AB63FA","dash":"dash"},"mode":"lines","name":"Average test_neg_mean_squared_error","showlegend":false,"visible":"legendonly","x":[-0.5,2.5],"y":[-4441.216646237895,-4441.216646237895],"type":"scatter"},{"legendgroup":"group3","line":{"color":"#AB63FA","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. test_neg_mean_squared_error","showlegend":false,"visible":"legendonly","x":[-0.5,2.5],"y":[-2991.5358095052034,-2991.5358095052034],"type":"scatter"},{"legendgroup":"group3","line":{"color":"#AB63FA","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. test_neg_mean_squared_error","showlegend":false,"visible":"legendonly","x":[-0.5,2.5],"y":[-5890.897482970586,-5890.897482970586],"type":"scatter"},{"legendgroup":"group4","marker":{"color":"#FFA15A"},"name":"test_score","showlegend":true,"visible":"legendonly","x":[0,1,2],"y":[0.3315056992326689,0.08022102830923838,0.035318157755769186],"type":"bar"},{"legendgroup":"group4","line":{"color":"#FFA15A","dash":"dash"},"mode":"lines","name":"Average test_score","showlegend":false,"visible":"legendonly","x":[-0.5,2.5],"y":[0.14901496176589216,0.14901496176589216],"type":"scatter"},{"legendgroup":"group4","line":{"color":"#FFA15A","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. test_score","showlegend":false,"visible":"legendonly","x":[-0.5,2.5],"y":[0.3086433392301182,0.3086433392301182],"type":"scatter"},{"legendgroup":"group4","line":{"color":"#FFA15A","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. test_score","showlegend":false,"visible":"legendonly","x":[-0.5,2.5],"y":[-0.010613415698333906,-0.010613415698333906],"type":"scatter"}],                        {"template":{"data":{"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"heatmapgl":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmapgl"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"geo":{"bgcolor":"white","lakecolor":"white","landcolor":"#E5ECF6","showlakes":true,"showland":true,"subunitcolor":"white"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"light"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"bgcolor":"#E5ECF6","radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","gridwidth":2,"linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white"},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","gridwidth":2,"linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white"},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","gridwidth":2,"linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white"}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"ternary":{"aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"bgcolor":"#E5ECF6","caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"title":{"x":0.05},"xaxis":{"automargin":true,"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","zerolinewidth":2}}},"title":{"text":"Cross-validation results for each split"},"xaxis":{"dtick":1,"tickmode":"linear","title":{"text":"Split number"}},"yaxis":{"title":{"text":"Value"}}},                        {"responsive": true}                    )                };                            </script>        </div>
+        <script charset="utf-8" src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>                <div id="58dff103-09fc-42b1-b509-e62dcf54e30a" class="plotly-graph-div" style="height:100%; width:100%;"></div>            <script type="text/javascript">                                    window.PLOTLYENV=window.PLOTLYENV || {};                                    if (document.getElementById("58dff103-09fc-42b1-b509-e62dcf54e30a")) {                    Plotly.newPlot(                        "58dff103-09fc-42b1-b509-e62dcf54e30a",                        [{"legendgroup":"group0","marker":{"color":"#636EFA"},"name":"fit_time (seconds)","showlegend":true,"visible":true,"x":[0,1,2,3,4],"y":[0.0008614063262939453,0.0008766651153564453,0.0007939338684082031,0.0008254051208496094,0.0008018016815185547],"type":"bar"},{"legendgroup":"group0","line":{"color":"#636EFA","dash":"dash"},"mode":"lines","name":"Average fit_time (seconds)","showlegend":false,"visible":true,"x":[-0.5,4.5],"y":[0.0008318424224853516,0.0008318424224853516],"type":"scatter"},{"legendgroup":"group0","line":{"color":"#636EFA","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. fit_time (seconds)","showlegend":false,"visible":true,"x":[-0.5,4.5],"y":[0.0008681192802841742,0.0008681192802841742],"type":"scatter"},{"legendgroup":"group0","line":{"color":"#636EFA","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. fit_time (seconds)","showlegend":false,"visible":true,"x":[-0.5,4.5],"y":[0.0007955655646865289,0.0007955655646865289],"type":"scatter"},{"legendgroup":"group1","marker":{"color":"#EF553B"},"name":"score_time (seconds)","showlegend":true,"visible":"legendonly","x":[0,1,2,3,4],"y":[0.0027549266815185547,0.0027370452880859375,0.0027077198028564453,0.0027413368225097656,0.0027313232421875],"type":"bar"},{"legendgroup":"group1","line":{"color":"#EF553B","dash":"dash"},"mode":"lines","name":"Average score_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.002734470367431641,0.002734470367431641],"type":"scatter"},{"legendgroup":"group1","line":{"color":"#EF553B","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. score_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.002751774531021167,0.002751774531021167],"type":"scatter"},{"legendgroup":"group1","line":{"color":"#EF553B","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. score_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.0027171662038421147,0.0027171662038421147],"type":"scatter"},{"legendgroup":"group2","marker":{"color":"#00CC96"},"name":"test_recall_weighted","showlegend":true,"visible":"legendonly","x":[0,1,2,3,4],"y":[0.9666666666666667,1.0,0.9666666666666667,0.9666666666666667,1.0],"type":"bar"},{"legendgroup":"group2","line":{"color":"#00CC96","dash":"dash"},"mode":"lines","name":"Average test_recall_weighted","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.9800000000000001,0.9800000000000001],"type":"scatter"},{"legendgroup":"group2","line":{"color":"#00CC96","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. test_recall_weighted","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.9982574185835056,0.9982574185835056],"type":"scatter"},{"legendgroup":"group2","line":{"color":"#00CC96","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. test_recall_weighted","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.9617425814164946,0.9617425814164946],"type":"scatter"},{"legendgroup":"group3","marker":{"color":"#AB63FA"},"name":"test_precision_weighted","showlegend":true,"visible":"legendonly","x":[0,1,2,3,4],"y":[0.9696969696969696,1.0,0.9696969696969696,0.9696969696969696,1.0],"type":"bar"},{"legendgroup":"group3","line":{"color":"#AB63FA","dash":"dash"},"mode":"lines","name":"Average test_precision_weighted","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.9818181818181818,0.9818181818181818],"type":"scatter"},{"legendgroup":"group3","line":{"color":"#AB63FA","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. test_precision_weighted","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.9984158350759141,0.9984158350759141],"type":"scatter"},{"legendgroup":"group3","line":{"color":"#AB63FA","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. test_precision_weighted","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.9652205285604495,0.9652205285604495],"type":"scatter"},{"legendgroup":"group4","marker":{"color":"#FFA15A"},"name":"test_score","showlegend":true,"visible":"legendonly","x":[0,1,2,3,4],"y":[0.9666666666666667,1.0,0.9666666666666667,0.9666666666666667,1.0],"type":"bar"},{"legendgroup":"group4","line":{"color":"#FFA15A","dash":"dash"},"mode":"lines","name":"Average test_score","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.9800000000000001,0.9800000000000001],"type":"scatter"},{"legendgroup":"group4","line":{"color":"#FFA15A","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. test_score","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.9982574185835056,0.9982574185835056],"type":"scatter"},{"legendgroup":"group4","line":{"color":"#FFA15A","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. test_score","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.9617425814164946,0.9617425814164946],"type":"scatter"}],                        {"template":{"data":{"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"heatmapgl":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmapgl"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"geo":{"bgcolor":"white","lakecolor":"white","landcolor":"#E5ECF6","showlakes":true,"showland":true,"subunitcolor":"white"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"light"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"bgcolor":"#E5ECF6","radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","gridwidth":2,"linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white"},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","gridwidth":2,"linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white"},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","gridwidth":2,"linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white"}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"ternary":{"aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"bgcolor":"#E5ECF6","caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"title":{"x":0.05},"xaxis":{"automargin":true,"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","zerolinewidth":2}}},"title":{"text":"Cross-validation results for each split"},"xaxis":{"dtick":1,"tickmode":"linear","title":{"text":"Split number"}},"yaxis":{"title":{"text":"Value"}}},                        {"responsive": true}                    )                };                            </script>        </div>
 </div>
 <br />
-<br /><p>Because Plotly graphs currently do not yet properly render in our docs engine due to <a class="reference external" href="https://github.com/plotly/plotly.py/issues/4828">a bug in Plotly</a>,
-we also show a screenshot below.
-Alternatively, if you zoom in or out in your browser window, the Plotly graph should display properly again.</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">import</span> <span class="nn">matplotlib.image</span> <span class="k">as</span> <span class="nn">mpimg</span>
+<br /><p>Skore’s <code class="docutils literal notranslate"><span class="pre">cross_validate</span></code> advantages are the following:</p>
+<ul class="simple">
+<li><p>By default, it computes several useful scores without the need for the user to specify it. For classification, you can observe that it computed the accuracy, the precision, and the recall.</p></li>
+<li><p>You automatically get some interactive plots to better understand how your model behaves depending on the split. For example:</p>
+<ul>
+<li><p>You can compare the fitting and testing times together for each split.</p></li>
+<li><p>You can compare the accuracy, precision, and recall scores together for each split.</p></li>
+</ul>
+</li>
+<li><p>The results and plots are automatically saved in your skore project, so that you can visualize them later in the UI for example.</p></li>
+</ul>
+</section>
+<section id="regression-task">
+<h3>Regression task<a class="headerlink" href="#regression-task" title="Link to this heading">#</a></h3>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://scikit-learn.org/stable/modules/generated/sklearn.utils.Bunch.html#sklearn.utils.Bunch" title="sklearn.utils.Bunch" class="sphx-glr-backref-module-sklearn-utils sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">diabetes</span></a> <span class="o">=</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_diabetes.html#sklearn.datasets.load_diabetes" title="sklearn.datasets.load_diabetes" class="sphx-glr-backref-module-sklearn-datasets sphx-glr-backref-type-py-function"><span class="n">datasets</span><span class="o">.</span><span class="n">load_diabetes</span></a><span class="p">()</span>
+<span class="n">X</span> <span class="o">=</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.utils.Bunch.html#sklearn.utils.Bunch" title="sklearn.utils.Bunch" class="sphx-glr-backref-module-sklearn-utils sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">diabetes</span></a><span class="o">.</span><span class="n">data</span><span class="p">[:</span><span class="mi">150</span><span class="p">]</span>
+<span class="n">y</span> <span class="o">=</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.utils.Bunch.html#sklearn.utils.Bunch" title="sklearn.utils.Bunch" class="sphx-glr-backref-module-sklearn-utils sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">diabetes</span></a><span class="o">.</span><span class="n">target</span><span class="p">[:</span><span class="mi">150</span><span class="p">]</span>
+<a href="https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html#sklearn.linear_model.Lasso" title="sklearn.linear_model.Lasso" class="sphx-glr-backref-module-sklearn-linear_model sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">lasso</span></a> <span class="o">=</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html#sklearn.linear_model.Lasso" title="sklearn.linear_model.Lasso" class="sphx-glr-backref-module-sklearn-linear_model sphx-glr-backref-type-py-class"><span class="n">linear_model</span><span class="o">.</span><span class="n">Lasso</span></a><span class="p">()</span>
 
-<span class="n">img</span> <span class="o">=</span> <span class="n">mpimg</span><span class="o">.</span><span class="n">imread</span><span class="p">(</span><span class="s2">&quot;plot_03_cross_validate_plot_screenshot.png&quot;</span><span class="p">)</span>
-<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
-<span class="c1"># fig.tight_layout(pad=0.01)</span>
+<span class="n">cv_results</span> <span class="o">=</span> <span class="n">skore</span><span class="o">.</span><span class="n">cross_validate</span><span class="p">(</span><a href="https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html#sklearn.linear_model.Lasso" title="sklearn.linear_model.Lasso" class="sphx-glr-backref-module-sklearn-linear_model sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">lasso</span></a><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">project</span><span class="o">=</span><span class="n">my_project_gs</span><span class="p">)</span>
+
+<span class="n">my_project_gs</span><span class="o">.</span><span class="n">get_item</span><span class="p">(</span><span class="s2">&quot;cross_validation&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Figure({
+    &#39;data&#39;: [{&#39;legendgroup&#39;: &#39;group0&#39;,
+              &#39;marker&#39;: {&#39;color&#39;: &#39;#636EFA&#39;},
+              &#39;name&#39;: &#39;fit_time (seconds)&#39;,
+              &#39;showlegend&#39;: True,
+              &#39;type&#39;: &#39;bar&#39;,
+              &#39;visible&#39;: True,
+              &#39;x&#39;: array([0, 1, 2, 3, 4]),
+              &#39;y&#39;: array([0.00071073, 0.00061035, 0.00060391, 0.00059986, 0.0005846 ])},
+             {&#39;legendgroup&#39;: &#39;group0&#39;,
+              &#39;line&#39;: {&#39;color&#39;: &#39;#636EFA&#39;, &#39;dash&#39;: &#39;dash&#39;},
+              &#39;mode&#39;: &#39;lines&#39;,
+              &#39;name&#39;: &#39;Average fit_time (seconds)&#39;,
+              &#39;showlegend&#39;: False,
+              &#39;type&#39;: &#39;scatter&#39;,
+              &#39;visible&#39;: True,
+              &#39;x&#39;: [-0.5, 4.5],
+              &#39;y&#39;: [0.0006218910217285156, 0.0006218910217285156]},
+             {&#39;legendgroup&#39;: &#39;group0&#39;,
+              &#39;line&#39;: {&#39;color&#39;: &#39;#636EFA&#39;, &#39;dash&#39;: &#39;dot&#39;},
+              &#39;mode&#39;: &#39;lines&#39;,
+              &#39;name&#39;: &#39;Average + 1 std. dev. fit_time (seconds)&#39;,
+              &#39;showlegend&#39;: False,
+              &#39;type&#39;: &#39;scatter&#39;,
+              &#39;visible&#39;: True,
+              &#39;x&#39;: [-0.5, 4.5],
+              &#39;y&#39;: [0.0006724471740611747, 0.0006724471740611747]},
+             {&#39;legendgroup&#39;: &#39;group0&#39;,
+              &#39;line&#39;: {&#39;color&#39;: &#39;#636EFA&#39;, &#39;dash&#39;: &#39;dot&#39;},
+              &#39;mode&#39;: &#39;lines&#39;,
+              &#39;name&#39;: &#39;Average - 1 std. dev. fit_time (seconds)&#39;,
+              &#39;showlegend&#39;: False,
+              &#39;type&#39;: &#39;scatter&#39;,
+              &#39;visible&#39;: True,
+              &#39;x&#39;: [-0.5, 4.5],
+              &#39;y&#39;: [0.0005713348693958566, 0.0005713348693958566]},
+             {&#39;legendgroup&#39;: &#39;group1&#39;,
+              &#39;marker&#39;: {&#39;color&#39;: &#39;#EF553B&#39;},
+              &#39;name&#39;: &#39;score_time (seconds)&#39;,
+              &#39;showlegend&#39;: True,
+              &#39;type&#39;: &#39;bar&#39;,
+              &#39;visible&#39;: &#39;legendonly&#39;,
+              &#39;x&#39;: array([0, 1, 2, 3, 4]),
+              &#39;y&#39;: array([0.00125408, 0.0011394 , 0.00111198, 0.00117135, 0.00112057])},
+             {&#39;legendgroup&#39;: &#39;group1&#39;,
+              &#39;line&#39;: {&#39;color&#39;: &#39;#EF553B&#39;, &#39;dash&#39;: &#39;dash&#39;},
+              &#39;mode&#39;: &#39;lines&#39;,
+              &#39;name&#39;: &#39;Average score_time (seconds)&#39;,
+              &#39;showlegend&#39;: False,
+              &#39;type&#39;: &#39;scatter&#39;,
+              &#39;visible&#39;: &#39;legendonly&#39;,
+              &#39;x&#39;: [-0.5, 4.5],
+              &#39;y&#39;: [0.0011594772338867187, 0.0011594772338867187]},
+             {&#39;legendgroup&#39;: &#39;group1&#39;,
+              &#39;line&#39;: {&#39;color&#39;: &#39;#EF553B&#39;, &#39;dash&#39;: &#39;dot&#39;},
+              &#39;mode&#39;: &#39;lines&#39;,
+              &#39;name&#39;: &#39;Average + 1 std. dev. score_time (seconds)&#39;,
+              &#39;showlegend&#39;: False,
+              &#39;type&#39;: &#39;scatter&#39;,
+              &#39;visible&#39;: &#39;legendonly&#39;,
+              &#39;x&#39;: [-0.5, 4.5],
+              &#39;y&#39;: [0.0012170609724141946, 0.0012170609724141946]},
+             {&#39;legendgroup&#39;: &#39;group1&#39;,
+              &#39;line&#39;: {&#39;color&#39;: &#39;#EF553B&#39;, &#39;dash&#39;: &#39;dot&#39;},
+              &#39;mode&#39;: &#39;lines&#39;,
+              &#39;name&#39;: &#39;Average - 1 std. dev. score_time (seconds)&#39;,
+              &#39;showlegend&#39;: False,
+              &#39;type&#39;: &#39;scatter&#39;,
+              &#39;visible&#39;: &#39;legendonly&#39;,
+              &#39;x&#39;: [-0.5, 4.5],
+              &#39;y&#39;: [0.0011018934953592428, 0.0011018934953592428]},
+             {&#39;legendgroup&#39;: &#39;group2&#39;,
+              &#39;marker&#39;: {&#39;color&#39;: &#39;#00CC96&#39;},
+              &#39;name&#39;: &#39;test_r2&#39;,
+              &#39;showlegend&#39;: True,
+              &#39;type&#39;: &#39;bar&#39;,
+              &#39;visible&#39;: &#39;legendonly&#39;,
+              &#39;x&#39;: array([0, 1, 2, 3, 4]),
+              &#39;y&#39;: array([0.29828675, 0.2241492 , 0.15480127, 0.25519733, 0.17108715])},
+             {&#39;legendgroup&#39;: &#39;group2&#39;,
+              &#39;line&#39;: {&#39;color&#39;: &#39;#00CC96&#39;, &#39;dash&#39;: &#39;dash&#39;},
+              &#39;mode&#39;: &#39;lines&#39;,
+              &#39;name&#39;: &#39;Average test_r2&#39;,
+              &#39;showlegend&#39;: False,
+              &#39;type&#39;: &#39;scatter&#39;,
+              &#39;visible&#39;: &#39;legendonly&#39;,
+              &#39;x&#39;: [-0.5, 4.5],
+              &#39;y&#39;: [0.22070433908369935, 0.22070433908369935]},
+             {&#39;legendgroup&#39;: &#39;group2&#39;,
+              &#39;line&#39;: {&#39;color&#39;: &#39;#00CC96&#39;, &#39;dash&#39;: &#39;dot&#39;},
+              &#39;mode&#39;: &#39;lines&#39;,
+              &#39;name&#39;: &#39;Average + 1 std. dev. test_r2&#39;,
+              &#39;showlegend&#39;: False,
+              &#39;type&#39;: &#39;scatter&#39;,
+              &#39;visible&#39;: &#39;legendonly&#39;,
+              &#39;x&#39;: [-0.5, 4.5],
+              &#39;y&#39;: [0.27991950413745326, 0.27991950413745326]},
+             {&#39;legendgroup&#39;: &#39;group2&#39;,
+              &#39;line&#39;: {&#39;color&#39;: &#39;#00CC96&#39;, &#39;dash&#39;: &#39;dot&#39;},
+              &#39;mode&#39;: &#39;lines&#39;,
+              &#39;name&#39;: &#39;Average - 1 std. dev. test_r2&#39;,
+              &#39;showlegend&#39;: False,
+              &#39;type&#39;: &#39;scatter&#39;,
+              &#39;visible&#39;: &#39;legendonly&#39;,
+              &#39;x&#39;: [-0.5, 4.5],
+              &#39;y&#39;: [0.16148917402994548, 0.16148917402994548]},
+             {&#39;legendgroup&#39;: &#39;group3&#39;,
+              &#39;marker&#39;: {&#39;color&#39;: &#39;#AB63FA&#39;},
+              &#39;name&#39;: &#39;test_neg_mean_squared_error&#39;,
+              &#39;showlegend&#39;: True,
+              &#39;type&#39;: &#39;bar&#39;,
+              &#39;visible&#39;: &#39;legendonly&#39;,
+              &#39;x&#39;: array([0, 1, 2, 3, 4]),
+              &#39;y&#39;: array([-2807.16799618, -4890.37813089, -3360.65006947, -4663.03492141,
+                          -5152.31964346])},
+             {&#39;legendgroup&#39;: &#39;group3&#39;,
+              &#39;line&#39;: {&#39;color&#39;: &#39;#AB63FA&#39;, &#39;dash&#39;: &#39;dash&#39;},
+              &#39;mode&#39;: &#39;lines&#39;,
+              &#39;name&#39;: &#39;Average test_neg_mean_squared_error&#39;,
+              &#39;showlegend&#39;: False,
+              &#39;type&#39;: &#39;scatter&#39;,
+              &#39;visible&#39;: &#39;legendonly&#39;,
+              &#39;x&#39;: [-0.5, 4.5],
+              &#39;y&#39;: [-4174.7101522812645, -4174.7101522812645]},
+             {&#39;legendgroup&#39;: &#39;group3&#39;,
+              &#39;line&#39;: {&#39;color&#39;: &#39;#AB63FA&#39;, &#39;dash&#39;: &#39;dot&#39;},
+              &#39;mode&#39;: &#39;lines&#39;,
+              &#39;name&#39;: &#39;Average + 1 std. dev. test_neg_mean_squared_error&#39;,
+              &#39;showlegend&#39;: False,
+              &#39;type&#39;: &#39;scatter&#39;,
+              &#39;visible&#39;: &#39;legendonly&#39;,
+              &#39;x&#39;: [-0.5, 4.5],
+              &#39;y&#39;: [-3145.240941942837, -3145.240941942837]},
+             {&#39;legendgroup&#39;: &#39;group3&#39;,
+              &#39;line&#39;: {&#39;color&#39;: &#39;#AB63FA&#39;, &#39;dash&#39;: &#39;dot&#39;},
+              &#39;mode&#39;: &#39;lines&#39;,
+              &#39;name&#39;: &#39;Average - 1 std. dev. test_neg_mean_squared_error&#39;,
+              &#39;showlegend&#39;: False,
+              &#39;type&#39;: &#39;scatter&#39;,
+              &#39;visible&#39;: &#39;legendonly&#39;,
+              &#39;x&#39;: [-0.5, 4.5],
+              &#39;y&#39;: [-5204.179362619692, -5204.179362619692]},
+             {&#39;legendgroup&#39;: &#39;group4&#39;,
+              &#39;marker&#39;: {&#39;color&#39;: &#39;#FFA15A&#39;},
+              &#39;name&#39;: &#39;test_score&#39;,
+              &#39;showlegend&#39;: True,
+              &#39;type&#39;: &#39;bar&#39;,
+              &#39;visible&#39;: &#39;legendonly&#39;,
+              &#39;x&#39;: array([0, 1, 2, 3, 4]),
+              &#39;y&#39;: array([0.29828675, 0.2241492 , 0.15480127, 0.25519733, 0.17108715])},
+             {&#39;legendgroup&#39;: &#39;group4&#39;,
+              &#39;line&#39;: {&#39;color&#39;: &#39;#FFA15A&#39;, &#39;dash&#39;: &#39;dash&#39;},
+              &#39;mode&#39;: &#39;lines&#39;,
+              &#39;name&#39;: &#39;Average test_score&#39;,
+              &#39;showlegend&#39;: False,
+              &#39;type&#39;: &#39;scatter&#39;,
+              &#39;visible&#39;: &#39;legendonly&#39;,
+              &#39;x&#39;: [-0.5, 4.5],
+              &#39;y&#39;: [0.22070433908369935, 0.22070433908369935]},
+             {&#39;legendgroup&#39;: &#39;group4&#39;,
+              &#39;line&#39;: {&#39;color&#39;: &#39;#FFA15A&#39;, &#39;dash&#39;: &#39;dot&#39;},
+              &#39;mode&#39;: &#39;lines&#39;,
+              &#39;name&#39;: &#39;Average + 1 std. dev. test_score&#39;,
+              &#39;showlegend&#39;: False,
+              &#39;type&#39;: &#39;scatter&#39;,
+              &#39;visible&#39;: &#39;legendonly&#39;,
+              &#39;x&#39;: [-0.5, 4.5],
+              &#39;y&#39;: [0.27991950413745326, 0.27991950413745326]},
+             {&#39;legendgroup&#39;: &#39;group4&#39;,
+              &#39;line&#39;: {&#39;color&#39;: &#39;#FFA15A&#39;, &#39;dash&#39;: &#39;dot&#39;},
+              &#39;mode&#39;: &#39;lines&#39;,
+              &#39;name&#39;: &#39;Average - 1 std. dev. test_score&#39;,
+              &#39;showlegend&#39;: False,
+              &#39;type&#39;: &#39;scatter&#39;,
+              &#39;visible&#39;: &#39;legendonly&#39;,
+              &#39;x&#39;: [-0.5, 4.5],
+              &#39;y&#39;: [0.16148917402994548, 0.16148917402994548]}],
+    &#39;layout&#39;: {&#39;template&#39;: &#39;...&#39;,
+               &#39;title&#39;: {&#39;text&#39;: &#39;Cross-validation results for each split&#39;},
+               &#39;xaxis&#39;: {&#39;dtick&#39;: 1, &#39;tickmode&#39;: &#39;linear&#39;, &#39;title&#39;: {&#39;text&#39;: &#39;Split number&#39;}},
+               &#39;yaxis&#39;: {&#39;title&#39;: {&#39;text&#39;: &#39;Value&#39;}}}
+})
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+<div>                        <script type="text/javascript">window.PlotlyConfig = {MathJaxConfig: 'local'};</script>
+        <script charset="utf-8" src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>                <div id="d8ed605a-5103-4b97-ae66-e084b4c2887f" class="plotly-graph-div" style="height:100%; width:100%;"></div>            <script type="text/javascript">                                    window.PLOTLYENV=window.PLOTLYENV || {};                                    if (document.getElementById("d8ed605a-5103-4b97-ae66-e084b4c2887f")) {                    Plotly.newPlot(                        "d8ed605a-5103-4b97-ae66-e084b4c2887f",                        [{"legendgroup":"group0","marker":{"color":"#636EFA"},"name":"fit_time (seconds)","showlegend":true,"visible":true,"x":[0,1,2,3,4],"y":[0.0007107257843017578,0.0006103515625,0.0006039142608642578,0.0005998611450195312,0.0005846023559570312],"type":"bar"},{"legendgroup":"group0","line":{"color":"#636EFA","dash":"dash"},"mode":"lines","name":"Average fit_time (seconds)","showlegend":false,"visible":true,"x":[-0.5,4.5],"y":[0.0006218910217285156,0.0006218910217285156],"type":"scatter"},{"legendgroup":"group0","line":{"color":"#636EFA","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. fit_time (seconds)","showlegend":false,"visible":true,"x":[-0.5,4.5],"y":[0.0006724471740611747,0.0006724471740611747],"type":"scatter"},{"legendgroup":"group0","line":{"color":"#636EFA","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. fit_time (seconds)","showlegend":false,"visible":true,"x":[-0.5,4.5],"y":[0.0005713348693958566,0.0005713348693958566],"type":"scatter"},{"legendgroup":"group1","marker":{"color":"#EF553B"},"name":"score_time (seconds)","showlegend":true,"visible":"legendonly","x":[0,1,2,3,4],"y":[0.0012540817260742188,0.0011394023895263672,0.0011119842529296875,0.0011713504791259766,0.0011205673217773438],"type":"bar"},{"legendgroup":"group1","line":{"color":"#EF553B","dash":"dash"},"mode":"lines","name":"Average score_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.0011594772338867187,0.0011594772338867187],"type":"scatter"},{"legendgroup":"group1","line":{"color":"#EF553B","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. score_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.0012170609724141946,0.0012170609724141946],"type":"scatter"},{"legendgroup":"group1","line":{"color":"#EF553B","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. score_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.0011018934953592428,0.0011018934953592428],"type":"scatter"},{"legendgroup":"group2","marker":{"color":"#00CC96"},"name":"test_r2","showlegend":true,"visible":"legendonly","x":[0,1,2,3,4],"y":[0.2982867487756391,0.22414919618930618,0.15480127210175387,0.2551973269039568,0.1710871514478407],"type":"bar"},{"legendgroup":"group2","line":{"color":"#00CC96","dash":"dash"},"mode":"lines","name":"Average test_r2","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.22070433908369935,0.22070433908369935],"type":"scatter"},{"legendgroup":"group2","line":{"color":"#00CC96","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. test_r2","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.27991950413745326,0.27991950413745326],"type":"scatter"},{"legendgroup":"group2","line":{"color":"#00CC96","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. test_r2","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.16148917402994548,0.16148917402994548],"type":"scatter"},{"legendgroup":"group3","marker":{"color":"#AB63FA"},"name":"test_neg_mean_squared_error","showlegend":true,"visible":"legendonly","x":[0,1,2,3,4],"y":[-2807.167996179104,-4890.3781308939615,-3360.650069468378,-4663.034921405411,-5152.319643459466],"type":"bar"},{"legendgroup":"group3","line":{"color":"#AB63FA","dash":"dash"},"mode":"lines","name":"Average test_neg_mean_squared_error","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[-4174.7101522812645,-4174.7101522812645],"type":"scatter"},{"legendgroup":"group3","line":{"color":"#AB63FA","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. test_neg_mean_squared_error","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[-3145.240941942837,-3145.240941942837],"type":"scatter"},{"legendgroup":"group3","line":{"color":"#AB63FA","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. test_neg_mean_squared_error","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[-5204.179362619692,-5204.179362619692],"type":"scatter"},{"legendgroup":"group4","marker":{"color":"#FFA15A"},"name":"test_score","showlegend":true,"visible":"legendonly","x":[0,1,2,3,4],"y":[0.2982867487756391,0.22414919618930618,0.15480127210175387,0.2551973269039568,0.1710871514478407],"type":"bar"},{"legendgroup":"group4","line":{"color":"#FFA15A","dash":"dash"},"mode":"lines","name":"Average test_score","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.22070433908369935,0.22070433908369935],"type":"scatter"},{"legendgroup":"group4","line":{"color":"#FFA15A","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. test_score","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.27991950413745326,0.27991950413745326],"type":"scatter"},{"legendgroup":"group4","line":{"color":"#FFA15A","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. test_score","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.16148917402994548,0.16148917402994548],"type":"scatter"}],                        {"template":{"data":{"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"heatmapgl":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmapgl"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"geo":{"bgcolor":"white","lakecolor":"white","landcolor":"#E5ECF6","showlakes":true,"showland":true,"subunitcolor":"white"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"light"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"bgcolor":"#E5ECF6","radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","gridwidth":2,"linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white"},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","gridwidth":2,"linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white"},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","gridwidth":2,"linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white"}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"ternary":{"aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"bgcolor":"#E5ECF6","caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"title":{"x":0.05},"xaxis":{"automargin":true,"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","zerolinewidth":2}}},"title":{"text":"Cross-validation results for each split"},"xaxis":{"dtick":1,"tickmode":"linear","title":{"text":"Split number"}},"yaxis":{"title":{"text":"Value"}}},                        {"responsive": true}                    )                };                            </script>        </div>
+</div>
+<br />
+<br /></section>
+<section id="a-short-note-on-plotly-and-sphinx-auto-examples">
+<h3>A short note on Plotly and Sphinx auto-examples<a class="headerlink" href="#a-short-note-on-plotly-and-sphinx-auto-examples" title="Link to this heading">#</a></h3>
+<p>Because Plotly graphs currently do not properly render in our docs engine
+due to <a class="reference external" href="https://github.com/plotly/plotly.py/issues/4828">a bug in Plotly</a>,
+we also display a screenshot below (using 3 splits).
+Alternatively, if you zoom in or out in your browser window, the Plotly graph
+should display properly.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">img</span> <span class="o">=</span> <span class="n">mpimg</span><span class="o">.</span><span class="n">imread</span><span class="p">(</span><span class="s2">&quot;plot_03_cross_validate_plot_screenshot.png&quot;</span><span class="p">)</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">layout</span><span class="o">=</span><span class="s2">&quot;constrained&quot;</span><span class="p">)</span>
 <span class="n">fig</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">left</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">right</span><span class="o">=</span><span class="mf">0.99</span><span class="p">,</span> <span class="n">bottom</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">top</span><span class="o">=</span><span class="mf">0.99</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s2">&quot;off&quot;</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">img</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_03_cross_validate_001.png" srcset="../_images/sphx_glr_plot_03_cross_validate_001.png" alt="plot 03 cross validate" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>&lt;matplotlib.image.AxesImage object at 0x7f34cbaf6240&gt;
+<img src="../_images/sphx_glr_plot_03_cross_validate_001.png" srcset="../_images/sphx_glr_plot_03_cross_validate_001.png" alt="plot 03 cross validate" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>/home/runner/work/skore/skore/examples/plot_03_cross_validate.py:159: UserWarning:
+
+This figure was using a layout engine that is incompatible with subplots_adjust and/or tight_layout; not calling subplots_adjust.
 </pre></div>
 </div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 0.908 seconds)</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 1.085 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-03-cross-validate-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/9825adffd8a0e006b517b57261e52107/plot_03_cross_validate.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_03_cross_validate.ipynb</span></code></a></p>
@@ -737,6 +1021,8 @@ Alternatively, if you zoom in or out in your browser window, the Plotly graph sh
 </div>
 </div>
 <p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
 </section>
 
 
@@ -777,6 +1063,29 @@ Alternatively, if you zoom in or out in your browser window, the Plotly graph sh
                 <dialog id="pst-secondary-sidebar-modal"></dialog>
                 <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#creating-and-loading-the-skore-project">Creating and loading the skore project</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#cross-validation-in-scikit-learn">Cross-validation in scikit-learn</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#in-scikit-learn-why-do-we-recommend-using-cross-validate-over-cross-val-score">In scikit-learn, why do we recommend using <code class="docutils literal notranslate"><span class="pre">cross_validate</span></code> over <code class="docutils literal notranslate"><span class="pre">cross_val_score</span></code>?</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#why-do-we-recommend-using-skore-s-cross-validate-over-scikit-learn-s">Why do we recommend using skore’s <code class="docutils literal notranslate"><span class="pre">cross_validate</span></code> over scikit-learn’s?</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#cross-validation-in-skore">Cross-validation in skore</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#classification-task">Classification task</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#regression-task">Regression task</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#a-short-note-on-plotly-and-sphinx-auto-examples">A short note on Plotly and Sphinx auto-examples</a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
 
   <div class="sidebar-secondary-item">
 
