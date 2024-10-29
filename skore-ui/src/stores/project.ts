@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { ref, shallowRef } from "vue";
+import { ref, shallowRef, watch } from "vue";
 
 import { type Layout, type Project, type ProjectItem } from "@/models";
 import { deleteView as deleteViewApi, fetchProject, putView } from "@/services/api";
@@ -46,6 +46,7 @@ export const useProjectStore = defineStore("project", () => {
    */
   async function displayKey(view: string, key: string, position: number = -1) {
     stopBackendPolling();
+    let hasChanged = false;
     const realKey = key.replace(" (self)", "");
     if (!isKeyDisplayed(view, realKey)) {
       if (position === -1) {
@@ -57,13 +58,11 @@ export const useProjectStore = defineStore("project", () => {
           ...views.value[view].slice(position),
         ];
       }
-      _updatePresentableItemsInView();
-      await persistView(view, views.value[view]);
-      await startBackendPolling();
-      return true;
+      await _persistView(view, views.value[view]);
+      hasChanged = true;
     }
     await startBackendPolling();
-    return false;
+    return hasChanged;
   }
 
   /**
@@ -76,8 +75,7 @@ export const useProjectStore = defineStore("project", () => {
     if (isKeyDisplayed(view, key)) {
       const v = views.value[view];
       views.value[view] = v.filter((k) => k !== key);
-      _updatePresentableItemsInView();
-      await persistView(view, views.value[view]);
+      await _persistView(view, views.value[view]);
     }
     await startBackendPolling();
   }
@@ -110,20 +108,6 @@ export const useProjectStore = defineStore("project", () => {
   function stopBackendPolling() {
     _isCanceledCall = true;
     _stopBackendPolling && _stopBackendPolling();
-  }
-
-  /**
-   * Send the view's layout to backend
-   * @param view the view to persist
-   * @param layout the layout to persist
-   */
-  async function persistView(view: string, layout: Layout) {
-    if (items.value && views.value) {
-      const r = await putView(view, layout);
-      if (r) {
-        setProject(r);
-      }
-    }
   }
 
   /**
@@ -227,7 +211,7 @@ export const useProjectStore = defineStore("project", () => {
    */
   async function createView(name: string) {
     views.value[name] = [];
-    await persistView(name, views.value[name]);
+    await _persistView(name, views.value[name]);
   }
 
   /**
@@ -237,7 +221,7 @@ export const useProjectStore = defineStore("project", () => {
    */
   async function duplicateView(src: string, name: string) {
     views.value[name] = [...views.value[src]];
-    await persistView(name, views.value[name]);
+    await _persistView(name, views.value[name]);
   }
 
   /**
@@ -260,7 +244,7 @@ export const useProjectStore = defineStore("project", () => {
     views.value[newName] = views.value[name];
     delete views.value[name];
     await deleteView(name);
-    await persistView(newName, views.value[newName]);
+    await _persistView(newName, views.value[newName]);
   }
 
   /**
@@ -317,6 +301,42 @@ export const useProjectStore = defineStore("project", () => {
     }
     currentViewItems.value = r;
   }
+
+  /**
+   * Send the view's layout to backend
+   * @param view the view to persist
+   * @param layout the layout to persist
+   */
+  async function _persistView(view: string, layout: Layout) {
+    if (items.value && views.value) {
+      const r = await putView(view, layout);
+      if (r) {
+        setProject(r);
+      }
+    }
+  }
+
+  /**
+   * Persist the current view's layout when the items change.
+   * Useful when user reoganizes items in the current view.
+   */
+  watch(
+    () => currentViewItems.value,
+    async (value, oldValue) => {
+      // Compare arrays by mapping to keys and checking if they're in the same order
+      const newKeys = value.map((item) => item.key);
+      const oldKeys = oldValue.map((item) => item.key);
+
+      const arraysMatch =
+        newKeys.length === oldKeys.length && newKeys.every((key, index) => key === oldKeys[index]);
+
+      if (!arraysMatch && currentView.value !== null) {
+        const name = currentView.value;
+        views.value[name] = [...currentViewItems.value.map((item) => item.key)];
+        await _persistView(name, views.value[name]);
+      }
+    }
+  );
 
   return {
     // refs
