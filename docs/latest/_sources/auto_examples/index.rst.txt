@@ -51,7 +51,7 @@ Below is a gallery of examples on how to use skore.
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This example illustrates the use of cross_validate to get assistance when developing your ML/DS projects.">
+    <div class="sphx-glr-thumbcontainer" tooltip="This example illustrates the motivation and the use of cross_validate to get assistance when developing your ML/DS projects.">
 
 .. only:: html
 
