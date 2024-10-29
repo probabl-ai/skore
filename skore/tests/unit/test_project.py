@@ -45,7 +45,15 @@ def test_put_dict_item(in_memory_project):
 
 
 def test_put_pandas_dataframe(in_memory_project):
-    dataframe = pandas.DataFrame({"A": [1, 2, 3], "B": [4, 5, 6]})
+    dataframe = pandas.DataFrame(
+        {
+            "A": [1, 2, 3],
+            "B": [4, 5, 6],
+            "C": [7, 8, 9],
+        },
+        index=pandas.Index([0, 1, 2], name="myIndex"),
+    )
+
     in_memory_project.put("pandas_dataframe", dataframe)
     pandas.testing.assert_frame_equal(
         in_memory_project.get("pandas_dataframe"), dataframe
