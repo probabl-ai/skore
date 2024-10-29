@@ -15,7 +15,8 @@ This will create a skore project directory named ``my_project.skore`` in your
 current working directory.
 
 Now that the project file exists, we can write some Python code to put some 
-useful things in it. 
+useful things in it. The block below shows a small hyperparameter sweep and
+stores relevant information in the project.
 
 .. code-block:: python
 
@@ -63,9 +64,9 @@ Now that we have some elements in our project, we can explore them in a web inte
 
 This will automatically open a browser and allow you to click and drag elements into a view which you can then easily share statically with stakeholders. To do this you'll first want to create a view by clicking the ``+`` in the upper left side. From there you can add elemensts as you see fit.
 
+.. image:: _static/getting_started.png
+   :alt: Getting started with ``skore`` demo
+
 The goal of `skore` is to make it easy to share results of your experiments and you can also imagine that we will add useful widgets to help communicate results during the entire data science lifecycle. 
 
 For more features, please look into :ref:`auto_examples`.
-
-.. image:: https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_10_14_skore_demo.gif
-   :alt: Getting started with ``skore`` demo
