@@ -53,7 +53,12 @@ class PandasDataFrameItem(Item):
 
     @cached_property
     def dataframe(self) -> pandas.DataFrame:
-        """The pandas DataFrame."""
+        """
+        The pandas DataFrame from the persistence.
+
+        Its content can differ from the original dataframe because it has been serialize
+        using pandas `to_json` function and not pickled, to be environment independent.
+        """
         import io
 
         import pandas
@@ -92,6 +97,28 @@ class PandasDataFrameItem(Item):
 
         if not isinstance(dataframe, pandas.DataFrame):
             raise TypeError(f"Type '{dataframe.__class__}' is not supported.")
+
+        # Two native methods are available to serialize dataframe with multi-index,
+        # while keepping the index names:
+        #
+        # 1. Using table orientation with JSON serializer:
+        #    ```python
+        #    json = dataframe.to_json(orient="table")
+        #    dataframe = pandas.read_json(json, orient="table", dtype=False)
+        #    ```
+        #
+        #    This method fails when columns name is an integer.
+        #
+        # 2. Using record orientation with indexes as columns:
+        #    ```python
+        #    dataframe = dataframe.reset_index()
+        #    json = dataframe.to_json(orient="records")
+        #    dataframe = pandas.read_json(json, orient="records", dtype=False)
+        #    ```
+        #
+        #    This method fails when the index has the same name as one of the columns.
+        #
+        # None of those methods being compatible, we decide to store indexes separately.
 
         index = dataframe.index.to_frame(index=False)
         dataframe = dataframe.reset_index(drop=True)
