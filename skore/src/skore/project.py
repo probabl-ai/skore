@@ -167,9 +167,9 @@ class Project:
         """
         return self.item_repository.get_item(key)
 
-    def get_items(self, key: str) -> list[Item]:
+    def get_item_versions(self, key: str) -> list[Item]:
         """
-        Get the list of items associated with `key` from the Project.
+        Get all the versions of an item associated with `key` from the Project.
 
         The list is ordered from oldest to newest "put" date.
 
@@ -188,7 +188,7 @@ class Project:
         KeyError
             If the key does not correspond to any item.
         """
-        return self.item_repository.get_items(key)
+        return self.item_repository.get_item_versions(key)
 
     def list_item_keys(self) -> list[str]:
         """List all item keys in the Project.

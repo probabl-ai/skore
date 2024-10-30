@@ -101,7 +101,7 @@ class TestItemRepository:
             ]
         }
 
-    def test_get_items(self):
+    def test_get_item_versions(self):
         now = datetime.now(tz=timezone.utc).isoformat()
         item = MediaItem(
             media_bytes=b"media",
@@ -126,7 +126,7 @@ class TestItemRepository:
 
         repository.put_item("key", item2)
 
-        items = repository.get_items("key")
+        items = repository.get_item_versions("key")
 
         assert len(items) == 2
         assert items[0].media_bytes == b"media"

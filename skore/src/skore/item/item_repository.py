@@ -70,7 +70,7 @@ class ItemRepository:
 
     def get_item(self, key) -> Item:
         """
-        Retrieve an item from storage.
+        Get an item from storage.
 
         In practice, since each key is associated with a list of values,
         this will return the latest one.
@@ -87,9 +87,9 @@ class ItemRepository:
         """
         return ItemRepository.__construct_item(self.storage[key][-1])
 
-    def get_items(self, key) -> list[Item]:
+    def get_item_versions(self, key) -> list[Item]:
         """
-        Retrieve the list of items associated with `key` from the storage.
+        Get all the versions of an item associated with `key` from the storage.
 
         The list is ordered from oldest to newest "put" date.
 

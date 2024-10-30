@@ -167,11 +167,11 @@ def test_get(in_memory_project):
         in_memory_project.get("key2")
 
 
-def test_get_items(in_memory_project):
+def test_get_item_versions(in_memory_project):
     in_memory_project.put("key", 1)
     in_memory_project.put("key", 2)
 
-    items = in_memory_project.get_items("key")
+    items = in_memory_project.get_item_versions("key")
 
     assert len(items) == 2
     assert items[0].primitive == 1
