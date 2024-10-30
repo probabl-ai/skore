@@ -1,8 +1,8 @@
-.. _contributor_guide:
+.. _contributing:
 
-=================
-Contributor guide
-=================
+============
+Contributing
+============
 
 First off, thanks for taking the time to contribute, everyone is welcome to
 contribute.
@@ -48,7 +48,7 @@ Backend
 Install backend dependencies with:
 
 .. code-block:: bash
-    
+
     make install-skore
 
 
@@ -64,7 +64,7 @@ skore-ui
 Install skore-ui dependencies with:
 
 .. code-block:: bash
-    
+
     npm install
 
 in the ``skore-ui`` directory.

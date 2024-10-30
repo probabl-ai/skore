@@ -41,4 +41,4 @@ We are a product team working at `Probabl <https://probabl.ai>`_ and our motto i
    install
    auto_examples/index
    api
-   contributor_guide
+   contributing_link
