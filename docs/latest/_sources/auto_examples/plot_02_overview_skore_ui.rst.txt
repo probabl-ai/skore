@@ -457,9 +457,9 @@ Numpy array:
  .. code-block:: none
 
 
-    array([[-0.50737982,  1.19978551,  0.12752145],
-           [ 0.76829286, -0.31548078, -0.38633478],
-           [-0.00914076, -0.34649346, -0.69540111]])
+    array([[-0.35076134,  0.20714439,  0.77798675],
+           [-0.22477727,  1.97667477, -0.41286989],
+           [-0.17936035,  1.64746829,  0.04691964]])
 
 
 
@@ -509,21 +509,21 @@ Pandas data frame:
       <tbody>
         <tr>
           <th>0</th>
-          <td>-0.558286</td>
-          <td>-0.319729</td>
-          <td>1.432545</td>
+          <td>0.957550</td>
+          <td>0.352885</td>
+          <td>-0.603550</td>
         </tr>
         <tr>
           <th>1</th>
-          <td>-0.410004</td>
-          <td>-0.273227</td>
-          <td>1.885986</td>
+          <td>-0.190373</td>
+          <td>-0.060675</td>
+          <td>-0.416501</td>
         </tr>
         <tr>
           <th>2</th>
-          <td>0.000815</td>
-          <td>1.123012</td>
-          <td>0.195974</td>
+          <td>1.793750</td>
+          <td>1.645450</td>
+          <td>-0.190430</td>
         </tr>
       </tbody>
     </table>
@@ -2000,7 +2000,7 @@ Moreover, you can store fitted scikit-learn pipelines:
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 1.393 seconds)
+   **Total running time of the script:** (0 minutes 1.383 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_02_overview_skore_ui.py:
