@@ -55,7 +55,7 @@ This will automatically open a browser at the UI's location:
 ## 🔨 Contributing
 
 Thank you for your interest!
-See [our documentation](https://probabl-ai.github.io/skore/latest/contributing_link.html).
+See [our documentation](https://github.com/probabl-ai/skore/blob/main/CONTRIBUTING.rst).
 
 ## 💬 Where to ask questions
 
