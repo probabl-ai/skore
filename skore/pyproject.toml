@@ -83,6 +83,7 @@ sphinx = [
   "matplotlib",
   "numpydoc",
   "pandas",
+  "kaleido",
   "pydata-sphinx-theme",
   "scikit-learn",
   "sphinx",
