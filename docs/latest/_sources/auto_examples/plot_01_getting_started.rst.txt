@@ -20,37 +20,36 @@
 
 .. _example_getting_started:
 
-===============
-Getting started
-===============
+==========================
+Getting started with skore
+==========================
 
-This example runs the :ref:`getting_started` guide and adds examples a more
-types that can be stored.
+This getting started guide illustrates how to use skore and why:
 
-``skore``'s Project and UI
---------------------------
+#. Track and visualize your ML/DS results using skore's :class:`~skore.Project` and UI.
+#. Get assistance when developing your ML/DS projects.
 
-This section provides a quick start to skore's Project and UI, an open-source package that aims to enable data scientists to:
+   - Scikit-learn compatible :func:`~skore.cross_validate` provides insights and checks on cross-validation.
 
-#. Store objects of different types from their Python code: python lists, scikit-learn fitted pipelines, plotly figures, and more.
-#. Track and visualize these stored objects on a user-friendly dashboard.
 
-Initialize a Project and launch the UI
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Creating a skore project, loading it, and launching the UI
+==========================================================
 
-From your shell, initialize a skore project, here named ``my_project_gs``:
+.. GENERATED FROM PYTHON SOURCE LINES 21-22
 
-.. GENERATED FROM PYTHON SOURCE LINES 26-34
+From your shell, initialize a skore project, here named ``my_project``:
+
+.. GENERATED FROM PYTHON SOURCE LINES 24-32
 
 .. code-block:: Python
 
     import subprocess
 
     # remove the skore project if it already exists
-    subprocess.run("rm -rf my_project_gs.skore".split())
+    subprocess.run("rm -rf my_project.skore".split())
 
     # create the skore project
-    subprocess.run("python3 -m skore create my_project_gs".split())
+    subprocess.run("python3 -m skore create my_project".split())
 
 
 
@@ -61,33 +60,35 @@ From your shell, initialize a skore project, here named ``my_project_gs``:
  .. code-block:: none
 
 
-    CompletedProcess(args=['python3', '-m', 'skore', 'create', 'my_project_gs'], returncode=0)
+    CompletedProcess(args=['python3', '-m', 'skore', 'create', 'my_project'], returncode=0)
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 35-48
+.. GENERATED FROM PYTHON SOURCE LINES 33-47
 
-This will create a skore project directory named ``my_project_gs.skore`` in your
+This will create a skore project directory named ``my_project.skore`` in your
 current directory.
 
 From your shell (in the same directory), start the UI locally:
 
 .. code-block:: bash
 
-    python -m skore launch "my_project_gs"
+    python -m skore launch "my_project"
 
 This will automatically open a browser at the UI's location.
 
-Now that the project file exists, from your Python code (in the same
-directory), load the project so that you can read from and write to it:
+Now that the project exists, we can write some Python code (in the same
+directory) to add (:func:`~skore.Project.put`) some useful items in it.
+Let us load the project and add an integer to it for example:
 
-.. GENERATED FROM PYTHON SOURCE LINES 50-54
+.. GENERATED FROM PYTHON SOURCE LINES 49-54
 
 .. code-block:: Python
 
     from skore import load
 
-    my_project_gs = load("my_project_gs.skore")
+    my_project = load("my_project.skore")
+    my_project.put("my_int", 3)
 
 
 
@@ -96,203 +97,39 @@ directory), load the project so that you can read from and write to it:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 55-59
+.. GENERATED FROM PYTHON SOURCE LINES 55-61
 
-Storing some items
-^^^^^^^^^^^^^^^^^^
+Example of machine learning usage: hyperparameter sweep
+=======================================================
 
-Storing an integer:
+As an illustration of skore's usage with a machine learning motivation, let us
+perform a hyperparameter sweep and store relevant information in the skore
+project.
 
-.. GENERATED FROM PYTHON SOURCE LINES 61-63
+.. GENERATED FROM PYTHON SOURCE LINES 63-65
 
-.. code-block:: Python
+We search for the ``alpha`` hyperparameter of a Ridge regression on the
+Diabetes dataset:
 
-    my_project_gs.put("my_int", 3)
-
-
-
-
-
-
-
-
-.. GENERATED FROM PYTHON SOURCE LINES 64-65
-
-Here, the name of the stored item is ``my_int`` and the integer value is 3.
-
-.. GENERATED FROM PYTHON SOURCE LINES 67-69
-
-.. code-block:: Python
-
-    my_project_gs.get("my_int")
-
-
-
-
-
-.. rst-class:: sphx-glr-script-out
-
- .. code-block:: none
-
-
-    3
-
-
-
-.. GENERATED FROM PYTHON SOURCE LINES 70-71
-
-For a pandas data frame:
-
-.. GENERATED FROM PYTHON SOURCE LINES 73-80
+.. GENERATED FROM PYTHON SOURCE LINES 67-83
 
 .. code-block:: Python
 
     import numpy as np
-    import pandas as pd
-
-    my_df = pd.DataFrame(np.random.randn(3, 3))
-
-    my_project_gs.put("my_df", my_df)
-
-
-
-
-
-
-
-
-.. GENERATED FROM PYTHON SOURCE LINES 81-83
-
-.. code-block:: Python
-
-    my_project_gs.get("my_df")
-
-
-
-
-
-
-.. raw:: html
-
-    <div class="output_subarea output_html rendered_html output_result">
-    <div>
-    <style scoped>
-        .dataframe tbody tr th:only-of-type {
-            vertical-align: middle;
-        }
-
-        .dataframe tbody tr th {
-            vertical-align: top;
-        }
-
-        .dataframe thead th {
-            text-align: right;
-        }
-    </style>
-    <table border="1" class="dataframe">
-      <thead>
-        <tr style="text-align: right;">
-          <th></th>
-          <th>0</th>
-          <th>1</th>
-          <th>2</th>
-        </tr>
-        <tr>
-          <th>0</th>
-          <th></th>
-          <th></th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <th>0</th>
-          <td>-1.270300</td>
-          <td>0.893454</td>
-          <td>-0.351053</td>
-        </tr>
-        <tr>
-          <th>1</th>
-          <td>0.651804</td>
-          <td>0.429091</td>
-          <td>1.076950</td>
-        </tr>
-        <tr>
-          <th>2</th>
-          <td>0.604147</td>
-          <td>0.918375</td>
-          <td>1.597828</td>
-        </tr>
-      </tbody>
-    </table>
-    </div>
-    </div>
-    <br />
-    <br />
-
-.. GENERATED FROM PYTHON SOURCE LINES 84-85
-
-For a matplotlib figure:
-
-.. GENERATED FROM PYTHON SOURCE LINES 87-95
-
-.. code-block:: Python
-
-    import matplotlib.pyplot as plt
-
-    x = [0, 1, 2, 3, 4, 5]
-    fig, ax = plt.subplots(figsize=(5, 3), layout="constrained")
-    _ = ax.plot(x)
-
-    my_project_gs.put("my_figure", fig)
-
-
-
-
-.. image-sg:: /auto_examples/images/sphx_glr_plot_01_getting_started_001.png
-   :alt: plot 01 getting started
-   :srcset: /auto_examples/images/sphx_glr_plot_01_getting_started_001.png
-   :class: sphx-glr-single-img
-
-
-
-
-
-.. GENERATED FROM PYTHON SOURCE LINES 96-97
-
-For a scikit-learn fitted pipeline:
-
-.. GENERATED FROM PYTHON SOURCE LINES 99-114
-
-.. code-block:: Python
-
     from sklearn.datasets import load_diabetes
-    from sklearn.linear_model import Lasso
-    from sklearn.pipeline import Pipeline
-    from sklearn.preprocessing import StandardScaler
+    from sklearn.model_selection import GridSearchCV
+    from sklearn.linear_model import Ridge
 
     diabetes = load_diabetes()
     X = diabetes.data[:150]
     y = diabetes.target[:150]
-    my_pipeline = Pipeline(
-        [("standard_scaler", StandardScaler()), ("lasso", Lasso(alpha=2))]
+
+    gs_cv = GridSearchCV(
+        Ridge(),
+        param_grid={"alpha": np.logspace(-3, 5, 50)},
+        scoring="neg_root_mean_squared_error",
     )
-    my_pipeline.fit(X, y)
-
-    my_project_gs.put("my_fitted_pipeline", my_pipeline)
-
-
-
-
-
-
-
-
-.. GENERATED FROM PYTHON SOURCE LINES 115-117
-
-.. code-block:: Python
-
-    my_project_gs.get("my_fitted_pipeline")
+    gs_cv.fit(X, y)
 
 
 
@@ -302,7 +139,7 @@ For a scikit-learn fitted pipeline:
 .. raw:: html
 
     <div class="output_subarea output_html rendered_html output_result">
-    <style>#sk-container-id-2 {
+    <style>#sk-container-id-1 {
       /* Definition of color scheme common for light and dark mode */
       --sklearn-color-text: black;
       --sklearn-color-line: gray;
@@ -332,15 +169,15 @@ For a scikit-learn fitted pipeline:
       }
     }
 
-    #sk-container-id-2 {
+    #sk-container-id-1 {
       color: var(--sklearn-color-text);
     }
 
-    #sk-container-id-2 pre {
+    #sk-container-id-1 pre {
       padding: 0;
     }
 
-    #sk-container-id-2 input.sk-hidden--visually {
+    #sk-container-id-1 input.sk-hidden--visually {
       border: 0;
       clip: rect(1px 1px 1px 1px);
       clip: rect(1px, 1px, 1px, 1px);
@@ -352,7 +189,7 @@ For a scikit-learn fitted pipeline:
       width: 1px;
     }
 
-    #sk-container-id-2 div.sk-dashed-wrapped {
+    #sk-container-id-1 div.sk-dashed-wrapped {
       border: 1px dashed var(--sklearn-color-line);
       margin: 0 0.4em 0.5em 0.4em;
       box-sizing: border-box;
@@ -360,7 +197,7 @@ For a scikit-learn fitted pipeline:
       background-color: var(--sklearn-color-background);
     }
 
-    #sk-container-id-2 div.sk-container {
+    #sk-container-id-1 div.sk-container {
       /* jupyter's `normalize.less` sets `[hidden] { display: none; }`
          but bootstrap.min.css set `[hidden] { display: none !important; }`
          so we also need the `!important` here to be able to override the
@@ -370,7 +207,7 @@ For a scikit-learn fitted pipeline:
       position: relative;
     }
 
-    #sk-container-id-2 div.sk-text-repr-fallback {
+    #sk-container-id-1 div.sk-text-repr-fallback {
       display: none;
     }
 
@@ -386,14 +223,14 @@ For a scikit-learn fitted pipeline:
 
     /* Parallel-specific style estimator block */
 
-    #sk-container-id-2 div.sk-parallel-item::after {
+    #sk-container-id-1 div.sk-parallel-item::after {
       content: "";
       width: 100%;
       border-bottom: 2px solid var(--sklearn-color-text-on-default-background);
       flex-grow: 1;
     }
 
-    #sk-container-id-2 div.sk-parallel {
+    #sk-container-id-1 div.sk-parallel {
       display: flex;
       align-items: stretch;
       justify-content: center;
@@ -401,28 +238,28 @@ For a scikit-learn fitted pipeline:
       position: relative;
     }
 
-    #sk-container-id-2 div.sk-parallel-item {
+    #sk-container-id-1 div.sk-parallel-item {
       display: flex;
       flex-direction: column;
     }
 
-    #sk-container-id-2 div.sk-parallel-item:first-child::after {
+    #sk-container-id-1 div.sk-parallel-item:first-child::after {
       align-self: flex-end;
       width: 50%;
     }
 
-    #sk-container-id-2 div.sk-parallel-item:last-child::after {
+    #sk-container-id-1 div.sk-parallel-item:last-child::after {
       align-self: flex-start;
       width: 50%;
     }
 
-    #sk-container-id-2 div.sk-parallel-item:only-child::after {
+    #sk-container-id-1 div.sk-parallel-item:only-child::after {
       width: 0;
     }
 
     /* Serial-specific style estimator block */
 
-    #sk-container-id-2 div.sk-serial {
+    #sk-container-id-1 div.sk-serial {
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -440,14 +277,14 @@ For a scikit-learn fitted pipeline:
 
     /* Pipeline and ColumnTransformer style (default) */
 
-    #sk-container-id-2 div.sk-toggleable {
+    #sk-container-id-1 div.sk-toggleable {
       /* Default theme specific background. It is overwritten whether we have a
       specific estimator or a Pipeline/ColumnTransformer */
       background-color: var(--sklearn-color-background);
     }
 
     /* Toggleable label */
-    #sk-container-id-2 label.sk-toggleable__label {
+    #sk-container-id-1 label.sk-toggleable__label {
       cursor: pointer;
       display: block;
       width: 100%;
@@ -457,7 +294,7 @@ For a scikit-learn fitted pipeline:
       text-align: center;
     }
 
-    #sk-container-id-2 label.sk-toggleable__label-arrow:before {
+    #sk-container-id-1 label.sk-toggleable__label-arrow:before {
       /* Arrow on the left of the label */
       content: "▸";
       float: left;
@@ -465,13 +302,13 @@ For a scikit-learn fitted pipeline:
       color: var(--sklearn-color-icon);
     }
 
-    #sk-container-id-2 label.sk-toggleable__label-arrow:hover:before {
+    #sk-container-id-1 label.sk-toggleable__label-arrow:hover:before {
       color: var(--sklearn-color-text);
     }
 
     /* Toggleable content - dropdown */
 
-    #sk-container-id-2 div.sk-toggleable__content {
+    #sk-container-id-1 div.sk-toggleable__content {
       max-height: 0;
       max-width: 0;
       overflow: hidden;
@@ -480,12 +317,12 @@ For a scikit-learn fitted pipeline:
       background-color: var(--sklearn-color-unfitted-level-0);
     }
 
-    #sk-container-id-2 div.sk-toggleable__content.fitted {
+    #sk-container-id-1 div.sk-toggleable__content.fitted {
       /* fitted */
       background-color: var(--sklearn-color-fitted-level-0);
     }
 
-    #sk-container-id-2 div.sk-toggleable__content pre {
+    #sk-container-id-1 div.sk-toggleable__content pre {
       margin: 0.2em;
       border-radius: 0.25em;
       color: var(--sklearn-color-text);
@@ -493,79 +330,79 @@ For a scikit-learn fitted pipeline:
       background-color: var(--sklearn-color-unfitted-level-0);
     }
 
-    #sk-container-id-2 div.sk-toggleable__content.fitted pre {
+    #sk-container-id-1 div.sk-toggleable__content.fitted pre {
       /* unfitted */
       background-color: var(--sklearn-color-fitted-level-0);
     }
 
-    #sk-container-id-2 input.sk-toggleable__control:checked~div.sk-toggleable__content {
+    #sk-container-id-1 input.sk-toggleable__control:checked~div.sk-toggleable__content {
       /* Expand drop-down */
       max-height: 200px;
       max-width: 100%;
       overflow: auto;
     }
 
-    #sk-container-id-2 input.sk-toggleable__control:checked~label.sk-toggleable__label-arrow:before {
+    #sk-container-id-1 input.sk-toggleable__control:checked~label.sk-toggleable__label-arrow:before {
       content: "▾";
     }
 
     /* Pipeline/ColumnTransformer-specific style */
 
-    #sk-container-id-2 div.sk-label input.sk-toggleable__control:checked~label.sk-toggleable__label {
+    #sk-container-id-1 div.sk-label input.sk-toggleable__control:checked~label.sk-toggleable__label {
       color: var(--sklearn-color-text);
       background-color: var(--sklearn-color-unfitted-level-2);
     }
 
-    #sk-container-id-2 div.sk-label.fitted input.sk-toggleable__control:checked~label.sk-toggleable__label {
+    #sk-container-id-1 div.sk-label.fitted input.sk-toggleable__control:checked~label.sk-toggleable__label {
       background-color: var(--sklearn-color-fitted-level-2);
     }
 
     /* Estimator-specific style */
 
     /* Colorize estimator box */
-    #sk-container-id-2 div.sk-estimator input.sk-toggleable__control:checked~label.sk-toggleable__label {
+    #sk-container-id-1 div.sk-estimator input.sk-toggleable__control:checked~label.sk-toggleable__label {
       /* unfitted */
       background-color: var(--sklearn-color-unfitted-level-2);
     }
 
-    #sk-container-id-2 div.sk-estimator.fitted input.sk-toggleable__control:checked~label.sk-toggleable__label {
+    #sk-container-id-1 div.sk-estimator.fitted input.sk-toggleable__control:checked~label.sk-toggleable__label {
       /* fitted */
       background-color: var(--sklearn-color-fitted-level-2);
     }
 
-    #sk-container-id-2 div.sk-label label.sk-toggleable__label,
-    #sk-container-id-2 div.sk-label label {
+    #sk-container-id-1 div.sk-label label.sk-toggleable__label,
+    #sk-container-id-1 div.sk-label label {
       /* The background is the default theme color */
       color: var(--sklearn-color-text-on-default-background);
     }
 
     /* On hover, darken the color of the background */
-    #sk-container-id-2 div.sk-label:hover label.sk-toggleable__label {
+    #sk-container-id-1 div.sk-label:hover label.sk-toggleable__label {
       color: var(--sklearn-color-text);
       background-color: var(--sklearn-color-unfitted-level-2);
     }
 
     /* Label box, darken color on hover, fitted */
-    #sk-container-id-2 div.sk-label.fitted:hover label.sk-toggleable__label.fitted {
+    #sk-container-id-1 div.sk-label.fitted:hover label.sk-toggleable__label.fitted {
       color: var(--sklearn-color-text);
       background-color: var(--sklearn-color-fitted-level-2);
     }
 
     /* Estimator label */
 
-    #sk-container-id-2 div.sk-label label {
+    #sk-container-id-1 div.sk-label label {
       font-family: monospace;
       font-weight: bold;
       display: inline-block;
       line-height: 1.2em;
     }
 
-    #sk-container-id-2 div.sk-label-container {
+    #sk-container-id-1 div.sk-label-container {
       text-align: center;
     }
 
     /* Estimator-specific */
-    #sk-container-id-2 div.sk-estimator {
+    #sk-container-id-1 div.sk-estimator {
       font-family: monospace;
       border: 1px dotted var(--sklearn-color-border-box);
       border-radius: 0.25em;
@@ -575,18 +412,18 @@ For a scikit-learn fitted pipeline:
       background-color: var(--sklearn-color-unfitted-level-0);
     }
 
-    #sk-container-id-2 div.sk-estimator.fitted {
+    #sk-container-id-1 div.sk-estimator.fitted {
       /* fitted */
       background-color: var(--sklearn-color-fitted-level-0);
     }
 
     /* on hover */
-    #sk-container-id-2 div.sk-estimator:hover {
+    #sk-container-id-1 div.sk-estimator:hover {
       /* unfitted */
       background-color: var(--sklearn-color-unfitted-level-2);
     }
 
-    #sk-container-id-2 div.sk-estimator.fitted:hover {
+    #sk-container-id-1 div.sk-estimator.fitted:hover {
       /* fitted */
       background-color: var(--sklearn-color-fitted-level-2);
     }
@@ -673,7 +510,7 @@ For a scikit-learn fitted pipeline:
 
     /* "?"-specific style due to the `<a>` HTML tag */
 
-    #sk-container-id-2 a.estimator_doc_link {
+    #sk-container-id-1 a.estimator_doc_link {
       float: right;
       font-size: 1rem;
       line-height: 1em;
@@ -688,46 +525,471 @@ For a scikit-learn fitted pipeline:
       border: var(--sklearn-color-unfitted-level-1) 1pt solid;
     }
 
-    #sk-container-id-2 a.estimator_doc_link.fitted {
+    #sk-container-id-1 a.estimator_doc_link.fitted {
       /* fitted */
       border: var(--sklearn-color-fitted-level-1) 1pt solid;
       color: var(--sklearn-color-fitted-level-1);
     }
 
     /* On hover */
-    #sk-container-id-2 a.estimator_doc_link:hover {
+    #sk-container-id-1 a.estimator_doc_link:hover {
       /* unfitted */
       background-color: var(--sklearn-color-unfitted-level-3);
       color: var(--sklearn-color-background);
       text-decoration: none;
     }
 
-    #sk-container-id-2 a.estimator_doc_link.fitted:hover {
+    #sk-container-id-1 a.estimator_doc_link.fitted:hover {
       /* fitted */
       background-color: var(--sklearn-color-fitted-level-3);
     }
-    </style><div id="sk-container-id-2" class="sk-top-container"><div class="sk-text-repr-fallback"><pre>Pipeline(steps=[(&#x27;standard_scaler&#x27;, StandardScaler()),
-                    (&#x27;lasso&#x27;, Lasso(alpha=2))])</pre><b>In a Jupyter environment, please rerun this cell to show the HTML representation or trust the notebook. <br />On GitHub, the HTML representation is unable to render, please try loading this page with nbviewer.org.</b></div><div class="sk-container" hidden><div class="sk-item sk-dashed-wrapped"><div class="sk-label-container"><div class="sk-label fitted sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-4" type="checkbox" ><label for="sk-estimator-id-4" class="sk-toggleable__label fitted sk-toggleable__label-arrow fitted">&nbsp;&nbsp;Pipeline<a class="sk-estimator-doc-link fitted" rel="noreferrer" target="_blank" href="https://scikit-learn.org/1.5/modules/generated/sklearn.pipeline.Pipeline.html">?<span>Documentation for Pipeline</span></a><span class="sk-estimator-doc-link fitted">i<span>Fitted</span></span></label><div class="sk-toggleable__content fitted"><pre>Pipeline(steps=[(&#x27;standard_scaler&#x27;, StandardScaler()),
-                    (&#x27;lasso&#x27;, Lasso(alpha=2))])</pre></div> </div></div><div class="sk-serial"><div class="sk-item"><div class="sk-estimator fitted sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-5" type="checkbox" ><label for="sk-estimator-id-5" class="sk-toggleable__label fitted sk-toggleable__label-arrow fitted">&nbsp;StandardScaler<a class="sk-estimator-doc-link fitted" rel="noreferrer" target="_blank" href="https://scikit-learn.org/1.5/modules/generated/sklearn.preprocessing.StandardScaler.html">?<span>Documentation for StandardScaler</span></a></label><div class="sk-toggleable__content fitted"><pre>StandardScaler()</pre></div> </div></div><div class="sk-item"><div class="sk-estimator fitted sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-6" type="checkbox" ><label for="sk-estimator-id-6" class="sk-toggleable__label fitted sk-toggleable__label-arrow fitted">&nbsp;Lasso<a class="sk-estimator-doc-link fitted" rel="noreferrer" target="_blank" href="https://scikit-learn.org/1.5/modules/generated/sklearn.linear_model.Lasso.html">?<span>Documentation for Lasso</span></a></label><div class="sk-toggleable__content fitted"><pre>Lasso(alpha=2)</pre></div> </div></div></div></div></div></div>
+    </style><div id="sk-container-id-1" class="sk-top-container"><div class="sk-text-repr-fallback"><pre>GridSearchCV(estimator=Ridge(),
+                 param_grid={&#x27;alpha&#x27;: array([1.00000000e-03, 1.45634848e-03, 2.12095089e-03, 3.08884360e-03,
+           4.49843267e-03, 6.55128557e-03, 9.54095476e-03, 1.38949549e-02,
+           2.02358965e-02, 2.94705170e-02, 4.29193426e-02, 6.25055193e-02,
+           9.10298178e-02, 1.32571137e-01, 1.93069773e-01, 2.81176870e-01,
+           4.09491506e-01, 5.96362332e-01, 8.68511374e-01, 1.26485...
+           3.72759372e+01, 5.42867544e+01, 7.90604321e+01, 1.15139540e+02,
+           1.67683294e+02, 2.44205309e+02, 3.55648031e+02, 5.17947468e+02,
+           7.54312006e+02, 1.09854114e+03, 1.59985872e+03, 2.32995181e+03,
+           3.39322177e+03, 4.94171336e+03, 7.19685673e+03, 1.04811313e+04,
+           1.52641797e+04, 2.22299648e+04, 3.23745754e+04, 4.71486636e+04,
+           6.86648845e+04, 1.00000000e+05])},
+                 scoring=&#x27;neg_root_mean_squared_error&#x27;)</pre><b>In a Jupyter environment, please rerun this cell to show the HTML representation or trust the notebook. <br />On GitHub, the HTML representation is unable to render, please try loading this page with nbviewer.org.</b></div><div class="sk-container" hidden><div class="sk-item sk-dashed-wrapped"><div class="sk-label-container"><div class="sk-label fitted sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-1" type="checkbox" ><label for="sk-estimator-id-1" class="sk-toggleable__label fitted sk-toggleable__label-arrow fitted">&nbsp;&nbsp;GridSearchCV<a class="sk-estimator-doc-link fitted" rel="noreferrer" target="_blank" href="https://scikit-learn.org/1.5/modules/generated/sklearn.model_selection.GridSearchCV.html">?<span>Documentation for GridSearchCV</span></a><span class="sk-estimator-doc-link fitted">i<span>Fitted</span></span></label><div class="sk-toggleable__content fitted"><pre>GridSearchCV(estimator=Ridge(),
+                 param_grid={&#x27;alpha&#x27;: array([1.00000000e-03, 1.45634848e-03, 2.12095089e-03, 3.08884360e-03,
+           4.49843267e-03, 6.55128557e-03, 9.54095476e-03, 1.38949549e-02,
+           2.02358965e-02, 2.94705170e-02, 4.29193426e-02, 6.25055193e-02,
+           9.10298178e-02, 1.32571137e-01, 1.93069773e-01, 2.81176870e-01,
+           4.09491506e-01, 5.96362332e-01, 8.68511374e-01, 1.26485...
+           3.72759372e+01, 5.42867544e+01, 7.90604321e+01, 1.15139540e+02,
+           1.67683294e+02, 2.44205309e+02, 3.55648031e+02, 5.17947468e+02,
+           7.54312006e+02, 1.09854114e+03, 1.59985872e+03, 2.32995181e+03,
+           3.39322177e+03, 4.94171336e+03, 7.19685673e+03, 1.04811313e+04,
+           1.52641797e+04, 2.22299648e+04, 3.23745754e+04, 4.71486636e+04,
+           6.86648845e+04, 1.00000000e+05])},
+                 scoring=&#x27;neg_root_mean_squared_error&#x27;)</pre></div> </div></div><div class="sk-parallel"><div class="sk-parallel-item"><div class="sk-item"><div class="sk-label-container"><div class="sk-label fitted sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-2" type="checkbox" ><label for="sk-estimator-id-2" class="sk-toggleable__label fitted sk-toggleable__label-arrow fitted">best_estimator_: Ridge</label><div class="sk-toggleable__content fitted"><pre>Ridge(alpha=np.float64(0.029470517025518096))</pre></div> </div></div><div class="sk-serial"><div class="sk-item"><div class="sk-estimator fitted sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-3" type="checkbox" ><label for="sk-estimator-id-3" class="sk-toggleable__label fitted sk-toggleable__label-arrow fitted">&nbsp;Ridge<a class="sk-estimator-doc-link fitted" rel="noreferrer" target="_blank" href="https://scikit-learn.org/1.5/modules/generated/sklearn.linear_model.Ridge.html">?<span>Documentation for Ridge</span></a></label><div class="sk-toggleable__content fitted"><pre>Ridge(alpha=np.float64(0.029470517025518096))</pre></div> </div></div></div></div></div></div></div></div></div>
     </div>
     <br />
     <br />
 
-.. GENERATED FROM PYTHON SOURCE LINES 118-126
+.. GENERATED FROM PYTHON SOURCE LINES 84-86
 
-Back to the dashboard
-^^^^^^^^^^^^^^^^^^^^^
+Now, we store the hyperparameter's metrics in a dataframe and make a custom
+plot:
+
+.. GENERATED FROM PYTHON SOURCE LINES 88-94
+
+.. code-block:: Python
+
+    import pandas as pd
+
+    df = pd.DataFrame(gs_cv.cv_results_)
+    df.insert(len(df.columns), "rmse", -df["mean_test_score"].values)
+    df[["param_alpha", "rmse"]].head()
+
+
+
+
+
+
+.. raw:: html
+
+    <div class="output_subarea output_html rendered_html output_result">
+    <div>
+    <style scoped>
+        .dataframe tbody tr th:only-of-type {
+            vertical-align: middle;
+        }
+
+        .dataframe tbody tr th {
+            vertical-align: top;
+        }
+
+        .dataframe thead th {
+            text-align: right;
+        }
+    </style>
+    <table border="1" class="dataframe">
+      <thead>
+        <tr style="text-align: right;">
+          <th></th>
+          <th>param_alpha</th>
+          <th>rmse</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th>0</th>
+          <td>0.001000</td>
+          <td>55.618873</td>
+        </tr>
+        <tr>
+          <th>1</th>
+          <td>0.001456</td>
+          <td>55.492536</td>
+        </tr>
+        <tr>
+          <th>2</th>
+          <td>0.002121</td>
+          <td>55.358884</td>
+        </tr>
+        <tr>
+          <th>3</th>
+          <td>0.003089</td>
+          <td>55.219924</td>
+        </tr>
+        <tr>
+          <th>4</th>
+          <td>0.004498</td>
+          <td>55.076585</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+    </div>
+    <br />
+    <br />
+
+.. GENERATED FROM PYTHON SOURCE LINES 95-105
+
+.. code-block:: Python
+
+    import matplotlib.pyplot as plt
+
+    fig = plt.figure(layout="constrained")
+    plt.plot(df["param_alpha"], df["rmse"])
+    plt.xscale("log")
+    plt.xlabel("Alpha hyperparameter")
+    plt.ylabel("RMSE")
+    plt.title("Ridge regression")
+    plt.show()
+
+
+
+
+.. image-sg:: /auto_examples/images/sphx_glr_plot_01_getting_started_001.png
+   :alt: Ridge regression
+   :srcset: /auto_examples/images/sphx_glr_plot_01_getting_started_001.png
+   :class: sphx-glr-single-img
+
+
+
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 106-109
+
+|
+Finally, we store some relevant information to our skore project, so that we
+can visualize them later in the skore UI for example:
+
+.. GENERATED FROM PYTHON SOURCE LINES 111-115
+
+.. code-block:: Python
+
+    my_project.put("my_gs_cv", gs_cv)
+    my_project.put("my_df", df)
+    my_project.put("my_fig", fig)
+
+
+
+
+
+
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 116-131
+
+Cross-validation with skore
+===========================
+
+In order to assist its users when programming, skore has implemented a
+:func:`~skore.cross_validate` function that wraps scikit-learn's
+:func:`~sklearn.model_selection.cross_validate`, to provide more context and
+facilitate the analysis.
+
+For more information on the motivation behind skore's ``cross_validate``,
+see :ref:`example_cross_validate`.
+
+On the same previous data and a Ridge regressor (with default ``alpha`` value),
+let us launch skore's cross-validation, which will automatically add
+(:func:`~skore.Project.put`)
+a ``cross_validation`` item with a plotly chart in your project.
+
+.. GENERATED FROM PYTHON SOURCE LINES 133-140
+
+.. code-block:: Python
+
+    from skore import cross_validate
+
+    cv_results = cross_validate(Ridge(), X, y, cv=5, project=my_project)
+
+    fig_plotly = my_project.get_item("cross_validation").plot
+    fig_plotly
+
+
+
+
+
+.. rst-class:: sphx-glr-script-out
+
+ .. code-block:: none
+
+    Figure({
+        'data': [{'legendgroup': 'group0',
+                  'marker': {'color': '#636EFA'},
+                  'name': 'fit_time (seconds)',
+                  'showlegend': True,
+                  'type': 'bar',
+                  'visible': True,
+                  'x': array([0, 1, 2, 3, 4]),
+                  'y': array([0.00078821, 0.00061703, 0.00058818, 0.00058603, 0.00058293])},
+                 {'legendgroup': 'group0',
+                  'line': {'color': '#636EFA', 'dash': 'dash'},
+                  'mode': 'lines',
+                  'name': 'Average fit_time (seconds)',
+                  'showlegend': False,
+                  'type': 'scatter',
+                  'visible': True,
+                  'x': [-0.5, 4.5],
+                  'y': [0.000632476806640625, 0.000632476806640625]},
+                 {'legendgroup': 'group0',
+                  'line': {'color': '#636EFA', 'dash': 'dot'},
+                  'mode': 'lines',
+                  'name': 'Average + 1 std. dev. fit_time (seconds)',
+                  'showlegend': False,
+                  'type': 'scatter',
+                  'visible': True,
+                  'x': [-0.5, 4.5],
+                  'y': [0.0007206045506598982, 0.0007206045506598982]},
+                 {'legendgroup': 'group0',
+                  'line': {'color': '#636EFA', 'dash': 'dot'},
+                  'mode': 'lines',
+                  'name': 'Average - 1 std. dev. fit_time (seconds)',
+                  'showlegend': False,
+                  'type': 'scatter',
+                  'visible': True,
+                  'x': [-0.5, 4.5],
+                  'y': [0.0005443490626213519, 0.0005443490626213519]},
+                 {'legendgroup': 'group1',
+                  'marker': {'color': '#EF553B'},
+                  'name': 'score_time (seconds)',
+                  'showlegend': True,
+                  'type': 'bar',
+                  'visible': 'legendonly',
+                  'x': array([0, 1, 2, 3, 4]),
+                  'y': array([0.00140357, 0.00112844, 0.00113297, 0.00110459, 0.00110626])},
+                 {'legendgroup': 'group1',
+                  'line': {'color': '#EF553B', 'dash': 'dash'},
+                  'mode': 'lines',
+                  'name': 'Average score_time (seconds)',
+                  'showlegend': False,
+                  'type': 'scatter',
+                  'visible': 'legendonly',
+                  'x': [-0.5, 4.5],
+                  'y': [0.0011751651763916016, 0.0011751651763916016]},
+                 {'legendgroup': 'group1',
+                  'line': {'color': '#EF553B', 'dash': 'dot'},
+                  'mode': 'lines',
+                  'name': 'Average + 1 std. dev. score_time (seconds)',
+                  'showlegend': False,
+                  'type': 'scatter',
+                  'visible': 'legendonly',
+                  'x': [-0.5, 4.5],
+                  'y': [0.0013034825562446438, 0.0013034825562446438]},
+                 {'legendgroup': 'group1',
+                  'line': {'color': '#EF553B', 'dash': 'dot'},
+                  'mode': 'lines',
+                  'name': 'Average - 1 std. dev. score_time (seconds)',
+                  'showlegend': False,
+                  'type': 'scatter',
+                  'visible': 'legendonly',
+                  'x': [-0.5, 4.5],
+                  'y': [0.0010468477965385593, 0.0010468477965385593]},
+                 {'legendgroup': 'group2',
+                  'marker': {'color': '#00CC96'},
+                  'name': 'test_r2',
+                  'showlegend': True,
+                  'type': 'bar',
+                  'visible': 'legendonly',
+                  'x': array([0, 1, 2, 3, 4]),
+                  'y': array([0.23525249, 0.22565864, 0.08867683, 0.22580239, 0.20372585])},
+                 {'legendgroup': 'group2',
+                  'line': {'color': '#00CC96', 'dash': 'dash'},
+                  'mode': 'lines',
+                  'name': 'Average test_r2',
+                  'showlegend': False,
+                  'type': 'scatter',
+                  'visible': 'legendonly',
+                  'x': [-0.5, 4.5],
+                  'y': [0.19582324178784372, 0.19582324178784372]},
+                 {'legendgroup': 'group2',
+                  'line': {'color': '#00CC96', 'dash': 'dot'},
+                  'mode': 'lines',
+                  'name': 'Average + 1 std. dev. test_r2',
+                  'showlegend': False,
+                  'type': 'scatter',
+                  'visible': 'legendonly',
+                  'x': [-0.5, 4.5],
+                  'y': [0.2568280982210851, 0.2568280982210851]},
+                 {'legendgroup': 'group2',
+                  'line': {'color': '#00CC96', 'dash': 'dot'},
+                  'mode': 'lines',
+                  'name': 'Average - 1 std. dev. test_r2',
+                  'showlegend': False,
+                  'type': 'scatter',
+                  'visible': 'legendonly',
+                  'x': [-0.5, 4.5],
+                  'y': [0.13481838535460233, 0.13481838535460233]},
+                 {'legendgroup': 'group3',
+                  'marker': {'color': '#AB63FA'},
+                  'name': 'test_neg_mean_squared_error',
+                  'showlegend': True,
+                  'type': 'bar',
+                  'visible': 'legendonly',
+                  'x': array([0, 1, 2, 3, 4]),
+                  'y': array([-3059.33331767, -4880.86372794, -3623.57178214, -4847.06973839,
+                              -4949.44545505])},
+                 {'legendgroup': 'group3',
+                  'line': {'color': '#AB63FA', 'dash': 'dash'},
+                  'mode': 'lines',
+                  'name': 'Average test_neg_mean_squared_error',
+                  'showlegend': False,
+                  'type': 'scatter',
+                  'visible': 'legendonly',
+                  'x': [-0.5, 4.5],
+                  'y': [-4272.05680423733, -4272.05680423733]},
+                 {'legendgroup': 'group3',
+                  'line': {'color': '#AB63FA', 'dash': 'dot'},
+                  'mode': 'lines',
+                  'name': 'Average + 1 std. dev. test_neg_mean_squared_error',
+                  'showlegend': False,
+                  'type': 'scatter',
+                  'visible': 'legendonly',
+                  'x': [-0.5, 4.5],
+                  'y': [-3398.647935521724, -3398.647935521724]},
+                 {'legendgroup': 'group3',
+                  'line': {'color': '#AB63FA', 'dash': 'dot'},
+                  'mode': 'lines',
+                  'name': 'Average - 1 std. dev. test_neg_mean_squared_error',
+                  'showlegend': False,
+                  'type': 'scatter',
+                  'visible': 'legendonly',
+                  'x': [-0.5, 4.5],
+                  'y': [-5145.465672952936, -5145.465672952936]},
+                 {'legendgroup': 'group4',
+                  'marker': {'color': '#FFA15A'},
+                  'name': 'test_score',
+                  'showlegend': True,
+                  'type': 'bar',
+                  'visible': 'legendonly',
+                  'x': array([0, 1, 2, 3, 4]),
+                  'y': array([0.23525249, 0.22565864, 0.08867683, 0.22580239, 0.20372585])},
+                 {'legendgroup': 'group4',
+                  'line': {'color': '#FFA15A', 'dash': 'dash'},
+                  'mode': 'lines',
+                  'name': 'Average test_score',
+                  'showlegend': False,
+                  'type': 'scatter',
+                  'visible': 'legendonly',
+                  'x': [-0.5, 4.5],
+                  'y': [0.19582324178784372, 0.19582324178784372]},
+                 {'legendgroup': 'group4',
+                  'line': {'color': '#FFA15A', 'dash': 'dot'},
+                  'mode': 'lines',
+                  'name': 'Average + 1 std. dev. test_score',
+                  'showlegend': False,
+                  'type': 'scatter',
+                  'visible': 'legendonly',
+                  'x': [-0.5, 4.5],
+                  'y': [0.2568280982210851, 0.2568280982210851]},
+                 {'legendgroup': 'group4',
+                  'line': {'color': '#FFA15A', 'dash': 'dot'},
+                  'mode': 'lines',
+                  'name': 'Average - 1 std. dev. test_score',
+                  'showlegend': False,
+                  'type': 'scatter',
+                  'visible': 'legendonly',
+                  'x': [-0.5, 4.5],
+                  'y': [0.13481838535460233, 0.13481838535460233]}],
+        'layout': {'template': '...',
+                   'title': {'text': 'Cross-validation results for each split'},
+                   'xaxis': {'dtick': 1, 'tickmode': 'linear', 'title': {'text': 'Split number'}},
+                   'yaxis': {'title': {'text': 'Value'}}}
+    })
+
+
+.. raw:: html
+
+    <div class="output_subarea output_html rendered_html output_result">
+    <div>                        <script type="text/javascript">window.PlotlyConfig = {MathJaxConfig: 'local'};</script>
+            <script charset="utf-8" src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>                <div id="fc3e3873-8aa9-4abf-800a-79b8b028dc82" class="plotly-graph-div" style="height:100%; width:100%;"></div>            <script type="text/javascript">                                    window.PLOTLYENV=window.PLOTLYENV || {};                                    if (document.getElementById("fc3e3873-8aa9-4abf-800a-79b8b028dc82")) {                    Plotly.newPlot(                        "fc3e3873-8aa9-4abf-800a-79b8b028dc82",                        [{"legendgroup":"group0","marker":{"color":"#636EFA"},"name":"fit_time (seconds)","showlegend":true,"visible":true,"x":[0,1,2,3,4],"y":[0.0007882118225097656,0.0006170272827148438,0.0005881786346435547,0.0005860328674316406,0.0005829334259033203],"type":"bar"},{"legendgroup":"group0","line":{"color":"#636EFA","dash":"dash"},"mode":"lines","name":"Average fit_time (seconds)","showlegend":false,"visible":true,"x":[-0.5,4.5],"y":[0.000632476806640625,0.000632476806640625],"type":"scatter"},{"legendgroup":"group0","line":{"color":"#636EFA","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. fit_time (seconds)","showlegend":false,"visible":true,"x":[-0.5,4.5],"y":[0.0007206045506598982,0.0007206045506598982],"type":"scatter"},{"legendgroup":"group0","line":{"color":"#636EFA","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. fit_time (seconds)","showlegend":false,"visible":true,"x":[-0.5,4.5],"y":[0.0005443490626213519,0.0005443490626213519],"type":"scatter"},{"legendgroup":"group1","marker":{"color":"#EF553B"},"name":"score_time (seconds)","showlegend":true,"visible":"legendonly","x":[0,1,2,3,4],"y":[0.0014035701751708984,0.0011284351348876953,0.001132965087890625,0.001104593276977539,0.00110626220703125],"type":"bar"},{"legendgroup":"group1","line":{"color":"#EF553B","dash":"dash"},"mode":"lines","name":"Average score_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.0011751651763916016,0.0011751651763916016],"type":"scatter"},{"legendgroup":"group1","line":{"color":"#EF553B","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. score_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.0013034825562446438,0.0013034825562446438],"type":"scatter"},{"legendgroup":"group1","line":{"color":"#EF553B","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. score_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.0010468477965385593,0.0010468477965385593],"type":"scatter"},{"legendgroup":"group2","marker":{"color":"#00CC96"},"name":"test_r2","showlegend":true,"visible":"legendonly","x":[0,1,2,3,4],"y":[0.23525249224772737,0.22565864126294644,0.08867683412341831,0.2258023886409567,0.20372585266416976],"type":"bar"},{"legendgroup":"group2","line":{"color":"#00CC96","dash":"dash"},"mode":"lines","name":"Average test_r2","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.19582324178784372,0.19582324178784372],"type":"scatter"},{"legendgroup":"group2","line":{"color":"#00CC96","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. test_r2","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.2568280982210851,0.2568280982210851],"type":"scatter"},{"legendgroup":"group2","line":{"color":"#00CC96","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. test_r2","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.13481838535460233,0.13481838535460233],"type":"scatter"},{"legendgroup":"group3","marker":{"color":"#AB63FA"},"name":"test_neg_mean_squared_error","showlegend":true,"visible":"legendonly","x":[0,1,2,3,4],"y":[-3059.333317668126,-4880.863727942183,-3623.5717821383055,-4847.069738390084,-4949.44545504795],"type":"bar"},{"legendgroup":"group3","line":{"color":"#AB63FA","dash":"dash"},"mode":"lines","name":"Average test_neg_mean_squared_error","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[-4272.05680423733,-4272.05680423733],"type":"scatter"},{"legendgroup":"group3","line":{"color":"#AB63FA","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. test_neg_mean_squared_error","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[-3398.647935521724,-3398.647935521724],"type":"scatter"},{"legendgroup":"group3","line":{"color":"#AB63FA","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. test_neg_mean_squared_error","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[-5145.465672952936,-5145.465672952936],"type":"scatter"},{"legendgroup":"group4","marker":{"color":"#FFA15A"},"name":"test_score","showlegend":true,"visible":"legendonly","x":[0,1,2,3,4],"y":[0.23525249224772737,0.22565864126294644,0.08867683412341831,0.2258023886409567,0.20372585266416976],"type":"bar"},{"legendgroup":"group4","line":{"color":"#FFA15A","dash":"dash"},"mode":"lines","name":"Average test_score","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.19582324178784372,0.19582324178784372],"type":"scatter"},{"legendgroup":"group4","line":{"color":"#FFA15A","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. test_score","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.2568280982210851,0.2568280982210851],"type":"scatter"},{"legendgroup":"group4","line":{"color":"#FFA15A","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. test_score","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.13481838535460233,0.13481838535460233],"type":"scatter"}],                        {"template":{"data":{"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"heatmapgl":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmapgl"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"geo":{"bgcolor":"white","lakecolor":"white","landcolor":"#E5ECF6","showlakes":true,"showland":true,"subunitcolor":"white"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"light"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"bgcolor":"#E5ECF6","radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","gridwidth":2,"linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white"},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","gridwidth":2,"linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white"},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","gridwidth":2,"linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white"}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"ternary":{"aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"bgcolor":"#E5ECF6","caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"title":{"x":0.05},"xaxis":{"automargin":true,"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","zerolinewidth":2}}},"title":{"text":"Cross-validation results for each split"},"xaxis":{"dtick":1,"tickmode":"linear","title":{"text":"Split number"}},"yaxis":{"title":{"text":"Value"}}},                        {"responsive": true}                    )                };                            </script>        </div>
+    </div>
+    <br />
+    <br />
+
+.. GENERATED FROM PYTHON SOURCE LINES 141-148
+
+.. note::
+  Because Plotly graphs currently do not properly render in our Sphinx
+  auto-examples docs engine due to
+  `a bug in Plotly <https://github.com/plotly/plotly.py/issues/4828>`_,
+  we also display its static image below.
+  Alternatively, we recommend zooming in / out in your browser window for the
+  Plotly graphs to display properly.
+
+.. GENERATED FROM PYTHON SOURCE LINES 150-161
+
+.. code-block:: Python
+
+    import matplotlib.pyplot as plt
+    import matplotlib.image as mpimg
+
+    fig_plotly.write_image("plot_01_cross_validation.png", scale=2)
+
+    img = mpimg.imread("plot_01_cross_validation.png")
+    fig, ax = plt.subplots(layout="constrained")
+    ax.axis("off")
+    ax.imshow(img)
+    plt.show()
+
+
+
+
+.. image-sg:: /auto_examples/images/sphx_glr_plot_01_getting_started_002.png
+   :alt: plot 01 getting started
+   :srcset: /auto_examples/images/sphx_glr_plot_01_getting_started_002.png
+   :class: sphx-glr-single-img
+
+
+
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 162-171
+
+Manipulating the skore UI
+=========================
+
+The skore UI is a very efficient tool to track and visualize the items in your
+project, such as grid search or cross-validation results.
 
 #. On the top left, by default, you can observe that you are in a *View* called ``default``. You can rename this view or create another one.
 #. From the *Items* section on the bottom left, you can add stored items to this view, either by clicking on ``+`` or by doing drag-and-drop.
+#. In the skore UI on the right, you can drag-and-drop items to re-order them, remove items, etc.
 
-.. image:: https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_10_14_skore_demo.gif
-   :alt: Getting started with ``skore`` demo
+.. GENERATED FROM PYTHON SOURCE LINES 173-175
+
+.. image:: https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_10_30_skore_demo.gif
+  :alt: Getting started with ``skore`` demo
+
+.. GENERATED FROM PYTHON SOURCE LINES 177-179
+
+.. admonition:: Stay tuned for some new features!
+  Feel free to join our `Discord <https://discord.gg/scBZerAGwW>`_.
 
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 5.173 seconds)
+   **Total running time of the script:** (0 minutes 6.327 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_01_getting_started.py:
