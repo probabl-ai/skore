@@ -7,7 +7,7 @@ Getting started with skore
 
 This getting started guide illustrates how to use skore and why:
 
-#. Track and visualize your ML/DS results.
+#. Track and visualize your ML/DS results using skore's :class:`~skore.Project` and UI.
 #. Get assistance when developing your ML/DS projects.
 
    - Scikit-learn compatible :func:`~skore.cross_validate` provides insights and checks on cross-validation.
@@ -41,8 +41,8 @@ subprocess.run("python3 -m skore create my_project".split())
 #
 # This will automatically open a browser at the UI's location.
 #
-# Now that the project file exists, we can write some Python code to put some
-# useful things in it.
+# Now that the project exists, we can write some Python code (in the same
+# directory) to add (:func:`~skore.Project.put`) some useful items in it.
 # Let us load the project and add an integer to it for example:
 
 # %%
@@ -55,14 +55,13 @@ my_project.put("my_int", 3)
 # Example of machine learning usage: hyperparameter sweep
 # =======================================================
 #
-# As an illustration of skore's usage with a ML motivation, let us
-# perform a small hyperparameter sweep and store relevant information
-# in the skore project.
-
+# As an illustration of skore's usage with a machine learning motivation, let us
+# perform a hyperparameter sweep and store relevant information in the skore
+# project.
 
 # %%
-# Search for a hyperparameter ``alpha`` of Ridge regression on a the Diabetes
-# dataset:
+# We search for the ``alpha`` hyperparameter of a Ridge regression on the
+# Diabetes dataset:
 
 # %%
 import numpy as np
@@ -74,21 +73,21 @@ diabetes = load_diabetes()
 X = diabetes.data[:150]
 y = diabetes.target[:150]
 
-cv = GridSearchCV(
+gs_cv = GridSearchCV(
     Ridge(),
     param_grid={"alpha": np.logspace(-3, 5, 50)},
     scoring="neg_root_mean_squared_error",
 )
-cv.fit(X, y)
+gs_cv.fit(X, y)
 
 # %%
-# Store the hyperparameter's metrics in a dataframe and make a custom
-# chart:
+# Now, we store the hyperparameter's metrics in a dataframe and make a custom
+# plot:
 
 # %%
 import pandas as pd
 
-df = pd.DataFrame(cv.cv_results_)
+df = pd.DataFrame(gs_cv.cv_results_)
 df.insert(len(df.columns), "rmse", -df["mean_test_score"].values)
 df[["param_alpha", "rmse"]].head()
 
@@ -105,10 +104,11 @@ plt.show()
 
 # %%
 # |
-# Store relevant information into a skore project:
+# Finally, we store some relevant information to our skore project, so that we
+# can visualize them later in the skore UI for example:
 
 # %%
-my_project.put("my_cv", cv)
+my_project.put("my_gs_cv", gs_cv)
 my_project.put("my_df", df)
 my_project.put("my_fig", fig)
 
@@ -118,31 +118,39 @@ my_project.put("my_fig", fig)
 #
 # In order to assist its users when programming, skore has implemented a
 # :func:`~skore.cross_validate` function that wraps scikit-learn's
-# ``cross_validate`` function, to provide more context and facilitate the
-# analysis.
+# :func:`~sklearn.model_selection.cross_validate`, to provide more context and
+# facilitate the analysis.
 #
-# For more information on the motivation behind skore's ,
+# For more information on the motivation behind skore's ``cross_validate``,
 # see :ref:`example_cross_validate`.
+#
+# On the same previous data and a Ridge regressor (with default ``alpha`` value),
+# let us launch skore's cross-validation, which will automatically add
+# (:func:`~skore.Project.put`)
+# a ``cross_validation`` item with a plotly chart in your project.
 
 # %%
 from skore import cross_validate
 
-cv_results = cross_validate(cv, X, y, cv=5, project=my_project)
+cv_results = cross_validate(Ridge(), X, y, cv=5, project=my_project)
+
+fig_plotly = my_project.get_item("cross_validation").plot
+fig_plotly
 
 # %%
-# From the above call, a ``cross_validation`` item with a plotly chart is
-# automatically added (``put``) in your project.
-
-# %%
-# Let us export the cross-validation into a .png file in order to visualize it
-# in this Sphinx example notebook:
+# .. note::
+#   Because Plotly graphs currently do not properly render in our Sphinx
+#   auto-examples docs engine due to
+#   `a bug in Plotly <https://github.com/plotly/plotly.py/issues/4828>`_,
+#   we also display its static image below.
+#   Alternatively, we recommend zooming in / out in your browser window for the
+#   Plotly graphs to display properly.
 
 # %%
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 
-fig_plotly = my_project.get_item("cross_validation").plot
-fig_plotly.write_image("plot_01_cross_validation.png")
+fig_plotly.write_image("plot_01_cross_validation.png", scale=2)
 
 img = mpimg.imread("plot_01_cross_validation.png")
 fig, ax = plt.subplots(layout="constrained")
@@ -159,3 +167,4 @@ plt.show()
 #
 # #. On the top left, by default, you can observe that you are in a *View* called ``default``. You can rename this view or create another one.
 # #. From the *Items* section on the bottom left, you can add stored items to this view, either by clicking on ``+`` or by doing drag-and-drop.
+# #. In the skore UI on the right, you can drag-and-drop items to re-order them, remove items, etc.
