@@ -1,6 +1,4 @@
 <script lang="ts">
-import { ref, watch } from "vue";
-
 export interface TreeAccordionItemAction {
   icon: string;
   actionName: string;
@@ -15,6 +13,7 @@ export interface TreeAccordionNode {
 </script>
 
 <script setup lang="ts">
+import { provide } from "vue";
 import TreeAccordionItem from "./TreeAccordionItem.vue";
 
 const props = defineProps<{
@@ -23,13 +22,9 @@ const props = defineProps<{
 const emit = defineEmits<{
   itemAction: [action: string, itemName: string];
 }>();
-const lastItemAction = ref<string | null>(null);
-const lastItemName = ref<string | null>(null);
 
-watch([lastItemAction, lastItemName], () => {
-  if (lastItemAction.value && lastItemName.value) {
-    emit("itemAction", lastItemAction.value, lastItemName.value);
-  }
+provide("emitItemAction", (action: string, itemName: string) => {
+  emit("itemAction", action, itemName);
 });
 </script>
 
@@ -42,8 +37,6 @@ watch([lastItemAction, lastItemName], () => {
       :children="node.children"
       :is-root="true"
       :actions="node.actions"
-      v-model:last-item-action="lastItemAction"
-      v-model:last-item-name="lastItemName"
     />
   </div>
 </template>

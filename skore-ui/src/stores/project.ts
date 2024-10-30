@@ -98,7 +98,6 @@ export const useProjectStore = defineStore("project", () => {
   let _stopBackendPolling: Function | null = null;
   async function startBackendPolling() {
     _isCanceledCall = false;
-    await fetch();
     _stopBackendPolling = await poll(fetch, 1500);
   }
 
@@ -318,7 +317,7 @@ export const useProjectStore = defineStore("project", () => {
 
   /**
    * Persist the current view's layout when the items change.
-   * Useful when user reoganizes items in the current view.
+   * Useful when user reorganizes items in the current view.
    */
   watch(
     () => currentViewItems.value,

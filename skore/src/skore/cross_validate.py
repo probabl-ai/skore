@@ -188,12 +188,14 @@ def _strip_cv_results_scores(cv_results: dict, added_scorers: list[str]) -> dict
 def cross_validate(*args, project: Optional[Project] = None, **kwargs) -> dict:
     """Evaluate estimator by cross-validation and output UI-friendly object.
 
-    This function wraps scikit-learn's `cross_validate <https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate>`_
+    This function wraps scikit-learn's :func:`~sklearn.model_selection.cross_validate`
     function, to provide more context and facilitate the analysis.
     As such, the arguments are the same as scikit-learn's cross_validate function.
 
     The dict returned by this function is a strict super-set of the one returned by
-    scikit-learn's `cross_validate`.
+    scikit-learn's ``cross_validate``.
+
+    For a user guide and in-depth example, see :ref:`example_cross_validate`.
 
     Parameters
     ----------

@@ -182,3 +182,4 @@ sphinx/build/
 sphinx/auto_examples/
 sphinx/generated/
 sphinx/sg_execution_times.rst
+examples/plot_*.png

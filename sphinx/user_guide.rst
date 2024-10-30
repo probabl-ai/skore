@@ -8,4 +8,4 @@ User guide
 .. note::
 
     The user guide is currently work in progress and will be released soon, thank you for your patience!
-    For now, please look into :ref:`getting_started` and the :ref:`auto_examples` section.
+    For now, please look into the narrated :ref:`auto_examples` section.
