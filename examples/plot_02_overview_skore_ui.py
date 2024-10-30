@@ -230,8 +230,6 @@ my_altair_chart = (
 
 my_project_ui.put("my_altair_chart", my_altair_chart)
 
-my_altair_chart
-
 # %%
 # .. note::
 #     For Plotly figures, some users reported the following error when running Plotly cells:
