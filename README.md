@@ -14,7 +14,7 @@ With skore, data scientists can:
 These are only the first features: `skore` is a work in progress and aims to be an end-to-end library for data scientists.
 Stay tuned, and join [our Discord](https://discord.probabl.ai) if you want to give us feedback!
 
-![GIF: short demo of skore](https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_10_14_skore_demo.gif)
+![GIF: short demo of skore](https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_10_30_skore_demo.gif)
 
 ## ⚙️ Installation
 
@@ -28,6 +28,8 @@ pip install -U skore
 **Warning:** For Windows users, the encoding must be set to [UTF-8](https://docs.python.org/3/using/windows.html#utf-8-mode): see [PYTHONUTF8](https://docs.python.org/3/using/cmdline.html#envvar-PYTHONUTF8).
 
 ## 🚀 Quick start
+
+For more information on how and why to use skore, see our [documentation](https://probabl-ai.github.io/skore/latest/auto_examples/index.html).
 
 1. From your shell, initialize a skore project, here named `my_project`:
 ```bash
@@ -50,52 +52,10 @@ This will automatically open a browser at the UI's location:
 1. On the top left, by default, you can observe that you are in a _View_ called `default`. You can rename this view or create another one.
 2. From the _Items_ section on the bottom left, you can add stored items to this view, either by clicking on `+` or by doing drag-and-drop.
 
-## 👨‍🏫 More examples
-
-Note that after launching the dashboard, you can keep modifying the current items or store new ones from your python code, and the dashboard will automatically be refreshed.
-
-Storing a pandas dataframe:
-```python
-import numpy as np
-import pandas as pd
-
-my_df = pd.DataFrame(np.random.randn(3, 3))
-project.put("my_df", my_df)
-```
-
-Storing a matplotlib figure:
-```python
-import matplotlib.pyplot as plt
-
-x = [0, 1, 2, 3, 4, 5]
-fig, ax = plt.subplots(figsize=(5, 3), layout="constrained")
-ax.plot(x)
-project.put("my_figure", fig)
-```
-
-Storing a scikit-learn fitted pipeline:
-```python
-from sklearn.datasets import load_diabetes
-from sklearn.linear_model import Lasso
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
-
-diabetes = load_diabetes()
-X = diabetes.data[:150]
-y = diabetes.target[:150]
-my_pipeline = Pipeline(
-    [("standard_scaler", StandardScaler()), ("lasso", Lasso(alpha=2))]
-)
-my_pipeline.fit(X, y)
-project.put("my_fitted_pipeline", my_pipeline)
-```
-
-For more examples, see our [documentation](https://probabl-ai.github.io/skore/latest/auto_examples/index.html).
-
 ## 🔨 Contributing
 
 Thank you for your interest!
-See [CONTRIBUTING.md](https://github.com/probabl-ai/skore/blob/main/CONTRIBUTING.md).
+See [CONTRIBUTING.rst](https://github.com/probabl-ai/skore/blob/main/CONTRIBUTING.rst).
 
 ## 💬 Where to ask questions
 

@@ -3,4 +3,5 @@
 Examples
 ========
 
-Below is a gallery of examples on how to use skore.
+Below is a gallery of narrated notebook examples on how and why to use skore.
+They also serve as our user guide.
