@@ -1,17 +1,13 @@
 """
-.. _example_basic_usage:
+.. _example_overview_skore_ui:
 
-===========
-Basic usage
-===========
+========================
+Overview of the skore UI
+========================
 
-This example complements the :ref:`example_getting_started` example and shows
-some more functionalities.
+This example provides an overview of the functionalities and the different types
+of items that you can store in a skore :class:`~skore.Project`.
 """
-
-# %%
-# Project and UI
-# --------------
 
 # %%
 import altair as alt
@@ -31,33 +27,33 @@ from skore import load
 from skore.item import MediaItem
 
 # %%
-# Initialize a Project and launch the UI
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# Creating and loading a skore project
+# ====================================
 
 # %%
 import subprocess
 
 # remove the skore project if it already exists
-subprocess.run("rm -rf my_project_bu.skore".split())
+subprocess.run("rm -rf my_project_ui.skore".split())
 
 # create the skore project
-subprocess.run("python3 -m skore create my_project_bu".split())
+subprocess.run("python3 -m skore create my_project_ui".split())
 
 
 # %%
 from skore import load
 
-my_project_bu = load("my_project_bu.skore")
+my_project_ui = load("my_project_ui.skore")
 
 
 # %%
 # Storing an integer
-# ^^^^^^^^^^^^^^^^^^
+# ==================
 #
 # Now, let us store our first object, for example an integer:
 
 # %%
-my_project_bu.put("my_int", 3)
+my_project_ui.put("my_int", 3)
 
 # %%
 # Here, the name of the object is ``my_int`` and the integer value is 3.
@@ -65,53 +61,53 @@ my_project_bu.put("my_int", 3)
 # You can read it from the project:
 
 # %%
-my_project_bu.get("my_int")
+my_project_ui.get("my_int")
 
 # %%
 # Careful; like in a traditional Python dictionary, the ``put`` method will *overwrite* past data if you use a key which already exists!
 
 # %%
-my_project_bu.put("my_int", 30_000)
+my_project_ui.put("my_int", 30_000)
 
 # %%
 # Let us check the updated value:
 
 # %%
-my_project_bu.get("my_int")
+my_project_ui.get("my_int")
 
 # %%
 # By using the ``delete_item`` method, you can also delete an object so that your skore UI does not become cluttered:
 
 # %%
-my_project_bu.put("my_int_2", 10)
+my_project_ui.put("my_int_2", 10)
 
 # %%
-my_project_bu.delete_item("my_int_2")
+my_project_ui.delete_item("my_int_2")
 
 # %%
 # You can display all the keys in your project:
 
 # %%
-my_project_bu.list_item_keys()
+my_project_ui.list_item_keys()
 
 # %%
 # Storing a string
-# ^^^^^^^^^^^^^^^^
+# ================
 
 # %%
 # We just stored a integer, now let us store some text using strings!
 
 # %%
-my_project_bu.put("my_string", "Hello world!")
+my_project_ui.put("my_string", "Hello world!")
 
 # %%
-my_project_bu.get("my_string")
+my_project_ui.get("my_string")
 
 # %%
-# ``my_project_bu.get`` infers the type of the inserted object by default. For example, strings are assumed to be in Markdown format. Hence, you can customize the display of your text:
+# ``my_project_ui.get`` infers the type of the inserted object by default. For example, strings are assumed to be in Markdown format. Hence, you can customize the display of your text:
 
 # %%
-my_project_bu.put(
+my_project_ui.put(
     "my_string_2",
     (
         """Hello world!, **bold**, *italic*, `code`
@@ -129,7 +125,7 @@ def my_func(x):
 
 # %%
 # Note: we use ``put_item`` instead of ``put``:
-my_project_bu.put_item(
+my_project_ui.put_item(
     "my_string_3",
     MediaItem.factory(
         "<p><h1>Title</h1> <b>bold</b>, <i>italic</i>, etc.</p>", media_type="text/html"
@@ -140,7 +136,7 @@ my_project_bu.put_item(
 # Note that the media type is only used for the UI, and not in this notebook at hand:
 
 # %%
-my_project_bu.get("my_string_3")
+my_project_ui.get("my_string_3")
 
 # %%
 # You can also conveniently use a Python f-string:
@@ -148,20 +144,21 @@ my_project_bu.get("my_string_3")
 # %%
 x = 2
 y = [1, 2, 3, 4]
-my_project_bu.put(
+my_project_ui.put(
     "my_string_4", f"The value of `x` is {x} and the value of `y` is {y}."
 )
 
 # %%
 # Storing many kinds of data
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^
+# ==========================
 
 # %%
 # Python list:
 
 # %%
 my_list = [1, 2, 3, 4]
-my_project_bu.put("my_list", my_list)
+my_project_ui.put("my_list", my_list)
+my_list
 
 # %%
 # Python dictionary:
@@ -171,25 +168,28 @@ my_dict = {
     "company": "probabl",
     "year": 2023,
 }
-my_project_bu.put("my_dict", my_dict)
+my_project_ui.put("my_dict", my_dict)
+my_dict
 
 # %%
 # Numpy array:
 
 # %%
 my_arr = np.random.randn(3, 3)
-my_project_bu.put("my_arr", my_arr)
+my_project_ui.put("my_arr", my_arr)
+my_arr
 
 # %%
 # Pandas data frame:
 
 # %%
 my_df = pd.DataFrame(np.random.randn(3, 3))
-my_project_bu.put("my_df", my_df)
+my_project_ui.put("my_df", my_df)
+my_df.head()
 
 # %%
 # Data visualization
-# ^^^^^^^^^^^^^^^^^^
+# ==================
 #
 # Note that, in the dashboard, the interactivity of plots is supported, for example for Altair and Plotly.
 
@@ -207,8 +207,9 @@ ax.set_xlabel("x label")
 ax.set_ylabel("y label")
 ax.set_title("Simple Plot")
 ax.legend()
+plt.show()
 
-my_project_bu.put("my_figure", fig)
+my_project_ui.put("my_figure", fig)
 
 # %%
 # Altair chart:
@@ -227,7 +228,7 @@ my_altair_chart = (
     .properties(title="My title")
 )
 
-my_project_bu.put("my_altair_chart", my_altair_chart)
+my_project_ui.put("my_altair_chart", my_altair_chart)
 
 # %%
 # .. note::
@@ -254,7 +255,7 @@ fig = px.scatter(
     size=df.petal_length
 )
 
-my_project_bu.put("my_plotly_fig", fig)
+my_project_ui.put("my_plotly_fig", fig)
 
 # %%
 # Animated Plotly figure:
@@ -276,7 +277,7 @@ my_anim_plotly_fig = px.scatter(
     range_y=[25, 90],
 )
 
-my_project_bu.put("my_anim_plotly_fig", my_anim_plotly_fig)
+my_project_ui.put("my_anim_plotly_fig", my_anim_plotly_fig)
 
 # %%
 # PIL image:
@@ -286,11 +287,11 @@ my_pil_image = PIL.Image.new("RGB", (100, 100), color="red")
 with io.BytesIO() as output:
     my_pil_image.save(output, format="png")
 
-my_project_bu.put("my_pil_image", my_pil_image)
+my_project_ui.put("my_pil_image", my_pil_image)
 
 # %%
 # Scikit-learn models and pipelines
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# =================================
 #
 # As skore is developed by `Probabl <https://probabl.ai>`_, the spin-off of scikit-learn, skore treats scikit-learn models and pipelines as first-class citizens.
 #
@@ -298,7 +299,8 @@ my_project_bu.put("my_pil_image", my_pil_image)
 
 # %%
 my_model = Lasso(alpha=2)
-my_project_bu.put("my_model", my_model)
+my_project_ui.put("my_model", my_model)
+my_model
 
 # %%
 # You can also store scikit-learn pipelines:
@@ -307,7 +309,8 @@ my_project_bu.put("my_model", my_model)
 my_pipeline = Pipeline(
     [("standard_scaler", StandardScaler()), ("lasso", Lasso(alpha=2))]
 )
-my_project_bu.put("my_pipeline", my_pipeline)
+my_project_ui.put("my_pipeline", my_pipeline)
+my_pipeline
 
 # %%
 # Moreover, you can store fitted scikit-learn pipelines:
@@ -318,7 +321,5 @@ X = diabetes.data[:150]
 y = diabetes.target[:150]
 my_pipeline.fit(X, y)
 
-my_project_bu.put("my_fitted_pipeline", my_pipeline)
-
-# %%
-# *Stay tuned for some new features!*
+my_project_ui.put("my_fitted_pipeline", my_pipeline)
+my_pipeline

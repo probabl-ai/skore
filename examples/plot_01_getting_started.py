@@ -1,125 +1,178 @@
 """
 .. _example_getting_started:
 
-===============
-Getting started
-===============
+==========================
+Getting started with skore
+==========================
 
-This example runs the :ref:`getting_started` guide and adds examples a more
-types that can be stored.
+This getting started guide illustrates how to use skore and why:
 
-``skore``'s Project and UI
---------------------------
+#. Track and visualize your ML/DS results using skore's :class:`~skore.Project` and UI.
+#. Get assistance when developing your ML/DS projects.
 
-This section provides a quick start to skore's Project and UI, an open-source package that aims to enable data scientists to:
+   - Scikit-learn compatible :func:`~skore.cross_validate` provides insights and checks on cross-validation.
 
-#. Store objects of different types from their Python code: python lists, scikit-learn fitted pipelines, plotly figures, and more.
-#. Track and visualize these stored objects on a user-friendly dashboard.
 
-Initialize a Project and launch the UI
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-From your shell, initialize a skore project, here named ``my_project_gs``:
+Creating a skore project, loading it, and launching the UI
+==========================================================
 """
+
+# %%
+# From your shell, initialize a skore project, here named ``my_project``:
 
 # %%
 import subprocess
 
 # remove the skore project if it already exists
-subprocess.run("rm -rf my_project_gs.skore".split())
+subprocess.run("rm -rf my_project.skore".split())
 
 # create the skore project
-subprocess.run("python3 -m skore create my_project_gs".split())
+subprocess.run("python3 -m skore create my_project".split())
 
 # %%
-# This will create a skore project directory named ``my_project_gs.skore`` in your
+# This will create a skore project directory named ``my_project.skore`` in your
 # current directory.
 #
 # From your shell (in the same directory), start the UI locally:
 #
 # .. code-block:: bash
 #
-#     python -m skore launch "my_project_gs"
+#     python -m skore launch "my_project"
 #
 # This will automatically open a browser at the UI's location.
 #
-# Now that the project file exists, from your Python code (in the same
-# directory), load the project so that you can read from and write to it:
+# Now that the project exists, we can write some Python code (in the same
+# directory) to add (:func:`~skore.Project.put`) some useful items in it.
+# Let us load the project and add an integer to it for example:
 
 # %%
 from skore import load
 
-my_project_gs = load("my_project_gs.skore")
+my_project = load("my_project.skore")
+my_project.put("my_int", 3)
 
 # %%
-# Storing some items
-# ^^^^^^^^^^^^^^^^^^
+# Example of machine learning usage: hyperparameter sweep
+# =======================================================
 #
-# Storing an integer:
+# As an illustration of skore's usage with a machine learning motivation, let us
+# perform a hyperparameter sweep and store relevant information in the skore
+# project.
 
 # %%
-my_project_gs.put("my_int", 3)
-
-# %%
-# Here, the name of the stored item is ``my_int`` and the integer value is 3.
-
-# %%
-my_project_gs.get("my_int")
-
-# %%
-# For a pandas data frame:
+# We search for the ``alpha`` hyperparameter of a Ridge regression on the
+# Diabetes dataset:
 
 # %%
 import numpy as np
-import pandas as pd
-
-my_df = pd.DataFrame(np.random.randn(3, 3))
-
-my_project_gs.put("my_df", my_df)
-
-# %%
-my_project_gs.get("my_df")
-
-# %%
-# For a matplotlib figure:
-
-# %%
-import matplotlib.pyplot as plt
-
-x = [0, 1, 2, 3, 4, 5]
-fig, ax = plt.subplots(figsize=(5, 3), layout="constrained")
-_ = ax.plot(x)
-
-my_project_gs.put("my_figure", fig)
-
-# %%
-# For a scikit-learn fitted pipeline:
-
-# %%
 from sklearn.datasets import load_diabetes
-from sklearn.linear_model import Lasso
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import GridSearchCV
+from sklearn.linear_model import Ridge
 
 diabetes = load_diabetes()
 X = diabetes.data[:150]
 y = diabetes.target[:150]
-my_pipeline = Pipeline(
-    [("standard_scaler", StandardScaler()), ("lasso", Lasso(alpha=2))]
+
+gs_cv = GridSearchCV(
+    Ridge(),
+    param_grid={"alpha": np.logspace(-3, 5, 50)},
+    scoring="neg_root_mean_squared_error",
 )
-my_pipeline.fit(X, y)
-
-my_project_gs.put("my_fitted_pipeline", my_pipeline)
+gs_cv.fit(X, y)
 
 # %%
-my_project_gs.get("my_fitted_pipeline")
+# Now, we store the hyperparameter's metrics in a dataframe and make a custom
+# plot:
 
 # %%
-# Back to the dashboard
-# ^^^^^^^^^^^^^^^^^^^^^
+import pandas as pd
+
+df = pd.DataFrame(gs_cv.cv_results_)
+df.insert(len(df.columns), "rmse", -df["mean_test_score"].values)
+df[["param_alpha", "rmse"]].head()
+
+# %%
+import matplotlib.pyplot as plt
+
+fig = plt.figure(layout="constrained")
+plt.plot(df["param_alpha"], df["rmse"])
+plt.xscale("log")
+plt.xlabel("Alpha hyperparameter")
+plt.ylabel("RMSE")
+plt.title("Ridge regression")
+plt.show()
+
+# %%
+# |
+# Finally, we store some relevant information to our skore project, so that we
+# can visualize them later in the skore UI for example:
+
+# %%
+my_project.put("my_gs_cv", gs_cv)
+my_project.put("my_df", df)
+my_project.put("my_fig", fig)
+
+# %%
+# Cross-validation with skore
+# ===========================
+#
+# In order to assist its users when programming, skore has implemented a
+# :func:`~skore.cross_validate` function that wraps scikit-learn's
+# :func:`~sklearn.model_selection.cross_validate`, to provide more context and
+# facilitate the analysis.
+#
+# For more information on the motivation behind skore's ``cross_validate``,
+# see :ref:`example_cross_validate`.
+#
+# On the same previous data and a Ridge regressor (with default ``alpha`` value),
+# let us launch skore's cross-validation, which will automatically add
+# (:func:`~skore.Project.put`)
+# a ``cross_validation`` item with a plotly chart in your project.
+
+# %%
+from skore import cross_validate
+
+cv_results = cross_validate(Ridge(), X, y, cv=5, project=my_project)
+
+fig_plotly = my_project.get_item("cross_validation").plot
+fig_plotly
+
+# %%
+# .. note::
+#   Because Plotly graphs currently do not properly render in our Sphinx
+#   auto-examples docs engine due to
+#   `a bug in Plotly <https://github.com/plotly/plotly.py/issues/4828>`_,
+#   we also display its static image below.
+#   Alternatively, we recommend zooming in / out in your browser window for the
+#   Plotly graphs to display properly.
+
+# %%
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
+
+fig_plotly.write_image("plot_01_cross_validation.png", scale=2)
+
+img = mpimg.imread("plot_01_cross_validation.png")
+fig, ax = plt.subplots(layout="constrained")
+ax.axis("off")
+ax.imshow(img)
+plt.show()
+
+# %%
+# Manipulating the skore UI
+# =========================
+#
+# The skore UI is a very efficient tool to track and visualize the items in your
+# project, such as grid search or cross-validation results.
 #
 # #. On the top left, by default, you can observe that you are in a *View* called ``default``. You can rename this view or create another one.
 # #. From the *Items* section on the bottom left, you can add stored items to this view, either by clicking on ``+`` or by doing drag-and-drop.
-#
-# .. image:: https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_10_14_skore_demo.gif
-#    :alt: Getting started with ``skore`` demo
+# #. In the skore UI on the right, you can drag-and-drop items to re-order them, remove items, etc.
+
+# %%
+# .. image:: https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_10_30_skore_demo.gif
+#   :alt: Getting started with ``skore`` demo
+
+# %%
+# .. admonition:: Stay tuned for some new features!
+#   Feel free to join our `Discord <https://discord.gg/scBZerAGwW>`_.
