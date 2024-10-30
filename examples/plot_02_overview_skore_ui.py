@@ -47,8 +47,8 @@ my_project_ui = load("my_project_ui.skore")
 
 
 # %%
-# Storing an integer
-# ==================
+# Storing integers
+# ================
 #
 # Now, let us store our first object using :func:`~skore.Project.put`, for example an integer:
 
@@ -91,8 +91,8 @@ my_project_ui.delete_item("my_int_2")
 my_project_ui.list_item_keys()
 
 # %%
-# Storing a string
-# ================
+# Storing strings and texts
+# =========================
 
 # %%
 # We just stored a integer, now let us store some text using strings!
@@ -192,8 +192,8 @@ my_project_ui.put("my_df", my_df)
 my_df.head()
 
 # %%
-# Storing some data visualizations
-# ================================
+# Storing data visualizations
+# ===========================
 #
 # Note that, in the dashboard, the interactivity of plots is supported, for example for Altair and Plotly.
 
@@ -293,8 +293,8 @@ with io.BytesIO() as output:
 my_project_ui.put("my_pil_image", my_pil_image)
 
 # %%
-# Storing some scikit-learn models and pipelines
-# =============================================
+# Storing scikit-learn models and pipelines
+# =========================================
 #
 # As skore is developed by `Probabl <https://probabl.ai>`_, the spin-off of scikit-learn, skore treats scikit-learn models and pipelines as first-class citizens.
 #

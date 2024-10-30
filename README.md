@@ -29,7 +29,7 @@ pip install -U skore
 
 ## 🚀 Quick start
 
-For more information on how and why to use skore, see our [documentation](https://probabl-ai.github.io/skore/latest/auto_examples/index.html).
+(For more information on how and why to use skore, see our [documentation](https://probabl-ai.github.io/skore/latest/auto_examples/index.html).)
 
 1. From your shell, initialize a skore project, here named `my_project`:
 ```bash
