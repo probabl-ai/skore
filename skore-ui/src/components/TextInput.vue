@@ -45,16 +45,14 @@ onMounted(() => {
 .text-input {
   display: inline-flex;
   align-items: center;
-  padding: var(--spacing-padding-small);
-  border: 1px solid var(--border-color-normal);
-  border-radius: var(--border-radius);
-  background-color: var(--background-color-normal);
+  padding: var(--spacing-8);
+  border: var(--stroke-width-md) solid var(--color-stroke-background-primary);
+  border-radius: var(--radius-xs);
   box-shadow: 0 1px 2px var(--shadow-color);
-  color: var(--text-color-normal);
-  transition: all var(--transition-duration) var(--transition-easing);
+  transition: all var(--animation-duration) var(--animation-easing);
 
   .icon {
-    margin: 0 var(--spacing-gap-normal);
+    margin: 0 var(--spacing-10);
   }
 
   input {
@@ -63,8 +61,6 @@ onMounted(() => {
     border: none;
     background-color: transparent;
     color: inherit;
-    font-size: var(--text-size-normal);
-    font-weight: var(--text-weight-normal);
 
     &:focus {
       outline: none;
@@ -72,7 +68,7 @@ onMounted(() => {
   }
 
   &:has(input:focus) {
-    border-color: var(--color-primary);
+    border-color: var(--color-stroke-background-primary);
     box-shadow: 0 1px 2px rgb(from var(--color-primary) r g b / 20%);
   }
 }

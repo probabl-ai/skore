@@ -107,10 +107,10 @@ onBeforeUnmount(() => {
     overflow: visible;
     width: max-content;
     flex-direction: column;
-    border: solid 1px var(--border-color-normal);
-    border-radius: var(--border-radius);
-    background-color: var(--background-color-normal);
-    box-shadow: 4px 10px 20px var(--shadow-color);
+    border: solid var(--stroke-width-md) var(--color-stroke-background-primary);
+    border-radius: var(--radius-xs);
+    background-color: var(--color-background-primary);
+    box-shadow: 4px 10px 20px var(--color-shadow);
   }
 }
 </style>

@@ -49,11 +49,11 @@ const { floatingStyles } = useFloating(reference, floating, {
     position: absolute;
     z-index: 9999;
     width: max-content;
-    padding: var(--spacing-padding-small);
-    border: solid var(--border-width-small) var(--border-color-normal);
-    border-radius: var(--border-radius);
-    background-color: var(--background-color-normal);
-    box-shadow: 0 4px 18.2px -2px var(--toast-shadow-elevation);
+    padding: var(--spacing-6);
+    border: solid var(--stroke-width-md) var(--color-stroke-background-primary);
+    border-radius: var(--radius-xs);
+    background-color: var(--color-background-primary);
+    box-shadow: 0 4px 18.2px -2px var(--color-shadow);
   }
 }
 </style>

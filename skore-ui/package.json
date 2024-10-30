@@ -59,7 +59,7 @@
     "postcss-nesting": "^13.0.0",
     "postcss-sorting": "^8.0.2",
     "prettier": "^3.3.3",
-    "stylelint": "^16.9.0",
+    "stylelint": "^16.10.0",
     "stylelint-config-idiomatic-order": "^10.0.0",
     "stylelint-config-recommended-vue": "^1.5.0",
     "stylelint-config-standard": "^36.0.1",

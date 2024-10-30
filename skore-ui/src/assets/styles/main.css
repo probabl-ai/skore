@@ -8,8 +8,7 @@
 @import url("highlight.js/styles/atom-one-light.css") screen and (prefers-color-scheme: light);
 
 body {
-  background-color: var(--background-color-normal);
-  color: var(--text-color-normal);
+  background-color: var(--color-background-primary);
 }
 
 .simplebar-scrollbar {
@@ -18,6 +17,6 @@ body {
   }
 
   &::before {
-    background-color: var(--color-primary);
+    background-color: var(--color-text-tertiary);
   }
 }

@@ -44,30 +44,24 @@ const emit = defineEmits<{
   position: relative;
   overflow: auto;
   max-width: 100%;
-  background-color: var(--background-color-normal);
+  background-color: var(--color-background-primary);
 
   & .header {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    color: var(--text-color-highlight);
-    font-size: var(--text-size-normal);
-    font-weight: var(--text-weight-highlight);
 
     & .titles {
       position: relative;
-      padding-left: calc(var(--spacing-padding-small) + 4px);
+      padding-left: calc(var(--spacing-8) + 4px);
 
       & .title {
-        color: var(--text-color-highlight);
-        font-size: var(--text-size-highlight);
-        font-weight: var(--text-weight-highlight);
+        font-size: var(--font-size-sm);
       }
 
       & .subtitle {
-        color: var(--text-color-normal);
-        font-size: var(--text-size-normal);
-        font-weight: var(--text-weight-normal);
+        color: var(--color-text-secondary);
+        font-size: var(--font-size-xs);
       }
 
       &::before {
@@ -77,22 +71,22 @@ const emit = defineEmits<{
         display: block;
         width: 4px;
         height: 100%;
-        border-radius: var(--border-radius);
-        background-color: var(--color-primary);
+        border-radius: var(--radius-xs);
+        background-color: var(--color-background-branding);
         content: "";
       }
     }
 
     & .actions {
       opacity: 0;
-      transition: opacity var(--transition-duration) var(--transition-easing);
+      transition: opacity var(--animation-duration) var(--animation-easing);
     }
   }
 
   & hr {
     border: none;
-    border-top: solid 1px var(--border-color-normal);
-    margin: var(--spacing-padding-large) 0;
+    border-top: solid var(--stroke-width-md) var(--color-stroke-background-primary);
+    margin: var(--spacing-16) 0;
   }
 
   &:hover {
