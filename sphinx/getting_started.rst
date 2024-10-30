@@ -5,6 +5,9 @@ Getting started
 
 .. currentmodule:: skore
 
+.. tip::
+    See our :ref:`example_getting_started` example!
+
 From your shell, initialize a skore project, here named ``my_project``:
 
 .. code-block:: bash
@@ -35,7 +38,5 @@ This will automatically open a browser at the UI's location:
 #. On the top left, by default, you can observe that you are in a *View* called ``default``. You can rename this view or create another one.
 #. From the *Items* section on the bottom left, you can add stored items to this view, either by clicking on ``+`` or by doing drag-and-drop.
 
-For more features, please look into :ref:`auto_examples`.
-
-.. image:: https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_10_14_skore_demo.gif
+.. image:: https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_10_30_skore_demo.gif
    :alt: Getting started with ``skore`` demo

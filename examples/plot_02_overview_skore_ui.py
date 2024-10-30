@@ -1,17 +1,13 @@
 """
-.. _example_basic_usage:
+.. _example_overview_skore_ui:
 
-====================================================
-Overview of the main functionalities of the skore UI
-====================================================
+========================
+Overview of the skore UI
+========================
 
-This example complements the :ref:`example_getting_started` example and shows
-some more functionalities.
+This example provides an overview of the functionalities and the different types
+of items that you can store in a skore :class:`~skore.Project`.
 """
-
-# %%
-# Project and UI
-# --------------
 
 # %%
 import altair as alt
@@ -31,8 +27,8 @@ from skore import load
 from skore.item import MediaItem
 
 # %%
-# Initialize a Project and launch the UI
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# Creating and loading a skore project
+# ====================================
 
 # %%
 import subprocess
@@ -52,7 +48,7 @@ my_project_ui = load("my_project_ui.skore")
 
 # %%
 # Storing an integer
-# ^^^^^^^^^^^^^^^^^^
+# ==================
 #
 # Now, let us store our first object, for example an integer:
 
@@ -96,7 +92,7 @@ my_project_ui.list_item_keys()
 
 # %%
 # Storing a string
-# ^^^^^^^^^^^^^^^^
+# ================
 
 # %%
 # We just stored a integer, now let us store some text using strings!
@@ -154,7 +150,7 @@ my_project_ui.put(
 
 # %%
 # Storing many kinds of data
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^
+# ==========================
 
 # %%
 # Python list:
@@ -162,6 +158,7 @@ my_project_ui.put(
 # %%
 my_list = [1, 2, 3, 4]
 my_project_ui.put("my_list", my_list)
+my_list
 
 # %%
 # Python dictionary:
@@ -172,6 +169,7 @@ my_dict = {
     "year": 2023,
 }
 my_project_ui.put("my_dict", my_dict)
+my_dict
 
 # %%
 # Numpy array:
@@ -179,6 +177,7 @@ my_project_ui.put("my_dict", my_dict)
 # %%
 my_arr = np.random.randn(3, 3)
 my_project_ui.put("my_arr", my_arr)
+my_arr
 
 # %%
 # Pandas data frame:
@@ -186,10 +185,11 @@ my_project_ui.put("my_arr", my_arr)
 # %%
 my_df = pd.DataFrame(np.random.randn(3, 3))
 my_project_ui.put("my_df", my_df)
+my_df.head()
 
 # %%
 # Data visualization
-# ^^^^^^^^^^^^^^^^^^
+# ==================
 #
 # Note that, in the dashboard, the interactivity of plots is supported, for example for Altair and Plotly.
 
@@ -207,6 +207,7 @@ ax.set_xlabel("x label")
 ax.set_ylabel("y label")
 ax.set_title("Simple Plot")
 ax.legend()
+plt.show()
 
 my_project_ui.put("my_figure", fig)
 
@@ -228,6 +229,8 @@ my_altair_chart = (
 )
 
 my_project_ui.put("my_altair_chart", my_altair_chart)
+
+my_altair_chart
 
 # %%
 # .. note::
@@ -290,7 +293,7 @@ my_project_ui.put("my_pil_image", my_pil_image)
 
 # %%
 # Scikit-learn models and pipelines
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# =================================
 #
 # As skore is developed by `Probabl <https://probabl.ai>`_, the spin-off of scikit-learn, skore treats scikit-learn models and pipelines as first-class citizens.
 #
@@ -299,6 +302,7 @@ my_project_ui.put("my_pil_image", my_pil_image)
 # %%
 my_model = Lasso(alpha=2)
 my_project_ui.put("my_model", my_model)
+my_model
 
 # %%
 # You can also store scikit-learn pipelines:
@@ -308,6 +312,7 @@ my_pipeline = Pipeline(
     [("standard_scaler", StandardScaler()), ("lasso", Lasso(alpha=2))]
 )
 my_project_ui.put("my_pipeline", my_pipeline)
+my_pipeline
 
 # %%
 # Moreover, you can store fitted scikit-learn pipelines:
@@ -319,6 +324,4 @@ y = diabetes.target[:150]
 my_pipeline.fit(X, y)
 
 my_project_ui.put("my_fitted_pipeline", my_pipeline)
-
-# %%
-# *Stay tuned for some new features!*
+my_pipeline

@@ -144,9 +144,9 @@ fig_plotly_clf
 #   Plotly graphs to display properly.
 
 # %%
-fig_plotly_clf.write_image("plot_04_cross_validate_clf.png", scale=2)
+fig_plotly_clf.write_image("plot_03_cross_validate_clf.png", scale=2)
 
-img = mpimg.imread("plot_04_cross_validate_clf.png")
+img = mpimg.imread("plot_03_cross_validate_clf.png")
 fig, ax = plt.subplots(layout="constrained")
 ax.axis("off")
 ax.imshow(img)

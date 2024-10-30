@@ -1,5 +1,5 @@
 """
-.. _example_basic_ml_usage:
+.. _example_getting_started:
 
 ==========================
 Getting started with skore
@@ -13,8 +13,8 @@ This getting started guide illustrates how to use skore and why:
    - Scikit-learn compatible :func:`~skore.cross_validate` provides insights and checks on cross-validation.
 
 
-Initialize a skore project and launch the UI
-============================================
+Creating a skore project, loading it, and launching the UI
+==========================================================
 """
 
 # %%
@@ -168,3 +168,11 @@ plt.show()
 # #. On the top left, by default, you can observe that you are in a *View* called ``default``. You can rename this view or create another one.
 # #. From the *Items* section on the bottom left, you can add stored items to this view, either by clicking on ``+`` or by doing drag-and-drop.
 # #. In the skore UI on the right, you can drag-and-drop items to re-order them, remove items, etc.
+
+# %%
+# .. image:: https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_10_30_skore_demo.gif
+#   :alt: Getting started with ``skore`` demo
+
+# %%
+# .. admonition:: Stay tuned for some new features!
+#   Feel free to join our `Discord <https://discord.gg/scBZerAGwW>`_.
