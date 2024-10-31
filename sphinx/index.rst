@@ -16,8 +16,8 @@ an end-to-end library for data scientists.
 Stay tuned!
 Feedbacks are welcome: please feel free to join our `Discord <http://discord.probabl.ai>`_ or `create an issue <https://github.com/probabl-ai/skore/issues>`_.
 
-.. tip::
-   **Where to start?**
+.. admonition:: Where to start?
+
    See our :ref:`example_getting_started` example!
 
 We are a product team working at `Probabl <https://probabl.ai>`_ and our motto is *Own Your Data Science*.
