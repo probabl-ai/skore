@@ -1,6 +1,7 @@
 """The definition of API routes to list project items and get them."""
 
 import base64
+from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any
 
@@ -33,55 +34,52 @@ class SerializedItem:
 class SerializedProject:
     """Serialized project, to be sent to the skore-ui."""
 
-    items: dict[str, SerializedItem]
+    items: dict[str, list[SerializedItem]]
     views: dict[str, Layout]
 
 
 def __serialize_project(project: Project) -> SerializedProject:
-    views = {}
-    for key in project.list_view_keys():
-        views[key] = project.get_view(key).layout
+    items = defaultdict(list)
 
-    items = {}
     for key in project.list_item_keys():
-        item = project.get_item(key)
+        for item in project.get_item_versions(key):
+            if isinstance(item, PrimitiveItem):
+                value = item.primitive
+                media_type = "text/markdown"
+            elif isinstance(item, NumpyArrayItem):
+                value = item.array_list
+                media_type = "text/markdown"
+            elif isinstance(item, PandasDataFrameItem):
+                value = item.dataframe.to_dict(orient="tight")
+                media_type = "application/vnd.dataframe+json"
+            elif isinstance(item, PandasSeriesItem):
+                value = item.series_list
+                media_type = "text/markdown"
+            elif isinstance(item, SklearnBaseEstimatorItem):
+                value = item.estimator_html_repr
+                media_type = "application/vnd.sklearn.estimator+html"
+            elif isinstance(item, MediaItem):
+                value = base64.b64encode(item.media_bytes).decode()
+                media_type = item.media_type
+            elif isinstance(item, CrossValidationItem):
+                value = base64.b64encode(item.plot_bytes).decode()
+                media_type = "application/vnd.plotly.v1+json"
+            else:
+                raise ValueError(f"Item {item} is not a known item type.")
 
-        media_type = None
-        if isinstance(item, PrimitiveItem):
-            value = item.primitive
-            media_type = "text/markdown"
-        elif isinstance(item, NumpyArrayItem):
-            value = item.array_list
-            media_type = "text/markdown"
-        elif isinstance(item, PandasDataFrameItem):
-            value = item.dataframe.to_dict(orient="tight")
-            media_type = "application/vnd.dataframe+json"
-        elif isinstance(item, PandasSeriesItem):
-            value = item.series_list
-            media_type = "text/markdown"
-        elif isinstance(item, SklearnBaseEstimatorItem):
-            value = item.estimator_html_repr
-            media_type = "application/vnd.sklearn.estimator+html"
-        elif isinstance(item, MediaItem):
-            value = base64.b64encode(item.media_bytes).decode()
-            media_type = item.media_type
-        elif isinstance(item, CrossValidationItem):
-            # Convert plot to MediaItem
-            item = MediaItem.factory(item.plot)
-            value = base64.b64encode(item.media_bytes).decode()
-            media_type = item.media_type
-        else:
-            raise ValueError(f"Item {item} is not a known item type.")
+            items[key].append(
+                SerializedItem(
+                    media_type=media_type,
+                    value=value,
+                    updated_at=item.updated_at,
+                    created_at=item.created_at,
+                )
+            )
 
-        items[key] = SerializedItem(
-            media_type=media_type,
-            value=value,
-            updated_at=item.updated_at,
-            created_at=item.created_at,
-        )
+    views = {key: project.get_view(key).layout for key in project.list_view_keys()}
 
     return SerializedProject(
-        items=items,
+        items=dict(items),
         views=views,
     )
 
