@@ -9,10 +9,10 @@ from __future__ import annotations
 from functools import cached_property
 from typing import TYPE_CHECKING
 
+from skore.item.item import Item, ItemTypeError
+
 if TYPE_CHECKING:
     import pandas
-
-from skore.item.item import Item
 
 
 class PandasSeriesItem(Item):
@@ -70,7 +70,7 @@ class PandasSeriesItem(Item):
         import pandas
 
         if not isinstance(series, pandas.Series):
-            raise TypeError(f"Type '{series.__class__}' is not supported.")
+            raise ItemTypeError(f"Type '{series.__class__}' is not supported.")
 
         instance = cls(series_list=series.to_list())
 

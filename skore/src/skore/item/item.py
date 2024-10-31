@@ -9,6 +9,10 @@ from functools import cached_property
 from typing import Any, Optional
 
 
+class ItemTypeError(Exception):
+    """Item type exception."""
+
+
 class Item(ABC):
     """
     Abstract base class for all items in the project.

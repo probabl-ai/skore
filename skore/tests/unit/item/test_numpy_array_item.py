@@ -2,13 +2,17 @@ import json
 
 import numpy
 import pytest
-from skore.item import NumpyArrayItem
+from skore.item import ItemTypeError, NumpyArrayItem
 
 
 class TestNumpyArrayItem:
     @pytest.fixture(autouse=True)
     def monkeypatch_datetime(self, monkeypatch, MockDatetime):
         monkeypatch.setattr("skore.item.item.datetime", MockDatetime)
+
+    def test_factory_exception(self):
+        with pytest.raises(ItemTypeError):
+            NumpyArrayItem.factory(None)
 
     @pytest.mark.order(0)
     def test_factory(self, mock_nowstr):

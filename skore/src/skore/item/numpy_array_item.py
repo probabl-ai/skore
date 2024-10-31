@@ -9,10 +9,10 @@ from functools import cached_property
 from json import dumps, loads
 from typing import TYPE_CHECKING
 
+from skore.item.item import Item, ItemTypeError
+
 if TYPE_CHECKING:
     import numpy
-
-from skore.item.item import Item
 
 
 class NumpyArrayItem(Item):
@@ -75,6 +75,6 @@ class NumpyArrayItem(Item):
         import numpy
 
         if not isinstance(array, numpy.ndarray):
-            raise TypeError(f"Type '{array.__class__}' is not supported.")
+            raise ItemTypeError(f"Type '{array.__class__}' is not supported.")
 
         return cls(array_json=dumps(array.tolist()))

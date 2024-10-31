@@ -1,13 +1,17 @@
 import pytest
 from pandas import Series
 from pandas.testing import assert_series_equal
-from skore.item import PandasSeriesItem
+from skore.item import ItemTypeError, PandasSeriesItem
 
 
 class TestPandasSeriesItem:
     @pytest.fixture(autouse=True)
     def monkeypatch_datetime(self, monkeypatch, MockDatetime):
         monkeypatch.setattr("skore.item.item.datetime", MockDatetime)
+
+    def test_factory_exception(self):
+        with pytest.raises(ItemTypeError):
+            PandasSeriesItem.factory(None)
 
     @pytest.mark.order(0)
     def test_factory(self, mock_nowstr):
