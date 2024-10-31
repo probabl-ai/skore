@@ -19,6 +19,6 @@ export type Layout = string[];
  * A project is a collection of items and views
  */
 export interface Project {
-  items: { [key: string]: ProjectItem };
+  items: { [key: string]: ProjectItem[] };
   views: { [key: string]: Layout };
 }

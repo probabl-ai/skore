@@ -41,11 +41,11 @@ describe("Project store", () => {
     }
     const project = {
       items: {
-        a: makeFakeViewItem(),
-        "a/b": makeFakeViewItem(),
-        "a/b/d": makeFakeViewItem(),
-        "a/b/e": makeFakeViewItem(),
-        "a/b/f/g": makeFakeViewItem(),
+        a: [makeFakeViewItem()],
+        "a/b": [makeFakeViewItem()],
+        "a/b/d": [makeFakeViewItem()],
+        "a/b/e": [makeFakeViewItem()],
+        "a/b/f/g": [makeFakeViewItem()],
       },
       views: {},
     };
