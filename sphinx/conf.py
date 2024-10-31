@@ -9,8 +9,8 @@
 project = "skore"
 copyright = "2024, Probabl"
 author = "Probabl"
-version = "0"
-release = "0"
+# version = "0"
+# release = "0"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
