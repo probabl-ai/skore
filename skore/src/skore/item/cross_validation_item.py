@@ -46,6 +46,14 @@ def plot_cross_validation(cv_results: dict) -> plotly.graph_objects.Figure:
 
     df = pandas.DataFrame(_cv_results)
 
+    # Move time columns to last and "test_score" to first
+    if "fit_time" in df.columns:
+        df.insert(len(df.columns) - 1, "fit_time", df.pop("fit_time"))
+    if "score_time" in df.columns:
+        df.insert(len(df.columns) - 1, "score_time", df.pop("score_time"))
+    if "test_score" in df.columns:
+        df.insert(0, "test_score", df.pop("test_score"))
+
     dict_labels = {
         "fit_time": "fit_time (seconds)",
         "score_time": "score_time (seconds)",
