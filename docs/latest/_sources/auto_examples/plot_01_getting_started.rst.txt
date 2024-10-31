@@ -781,7 +781,7 @@ project, such as grid search or cross-validation results.
 
 .. GENERATED FROM PYTHON SOURCE LINES 170-172
 
-.. image:: https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_10_30_skore_demo.gif
+.. image:: https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_10_31_skore_demo_compressed.gif
   :alt: Getting started with ``skore`` demo
 
 .. GENERATED FROM PYTHON SOURCE LINES 174-176
@@ -792,7 +792,7 @@ project, such as grid search or cross-validation results.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 7.155 seconds)
+   **Total running time of the script:** (0 minutes 6.514 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_01_getting_started.py:

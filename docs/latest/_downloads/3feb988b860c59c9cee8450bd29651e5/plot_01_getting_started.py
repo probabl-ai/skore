@@ -167,7 +167,7 @@ plt.show()
 # #. In the skore UI on the right, you can drag-and-drop items to re-order them, remove items, etc.
 
 # %%
-# .. image:: https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_10_30_skore_demo.gif
+# .. image:: https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_10_31_skore_demo_compressed.gif
 #   :alt: Getting started with ``skore`` demo
 
 # %%
