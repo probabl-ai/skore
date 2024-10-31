@@ -48,6 +48,10 @@ sphinx_gallery_conf = {
     "within_subsection_order": "FileNameSortKey",  # See https://sphinx-gallery.github.io/stable/configuration.html#sorting-gallery-examples for alternatives
     "show_memory": False,
     "write_computation_times": False,
+    'reference_url': {
+        # The module you locally document uses None
+        'skore': None,
+        }
 }
 
 # intersphinx configuration
