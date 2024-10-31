@@ -20,6 +20,6 @@ You can check skore's latest version on `PyPI <https://pypi.org/project/skore/>`
 
     For Windows users, the encoding must be set to `UTF-8 <https://docs.python.org/3/using/windows.html#utf-8-mode>`_: see `PYTHONUTF8 <https://docs.python.org/3/using/cmdline.html#envvar-PYTHONUTF8>`_.
 
-.. tip::
-   **What's next?**
+.. admonition:: What's next?
+
    See our :ref:`example_getting_started` example!
