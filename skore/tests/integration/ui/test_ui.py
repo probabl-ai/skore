@@ -44,6 +44,28 @@ def test_get_items(client, in_memory_project):
     }
 
 
+def test_get_items_with_unserializable_objects(client, in_memory_project):
+    import numpy as np
+
+    in_memory_project.put("test", np.array([1]))
+
+    item = in_memory_project.get_item("test")
+
+    response = client.get("/api/project/items")
+    assert response.status_code == 200
+    assert response.json() == {
+        "views": {},
+        "items": {
+            "test": {
+                "media_type": "text/markdown",
+                "value": "test",
+                "updated_at": item.updated_at,
+                "created_at": item.created_at,
+            }
+        },
+    }
+
+
 def test_put_view_layout(client):
     response = client.put("/api/project/views?key=hello", json=["test"])
     assert response.status_code == 201

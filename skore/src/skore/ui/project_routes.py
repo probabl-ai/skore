@@ -1,10 +1,12 @@
 """The definition of API routes to list project items and get them."""
 
 import base64
-from dataclasses import dataclass
+import json
+from dataclasses import asdict, dataclass
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request, status
+from fastapi.responses import JSONResponse
 
 from skore.item.cross_validation_item import CrossValidationItem
 from skore.item.media_item import MediaItem
@@ -27,6 +29,23 @@ class SerializedItem:
     value: Any
     updated_at: str
     created_at: str
+    has_error: bool = False
+    error_message: str = ""
+
+    def to_jsonable(self):
+        d = asdict(self)
+        try:
+            json.dumps(d)  # noqa
+            return d
+        except TypeError:
+            return SerializedItem(
+                media_type=self.media_type,
+                value=None,
+                updated_at=self.updated_at,
+                created_at=self.created_at,
+                has_error=True,
+                error_message="c dla merde",
+            )
 
 
 @dataclass
@@ -37,7 +56,7 @@ class SerializedProject:
     views: dict[str, Layout]
 
 
-def __serialize_project(project: Project) -> SerializedProject:
+def serialize(project: Project):
     views = {}
     for key in project.list_view_keys():
         views[key] = project.get_view(key).layout
@@ -66,7 +85,6 @@ def __serialize_project(project: Project) -> SerializedProject:
             value = base64.b64encode(item.media_bytes).decode()
             media_type = item.media_type
         elif isinstance(item, CrossValidationItem):
-            # Convert plot to MediaItem
             item = MediaItem.factory(item.plot)
             value = base64.b64encode(item.media_bytes).decode()
             media_type = item.media_type
@@ -78,7 +96,7 @@ def __serialize_project(project: Project) -> SerializedProject:
             value=value,
             updated_at=item.updated_at,
             created_at=item.created_at,
-        )
+        ).to_jsonable()
 
     return SerializedProject(
         items=items,
@@ -86,28 +104,39 @@ def __serialize_project(project: Project) -> SerializedProject:
     )
 
 
+class ProjectResponse(JSONResponse):
+    """Project response with our own serialization strategy."""
+
+    def render(self, content: Project) -> bytes:
+        """Serialize the project."""
+        serialized = asdict(serialize(content))
+        response = json.dumps(
+            serialized,
+            ensure_ascii=False,
+            allow_nan=False,
+            indent=None,
+            separators=(",", ":"),
+        )
+
+        return response.encode("utf-8")
+
+
 @router.get("/items")
 async def get_items(request: Request):
-    """Serialize a project and send it."""
-    project = request.app.state.project
-    return __serialize_project(project)
+    return ProjectResponse(request.app.state.project)
 
 
-@router.put("/views", status_code=status.HTTP_201_CREATED)
+@router.put("/views")
 async def put_view(request: Request, key: str, layout: Layout):
-    """Set the layout of the view corresponding to `key`.
-
-    If the view corresponding to `key` does not exist, it will be created.
-    """
-    project: Project = request.app.state.project
-
+    project = request.app.state.project
     view = View(layout=layout)
+
     project.put_view(key, view)
 
-    return __serialize_project(project)
+    return ProjectResponse(project, status_code=status.HTTP_201_CREATED)
 
 
-@router.delete("/views", status_code=status.HTTP_202_ACCEPTED)
+@router.delete("/views")
 async def delete_view(request: Request, key: str):
     """Delete the view corresponding to `key`."""
     project: Project = request.app.state.project
@@ -119,4 +148,4 @@ async def delete_view(request: Request, key: str):
             status_code=status.HTTP_404_NOT_FOUND, detail="View not found"
         ) from None
 
-    return __serialize_project(project)
+    return ProjectResponse(project, status_code=status.HTTP_202_ACCEPTED)
