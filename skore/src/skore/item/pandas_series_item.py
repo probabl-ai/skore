@@ -23,9 +23,12 @@ class PandasSeriesItem(Item):
     creation and update timestamps.
     """
 
+    ORIENT = "split"
+
     def __init__(
         self,
-        series_list: list,
+        index_json: str,
+        series_json: str,
         created_at: str | None = None,
         updated_at: str | None = None,
     ):
@@ -34,8 +37,10 @@ class PandasSeriesItem(Item):
 
         Parameters
         ----------
-        series_list : list
-            The list representation of the series.
+        index_json : str
+            The JSON representation of the series's index.
+        series_json : str
+            The JSON representation of the series, without its index.
         created_at : str
             The creation timestamp in ISO format.
         updated_at : str
@@ -43,14 +48,37 @@ class PandasSeriesItem(Item):
         """
         super().__init__(created_at, updated_at)
 
-        self.series_list = series_list
+        self.index_json = index_json
+        self.series_json = series_json
 
     @cached_property
     def series(self) -> pandas.Series:
-        """The pandas Series."""
+        """
+        The pandas Series from the persistence.
+
+        Its content can differ from the original series because it has been serialized
+        using pandas' `to_json` function and not pickled, in order to be
+        environment-independent.
+        """
+        import io
+
         import pandas
 
-        return pandas.Series(self.series_list)
+        with (
+            io.StringIO(self.index_json) as index_stream,
+            io.StringIO(self.series_json) as series_stream,
+        ):
+            index = pandas.read_json(index_stream, orient=self.ORIENT, dtype=False)
+            index = index.set_index(list(index.columns))
+            series = pandas.read_json(
+                series_stream,
+                typ="series",
+                orient=self.ORIENT,
+                dtype=False,
+            )
+            series.index = index.index
+
+            return series
 
     @classmethod
     def factory(cls, series: pandas.Series) -> PandasSeriesItem:
@@ -72,9 +100,23 @@ class PandasSeriesItem(Item):
         if not isinstance(series, pandas.Series):
             raise TypeError(f"Type '{series.__class__}' is not supported.")
 
-        instance = cls(series_list=series.to_list())
+        # One native method is available to serialize series with multi-index,
+        # while keeping the index names:
+        #
+        # Using table orientation with JSON serializer:
+        #    ```python
+        #    json = series.to_json(orient="table")
+        #    series = pandas.read_json(json, typ="series", orient="table", dtype=False)
+        #    ```
+        #
+        #    This method fails when an index name is an integer.
+        #
+        # None of those methods being compatible, we decide to store indexes separately.
 
-        # add series as cached property
-        instance.series = series
+        index = series.index.to_frame(index=False)
+        series = series.reset_index(drop=True)
 
-        return instance
+        return cls(
+            index_json=index.to_json(orient=PandasSeriesItem.ORIENT),
+            series_json=series.to_json(orient=PandasSeriesItem.ORIENT),
+        )

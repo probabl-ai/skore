@@ -1,5 +1,6 @@
+import numpy as np
 import pytest
-from pandas import Series
+from pandas import Index, MultiIndex, Series
 from pandas.testing import assert_series_equal
 from skore.item import PandasSeriesItem
 
@@ -11,23 +12,63 @@ class TestPandasSeriesItem:
 
     @pytest.mark.order(0)
     def test_factory(self, mock_nowstr):
-        series = Series([0, 1, 2])
-        series_list = series.to_list()
+        series = Series([0, 1, 2], Index([0, 1, 2], name="myIndex"))
+
+        orient = PandasSeriesItem.ORIENT
+        index_json = series.index.to_frame(index=False).to_json(orient=orient)
+        series_json = series.reset_index(drop=True).to_json(orient=orient)
 
         item = PandasSeriesItem.factory(series)
 
-        assert item.series_list == series_list
+        assert item.index_json == index_json
+        assert item.series_json == series_json
         assert item.created_at == mock_nowstr
         assert item.updated_at == mock_nowstr
 
     @pytest.mark.order(1)
     def test_series(self, mock_nowstr):
-        series = Series([0, 1, 2])
-        series_list = series.to_list()
+        series = Series([0, 1, 2], Index([0, 1, 2], name="myIndex"))
+
+        orient = PandasSeriesItem.ORIENT
+        index_json = series.index.to_frame(index=False).to_json(orient=orient)
+        series_json = series.reset_index(drop=True).to_json(orient=orient)
 
         item1 = PandasSeriesItem.factory(series)
         item2 = PandasSeriesItem(
-            series_list=series_list,
+            index_json=index_json,
+            series_json=series_json,
+            created_at=mock_nowstr,
+            updated_at=mock_nowstr,
+        )
+
+        assert_series_equal(item1.series, series)
+        assert_series_equal(item2.series, series)
+
+    @pytest.mark.order(1)
+    def test_series_with_complex_object(self, mock_nowstr):
+        series = Series([np.array([1])], Index([0], name="myIndex"))
+        item = PandasSeriesItem.factory(series)
+
+        assert type(item.series.iloc[0]) is list
+
+    @pytest.mark.order(1)
+    def test_series_with_integer_indexes_name_and_multiindex(self, mock_nowstr):
+        series = Series(
+            [">70", ">70"],
+            MultiIndex.from_arrays(
+                [["france", "usa"], ["paris", "nyc"], ["1", "1"]],
+                names=(0, "city", "district"),
+            ),
+        )
+
+        orient = PandasSeriesItem.ORIENT
+        index_json = series.index.to_frame(index=False).to_json(orient=orient)
+        series_json = series.reset_index(drop=True).to_json(orient=orient)
+
+        item1 = PandasSeriesItem.factory(series)
+        item2 = PandasSeriesItem(
+            index_json=index_json,
+            series_json=series_json,
             created_at=mock_nowstr,
             updated_at=mock_nowstr,
         )

@@ -53,7 +53,7 @@ def __serialize_project(project: Project) -> SerializedProject:
                 value = item.dataframe.to_dict(orient="tight")
                 media_type = "application/vnd.dataframe+json"
             elif isinstance(item, PandasSeriesItem):
-                value = item.series_list
+                value = item.series.to_list()
                 media_type = "text/markdown"
             elif isinstance(item, SklearnBaseEstimatorItem):
                 value = item.estimator_html_repr
