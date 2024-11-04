@@ -10,7 +10,11 @@ from typing import Any, Optional
 
 
 class ItemTypeError(Exception):
-    """Item type exception."""
+    """Item type exception.
+
+    Exception raised when an attempt is made to convert an object to an Item, but the
+    object's type is not supported.
+    """
 
 
 class Item(ABC):
