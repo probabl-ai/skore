@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from "vue";
 import { addFrames, react, purge, relayout, type Layout } from "plotly.js-dist-min";
+import { onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { isDeepEqual } from "@/services/utils";
 
 const props = defineProps<{
   spec: { data: any; layout: any; frames: any };
@@ -41,6 +42,20 @@ onBeforeUnmount(() => {
     purge(container.value);
   }
 });
+
+watch(
+  () => props.spec.data,
+  async (newData, oldData) => {
+    if (container.value) {
+      if (!isDeepEqual(newData, oldData)) {
+        const plot = await react(container.value, newData, makeLayout());
+        if (props.spec.frames) {
+          addFrames(plot, props.spec.frames);
+        }
+      }
+    }
+  }
+);
 </script>
 
 <template>
