@@ -493,10 +493,10 @@ current directory.</p>
 <p>Now that the project exists, we can write some Python code (in the same
 directory) to add (<a class="reference internal" href="../generated/skore.Project.html#skore.Project.put" title="skore.Project.put"><code class="xref py py-func docutils literal notranslate"><span class="pre">put()</span></code></a>) some useful items in it.
 Let us load the project and add an integer to it for example:</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">skore</span> <span class="kn">import</span> <span class="n">load</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">skore</span> <span class="kn">import</span> <a href="../generated/skore.load.html#skore.load" title="skore.load" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-function"><span class="n">load</span></a>
 
-<span class="n">my_project</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="s2">&quot;my_project.skore&quot;</span><span class="p">)</span>
-<span class="n">my_project</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_int&quot;</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<a href="../generated/skore.Project.html#skore.Project" title="skore.Project" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">my_project</span></a> <span class="o">=</span> <a href="../generated/skore.load.html#skore.load" title="skore.load" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-function"><span class="n">load</span></a><span class="p">(</span><span class="s2">&quot;my_project.skore&quot;</span><span class="p">)</span>
+<a href="../generated/skore.Project.html#skore.Project.put" title="skore.Project.put" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-method"><span class="n">my_project</span><span class="o">.</span><span class="n">put</span></a><span class="p">(</span><span class="s2">&quot;my_int&quot;</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -1035,9 +1035,9 @@ plot:</p>
 </div>
 <p>Finally, we store some relevant information to our skore project, so that we
 can visualize them later in the skore UI for example:</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_gs_cv&quot;</span><span class="p">,</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html#sklearn.model_selection.GridSearchCV" title="sklearn.model_selection.GridSearchCV" class="sphx-glr-backref-module-sklearn-model_selection sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">gs_cv</span></a><span class="p">)</span>
-<span class="n">my_project</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_df&quot;</span><span class="p">,</span> <span class="n">df</span><span class="p">)</span>
-<span class="n">my_project</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_fig&quot;</span><span class="p">,</span> <span class="n">fig</span><span class="p">)</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="../generated/skore.Project.html#skore.Project.put" title="skore.Project.put" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-method"><span class="n">my_project</span><span class="o">.</span><span class="n">put</span></a><span class="p">(</span><span class="s2">&quot;my_gs_cv&quot;</span><span class="p">,</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html#sklearn.model_selection.GridSearchCV" title="sklearn.model_selection.GridSearchCV" class="sphx-glr-backref-module-sklearn-model_selection sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">gs_cv</span></a><span class="p">)</span>
+<a href="../generated/skore.Project.html#skore.Project.put" title="skore.Project.put" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-method"><span class="n">my_project</span><span class="o">.</span><span class="n">put</span></a><span class="p">(</span><span class="s2">&quot;my_df&quot;</span><span class="p">,</span> <span class="n">df</span><span class="p">)</span>
+<a href="../generated/skore.Project.html#skore.Project.put" title="skore.Project.put" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-method"><span class="n">my_project</span><span class="o">.</span><span class="n">put</span></a><span class="p">(</span><span class="s2">&quot;my_fig&quot;</span><span class="p">,</span> <span class="n">fig</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -1053,11 +1053,11 @@ see <a class="reference internal" href="plot_03_cross_validate.html#example-cros
 let us launch skore’s cross-validation, which will automatically add
 (<a class="reference internal" href="../generated/skore.Project.html#skore.Project.put" title="skore.Project.put"><code class="xref py py-func docutils literal notranslate"><span class="pre">put()</span></code></a>)
 a <code class="docutils literal notranslate"><span class="pre">cross_validation</span></code> item with a plotly chart in your project.</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">skore</span> <span class="kn">import</span> <span class="n">cross_validate</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">skore</span> <span class="kn">import</span> <a href="../generated/skore.cross_validate.html#skore.cross_validate" title="skore.cross_validate" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-function"><span class="n">cross_validate</span></a>
 
-<span class="n">cv_results</span> <span class="o">=</span> <span class="n">cross_validate</span><span class="p">(</span><a href="https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Ridge.html#sklearn.linear_model.Ridge" title="sklearn.linear_model.Ridge" class="sphx-glr-backref-module-sklearn-linear_model sphx-glr-backref-type-py-class"><span class="n">Ridge</span></a><span class="p">(),</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">project</span><span class="o">=</span><span class="n">my_project</span><span class="p">)</span>
+<span class="n">cv_results</span> <span class="o">=</span> <a href="../generated/skore.cross_validate.html#skore.cross_validate" title="skore.cross_validate" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-function"><span class="n">cross_validate</span></a><span class="p">(</span><a href="https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Ridge.html#sklearn.linear_model.Ridge" title="sklearn.linear_model.Ridge" class="sphx-glr-backref-module-sklearn-linear_model sphx-glr-backref-type-py-class"><span class="n">Ridge</span></a><span class="p">(),</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">project</span><span class="o">=</span><a href="../generated/skore.Project.html#skore.Project" title="skore.Project" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">my_project</span></a><span class="p">)</span>
 
-<span class="n">fig_plotly</span> <span class="o">=</span> <span class="n">my_project</span><span class="o">.</span><span class="n">get_item</span><span class="p">(</span><span class="s2">&quot;cross_validation&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span>
+<span class="n">fig_plotly</span> <span class="o">=</span> <a href="../generated/skore.Project.html#skore.Project.get_item" title="skore.Project.get_item" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-method"><span class="n">my_project</span><span class="o">.</span><span class="n">get_item</span></a><span class="p">(</span><span class="s2">&quot;cross_validation&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span>
 </pre></div>
 </div>
 <div class="admonition note">
@@ -1090,7 +1090,7 @@ project, such as grid search or cross-validation results.</p>
 <li><p>In the skore UI on the right, you can drag-and-drop items to re-order them, remove items, etc.</p></li>
 </ol>
 <img alt="Getting started with ``skore`` demo" src="https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_10_31_skore_demo_compressed.gif" />
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 6.514 seconds)</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 7.030 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-01-getting-started-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/e97c5b0c37bdd66afd2a201f006613dd/plot_01_getting_started.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_01_getting_started.ipynb</span></code></a></p>

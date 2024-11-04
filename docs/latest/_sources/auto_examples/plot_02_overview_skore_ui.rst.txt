@@ -459,9 +459,9 @@ Numpy array:
  .. code-block:: none
 
 
-    array([[ 1.07940211, -0.17079627,  0.32707525],
-           [ 0.72808672, -0.3453953 ,  0.58475624],
-           [-1.72280206, -0.3701965 ,  0.31195055]])
+    array([[ 1.63853041, -1.28706686, -0.37875963],
+           [-1.05853815,  2.3366351 , -1.48016548],
+           [ 0.76746085, -0.03573865, -0.10589976]])
 
 
 
@@ -513,43 +513,43 @@ Pandas data frame:
       <tbody>
         <tr>
           <th>0</th>
-          <td>1.927602</td>
-          <td>-0.743050</td>
-          <td>-0.019485</td>
-          <td>-0.432958</td>
-          <td>-0.806757</td>
+          <td>-0.095189</td>
+          <td>-1.373993</td>
+          <td>0.526623</td>
+          <td>-1.047739</td>
+          <td>1.763090</td>
         </tr>
         <tr>
           <th>1</th>
-          <td>0.763148</td>
-          <td>1.307049</td>
-          <td>0.266246</td>
-          <td>-0.033035</td>
-          <td>0.358300</td>
+          <td>0.019338</td>
+          <td>0.327058</td>
+          <td>-0.811625</td>
+          <td>-1.045237</td>
+          <td>0.229973</td>
         </tr>
         <tr>
           <th>2</th>
-          <td>0.168696</td>
-          <td>0.280827</td>
-          <td>-1.498675</td>
-          <td>-1.234922</td>
-          <td>1.775560</td>
+          <td>-0.885626</td>
+          <td>0.586916</td>
+          <td>-0.288776</td>
+          <td>0.266138</td>
+          <td>0.793233</td>
         </tr>
         <tr>
           <th>3</th>
-          <td>1.329606</td>
-          <td>-1.731826</td>
-          <td>-0.153971</td>
-          <td>-0.005179</td>
-          <td>0.585678</td>
+          <td>0.656678</td>
+          <td>1.011807</td>
+          <td>0.841818</td>
+          <td>0.976174</td>
+          <td>1.212396</td>
         </tr>
         <tr>
           <th>4</th>
-          <td>0.644292</td>
-          <td>-1.032703</td>
-          <td>-0.487868</td>
-          <td>2.313260</td>
-          <td>-1.211320</td>
+          <td>-0.733623</td>
+          <td>-0.071857</td>
+          <td>-1.319370</td>
+          <td>0.621754</td>
+          <td>-0.097709</td>
         </tr>
       </tbody>
     </table>
@@ -2025,7 +2025,7 @@ Moreover, you can store fitted scikit-learn pipelines:
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 1.417 seconds)
+   **Total running time of the script:** (0 minutes 1.439 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_02_overview_skore_ui.py:
