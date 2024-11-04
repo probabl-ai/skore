@@ -47,7 +47,7 @@ def __serialize_project(project: Project) -> SerializedProject:
                 value = item.primitive
                 media_type = "text/markdown"
             elif isinstance(item, NumpyArrayItem):
-                value = item.array_list
+                value = item.array.tolist()
                 media_type = "text/markdown"
             elif isinstance(item, PandasDataFrameItem):
                 value = item.dataframe.to_dict(orient="tight")
