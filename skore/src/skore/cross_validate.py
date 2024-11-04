@@ -250,7 +250,18 @@ def cross_validate(*args, project: Optional[Project] = None, **kwargs) -> dict:
     cv_results = sklearn.model_selection.cross_validate(
         *args, **kwargs, scoring=new_scorers
     )
-    cross_validation_item = CrossValidationItem.factory(cv_results, estimator, X, y)
+
+    if project is not None:
+        try:
+            cv_results_history = project.get_item_versions("cross_validation")
+        except KeyError:
+            cv_results_history = []
+    else:
+        cv_results_history = []
+
+    cross_validation_item = CrossValidationItem.factory(
+        cv_results, cv_results_history, estimator, X, y
+    )
 
     if project is not None:
         project.put_item("cross_validation", cross_validation_item)

@@ -141,6 +141,44 @@ def plot_cross_validation(cv_results: dict) -> plotly.graph_objects.Figure:
     return fig
 
 
+def plot_cross_validation_aggregation(
+    cv_results_items_history: list[Item],
+    cv_results: dict,
+) -> plotly.graph_objects.Figure:
+    """Plot the result of the aggregation of several cross-validation runs.
+
+    Parameters
+    ----------
+    cv_results_list : list[dict]
+        A list of outputs of scikit-learn's cross_validate function.
+
+    Returns
+    -------
+    plotly.graph_objects.Figure
+        A plot of the aggregated cross-validation results
+    """
+    from statistics import mean
+
+    import plotly.graph_objects as go
+
+    scores = []
+
+    for item in cv_results_items_history:
+        scores.append(mean(item.cv_results_serialized["fit_time"]))
+
+    scores.append(mean(cv_results["fit_time"]))
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Bar(
+            x=list(range(len(scores))),
+            y=scores,
+        ),
+    )
+
+    return fig
+
+
 def _hash_numpy(arr: numpy.ndarray) -> str:
     """Compute a hash string from a numpy array.
 
@@ -178,6 +216,7 @@ class CrossValidationItem(Item):
         X_info: dict,
         y_info: dict,
         plot_bytes: bytes,
+        aggregation_plot_bytes: bytes,
         created_at: str | None = None,
         updated_at: str | None = None,
     ):
@@ -196,7 +235,10 @@ class CrossValidationItem(Item):
         y_info : dict
             A summary of the target, input of scikit-learn's cross_validation function.
         plot_bytes : bytes
-            A plot of the cross-validation results, in the form of bytes.
+            A plot of the current cross-validation results, in the form of bytes.
+        aggregation_plot_bytes : bytes
+            A plot aggregating the data from all versions of the
+            cross-validation results, in the form of bytes.
         created_at : str
             The creation timestamp in ISO format.
         updated_at : str
@@ -209,11 +251,13 @@ class CrossValidationItem(Item):
         self.X_info = X_info
         self.y_info = y_info
         self.plot_bytes = plot_bytes
+        self.aggregation_plot_bytes = aggregation_plot_bytes
 
     @classmethod
     def factory(
         cls,
         cv_results: dict,
+        cv_results_items_history: list[CrossValidationItem],
         estimator: sklearn.base.BaseEstimator,
         X: Data,
         y: Target | None,
@@ -225,6 +269,8 @@ class CrossValidationItem(Item):
         ----------
         cv_results : dict
             The dict output of scikit-learn's cross_validate function.
+        cv_results_items_history: list[CrossValidationItem]
+            A list of previous cross_validate items.
         estimator : sklearn.base.BaseEstimator,
             The estimator that was cross-validated.
         X
@@ -271,16 +317,27 @@ class CrossValidationItem(Item):
         plot = plot_cross_validation(cv_results_serialized)
         plot_bytes = plotly.io.to_json(plot, engine="json").encode("utf-8")
 
+        aggregation_plot = plot_cross_validation_aggregation(
+            cv_results_items_history,
+            cv_results,
+        )
+
+        aggregation_plot_bytes = plotly.io.to_json(
+            aggregation_plot, engine="json"
+        ).encode("utf-8")
+
         instance = cls(
             cv_results_serialized=cv_results_serialized,
             estimator_info=estimator_info,
             X_info=X_info,
             y_info=y_info,
             plot_bytes=plot_bytes,
+            aggregation_plot_bytes=aggregation_plot_bytes,
         )
 
-        # Cache plot
+        # Cache plots
         instance.plot = plot
+        instance.aggregation_plot = aggregation_plot
 
         return instance
 
@@ -288,3 +345,11 @@ class CrossValidationItem(Item):
     def plot(self):
         """A plot of the cross-validation results."""
         return plotly.io.from_json(self.plot_bytes.decode("utf-8"))
+
+    @cached_property
+    def aggregation_plot(self):
+        """An aggregation plot of all the cross-validation results.
+
+        Results are aggregation from the oldest to the current.
+        """
+        return plotly.io.from_json(self.aggregation_plot_bytes.decode("utf-8"))
