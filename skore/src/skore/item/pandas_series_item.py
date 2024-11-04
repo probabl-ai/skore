@@ -111,7 +111,7 @@ class PandasSeriesItem(Item):
         #
         #    This method fails when an index name is an integer.
         #
-        # None of those methods being compatible, we decide to store indexes separately.
+        # None of those methods being compatible, we store indexes separately.
 
         index = series.index.to_frame(index=False)
         series = series.reset_index(drop=True)
