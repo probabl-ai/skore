@@ -37,14 +37,14 @@ const emit = defineEmits(["action"]);
   height: 44px;
   align-items: center;
   justify-content: space-between;
-  padding: var(--spacing-padding-large);
-  border-bottom: solid var(--border-width-normal) var(--border-color-normal);
-  background-color: var(--background-color-elevated);
+  padding: var(--spacing-12);
+  border-bottom: solid var(--stroke-width-md) var(--color-stroke-background-primary);
+  background-color: var(--color-background-secondary);
 
   & h1 {
-    color: var(--text-color-normal);
-    font-size: var(--text-size-title);
-    font-weight: var(--text-weight-highlight);
+    color: var(--color-text-primary);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-regular);
   }
 
   & .icon {
@@ -52,12 +52,10 @@ const emit = defineEmits(["action"]);
   }
 
   & .subtitle {
-    color: var(--text-color-low);
-    font-size: var(--text-size-normal);
-    font-weight: var(--text-weight-normal);
+    font-size: var(--font-size-xs);
 
     & .separator {
-      margin: 0 var(--spacing-gap-small);
+      margin: 0 var(--spacing-4);
     }
   }
 }

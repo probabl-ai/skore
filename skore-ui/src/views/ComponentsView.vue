@@ -15,7 +15,7 @@ import DraggableList from "@/components/DraggableList.vue";
 import DropdownButton from "@/components/DropdownButton.vue";
 import DropdownButtonItem from "@/components/DropdownButtonItem.vue";
 import DynamicContentRasterizer from "@/components/DynamicContentRasterizer.vue";
-import { type EditableListItemModel } from "@/components/EditableList.vue";
+import EditableList, { type EditableListItemModel } from "@/components/EditableList.vue";
 import FloatingTooltip from "@/components/FloatingTooltip.vue";
 import HtmlSnippetWidget from "@/components/HtmlSnippetWidget.vue";
 import ImageWidget from "@/components/ImageWidget.vue";
@@ -640,7 +640,7 @@ main {
 
   & [class^="icon-"],
   & [class*=" icon-"] {
-    color: var(--color-primary);
+    color: var(--color-icon-primary);
     font-size: 20px;
   }
 }
@@ -654,7 +654,7 @@ main {
   width: 200px;
   padding: 10px;
   margin-top: 10px;
-  background-color: var(--background-color-elevated);
+  background-color: var(--color-background-secondary);
   cursor: move;
   user-select: none;
 }

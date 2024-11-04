@@ -20,32 +20,29 @@ const props = defineProps<DropdownItemProps>();
 .dropdown-item {
   display: inline-block;
   box-sizing: border-box;
-  padding: var(--spacing-padding-small);
+  padding: var(--spacing-6);
   border: 0;
-  border-bottom: 1px solid var(--border-color-normal);
-  background-color: var(--background-color-normal);
-  color: var(--text-color-normal);
+  border-bottom: 1px solid var(--color-stroke-background-primary);
+  background-color: var(--color-background-primary);
   cursor: pointer;
-  font-size: var(--text-size-normal);
-  font-weight: var(--text-weight-normal);
   text-align: left;
   white-space: nowrap;
 
   &:first-child {
-    border-radius: var(--border-radius) var(--border-radius) 0 0;
+    border-radius: var(--radius-xs) var(--radius-xs) 0 0;
   }
 
   &:last-child {
-    border-radius: 0 0 var(--border-radius) var(--border-radius);
+    border-radius: 0 0 var(--radius-xs) var(--radius-xs);
     border-bottom: 0;
   }
 
   &:hover {
-    background-color: var(--background-color-elevated);
+    background-color: var(--color-background-secondary);
   }
 
   & .icon:has(+ .label) {
-    padding-right: var(--spacing-padding-small);
+    padding-right: var(--spacing-6);
   }
 }
 </style>
