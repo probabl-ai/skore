@@ -8,13 +8,13 @@ from __future__ import annotations
 from io import BytesIO
 from typing import TYPE_CHECKING, Any
 
+from skore.item.item import Item, ItemTypeError
+
 if TYPE_CHECKING:
     from altair.vegalite.v5.schema.core import TopLevelSpec as Altair
     from matplotlib.figure import Figure as Matplotlib
     from PIL.Image import Image as Pillow
     from plotly.basedatatypes import BaseFigure as Plotly
-
-from skore.item.item import Item
 
 
 def lazy_is_instance(object: Any, cls_fullname: str) -> bool:
@@ -97,7 +97,7 @@ class MediaItem(Item):
         if lazy_is_instance(media, "plotly.basedatatypes.BaseFigure"):
             return cls.factory_plotly(media, *args, **kwargs)
 
-        raise TypeError(f"Type '{media.__class__}' is not supported.")
+        raise ItemTypeError(f"Type '{media.__class__}' is not supported.")
 
     @classmethod
     def factory_bytes(
