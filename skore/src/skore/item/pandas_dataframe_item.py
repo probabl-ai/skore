@@ -9,10 +9,10 @@ from __future__ import annotations
 from functools import cached_property
 from typing import TYPE_CHECKING
 
+from skore.item.item import Item, ItemTypeError
+
 if TYPE_CHECKING:
     import pandas
-
-from skore.item.item import Item
 
 
 class PandasDataFrameItem(Item):
@@ -37,9 +37,9 @@ class PandasDataFrameItem(Item):
 
         Parameters
         ----------
-        index_json : json
+        index_json : str
             The JSON representation of the dataframe's index.
-        dataframe_json : json
+        dataframe_json : str
             The JSON representation of the dataframe, without its index.
         created_at : str
             The creation timestamp in ISO format.
@@ -97,7 +97,7 @@ class PandasDataFrameItem(Item):
         import pandas
 
         if not isinstance(dataframe, pandas.DataFrame):
-            raise TypeError(f"Type '{dataframe.__class__}' is not supported.")
+            raise ItemTypeError(f"Type '{dataframe.__class__}' is not supported.")
 
         # Two native methods are available to serialize dataframe with multi-index,
         # while keeping the index names:
@@ -108,7 +108,7 @@ class PandasDataFrameItem(Item):
         #    dataframe = pandas.read_json(json, orient="table", dtype=False)
         #    ```
         #
-        #    This method fails when a column name is an integer.
+        #    This method fails when an index/column name is an integer.
         #
         # 2. Using record orientation with indexes as columns:
         #    ```python
@@ -123,9 +123,8 @@ class PandasDataFrameItem(Item):
 
         index = dataframe.index.to_frame(index=False)
         dataframe = dataframe.reset_index(drop=True)
-        instance = cls(
+
+        return cls(
             index_json=index.to_json(orient=PandasDataFrameItem.ORIENT),
             dataframe_json=dataframe.to_json(orient=PandasDataFrameItem.ORIENT),
         )
-
-        return instance

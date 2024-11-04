@@ -14,7 +14,7 @@ import numpy
 import plotly.graph_objects
 import plotly.io
 
-from skore.item.item import Item
+from skore.item.item import Item, ItemTypeError
 
 if TYPE_CHECKING:
     import sklearn.base
@@ -238,7 +238,7 @@ class CrossValidationItem(Item):
             A new CrossValidationItem instance.
         """
         if not isinstance(cv_results, dict):
-            raise TypeError(f"Type '{cv_results.__class__}' is not supported.")
+            raise ItemTypeError(f"Type '{cv_results.__class__}' is not supported.")
 
         cv_results_serialized = {}
         for k, v in cv_results.items():
