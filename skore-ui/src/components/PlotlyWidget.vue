@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { addFrames, newPlot, purge, relayout, type Layout } from "plotly.js-dist-min";
 import { onBeforeUnmount, onMounted, ref } from "vue";
+import { addFrames, react, purge, relayout, type Layout } from "plotly.js-dist-min";
 
 const props = defineProps<{
   spec: { data: any; layout: any; frames: any };
@@ -28,7 +28,7 @@ const resizeObserver = new ResizeObserver(() => {
 onMounted(async () => {
   if (container.value) {
     resizeObserver.observe(container.value);
-    const plot = await newPlot(container.value, props.spec.data, makeLayout());
+    const plot = await react(container.value, props.spec.data, makeLayout());
     if (props.spec.frames) {
       addFrames(plot, props.spec.frames);
     }
