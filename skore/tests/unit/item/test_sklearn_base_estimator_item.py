@@ -1,7 +1,7 @@
 import pytest
 import sklearn.svm
 import skops.io
-from skore.item import SklearnBaseEstimatorItem
+from skore.item import ItemTypeError, SklearnBaseEstimatorItem
 
 
 class Estimator(sklearn.svm.SVC):
@@ -12,6 +12,10 @@ class TestSklearnBaseEstimatorItem:
     @pytest.fixture(autouse=True)
     def monkeypatch_datetime(self, monkeypatch, MockDatetime):
         monkeypatch.setattr("skore.item.item.datetime", MockDatetime)
+
+    def test_factory_exception(self):
+        with pytest.raises(ItemTypeError):
+            SklearnBaseEstimatorItem.factory(None)
 
     @pytest.mark.order(0)
     def test_factory(self, monkeypatch, mock_nowstr):

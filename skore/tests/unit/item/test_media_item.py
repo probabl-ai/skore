@@ -5,7 +5,7 @@ import matplotlib.pyplot
 import PIL as pillow
 import plotly.graph_objects as go
 import pytest
-from skore.item import MediaItem
+from skore.item import ItemTypeError, MediaItem
 
 
 class TestMediaItem:
@@ -14,7 +14,7 @@ class TestMediaItem:
         monkeypatch.setattr("skore.item.item.datetime", MockDatetime)
 
     def test_factory_exception(self):
-        with pytest.raises(TypeError):
+        with pytest.raises(ItemTypeError):
             MediaItem.factory(None)
 
     def test_factory_bytes(self, mock_nowstr):

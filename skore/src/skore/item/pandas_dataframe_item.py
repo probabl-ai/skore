@@ -9,10 +9,10 @@ from __future__ import annotations
 from functools import cached_property
 from typing import TYPE_CHECKING
 
+from skore.item.item import Item, ItemTypeError
+
 if TYPE_CHECKING:
     import pandas
-
-from skore.item.item import Item
 
 
 class PandasDataFrameItem(Item):
@@ -97,7 +97,7 @@ class PandasDataFrameItem(Item):
         import pandas
 
         if not isinstance(dataframe, pandas.DataFrame):
-            raise TypeError(f"Type '{dataframe.__class__}' is not supported.")
+            raise ItemTypeError(f"Type '{dataframe.__class__}' is not supported.")
 
         # Two native methods are available to serialize dataframe with multi-index,
         # while keeping the index names:
