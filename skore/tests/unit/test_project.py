@@ -61,7 +61,7 @@ def test_put_pandas_dataframe(in_memory_project):
 
 
 def test_put_pandas_series(in_memory_project):
-    series = pandas.Series([0, 1, 2])
+    series = pandas.Series([0, 1, 2], index=pandas.Index([0, 1, 2], name="myIndex"))
     in_memory_project.put("pandas_series", series)
     pandas.testing.assert_series_equal(in_memory_project.get("pandas_series"), series)
 
