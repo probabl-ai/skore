@@ -120,18 +120,17 @@ function onAction(action: string) {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    background-color: var(--background-color-normal);
+    background-color: var(--color-background-primary);
 
     .label {
       display: flex;
       height: var(--label-height);
       flex-direction: row;
       align-items: center;
-      transition: background-color var(--transition-duration) var(--transition-easing);
+      transition: background-color var(--animation-duration) var(--animation-easing);
 
       &:not(.has-children):hover {
-        background-color: var(--background-color-elevated);
-        color: var(--text-color-highlight);
+        background-color: var(--color-background-secondary);
       }
 
       &[draggable="true"] {
@@ -139,24 +138,21 @@ function onAction(action: string) {
       }
 
       & .children-indicator {
-        color: var(--text-color-normal);
+        color: var(--color-text-secondary);
       }
 
       & .icon {
-        margin-right: var(--spacing-gap-small);
-        color: var(--color-blue);
+        margin-right: var(--spacing-4);
+        color: var(--color-icon-tertiary);
       }
 
       & .text {
-        border-radius: var(--border-radius);
-        color: var(--text-color-highlight);
-        font-size: var(--text-size-title);
-        font-weight: var(--text-weight-normal);
+        border-radius: var(--radius-xs);
       }
 
       &.has-children {
         & .icon {
-          opacity: 0.4;
+          color: var(--color-icon-quartenary);
         }
       }
     }
@@ -165,19 +161,17 @@ function onAction(action: string) {
       display: flex;
       flex-direction: row;
       align-items: center;
-      gap: var(--spacing-gap-small);
+      gap: var(--spacing-8);
       opacity: 0;
-      transition: opacity var(--transition-duration) var(--transition-easing);
+      transition: opacity var(--animation-duration) var(--animation-easing);
 
       & button {
         padding: 0;
         border: none;
         margin: 0;
         background-color: transparent;
-        color: var(--text-color-normal);
         cursor: pointer;
-        font-size: var(--text-size-normal);
-        transition: color var(--transition-duration) var(--transition-easing);
+        transition: color var(--animation-duration) var(--animation-easing);
 
         &:hover {
           color: var(--color-primary);
@@ -190,9 +184,9 @@ function onAction(action: string) {
       border: none;
       margin: 0;
       background-color: transparent;
-      color: var(--text-color-normal);
+      color: var(--color-text-secondary);
       cursor: pointer;
-      transition: transform var(--transition-duration) var(--transition-easing);
+      transition: transform var(--animation-duration) var(--animation-easing);
 
       &.collapsed {
         transform: rotate(90deg);
@@ -211,22 +205,20 @@ function onAction(action: string) {
     z-index: 1;
     display: flex;
     flex-direction: column;
-    padding: var(--spacing-padding-small) 0 0 0;
-    gap: var(--spacing-padding-small);
+    padding-top: var(--spacing-6);
+    gap: var(--spacing-6);
   }
 
   & .toggle-children-move,
   & .toggle-children-enter-active,
   & .toggle-children-leave-active {
     transform-origin: top;
-    transition: all var(--transition-duration) var(--transition-easing);
+    transition: all var(--animation-duration) var(--animation-easing);
   }
 
   & .toggle-children-enter-from,
   & .toggle-children-leave-to {
-    margin-top: calc(
-      (var(--label-height) + var(--spacing-padding-small)) * var(--children-count) * -1
-    );
+    margin-top: calc((var(--label-height) + var(--spacing-6)) * var(--children-count) * -1);
     opacity: 0;
   }
 }

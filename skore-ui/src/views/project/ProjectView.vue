@@ -179,7 +179,7 @@ main {
       width: 292px;
       flex-direction: column;
       flex-shrink: 0;
-      border-right: solid 1px var(--border-color-normal);
+      border-right: solid 1px var(--color-stroke-background-primary);
 
       & .views-list {
         z-index: 2;
@@ -205,15 +205,15 @@ main {
         display: flex;
         height: var(--editor-height);
         align-items: center;
-        padding: var(--spacing-padding-large);
-        border-bottom: solid var(--border-width-normal) var(--border-color-normal);
-        background-color: var(--background-color-elevated);
+        padding: var(--spacing-12);
+        border-bottom: solid var(--stroke-width-md) var(--color-stroke-background-primary);
+        background-color: var(--color-background-secondary);
 
         & h1 {
           flex-grow: 1;
-          color: var(--text-color-normal);
-          font-size: var(--text-size-title);
-          font-weight: var(--text-weight-highlight);
+          color: var(--color-text-primary);
+          font-size: var(--font-size-sm);
+          font-weight: var(--font-weight-regular);
           text-align: center;
         }
 
@@ -231,33 +231,15 @@ main {
         height: 100%;
         flex-direction: column;
         justify-content: center;
-        background-color: var(--background-color-normal);
-
-        &:not(:has(.dropzone)) {
-          background-color: var(--background-color-normal);
-          background-image: radial-gradient(
-              circle at center,
-              transparent 0,
-              transparent 60%,
-              var(--background-color-normal) 100%
-            ),
-            linear-gradient(to right, var(--border-color-lower) 1px, transparent 1px),
-            linear-gradient(to bottom, var(--border-color-lower) 1px, transparent 1px);
-          background-size:
-            auto,
-            76px 76px,
-            76px 76px;
-        }
+        background-color: var(--color-background-primary);
 
         & .wrapper {
           padding-top: 225px;
-          margin: var(--spacing-padding-large);
+          margin: var(--spacing-24);
           background-image: var(--editor-placeholder-image);
           background-position: 50% 0;
           background-repeat: no-repeat;
           background-size: 265px 192px;
-          color: var(--text-color-normal);
-          font-size: var(--text-size-normal);
           text-align: center;
         }
 
@@ -267,10 +249,9 @@ main {
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          border-radius: 17px;
-          margin: var(--spacing-padding-large);
-          background: var(--background-color-normal);
-          background-color: var(--background-color-elevated);
+          border-radius: var(--radius-lg);
+          margin: var(--spacing-24);
+          background-color: var(--color-background-secondary);
           background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='17' ry='17' stroke='%23BABBBDFF' stroke-width='1' stroke-dasharray='11%2c11' stroke-dashoffset='0' stroke-linecap='square'/%3e%3c/svg%3e");
         }
       }
@@ -278,11 +259,11 @@ main {
       & .editor-container {
         height: 0;
         flex: 1;
-        padding: var(--spacing-padding-large);
+        padding: var(--spacing-24);
 
         & .draggable {
-          min-height: calc(100dvh - var(--editor-height) - var(--spacing-padding-large) * 2);
-          gap: var(--spacing-gap-large);
+          min-height: calc(100dvh - var(--editor-height) - var(--spacing-24) * 2);
+          gap: var(--spacing-24);
         }
       }
     }
@@ -294,8 +275,6 @@ main {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    color: var(--text-color-normal);
-    font-size: var(--text-size-normal);
   }
 }
 </style>

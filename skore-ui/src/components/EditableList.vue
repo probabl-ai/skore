@@ -55,7 +55,7 @@ function onRename(oldName: string, newName: string, item: EditableListItemModel)
 .editable-list {
   display: flex;
   flex-direction: column;
-  padding: var(--spacing-padding-normal);
-  gap: var(--spacing-padding-normal);
+  padding: var(--spacing-16);
+  gap: var(--spacing-16);
 }
 </style>
