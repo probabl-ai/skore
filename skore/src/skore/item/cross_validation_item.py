@@ -33,6 +33,8 @@ def plot_cross_validation(cv_results: dict) -> plotly.graph_objects.Figure:
     plotly.graph_objects.Figure
         A plot of the cross-validation results
     """
+    from datetime import timedelta
+
     import pandas
     import plotly.graph_objects as go
 
@@ -44,6 +46,14 @@ def plot_cross_validation(cv_results: dict) -> plotly.graph_objects.Figure:
 
     df = pandas.DataFrame(_cv_results)
 
+    # Move time columns to last and "test_score" to first
+    if "fit_time" in df.columns:
+        df.insert(len(df.columns) - 1, "fit_time", df.pop("fit_time"))
+    if "score_time" in df.columns:
+        df.insert(len(df.columns) - 1, "score_time", df.pop("score_time"))
+    if "test_score" in df.columns:
+        df.insert(0, "test_score", df.pop("test_score"))
+
     dict_labels = {
         "fit_time": "fit_time (seconds)",
         "score_time": "score_time (seconds)",
@@ -52,12 +62,29 @@ def plot_cross_validation(cv_results: dict) -> plotly.graph_objects.Figure:
     fig = go.Figure()
 
     for col_i, col_name in enumerate(df.columns):
-        visible = True if col_i == 0 else "legendonly"
         metric_name = dict_labels.get(col_name, col_name)
         bar_color = plotly.colors.qualitative.Plotly[
             col_i % len(plotly.colors.qualitative.Plotly)
         ]
         bar_x = [min(df.index) - 0.5, max(df.index) + 0.5]
+
+        common_kwargs = dict(
+            visible=True if col_i == 0 else "legendonly",
+            legendgroup=f"group{col_i}",
+            # If the metric is a duration (e.g. "fit_time"),
+            # we show a different hover text
+            hovertemplate=(
+                "%{customdata}" f"<extra>{col_name} (timedelta)</extra>"
+                if col_name.endswith("_time")
+                else "%{y}"
+            ),
+            customdata=(
+                [str(timedelta(seconds=x)) for x in df[col_name].values]
+                if col_name.endswith("_time")
+                else None
+            ),
+        )
+
         # Calculate statistics
         avg_value = df[col_name].mean()
         std_value = df[col_name].std()
@@ -70,10 +97,9 @@ def plot_cross_validation(cv_results: dict) -> plotly.graph_objects.Figure:
                     x=df.index,
                     y=df[col_name].values,
                     name=metric_name,
-                    visible=visible,
                     marker_color=bar_color,
-                    legendgroup=f"group{col_i}",
                     showlegend=True,
+                    **common_kwargs,
                 ),
                 # Mean line
                 go.Scatter(
@@ -81,10 +107,9 @@ def plot_cross_validation(cv_results: dict) -> plotly.graph_objects.Figure:
                     y=[avg_value, avg_value],
                     name=f"Average {metric_name}",
                     line=dict(dash="dash", color=bar_color),
-                    visible=visible,
-                    legendgroup=f"group{col_i}",
                     showlegend=False,
                     mode="lines",
+                    **common_kwargs,
                 ),
                 # +1 std line
                 go.Scatter(
@@ -92,10 +117,9 @@ def plot_cross_validation(cv_results: dict) -> plotly.graph_objects.Figure:
                     y=[avg_value + std_value, avg_value + std_value],
                     name=f"Average + 1 std. dev. {metric_name}",
                     line=dict(dash="dot", color=bar_color),
-                    visible=visible,
-                    legendgroup=f"group{col_i}",
                     showlegend=False,
                     mode="lines",
+                    **common_kwargs,
                 ),
                 # -1 std line
                 go.Scatter(
@@ -103,10 +127,9 @@ def plot_cross_validation(cv_results: dict) -> plotly.graph_objects.Figure:
                     y=[avg_value - std_value, avg_value - std_value],
                     name=f"Average - 1 std. dev. {metric_name}",
                     line=dict(dash="dot", color=bar_color),
-                    visible=visible,
-                    legendgroup=f"group{col_i}",
                     showlegend=False,
                     mode="lines",
+                    **common_kwargs,
                 ),
             ]
         )

@@ -45,7 +45,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=26a4bc78f4c0ddb94549" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=26a4bc78f4c0ddb94549" />
 
-    <script src="../_static/documentation_options.js?v=8dde47fa"></script>
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
     <link rel="prev" title="API" href="../api.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0" />
+  <meta name="docsearch:version" content="" />
   </head>
   
   
@@ -550,6 +550,33 @@
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="skore.Project.get_item_versions">
+<span class="sig-name descname"><span class="pre">get_item_versions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">Item</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#skore.Project.get_item_versions" title="Link to this definition">#</a></dt>
+<dd><p>Get all the versions of an item associated with <cite>key</cite> from the Project.</p>
+<p>The list is ordered from oldest to newest “put” date.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>key</strong><span class="classifier">str</span></dt><dd><p>The key corresponding to the item to get.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt>list[Item]</dt><dd><p>The list of items corresponding to key <cite>key</cite>.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt>KeyError</dt><dd><p>If the key does not correspond to any item.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="skore.Project.get_view">
 <span class="sig-name descname"><span class="pre">get_view</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">View</span></span></span><a class="headerlink" href="#skore.Project.get_view" title="Link to this definition">#</a></dt>
 <dd><p>Get the view corresponding to <cite>key</cite> from the Project.</p>
@@ -737,6 +764,7 @@ If <cite>key</cite> is a dict, this argument is ignored.</p>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#skore.Project.delete_view"><code class="docutils literal notranslate"><span class="pre">Project.delete_view()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#skore.Project.get"><code class="docutils literal notranslate"><span class="pre">Project.get()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#skore.Project.get_item"><code class="docutils literal notranslate"><span class="pre">Project.get_item()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#skore.Project.get_item_versions"><code class="docutils literal notranslate"><span class="pre">Project.get_item_versions()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#skore.Project.get_view"><code class="docutils literal notranslate"><span class="pre">Project.get_view()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#skore.Project.list_item_keys"><code class="docutils literal notranslate"><span class="pre">Project.list_item_keys()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#skore.Project.list_view_keys"><code class="docutils literal notranslate"><span class="pre">Project.list_view_keys()</span></code></a></li>

@@ -9,8 +9,8 @@
 project = "skore"
 copyright = "2024, Probabl"
 author = "Probabl"
-version = "0"
-release = "0"
+# version = "0"
+# release = "0"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -48,6 +48,10 @@ sphinx_gallery_conf = {
     "within_subsection_order": "FileNameSortKey",  # See https://sphinx-gallery.github.io/stable/configuration.html#sorting-gallery-examples for alternatives
     "show_memory": False,
     "write_computation_times": False,
+    'reference_url': {
+        # The module you locally document uses None
+        'skore': None,
+        }
 }
 
 # intersphinx configuration

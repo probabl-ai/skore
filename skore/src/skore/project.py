@@ -167,6 +167,29 @@ class Project:
         """
         return self.item_repository.get_item(key)
 
+    def get_item_versions(self, key: str) -> list[Item]:
+        """
+        Get all the versions of an item associated with `key` from the Project.
+
+        The list is ordered from oldest to newest "put" date.
+
+        Parameters
+        ----------
+        key : str
+            The key corresponding to the item to get.
+
+        Returns
+        -------
+        list[Item]
+            The list of items corresponding to key `key`.
+
+        Raises
+        ------
+        KeyError
+            If the key does not correspond to any item.
+        """
+        return self.item_repository.get_item_versions(key)
+
     def list_item_keys(self) -> list[str]:
         """List all item keys in the Project.
 
