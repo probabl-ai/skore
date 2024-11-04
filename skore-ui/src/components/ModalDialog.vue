@@ -56,8 +56,6 @@ onUnmounted(() => {
 
 <style scoped>
 .container {
-  --modal-border-radius: 12px;
-
   position: fixed;
   top: 0;
   left: 0;
@@ -71,25 +69,27 @@ onUnmounted(() => {
   & .dialog {
     position: relative;
     width: 40dvw;
-    border: solid 1px var(--border-color-normal);
-    border-radius: var(--modal-border-radius);
+    border: solid var(--stroke-width-md) var(--color-stroke-background-primary);
+    border-radius: var(--radius-lg);
+    box-shadow:
+      0 4px 19.5px var(--color-shadow),
+      0 -4px 0 var(--color-background-branding);
 
     & button.close {
       position: absolute;
       z-index: 3;
-      top: var(--spacing-padding-normal);
-      right: var(--spacing-padding-normal);
+      top: var(--spacing-12);
+      right: var(--spacing-12);
       border: none;
       background-color: transparent;
-      color: var(--text-color-normal);
+      color: var(--color-text-primary);
       cursor: pointer;
-      font-size: calc(var(--text-size-title) * 1.5);
+      font-size: var(--font-size-md);
       transform-origin: center;
-      transition: color var(--transition-duration) var(--transition-easing);
+      transition: color var(--animation-duration) var(--animation-easing);
 
       &:hover {
         background-color: transparent;
-        color: var(--text-color-highlight);
       }
     }
 
@@ -98,35 +98,31 @@ onUnmounted(() => {
       z-index: 2;
       display: flex;
       flex-direction: column;
-      padding: var(--spacing-padding-normal) var(--spacing-padding-normal)
-        calc(var(--spacing-padding-normal) * 2) var(--spacing-padding-normal);
+      padding: var(--spacing-16) var(--spacing-16) calc(var(--spacing-16) * 2) var(--spacing-16);
       border: solid 1px var(--border-color-normal);
-      border-radius: var(--modal-border-radius);
-      background-color: var(--background-color-elevated);
+      border-radius: var(--radius-lg);
+      background-color: var(--color-background-primary);
       gap: 24px;
 
       & h2 {
-        color: var(--text-color-highlight);
-        font-size: 20px;
-        font-weight: 500;
+        color: var(--color-text-primary);
+        font-size: var(--font-size-lg);
+        font-weight: var(--font-weight-medium);
       }
 
       & p {
-        color: var(--text-color-normal);
-        font-size: var(--text-size-normal);
-        font-weight: var(--text-weight-normal);
+        color: var(--color-text-secondary);
+        font-size: var(--font-size-sm);
+        font-weight: var(--font-weight-regular);
       }
 
       & .prompt {
         display: flex;
         flex-direction: column;
-        color: var(--text-color-normal);
-        font-size: var(--text-size-normal);
-        font-weight: var(--text-weight-normal);
-        gap: var(--spacing-gap-normal);
+        gap: var(--spacing-16);
 
         & .text-input {
-          background-color: var(--background-color-elevated);
+          background-color: var(--color-background-primary);
         }
       }
     }
@@ -137,15 +133,15 @@ onUnmounted(() => {
       display: flex;
       flex-direction: row;
       justify-content: center;
-      padding: calc(var(--spacing-padding-normal) + var(--modal-border-radius))
-        var(--spacing-padding-normal) var(--spacing-padding-normal) var(--spacing-padding-normal);
-      border-radius: 0 0 var(--modal-border-radius) var(--modal-border-radius);
-      margin-top: calc(var(--modal-border-radius) * -1);
-      background-color: var(--background-color-elevated);
-      gap: var(--spacing-gap-normal);
+      padding: calc(var(--spacing-16) + var(--radius-lg)) var(--spacing-16) var(--spacing-16)
+        var(--spacing-16);
+      border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+      margin-top: calc(var(--radius-lg) * -1);
+      background-color: var(--color-background-secondary);
+      gap: var(--spacing-16);
 
       & button.regular {
-        background-color: var(--background-color-elevated);
+        background-color: var(--color-background-primary);
       }
 
       &.alert button {
@@ -160,28 +156,12 @@ onUnmounted(() => {
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  .container .dialog {
-    box-shadow:
-      0 4px 19.5px hsl(0deg 0% 65% / 25%),
-      0 -4px 0 var(--color-primary);
-  }
-}
-
-@media (prefers-color-scheme: light) {
-  .container .dialog {
-    box-shadow:
-      0 4px 19.5px hsl(0deg 0% 45% / 25%),
-      0 -4px 0 var(--color-primary);
-  }
-}
-
 .modal-appear-enter-active,
 .modal-appear-leave-active {
-  transition: opacity var(--transition-duration) var(--transition-easing);
+  transition: opacity var(--animation-duration) var(--animation-easing);
 
   & .dialog {
-    transition: transform var(--transition-duration) var(--transition-easing);
+    transition: transform var(--animation-duration) var(--animation-easing);
   }
 }
 

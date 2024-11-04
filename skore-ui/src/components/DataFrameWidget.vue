@@ -165,28 +165,28 @@ watch([() => toValue(props.data), () => toValue(props.columns)], () => {
 
   table {
     min-width: 100%;
-    border: 1px solid var(--border-color-normal);
-    border-radius: var(--border-radius);
-    margin-top: var(--spacing-gap-small);
+    border: 1px var(--stroke-width-md) var(--color-stroke-background-primary);
+    border-radius: var(--radius-xs);
+    margin-top: var(--spacing-4);
     border-collapse: separate;
     border-spacing: 0;
     overflow-x: auto;
     text-align: right;
 
     & thead {
-      background-color: var(--background-color-elevated);
-      color: var(--text-color-normal);
-      font-size: var(--text-size-normal);
-      font-weight: var(--text-weight-normal);
+      background-color: var(--color-background-secondary);
 
       & tr {
         & th {
-          padding: var(--spacing-padding-small);
+          padding: var(--spacing-4);
+          color: var(--color-text-primary);
+          font-size: var(--font-size-sm);
+          font-weight: var(--font-weight-medium);
           text-align: right;
 
           &:first-child,
           &.named-index {
-            background-color: var(--background-color-elevated);
+            background-color: var(--color-background-secondary);
           }
 
           &[colspan="1"]:first-child:not(.named-index) {
@@ -200,20 +200,14 @@ watch([() => toValue(props.data), () => toValue(props.columns)], () => {
     & tbody {
       & tr {
         position: relative;
-        padding: var(--spacing-padding-small);
+        padding: var(--spacing-4);
 
         & td {
-          padding: var(--spacing-padding-small);
-          color: var(--text-color-highlight);
-          font-size: var(--text-size-highlight);
-          font-weight: var(--text-weight-highlight);
+          padding: var(--spacing-4);
 
           &:first-child,
           &.named-index {
-            background-color: var(--background-color-elevated);
-            color: var(--text-color-normal);
-            font-size: var(--text-size-normal);
-            font-weight: var(--text-weight-normal);
+            background-color: var(--color-background-secondary);
             text-align: left;
           }
 
@@ -239,7 +233,7 @@ watch([() => toValue(props.data), () => toValue(props.columns)], () => {
     & > thead:not(:last-child),
     & > tbody:not(:last-child),
     & > tfoot:not(:last-child) {
-      border-bottom: 1px solid var(--border-color-normal);
+      border-bottom: solid var(--stroke-width-md) var(--color-stroke-background-primary);
     }
   }
 
@@ -247,36 +241,33 @@ watch([() => toValue(props.data), () => toValue(props.columns)], () => {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-top: var(--spacing-gap-normal);
-    color: var(--text-color-normal);
-    font-size: var(--text-size-normal);
-    font-weight: var(--text-weight-normal);
+    margin-top: var(--spacing-8);
+    color: var(--color-text-primary);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-regular);
 
     .pagination-buttons {
       display: flex;
       align-items: center;
-      gap: var(--spacing-gap-normal);
+      gap: var(--spacing-8);
 
       & button {
         border: none;
         background-color: transparent;
         cursor: pointer;
-        font-size: var(--text-size-highlight);
-        font-weight: var(--text-weight-highlight);
+        font-size: var(--font-size-sm);
+        font-weight: var(--font-weight-regular);
       }
     }
 
     & select {
-      padding: var(--spacing-padding-small);
-      border: 1px solid var(--border-color-lower);
-      border-radius: var(--border-radius);
-      margin-left: var(--spacing-gap-normal);
-      background-color: var(--background-color-elevated);
-      box-shadow: 0 1px 2px var(--shadow-color);
-      color: var(--text-color-highlight);
+      padding: var(--spacing-4);
+      border: solid var(--stroke-width-md) var(--color-stroke-background-primary);
+      border-radius: var(--radius-xs);
+      margin-left: var(--spacing-8);
+      background-color: var(--color-background-secondary);
+      box-shadow: 0 1px 2px var(--color-shadow);
       cursor: pointer;
-      font-size: var(--text-size-highlight);
-      font-weight: var(--text-weight-highlight);
     }
   }
 }

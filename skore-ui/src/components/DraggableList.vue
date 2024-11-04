@@ -31,7 +31,7 @@ function topDropIndicatorStyles() {
   if (dropIndicatorPosition.value === -1) {
     return {
       marginTop: `${movingItemHeight.value}px`,
-      marginBottom: "var(--spacing-gap-normal)",
+      marginBottom: "var(--spacing-16)",
     };
   }
   return {};
@@ -41,11 +41,11 @@ function dropIndicatorStyles(index: number) {
   const y = dropIndicatorPosition.value === index ? movingItemHeight.value : 0;
   if (direction === "up") {
     return {
-      marginTop: `calc(var(--spacing-gap-normal) + ${y}px)`,
+      marginTop: `calc(var(--spacing-16) + ${y}px)`,
     };
   } else if (direction === "down") {
     return {
-      marginTop: `var(--spacing-gap-normal)`,
+      marginTop: `var(--spacing-16)`,
       marginBottom: `${y}px`,
     };
   }
@@ -238,18 +238,6 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-@media (prefers-color-scheme: dark) {
-  .draggable {
-    --shadow-color: hsl(0deg 0% 54% / 25%);
-  }
-}
-
-@media (prefers-color-scheme: light) {
-  .draggable {
-    --shadow-color: hsl(0deg 0% 46% / 25%);
-  }
-}
-
 .draggable {
   --content-left-margin: 18px;
 
@@ -260,18 +248,18 @@ onBeforeUnmount(() => {
   & .item {
     position: relative;
     width: 100%;
-    transition: transform var(--transition-duration) var(--transition-easing);
+    transition: transform var(--animation-duration) var(--animation-easing);
 
     & .handle {
       position: absolute;
       top: -4px;
       left: 0;
       display: flex;
-      color: hsl(from var(--color-primary) h s calc(l * 1.5));
+      color: var(--color-icon-primary);
       cursor: move;
-      font-size: calc(var(--text-size-normal) * 1.7);
+      font-size: var(--font-size-lg);
       opacity: 0;
-      transition: opacity var(--transition-duration) var(--transition-easing);
+      transition: opacity var(--animation-duration) var(--animation-easing);
     }
 
     & .content-wrapper {
@@ -281,7 +269,7 @@ onBeforeUnmount(() => {
 
     & .content {
       width: 100%;
-      transition: opacity var(--transition-duration) var(--transition-easing);
+      transition: opacity var(--animation-duration) var(--animation-easing);
 
       &.moving {
         opacity: 0.4;
@@ -290,8 +278,8 @@ onBeforeUnmount(() => {
 
     & .drop-indicator {
       height: 0;
-      border-radius: 3px;
-      background-color: var(--color-primary);
+      border-radius: var(--radius-xs);
+      background-color: var(--color-background-branding);
       opacity: 0;
 
       &.visible {
@@ -300,7 +288,7 @@ onBeforeUnmount(() => {
       }
 
       &.bottom {
-        margin: var(--spacing-gap-normal) 0;
+        margin: var(--spacing-16) 0;
       }
     }
 
@@ -315,7 +303,7 @@ onBeforeUnmount(() => {
     position: absolute;
     z-index: 2;
     margin-left: var(--content-left-margin);
-    box-shadow: 0 4px 17.7px 1px var(--shadow-color);
+    box-shadow: 0 4px 17.7px 1px var(--color-shadow);
     transform-origin: top left;
   }
 
@@ -328,9 +316,9 @@ onBeforeUnmount(() => {
 
     & .drop-indicator {
       transition:
-        opacity var(--transition-duration) var(--transition-easing),
-        height var(--transition-duration) var(--transition-easing),
-        margin var(--transition-duration) var(--transition-easing);
+        opacity var(--animation-duration) var(--animation-easing),
+        height var(--animation-duration) var(--animation-easing),
+        margin var(--animation-duration) var(--animation-easing);
     }
   }
 }

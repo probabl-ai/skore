@@ -63,8 +63,8 @@ async function onItemAction(action: string, key: string) {
   & .scrollable {
     height: 0;
     flex: 1;
-    padding: var(--spacing-padding-large);
-    background-color: var(--background-color-normal);
+    padding: var(--spacing-16);
+    background-color: var(--color-background-primary);
   }
 }
 </style>
