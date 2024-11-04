@@ -87,9 +87,14 @@ function onPageSizeChange(event: Event) {
   rowPerPage.value = parseInt((event.target as HTMLSelectElement).value);
 }
 
-watch([() => toValue(props.data), () => toValue(props.columns)], () => {
-  currentPage.value = 0;
-});
+watch(
+  [() => toValue(props.data), () => toValue(props.columns)],
+  ([newData, newColumns], [oldData, oldColumns]) => {
+    if (newData.length != oldData.length || newColumns.length != oldColumns.length) {
+      currentPage.value = 0;
+    }
+  }
+);
 </script>
 
 <template>
