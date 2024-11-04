@@ -8,7 +8,7 @@ function in order to enrich it with more information and enable more analysis.
 import contextlib
 from typing import Literal, Optional
 
-from skore.item.cross_validation_item import CrossValidationItem
+from skore.item.cross_validation_item import AggCrossValidationItem, CrossValidationItem
 from skore.project import Project
 
 
@@ -251,19 +251,19 @@ def cross_validate(*args, project: Optional[Project] = None, **kwargs) -> dict:
         *args, **kwargs, scoring=new_scorers
     )
 
+    cross_validation_item = CrossValidationItem.factory(cv_results, estimator, X, y)
+
     if project is not None:
         try:
             cv_results_history = project.get_item_versions("cross_validation")
         except KeyError:
             cv_results_history = []
-    else:
-        cv_results_history = []
 
-    cross_validation_item = CrossValidationItem.factory(
-        cv_results, cv_results_history, estimator, X, y
-    )
+        agg_cross_validation_item = AggCrossValidationItem.factory(
+            cv_results_history + [cross_validation_item]
+        )
 
-    if project is not None:
+        project.put_item("cross_validation_aggregated", agg_cross_validation_item)
         project.put_item("cross_validation", cross_validation_item)
 
     # If in a IPython context (e.g. Jupyter notebook), display the plot

@@ -32,7 +32,6 @@ class TestCrossValidationItem:
                 "estimator": [MyEstimator(), MyEstimator(), MyEstimator()],
                 "fit_time": [1, 2, 3],
             },
-            cv_results_items_history=[],
             estimator=MyEstimator(),
             X=[[1.0]],
             y=[1],
@@ -43,6 +42,5 @@ class TestCrossValidationItem:
         assert item.X_info == {"nb_cols": 1, "nb_rows": 1, "hash": ""}
         assert item.y_info == {"hash": ""}
         assert isinstance(item.plot_bytes, bytes)
-        assert isinstance(item.aggregation_plot_bytes, bytes)
         assert item.created_at == mock_nowstr
         assert item.updated_at == mock_nowstr
