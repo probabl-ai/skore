@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import DropdownButton from "@/components/DropdownButton.vue";
 import DropdownButtonItem from "@/components/DropdownButtonItem.vue";
+import { onBeforeUnmount, onMounted, useTemplateRef } from "vue";
 
 const props = defineProps<{
   title: string;
@@ -11,10 +12,24 @@ const props = defineProps<{
 const emit = defineEmits<{
   cardRemoved: [];
 }>();
+
+const root = useTemplateRef<HTMLDivElement>("root");
+
+function onAnimationEnd() {
+  root.value?.classList.remove("blink");
+}
+
+onMounted(() => {
+  root.value?.addEventListener("animationend", onAnimationEnd);
+});
+
+onBeforeUnmount(() => {
+  root.value?.removeEventListener("animationend", onAnimationEnd);
+});
 </script>
 
 <template>
-  <div class="card">
+  <div class="card" ref="root">
     <div class="header">
       <div class="titles">
         <div class="title">{{ props.title }}</div>
@@ -93,6 +108,34 @@ const emit = defineEmits<{
     & .header .actions {
       opacity: 1;
     }
+  }
+
+  &.blink {
+    & .header {
+      & .titles {
+        &::before {
+          animation-duration: var(--animation-duration);
+          animation-iteration-count: 5;
+          animation-name: blink;
+          animation-play-state: running;
+          animation-timing-function: var(--animation-easing);
+        }
+      }
+    }
+  }
+}
+
+@keyframes blink {
+  0% {
+    background-color: var(--color-background-branding);
+  }
+
+  50% {
+    background-color: var(--color-background-primary);
+  }
+
+  100% {
+    background-color: var(--color-background-branding);
   }
 }
 </style>

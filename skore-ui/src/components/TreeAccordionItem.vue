@@ -57,17 +57,18 @@ function onAction(action: string) {
       <div
         class="label"
         :class="{ 'has-children': hasChildren }"
-        :draggable="isDraggable && !hasChildren"
+        :draggable="props.enabled && isDraggable && !hasChildren"
         @dragstart="onDragStart($event)"
         @mousedown="isDraggable = true"
         @mouseup="isDraggable = false"
         @mouseleave="isDraggable = false"
+        @click="onAction('clicked')"
       >
         <span class="children-indicator icon-branch" v-if="!isRoot" />
         <span class="icon icon-pill" />
         <span class="text">{{ label }}</span>
       </div>
-      <div class="actions">
+      <div class="actions" v-if="props.enabled">
         <button
           v-for="(action, index) in props.actions"
           :key="index"
@@ -94,6 +95,7 @@ function onAction(action: string) {
           :children="child.children"
           :is-root="false"
           :actions="child.actions"
+          :enabled="child.enabled"
         />
       </div>
     </Transition>
