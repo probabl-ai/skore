@@ -1,6 +1,7 @@
 """cross_validate function.
 
-This function implements a wrapper over scikit-learn's `cross_validate <https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate>`_
+This function implements a wrapper over scikit-learn's
+`cross_validate <https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate>`_
 function in order to enrich it with more information and enable more analysis.
 """
 
@@ -190,27 +191,30 @@ def cross_validate(*args, project: Optional[Project] = None, **kwargs) -> dict:
 
     This function wraps scikit-learn's :func:`~sklearn.model_selection.cross_validate`
     function, to provide more context and facilitate the analysis.
-    As such, the arguments are the same as scikit-learn's cross_validate function.
+    As such, the arguments are the same as scikit-learn's ``cross_validate`` function.
 
     The dict returned by this function is a strict super-set of the one returned by
-    scikit-learn's ``cross_validate``.
+    scikit-learn's :func:`~sklearn.model_selection.cross_validate`.
 
     For a user guide and in-depth example, see :ref:`example_cross_validate`.
 
     Parameters
     ----------
     *args
-        Positional arguments accepted by scikit-learn's cross_validate,
-        such as `estimator`, and `X`.
+        Positional arguments accepted by scikit-learn's
+        :func:`~sklearn.model_selection.cross_validate`,
+        such as ``estimator`` and ``X``.
     project : Project, optional
         A project to save cross-validation data into. If None, no save is performed.
     **kwargs
-        Additional keyword arguments accepted by scikit-learn's cross_validate.
+        Additional keyword arguments accepted by scikit-learn's
+        :func:`~sklearn.model_selection.cross_validate`.
 
     Returns
     -------
     cv_results : dict
-        A dict of the form returned by scikit-learn's cross_validate function.
+        A dict of the form returned by scikit-learn's
+        :func:`~sklearn.model_selection.cross_validate` function.
 
     Examples
     --------
