@@ -203,7 +203,7 @@ my_df.head()
 # %%
 x = np.linspace(0, 2, 100)
 
-fig, ax = plt.subplots(figsize=(5, 2.7), layout="constrained")
+fig, ax = plt.subplots(layout="constrained", dpi=200)
 ax.plot(x, x, label="linear")
 ax.plot(x, x**2, label="quadratic")
 ax.plot(x, x**3, label="cubic")
@@ -216,6 +216,7 @@ plt.show()
 my_project_ui.put("my_figure", fig)
 
 # %%
+# |
 # Altair chart:
 
 # %%

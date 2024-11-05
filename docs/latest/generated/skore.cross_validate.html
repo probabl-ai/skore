@@ -464,25 +464,28 @@
 <dd><p>Evaluate estimator by cross-validation and output UI-friendly object.</p>
 <p>This function wraps scikit-learn’s <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="(in scikit-learn v1.5)"><code class="xref py py-func docutils literal notranslate"><span class="pre">cross_validate()</span></code></a>
 function, to provide more context and facilitate the analysis.
-As such, the arguments are the same as scikit-learn’s cross_validate function.</p>
+As such, the arguments are the same as scikit-learn’s <code class="docutils literal notranslate"><span class="pre">cross_validate</span></code> function.</p>
 <p>The dict returned by this function is a strict super-set of the one returned by
-scikit-learn’s <code class="docutils literal notranslate"><span class="pre">cross_validate</span></code>.</p>
+scikit-learn’s <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="(in scikit-learn v1.5)"><code class="xref py py-func docutils literal notranslate"><span class="pre">cross_validate()</span></code></a>.</p>
 <p>For a user guide and in-depth example, see <a class="reference internal" href="../auto_examples/plot_03_cross_validate.html#example-cross-validate"><span class="std std-ref">Enhancing cross-validation</span></a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>*args</strong></dt><dd><p>Positional arguments accepted by scikit-learn’s cross_validate,
-such as <cite>estimator</cite>, and <cite>X</cite>.</p>
+<dt><strong>*args</strong></dt><dd><p>Positional arguments accepted by scikit-learn’s
+<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="(in scikit-learn v1.5)"><code class="xref py py-func docutils literal notranslate"><span class="pre">cross_validate()</span></code></a>,
+such as <code class="docutils literal notranslate"><span class="pre">estimator</span></code> and <code class="docutils literal notranslate"><span class="pre">X</span></code>.</p>
 </dd>
 <dt><strong>project</strong><span class="classifier">Project, optional</span></dt><dd><p>A project to save cross-validation data into. If None, no save is performed.</p>
 </dd>
-<dt><strong>**kwargs</strong></dt><dd><p>Additional keyword arguments accepted by scikit-learn’s cross_validate.</p>
+<dt><strong>**kwargs</strong></dt><dd><p>Additional keyword arguments accepted by scikit-learn’s
+<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="(in scikit-learn v1.5)"><code class="xref py py-func docutils literal notranslate"><span class="pre">cross_validate()</span></code></a>.</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>cv_results</strong><span class="classifier">dict</span></dt><dd><p>A dict of the form returned by scikit-learn’s cross_validate function.</p>
+<dt><strong>cv_results</strong><span class="classifier">dict</span></dt><dd><p>A dict of the form returned by scikit-learn’s
+<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="(in scikit-learn v1.5)"><code class="xref py py-func docutils literal notranslate"><span class="pre">cross_validate()</span></code></a> function.</p>
 </dd>
 </dl>
 </dd>
