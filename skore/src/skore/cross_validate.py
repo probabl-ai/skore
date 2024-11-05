@@ -82,7 +82,7 @@ def _get_scorers_to_add(estimator, y) -> list[str]:
 
     # Add scorers based on the ML task
     if ml_task == "regression":
-        return ["r2", "neg_mean_squared_error"]
+        return ["r2", "neg_root_mean_squared_error"]
     if ml_task == "binary-classification":
         return ["roc_auc", "neg_brier_score", "recall", "precision"]
     if ml_task == "multiclass-classification":
