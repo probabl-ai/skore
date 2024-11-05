@@ -1,16 +1,34 @@
 <script setup lang="ts">
 import DropdownButton from "@/components/DropdownButton.vue";
 import DropdownButtonItem from "@/components/DropdownButtonItem.vue";
+import FloatingTooltip from "@/components/FloatingTooltip.vue";
+import SimpleButton from "@/components/SimpleButton.vue";
+import { formatDistance } from "date-fns";
+import { ref } from "vue";
 
 const props = defineProps<{
   title: string;
   subtitle?: string;
   showActions: boolean;
+  updates?: string[];
 }>();
 
 const emit = defineEmits<{
   cardRemoved: [];
+  updateSelected: [number];
 }>();
+
+const isLatestUpdate = ref(true);
+
+function getUpdateLabel(update: string) {
+  const now = new Date();
+  return `Updated ${formatDistance(update, now)} ago`;
+}
+
+function switchToUpdate(index: number) {
+  isLatestUpdate.value = index === (props.updates?.length ?? 0) - 1;
+  emit("updateSelected", index);
+}
 </script>
 
 <template>
@@ -20,16 +38,35 @@ const emit = defineEmits<{
         <div class="title">{{ props.title }}</div>
         <div class="subtitle" v-if="props.subtitle">
           {{ props.subtitle }}
+          <Transition name="fade">
+            <span v-if="!isLatestUpdate" class="warning">
+              <i class="icon-warning"></i>
+              You are viewing an old update
+              <a href="#" @click.prevent="switchToUpdate((props.updates?.length ?? 0) - 1)">
+                switch to latest
+              </a>
+            </span>
+          </Transition>
         </div>
       </div>
       <div v-if="props.showActions" class="actions">
-        <DropdownButton icon="icon-more" align="right">
+        <DropdownButton
+          icon="icon-history"
+          align="right"
+          v-if="props.updates && props.updates.length > 1"
+        >
           <DropdownButtonItem
-            label="Remove from view"
-            icon="icon-trash"
-            @click="emit('cardRemoved')"
+            v-for="(item, index) in Array.from(props.updates).reverse()"
+            :key="index"
+            :icon="index === 0 ? 'icon-check' : ''"
+            :label="getUpdateLabel(item)"
+            @click="switchToUpdate(props.updates.length - index - 1)"
+            icon-position="right"
           />
         </DropdownButton>
+        <FloatingTooltip text="Remove from view" placement="bottom-end">
+          <SimpleButton icon="icon-trash" @click="emit('cardRemoved')" />
+        </FloatingTooltip>
       </div>
     </div>
     <hr />
@@ -62,6 +99,13 @@ const emit = defineEmits<{
       & .subtitle {
         color: var(--color-text-secondary);
         font-size: var(--font-size-xs);
+
+        & .warning {
+          & a,
+          & a:visited {
+            color: var(--color-text-secondary);
+          }
+        }
       }
 
       &::before {
@@ -78,6 +122,9 @@ const emit = defineEmits<{
     }
 
     & .actions {
+      display: flex;
+      flex-direction: row;
+      gap: var(--spacing-4);
       opacity: 0;
       transition: opacity var(--animation-duration) var(--animation-easing);
     }

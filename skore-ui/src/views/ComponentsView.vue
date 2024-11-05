@@ -357,7 +357,7 @@ const isCached = ref(false);
             <DropdownButton label="hey ho" icon="icon-pie-chart">
               <DropdownButtonItem label="hey ho" icon="icon-pie-chart" />
               <DropdownButtonItem icon="icon-pie-chart" />
-              <DropdownButtonItem label="hey ho" />
+              <DropdownButtonItem label="hey ho" icon="icon-pie-chart" icon-position="right" />
             </DropdownButton>
             dropdown button with label and icon
           </p>
@@ -504,6 +504,7 @@ const isCached = ref(false);
           <div>icon-handle <span class="icon-handle"></span></div>
           <div>icon-left-double-chevron <span class="icon-left-double-chevron"></span></div>
           <div>icon-plus <span class="icon-plus"></span></div>
+          <div>icon-history <span class="icon-history"></span></div>
         </div>
       </TabsItem>
       <TabsItem :value="12">
@@ -567,6 +568,21 @@ const isCached = ref(false);
             <template #tooltipContent>
               <span style="color: red">red content</span>
             </template>
+          </FloatingTooltip>
+        </div>
+        <div>
+          <FloatingTooltip text="Tooltip on button">
+            <SimpleButton label="button with tooltip" />
+          </FloatingTooltip>
+        </div>
+        <div>
+          <FloatingTooltip text="Tooltip on button bottom-start" placement="bottom-start">
+            bottom start
+          </FloatingTooltip>
+        </div>
+        <div>
+          <FloatingTooltip text="Tooltip on button bottom-end" placement="bottom-end">
+            bottom end
           </FloatingTooltip>
         </div>
       </TabsItem>

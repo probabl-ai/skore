@@ -68,14 +68,16 @@ onBeforeMount(() => {
   }
 
   &.regular {
-    padding: var(--spacing-4) var(--spacing-8);
+    padding: 0 var(--spacing-4);
     border: var(--stroke-width-md) solid var(--color-stroke-background-primary);
     border-radius: var(--radius-xs);
     margin: 0 auto;
     background: var(--color-background-primary);
+    font-size: var(--font-size-md);
   }
 
   &.inline {
+    padding: var(--spacing-4);
     border: none;
     background: none;
     box-shadow: none;

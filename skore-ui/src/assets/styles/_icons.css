@@ -23,19 +23,19 @@
   font-style: normal;
   font-variant: normal;
   font-weight: normal;
-  line-height: 1;
+  line-height: inherit;
   text-transform: none;
 }
 
-.icon-trash::before {
+.icon-check::before {
   content: "\e900";
 }
 
-.icon-left-double-chevron::before {
+.icon-history::before {
   content: "\e901";
 }
 
-.icon-left-chevron::before {
+.icon-left-double-chevron::before {
   content: "\e902";
 }
 
@@ -51,90 +51,94 @@
   content: "\e905";
 }
 
-.icon-edit::before {
+.icon-trash::before {
   content: "\e906";
 }
 
-.icon-copy::before {
+.icon-edit::before {
   content: "\e907";
 }
 
-.icon-pill::before {
+.icon-copy::before {
   content: "\e908";
 }
 
-.icon-new-document::before {
+.icon-pill::before {
   content: "\e909";
 }
 
-.icon-recent-document::before {
+.icon-new-document::before {
   content: "\e90a";
 }
 
-.icon-plus::before {
+.icon-recent-document::before {
   content: "\e90b";
 }
 
-.icon-plus-circle::before {
+.icon-plus::before {
   content: "\e90c";
 }
 
-.icon-warning::before {
+.icon-plus-circle::before {
   content: "\e90d";
 }
 
-.icon-info::before {
+.icon-warning::before {
   content: "\e90e";
 }
 
-.icon-error::before {
+.icon-info::before {
   content: "\e90f";
 }
 
-.icon-success::before {
+.icon-error::before {
   content: "\e910";
 }
 
-.icon-search::before {
+.icon-success::before {
   content: "\e911";
 }
 
-.icon-maximize::before {
+.icon-search::before {
   content: "\e912";
 }
 
-.icon-folder::before {
+.icon-maximize::before {
   content: "\e913";
 }
 
-.icon-plot::before {
+.icon-folder::before {
   content: "\e914";
 }
 
-.icon-text::before {
+.icon-plot::before {
   content: "\e915";
 }
 
-.icon-gift::before {
+.icon-text::before {
   content: "\e916";
 }
 
-.icon-pie-chart::before {
+.icon-gift::before {
   content: "\e917";
 }
 
-.icon-chevron-left::before {
+.icon-pie-chart::before {
   content: "\e918";
 }
 
-.icon-chevron-down::before {
+.icon-chevron-left::before {
   content: "\e919";
 }
 
-.icon-chevron-right::before {
+.icon-chevron-down::before {
   content: "\e91a";
 }
 
-.icon-chevron-up::before {
+.icon-chevron-right::before {
   content: "\e91b";
+}
+
+.icon-chevron-up::before {
+  content: "\e91c";
 }
