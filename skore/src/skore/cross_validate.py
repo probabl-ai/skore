@@ -218,17 +218,31 @@ def cross_validate(*args, project: Optional[Project] = None, **kwargs) -> dict:
 
     Examples
     --------
-    >>> def prepare_cv():
-    ...     from sklearn import datasets, linear_model
-    ...     diabetes = datasets.load_diabetes()
-    ...     X = diabetes.data[:150]
-    ...     y = diabetes.target[:150]
-    ...     lasso = linear_model.Lasso()
-    ...     return lasso, X, y
+    Without saving anything in a skore project:
 
-    >>> project = skore.load("project.skore")  # doctest: +SKIP
-    >>> lasso, X, y = prepare_cv()  # doctest: +SKIP
-    >>> cross_validate(lasso, X, y, cv=3, project=project)  # doctest: +SKIP
+    >>> from sklearn import datasets, svm
+    >>> import skore
+    >>> X, y = datasets.load_iris(return_X_y=True)
+    >>> clf = svm.SVC(kernel='linear', random_state=0)
+    >>> cv_results = skore.cross_validate(clf, X, y, cv=5)
+    >>> cv_results
+    {'fit_time': array(...), 'score_time': array(...), 'test_score': array(...)}
+
+    Saving the results in a skore project called ``my_project``:
+
+    >>> import subprocess
+    >>> from sklearn import datasets, svm
+    >>> import skore
+    >>> # create the skore project (deleting it beforehand)
+    >>> subprocess.run("rm -rf my_project.skore".split())
+    >>> subprocess.run("python3 -m skore create my_project".split())
+    >>> # load the project
+    >>> my_project = skore.load("my_project.skore")
+    >>> # load the data and perform the cross-validation
+    >>> X, y = datasets.load_iris(return_X_y=True)
+    >>> clf = svm.SVC(kernel='linear', random_state=0)
+    >>> cv_results = skore.cross_validate(clf, X, y, cv=5, project=my_project)
+    >>> cv_results
     {'fit_time': array(...), 'score_time': array(...), 'test_score': array(...)}
     """
     import sklearn.model_selection
