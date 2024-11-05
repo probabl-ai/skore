@@ -122,19 +122,6 @@ fig_plotly_clf = my_project_gs.get_item("cross_validation").plot
 fig_plotly_clf
 
 # %%
-# Skore's ``cross_validate`` advantages are the following:
-#
-# * By default, it computes several useful scores without the need for the user to manually specify them. For classification, you can observe that it computed the accuracy, the precision, and the recall.
-#
-# * You automatically get some interactive Plotly graphs to better understand how your model behaves depending on the split. For example:
-#
-#   * You can compare the fitting and scoring times together for each split.
-#
-#   * You can compare the accuracy, precision, and recall scores together for each split.
-#
-# * The results and plots are automatically saved in your skore project, so that you can visualize them later in the UI for example.
-
-# %%
 # .. note::
 #   Because Plotly graphs currently do not properly render in our Sphinx
 #   auto-examples docs engine due to
@@ -151,6 +138,19 @@ fig, ax = plt.subplots(layout="constrained")
 ax.axis("off")
 ax.imshow(img)
 plt.show()
+
+# %%
+# Skore's ``cross_validate`` advantages are the following:
+#
+# * By default, it computes several useful scores without the need for the user to manually specify them. For classification, you can observe that it computed the accuracy, the precision, and the recall.
+#
+# * You automatically get some interactive Plotly graphs to better understand how your model behaves depending on the split. For example:
+#
+#   * You can compare the fitting and scoring times together for each split.
+#
+#   * You can compare the accuracy, precision, and recall scores together for each split.
+#
+# * The results and plots are automatically saved in your skore project, so that you can visualize them later in the UI for example.
 
 # %%
 # Regression task
