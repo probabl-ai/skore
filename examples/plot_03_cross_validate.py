@@ -131,15 +131,16 @@ fig_plotly_clf
 #   Plotly graphs to display properly.
 
 # %%
-fig_plotly_clf.write_image("plot_03_cross_validate_clf.png", scale=2)
+fig_plotly_clf.write_image("plot_03_cross_validate_clf.png", scale=4)
 
 img = mpimg.imread("plot_03_cross_validate_clf.png")
-fig, ax = plt.subplots(layout="constrained")
+fig, ax = plt.subplots(layout="constrained", dpi=200)
 ax.axis("off")
 ax.imshow(img)
 plt.show()
 
 # %%
+# |
 # Skore's ``cross_validate`` advantages are the following:
 #
 # * By default, it computes several useful scores without the need for the user to manually specify them. For classification, you can observe that it computed the accuracy, the precision, and the recall.
