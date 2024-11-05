@@ -8,7 +8,10 @@ function in order to enrich it with more information and enable more analysis.
 import contextlib
 from typing import Literal, Optional
 
-from skore.item.cross_validation_item import AggCrossValidationItem, CrossValidationItem
+from skore.item.cross_validation_item import (
+    CrossValidationAggregationItem,
+    CrossValidationItem,
+)
 from skore.project import Project
 
 
@@ -259,7 +262,7 @@ def cross_validate(*args, project: Optional[Project] = None, **kwargs) -> dict:
         except KeyError:
             cv_results_history = []
 
-        agg_cross_validation_item = AggCrossValidationItem.factory(
+        agg_cross_validation_item = CrossValidationAggregationItem.factory(
             cv_results_history + [cross_validation_item]
         )
 

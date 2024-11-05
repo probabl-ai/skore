@@ -7,7 +7,10 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request, status
 
-from skore.item.cross_validation_item import AggCrossValidationItem, CrossValidationItem
+from skore.item.cross_validation_item import (
+    CrossValidationAggregationItem,
+    CrossValidationItem,
+)
 from skore.item.media_item import MediaItem
 from skore.item.numpy_array_item import NumpyArrayItem
 from skore.item.pandas_dataframe_item import PandasDataFrameItem
@@ -61,7 +64,9 @@ def __serialize_project(project: Project) -> SerializedProject:
             elif isinstance(item, MediaItem):
                 value = base64.b64encode(item.media_bytes).decode()
                 media_type = item.media_type
-            elif isinstance(item, (CrossValidationItem, AggCrossValidationItem)):
+            elif isinstance(
+                item, (CrossValidationItem, CrossValidationAggregationItem)
+            ):
                 value = base64.b64encode(item.plot_bytes).decode()
                 media_type = "application/vnd.plotly.v1+json"
             else:

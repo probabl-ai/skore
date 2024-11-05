@@ -375,7 +375,7 @@ class CrossValidationItem(Item):
         return plotly.io.from_json(self.plot_bytes.decode("utf-8"))
 
 
-class AggCrossValidationItem(Item):
+class CrossValidationAggregationItem(Item):
     """Aggregated outputs of several cross-validation workflow runs."""
 
     def __init__(
@@ -385,7 +385,7 @@ class AggCrossValidationItem(Item):
         updated_at: str | None = None,
     ):
         """
-        Initialize an AggCrossValidationItem.
+        Initialize an CrossValidationAggregationItem.
 
         Parameters
         ----------
@@ -404,9 +404,9 @@ class AggCrossValidationItem(Item):
     def factory(
         cls,
         cv_results_items_versions: list[CrossValidationItem],
-    ) -> AggCrossValidationItem:
+    ) -> CrossValidationAggregationItem:
         """
-        Create a new AggCrossValidationItem instance.
+        Create a new CrossValidationAggregationItem instance.
 
         Parameters
         ----------
@@ -415,8 +415,8 @@ class AggCrossValidationItem(Item):
 
         Returns
         -------
-        AggCrossValidationItem
-            A new AggCrossValidationItem instance.
+        CrossValidationAggregationItem
+            A new CrossValidationAggregationItem instance.
         """
         plot = plot_cross_validation_aggregation(cv_results_items_versions)
 

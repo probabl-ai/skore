@@ -10,7 +10,7 @@ from sklearn.multiclass import OneVsOneClassifier
 from sklearn.svm import SVC
 from skore.cross_validate import cross_validate
 from skore.item.cross_validation_item import (
-    AggCrossValidationItem,
+    CrossValidationAggregationItem,
     CrossValidationItem,
     plot_cross_validation,
 )
@@ -168,7 +168,7 @@ def test_aggregated_cross_validation(rf, in_memory_project):
     cross_validate(*args, project=in_memory_project)
     assert isinstance(
         in_memory_project.item_repository.get_item("cross_validation_aggregated"),
-        AggCrossValidationItem,
+        CrossValidationAggregationItem,
     )
 
     cross_validate(*args, project=in_memory_project)
