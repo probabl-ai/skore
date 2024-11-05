@@ -20,6 +20,13 @@ function makeLayout(): Partial<Layout> {
   };
 }
 
+async function buildPlot(containerValue: HTMLDivElement, plotData: any) {
+  const plot = await react(containerValue, plotData, makeLayout());
+  if (props.spec.frames) {
+    addFrames(plot, props.spec.frames);
+  }
+}
+
 const resizeObserver = new ResizeObserver(() => {
   if (container.value) {
     relayout(container.value, makeLayout());
@@ -29,10 +36,7 @@ const resizeObserver = new ResizeObserver(() => {
 onMounted(async () => {
   if (container.value) {
     resizeObserver.observe(container.value);
-    const plot = await react(container.value, props.spec.data, makeLayout());
-    if (props.spec.frames) {
-      addFrames(plot, props.spec.frames);
-    }
+    buildPlot(container.value, props.spec.data);
   }
 });
 
@@ -46,12 +50,9 @@ onBeforeUnmount(() => {
 watch(
   () => props.spec.data,
   async (newData, oldData) => {
-    if (container.value) {
-      if (!isDeepEqual(newData, oldData)) {
-        const plot = await react(container.value, newData, makeLayout());
-        if (props.spec.frames) {
-          addFrames(plot, props.spec.frames);
-        }
+    if (!isDeepEqual(newData, oldData)) {
+      if (container.value) {
+        buildPlot(container.value, newData);
       }
     }
   }
