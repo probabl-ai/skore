@@ -1,5 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
+from skore.item import PrimitiveItem
 from skore.ui.app import create_app
 from skore.view.view import View
 
@@ -30,8 +31,8 @@ def test_get_items(client, in_memory_project):
     in_memory_project.put("test", "version_2")
 
     items = in_memory_project.get_item_versions("test")
-
     response = client.get("/api/project/items")
+
     assert response.status_code == 200
     assert response.json() == {
         "views": {},
@@ -40,6 +41,8 @@ def test_get_items(client, in_memory_project):
                 {
                     "media_type": "text/markdown",
                     "value": item.primitive,
+                    "error": False,
+                    "traceback": None,
                     "created_at": item.created_at,
                     "updated_at": item.updated_at,
                 }
@@ -49,24 +52,29 @@ def test_get_items(client, in_memory_project):
     }
 
 
-def test_get_items_with_unserializable_objects(client, in_memory_project):
-    import numpy as np
+def test_get_items_with_unserializable_objects(monkeypatch, client, in_memory_project):
+    monkeypatch.setattr("skore.ui.project_routes.format_exc", lambda: "<traceback>")
 
-    in_memory_project.put("test", np.array([1]))
+    in_memory_project.put_item("test", PrimitiveItem(object))
 
     item = in_memory_project.get_item("test")
-
     response = client.get("/api/project/items")
+
+    assert item.primitive is object
     assert response.status_code == 200
     assert response.json() == {
         "views": {},
         "items": {
-            "test": {
-                "media_type": "text/markdown",
-                "value": "test",
-                "updated_at": item.updated_at,
-                "created_at": item.created_at,
-            }
+            "test": [
+                {
+                    "media_type": "text/markdown",
+                    "value": None,
+                    "error": True,
+                    "traceback": "<traceback>",
+                    "updated_at": item.updated_at,
+                    "created_at": item.created_at,
+                },
+            ]
         },
     }
 
