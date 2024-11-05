@@ -218,7 +218,7 @@ def cross_validate(*args, project: Optional[Project] = None, **kwargs) -> dict:
 
     Examples
     --------
-    Without saving anything in a skore project:
+    Classification task (without saving in a skore project):
 
     >>> from sklearn import datasets, svm
     >>> import skore
@@ -228,7 +228,7 @@ def cross_validate(*args, project: Optional[Project] = None, **kwargs) -> dict:
     >>> cv_results
     {'fit_time': array(...), 'score_time': array(...), 'test_score': array(...)}
 
-    Saving the results in a skore project called ``my_project``:
+    Classification task saving the results in a skore project called ``my_project``:
 
     >>> import subprocess
     >>> from sklearn import datasets, svm
@@ -242,6 +242,18 @@ def cross_validate(*args, project: Optional[Project] = None, **kwargs) -> dict:
     >>> X, y = datasets.load_iris(return_X_y=True)
     >>> clf = svm.SVC(kernel='linear', random_state=0)
     >>> cv_results = skore.cross_validate(clf, X, y, cv=5, project=my_project)
+    >>> cv_results
+    {'fit_time': array(...), 'score_time': array(...), 'test_score': array(...)}
+
+    Regression task (without saving in a skore project):
+
+    >>> from sklearn import datasets, linear_model
+    >>> import skore
+    >>> diabetes = datasets.load_diabetes()
+    >>> X = diabetes.data[:150]
+    >>> y = diabetes.target[:150]
+    >>> lasso = linear_model.Lasso()
+    >>> cv_results = skore.cross_validate(lasso, X, y, cv=5)
     >>> cv_results
     {'fit_time': array(...), 'score_time': array(...), 'test_score': array(...)}
     """
