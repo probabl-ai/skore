@@ -94,7 +94,7 @@ df[["param_alpha", "rmse"]].head()
 # %%
 import matplotlib.pyplot as plt
 
-fig = plt.figure(layout="constrained")
+fig = plt.figure(layout="constrained", dpi=200)
 plt.plot(df["param_alpha"], df["rmse"])
 plt.xscale("log")
 plt.xlabel("Alpha hyperparameter")
@@ -147,10 +147,10 @@ fig_plotly = my_project.get_item("cross_validation").plot
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 
-fig_plotly.write_image("plot_01_cross_validation.png", scale=2)
+fig_plotly.write_image("plot_01_cross_validation.png", scale=4)
 
 img = mpimg.imread("plot_01_cross_validation.png")
-fig, ax = plt.subplots(layout="constrained")
+fig, ax = plt.subplots(layout="constrained", dpi=200)
 ax.axis("off")
 ax.imshow(img)
 plt.show()
