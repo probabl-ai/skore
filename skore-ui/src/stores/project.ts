@@ -112,11 +112,20 @@ export const useProjectStore = defineStore("project", () => {
   /**
    * Set the current views and items
    * Autoselect the first view if no view is selected
+   *
+   * For now only the latest item is kept in memory.
+   *
    * @param r data received from the backend
    */
   async function setProject(r: Project) {
-    items.value = r.items;
+    const latestItemByKey: { [key: string]: ProjectItem } = {};
+    for (const [key, value] of Object.entries(r.items)) {
+      latestItemByKey[key] = value[value.length - 1];
+    }
+
+    items.value = latestItemByKey;
     views.value = r.views;
+
     const viewNames = Object.keys(views.value);
     if (currentView.value === null) {
       if (viewNames.length > 0) {

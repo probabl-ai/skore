@@ -14,7 +14,7 @@ import numpy
 import plotly.graph_objects
 import plotly.io
 
-from skore.item.item import Item
+from skore.item.item import Item, ItemTypeError
 
 if TYPE_CHECKING:
     import sklearn.base
@@ -45,6 +45,14 @@ def plot_cross_validation(cv_results: dict) -> plotly.graph_objects.Figure:
         del _cv_results["estimator"]
 
     df = pandas.DataFrame(_cv_results)
+
+    # Move time columns to last and "test_score" to first
+    if "fit_time" in df.columns:
+        df.insert(len(df.columns) - 1, "fit_time", df.pop("fit_time"))
+    if "score_time" in df.columns:
+        df.insert(len(df.columns) - 1, "score_time", df.pop("score_time"))
+    if "test_score" in df.columns:
+        df.insert(0, "test_score", df.pop("test_score"))
 
     dict_labels = {
         "fit_time": "fit_time (seconds)",
@@ -230,7 +238,7 @@ class CrossValidationItem(Item):
             A new CrossValidationItem instance.
         """
         if not isinstance(cv_results, dict):
-            raise TypeError(f"Type '{cv_results.__class__}' is not supported.")
+            raise ItemTypeError(f"Type '{cv_results.__class__}' is not supported.")
 
         cv_results_serialized = {}
         for k, v in cv_results.items():

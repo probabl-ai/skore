@@ -253,9 +253,11 @@ def cross_validate(*args, project: Optional[Project] = None, **kwargs) -> dict:
 
     # If in a IPython context (e.g. Jupyter notebook), display the plot
     with contextlib.suppress(ImportError):
+        from IPython.core.interactiveshell import InteractiveShell
         from IPython.display import display
 
-        display(cross_validation_item.plot)
+        if InteractiveShell.initialized():
+            display(cross_validation_item.plot)
 
     # Remove information related to our scorers, so that our return value is
     # the same as sklearn's

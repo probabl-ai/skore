@@ -1,12 +1,11 @@
 """The definition of API routes to list project items and get them."""
 
 import base64
-import json
-from dataclasses import asdict, dataclass
+from collections import defaultdict
+from dataclasses import dataclass
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request, status
-from fastapi.responses import JSONResponse
 
 from skore.item.cross_validation_item import CrossValidationItem
 from skore.item.media_item import MediaItem
@@ -29,114 +28,84 @@ class SerializedItem:
     value: Any
     updated_at: str
     created_at: str
-    has_error: bool = False
-    error_message: str = ""
-
-    def to_jsonable(self):
-        d = asdict(self)
-        try:
-            json.dumps(d)  # noqa
-            return d
-        except TypeError:
-            return SerializedItem(
-                media_type=self.media_type,
-                value=None,
-                updated_at=self.updated_at,
-                created_at=self.created_at,
-                has_error=True,
-                error_message="c dla merde",
-            )
 
 
 @dataclass
 class SerializedProject:
     """Serialized project, to be sent to the skore-ui."""
 
-    items: dict[str, SerializedItem]
+    items: dict[str, list[SerializedItem]]
     views: dict[str, Layout]
 
 
-def serialize(project: Project):
-    views = {}
-    for key in project.list_view_keys():
-        views[key] = project.get_view(key).layout
+def __serialize_project(project: Project) -> SerializedProject:
+    items = defaultdict(list)
 
-    items = {}
     for key in project.list_item_keys():
-        item = project.get_item(key)
+        for item in project.get_item_versions(key):
+            if isinstance(item, PrimitiveItem):
+                value = item.primitive
+                media_type = "text/markdown"
+            elif isinstance(item, NumpyArrayItem):
+                value = item.array.tolist()
+                media_type = "text/markdown"
+            elif isinstance(item, PandasDataFrameItem):
+                value = item.dataframe.to_dict(orient="tight")
+                media_type = "application/vnd.dataframe+json"
+            elif isinstance(item, PandasSeriesItem):
+                value = item.series.to_list()
+                media_type = "text/markdown"
+            elif isinstance(item, SklearnBaseEstimatorItem):
+                value = item.estimator_html_repr
+                media_type = "application/vnd.sklearn.estimator+html"
+            elif isinstance(item, MediaItem):
+                value = base64.b64encode(item.media_bytes).decode()
+                media_type = item.media_type
+            elif isinstance(item, CrossValidationItem):
+                value = base64.b64encode(item.plot_bytes).decode()
+                media_type = "application/vnd.plotly.v1+json"
+            else:
+                raise ValueError(f"Item {item} is not a known item type.")
 
-        media_type = None
-        if isinstance(item, PrimitiveItem):
-            value = item.primitive
-            media_type = "text/markdown"
-        elif isinstance(item, NumpyArrayItem):
-            value = item.array_list
-            media_type = "text/markdown"
-        elif isinstance(item, PandasDataFrameItem):
-            value = item.dataframe.to_dict(orient="tight")
-            media_type = "application/vnd.dataframe+json"
-        elif isinstance(item, PandasSeriesItem):
-            value = item.series_list
-            media_type = "text/markdown"
-        elif isinstance(item, SklearnBaseEstimatorItem):
-            value = item.estimator_html_repr
-            media_type = "application/vnd.sklearn.estimator+html"
-        elif isinstance(item, MediaItem):
-            value = base64.b64encode(item.media_bytes).decode()
-            media_type = item.media_type
-        elif isinstance(item, CrossValidationItem):
-            item = MediaItem.factory(item.plot)
-            value = base64.b64encode(item.media_bytes).decode()
-            media_type = item.media_type
-        else:
-            raise ValueError(f"Item {item} is not a known item type.")
+            items[key].append(
+                SerializedItem(
+                    media_type=media_type,
+                    value=value,
+                    updated_at=item.updated_at,
+                    created_at=item.created_at,
+                )
+            )
 
-        items[key] = SerializedItem(
-            media_type=media_type,
-            value=value,
-            updated_at=item.updated_at,
-            created_at=item.created_at,
-        ).to_jsonable()
+    views = {key: project.get_view(key).layout for key in project.list_view_keys()}
 
     return SerializedProject(
-        items=items,
+        items=dict(items),
         views=views,
     )
 
 
-class ProjectResponse(JSONResponse):
-    """Project response with our own serialization strategy."""
-
-    def render(self, content: Project) -> bytes:
-        """Serialize the project."""
-        serialized = asdict(serialize(content))
-        response = json.dumps(
-            serialized,
-            ensure_ascii=False,
-            allow_nan=False,
-            indent=None,
-            separators=(",", ":"),
-        )
-
-        return response.encode("utf-8")
-
-
 @router.get("/items")
 async def get_items(request: Request):
-    return ProjectResponse(request.app.state.project)
-
-
-@router.put("/views")
-async def put_view(request: Request, key: str, layout: Layout):
+    """Serialize a project and send it."""
     project = request.app.state.project
-    view = View(layout=layout)
+    return __serialize_project(project)
 
+
+@router.put("/views", status_code=status.HTTP_201_CREATED)
+async def put_view(request: Request, key: str, layout: Layout):
+    """Set the layout of the view corresponding to `key`.
+
+    If the view corresponding to `key` does not exist, it will be created.
+    """
+    project: Project = request.app.state.project
+
+    view = View(layout=layout)
     project.put_view(key, view)
 
-    return ProjectResponse(project, status_code=status.HTTP_201_CREATED)
+    return __serialize_project(project)
 
 
-@router.delete("/views")
+@router.delete("/views", status_code=status.HTTP_202_ACCEPTED)
 async def delete_view(request: Request, key: str):
     """Delete the view corresponding to `key`."""
     project: Project = request.app.state.project
@@ -148,4 +117,4 @@ async def delete_view(request: Request, key: str):
             status_code=status.HTTP_404_NOT_FOUND, detail="View not found"
         ) from None
 
-    return ProjectResponse(project, status_code=status.HTTP_202_ACCEPTED)
+    return __serialize_project(project)

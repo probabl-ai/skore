@@ -26,20 +26,25 @@ def test_get_items(client, in_memory_project):
     assert response.status_code == 200
     assert response.json() == {"views": {}, "items": {}}
 
-    in_memory_project.put("test", "test")
-    item = in_memory_project.get_item("test")
+    in_memory_project.put("test", "version_1")
+    in_memory_project.put("test", "version_2")
+
+    items = in_memory_project.get_item_versions("test")
 
     response = client.get("/api/project/items")
     assert response.status_code == 200
     assert response.json() == {
         "views": {},
         "items": {
-            "test": {
-                "media_type": "text/markdown",
-                "value": "test",
-                "updated_at": item.updated_at,
-                "created_at": item.created_at,
-            }
+            "test": [
+                {
+                    "media_type": "text/markdown",
+                    "value": item.primitive,
+                    "created_at": item.created_at,
+                    "updated_at": item.updated_at,
+                }
+                for item in items
+            ],
         },
     }
 

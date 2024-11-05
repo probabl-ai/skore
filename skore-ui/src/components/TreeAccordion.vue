@@ -45,7 +45,7 @@ provide("emitItemAction", (action: string, itemName: string) => {
 .accordion {
   display: flex;
   flex-direction: column;
-  background-color: var(--background-color-normal);
-  gap: var(--spacing-gap-large);
+  background-color: var(--color-background-primary);
+  gap: var(--spacing-20);
 }
 </style>

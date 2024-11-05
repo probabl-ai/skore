@@ -1,5 +1,5 @@
 import pytest
-from skore.item import PrimitiveItem
+from skore.item import ItemTypeError, PrimitiveItem
 
 
 class TestPrimitiveItem:
@@ -23,3 +23,7 @@ class TestPrimitiveItem:
         assert item.primitive == primitive
         assert item.created_at == mock_nowstr
         assert item.updated_at == mock_nowstr
+
+    def test_factory_exception(self):
+        with pytest.raises(ItemTypeError):
+            PrimitiveItem.factory(None)

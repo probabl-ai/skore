@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from skore.item.item import Item
+from skore.item.item import Item, ItemTypeError
 
 if TYPE_CHECKING:
     from typing import Union
@@ -83,6 +83,6 @@ class PrimitiveItem(Item):
             A new PrimitiveItem instance.
         """
         if not is_primitive(primitive):
-            raise TypeError(f"Type '{primitive.__class__}' is not supported.")
+            raise ItemTypeError(f"Type '{primitive.__class__}' is not supported.")
 
         return cls(primitive=primitive)

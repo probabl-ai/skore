@@ -47,37 +47,32 @@ onBeforeMount(() => {
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  border-radius: var(--border-radius);
-  box-shadow:
-    0 2px 6px rgb(0 0 0 / 9%),
-    0 2px 4px rgb(0 0 0 / 25%),
-    inset 0 1px 4.3px rgb(255 226 199 / 84%);
-  color: var(--button-color);
+  border-radius: var(--radius-xs);
+  color: var(--color-text-secondary);
   cursor: pointer;
 
   &.primary {
-    padding: var(--spacing-padding-small) var(--spacing-padding-normal);
-    border: solid 1px rgb(from var(--button-background-color) h s calc(l + 10%));
-    background-color: var(--button-background-color);
-    background-image: linear-gradient(to bottom, transparent, var(--button-background-color)),
+    padding: var(--spacing-6) var(--spacing-16);
+    border: solid 1px var(--color-background-branding);
+    background-color: var(--color-background-branding);
+    background-image: linear-gradient(to bottom, transparent, var(--color-background-branding)),
       url("../assets/images/button-background.png");
     background-position:
       var(--background-offset-x) var(--background-offset-y),
       0;
-    font-size: var(--text-size-highlight);
-    font-weight: var(--text-weight-highlight);
+    box-shadow:
+      0 2px 6px rgb(0 0 0 / 9%),
+      0 2px 4px rgb(0 0 0 / 25%),
+      inset 0 1px 4.3px rgb(255 226 199 / 84%);
+    color: var(--color-text-button-primary);
   }
 
   &.regular {
-    padding: calc(var(--spacing-padding-small) * 0.6) var(--spacing-padding-small);
-    border: var(--border-width-normal) solid var(--border-color-elevated);
-    border-radius: var(--border-radius);
+    padding: var(--spacing-4) var(--spacing-8);
+    border: var(--stroke-width-md) solid var(--color-stroke-background-primary);
+    border-radius: var(--radius-xs);
     margin: 0 auto;
-    background: var(--border-color-lower);
-    box-shadow: inset 0 0 3.24px 2.4px rgb(var(--text-color-highlight) 0.5);
-    color: var(--text-color-normal);
-    font-size: var(--text-size-normal);
-    font-weight: var(--text-weight-normal);
+    background: var(--color-background-primary);
   }
 
   &.inline {
@@ -87,7 +82,7 @@ onBeforeMount(() => {
   }
 
   .icon:has(+ .label) {
-    padding-right: var(--spacing-padding-small);
+    padding-right: var(--spacing-8);
   }
 }
 </style>

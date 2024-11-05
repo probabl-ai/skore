@@ -45,7 +45,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=26a4bc78f4c0ddb94549" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=26a4bc78f4c0ddb94549" />
 
-    <script src="../_static/documentation_options.js?v=8dde47fa"></script>
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
     <link rel="prev" title="Getting started with skore" href="plot_01_getting_started.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0" />
+  <meta name="docsearch:version" content="" />
   </head>
   
   
@@ -474,7 +474,7 @@ of items that you can store in a skore <a class="reference internal" href="../ge
 <span class="kn">from</span> <span class="nn">sklearn.pipeline</span> <span class="kn">import</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html#sklearn.pipeline.Pipeline" title="sklearn.pipeline.Pipeline" class="sphx-glr-backref-module-sklearn-pipeline sphx-glr-backref-type-py-class"><span class="n">Pipeline</span></a>
 <span class="kn">from</span> <span class="nn">sklearn.preprocessing</span> <span class="kn">import</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.StandardScaler.html#sklearn.preprocessing.StandardScaler" title="sklearn.preprocessing.StandardScaler" class="sphx-glr-backref-module-sklearn-preprocessing sphx-glr-backref-type-py-class"><span class="n">StandardScaler</span></a>
 
-<span class="kn">from</span> <span class="nn">skore</span> <span class="kn">import</span> <span class="n">load</span>
+<span class="kn">from</span> <span class="nn">skore</span> <span class="kn">import</span> <a href="../generated/skore.load.html#skore.load" title="skore.load" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-function"><span class="n">load</span></a>
 <span class="kn">from</span> <span class="nn">skore.item</span> <span class="kn">import</span> <span class="n">MediaItem</span>
 </pre></div>
 </div>
@@ -492,66 +492,66 @@ of items that you can store in a skore <a class="reference internal" href="../ge
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>CompletedProcess(args=[&#39;python3&#39;, &#39;-m&#39;, &#39;skore&#39;, &#39;create&#39;, &#39;my_project_ui&#39;], returncode=0)
 </pre></div>
 </div>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">skore</span> <span class="kn">import</span> <span class="n">load</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">skore</span> <span class="kn">import</span> <a href="../generated/skore.load.html#skore.load" title="skore.load" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-function"><span class="n">load</span></a>
 
-<span class="n">my_project_ui</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="s2">&quot;my_project_ui.skore&quot;</span><span class="p">)</span>
+<a href="../generated/skore.Project.html#skore.Project" title="skore.Project" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">my_project_ui</span></a> <span class="o">=</span> <a href="../generated/skore.load.html#skore.load" title="skore.load" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-function"><span class="n">load</span></a><span class="p">(</span><span class="s2">&quot;my_project_ui.skore&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
-<section id="storing-an-integer">
-<h2>Storing an integer<a class="headerlink" href="#storing-an-integer" title="Link to this heading">#</a></h2>
-<p>Now, let us store our first object, for example an integer:</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_ui</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_int&quot;</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<section id="storing-integers">
+<h2>Storing integers<a class="headerlink" href="#storing-integers" title="Link to this heading">#</a></h2>
+<p>Now, let us store our first object using <a class="reference internal" href="../generated/skore.Project.html#skore.Project.put" title="skore.Project.put"><code class="xref py py-func docutils literal notranslate"><span class="pre">put()</span></code></a>, for example an integer:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="../generated/skore.Project.html#skore.Project.put" title="skore.Project.put" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-method"><span class="n">my_project_ui</span><span class="o">.</span><span class="n">put</span></a><span class="p">(</span><span class="s2">&quot;my_int&quot;</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Here, the name of the object is <code class="docutils literal notranslate"><span class="pre">my_int</span></code> and the integer value is 3.</p>
-<p>You can read it from the project:</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_ui</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;my_int&quot;</span><span class="p">)</span>
+<p>You can read it from the project by using <a class="reference internal" href="../generated/skore.Project.html#skore.Project.get" title="skore.Project.get"><code class="xref py py-func docutils literal notranslate"><span class="pre">get()</span></code></a>:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="../generated/skore.Project.html#skore.Project.get" title="skore.Project.get" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-method"><span class="n">my_project_ui</span><span class="o">.</span><span class="n">get</span></a><span class="p">(</span><span class="s2">&quot;my_int&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>3
 </pre></div>
 </div>
 <p>Careful; like in a traditional Python dictionary, the <code class="docutils literal notranslate"><span class="pre">put</span></code> method will <em>overwrite</em> past data if you use a key which already exists!</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_ui</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_int&quot;</span><span class="p">,</span> <span class="mi">30_000</span><span class="p">)</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="../generated/skore.Project.html#skore.Project.put" title="skore.Project.put" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-method"><span class="n">my_project_ui</span><span class="o">.</span><span class="n">put</span></a><span class="p">(</span><span class="s2">&quot;my_int&quot;</span><span class="p">,</span> <span class="mi">30_000</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Let us check the updated value:</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_ui</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;my_int&quot;</span><span class="p">)</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="../generated/skore.Project.html#skore.Project.get" title="skore.Project.get" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-method"><span class="n">my_project_ui</span><span class="o">.</span><span class="n">get</span></a><span class="p">(</span><span class="s2">&quot;my_int&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>30000
 </pre></div>
 </div>
-<p>By using the <code class="docutils literal notranslate"><span class="pre">delete_item</span></code> method, you can also delete an object so that your skore UI does not become cluttered:</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_ui</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_int_2&quot;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<p>By using the <a class="reference internal" href="../generated/skore.Project.html#skore.Project.delete_item" title="skore.Project.delete_item"><code class="xref py py-func docutils literal notranslate"><span class="pre">delete_item()</span></code></a> method, you can also delete an object so that your skore UI does not become cluttered:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="../generated/skore.Project.html#skore.Project.put" title="skore.Project.put" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-method"><span class="n">my_project_ui</span><span class="o">.</span><span class="n">put</span></a><span class="p">(</span><span class="s2">&quot;my_int_2&quot;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_ui</span><span class="o">.</span><span class="n">delete_item</span><span class="p">(</span><span class="s2">&quot;my_int_2&quot;</span><span class="p">)</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="../generated/skore.Project.html#skore.Project.delete_item" title="skore.Project.delete_item" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-method"><span class="n">my_project_ui</span><span class="o">.</span><span class="n">delete_item</span></a><span class="p">(</span><span class="s2">&quot;my_int_2&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>You can display all the keys in your project:</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_ui</span><span class="o">.</span><span class="n">list_item_keys</span><span class="p">()</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="../generated/skore.Project.html#skore.Project.list_item_keys" title="skore.Project.list_item_keys" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-method"><span class="n">my_project_ui</span><span class="o">.</span><span class="n">list_item_keys</span></a><span class="p">()</span>
 </pre></div>
 </div>
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>[&#39;my_int&#39;]
 </pre></div>
 </div>
 </section>
-<section id="storing-a-string">
-<h2>Storing a string<a class="headerlink" href="#storing-a-string" title="Link to this heading">#</a></h2>
+<section id="storing-strings-and-texts">
+<h2>Storing strings and texts<a class="headerlink" href="#storing-strings-and-texts" title="Link to this heading">#</a></h2>
 <p>We just stored a integer, now let us store some text using strings!</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_ui</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_string&quot;</span><span class="p">,</span> <span class="s2">&quot;Hello world!&quot;</span><span class="p">)</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="../generated/skore.Project.html#skore.Project.put" title="skore.Project.put" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-method"><span class="n">my_project_ui</span><span class="o">.</span><span class="n">put</span></a><span class="p">(</span><span class="s2">&quot;my_string&quot;</span><span class="p">,</span> <span class="s2">&quot;Hello world!&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_ui</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;my_string&quot;</span><span class="p">)</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="../generated/skore.Project.html#skore.Project.get" title="skore.Project.get" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-method"><span class="n">my_project_ui</span><span class="o">.</span><span class="n">get</span></a><span class="p">(</span><span class="s2">&quot;my_string&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>&#39;Hello world!&#39;
 </pre></div>
 </div>
-<p><code class="docutils literal notranslate"><span class="pre">my_project_ui.get</span></code> infers the type of the inserted object by default. For example, strings are assumed to be in Markdown format. Hence, you can customize the display of your text:</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_ui</span><span class="o">.</span><span class="n">put</span><span class="p">(</span>
+<p><a class="reference internal" href="../generated/skore.Project.html#skore.Project.get" title="skore.Project.get"><code class="xref py py-func docutils literal notranslate"><span class="pre">get()</span></code></a> infers the type of the inserted object by default. For example, strings are assumed to be in Markdown format. Hence, you can customize the display of your text:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="../generated/skore.Project.html#skore.Project.put" title="skore.Project.put" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-method"><span class="n">my_project_ui</span><span class="o">.</span><span class="n">put</span></a><span class="p">(</span>
     <span class="s2">&quot;my_string_2&quot;</span><span class="p">,</span>
     <span class="p">(</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Hello world!, **bold**, *italic*, `code`</span>
@@ -565,18 +565,22 @@ of items that you can store in a skore <a class="reference internal" href="../ge
 <span class="p">)</span>
 </pre></div>
 </div>
-<p>Moreover, you can also explicitly tell <cite>skore</cite> the media type of an object, for example in HTML:</p>
-<p>Note: we use <code class="docutils literal notranslate"><span class="pre">put_item</span></code> instead of <code class="docutils literal notranslate"><span class="pre">put</span></code>:</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_ui</span><span class="o">.</span><span class="n">put_item</span><span class="p">(</span>
+<p>Moreover, you can also explicitly tell skore the media type of an object, for example in HTML:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="../generated/skore.Project.html#skore.Project.put_item" title="skore.Project.put_item" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-method"><span class="n">my_project_ui</span><span class="o">.</span><span class="n">put_item</span></a><span class="p">(</span>
     <span class="s2">&quot;my_string_3&quot;</span><span class="p">,</span>
     <span class="n">MediaItem</span><span class="o">.</span><span class="n">factory</span><span class="p">(</span>
-        <span class="s2">&quot;&lt;p&gt;&lt;h1&gt;Title&lt;/h1&gt; &lt;b&gt;bold&lt;/b&gt;, &lt;i&gt;italic&lt;/i&gt;, etc.&lt;/p&gt;&quot;</span><span class="p">,</span> <span class="n">media_type</span><span class="o">=</span><span class="s2">&quot;text/html&quot;</span>
+        <span class="s2">&quot;&lt;p&gt;&lt;h1&gt;Title&lt;/h1&gt; &lt;b&gt;bold&lt;/b&gt;, &lt;i&gt;italic&lt;/i&gt;, etc.&lt;/p&gt;&quot;</span><span class="p">,</span>
+        <span class="n">media_type</span><span class="o">=</span><span class="s2">&quot;text/html&quot;</span>
     <span class="p">),</span>
 <span class="p">)</span>
 </pre></div>
 </div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>We used <a class="reference internal" href="../generated/skore.Project.html#skore.Project.put_item" title="skore.Project.put_item"><code class="xref py py-func docutils literal notranslate"><span class="pre">put_item()</span></code></a> instead of <a class="reference internal" href="../generated/skore.Project.html#skore.Project.put" title="skore.Project.put"><code class="xref py py-func docutils literal notranslate"><span class="pre">put()</span></code></a>.</p>
+</div>
 <p>Note that the media type is only used for the UI, and not in this notebook at hand:</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_project_ui</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;my_string_3&quot;</span><span class="p">)</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="../generated/skore.Project.html#skore.Project.get" title="skore.Project.get" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-method"><span class="n">my_project_ui</span><span class="o">.</span><span class="n">get</span></a><span class="p">(</span><span class="s2">&quot;my_string_3&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>b&#39;&lt;p&gt;&lt;h1&gt;Title&lt;/h1&gt; &lt;b&gt;bold&lt;/b&gt;, &lt;i&gt;italic&lt;/i&gt;, etc.&lt;/p&gt;&#39;
@@ -585,7 +589,7 @@ of items that you can store in a skore <a class="reference internal" href="../ge
 <p>You can also conveniently use a Python f-string:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">x</span> <span class="o">=</span> <span class="mi">2</span>
 <span class="n">y</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]</span>
-<span class="n">my_project_ui</span><span class="o">.</span><span class="n">put</span><span class="p">(</span>
+<a href="../generated/skore.Project.html#skore.Project.put" title="skore.Project.put" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-method"><span class="n">my_project_ui</span><span class="o">.</span><span class="n">put</span></a><span class="p">(</span>
     <span class="s2">&quot;my_string_4&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;The value of `x` is </span><span class="si">{</span><span class="n">x</span><span class="si">}</span><span class="s2"> and the value of `y` is </span><span class="si">{</span><span class="n">y</span><span class="si">}</span><span class="s2">.&quot;</span>
 <span class="p">)</span>
 </pre></div>
@@ -595,7 +599,7 @@ of items that you can store in a skore <a class="reference internal" href="../ge
 <h2>Storing many kinds of data<a class="headerlink" href="#storing-many-kinds-of-data" title="Link to this heading">#</a></h2>
 <p>Python list:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_list</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]</span>
-<span class="n">my_project_ui</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_list&quot;</span><span class="p">,</span> <span class="n">my_list</span><span class="p">)</span>
+<a href="../generated/skore.Project.html#skore.Project.put" title="skore.Project.put" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-method"><span class="n">my_project_ui</span><span class="o">.</span><span class="n">put</span></a><span class="p">(</span><span class="s2">&quot;my_list&quot;</span><span class="p">,</span> <span class="n">my_list</span><span class="p">)</span>
 <span class="n">my_list</span>
 </pre></div>
 </div>
@@ -607,7 +611,7 @@ of items that you can store in a skore <a class="reference internal" href="../ge
     <span class="s2">&quot;company&quot;</span><span class="p">:</span> <span class="s2">&quot;probabl&quot;</span><span class="p">,</span>
     <span class="s2">&quot;year&quot;</span><span class="p">:</span> <span class="mi">2023</span><span class="p">,</span>
 <span class="p">}</span>
-<span class="n">my_project_ui</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_dict&quot;</span><span class="p">,</span> <span class="n">my_dict</span><span class="p">)</span>
+<a href="../generated/skore.Project.html#skore.Project.put" title="skore.Project.put" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-method"><span class="n">my_project_ui</span><span class="o">.</span><span class="n">put</span></a><span class="p">(</span><span class="s2">&quot;my_dict&quot;</span><span class="p">,</span> <span class="n">my_dict</span><span class="p">)</span>
 <span class="n">my_dict</span>
 </pre></div>
 </div>
@@ -616,18 +620,18 @@ of items that you can store in a skore <a class="reference internal" href="../ge
 </div>
 <p>Numpy array:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
-<span class="n">my_project_ui</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_arr&quot;</span><span class="p">,</span> <span class="n">my_arr</span><span class="p">)</span>
+<a href="../generated/skore.Project.html#skore.Project.put" title="skore.Project.put" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-method"><span class="n">my_project_ui</span><span class="o">.</span><span class="n">put</span></a><span class="p">(</span><span class="s2">&quot;my_arr&quot;</span><span class="p">,</span> <span class="n">my_arr</span><span class="p">)</span>
 <span class="n">my_arr</span>
 </pre></div>
 </div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>array([[-1.34044143, -0.40148859, -0.51701723],
-       [-2.46025513,  0.32800382,  0.23328257],
-       [ 0.03001453, -0.47692534, -0.00838834]])
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>array([[-0.32904692,  0.31814297,  0.58070251],
+       [ 0.49370379, -0.97669951,  1.34551263],
+       [-1.19088011, -0.19826225,  0.19298488]])
 </pre></div>
 </div>
 <p>Pandas data frame:</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
-<span class="n">my_project_ui</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_df&quot;</span><span class="p">,</span> <span class="n">my_df</span><span class="p">)</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">my_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+<a href="../generated/skore.Project.html#skore.Project.put" title="skore.Project.put" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-method"><span class="n">my_project_ui</span><span class="o">.</span><span class="n">put</span></a><span class="p">(</span><span class="s2">&quot;my_df&quot;</span><span class="p">,</span> <span class="n">my_df</span><span class="p">)</span>
 <span class="n">my_df</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
 </pre></div>
 </div>
@@ -653,26 +657,50 @@ of items that you can store in a skore <a class="reference internal" href="../ge
       <th>0</th>
       <th>1</th>
       <th>2</th>
+      <th>3</th>
+      <th>4</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <th>0</th>
-      <td>-1.838476</td>
-      <td>1.133092</td>
-      <td>0.877153</td>
+      <td>1.069699</td>
+      <td>-0.676432</td>
+      <td>0.676294</td>
+      <td>1.062888</td>
+      <td>0.142485</td>
     </tr>
     <tr>
       <th>1</th>
-      <td>0.767168</td>
-      <td>-1.054779</td>
-      <td>0.946026</td>
+      <td>0.564130</td>
+      <td>0.966404</td>
+      <td>-0.681039</td>
+      <td>-0.841938</td>
+      <td>1.266124</td>
     </tr>
     <tr>
       <th>2</th>
-      <td>0.803104</td>
-      <td>2.075479</td>
-      <td>-0.976449</td>
+      <td>-0.376275</td>
+      <td>0.756494</td>
+      <td>-0.024506</td>
+      <td>0.583964</td>
+      <td>0.224596</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>-0.587457</td>
+      <td>0.363877</td>
+      <td>1.129912</td>
+      <td>-0.848390</td>
+      <td>-0.960184</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>-1.238452</td>
+      <td>-2.362436</td>
+      <td>0.430257</td>
+      <td>0.190562</td>
+      <td>-1.476640</td>
     </tr>
   </tbody>
 </table>
@@ -680,8 +708,8 @@ of items that you can store in a skore <a class="reference internal" href="../ge
 </div>
 <br />
 <br /></section>
-<section id="data-visualization">
-<h2>Data visualization<a class="headerlink" href="#data-visualization" title="Link to this heading">#</a></h2>
+<section id="storing-data-visualizations">
+<h2>Storing data visualizations<a class="headerlink" href="#storing-data-visualizations" title="Link to this heading">#</a></h2>
 <p>Note that, in the dashboard, the interactivity of plots is supported, for example for Altair and Plotly.</p>
 <p>Matplotlib figure:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
@@ -696,7 +724,7 @@ of items that you can store in a skore <a class="reference internal" href="../ge
 <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 
-<span class="n">my_project_ui</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_figure&quot;</span><span class="p">,</span> <span class="n">fig</span><span class="p">)</span>
+<a href="../generated/skore.Project.html#skore.Project.put" title="skore.Project.put" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-method"><span class="n">my_project_ui</span><span class="o">.</span><span class="n">put</span></a><span class="p">(</span><span class="s2">&quot;my_figure&quot;</span><span class="p">,</span> <span class="n">fig</span><span class="p">)</span>
 </pre></div>
 </div>
 <img src="../_images/sphx_glr_plot_02_overview_skore_ui_001.png" srcset="../_images/sphx_glr_plot_02_overview_skore_ui_001.png" alt="Simple Plot" class = "sphx-glr-single-img"/><p>Altair chart:</p>
@@ -713,16 +741,15 @@ of items that you can store in a skore <a class="reference internal" href="../ge
     <span class="o">.</span><span class="n">properties</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;My title&quot;</span><span class="p">)</span>
 <span class="p">)</span>
 
-<span class="n">my_project_ui</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_altair_chart&quot;</span><span class="p">,</span> <span class="n">my_altair_chart</span><span class="p">)</span>
+<a href="../generated/skore.Project.html#skore.Project.put" title="skore.Project.put" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-method"><span class="n">my_project_ui</span><span class="o">.</span><span class="n">put</span></a><span class="p">(</span><span class="s2">&quot;my_altair_chart&quot;</span><span class="p">,</span> <span class="n">my_altair_chart</span><span class="p">)</span>
 </pre></div>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>For Plotly figures, some users reported the following error when running Plotly cells:
-<code class="docutils literal notranslate"><span class="pre">`</span>
-<span class="pre">ValueError:</span> <span class="pre">Mime</span> <span class="pre">type</span> <span class="pre">rendering</span> <span class="pre">requires</span> <span class="pre">nbformat&gt;=4.2.0</span> <span class="pre">but</span> <span class="pre">it</span> <span class="pre">is</span> <span class="pre">not</span> <span class="pre">installed</span>
-<span class="pre">`</span></code>
-This is a Plotly issue which is documented <a class="reference external" href="https://github.com/plotly/plotly.py/issues/3285">here</a>; to solve it, we recommend installing nbformat in your environment, e.g. with</p>
+<code class="docutils literal notranslate"><span class="pre">ValueError:</span> <span class="pre">Mime</span> <span class="pre">type</span> <span class="pre">rendering</span> <span class="pre">requires</span> <span class="pre">nbformat&gt;=4.2.0</span> <span class="pre">but</span> <span class="pre">it</span> <span class="pre">is</span> <span class="pre">not</span> <span class="pre">installed</span></code>.
+This is a Plotly issue which is documented <a class="reference external" href="https://github.com/plotly/plotly.py/issues/3285">here</a>;
+to solve it, we recommend installing nbformat in your environment, e.g. with:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">pip install --upgrade nbformat</span>
 </pre></div>
 </div>
@@ -737,7 +764,7 @@ This is a Plotly issue which is documented <a class="reference external" href="h
     <span class="n">size</span><span class="o">=</span><span class="n">df</span><span class="o">.</span><span class="n">petal_length</span>
 <span class="p">)</span>
 
-<span class="n">my_project_ui</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_plotly_fig&quot;</span><span class="p">,</span> <span class="n">fig</span><span class="p">)</span>
+<a href="../generated/skore.Project.html#skore.Project.put" title="skore.Project.put" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-method"><span class="n">my_project_ui</span><span class="o">.</span><span class="n">put</span></a><span class="p">(</span><span class="s2">&quot;my_plotly_fig&quot;</span><span class="p">,</span> <span class="n">fig</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Animated Plotly figure:</p>
@@ -753,11 +780,11 @@ This is a Plotly issue which is documented <a class="reference external" href="h
     <span class="n">hover_name</span><span class="o">=</span><span class="s2">&quot;country&quot;</span><span class="p">,</span>
     <span class="n">log_x</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">size_max</span><span class="o">=</span><span class="mi">55</span><span class="p">,</span>
-    <span class="n">range_x</span><span class="o">=</span><span class="p">[</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100000</span><span class="p">],</span>
+    <span class="n">range_x</span><span class="o">=</span><span class="p">[</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100_000</span><span class="p">],</span>
     <span class="n">range_y</span><span class="o">=</span><span class="p">[</span><span class="mi">25</span><span class="p">,</span> <span class="mi">90</span><span class="p">],</span>
 <span class="p">)</span>
 
-<span class="n">my_project_ui</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_anim_plotly_fig&quot;</span><span class="p">,</span> <span class="n">my_anim_plotly_fig</span><span class="p">)</span>
+<a href="../generated/skore.Project.html#skore.Project.put" title="skore.Project.put" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-method"><span class="n">my_project_ui</span><span class="o">.</span><span class="n">put</span></a><span class="p">(</span><span class="s2">&quot;my_anim_plotly_fig&quot;</span><span class="p">,</span> <span class="n">my_anim_plotly_fig</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>PIL image:</p>
@@ -765,16 +792,16 @@ This is a Plotly issue which is documented <a class="reference external" href="h
 <span class="k">with</span> <span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">()</span> <span class="k">as</span> <span class="n">output</span><span class="p">:</span>
     <span class="n">my_pil_image</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;png&quot;</span><span class="p">)</span>
 
-<span class="n">my_project_ui</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_pil_image&quot;</span><span class="p">,</span> <span class="n">my_pil_image</span><span class="p">)</span>
+<a href="../generated/skore.Project.html#skore.Project.put" title="skore.Project.put" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-method"><span class="n">my_project_ui</span><span class="o">.</span><span class="n">put</span></a><span class="p">(</span><span class="s2">&quot;my_pil_image&quot;</span><span class="p">,</span> <span class="n">my_pil_image</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
-<section id="scikit-learn-models-and-pipelines">
-<h2>Scikit-learn models and pipelines<a class="headerlink" href="#scikit-learn-models-and-pipelines" title="Link to this heading">#</a></h2>
+<section id="storing-scikit-learn-models-and-pipelines">
+<h2>Storing scikit-learn models and pipelines<a class="headerlink" href="#storing-scikit-learn-models-and-pipelines" title="Link to this heading">#</a></h2>
 <p>As skore is developed by <a class="reference external" href="https://probabl.ai">Probabl</a>, the spin-off of scikit-learn, skore treats scikit-learn models and pipelines as first-class citizens.</p>
 <p>First of all, you can store a scikit-learn model:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html#sklearn.linear_model.Lasso" title="sklearn.linear_model.Lasso" class="sphx-glr-backref-module-sklearn-linear_model sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">my_model</span></a> <span class="o">=</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html#sklearn.linear_model.Lasso" title="sklearn.linear_model.Lasso" class="sphx-glr-backref-module-sklearn-linear_model sphx-glr-backref-type-py-class"><span class="n">Lasso</span></a><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-<span class="n">my_project_ui</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_model&quot;</span><span class="p">,</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html#sklearn.linear_model.Lasso" title="sklearn.linear_model.Lasso" class="sphx-glr-backref-module-sklearn-linear_model sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">my_model</span></a><span class="p">)</span>
+<a href="../generated/skore.Project.html#skore.Project.put" title="skore.Project.put" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-method"><span class="n">my_project_ui</span><span class="o">.</span><span class="n">put</span></a><span class="p">(</span><span class="s2">&quot;my_model&quot;</span><span class="p">,</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html#sklearn.linear_model.Lasso" title="sklearn.linear_model.Lasso" class="sphx-glr-backref-module-sklearn-linear_model sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">my_model</span></a><span class="p">)</span>
 <a href="https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html#sklearn.linear_model.Lasso" title="sklearn.linear_model.Lasso" class="sphx-glr-backref-module-sklearn-linear_model sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">my_model</span></a>
 </pre></div>
 </div>
@@ -1190,7 +1217,7 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html#sklearn.pipeline.Pipeline" title="sklearn.pipeline.Pipeline" class="sphx-glr-backref-module-sklearn-pipeline sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">my_pipeline</span></a> <span class="o">=</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html#sklearn.pipeline.Pipeline" title="sklearn.pipeline.Pipeline" class="sphx-glr-backref-module-sklearn-pipeline sphx-glr-backref-type-py-class"><span class="n">Pipeline</span></a><span class="p">(</span>
     <span class="p">[(</span><span class="s2">&quot;standard_scaler&quot;</span><span class="p">,</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.StandardScaler.html#sklearn.preprocessing.StandardScaler" title="sklearn.preprocessing.StandardScaler" class="sphx-glr-backref-module-sklearn-preprocessing sphx-glr-backref-type-py-class"><span class="n">StandardScaler</span></a><span class="p">()),</span> <span class="p">(</span><span class="s2">&quot;lasso&quot;</span><span class="p">,</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html#sklearn.linear_model.Lasso" title="sklearn.linear_model.Lasso" class="sphx-glr-backref-module-sklearn-linear_model sphx-glr-backref-type-py-class"><span class="n">Lasso</span></a><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mi">2</span><span class="p">))]</span>
 <span class="p">)</span>
-<span class="n">my_project_ui</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_pipeline&quot;</span><span class="p">,</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html#sklearn.pipeline.Pipeline" title="sklearn.pipeline.Pipeline" class="sphx-glr-backref-module-sklearn-pipeline sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">my_pipeline</span></a><span class="p">)</span>
+<a href="../generated/skore.Project.html#skore.Project.put" title="skore.Project.put" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-method"><span class="n">my_project_ui</span><span class="o">.</span><span class="n">put</span></a><span class="p">(</span><span class="s2">&quot;my_pipeline&quot;</span><span class="p">,</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html#sklearn.pipeline.Pipeline" title="sklearn.pipeline.Pipeline" class="sphx-glr-backref-module-sklearn-pipeline sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">my_pipeline</span></a><span class="p">)</span>
 <a href="https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html#sklearn.pipeline.Pipeline" title="sklearn.pipeline.Pipeline" class="sphx-glr-backref-module-sklearn-pipeline sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">my_pipeline</span></a>
 </pre></div>
 </div>
@@ -1610,7 +1637,7 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
 <span class="n">y</span> <span class="o">=</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.utils.Bunch.html#sklearn.utils.Bunch" title="sklearn.utils.Bunch" class="sphx-glr-backref-module-sklearn-utils sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">diabetes</span></a><span class="o">.</span><span class="n">target</span><span class="p">[:</span><span class="mi">150</span><span class="p">]</span>
 <a href="https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html#sklearn.pipeline.Pipeline.fit" title="sklearn.pipeline.Pipeline.fit" class="sphx-glr-backref-module-sklearn-pipeline sphx-glr-backref-type-py-method"><span class="n">my_pipeline</span><span class="o">.</span><span class="n">fit</span></a><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
 
-<span class="n">my_project_ui</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;my_fitted_pipeline&quot;</span><span class="p">,</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html#sklearn.pipeline.Pipeline" title="sklearn.pipeline.Pipeline" class="sphx-glr-backref-module-sklearn-pipeline sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">my_pipeline</span></a><span class="p">)</span>
+<a href="../generated/skore.Project.html#skore.Project.put" title="skore.Project.put" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-method"><span class="n">my_project_ui</span><span class="o">.</span><span class="n">put</span></a><span class="p">(</span><span class="s2">&quot;my_fitted_pipeline&quot;</span><span class="p">,</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html#sklearn.pipeline.Pipeline" title="sklearn.pipeline.Pipeline" class="sphx-glr-backref-module-sklearn-pipeline sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">my_pipeline</span></a><span class="p">)</span>
 <a href="https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html#sklearn.pipeline.Pipeline" title="sklearn.pipeline.Pipeline" class="sphx-glr-backref-module-sklearn-pipeline sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">my_pipeline</span></a>
 </pre></div>
 </div>
@@ -2024,7 +2051,7 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
                 (&#x27;lasso&#x27;, Lasso(alpha=2))])</pre></div> </div></div><div class="sk-serial"><div class="sk-item"><div class="sk-estimator fitted sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-19" type="checkbox" ><label for="sk-estimator-id-19" class="sk-toggleable__label fitted sk-toggleable__label-arrow fitted">&nbsp;StandardScaler<a class="sk-estimator-doc-link fitted" rel="noreferrer" target="_blank" href="https://scikit-learn.org/1.5/modules/generated/sklearn.preprocessing.StandardScaler.html">?<span>Documentation for StandardScaler</span></a></label><div class="sk-toggleable__content fitted"><pre>StandardScaler()</pre></div> </div></div><div class="sk-item"><div class="sk-estimator fitted sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-20" type="checkbox" ><label for="sk-estimator-id-20" class="sk-toggleable__label fitted sk-toggleable__label-arrow fitted">&nbsp;Lasso<a class="sk-estimator-doc-link fitted" rel="noreferrer" target="_blank" href="https://scikit-learn.org/1.5/modules/generated/sklearn.linear_model.Lasso.html">?<span>Documentation for Lasso</span></a></label><div class="sk-toggleable__content fitted"><pre>Lasso(alpha=2)</pre></div> </div></div></div></div></div></div>
 </div>
 <br />
-<br /><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 1.533 seconds)</p>
+<br /><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 1.402 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-02-overview-skore-ui-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/e7cbd7f6fc2c2626a6c20bf80bc30ea7/plot_02_overview_skore_ui.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_02_overview_skore_ui.ipynb</span></code></a></p>
@@ -2088,11 +2115,11 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#creating-and-loading-a-skore-project">Creating and loading a skore project</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#storing-an-integer">Storing an integer</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#storing-a-string">Storing a string</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#storing-integers">Storing integers</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#storing-strings-and-texts">Storing strings and texts</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#storing-many-kinds-of-data">Storing many kinds of data</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data-visualization">Data visualization</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#scikit-learn-models-and-pipelines">Scikit-learn models and pipelines</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#storing-data-visualizations">Storing data visualizations</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#storing-scikit-learn-models-and-pipelines">Storing scikit-learn models and pipelines</a></li>
 </ul>
   </nav></div>
 

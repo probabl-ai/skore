@@ -35,7 +35,7 @@ function onBeforeLeave(el: Element) {
   top: 0;
   right: 0;
   width: 100dvw;
-  padding: var(--spacing-padding-large);
+  padding: var(--spacing-20);
   pointer-events: none;
 
   & .toasts {
@@ -43,7 +43,7 @@ function onBeforeLeave(el: Element) {
     display: flex;
     flex-direction: column-reverse;
     align-items: center;
-    gap: var(--spacing-gap-normal);
+    gap: var(--spacing-12);
 
     & > div {
       z-index: 2;
@@ -55,7 +55,7 @@ function onBeforeLeave(el: Element) {
 .toasts-move,
 .toasts-enter-active,
 .toasts-leave-active {
-  transition: all var(--transition-duration) var(--transition-easing);
+  transition: all var(--animation-duration) var(--animation-easing);
 }
 
 .toasts-enter-from {

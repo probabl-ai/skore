@@ -14,7 +14,7 @@ With skore, data scientists can:
 These are only the first features: `skore` is a work in progress and aims to be an end-to-end library for data scientists.
 Stay tuned, and join [our Discord](https://discord.probabl.ai) if you want to give us feedback!
 
-![GIF: short demo of skore](https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_10_30_skore_demo.gif)
+![GIF: short demo of skore](https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_10_31_skore_demo_compressed.gif)
 
 ## ⚙️ Installation
 
@@ -29,7 +29,7 @@ pip install -U skore
 
 ## 🚀 Quick start
 
-For more information on how and why to use skore, see our [documentation](https://probabl-ai.github.io/skore/latest/auto_examples/index.html).
+(For more information on how and why to use skore, see our [documentation](https://probabl-ai.github.io/skore/latest/auto_examples/index.html).)
 
 1. From your shell, initialize a skore project, here named `my_project`:
 ```bash
@@ -51,6 +51,7 @@ python -m skore launch "my_project"
 This will automatically open a browser at the UI's location:
 1. On the top left, by default, you can observe that you are in a _View_ called `default`. You can rename this view or create another one.
 2. From the _Items_ section on the bottom left, you can add stored items to this view, either by clicking on `+` or by doing drag-and-drop.
+3. In the skore UI on the right, you can drag-and-drop items to re-order them, remove items, etc.
 
 ## 🔨 Contributing
 

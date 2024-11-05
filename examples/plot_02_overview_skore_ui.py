@@ -47,10 +47,10 @@ my_project_ui = load("my_project_ui.skore")
 
 
 # %%
-# Storing an integer
-# ==================
+# Storing integers
+# ================
 #
-# Now, let us store our first object, for example an integer:
+# Now, let us store our first object using :func:`~skore.Project.put`, for example an integer:
 
 # %%
 my_project_ui.put("my_int", 3)
@@ -58,7 +58,7 @@ my_project_ui.put("my_int", 3)
 # %%
 # Here, the name of the object is ``my_int`` and the integer value is 3.
 #
-# You can read it from the project:
+# You can read it from the project by using :func:`~skore.Project.get`:
 
 # %%
 my_project_ui.get("my_int")
@@ -76,7 +76,7 @@ my_project_ui.put("my_int", 30_000)
 my_project_ui.get("my_int")
 
 # %%
-# By using the ``delete_item`` method, you can also delete an object so that your skore UI does not become cluttered:
+# By using the :func:`~skore.Project.delete_item` method, you can also delete an object so that your skore UI does not become cluttered:
 
 # %%
 my_project_ui.put("my_int_2", 10)
@@ -91,8 +91,8 @@ my_project_ui.delete_item("my_int_2")
 my_project_ui.list_item_keys()
 
 # %%
-# Storing a string
-# ================
+# Storing strings and texts
+# =========================
 
 # %%
 # We just stored a integer, now let us store some text using strings!
@@ -104,7 +104,7 @@ my_project_ui.put("my_string", "Hello world!")
 my_project_ui.get("my_string")
 
 # %%
-# ``my_project_ui.get`` infers the type of the inserted object by default. For example, strings are assumed to be in Markdown format. Hence, you can customize the display of your text:
+# :func:`~skore.Project.get` infers the type of the inserted object by default. For example, strings are assumed to be in Markdown format. Hence, you can customize the display of your text:
 
 # %%
 my_project_ui.put(
@@ -121,16 +121,20 @@ def my_func(x):
 )
 
 # %%
-# Moreover, you can also explicitly tell `skore` the media type of an object, for example in HTML:
+# Moreover, you can also explicitly tell skore the media type of an object, for example in HTML:
 
 # %%
-# Note: we use ``put_item`` instead of ``put``:
 my_project_ui.put_item(
     "my_string_3",
     MediaItem.factory(
-        "<p><h1>Title</h1> <b>bold</b>, <i>italic</i>, etc.</p>", media_type="text/html"
+        "<p><h1>Title</h1> <b>bold</b>, <i>italic</i>, etc.</p>",
+        media_type="text/html"
     ),
 )
+
+#%%
+# .. note::
+#   We used :func:`~skore.Project.put_item` instead of :func:`~skore.Project.put`.
 
 # %%
 # Note that the media type is only used for the UI, and not in this notebook at hand:
@@ -183,13 +187,13 @@ my_arr
 # Pandas data frame:
 
 # %%
-my_df = pd.DataFrame(np.random.randn(3, 3))
+my_df = pd.DataFrame(np.random.randn(10, 5))
 my_project_ui.put("my_df", my_df)
 my_df.head()
 
 # %%
-# Data visualization
-# ==================
+# Storing data visualizations
+# ===========================
 #
 # Note that, in the dashboard, the interactivity of plots is supported, for example for Altair and Plotly.
 
@@ -233,12 +237,11 @@ my_project_ui.put("my_altair_chart", my_altair_chart)
 # %%
 # .. note::
 #     For Plotly figures, some users reported the following error when running Plotly cells:
-#     ```
-#     ValueError: Mime type rendering requires nbformat>=4.2.0 but it is not installed
-#     ```
-#     This is a Plotly issue which is documented `here <https://github.com/plotly/plotly.py/issues/3285>`_; to solve it, we recommend installing nbformat in your environment, e.g. with
+#     ``ValueError: Mime type rendering requires nbformat>=4.2.0 but it is not installed``.
+#     This is a Plotly issue which is documented `here <https://github.com/plotly/plotly.py/issues/3285>`_;
+#     to solve it, we recommend installing nbformat in your environment, e.g. with:
 #
-#     .. code:: console
+#     .. code-block:: console
 #
 #         pip install --upgrade nbformat
 
@@ -273,7 +276,7 @@ my_anim_plotly_fig = px.scatter(
     hover_name="country",
     log_x=True,
     size_max=55,
-    range_x=[100, 100000],
+    range_x=[100, 100_000],
     range_y=[25, 90],
 )
 
@@ -290,8 +293,8 @@ with io.BytesIO() as output:
 my_project_ui.put("my_pil_image", my_pil_image)
 
 # %%
-# Scikit-learn models and pipelines
-# =================================
+# Storing scikit-learn models and pipelines
+# =========================================
 #
 # As skore is developed by `Probabl <https://probabl.ai>`_, the spin-off of scikit-learn, skore treats scikit-learn models and pipelines as first-class citizens.
 #

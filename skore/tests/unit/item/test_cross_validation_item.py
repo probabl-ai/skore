@@ -1,6 +1,6 @@
 import numpy
 import pytest
-from skore.item import CrossValidationItem
+from skore.item import CrossValidationItem, ItemTypeError
 
 
 class TestCrossValidationItem:
@@ -9,8 +9,13 @@ class TestCrossValidationItem:
         monkeypatch.setattr("skore.item.item.datetime", MockDatetime)
 
     def test_factory_exception(self):
-        with pytest.raises(TypeError):
-            CrossValidationItem.factory(None)
+        with pytest.raises(ItemTypeError):
+            CrossValidationItem.factory(
+                cv_results=None,
+                estimator=None,
+                X=None,
+                y=None,
+            )
 
     def test_factory(self, monkeypatch, mock_nowstr):
         monkeypatch.setattr(

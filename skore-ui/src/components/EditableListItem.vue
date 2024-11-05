@@ -93,12 +93,10 @@ onMounted(() => {
   height: 25px;
   align-items: center;
   justify-content: space-between;
-  padding: var(--spacing-padding-small);
-  border-radius: var(--border-radius);
+  padding: var(--spacing-6);
+  border-radius: var(--radius-xs);
   cursor: pointer;
-  font-size: var(--text-size-normal);
-  font-weight: var(--text-weight-highlight);
-  transition: background-color var(--transition-duration) var(--transition-easing);
+  transition: background-color var(--animation-duration) var(--animation-easing);
 
   .icon {
     color: var(--color-orange);
@@ -106,30 +104,29 @@ onMounted(() => {
 
   .label {
     min-width: 100px;
-    color: var(--text-color-highlight);
     line-height: 2;
     outline: none;
-    transition: font-weight var(--transition-duration) var(--transition-easing);
+    transition: font-weight var(--animation-duration) var(--animation-easing);
 
     &[contenteditable="true"] {
-      background-color: var(--color-primary);
-      caret-color: var(--color-secondary);
-      color: var(--button-color);
+      background-color: var(--color-background-primary);
+      caret-color: var(--color-background-branding);
+      color: var(--color-text-button-primary);
       cursor: text;
     }
   }
 
   .icon:has(+ .label) {
-    padding-right: var(--spacing-padding-small);
+    padding-right: var(--spacing-6);
   }
 
   .dropdown {
     opacity: 0;
-    transition: opacity var(--transition-duration) var(--transition-easing);
+    transition: opacity var(--animation-duration) var(--animation-easing);
   }
 
   &:hover {
-    background-color: var(--background-color-elevated);
+    background-color: var(--color-background-secondary);
 
     .label {
       font-weight: 500;

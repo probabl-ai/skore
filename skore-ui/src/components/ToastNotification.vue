@@ -88,9 +88,9 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--spacing-padding-normal) var(--spacing-padding-large);
+  padding: var(--spacing-12) var(--spacing-20);
   border: 2px solid var(--toast-border-color);
-  border-radius: 32px;
+  border-radius: var(--radius-xl);
   background-color: var(--toast-background-color);
   background-image: linear-gradient(to right, var(--toast-background-color) 20%, transparent 100%),
     repeating-linear-gradient(
@@ -128,10 +128,7 @@ onBeforeUnmount(() => {
     z-index: 2;
     display: flex;
     align-items: center;
-    color: var(--toast-text-color);
-    font-size: var(--text-size-highlight);
-    font-weight: var(--text-weight-highlight);
-    gap: var(--spacing-gap-normal);
+    gap: var(--spacing-12);
 
     & .icon-wrapper {
       & .icon {
@@ -185,7 +182,7 @@ onBeforeUnmount(() => {
   & .actions {
     display: flex;
     align-items: center;
-    gap: var(--spacing-gap-normal);
+    gap: var(--spacing-12);
     pointer-events: auto;
 
     & button {
@@ -193,8 +190,6 @@ onBeforeUnmount(() => {
       background: none;
       color: var(--toast-dismiss-color);
       cursor: pointer;
-      font-size: var(--text-size-normal);
-      font-weight: var(--text-weight-normal);
     }
   }
 }

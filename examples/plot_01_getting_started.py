@@ -135,16 +135,13 @@ from skore import cross_validate
 cv_results = cross_validate(Ridge(), X, y, cv=5, project=my_project)
 
 fig_plotly = my_project.get_item("cross_validation").plot
-fig_plotly
 
 # %%
 # .. note::
 #   Because Plotly graphs currently do not properly render in our Sphinx
 #   auto-examples docs engine due to
 #   `a bug in Plotly <https://github.com/plotly/plotly.py/issues/4828>`_,
-#   we also display its static image below.
-#   Alternatively, we recommend zooming in / out in your browser window for the
-#   Plotly graphs to display properly.
+#   we display its static image below.
 
 # %%
 import matplotlib.pyplot as plt
@@ -170,7 +167,7 @@ plt.show()
 # #. In the skore UI on the right, you can drag-and-drop items to re-order them, remove items, etc.
 
 # %%
-# .. image:: https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_10_30_skore_demo.gif
+# .. image:: https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_10_31_skore_demo_compressed.gif
 #   :alt: Getting started with ``skore`` demo
 
 # %%

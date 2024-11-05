@@ -103,10 +103,10 @@ Creating and loading a skore project
 
 .. GENERATED FROM PYTHON SOURCE LINES 50-54
 
-Storing an integer
-==================
+Storing integers
+================
 
-Now, let us store our first object, for example an integer:
+Now, let us store our first object using :func:`~skore.Project.put`, for example an integer:
 
 .. GENERATED FROM PYTHON SOURCE LINES 56-58
 
@@ -125,7 +125,7 @@ Now, let us store our first object, for example an integer:
 
 Here, the name of the object is ``my_int`` and the integer value is 3.
 
-You can read it from the project:
+You can read it from the project by using :func:`~skore.Project.get`:
 
 .. GENERATED FROM PYTHON SOURCE LINES 64-66
 
@@ -188,7 +188,7 @@ Let us check the updated value:
 
 .. GENERATED FROM PYTHON SOURCE LINES 79-80
 
-By using the ``delete_item`` method, you can also delete an object so that your skore UI does not become cluttered:
+By using the :func:`~skore.Project.delete_item` method, you can also delete an object so that your skore UI does not become cluttered:
 
 .. GENERATED FROM PYTHON SOURCE LINES 82-84
 
@@ -241,8 +241,8 @@ You can display all the keys in your project:
 
 .. GENERATED FROM PYTHON SOURCE LINES 94-96
 
-Storing a string
-================
+Storing strings and texts
+=========================
 
 .. GENERATED FROM PYTHON SOURCE LINES 98-99
 
@@ -282,7 +282,7 @@ We just stored a integer, now let us store some text using strings!
 
 .. GENERATED FROM PYTHON SOURCE LINES 107-108
 
-``my_project_ui.get`` infers the type of the inserted object by default. For example, strings are assumed to be in Markdown format. Hence, you can customize the display of your text:
+:func:`~skore.Project.get` infers the type of the inserted object by default. For example, strings are assumed to be in Markdown format. Hence, you can customize the display of your text:
 
 .. GENERATED FROM PYTHON SOURCE LINES 110-123
 
@@ -310,20 +310,17 @@ We just stored a integer, now let us store some text using strings!
 
 .. GENERATED FROM PYTHON SOURCE LINES 124-125
 
-Moreover, you can also explicitly tell `skore` the media type of an object, for example in HTML:
+Moreover, you can also explicitly tell skore the media type of an object, for example in HTML:
 
-.. GENERATED FROM PYTHON SOURCE LINES 127-128
-
-Note: we use ``put_item`` instead of ``put``:
-
-.. GENERATED FROM PYTHON SOURCE LINES 128-135
+.. GENERATED FROM PYTHON SOURCE LINES 127-135
 
 .. code-block:: Python
 
     my_project_ui.put_item(
         "my_string_3",
         MediaItem.factory(
-            "<p><h1>Title</h1> <b>bold</b>, <i>italic</i>, etc.</p>", media_type="text/html"
+            "<p><h1>Title</h1> <b>bold</b>, <i>italic</i>, etc.</p>",
+            media_type="text/html"
         ),
     )
 
@@ -334,11 +331,16 @@ Note: we use ``put_item`` instead of ``put``:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 136-137
+.. GENERATED FROM PYTHON SOURCE LINES 136-138
+
+.. note::
+  We used :func:`~skore.Project.put_item` instead of :func:`~skore.Project.put`.
+
+.. GENERATED FROM PYTHON SOURCE LINES 140-141
 
 Note that the media type is only used for the UI, and not in this notebook at hand:
 
-.. GENERATED FROM PYTHON SOURCE LINES 139-141
+.. GENERATED FROM PYTHON SOURCE LINES 143-145
 
 .. code-block:: Python
 
@@ -357,11 +359,11 @@ Note that the media type is only used for the UI, and not in this notebook at ha
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 142-143
+.. GENERATED FROM PYTHON SOURCE LINES 146-147
 
 You can also conveniently use a Python f-string:
 
-.. GENERATED FROM PYTHON SOURCE LINES 145-151
+.. GENERATED FROM PYTHON SOURCE LINES 149-155
 
 .. code-block:: Python
 
@@ -378,16 +380,16 @@ You can also conveniently use a Python f-string:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 152-154
+.. GENERATED FROM PYTHON SOURCE LINES 156-158
 
 Storing many kinds of data
 ==========================
 
-.. GENERATED FROM PYTHON SOURCE LINES 156-157
+.. GENERATED FROM PYTHON SOURCE LINES 160-161
 
 Python list:
 
-.. GENERATED FROM PYTHON SOURCE LINES 159-163
+.. GENERATED FROM PYTHON SOURCE LINES 163-167
 
 .. code-block:: Python
 
@@ -408,11 +410,11 @@ Python list:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 164-165
+.. GENERATED FROM PYTHON SOURCE LINES 168-169
 
 Python dictionary:
 
-.. GENERATED FROM PYTHON SOURCE LINES 167-174
+.. GENERATED FROM PYTHON SOURCE LINES 171-178
 
 .. code-block:: Python
 
@@ -436,11 +438,11 @@ Python dictionary:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 175-176
+.. GENERATED FROM PYTHON SOURCE LINES 179-180
 
 Numpy array:
 
-.. GENERATED FROM PYTHON SOURCE LINES 178-182
+.. GENERATED FROM PYTHON SOURCE LINES 182-186
 
 .. code-block:: Python
 
@@ -457,21 +459,21 @@ Numpy array:
  .. code-block:: none
 
 
-    array([[-1.34044143, -0.40148859, -0.51701723],
-           [-2.46025513,  0.32800382,  0.23328257],
-           [ 0.03001453, -0.47692534, -0.00838834]])
+    array([[-0.32904692,  0.31814297,  0.58070251],
+           [ 0.49370379, -0.97669951,  1.34551263],
+           [-1.19088011, -0.19826225,  0.19298488]])
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 183-184
+.. GENERATED FROM PYTHON SOURCE LINES 187-188
 
 Pandas data frame:
 
-.. GENERATED FROM PYTHON SOURCE LINES 186-190
+.. GENERATED FROM PYTHON SOURCE LINES 190-194
 
 .. code-block:: Python
 
-    my_df = pd.DataFrame(np.random.randn(3, 3))
+    my_df = pd.DataFrame(np.random.randn(10, 5))
     my_project_ui.put("my_df", my_df)
     my_df.head()
 
@@ -504,26 +506,50 @@ Pandas data frame:
           <th>0</th>
           <th>1</th>
           <th>2</th>
+          <th>3</th>
+          <th>4</th>
         </tr>
       </thead>
       <tbody>
         <tr>
           <th>0</th>
-          <td>-1.838476</td>
-          <td>1.133092</td>
-          <td>0.877153</td>
+          <td>1.069699</td>
+          <td>-0.676432</td>
+          <td>0.676294</td>
+          <td>1.062888</td>
+          <td>0.142485</td>
         </tr>
         <tr>
           <th>1</th>
-          <td>0.767168</td>
-          <td>-1.054779</td>
-          <td>0.946026</td>
+          <td>0.564130</td>
+          <td>0.966404</td>
+          <td>-0.681039</td>
+          <td>-0.841938</td>
+          <td>1.266124</td>
         </tr>
         <tr>
           <th>2</th>
-          <td>0.803104</td>
-          <td>2.075479</td>
-          <td>-0.976449</td>
+          <td>-0.376275</td>
+          <td>0.756494</td>
+          <td>-0.024506</td>
+          <td>0.583964</td>
+          <td>0.224596</td>
+        </tr>
+        <tr>
+          <th>3</th>
+          <td>-0.587457</td>
+          <td>0.363877</td>
+          <td>1.129912</td>
+          <td>-0.848390</td>
+          <td>-0.960184</td>
+        </tr>
+        <tr>
+          <th>4</th>
+          <td>-1.238452</td>
+          <td>-2.362436</td>
+          <td>0.430257</td>
+          <td>0.190562</td>
+          <td>-1.476640</td>
         </tr>
       </tbody>
     </table>
@@ -532,18 +558,18 @@ Pandas data frame:
     <br />
     <br />
 
-.. GENERATED FROM PYTHON SOURCE LINES 191-195
+.. GENERATED FROM PYTHON SOURCE LINES 195-199
 
-Data visualization
-==================
+Storing data visualizations
+===========================
 
 Note that, in the dashboard, the interactivity of plots is supported, for example for Altair and Plotly.
 
-.. GENERATED FROM PYTHON SOURCE LINES 197-198
+.. GENERATED FROM PYTHON SOURCE LINES 201-202
 
 Matplotlib figure:
 
-.. GENERATED FROM PYTHON SOURCE LINES 200-214
+.. GENERATED FROM PYTHON SOURCE LINES 204-218
 
 .. code-block:: Python
 
@@ -573,11 +599,11 @@ Matplotlib figure:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 215-216
+.. GENERATED FROM PYTHON SOURCE LINES 219-220
 
 Altair chart:
 
-.. GENERATED FROM PYTHON SOURCE LINES 218-233
+.. GENERATED FROM PYTHON SOURCE LINES 222-237
 
 .. code-block:: Python
 
@@ -603,24 +629,23 @@ Altair chart:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 234-244
+.. GENERATED FROM PYTHON SOURCE LINES 238-247
 
 .. note::
     For Plotly figures, some users reported the following error when running Plotly cells:
-    ```
-    ValueError: Mime type rendering requires nbformat>=4.2.0 but it is not installed
-    ```
-    This is a Plotly issue which is documented `here <https://github.com/plotly/plotly.py/issues/3285>`_; to solve it, we recommend installing nbformat in your environment, e.g. with
+    ``ValueError: Mime type rendering requires nbformat>=4.2.0 but it is not installed``.
+    This is a Plotly issue which is documented `here <https://github.com/plotly/plotly.py/issues/3285>`_;
+    to solve it, we recommend installing nbformat in your environment, e.g. with:
 
-    .. code:: console
+    .. code-block:: console
 
         pip install --upgrade nbformat
 
-.. GENERATED FROM PYTHON SOURCE LINES 246-247
+.. GENERATED FROM PYTHON SOURCE LINES 249-250
 
 Plotly figure:
 
-.. GENERATED FROM PYTHON SOURCE LINES 249-260
+.. GENERATED FROM PYTHON SOURCE LINES 252-263
 
 .. code-block:: Python
 
@@ -642,11 +667,11 @@ Plotly figure:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 261-262
+.. GENERATED FROM PYTHON SOURCE LINES 264-265
 
 Animated Plotly figure:
 
-.. GENERATED FROM PYTHON SOURCE LINES 264-282
+.. GENERATED FROM PYTHON SOURCE LINES 267-285
 
 .. code-block:: Python
 
@@ -662,7 +687,7 @@ Animated Plotly figure:
         hover_name="country",
         log_x=True,
         size_max=55,
-        range_x=[100, 100000],
+        range_x=[100, 100_000],
         range_y=[25, 90],
     )
 
@@ -675,11 +700,11 @@ Animated Plotly figure:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 283-284
+.. GENERATED FROM PYTHON SOURCE LINES 286-287
 
 PIL image:
 
-.. GENERATED FROM PYTHON SOURCE LINES 286-292
+.. GENERATED FROM PYTHON SOURCE LINES 289-295
 
 .. code-block:: Python
 
@@ -696,16 +721,16 @@ PIL image:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 293-299
+.. GENERATED FROM PYTHON SOURCE LINES 296-302
 
-Scikit-learn models and pipelines
-=================================
+Storing scikit-learn models and pipelines
+=========================================
 
 As skore is developed by `Probabl <https://probabl.ai>`_, the spin-off of scikit-learn, skore treats scikit-learn models and pipelines as first-class citizens.
 
 First of all, you can store a scikit-learn model:
 
-.. GENERATED FROM PYTHON SOURCE LINES 301-305
+.. GENERATED FROM PYTHON SOURCE LINES 304-308
 
 .. code-block:: Python
 
@@ -1130,11 +1155,11 @@ First of all, you can store a scikit-learn model:
     <br />
     <br />
 
-.. GENERATED FROM PYTHON SOURCE LINES 306-307
+.. GENERATED FROM PYTHON SOURCE LINES 309-310
 
 You can also store scikit-learn pipelines:
 
-.. GENERATED FROM PYTHON SOURCE LINES 309-315
+.. GENERATED FROM PYTHON SOURCE LINES 312-318
 
 .. code-block:: Python
 
@@ -1563,11 +1588,11 @@ You can also store scikit-learn pipelines:
     <br />
     <br />
 
-.. GENERATED FROM PYTHON SOURCE LINES 316-317
+.. GENERATED FROM PYTHON SOURCE LINES 319-320
 
 Moreover, you can store fitted scikit-learn pipelines:
 
-.. GENERATED FROM PYTHON SOURCE LINES 319-326
+.. GENERATED FROM PYTHON SOURCE LINES 322-329
 
 .. code-block:: Python
 
@@ -2000,7 +2025,7 @@ Moreover, you can store fitted scikit-learn pipelines:
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 1.533 seconds)
+   **Total running time of the script:** (0 minutes 1.402 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_02_overview_skore_ui.py:

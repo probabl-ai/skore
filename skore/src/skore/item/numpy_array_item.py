@@ -6,12 +6,13 @@ This module defines the NumpyArrayItem class, which represents a NumPy array ite
 from __future__ import annotations
 
 from functools import cached_property
+from json import dumps, loads
 from typing import TYPE_CHECKING
+
+from skore.item.item import Item, ItemTypeError
 
 if TYPE_CHECKING:
     import numpy
-
-from skore.item.item import Item
 
 
 class NumpyArrayItem(Item):
@@ -19,27 +20,11 @@ class NumpyArrayItem(Item):
     A class to represent a NumPy array item.
 
     This class encapsulates a NumPy array along with its creation and update timestamps.
-
-    Attributes
-    ----------
-    array_list : list
-        The list representation of the NumPy array.
-    created_at : str
-        The timestamp when the item was created, in ISO format.
-    updated_at : str
-        The timestamp when the item was last updated, in ISO format.
-
-    Methods
-    -------
-    array() : numpy.ndarray
-        Returns the NumPy array representation of the stored list.
-    factory(array: numpy.ndarray) : NumpyArrayItem
-        Creates a new NumpyArrayItem instance from a NumPy array.
     """
 
     def __init__(
         self,
-        array_list: list,
+        array_json: str,
         created_at: str | None = None,
         updated_at: str | None = None,
     ):
@@ -48,8 +33,8 @@ class NumpyArrayItem(Item):
 
         Parameters
         ----------
-        array_list : list
-            The list representation of the NumPy array.
+        array_json : str
+            The JSON representation of the array.
         created_at : str
             The creation timestamp in ISO format.
         updated_at : str
@@ -57,21 +42,20 @@ class NumpyArrayItem(Item):
         """
         super().__init__(created_at, updated_at)
 
-        self.array_list = array_list
+        self.array_json = array_json
 
     @cached_property
     def array(self) -> numpy.ndarray:
         """
-        Convert the stored list to a NumPy array.
+        The numpy array from the persistence.
 
-        Returns
-        -------
-        numpy.ndarray
-            The NumPy array representation of the stored list.
+        Its content can differ from the original array because it has been serialized
+        using `json.dumps` function and not pickled, in order to be
+        environment-independent.
         """
         import numpy
 
-        return numpy.asarray(self.array_list)
+        return numpy.asarray(loads(self.array_json))
 
     @classmethod
     def factory(cls, array: numpy.ndarray) -> NumpyArrayItem:
@@ -91,11 +75,6 @@ class NumpyArrayItem(Item):
         import numpy
 
         if not isinstance(array, numpy.ndarray):
-            raise TypeError(f"Type '{array.__class__}' is not supported.")
+            raise ItemTypeError(f"Type '{array.__class__}' is not supported.")
 
-        instance = cls(array_list=array.tolist())
-
-        # add array as cached property
-        instance.array = array
-
-        return instance
+        return cls(array_json=dumps(array.tolist()))
