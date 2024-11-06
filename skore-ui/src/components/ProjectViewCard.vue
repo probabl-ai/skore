@@ -120,6 +120,12 @@ onBeforeUnmount(() => {
         font-size: var(--font-size-xs);
 
         & .warning {
+          & .icon-warning {
+            display: inline-block;
+            font-size: var(--font-size-md);
+            transform: translateY(4px);
+          }
+
           & a,
           & a:visited {
             color: var(--color-text-secondary);
@@ -146,6 +152,11 @@ onBeforeUnmount(() => {
       gap: var(--spacing-4);
       opacity: 0;
       transition: opacity var(--animation-duration) var(--animation-easing);
+
+      & .dropdown,
+      & .button {
+        font-size: var(--font-size-md);
+      }
     }
   }
 

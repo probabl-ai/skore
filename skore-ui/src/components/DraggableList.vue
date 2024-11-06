@@ -252,7 +252,7 @@ onBeforeUnmount(() => {
 
     & .handle {
       position: absolute;
-      top: -4px;
+      top: 6px;
       left: 0;
       display: flex;
       color: var(--color-icon-primary);
