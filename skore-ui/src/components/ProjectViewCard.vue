@@ -55,7 +55,7 @@ onBeforeUnmount(() => {
           <Transition name="fade">
             <span v-if="!isLatestUpdate" class="warning">
               <i class="icon-warning"></i>
-              You are viewing an old update
+              You are viewing an old version
               <a href="#" @click.prevent="switchToUpdate((props.updates?.length ?? 0) - 1)">
                 switch to latest
               </a>
