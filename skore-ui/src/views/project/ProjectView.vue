@@ -110,6 +110,7 @@ onBeforeUnmount(() => {
                 :title="key.toString()"
                 :subtitle="getItemSubtitle(createdAt, updatedAt)"
                 :showActions="props.showCardActions"
+                :data-name="key"
                 @card-removed="onCardRemoved(key)"
               >
                 <DataFrameWidget

@@ -16,7 +16,7 @@ const itemsAsTree = computed(() => {
   // add actions to the leaf nodes
   function addActions(node: TreeAccordionNode) {
     if (node.children?.length === 0) {
-      node.actions = [{ icon: "icon-plus", actionName: "add" }];
+      node.actions = [{ icon: "icon-plus", actionName: "add", enabled: true }];
     }
     for (const child of node.children ?? []) {
       addActions(child);
@@ -25,18 +25,45 @@ const itemsAsTree = computed(() => {
   for (const node of tree) {
     addActions(node);
   }
+  // add interactive status to nodes
+  function addInteractiveStatus(node: TreeAccordionNode) {
+    node.enabled =
+      projectStore.currentView !== null
+        ? !projectStore.isKeyDisplayed(projectStore.currentView, node.name)
+        : false;
+    for (const child of node.children ?? []) {
+      addInteractiveStatus(child);
+    }
+  }
+  for (const node of tree) {
+    addInteractiveStatus(node);
+  }
   return tree;
 });
 
 async function onItemAction(action: string, key: string) {
   if (projectStore.currentView) {
-    const success = await projectStore.displayKey(projectStore.currentView, key);
+    switch (action) {
+      case "add": {
+        const success = await projectStore.displayKey(projectStore.currentView, key);
 
-    if (success) {
-      // Scroll to last element
-      const lastItemElement = document.querySelector(".editor-container .item:last-child");
-      if (lastItemElement) {
-        lastItemElement.scrollIntoView({ behavior: "smooth", block: "start" });
+        if (success) {
+          // Scroll to last element
+          const lastItemElement = document.querySelector(".editor-container .item:last-child");
+          if (lastItemElement) {
+            lastItemElement.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        }
+        break;
+      }
+      case "clicked": {
+        // if clicke item is added to the view then scroll to it
+        const relatedCard = document.querySelector(`.item [data-name="${key}"]`);
+        if (relatedCard) {
+          relatedCard.scrollIntoView({ behavior: "smooth", block: "start" });
+          relatedCard.classList.add("blink");
+        }
+        break;
       }
     }
   } else {
