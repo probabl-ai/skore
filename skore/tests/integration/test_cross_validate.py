@@ -170,10 +170,3 @@ def test_aggregated_cross_validation(rf, in_memory_project):
         in_memory_project.item_repository.get_item("cross_validation_aggregated"),
         CrossValidationAggregationItem,
     )
-
-    cross_validate(*args, project=in_memory_project)
-    cross_validate(*args, project=in_memory_project)
-    cross_validate(*args, project=in_memory_project)
-    in_memory_project.item_repository.get_item(
-        "cross_validation_aggregated"
-    ).plot.show()
