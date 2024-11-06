@@ -281,7 +281,7 @@ class CrossValidationItem(Item):
         y_info : dict
             A summary of the target, input of scikit-learn's cross_validation function.
         plot_bytes : bytes
-            A plot of the current cross-validation results, in the form of bytes.
+            A plot of the cross-validation results, in the form of bytes.
         created_at : str
             The creation timestamp in ISO format.
         updated_at : str
@@ -364,7 +364,7 @@ class CrossValidationItem(Item):
             plot_bytes=plot_bytes,
         )
 
-        # Cache plots
+        # Cache plot
         instance.plot = plot
 
         return instance
@@ -426,7 +426,7 @@ class CrossValidationAggregationItem(Item):
             plot_bytes=plot_bytes,
         )
 
-        # Cache plots
+        # Cache plot
         instance.plot = plot
 
         return instance
