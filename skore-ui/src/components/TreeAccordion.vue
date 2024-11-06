@@ -2,10 +2,12 @@
 export interface TreeAccordionItemAction {
   icon: string;
   actionName: string;
+  enabled: boolean;
 }
 
 export interface TreeAccordionNode {
   name: string;
+  enabled: boolean;
   children?: TreeAccordionNode[];
   isRoot?: boolean;
   actions?: TreeAccordionItemAction[];
@@ -37,6 +39,7 @@ provide("emitItemAction", (action: string, itemName: string) => {
       :children="node.children"
       :is-root="true"
       :actions="node.actions"
+      :enabled="node.enabled"
     />
   </div>
 </template>

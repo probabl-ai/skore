@@ -81,24 +81,34 @@ function onSectionHeaderAction() {
 const fileTreeNodes: TreeAccordionNode[] = [
   {
     name: "fraud",
-    children: [{ name: "fraud/accuracy" }, { name: "fraud/accuracy3" }],
+    enabled: true,
+    children: [
+      { name: "fraud/accuracy", enabled: true },
+      { name: "fraud/accuracy3", enabled: true },
+    ],
   },
   {
     name: "fraud2",
-    children: [{ name: "fraud2/accuracy" }, { name: "fraud2/accuracy3" }],
+    enabled: true,
+    children: [
+      { name: "fraud2/accuracy", enabled: true },
+      { name: "fraud2/accuracy3", enabled: true },
+    ],
   },
   {
     name: "nested",
+    enabled: true,
     children: [
       {
         name: "nested/fraud2/accuracy",
+        enabled: true,
         children: [
-          { name: "nested/fraud2/accuracy/self" },
-          { name: "nested/fraud2/accuracy/self2" },
-          { name: "nested/fraud2/accuracy/self3" },
+          { name: "nested/fraud2/accuracy/self", enabled: true },
+          { name: "nested/fraud2/accuracy/self2", enabled: true },
+          { name: "nested/fraud2/accuracy/self3", enabled: true },
         ],
       },
-      { name: "nested/fraud2/accuracy3", children: [] },
+      { name: "nested/fraud2/accuracy3", enabled: true, children: [] },
     ],
   },
 ];
@@ -107,19 +117,22 @@ const lastAction = ref<string | null>(null);
 const fileTreeItemWithActions: TreeAccordionNode[] = [
   {
     name: "fraud",
+    enabled: true,
     children: [
       {
         name: "fraud/accuracy",
+        enabled: true,
         actions: [
-          { icon: "icon-plus-circle", actionName: "add" },
-          { icon: "icon-trash", actionName: "delete" },
+          { icon: "icon-plus-circle", actionName: "add", enabled: true },
+          { icon: "icon-trash", actionName: "delete", enabled: true },
         ],
       },
       {
         name: "fraud/accuracy3",
+        enabled: true,
         actions: [
-          { icon: "icon-plus-circle", actionName: "add" },
-          { icon: "icon-trash", actionName: "delete" },
+          { icon: "icon-plus-circle", actionName: "add", enabled: true },
+          { icon: "icon-trash", actionName: "delete", enabled: true },
         ],
       },
     ],
