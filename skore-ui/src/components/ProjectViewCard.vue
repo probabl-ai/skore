@@ -25,7 +25,7 @@ const isLatestUpdate = ref(true);
 
 function getUpdateLabel(update: string) {
   const now = new Date();
-  return `Updated ${formatDistance(update, now)} ago`;
+  return `updated ${formatDistance(update, now)} ago`;
 }
 
 function switchToUpdate(index: number) {
@@ -78,7 +78,7 @@ onBeforeUnmount(() => {
             v-for="(item, index) in Array.from(props.updates).reverse()"
             :key="index"
             :icon="isCurrentlySelectedVersion(index) ? 'icon-check' : ''"
-            :label="getUpdateLabel(item)"
+            :label="`#${props.updates.length - index} ${getUpdateLabel(item)}`"
             @click="switchToUpdate(props.updates.length - index - 1)"
             icon-position="right"
           />
