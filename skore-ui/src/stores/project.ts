@@ -36,8 +36,9 @@ export const useProjectStore = defineStore("project", () => {
    * @returns true if the key is displayed, false otherwise
    */
   function isKeyDisplayed(view: string, key: string) {
+    const realKey = key.replace(" (self)", "");
     const visibleKeys = views.value[view] ?? [];
-    return visibleKeys.includes(key);
+    return visibleKeys.includes(realKey);
   }
 
   /**
@@ -403,6 +404,7 @@ export const useProjectStore = defineStore("project", () => {
     displayKey,
     duplicateView,
     hideKey,
+    isKeyDisplayed,
     keysAsTree,
     setCurrentView,
     setProject,

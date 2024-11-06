@@ -1,10 +1,11 @@
 <script setup lang="ts">
+import { formatDistance } from "date-fns";
+import { onBeforeUnmount, onMounted, ref, useTemplateRef } from "vue";
+
 import DropdownButton from "@/components/DropdownButton.vue";
 import DropdownButtonItem from "@/components/DropdownButtonItem.vue";
 import FloatingTooltip from "@/components/FloatingTooltip.vue";
 import SimpleButton from "@/components/SimpleButton.vue";
-import { formatDistance } from "date-fns";
-import { ref } from "vue";
 
 const props = defineProps<{
   title: string;
@@ -18,6 +19,7 @@ const emit = defineEmits<{
   updateSelected: [number];
 }>();
 
+const root = useTemplateRef<HTMLDivElement>("root");
 const isLatestUpdate = ref(true);
 
 function getUpdateLabel(update: string) {
@@ -29,10 +31,22 @@ function switchToUpdate(index: number) {
   isLatestUpdate.value = index === (props.updates?.length ?? 0) - 1;
   emit("updateSelected", index);
 }
+
+function onAnimationEnd() {
+  root.value?.classList.remove("blink");
+}
+
+onMounted(() => {
+  root.value?.addEventListener("animationend", onAnimationEnd);
+});
+
+onBeforeUnmount(() => {
+  root.value?.removeEventListener("animationend", onAnimationEnd);
+});
 </script>
 
 <template>
-  <div class="card">
+  <div class="card" ref="root">
     <div class="header">
       <div class="titles">
         <div class="title">{{ props.title }}</div>
@@ -140,6 +154,34 @@ function switchToUpdate(index: number) {
     & .header .actions {
       opacity: 1;
     }
+  }
+
+  &.blink {
+    & .header {
+      & .titles {
+        &::before {
+          animation-duration: var(--animation-duration);
+          animation-iteration-count: 5;
+          animation-name: blink;
+          animation-play-state: running;
+          animation-timing-function: var(--animation-easing);
+        }
+      }
+    }
+  }
+}
+
+@keyframes blink {
+  0% {
+    background-color: var(--color-background-branding);
+  }
+
+  50% {
+    background-color: var(--color-background-primary);
+  }
+
+  100% {
+    background-color: var(--color-background-branding);
   }
 }
 </style>

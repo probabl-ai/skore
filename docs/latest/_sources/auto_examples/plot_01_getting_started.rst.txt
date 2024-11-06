@@ -656,7 +656,7 @@ plot:
 
     import matplotlib.pyplot as plt
 
-    fig = plt.figure(layout="constrained")
+    fig = plt.figure(layout="constrained", dpi=200)
     plt.plot(df["param_alpha"], df["rmse"])
     plt.xscale("log")
     plt.xlabel("Alpha hyperparameter")
@@ -747,10 +747,10 @@ a ``cross_validation`` item with a plotly chart in your project.
     import matplotlib.pyplot as plt
     import matplotlib.image as mpimg
 
-    fig_plotly.write_image("plot_01_cross_validation.png", scale=2)
+    fig_plotly.write_image("plot_01_cross_validation.png", scale=4)
 
     img = mpimg.imread("plot_01_cross_validation.png")
-    fig, ax = plt.subplots(layout="constrained")
+    fig, ax = plt.subplots(layout="constrained", dpi=200)
     ax.axis("off")
     ax.imshow(img)
     plt.show()
@@ -792,7 +792,7 @@ project, such as grid search or cross-validation results.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 6.759 seconds)
+   **Total running time of the script:** (0 minutes 7.602 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_01_getting_started.py:
