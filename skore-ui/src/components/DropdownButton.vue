@@ -10,7 +10,7 @@ export interface DropdownProps {
 
 <script setup lang="ts">
 import { autoUpdate, useFloating } from "@floating-ui/vue";
-import { onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 
 import SimpleButton from "@/components/SimpleButton.vue";
 
@@ -62,6 +62,15 @@ const intersectionObserver = new IntersectionObserver(
   }
 );
 
+const transitionName = computed(() => {
+  const isVisible = el.value?.checkVisibility({
+    opacityProperty: true,
+    contentVisibilityAuto: true,
+    visibilityProperty: true,
+  });
+  return isVisible ? "fade" : "";
+});
+
 onMounted(() => {
   document.addEventListener("click", onClick);
   document.addEventListener("mousemove", onMouseMove);
@@ -87,7 +96,7 @@ onBeforeUnmount(() => {
       @click="isOpen = !isOpen"
       ref="reference"
     />
-    <Transition name="fade">
+    <Transition :name="transitionName">
       <div class="items" v-if="isOpen" ref="floating" :style="floatingStyles">
         <slot></slot>
       </div>
