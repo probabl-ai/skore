@@ -111,6 +111,7 @@ onBeforeUnmount(() => {
                 :subtitle="getItemSubtitle(createdAt)"
                 :showActions="props.showCardActions"
                 :updates="updates"
+                :current-update-index="projectStore.getCurrentItemUpdateIndex(key)"
                 :data-name="key"
                 @card-removed="onCardRemoved(key)"
                 @update-selected="projectStore.setCurrentItemUpdateIndex(key, $event)"

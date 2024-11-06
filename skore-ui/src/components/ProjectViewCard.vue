@@ -12,6 +12,7 @@ const props = defineProps<{
   subtitle?: string;
   showActions: boolean;
   updates?: string[];
+  currentUpdateIndex?: number;
 }>();
 
 const emit = defineEmits<{
@@ -34,6 +35,10 @@ function switchToUpdate(index: number) {
 
 function onAnimationEnd() {
   root.value?.classList.remove("blink");
+}
+
+function isCurrentlySelectedVersion(index: number) {
+  return index === (props.updates?.length ?? 0) - (props.currentUpdateIndex ?? 0) - 1;
 }
 
 onMounted(() => {
@@ -72,7 +77,7 @@ onBeforeUnmount(() => {
           <DropdownButtonItem
             v-for="(item, index) in Array.from(props.updates).reverse()"
             :key="index"
-            :icon="index === 0 ? 'icon-check' : ''"
+            :icon="isCurrentlySelectedVersion(index) ? 'icon-check' : ''"
             :label="getUpdateLabel(item)"
             @click="switchToUpdate(props.updates.length - index - 1)"
             icon-position="right"

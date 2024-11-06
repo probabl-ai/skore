@@ -73,7 +73,6 @@ onBeforeMount(() => {
     border-radius: var(--radius-xs);
     margin: 0 auto;
     background: var(--color-background-primary);
-    font-size: var(--font-size-md);
   }
 
   &.inline {

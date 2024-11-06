@@ -297,6 +297,23 @@ export const useProjectStore = defineStore("project", () => {
   }
 
   /**
+   * Set the current update index for an item.
+   * @param key the key of the item to get the update index for
+   * @returns the index of the update for the given key
+   */
+  function getCurrentItemUpdateIndex(key: string) {
+    if (currentItemUpdateIndex[key] === undefined) {
+      const updates = currentViewItems.value.find((item) => item.key === key)?.updates;
+      if (updates) {
+        return updates.length - 1;
+      } else {
+        return 0;
+      }
+    }
+    return currentItemUpdateIndex[key];
+  }
+
+  /**
    * Get the items in the current view as a presentable list.
    * @returns a list of items with their metadata
    */
@@ -410,6 +427,7 @@ export const useProjectStore = defineStore("project", () => {
     setProject,
     renameView,
     setCurrentItemUpdateIndex,
+    getCurrentItemUpdateIndex,
     startBackendPolling,
     stopBackendPolling,
   };
