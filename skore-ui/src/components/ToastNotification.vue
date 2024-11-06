@@ -10,15 +10,15 @@ let animationPlayState = ref("paused");
 const icon = computed(() => {
   switch (props.type) {
     case "success":
-      return "icon-success";
+      return "icon-success-circle";
     case "error":
-      return "icon-error";
+      return "icon-error-circle";
     case "info":
-      return "icon-info";
+      return "icon-info-circle";
     case "warning":
-      return "icon-warning";
+      return "icon-warning-circle";
     default:
-      return "icon-info";
+      return "icon-info-circle";
   }
 });
 
