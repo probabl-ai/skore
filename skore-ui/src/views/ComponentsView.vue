@@ -370,7 +370,7 @@ const isCached = ref(false);
             <DropdownButton label="hey ho" icon="icon-pie-chart">
               <DropdownButtonItem label="hey ho" icon="icon-pie-chart" />
               <DropdownButtonItem icon="icon-pie-chart" />
-              <DropdownButtonItem label="hey ho" />
+              <DropdownButtonItem label="hey ho" icon="icon-pie-chart" icon-position="right" />
             </DropdownButton>
             dropdown button with label and icon
           </p>
@@ -499,10 +499,11 @@ const isCached = ref(false);
           <div>icon-new-document <span class="icon-new-document"></span></div>
           <div>icon-recent-document <span class="icon-recent-document"></span></div>
           <div>icon-plus-circle <span class="icon-plus-circle"></span></div>
+          <div>icon-warning-circle <span class="icon-warning-circle"></span></div>
+          <div>icon-info-circle <span class="icon-info-circle"></span></div>
+          <div>icon-error-circle <span class="icon-error-circle"></span></div>
+          <div>icon-success-circle <span class="icon-success-circle"></span></div>
           <div>icon-warning <span class="icon-warning"></span></div>
-          <div>icon-info <span class="icon-info"></span></div>
-          <div>icon-error <span class="icon-error"></span></div>
-          <div>icon-success <span class="icon-success"></span></div>
           <div>icon-search <span class="icon-search"></span></div>
           <div>icon-maximize <span class="icon-maximize"></span></div>
           <div>icon-folder <span class="icon-folder"></span></div>
@@ -517,6 +518,7 @@ const isCached = ref(false);
           <div>icon-handle <span class="icon-handle"></span></div>
           <div>icon-left-double-chevron <span class="icon-left-double-chevron"></span></div>
           <div>icon-plus <span class="icon-plus"></span></div>
+          <div>icon-history <span class="icon-history"></span></div>
         </div>
       </TabsItem>
       <TabsItem :value="12">
@@ -580,6 +582,21 @@ const isCached = ref(false);
             <template #tooltipContent>
               <span style="color: red">red content</span>
             </template>
+          </FloatingTooltip>
+        </div>
+        <div>
+          <FloatingTooltip text="Tooltip on button">
+            <SimpleButton label="button with tooltip" />
+          </FloatingTooltip>
+        </div>
+        <div>
+          <FloatingTooltip text="Tooltip on button bottom-start" placement="bottom-start">
+            bottom start
+          </FloatingTooltip>
+        </div>
+        <div>
+          <FloatingTooltip text="Tooltip on button bottom-end" placement="bottom-end">
+            bottom end
           </FloatingTooltip>
         </div>
       </TabsItem>

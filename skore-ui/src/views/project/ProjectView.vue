@@ -50,9 +50,9 @@ function onItemDrop(event: DragEvent) {
   }
 }
 
-function getItemSubtitle(created_at: Date, updated_at: Date) {
+function getItemSubtitle(created_at: Date) {
   const now = new Date();
-  return `Created ${formatDistance(created_at, now)} ago, updated ${formatDistance(updated_at, now)} ago`;
+  return `Created ${formatDistance(created_at, now)} ago`;
 }
 
 onMounted(async () => {
@@ -104,14 +104,17 @@ onBeforeUnmount(() => {
             @drop="onItemDrop($event)"
             @dragover.prevent
           >
-            <template #item="{ key, mediaType, data, createdAt, updatedAt }">
+            <template #item="{ key, mediaType, data, createdAt, updates }">
               <ProjectViewCard
                 :key="key"
                 :title="key.toString()"
-                :subtitle="getItemSubtitle(createdAt, updatedAt)"
+                :subtitle="getItemSubtitle(createdAt)"
                 :showActions="props.showCardActions"
+                :updates="updates"
+                :current-update-index="projectStore.getCurrentItemUpdateIndex(key)"
                 :data-name="key"
                 @card-removed="onCardRemoved(key)"
+                @update-selected="projectStore.setCurrentItemUpdateIndex(key, $event)"
               >
                 <DataFrameWidget
                   v-if="mediaType === 'application/vnd.dataframe+json'"

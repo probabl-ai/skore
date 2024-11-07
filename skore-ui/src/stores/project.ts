@@ -17,14 +17,17 @@ export interface PresentableItem {
   data: any;
   createdAt: Date;
   updatedAt: Date;
+  updates: string[];
 }
 
 export const useProjectStore = defineStore("project", () => {
-  // this objects is not deeply reactive as it may be very large
+  // this objects are not deeply reactive as they may be very large
   const items = shallowRef<{ [key: string]: ProjectItem } | null>(null);
   const currentViewItems = shallowRef<PresentableItem[]>([]);
   const views = ref<{ [key: string]: Layout }>({});
   const currentView = ref<string | null>(null);
+  const itemsUpdates = ref<{ [key: string]: string[] }>({});
+  let currentItemUpdateIndex: { [key: string]: number } = {};
 
   /**
    * Return true if the the given key is in the list of displayed keys, false otherwise.
@@ -116,16 +119,19 @@ export const useProjectStore = defineStore("project", () => {
    *
    * For now only the latest item is kept in memory.
    *
-   * @param r data received from the backend
+   * @param p data received from the backend
    */
-  async function setProject(r: Project) {
+  async function setProject(p: Project) {
+    const historyByKey: { [key: string]: string[] } = {};
     const latestItemByKey: { [key: string]: ProjectItem } = {};
-    for (const [key, value] of Object.entries(r.items)) {
+    for (const [key, value] of Object.entries(p.items)) {
       latestItemByKey[key] = value[value.length - 1];
+      historyByKey[key] = value.map((item) => item.updated_at);
     }
 
     items.value = latestItemByKey;
-    views.value = r.views;
+    views.value = p.views;
+    itemsUpdates.value = historyByKey;
 
     const viewNames = Object.keys(views.value);
     if (currentView.value === null) {
@@ -136,6 +142,7 @@ export const useProjectStore = defineStore("project", () => {
       currentView.value = null;
     }
     _updatePresentableItemsInView();
+    _saveItemsToSessionStorage(p.items);
   }
 
   /**
@@ -261,7 +268,49 @@ export const useProjectStore = defineStore("project", () => {
    */
   function setCurrentView(view: string) {
     currentView.value = view;
+    currentItemUpdateIndex = {};
     _updatePresentableItemsInView();
+  }
+
+  /**
+   * Get the history of an item in the project.
+   * @param key the item's key to get the history of
+   * @param index the index of the update to get
+   * @returns the update at the given index
+   */
+  function getItemUpdate(key: string, index: number) {
+    const r = sessionStorage.getItem(`items/${key}`);
+    if (r) {
+      return JSON.parse(r)[index] as ProjectItem;
+    }
+    return null;
+  }
+
+  /**
+   * Set the current update index for an item.
+   * @param key the key of the item to set the update index for
+   * @param index the index of the update to set
+   */
+  function setCurrentItemUpdateIndex(key: string, index: number) {
+    currentItemUpdateIndex[key] = index;
+    _updatePresentableItemsInView();
+  }
+
+  /**
+   * Set the current update index for an item.
+   * @param key the key of the item to get the update index for
+   * @returns the index of the update for the given key
+   */
+  function getCurrentItemUpdateIndex(key: string) {
+    if (currentItemUpdateIndex[key] === undefined) {
+      const updates = currentViewItems.value.find((item) => item.key === key)?.updates;
+      if (updates) {
+        return updates.length - 1;
+      } else {
+        return 0;
+      }
+    }
+    return currentItemUpdateIndex[key];
   }
 
   /**
@@ -273,7 +322,10 @@ export const useProjectStore = defineStore("project", () => {
     if (items.value !== null && currentView.value !== null) {
       const v = views.value[currentView.value];
       for (const key of v) {
-        const item = items.value[key];
+        const item =
+          currentItemUpdateIndex[key] !== undefined
+            ? getItemUpdate(key, currentItemUpdateIndex[key])
+            : items.value[key];
         if (item) {
           const mediaType = item.media_type || "";
           let data;
@@ -304,6 +356,7 @@ export const useProjectStore = defineStore("project", () => {
             data,
             createdAt,
             updatedAt,
+            updates: itemsUpdates.value[key],
           });
         }
       }
@@ -322,6 +375,15 @@ export const useProjectStore = defineStore("project", () => {
       if (r) {
         setProject(r);
       }
+    }
+  }
+
+  /**
+   * Save the items to the session storage.
+   */
+  function _saveItemsToSessionStorage(items: { [key: string]: ProjectItem[] }) {
+    for (const [key, value] of Object.entries(items)) {
+      sessionStorage.setItem(`items/${key}`, JSON.stringify(value));
     }
   }
 
@@ -364,6 +426,8 @@ export const useProjectStore = defineStore("project", () => {
     setCurrentView,
     setProject,
     renameView,
+    setCurrentItemUpdateIndex,
+    getCurrentItemUpdateIndex,
     startBackendPolling,
     stopBackendPolling,
   };

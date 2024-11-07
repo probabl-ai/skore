@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { defineProps, nextTick, onMounted, ref, watch } from "vue";
+import { nextTick, onMounted, ref, watch } from "vue";
 
 import DropdownButton from "@/components/DropdownButton.vue";
 import DropdownButtonItem from "@/components/DropdownButtonItem.vue";
