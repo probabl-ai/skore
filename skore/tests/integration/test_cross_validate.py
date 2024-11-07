@@ -9,7 +9,11 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.multiclass import OneVsOneClassifier
 from sklearn.svm import SVC
 from skore.cross_validate import cross_validate
-from skore.item.cross_validation_item import CrossValidationItem, plot_cross_validation
+from skore.item.cross_validation_item import (
+    CrossValidationAggregationItem,
+    CrossValidationItem,
+    plot_cross_validation,
+)
 
 
 @pytest.fixture
@@ -157,3 +161,12 @@ def test_plot_cross_validation():
         ),
     }
     plot_cross_validation(cv_results)
+
+
+def test_aggregated_cross_validation(rf, in_memory_project):
+    args = rf
+    cross_validate(*args, project=in_memory_project)
+    assert isinstance(
+        in_memory_project.item_repository.get_item("cross_validation_aggregated"),
+        CrossValidationAggregationItem,
+    )

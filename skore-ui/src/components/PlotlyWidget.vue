@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { addFrames, newPlot, purge, relayout, type Layout } from "plotly.js-dist-min";
-import { onBeforeUnmount, onMounted, ref } from "vue";
+import { addFrames, react, purge, relayout, type Layout } from "plotly.js-dist-min";
+import { onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { isDeepEqual } from "@/services/utils";
 
 const props = defineProps<{
   spec: { data: any; layout: any; frames: any };
@@ -19,6 +20,13 @@ function makeLayout(): Partial<Layout> {
   };
 }
 
+async function buildPlot(containerValue: HTMLDivElement, plotData: any) {
+  const plot = await react(containerValue, plotData, makeLayout());
+  if (props.spec.frames) {
+    addFrames(plot, props.spec.frames);
+  }
+}
+
 const resizeObserver = new ResizeObserver(() => {
   if (container.value) {
     relayout(container.value, makeLayout());
@@ -28,10 +36,7 @@ const resizeObserver = new ResizeObserver(() => {
 onMounted(async () => {
   if (container.value) {
     resizeObserver.observe(container.value);
-    const plot = await newPlot(container.value, props.spec.data, makeLayout());
-    if (props.spec.frames) {
-      addFrames(plot, props.spec.frames);
-    }
+    buildPlot(container.value, props.spec.data);
   }
 });
 
@@ -41,6 +46,17 @@ onBeforeUnmount(() => {
     purge(container.value);
   }
 });
+
+watch(
+  () => props.spec.data,
+  async (newData, oldData) => {
+    if (!isDeepEqual(newData, oldData)) {
+      if (container.value) {
+        buildPlot(container.value, newData);
+      }
+    }
+  }
+);
 </script>
 
 <template>

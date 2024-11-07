@@ -30,6 +30,7 @@ class TestCrossValidationItem:
             cv_results={
                 "test_score": numpy.array([1, 2, 3]),
                 "estimator": [MyEstimator(), MyEstimator(), MyEstimator()],
+                "fit_time": [1, 2, 3],
             },
             estimator=MyEstimator(),
             X=[[1.0]],
