@@ -49,6 +49,6 @@ provide("emitItemAction", (action: string, itemName: string) => {
   display: flex;
   flex-direction: column;
   background-color: var(--color-background-primary);
-  gap: var(--spacing-20);
+  gap: var(--spacing-8);
 }
 </style>

@@ -2,17 +2,27 @@
 interface DropdownItemProps {
   label?: string;
   icon?: string;
+  iconPosition?: "left" | "right";
 }
 
-const props = defineProps<DropdownItemProps>();
+const props = withDefaults(defineProps<DropdownItemProps>(), { iconPosition: "left" });
 </script>
 
 <template>
-  <button class="dropdown-item">
-    <span v-if="props.icon" :class="props.icon" class="icon"></span>
+  <button class="dropdown-item" :class="{ 'has-label': props.label }">
+    <span
+      v-if="props.icon && props.iconPosition === 'left'"
+      :class="props.icon"
+      class="icon left"
+    ></span>
     <span v-if="props.label" class="label">
       {{ props.label }}
     </span>
+    <span
+      v-if="props.icon && props.iconPosition === 'right'"
+      :class="props.icon"
+      class="icon right"
+    ></span>
   </button>
 </template>
 
@@ -41,8 +51,12 @@ const props = defineProps<DropdownItemProps>();
     background-color: var(--color-background-secondary);
   }
 
-  & .icon:has(+ .label) {
+  &.has-label .icon.left {
     padding-right: var(--spacing-6);
+  }
+
+  &.has-label .icon.right {
+    padding-left: var(--spacing-6);
   }
 }
 </style>

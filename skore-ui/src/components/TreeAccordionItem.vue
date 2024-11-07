@@ -104,7 +104,7 @@ function onAction(action: string) {
 
 <style scoped>
 .tree-accordion-item {
-  --label-height: 17px;
+  --label-height: 28px;
 
   position: relative;
   overflow: hidden;
@@ -173,6 +173,7 @@ function onAction(action: string) {
         margin: 0;
         background-color: transparent;
         cursor: pointer;
+        font-size: var(--font-size-md);
         transition: color var(--animation-duration) var(--animation-easing);
 
         &:hover {
@@ -208,7 +209,7 @@ function onAction(action: string) {
     display: flex;
     flex-direction: column;
     padding-top: var(--spacing-6);
-    gap: var(--spacing-6);
+    gap: var(--spacing-4);
   }
 
   & .toggle-children-move,
