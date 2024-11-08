@@ -6,10 +6,9 @@ Enhancing cross-validation
 ==========================
 
 This example illustrates the motivation and the use of skore's
-:func:`~skore.cross_validate` to get assistance when developing your
+:func:`~skore.sklearn.cross_validate` to get assistance when developing your
 ML/DS projects.
 """
-
 
 # %%
 import subprocess
@@ -22,7 +21,7 @@ from sklearn import svm
 from sklearn.model_selection import cross_validate as sklearn_cross_validate
 
 from skore import load
-import skore.cross_validate
+import skore.sklearn.cross_validate
 
 
 # %%
@@ -61,25 +60,28 @@ my_project_gs = load("my_project_cv.skore")
 
 # %%
 X, y = datasets.load_iris(return_X_y=True)
-clf = svm.SVC(kernel='linear', C=1, random_state=0)
+clf = svm.SVC(kernel="linear", C=1, random_state=0)
 
 # %%
 # Single metric evaluation using ``cross_validate``:
 
 # %%
 cv_results = sklearn_cross_validate(clf, X, y, cv=5)
-cv_results['test_score']
+cv_results["test_score"]
 
 # %%
 # Multiple metric evaluation using ``cross_validate``:
 
 # %%
 scores = sklearn_cross_validate(
-    clf, X, y, cv=5,
-    scoring=['accuracy', 'precision_macro'],
+    clf,
+    X,
+    y,
+    cv=5,
+    scoring=["accuracy", "precision_macro"],
 )
-print(scores['test_accuracy'])
-print(scores['test_precision_macro'])
+print(scores["test_accuracy"])
+print(scores["test_precision_macro"])
 
 # %%
 # In scikit-learn, why do we recommend using ``cross_validate`` over ``cross_val_score``?
@@ -106,7 +108,7 @@ print(scores['test_precision_macro'])
 # =========================
 #
 # In order to assist its users when programming, skore has implemented a
-# :func:`~skore.cross_validate` function that wraps scikit-learn's
+# :func:`~skore.sklearn.cross_validate` function that wraps scikit-learn's
 # :func:`~sklearn.model_selection.cross_validate`, to provide more
 # context and facilitate the analysis.
 #
@@ -116,7 +118,7 @@ print(scores['test_precision_macro'])
 # Let us continue with the same use case.
 
 # %%
-cv_results = skore.cross_validate(clf, X, y, cv=5, project=my_project_gs)
+cv_results = skore.sklearn.cross_validate(clf, X, y, cv=5, project=my_project_gs)
 
 fig_plotly_clf = my_project_gs.get_item("cross_validation").plot
 fig_plotly_clf
@@ -179,7 +181,7 @@ X = diabetes.data[:150]
 y = diabetes.target[:150]
 lasso = linear_model.Lasso()
 
-cv_results = skore.cross_validate(lasso, X, y, cv=5, project=my_project_gs)
+cv_results = skore.sklearn.cross_validate(lasso, X, y, cv=5, project=my_project_gs)
 
 fig_plotly_reg = my_project_gs.get_item("cross_validation").plot
 fig_plotly_reg

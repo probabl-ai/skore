@@ -9,7 +9,7 @@ With skore, data scientists can:
 #. Track and visualize their ML/DS results.
 #. Get assistance when developing their ML/DS projects.
 
-   - Scikit-learn compatible :func:`~skore.cross_validate` provides insights and checks on cross-validation.
+   - Scikit-learn compatible :func:`~skore.sklearn.cross_validate` provides insights and checks on cross-validation.
 
 These are only the initial features: skore is a work in progress and aims to be
 an end-to-end library for data scientists.

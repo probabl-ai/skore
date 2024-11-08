@@ -10,7 +10,7 @@ This getting started guide illustrates how to use skore and why:
 #. Track and visualize your ML/DS results using skore's :class:`~skore.Project` and UI.
 #. Get assistance when developing your ML/DS projects.
 
-   - Scikit-learn compatible :func:`~skore.cross_validate` provides insights and checks on cross-validation.
+   - Scikit-learn compatible :func:`~skore.sklearn.cross_validate` provides insights and checks on cross-validation.
 
 
 Creating a skore project, loading it, and launching the UI
@@ -117,7 +117,7 @@ my_project.put("my_fig", fig)
 # ===========================
 #
 # In order to assist its users when programming, skore has implemented a
-# :func:`~skore.cross_validate` function that wraps scikit-learn's
+# :func:`~skore.sklearn.cross_validate` function that wraps scikit-learn's
 # :func:`~sklearn.model_selection.cross_validate`, to provide more context and
 # facilitate the analysis.
 #
@@ -130,7 +130,7 @@ my_project.put("my_fig", fig)
 # a ``cross_validation`` item with a plotly chart in your project.
 
 # %%
-from skore import cross_validate
+from skore.sklearn import cross_validate
 
 cv_results = cross_validate(Ridge(), X, y, cv=5, project=my_project)
 

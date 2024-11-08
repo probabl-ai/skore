@@ -34,4 +34,4 @@ These functions and classes enhance scikit-learn's ones.
     :template: function.rst
     :nosignatures:
 
-    cross_validate
+    sklearn.cross_validate
