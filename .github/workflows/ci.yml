@@ -41,14 +41,14 @@ jobs:
 
   lint-and-test-skore:
     needs: [lint-all-files, changes]
-    if: ${{ needs.changes.outputs.skore == 'true' }}
+    if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && needs.changes.outputs.skore == 'true') }}
     uses: ./.github/workflows/skore.yml
     permissions:
       contents: read
 
   lint-and-test-skore-ui:
     needs: [lint-all-files, changes]
-    if: ${{ needs.changes.outputs.skore-ui == 'true' }}
+    if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && needs.changes.outputs.skore-ui == 'true') }}
     uses: ./.github/workflows/skore-ui.yml
     permissions:
       contents: read
