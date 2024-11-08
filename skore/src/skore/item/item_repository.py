@@ -58,7 +58,7 @@ class ItemRepository:
         self.storage = storage
 
     @staticmethod
-    def __deconstruct_item(item) -> dict:
+    def __deconstruct_item(item: Item) -> dict:
         return {
             "item_class_name": item.__class__.__name__,
             "item": item.__parameters__,
@@ -122,15 +122,15 @@ class ItemRepository:
         item : Item
             The item to be stored.
         """
-        item = ItemRepository.__deconstruct_item(item)
+        _item = ItemRepository.__deconstruct_item(item)
 
         if key in self.storage:
             items = self.storage[key]
-            item["item"]["created_at"] = items[0]["item"]["created_at"]
+            _item["item"]["created_at"] = items[0]["item"]["created_at"]
 
-            self.storage[key] = items + [item]
+            self.storage[key] = items + [_item]
         else:
-            self.storage[key] = [item]
+            self.storage[key] = [_item]
 
     def delete_item(self, key):
         """
