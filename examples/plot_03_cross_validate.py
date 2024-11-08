@@ -158,6 +158,13 @@ plt.show()
 # ^^^^^^^^^^^^^^^
 
 # %%
+# For now all cross-validation information is stored in the same place, which might lead to comparing two models that don't do the same thing. To remedy this, we clear the information stored in skore; in the future this will be managed automatically.
+
+# %%
+my_project_gs.delete_item("cross_validation")
+my_project_gs.delete_item("cross_validation_aggregated")
+
+# %%
 diabetes = datasets.load_diabetes()
 X = diabetes.data[:150]
 y = diabetes.target[:150]
