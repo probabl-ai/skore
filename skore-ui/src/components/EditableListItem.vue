@@ -111,7 +111,7 @@ onMounted(() => {
     &[contenteditable="true"] {
       background-color: var(--color-background-primary);
       caret-color: var(--color-background-branding);
-      color: var(--color-text-button-primary);
+      color: var(--color-text-primary);
       cursor: text;
     }
   }
