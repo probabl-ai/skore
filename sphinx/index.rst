@@ -22,7 +22,7 @@ Feedbacks are welcome: please feel free to join our `Discord <http://discord.pro
 
 We are a product team working at `Probabl <https://probabl.ai>`_ and our motto is *Own Your Data Science*.
 
-- License: BSD
+- License: MIT
 - GitHub repository: https://github.com/probabl-ai/skore
 - Discord: http://discord.probabl.ai
 - Status: under development, API is subject to change.
