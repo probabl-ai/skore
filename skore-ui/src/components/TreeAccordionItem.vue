@@ -49,7 +49,7 @@ function onAction(action: string) {
 <template>
   <div
     class="tree-accordion-item"
-    :class="{ first: isRoot }"
+    :class="{ first: isRoot, enabled: props.enabled }"
     :style="{ '--children-count': totalChildrenCount }"
     :data-name="props.name"
   >
@@ -109,7 +109,6 @@ function onAction(action: string) {
   position: relative;
   overflow: hidden;
   margin-left: 19px;
-  cursor: pointer;
 
   &.first {
     margin-left: 0;
@@ -127,17 +126,11 @@ function onAction(action: string) {
     .label {
       display: flex;
       height: var(--label-height);
+      flex: 1;
       flex-direction: row;
       align-items: center;
+      cursor: help;
       transition: background-color var(--animation-duration) var(--animation-easing);
-
-      &:not(.has-children):hover {
-        background-color: var(--color-background-secondary);
-      }
-
-      &[draggable="true"] {
-        cursor: grabbing;
-      }
 
       & .children-indicator {
         color: var(--color-text-secondary);
@@ -200,6 +193,18 @@ function onAction(action: string) {
       .actions {
         opacity: 1;
       }
+    }
+  }
+
+  &.enabled > .label-container > .label {
+    cursor: pointer;
+
+    &:not(.has-children):hover {
+      background-color: var(--color-background-secondary);
+    }
+
+    &[draggable="true"] {
+      cursor: grabbing;
     }
   }
 
