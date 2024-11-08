@@ -15,8 +15,7 @@ import VegaWidget from "@/components/VegaWidget.vue";
 import { useProjectStore } from "@/stores/project";
 import { useToastsStore } from "@/stores/toasts";
 import ProjectItemList from "@/views/project/ProjectItemList.vue";
-import ProjectViewList from "@/views/project/ProjectViewList.vue";
-
+import ProjectViewNavigator from "@/views/project/ProjectViewNavigator.vue";
 const props = defineProps({
   showCardActions: {
     type: Boolean,
@@ -67,7 +66,6 @@ onBeforeUnmount(() => {
 <template>
   <main class="project-view" v-if="projectStore.items !== null">
     <div class="left-panel" v-if="projectStore.items && !isInFocusMode">
-      <ProjectViewList />
       <ProjectItemList />
     </div>
     <div ref="editor" class="editor">
@@ -78,7 +76,7 @@ onBeforeUnmount(() => {
           class="focus-mode-button"
           :class="{ flipped: isInFocusMode }"
         />
-        <h1>{{ projectStore.currentView }}</h1>
+        <ProjectViewNavigator />
       </div>
       <Transition name="fade">
         <div
@@ -213,7 +211,7 @@ main {
         border-bottom: solid var(--stroke-width-md) var(--color-stroke-background-primary);
         background-color: var(--color-background-secondary);
 
-        & h1 {
+        & .project-view-navigator {
           flex-grow: 1;
           color: var(--color-text-primary);
           font-size: var(--font-size-sm);

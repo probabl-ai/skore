@@ -142,16 +142,16 @@ const fileTreeItemWithActions: TreeAccordionNode[] = [
 const items = ref<EditableListItemModel[]>([
   { name: "Item 1", icon: "icon-plot", id: generateRandomId() },
   { name: "Item 2", id: generateRandomId() },
-  { name: "Item 3", icon: "icon-error", id: generateRandomId() },
-  { name: "Item 4", icon: "icon-error", id: generateRandomId() },
-  { name: "Item 5", icon: "icon-error", id: generateRandomId() },
-  { name: "Item 6", icon: "icon-error", id: generateRandomId() },
-  { name: "Item 7", icon: "icon-error", id: generateRandomId() },
-  { name: "Item 8", icon: "icon-error", id: generateRandomId() },
-  { name: "Item 9", icon: "icon-error", id: generateRandomId() },
-  { name: "Item 10", icon: "icon-error", id: generateRandomId() },
-  { name: "Item 11", icon: "icon-error", id: generateRandomId() },
-  { name: "Item 12", icon: "icon-error", id: generateRandomId() },
+  { name: "Item 3", icon: "icon-new-document", id: generateRandomId() },
+  { name: "Item 4", icon: "icon-new-document", id: generateRandomId() },
+  { name: "Item 5", icon: "icon-new-document", id: generateRandomId() },
+  { name: "Item 6", icon: "icon-new-document", id: generateRandomId() },
+  { name: "Item 7", icon: "icon-new-document", id: generateRandomId() },
+  { name: "Item 8", icon: "icon-new-document", id: generateRandomId() },
+  { name: "Item 9", icon: "icon-new-document", id: generateRandomId() },
+  { name: "Item 10", icon: "icon-new-document", id: generateRandomId() },
+  { name: "Item 11", icon: "icon-new-document", id: generateRandomId() },
+  { name: "Item 12", icon: "icon-new-document", id: generateRandomId() },
 ]);
 
 function onAddToEditableListAction() {

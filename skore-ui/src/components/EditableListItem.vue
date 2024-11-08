@@ -75,15 +75,20 @@ onMounted(() => {
         {{ item.name }}
       </span>
     </div>
-    <DropdownButton icon="icon-more" :is-inline="true" align="right" v-if="item.isNamed">
-      <DropdownButtonItem
-        v-for="action in props.actions"
-        :key="action.emitPayload"
-        :label="action.label"
-        :icon="action.icon"
-        @click="emit('action', action.emitPayload)"
-      />
-    </DropdownButton>
+    <div class="actions">
+      <DropdownButton icon="icon-more" :is-inline="true" align="right" v-if="item.isNamed">
+        <DropdownButtonItem
+          v-for="action in props.actions"
+          :key="action.emitPayload"
+          :label="action.label"
+          :icon="action.icon"
+          @click="emit('action', action.emitPayload)"
+        />
+      </DropdownButton>
+      <div class="selected" v-if="item.isSelected">
+        <i class="icon-check" />
+      </div>
+    </div>
   </div>
 </template>
 
@@ -93,47 +98,67 @@ onMounted(() => {
   height: 25px;
   align-items: center;
   justify-content: space-between;
-  padding: var(--spacing-6);
   border-radius: var(--radius-xs);
   cursor: pointer;
   transition: background-color var(--animation-duration) var(--animation-easing);
 
-  .icon {
+  & .icon {
     color: var(--color-orange);
   }
 
-  .label {
-    min-width: 100px;
-    line-height: 2;
-    outline: none;
-    transition: font-weight var(--animation-duration) var(--animation-easing);
+  &.label-container {
+    &.label {
+      min-width: 100px;
+      outline: none;
+      transition: font-weight var(--animation-duration) var(--animation-easing);
 
-    &[contenteditable="true"] {
-      background-color: var(--color-background-primary);
-      caret-color: var(--color-background-branding);
-      color: var(--color-text-primary);
-      cursor: text;
+      &[contenteditable="true"] {
+        background-color: var(--color-background-primary);
+        caret-color: var(--color-background-branding);
+        color: var(--color-text-primary);
+        cursor: text;
+      }
+    }
+
+    & .icon:has(+ .label) {
+      padding-right: var(--spacing-6);
+    }
+
+    & .dropdown {
+      opacity: 0;
+      transition: opacity var(--animation-duration) var(--animation-easing);
     }
   }
 
-  .icon:has(+ .label) {
-    padding-right: var(--spacing-6);
-  }
+  & .actions {
+    position: relative;
 
-  .dropdown {
-    opacity: 0;
-    transition: opacity var(--animation-duration) var(--animation-easing);
+    & .selected {
+      position: absolute;
+      top: 0;
+      left: 0;
+      display: flex;
+      width: 100%;
+      height: 100%;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--color-background-primary);
+      color: var(--color-text-secondary);
+      opacity: 1;
+      transition: opacity var(--animation-duration) var(--animation-easing);
+    }
   }
 
   &:hover {
     background-color: var(--color-background-secondary);
 
-    .label {
-      font-weight: 500;
+    & .dropdown {
+      opacity: 1;
     }
 
-    .dropdown {
-      opacity: 1;
+    & .selected {
+      opacity: 0;
+      pointer-events: none;
     }
   }
 }
