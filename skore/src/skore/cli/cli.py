@@ -9,7 +9,7 @@ from skore.cli.launch_dashboard import __launch
 from skore.cli.quickstart_command import __quickstart
 
 
-def cli(args: list[str]):
+def cli():
     """CLI for Skore."""
     parser = argparse.ArgumentParser(prog="skore")
 
@@ -61,20 +61,24 @@ def cli(args: list[str]):
         "quickstart", help='Create a "project.skore" file and start the UI'
     )
 
-    parsed_args: argparse.Namespace = parser.parse_args(args)
+    parsed_args: argparse.Namespace = parser.parse_args()
 
-    if parsed_args.subcommand == "launch":
-        __launch(
-            project_name=parsed_args.project_name,
-            port=parsed_args.port,
-            open_browser=parsed_args.open_browser,
-        )
-    elif parsed_args.subcommand == "create":
-        __create(
-            project_name=parsed_args.project_name,
-            working_dir=parsed_args.working_dir,
-        )
-    elif parsed_args.subcommand == "quickstart":
-        __quickstart()
-    else:
-        parser.print_help()
+    try:
+        if parsed_args.subcommand == "launch":
+            __launch(
+                project_name=parsed_args.project_name,
+                port=parsed_args.port,
+                open_browser=parsed_args.open_browser,
+            )
+        elif parsed_args.subcommand == "create":
+            __create(
+                project_name=parsed_args.project_name,
+                working_dir=parsed_args.working_dir,
+            )
+        elif parsed_args.subcommand == "quickstart":
+            __quickstart()
+        else:
+            parser.print_help()
+        return 0
+    except Exception:
+        return 1
