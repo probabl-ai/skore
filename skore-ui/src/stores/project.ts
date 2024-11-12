@@ -236,6 +236,10 @@ export const useProjectStore = defineStore("project", () => {
    * @param name the name of the new view
    */
   async function duplicateView(src: string, name: string) {
+    if (views.value[src] === undefined) {
+      console.error("View not found", src);
+      return;
+    }
     views.value[name] = [...views.value[src]];
     await _persistView(name, views.value[name]);
   }
