@@ -1,7 +1,7 @@
 import numpy
 import pandas
 import pytest
-from skore.train_test_split import HighClassImbalanceWarning
+from skore.sklearn.train_test_split import HighClassImbalanceWarning
 
 my_list = [0] * 100 + [1] * 100 + [2] * 300
 
