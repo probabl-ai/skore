@@ -81,4 +81,5 @@ def cli():
             parser.print_help()
         return 0
     except Exception:
+        raise
         return 1
