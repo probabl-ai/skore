@@ -10,7 +10,6 @@ This example illustrates the motivation and the use of skore's
 ML/DS projects.
 """
 
-
 # %%
 import subprocess
 
@@ -21,8 +20,7 @@ from sklearn import datasets, linear_model
 from sklearn import svm
 from sklearn.model_selection import cross_validate as sklearn_cross_validate
 
-from skore import load
-import skore.cross_validate
+import skore
 
 
 # %%
@@ -39,7 +37,7 @@ subprocess.run("python3 -m skore create my_project_cv".split())
 
 
 # %%
-my_project_gs = load("my_project_cv.skore")
+my_project_gs = skore.load("my_project_cv.skore")
 
 # %%
 # Cross-validation in scikit-learn
@@ -61,25 +59,28 @@ my_project_gs = load("my_project_cv.skore")
 
 # %%
 X, y = datasets.load_iris(return_X_y=True)
-clf = svm.SVC(kernel='linear', C=1, random_state=0)
+clf = svm.SVC(kernel="linear", C=1, random_state=0)
 
 # %%
 # Single metric evaluation using ``cross_validate``:
 
 # %%
 cv_results = sklearn_cross_validate(clf, X, y, cv=5)
-cv_results['test_score']
+cv_results["test_score"]
 
 # %%
 # Multiple metric evaluation using ``cross_validate``:
 
 # %%
 scores = sklearn_cross_validate(
-    clf, X, y, cv=5,
-    scoring=['accuracy', 'precision_macro'],
+    clf,
+    X,
+    y,
+    cv=5,
+    scoring=["accuracy", "precision_macro"],
 )
-print(scores['test_accuracy'])
-print(scores['test_precision_macro'])
+print(scores["test_accuracy"])
+print(scores["test_precision_macro"])
 
 # %%
 # In scikit-learn, why do we recommend using ``cross_validate`` over ``cross_val_score``?
