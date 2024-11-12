@@ -31,7 +31,7 @@ Finally, from your shell (in the same directory), start the UI locally:
 
 .. code-block:: bash
 
-    kkore launch "my_project"
+    skore launch "my_project"
 
 This will automatically open a browser at the UI's location:
 
