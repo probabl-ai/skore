@@ -118,8 +118,8 @@ my_project.put("my_fig", fig)
 # ===========================
 #
 # In order to assist its users when programming, skore has implemented a
-# :func:`~skore.cross_validate` function that wraps scikit-learn's
-# :func:`~sklearn.model_selection.cross_validate`, to provide more context and
+# :func:`skore.cross_validate` function that wraps scikit-learn's
+# :func:`sklearn.model_selection.cross_validate`, to provide more context and
 # facilitate the analysis.
 #
 # For more information on the motivation behind skore's ``cross_validate``,
