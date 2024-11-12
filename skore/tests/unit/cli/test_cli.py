@@ -19,7 +19,10 @@ def test_cli_launch(monkeypatch):
         launch_open_browser = open_browser
 
     monkeypatch.setattr("skore.cli.cli.__launch", fake_launch)
-    monkeypatch.setattr("sys.argv", ["skore", "launch", "project.skore", "--port", "0", "--no-open-browser"])
+    monkeypatch.setattr(
+        "sys.argv",
+        ["skore", "launch", "project.skore", "--port", "0", "--no-open-browser"],
+    )
 
     cli()
 
@@ -29,7 +32,9 @@ def test_cli_launch(monkeypatch):
 
 
 def test_cli_launch_no_project_name(monkeypatch):
-    monkeypatch.setattr("sys.argv", ["skore", "launch", "--port", 0, "--no-open-browser"])
+    monkeypatch.setattr(
+        "sys.argv", ["skore", "launch", "--port", 0, "--no-open-browser"]
+    )
 
     with pytest.raises(SystemExit):
         cli()
