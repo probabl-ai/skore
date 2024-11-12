@@ -45,6 +45,12 @@ function onBlur() {
   renameItem(label.value?.textContent ?? "unnamed");
 }
 
+function onLabelClicked() {
+  if (item.value.isNamed) {
+    emit("select");
+  }
+}
+
 watch(
   () => item.value.isNamed,
   async (isNamed) => {
@@ -63,7 +69,7 @@ onMounted(() => {
 
 <template>
   <div class="editable-list-item">
-    <div class="label-container" @click="emit('select')">
+    <div class="label-container" @click="onLabelClicked">
       <span class="icon" v-if="item.icon" :class="item.icon" />
       <span
         class="label"
@@ -106,27 +112,27 @@ onMounted(() => {
     color: var(--color-orange);
   }
 
-  &.label-container {
-    &.label {
-      min-width: 100px;
+  & .label-container {
+    overflow: hidden;
+    flex: 1 1 0%;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    & .label {
       outline: none;
       transition: font-weight var(--animation-duration) var(--animation-easing);
 
       &[contenteditable="true"] {
-        background-color: var(--color-background-primary);
-        caret-color: var(--color-background-branding);
-        color: var(--color-text-primary);
+        background-color: var(--color-background-branding);
+        caret-color: var(--color-text-button-primary);
+        color: var(--color-text-button-primary);
         cursor: text;
       }
     }
 
     & .icon:has(+ .label) {
       padding-right: var(--spacing-6);
-    }
-
-    & .dropdown {
-      opacity: 0;
-      transition: opacity var(--animation-duration) var(--animation-easing);
     }
   }
 

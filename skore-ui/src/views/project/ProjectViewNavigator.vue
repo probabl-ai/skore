@@ -56,12 +56,13 @@ async function onViewsListAction(action: string, item: EditableListItemModel) {
     case "duplicate": {
       const index = views.value.indexOf(item) ?? 0;
       const newName = `${item.name} - copy`;
+      const id = generateRandomId();
       views.value.splice(index + 1, 0, {
         name: newName,
         isNamed: false,
-        id: generateRandomId(),
+        id,
       });
-      unsavedViewsId = newName;
+      unsavedViewsId = id;
       await projectStore.duplicateView(item.name, newName);
       break;
     }
@@ -87,8 +88,7 @@ function onClickOutside(e: Event) {
   if (el.value) {
     // is it a click outside and do we have a pending action ?
     const isOutside = !el.value.contains(e.target as Node);
-    const isPendingRename = views.value.some((view) => !view.isNamed) && unsavedViewsId !== "";
-    console.log(isPendingRename);
+    const isPendingRename = views.value.some((view) => !view.isNamed) || unsavedViewsId !== "";
     if (isOutside && !isPendingRename) {
       isDropdownOpen.value = false;
     }
@@ -114,7 +114,7 @@ onBeforeUnmount(() => {
   <div class="project-view-navigator" ref="el">
     <div class="dropdown" @click="isDropdownOpen = !isDropdownOpen" ref="dropdown">
       <i class="icon-recent-document" />
-      <span class="current-view-name">{{ projectStore.currentView }}</span>
+      <span class="current-view-name">{{ projectStore.currentView ?? "Select a view" }}</span>
       <i class="icon-chevron-up" :class="{ turned: isDropdownOpen }" />
     </div>
     <Transition name="fade">
@@ -144,6 +144,7 @@ onBeforeUnmount(() => {
 <style scoped>
 .project-view-navigator {
   display: flex;
+  min-width: 0;
   flex-direction: column;
   align-content: center;
   align-items: center;
@@ -172,7 +173,8 @@ onBeforeUnmount(() => {
   & .dropdown-menu {
     z-index: 9999;
     display: flex;
-    min-width: 263px;
+    min-width: 300px;
+    flex: 1 0 auto;
     flex-direction: column;
     border: var(--stroke-width-md) solid var(--color-stroke-background-primary);
     border-radius: var(--radius-xs);
