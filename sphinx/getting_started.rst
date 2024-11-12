@@ -12,7 +12,7 @@ From your shell, initialize a skore project, here named ``my_project``:
 
 .. code-block:: bash
 
-    python -m skore create "my_project"
+    skore create "my_project"
 
 This will create a skore project directory named ``my_project.skore`` in your
 current working directory.
@@ -31,7 +31,7 @@ Finally, from your shell (in the same directory), start the UI locally:
 
 .. code-block:: bash
 
-    python -m skore launch "my_project"
+    kkore launch "my_project"
 
 This will automatically open a browser at the UI's location:
 

@@ -33,7 +33,7 @@ pip install -U skore
 
 1. From your shell, initialize a skore project, here named `my_project`:
 ```bash
-python -m skore create "my_project"
+skore create "my_project"
 ```
 This will create a skore project directory named `my_project.skore` in your current working directory.
 
@@ -46,7 +46,7 @@ project.put("my_int", 3)
 
 3. Finally, from your shell (in the same directory), start the UI locally:
 ```bash
-python -m skore launch "my_project"
+skore launch "my_project"
 ```
 This will automatically open a browser at the UI's location:
 1. On the top left, by default, you can observe that you are in a _View_ called `default`. You can rename this view or create another one.
