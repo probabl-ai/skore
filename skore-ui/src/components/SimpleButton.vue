@@ -1,13 +1,15 @@
-<script setup lang="ts">
-import { generateRandomMultiple } from "@/services/utils";
-import { onBeforeMount, ref } from "vue";
-
-interface ButtonProps {
+<script lang="ts">
+export interface ButtonProps {
   label?: string;
   icon?: string;
   isPrimary?: boolean;
   isInline?: boolean;
 }
+</script>
+
+<script setup lang="ts">
+import { generateRandomMultiple } from "@/services/utils";
+import { onBeforeMount, ref } from "vue";
 
 const props = withDefaults(defineProps<ButtonProps>(), { isPrimary: false });
 const randomBackgroundOffsetX = ref(0);

@@ -1,28 +1,25 @@
-<script lang="ts">
-export interface DropdownProps {
-  label?: string;
-  icon?: string;
-  isPrimary?: boolean;
-  align?: "left" | "right";
-  isInline?: boolean;
-}
-</script>
-
 <script setup lang="ts">
-import { autoUpdate, useFloating } from "@floating-ui/vue";
+import { autoPlacement, autoUpdate, useFloating, type Placement } from "@floating-ui/vue";
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 
-import SimpleButton from "@/components/SimpleButton.vue";
+import SimpleButton, { type ButtonProps } from "@/components/SimpleButton.vue";
 
-const { label, icon, isPrimary = false, align = "left", isInline } = defineProps<DropdownProps>();
+interface DropdownProps extends ButtonProps {
+  allowedPlacements?: Placement[];
+}
+
+const props = withDefaults(defineProps<DropdownProps>(), {
+  isPrimary: false,
+  allowedPlacements: () => ["top-end", "bottom-end", "top-start", "bottom-start"],
+});
 
 const isOpen = ref(false);
 const el = ref<HTMLDivElement>();
 const reference = ref<HTMLElement>();
 const floating = ref<HTMLDivElement>();
 const { floatingStyles } = useFloating(reference, floating, {
-  placement: align === "right" ? "bottom-end" : "bottom-start",
   strategy: "fixed",
+  middleware: [autoPlacement({ allowedPlacements: props.allowedPlacements as Placement[] })],
   whileElementsMounted: autoUpdate,
 });
 
@@ -87,12 +84,12 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="dropdown" ref="el" :class="{ 'align-right': align === 'right' }">
+  <div class="dropdown" ref="el">
     <SimpleButton
-      :is-primary="isPrimary"
-      :label="label"
-      :icon="icon"
-      :is-inline="isInline"
+      :is-primary="props.isPrimary"
+      :label="props.label"
+      :icon="props.icon"
+      :is-inline="props.isInline"
       @click="isOpen = !isOpen"
       ref="reference"
     />
