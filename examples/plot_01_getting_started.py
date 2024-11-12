@@ -12,7 +12,6 @@ This getting started guide illustrates how to use skore and why:
 
    - Scikit-learn compatible :func:`~skore.cross_validate` provides insights and checks on cross-validation.
 
-
 Creating a skore project, loading it, and launching the UI
 ==========================================================
 """
@@ -22,12 +21,15 @@ Creating a skore project, loading it, and launching the UI
 
 # %%
 import subprocess
+import tempfile
+from pathlib import Path
 
-# remove the skore project if it already exists
-subprocess.run("rm -rf my_project.skore".split())
+# create a temporary directory that will be cleaned up automatically
+temp_dir = Path(tempfile.mkdtemp(prefix="skore_example_"))
+
 
 # create the skore project
-subprocess.run("python3 -m skore create my_project".split())
+subprocess.run(f"python3 -m skore create my_project --working-dir {temp_dir}".split())
 
 # %%
 # This will create a skore project directory named ``my_project.skore`` in your
@@ -48,7 +50,7 @@ subprocess.run("python3 -m skore create my_project".split())
 # %%
 from skore import load
 
-my_project = load("my_project.skore")
+my_project = load(temp_dir / "my_project.skore")
 my_project.put("my_int", 3)
 
 # %%
@@ -173,3 +175,13 @@ plt.show()
 # %%
 # .. admonition:: Stay tuned for some new features!
 #   Feel free to join our `Discord <https://discord.gg/scBZerAGwW>`_.
+
+# %%
+# Cleanup the project
+# -------------------
+#
+# Remove the temporary directory:
+
+import shutil
+
+shutil.rmtree(temp_dir)
