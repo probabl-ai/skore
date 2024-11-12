@@ -8,7 +8,7 @@ from sklearn.cluster import KMeans
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.multiclass import OneVsOneClassifier
 from sklearn.svm import SVC
-from skore.cross_validate import cross_validate
+from skore import cross_validate
 from skore.item.cross_validation_item import (
     CrossValidationAggregationItem,
     CrossValidationItem,
