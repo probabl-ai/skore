@@ -36,11 +36,11 @@ subprocess.run("python3 -m skore create my_project_hist".split())
 my_project_hist = skore.load("my_project_hist.skore")
 
 # %%
-my_project_hist.put("my_int", 3)
-time.sleep(0.1)
 my_project_hist.put("my_int", 4)
 time.sleep(0.1)
-my_project_hist.put("my_int", 5)
+my_project_hist.put("my_int", 9)
+time.sleep(0.1)
+my_project_hist.put("my_int", 16)
 
 # %%
 my_list = my_project_hist.get_item_versions("my_int")
@@ -68,7 +68,7 @@ print(list_update)
 
 
 # %%
-plt.plot(list_update, list_values)
+plt.plot(list_update, list_values, "-o")
 plt.xticks(rotation=45)
 plt.show()
 
