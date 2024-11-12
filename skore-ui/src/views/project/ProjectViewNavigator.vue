@@ -85,10 +85,11 @@ function onAddView() {
 
 function onClickOutside(e: Event) {
   if (el.value) {
-    // is it a click outside or a click on an item ?
+    // is it a click outside and do we have a pending action ?
     const isOutside = !el.value.contains(e.target as Node);
-    const isRenameAction = views.value.some((view) => !view.isNamed);
-    if (isOutside && !isRenameAction) {
+    const isPendingRename = views.value.some((view) => !view.isNamed) && unsavedViewsId !== "";
+    console.log(isPendingRename);
+    if (isOutside && !isPendingRename) {
       isDropdownOpen.value = false;
     }
   }
@@ -122,7 +123,7 @@ onBeforeUnmount(() => {
           <span>Add a new view</span>
           <i class="icon-plus-circle" />
         </div>
-        <Simplebar class="view-list">
+        <Simplebar class="view-list" v-if="views.length > 0">
           <EditableList
             v-model:items="views"
             :actions="[

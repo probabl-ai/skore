@@ -258,7 +258,6 @@ export const useProjectStore = defineStore("project", () => {
    */
   async function renameView(name: string, newName: string) {
     views.value[newName] = views.value[name];
-    delete views.value[name];
     await deleteView(name);
     await _persistView(newName, views.value[newName]);
   }
