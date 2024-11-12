@@ -7,8 +7,8 @@ from typing import Optional, Union
 from skore.cli import logger
 from skore.cli.exceptions import (
     InvalidProjectNameError,
-    ProjectCreationError,
     ProjectAlreadyExistsError,
+    ProjectCreationError,
     ProjectPermissionError,
 )
 from skore.project import load

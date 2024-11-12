@@ -1,5 +1,6 @@
 """Custom exceptions for the CLI."""
 
+
 class InvalidProjectNameError(Exception):
     """The project name does not fit with one or more of the project name rules.
 
