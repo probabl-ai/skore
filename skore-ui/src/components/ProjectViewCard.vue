@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { formatDistance } from "date-fns";
+import Simplebar from "simplebar-vue";
 import { onBeforeUnmount, onMounted, ref, useTemplateRef } from "vue";
 
 import DropdownButton from "@/components/DropdownButton.vue";
@@ -74,14 +75,16 @@ onBeforeUnmount(() => {
           align="right"
           v-if="props.updates && props.updates.length > 1"
         >
-          <DropdownButtonItem
-            v-for="(item, index) in Array.from(props.updates).reverse()"
-            :key="index"
-            :icon="isCurrentlySelectedVersion(index) ? 'icon-check' : ''"
-            :label="`#${props.updates.length - index} ${getUpdateLabel(item)}`"
-            @click="switchToUpdate(props.updates.length - index - 1)"
-            icon-position="right"
-          />
+          <Simplebar class="history-items">
+            <DropdownButtonItem
+              v-for="(item, index) in Array.from(props.updates).reverse()"
+              :key="index"
+              :icon="isCurrentlySelectedVersion(index) ? 'icon-check' : ''"
+              :label="`#${props.updates.length - index} ${getUpdateLabel(item)}`"
+              @click="switchToUpdate(props.updates.length - index - 1)"
+              icon-position="right"
+            />
+          </Simplebar>
         </DropdownButton>
         <FloatingTooltip text="Remove from view" placement="bottom-end">
           <SimpleButton icon="icon-trash" @click="emit('cardRemoved')" />
@@ -156,6 +159,11 @@ onBeforeUnmount(() => {
       & .dropdown,
       & .button {
         font-size: var(--font-size-md);
+      }
+
+      & .history-items {
+        max-height: 40dvh;
+        font-size: var(--font-size-sm);
       }
     }
   }
