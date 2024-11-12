@@ -14,16 +14,16 @@ from skore.item.cross_validation_item import (
 )
 from skore.project import Project
 
-
-def _find_ml_task(
-    estimator, y
-) -> Literal[
+MLTask = Literal[
     "binary-classification",
     "multiclass-classification",
     "regression",
     "clustering",
     "unknown",
-]:
+]
+
+
+def _find_ml_task(estimator, y) -> MLTask:
     """Guess the ML task being addressed based on an estimator and a target array.
 
     Parameters
@@ -35,7 +35,8 @@ def _find_ml_task(
 
     Returns
     -------
-    Literal["classification", "regression", "clustering", "unknown"]
+    Literal["binary-classification", "multiclass-classification",
+    "regression", "clustering", "unknown"]
         The guess of the kind of ML task being performed.
     """
     import sklearn.utils.multiclass
