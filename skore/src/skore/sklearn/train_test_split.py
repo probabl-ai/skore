@@ -1,15 +1,19 @@
 """Implement train_test_split."""
 
-from dataclasses import dataclass
-from typing import Any, Optional, Union
+from __future__ import annotations
+
+import warnings
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 import pandas
 from numpy.random import RandomState
 
-from skore.cross_validate import MLTask
 from skore.project import Project
 
-ArrayLike = Any
+if TYPE_CHECKING:
+    from skore.sklearn.cross_validate import MLTask
+
+    ArrayLike = Any
 
 
 def _find_ml_task(y) -> MLTask:
@@ -49,30 +53,10 @@ def _find_ml_task(y) -> MLTask:
     return "unknown"
 
 
-@dataclass
-class TrainTestSplitWarningInput:
-    """The information obtained during the train-test-split run.
-
-    This information is used for computing various good-practice checks.
-    """
-
-    # The train_test_split arguments
-    arrays: ArrayLike
-    test_size: Optional[Union[int, float]]
-    train_size: Optional[Union[int, float]]
-    random_state: Optional[Union[int, RandomState]]
-    shuffle: bool
-    stratify: Optional[ArrayLike]
-
-    # Extra information that was deduced
-    y_test: Optional[ArrayLike]
-    ml_task: MLTask
-
-
-class HighClassImbalanceWarning:
+class HighClassImbalanceWarning(Warning):
     """Check whether the test set has high class imbalance."""
 
-    msg = (
+    MSG = (
         "It seems that you have a classification problem with a high class "
         "imbalance: the test set has less than 100 examples of each class. In this "
         "case, using train_test_split may not be a good idea because of high  "
@@ -81,20 +65,12 @@ class HighClassImbalanceWarning:
         "use skore.cross_validate."
     )
 
-    # @staticmethod
-    # def make_inputs(x: TrainTestSplitWarningInput):
-    #     y_test = x.y_test
-    #     stratify = x.stratify
-    #     ml_task = x.ml_task
-    #     return y_test, stratify, ml_task
-
     @staticmethod
     def check(
-        y_test=y_test,
-        stratify=False,
-        ml_task="multiclass-classification",
-        # **kwargs
-        # x: TrainTestSplitWarningInput
+        y: Optional[ArrayLike],
+        stratify: Optional[ArrayLike],
+        ml_task: MLTask,
+        **kwargs,
     ) -> bool:
         """Check whether the test set has high class imbalance.
 
@@ -103,21 +79,14 @@ class HighClassImbalanceWarning:
         bool
             True if the check passed, False otherwise
         """
-        if (
-            (x.stratify is False)
-            and (x.y_test is not None)
-            and ("classification" in x.ml_task)
-        ):
-            class_counts = pandas.Series(x.y_test).value_counts()
-            if any(count < 100 for count in class_counts) or (
-                max(class_counts) / min(class_counts) >= 3
-            ):
-                return False
+        if stratify or (y is None or len(y) == 0) or ("classification" not in ml_task):
+            return True
 
-        return True
+        class_counts = pandas.Series(y).value_counts()
+
+        return (max(class_counts) / min(class_counts)) < 3
 
 
-# TODO: warnings in docstring?
 def train_test_split(
     *arrays: ArrayLike,
     test_size: Optional[Union[int, float]] = None,
@@ -163,20 +132,16 @@ def train_test_split(
     -------
     splitting : list, length=2 * len(arrays)
         List containing train-test split of inputs.
-
-    Warnings
-    --------
-
     """
     import sklearn.model_selection
 
     output = sklearn.model_selection.train_test_split(
         *arrays,
-        test_size,
-        train_size,
-        random_state,
-        shuffle,
-        stratify,
+        test_size=test_size,
+        train_size=train_size,
+        random_state=random_state,
+        shuffle=shuffle,
+        stratify=stratify,
     )
 
     if len(arrays) >= 2:
@@ -187,22 +152,24 @@ def train_test_split(
         y_test = None
     ml_task = _find_ml_task(y)
 
-    x = TrainTestSplitWarningInput(
+    kwargs = dict(
         arrays=arrays,
         test_size=test_size,
         train_size=train_size,
         random_state=random_state,
         shuffle=shuffle,
         stratify=stratify,
+        y=y,
         y_test=y_test,
         ml_task=ml_task,
     )
-    failed_checks = []
 
     for warning_class in [HighClassImbalanceWarning]:
-        warning_inputs = warning_class.make_inputs(x)
-        check = warning_class.check(*warning_inputs)
+        check = warning_class.check(**kwargs)
+
         if check is False:
-            failed_checks.append(warning_class)
+            warnings.warn(
+                message=warning_class.MSG, category=warning_class, stacklevel=1
+            )
 
     return output
