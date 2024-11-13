@@ -31,7 +31,7 @@ Finally, from your shell (in the same directory), start the UI locally:
 
 .. code-block:: bash
 
-    skore launch "my_project"
+    python -m skore launch "my_project"
 
 This will automatically open a browser at the UI's location:
 

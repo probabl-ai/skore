@@ -2,6 +2,7 @@
 
 import argparse
 import pathlib
+import sys
 from importlib.metadata import version
 
 from skore.cli.create_project import __create
@@ -9,7 +10,7 @@ from skore.cli.launch_dashboard import __launch
 from skore.cli.quickstart_command import __quickstart
 
 
-def cli():
+def cli(args: list[str] | None = None):
     """CLI for Skore."""
     parser = argparse.ArgumentParser(prog="skore")
 
@@ -61,7 +62,9 @@ def cli():
         "quickstart", help='Create a "project.skore" file and start the UI'
     )
 
-    parsed_args: argparse.Namespace = parser.parse_args()
+    if args is None:
+        args = sys.argv[1:]
+    parsed_args: argparse.Namespace = parser.parse_args(args)
 
     try:
         if parsed_args.subcommand == "launch":

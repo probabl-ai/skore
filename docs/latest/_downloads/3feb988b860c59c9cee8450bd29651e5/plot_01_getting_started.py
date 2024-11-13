@@ -37,7 +37,7 @@ subprocess.run("python3 -m skore create my_project".split())
 #
 # .. code-block:: bash
 #
-#     skore launch "my_project"
+#     python -m skore launch "my_project"
 #
 # This will automatically open a browser at the UI's location.
 #
