@@ -93,7 +93,7 @@ onBeforeUnmount(() => {
         >
           <div class="wrapper" v-if="projectStore.currentView === null">No view selected.</div>
           <div class="dropzone" v-else>
-            <div class="wrapper">The view is empty, start by dropping an element.</div>
+            <div class="wrapper">The view is empty, start by dropping an item.</div>
           </div>
         </div>
         <Simplebar class="editor-container" v-else>
