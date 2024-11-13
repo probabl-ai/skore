@@ -4,13 +4,14 @@ import argparse
 import pathlib
 import sys
 from importlib.metadata import version
+from typing import Optional
 
 from skore.cli.create_project import __create
 from skore.cli.launch_dashboard import __launch
 from skore.cli.quickstart_command import __quickstart
 
 
-def cli(args: list[str] | None = None):
+def cli(args: Optional[list[str]] = None):
     """CLI for Skore."""
     parser = argparse.ArgumentParser(prog="skore")
 
