@@ -1,4 +1,4 @@
-"""Custom exceptions for the CLI."""
+"""Custom exceptions."""
 
 
 class InvalidProjectNameError(Exception):
