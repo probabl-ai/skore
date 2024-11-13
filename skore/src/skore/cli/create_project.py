@@ -1,6 +1,7 @@
 """Implement the "create project" feature."""
 
 import re
+import shutil
 from pathlib import Path
 from typing import Optional, Union
 
@@ -74,7 +75,9 @@ class ProjectPermissionError(Exception):
 
 
 def __create(
-    project_name: Union[str, Path], working_dir: Optional[Path] = None
+    project_name: Union[str, Path],
+    working_dir: Optional[Path] = None,
+    overwrite: bool = False,
 ) -> Path:
     """Create a project file named according to `project_name`.
 
@@ -87,6 +90,9 @@ def __create(
         `working_dir`. If `project_name` is an absolute path, `working_dir` will have
         no effect. If set to None (the default), `working_dir` will be re-set to the
         current working directory.
+    overwrite : bool
+        If True, overwrite an existing project with the same name. If False, raise an
+        error if a project with the same name already exists.
 
     Returns
     -------
@@ -114,14 +120,17 @@ def __create(
         project_path.with_name(checked_project_name + ".skore")
     )
 
+    if project_directory.exists():
+        if not overwrite:
+            raise ProjectAlreadyExistsError(
+                f"Unable to create project file '{project_directory}' because a file "
+                "with that name already exists. Please choose a different name or "
+                "use the --overwrite flag with the CLI or overwrite=True with the API."
+            )
+        shutil.rmtree(project_directory)
+
     try:
-        project_directory.mkdir()
-    except FileExistsError as e:
-        raise ProjectAlreadyExistsError(
-            f"Unable to create project file '{project_directory}' because a file "
-            "with that name already exists. Please choose a different name or delete "
-            "the existing file."
-        ) from e
+        project_directory.mkdir(parents=True)
     except PermissionError as e:
         raise ProjectPermissionError(
             f"Unable to create project file '{project_directory}'. "
