@@ -84,7 +84,6 @@ gs_cv.fit(X, y)
 # Now, we store the hyperparameter's metrics in a dataframe and make a custom
 # plot:
 
-breakpoint()
 # %%
 import pandas as pd
 
