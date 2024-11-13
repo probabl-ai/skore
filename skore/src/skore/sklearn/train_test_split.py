@@ -21,8 +21,8 @@ def _find_ml_task(y) -> MLTask:
 
     Parameters
     ----------
-    y : numpy.ndarray, optional
-        A target vector.
+    y : numpy.ndarray
+        A 1-dimensional target vector.
 
     Returns
     -------
@@ -74,10 +74,20 @@ class HighClassImbalanceWarning(Warning):
     ) -> bool:
         """Check whether the test set has high class imbalance.
 
+        Parameters
+        ----------
+        y : array-like or None
+            A 1-dimensional target vector, as a list, numpy array, scipy sparse array,
+            or pandas dataframe.
+        stratify : array-like or None
+            An 1-dimensional target array to be used for stratification.
+        ml_task : MLTask
+            The type of machine-learning tasks being performed.
+
         Returns
         -------
         bool
-            True if the check passed, False otherwise
+            True if the check passed, False otherwise.
         """
         if stratify or (y is None or len(y) == 0) or ("classification" not in ml_task):
             return True
@@ -89,6 +99,8 @@ class HighClassImbalanceWarning(Warning):
 
 def train_test_split(
     *arrays: ArrayLike,
+    X: Optional[ArrayLike] = None,
+    y: Optional[ArrayLike] = None,
     test_size: Optional[Union[int, float]] = None,
     train_size: Optional[Union[int, float]] = None,
     random_state: Optional[Union[int, RandomState]] = None,
@@ -101,13 +113,16 @@ def train_test_split(
     This is a layer over scikit-learn's `train_test_split https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html`_
     helper function, enriching it with various warnings that can be saved in a Project.
 
+
     Parameters
     ----------
     *arrays : sequence of indexables with same length / shape[0]
         Allowed inputs are lists, numpy arrays, scipy-sparse matrices or pandas
         dataframes.
-    project : Project, optional
-        The project to save information into. If None, no information will be saved.
+    X : array-like, optional
+        If not None, will be appended to the list of arrays passed positionally.
+    y : array-like, optional
+        If not None, will be appended to the list of arrays passed positionally.
     test_size : float or int, optional
         If float, should be between 0.0 and 1.0 and represent the proportion of
         the dataset to include in the test split. If int, represents the absolute number
@@ -127,16 +142,44 @@ def train_test_split(
     stratify : array-like, optional
         If not None, data is split in a stratified fashion, using this as the
         class labels.
+    project : Project, optional
+        The project to save information into. If None, no information will be saved.
 
     Returns
     -------
     splitting : list, length=2 * len(arrays)
         List containing train-test split of inputs.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> X, y = np.arange(10).reshape((5, 2)), range(5)
+
+    >>> X_train, X_test, y_train, y_test = train_test_split(X, y,
+    ...     test_size=0.33, random_state=42)
+    >>> X_train
+    array([[4, 5],
+           [0, 1],
+           [6, 7]])
+
+    # Makes detection of problems easier
+    >>> X_train, X_test, y_train, y_test = train_test_split(X=X, y=y,
+    ...     test_size=0.33, random_state=42)
+    >>> X_train
+    array([[4, 5],
+           [0, 1],
+           [6, 7]])
     """
     import sklearn.model_selection
 
+    new_arrays = list(arrays)
+    if X is not None:
+        new_arrays.append(X)
+    if y is not None:
+        new_arrays.append(y)
+        
     output = sklearn.model_selection.train_test_split(
-        *arrays,
+        *new_arrays,
         test_size=test_size,
         train_size=train_size,
         random_state=random_state,
