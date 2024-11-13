@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Optional, Union
 
 from skore.cli import logger
-from skore.cli.exceptions import (
+from skore.exceptions import (
     InvalidProjectNameError,
     ProjectAlreadyExistsError,
     ProjectCreationError,
