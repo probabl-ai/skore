@@ -37,7 +37,7 @@
     <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-dataframe.css?v=2082cf3c" />
     <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
     <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
-    <link rel="stylesheet" type="text/css" href="../_static/css/custom.css?v=e561df91" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/custom.css?v=2fb73d80" />
   
   <!-- So that users can add custom icons -->
   <script src="../_static/scripts/fontawesome.js?digest=26a4bc78f4c0ddb94549"></script>
@@ -464,29 +464,39 @@ to download the full example code.</p>
 <li><p>Track and visualize your ML/DS results using skore’s <a class="reference internal" href="../generated/skore.Project.html#skore.Project" title="skore.Project"><code class="xref py py-class docutils literal notranslate"><span class="pre">Project</span></code></a> and UI.</p></li>
 <li><p>Get assistance when developing your ML/DS projects.</p>
 <ul class="simple">
-<li><p>Scikit-learn compatible <a class="reference internal" href="../generated/skore.cross_validate.html#skore.cross_validate" title="skore.cross_validate"><code class="xref py py-func docutils literal notranslate"><span class="pre">cross_validate()</span></code></a> provides insights and checks on cross-validation.</p></li>
+<li><p>Scikit-learn compatible <a class="reference internal" href="../generated/skore.cross_validate.html#skore.cross_validate" title="skore.cross_validate"><code class="xref py py-func docutils literal notranslate"><span class="pre">skore.cross_validate()</span></code></a> provides insights and checks
+on cross-validation.</p></li>
 </ul>
 </li>
 </ol>
 <section id="creating-a-skore-project-loading-it-and-launching-the-ui">
 <h2>Creating a skore project, loading it, and launching the UI<a class="headerlink" href="#creating-a-skore-project-loading-it-and-launching-the-ui" title="Link to this heading">#</a></h2>
+<p>We start by creating a temporary directory to store our project such that we can
+easily clean it after executing this example. If you want to keep the project,
+you have to skip this section.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">tempfile</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+
+<span class="n">temp_dir</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">TemporaryDirectory</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;skore_example_&quot;</span><span class="p">)</span>
+<span class="n">temp_dir_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">temp_dir</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+</pre></div>
+</div>
 <p>From your shell, initialize a skore project, here named <code class="docutils literal notranslate"><span class="pre">my_project</span></code>:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">subprocess</span>
 
-<span class="c1"># remove the skore project if it already exists</span>
-<span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">&quot;rm -rf my_project.skore&quot;</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>
-
 <span class="c1"># create the skore project</span>
-<span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">&quot;python3 -m skore create my_project&quot;</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>
+<span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+    <span class="sa">f</span><span class="s2">&quot;python3 -m skore create my_project --working-dir </span><span class="si">{</span><span class="n">temp_dir</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+<span class="p">)</span>
 </pre></div>
 </div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>CompletedProcess(args=[&#39;python3&#39;, &#39;-m&#39;, &#39;skore&#39;, &#39;create&#39;, &#39;my_project&#39;], returncode=0)
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>CompletedProcess(args=[&#39;python3&#39;, &#39;-m&#39;, &#39;skore&#39;, &#39;create&#39;, &#39;my_project&#39;, &#39;--working-dir&#39;, &#39;/tmp/skore_example_yodpvwjy&#39;], returncode=0)
 </pre></div>
 </div>
 <p>This will create a skore project directory named <code class="docutils literal notranslate"><span class="pre">my_project.skore</span></code> in your
 current directory.</p>
 <p>From your shell (in the same directory), start the UI locally:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>skore<span class="w"> </span>launch<span class="w"> </span><span class="s2">&quot;my_project&quot;</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>skore<span class="w"> </span>launch<span class="w"> </span><span class="s2">&quot;path/to/my_project&quot;</span>
 </pre></div>
 </div>
 <p>This will automatically open a browser at the UI’s location.</p>
@@ -495,7 +505,7 @@ directory) to add (<a class="reference internal" href="../generated/skore.Projec
 Let us load the project and add an integer to it for example:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">skore</span> <span class="kn">import</span> <a href="../generated/skore.load.html#skore.load" title="skore.load" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-function"><span class="n">load</span></a>
 
-<a href="../generated/skore.Project.html#skore.Project" title="skore.Project" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">my_project</span></a> <span class="o">=</span> <a href="../generated/skore.load.html#skore.load" title="skore.load" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-function"><span class="n">load</span></a><span class="p">(</span><span class="s2">&quot;my_project.skore&quot;</span><span class="p">)</span>
+<a href="../generated/skore.Project.html#skore.Project" title="skore.Project" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">my_project</span></a> <span class="o">=</span> <a href="../generated/skore.load.html#skore.load" title="skore.load" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-function"><span class="n">load</span></a><span class="p">(</span><span class="n">temp_dir_path</span> <span class="o">/</span> <span class="s2">&quot;my_project.skore&quot;</span><span class="p">)</span>
 <a href="../generated/skore.Project.html#skore.Project.put" title="skore.Project.put" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-method"><span class="n">my_project</span><span class="o">.</span><span class="n">put</span></a><span class="p">(</span><span class="s2">&quot;my_int&quot;</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -1044,8 +1054,8 @@ can visualize them later in the skore UI for example:</p>
 <section id="cross-validation-with-skore">
 <h2>Cross-validation with skore<a class="headerlink" href="#cross-validation-with-skore" title="Link to this heading">#</a></h2>
 <p>In order to assist its users when programming, skore has implemented a
-<a class="reference internal" href="../generated/skore.cross_validate.html#skore.cross_validate" title="skore.cross_validate"><code class="xref py py-func docutils literal notranslate"><span class="pre">cross_validate()</span></code></a> function that wraps scikit-learn’s
-<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="(in scikit-learn v1.5)"><code class="xref py py-func docutils literal notranslate"><span class="pre">cross_validate()</span></code></a>, to provide more context and
+<a class="reference internal" href="../generated/skore.cross_validate.html#skore.cross_validate" title="skore.cross_validate"><code class="xref py py-func docutils literal notranslate"><span class="pre">skore.cross_validate()</span></code></a> function that wraps scikit-learn’s
+<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="(in scikit-learn v1.5)"><code class="xref py py-func docutils literal notranslate"><span class="pre">sklearn.model_selection.cross_validate()</span></code></a>, to provide more context and
 facilitate the analysis.</p>
 <p>For more information on the motivation behind skore’s <code class="docutils literal notranslate"><span class="pre">cross_validate</span></code>,
 see <a class="reference internal" href="plot_03_cross_validate.html#example-cross-validate"><span class="std std-ref">Enhancing cross-validation</span></a>.</p>
@@ -1090,7 +1100,13 @@ project, such as grid search or cross-validation results.</p>
 <li><p>In the skore UI on the right, you can drag-and-drop items to re-order them, remove items, etc.</p></li>
 </ol>
 <img alt="Getting started with ``skore`` demo" src="https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_10_31_skore_demo_compressed.gif" />
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 11.077 seconds)</p>
+<section id="cleanup-the-project">
+<h3>Cleanup the project<a class="headerlink" href="#cleanup-the-project" title="Link to this heading">#</a></h3>
+<p>Remove the temporary directory:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">temp_dir</span><span class="o">.</span><span class="n">cleanup</span><span class="p">()</span>
+</pre></div>
+</div>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 7.316 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-01-getting-started-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/e97c5b0c37bdd66afd2a201f006613dd/plot_01_getting_started.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_01_getting_started.ipynb</span></code></a></p>
@@ -1103,6 +1119,7 @@ project, such as grid search or cross-validation results.</p>
 </div>
 </div>
 <p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
 </section>
 </section>
 
@@ -1156,7 +1173,10 @@ project, such as grid search or cross-validation results.</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#creating-a-skore-project-loading-it-and-launching-the-ui">Creating a skore project, loading it, and launching the UI</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#example-of-machine-learning-usage-hyperparameter-sweep">Example of machine learning usage: hyperparameter sweep</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#cross-validation-with-skore">Cross-validation with skore</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#manipulating-the-skore-ui">Manipulating the skore UI</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#manipulating-the-skore-ui">Manipulating the skore UI</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cleanup-the-project">Cleanup the project</a></li>
+</ul>
+</li>
 </ul>
   </nav></div>
 
@@ -1166,6 +1186,41 @@ project, such as grid search or cross-validation results.</p>
     <a href="../_sources/auto_examples/plot_01_getting_started.rst.txt">
       <i class="fa-solid fa-file-lines"></i> Show Source
     </a>
+  </div>
+</div>
+
+  <div class="sidebar-secondary-item">
+
+
+  <div class="sphx-glr-sidebar-component">
+    
+      
+        <div class="sphx-glr-sidebar-item sphx-glr-download-python-sidebar" title="plot_01_getting_started.py">
+          <a download href="../_downloads/3feb988b860c59c9cee8450bd29651e5/plot_01_getting_started.py">
+            <i class="fa-solid fa-download"></i>
+            Download source code
+          </a>
+        </div>
+      
+    
+      
+        <div class="sphx-glr-sidebar-item sphx-glr-download-jupyter-sidebar" title="plot_01_getting_started.ipynb">
+          <a download href="../_downloads/e97c5b0c37bdd66afd2a201f006613dd/plot_01_getting_started.ipynb">
+            <i class="fa-solid fa-download"></i>
+            Download Jupyter notebook
+          </a>
+        </div>
+      
+    
+      
+        <div class="sphx-glr-sidebar-item sphx-glr-download-zip-sidebar" title="plot_01_getting_started.zip">
+          <a download href="../_downloads/97b4b84f5410e1134b3cbe5e4682d2a1/plot_01_getting_started.zip">
+            <i class="fa-solid fa-download"></i>
+            Download zipped
+          </a>
+        </div>
+      
+    
   </div>
 </div>
 

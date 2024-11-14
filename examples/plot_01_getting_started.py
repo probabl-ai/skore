@@ -10,24 +10,31 @@ This getting started guide illustrates how to use skore and why:
 #. Track and visualize your ML/DS results using skore's :class:`~skore.Project` and UI.
 #. Get assistance when developing your ML/DS projects.
 
-   - Scikit-learn compatible :func:`~skore.cross_validate` provides insights and checks on cross-validation.
-
+   - Scikit-learn compatible :func:`skore.cross_validate` provides insights and checks
+     on cross-validation.
 
 Creating a skore project, loading it, and launching the UI
 ==========================================================
 """
 
 # %%
-# From your shell, initialize a skore project, here named ``my_project``:
+# We start by creating a temporary directory to store our project such that we can
+# easily clean it after executing this example. If you want to keep the project,
+# you have to skip this section.
+import tempfile
+from pathlib import Path
+
+temp_dir = tempfile.TemporaryDirectory(prefix="skore_example_")
+temp_dir_path = Path(temp_dir.name)
 
 # %%
+# From your shell, initialize a skore project, here named ``my_project``:
 import subprocess
 
-# remove the skore project if it already exists
-subprocess.run("rm -rf my_project.skore".split())
-
 # create the skore project
-subprocess.run("python3 -m skore create my_project".split())
+subprocess.run(
+    f"python3 -m skore create my_project --working-dir {temp_dir.name}".split()
+)
 
 # %%
 # This will create a skore project directory named ``my_project.skore`` in your
@@ -48,7 +55,7 @@ subprocess.run("python3 -m skore create my_project".split())
 # %%
 from skore import load
 
-my_project = load("my_project.skore")
+my_project = load(temp_dir_path / "my_project.skore")
 my_project.put("my_int", 3)
 
 # %%
@@ -117,8 +124,8 @@ my_project.put("my_fig", fig)
 # ===========================
 #
 # In order to assist its users when programming, skore has implemented a
-# :func:`~skore.cross_validate` function that wraps scikit-learn's
-# :func:`~sklearn.model_selection.cross_validate`, to provide more context and
+# :func:`skore.cross_validate` function that wraps scikit-learn's
+# :func:`sklearn.model_selection.cross_validate`, to provide more context and
 # facilitate the analysis.
 #
 # For more information on the motivation behind skore's ``cross_validate``,
@@ -173,3 +180,10 @@ plt.show()
 # %%
 # .. admonition:: Stay tuned for some new features!
 #   Feel free to join our `Discord <https://discord.gg/scBZerAGwW>`_.
+
+# %%
+# Cleanup the project
+# -------------------
+#
+# Remove the temporary directory:
+temp_dir.cleanup()
