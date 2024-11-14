@@ -9,8 +9,6 @@ This example provides an overview of the functionalities and the different types
 of items that you can store in a skore :class:`~skore.Project`.
 """
 
-# ruff: noqa: E402
-
 # %%
 # Creating and loading a skore project
 # ====================================

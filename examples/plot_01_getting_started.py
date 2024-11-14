@@ -17,8 +17,6 @@ Creating a skore project, loading it, and launching the UI
 ==========================================================
 """
 
-# ruff: noqa: E402
-
 # %%
 # We start by creating a temporary directory to store our project such that we can
 # easily clean it after executing this example. If you want to keep the project,

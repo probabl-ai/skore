@@ -10,8 +10,6 @@ This example illustrates the motivation and the use of skore's
 ML/DS projects.
 """
 
-# ruff: noqa: E402
-
 # %%
 # Creating and loading the skore project
 # ======================================
