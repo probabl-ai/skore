@@ -75,11 +75,11 @@ class HighClassImbalanceWarning(TrainTestSplitWarning):
 
     MSG = (
         "It seems that you have a classification problem with a high class "
-        "imbalance: the test set has less than 100 examples of each class. In this "
+        "imbalance. In this "
         "case, using train_test_split may not be a good idea because of high  "
-        "variability in the scores obtained on the test set. We suggest three options "
-        "to tackle this challenge: you can increase test_size, collect more data, or "
-        "use skore.cross_validate."
+        "variability in the scores obtained on the test set. "
+        "To tackle this challenge we suggest to use skore's "
+        "cross_validate function."
     )
 
     @staticmethod
@@ -90,6 +90,12 @@ class HighClassImbalanceWarning(TrainTestSplitWarning):
         **kwargs,
     ) -> bool:
         """Check whether the test set has high class imbalance.
+
+        More precisely, we check whether the most populated class in `y` has
+        more than 3 times the size of the least populated class in `y`.
+        The other arguments are needed to see if the check is relevant. For
+        example, if `y` is a used for a regression task, then the check should
+        be skipped.
 
         Parameters
         ----------
@@ -127,9 +133,8 @@ def train_test_split(
 ):
     """Perform train-test-split of data.
 
-    This is a layer over scikit-learn's `train_test_split https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html`_
+    This is a wrapper over scikit-learn's `train_test_split https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html`_
     helper function, enriching it with various warnings that can be saved in a Project.
-
 
     Parameters
     ----------
@@ -139,7 +144,8 @@ def train_test_split(
     X : array-like, optional
         If not None, will be appended to the list of arrays passed positionally.
     y : array-like, optional
-        If not None, will be appended to the list of arrays passed positionally.
+        If not None, will be appended to the list of arrays passed positionally, after
+        `X`.
     test_size : float or int, optional
         If float, should be between 0.0 and 1.0 and represent the proportion of
         the dataset to include in the test split. If int, represents the absolute number
@@ -150,10 +156,10 @@ def train_test_split(
         of the dataset to include in the train split. If int, represents the absolute
         number of train samples. If None, the value is automatically set to the
         complement of the test size.
-    random_state : int or RandomState instance, optional
+    random_state : int or numpy RandomState instance, optional
         Controls the shuffling applied to the data before applying the split. Pass an
-        int for reproducible output across multiple function calls. See Glossary.
-    shuffle : bool, default=True
+        int for reproducible output across multiple function calls.
+    shuffle : bool, default is True
         Whether or not to shuffle the data before splitting. If shuffle=False
         then stratify must be None.
     stratify : array-like, optional
@@ -164,14 +170,20 @@ def train_test_split(
 
     Returns
     -------
-    splitting : list, length=2 * len(arrays)
+    splitting : list
         List containing train-test split of inputs.
+        The length of the list is twice the number of arrays passed, including
+        the X and y keyword arguments. If arrays are passed positionally as well
+        as through X and y, the output arrays are ordered as follows: first the
+        arrays passed positionally, in the order they were passed, then X if it
+        was passed, then y if it was passed.
 
     Examples
     --------
     >>> import numpy as np
     >>> X, y = np.arange(10).reshape((5, 2)), range(5)
 
+    # Drop-in replacement for sklearn train_test_split
     >>> X_train, X_test, y_train, y_test = train_test_split(X, y,
     ...     test_size=0.33, random_state=42)
     >>> X_train
@@ -179,9 +191,18 @@ def train_test_split(
            [0, 1],
            [6, 7]])
 
-    # Makes detection of problems easier
+    # Explicit X and y, makes detection of problems easier
     >>> X_train, X_test, y_train, y_test = train_test_split(X=X, y=y,
     ...     test_size=0.33, random_state=42)
+    >>> X_train
+    array([[4, 5],
+           [0, 1],
+           [6, 7]])
+
+    # When passing X and y explicitly, X is returned before y
+    >>> arr = np.arange(10).reshape((5, 2))
+    >>> arr_train, arr_test, X_train, X_test, y_train, y_test = train_test_split(
+    ...     arr, y=y, X=X, test_size=0.33, random_state=42)
     >>> X_train
     array([[4, 5],
            [0, 1],
