@@ -31,7 +31,7 @@ temp_dir_path = Path(temp_dir.name)
 # create the skore project
 import skore
 
-my_project = skore.create("my_project", working_dir=temp_dir)
+my_project = skore.create("my_project", working_dir=temp_dir_path)
 
 # %%
 # This will create a skore project directory named ``my_project.skore`` in your
