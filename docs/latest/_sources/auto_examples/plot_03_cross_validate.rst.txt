@@ -25,47 +25,45 @@ Enhancing cross-validation
 ==========================
 
 This example illustrates the motivation and the use of skore's
-:func:`~skore.cross_validate` to get assistance when developing your
+:func:`skore.cross_validate` to get assistance when developing your
 ML/DS projects.
 
-.. GENERATED FROM PYTHON SOURCE LINES 14-26
+.. GENERATED FROM PYTHON SOURCE LINES 14-20
+
+Creating and loading the skore project
+======================================
+
+We start by creating a temporary directory to store our project such that we can
+easily clean it after executing this example. If you want to keep the project,
+you have to skip this section.
+
+.. GENERATED FROM PYTHON SOURCE LINES 20-26
+
+.. code-block:: Python
+
+    import tempfile
+    from pathlib import Path
+
+    temp_dir = tempfile.TemporaryDirectory(prefix="skore_example_")
+    temp_dir_path = Path(temp_dir.name)
+
+
+
+
+
+
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 27-35
 
 .. code-block:: Python
 
     import subprocess
 
-    import matplotlib.pyplot as plt
-    import matplotlib.image as mpimg
-
-    from sklearn import datasets, linear_model
-    from sklearn import svm
-    from sklearn.model_selection import cross_validate as sklearn_cross_validate
-
-    import skore
-
-
-
-
-
-
-
-
-
-.. GENERATED FROM PYTHON SOURCE LINES 27-29
-
-Creating and loading the skore project
-======================================
-
-.. GENERATED FROM PYTHON SOURCE LINES 31-39
-
-.. code-block:: Python
-
-
-    # remove the skore project if it already exists
-    subprocess.run("rm -rf my_project_cv.skore".split())
-
     # create the skore project
-    subprocess.run("python3 -m skore create my_project_cv".split())
+    subprocess.run(
+        f"python3 -m skore create my_project_cv --working-dir {temp_dir.name}".split()
+    )
 
 
 
@@ -77,15 +75,17 @@ Creating and loading the skore project
  .. code-block:: none
 
 
-    CompletedProcess(args=['python3', '-m', 'skore', 'create', 'my_project_cv'], returncode=0)
+    CompletedProcess(args=['python3', '-m', 'skore', 'create', 'my_project_cv', '--working-dir', '/tmp/skore_example_90mp0ert'], returncode=0)
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 40-42
+.. GENERATED FROM PYTHON SOURCE LINES 36-40
 
 .. code-block:: Python
 
-    my_project_gs = skore.load("my_project_cv.skore")
+    import skore
+
+    my_project_gs = skore.load(temp_dir_path / "my_project_cv.skore")
 
 
 
@@ -94,31 +94,36 @@ Creating and loading the skore project
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 43-59
+.. GENERATED FROM PYTHON SOURCE LINES 41-59
 
 Cross-validation in scikit-learn
 ================================
 
 Scikit-learn holds two functions for cross-validation:
 
-* :func:`~sklearn.model_selection.cross_val_score`
-* :func:`~sklearn.model_selection.cross_validate`
+* :func:`sklearn.model_selection.cross_val_score`
+* :func:`sklearn.model_selection.cross_validate`
 
-Essentially, ``cross_val_score`` runs cross-validation for single metric
-evaluation, while ``cross_validate`` runs cross-validation with multiple
-metrics and can also return extra information such as train scores, fit times, and score times.
+Essentially, :func:`sklearn.model_selection.cross_val_score` runs cross-validation for
+single metric evaluation, while :func:`sklearn.model_selection.cross_validate` runs
+cross-validation with multiple metrics and can also return extra information such as
+train scores, fit times, and score times.
 
-Hence, in skore, we are more interested in the ``cross_validate`` function as
-it allows to do more than the historical ``cross_val_score``.
+Hence, in skore, we are more interested in the
+:func:`sklearn.model_selection.cross_validate` function as it allows to do
+more than the historical :func:`sklearn.model_selection.cross_val_score`.
 
 Let us illustrate cross-validation on a multi-class classification task.
 
-.. GENERATED FROM PYTHON SOURCE LINES 61-64
+.. GENERATED FROM PYTHON SOURCE LINES 61-67
 
 .. code-block:: Python
 
-    X, y = datasets.load_iris(return_X_y=True)
-    clf = svm.SVC(kernel="linear", C=1, random_state=0)
+    from sklearn.datasets import load_iris
+    from sklearn.svm import SVC
+
+    X, y = load_iris(return_X_y=True)
+    clf = SVC(kernel="linear", C=1, random_state=0)
 
 
 
@@ -127,16 +132,18 @@ Let us illustrate cross-validation on a multi-class classification task.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 65-66
+.. GENERATED FROM PYTHON SOURCE LINES 68-69
 
-Single metric evaluation using ``cross_validate``:
+Single metric evaluation using :func:`sklearn.model_selection.cross_validate`:
 
-.. GENERATED FROM PYTHON SOURCE LINES 68-71
+.. GENERATED FROM PYTHON SOURCE LINES 71-76
 
 .. code-block:: Python
+
+    from sklearn.model_selection import cross_validate as sklearn_cross_validate
 
     cv_results = sklearn_cross_validate(clf, X, y, cv=5)
-    cv_results["test_score"]
+    print(f"test_score: {cv_results['test_score']}")
 
 
 
@@ -146,72 +153,123 @@ Single metric evaluation using ``cross_validate``:
 
  .. code-block:: none
 
-
-    array([0.96666667, 1.        , 0.96666667, 0.96666667, 1.        ])
-
+    test_score: [0.96666667 1.         0.96666667 0.96666667 1.        ]
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 72-73
 
-Multiple metric evaluation using ``cross_validate``:
 
-.. GENERATED FROM PYTHON SOURCE LINES 75-85
+.. GENERATED FROM PYTHON SOURCE LINES 77-78
+
+Multiple metric evaluation using :func:`sklearn.model_selection.cross_validate`:
+
+.. GENERATED FROM PYTHON SOURCE LINES 80-92
 
 .. code-block:: Python
 
-    scores = sklearn_cross_validate(
+    import pandas as pd
+
+    cv_results = sklearn_cross_validate(
         clf,
         X,
         y,
         cv=5,
         scoring=["accuracy", "precision_macro"],
     )
-    print(scores["test_accuracy"])
-    print(scores["test_precision_macro"])
+    test_scores = pd.DataFrame(cv_results)[["test_accuracy", "test_precision_macro"]]
+    test_scores
 
 
 
 
 
-.. rst-class:: sphx-glr-script-out
 
- .. code-block:: none
+.. raw:: html
 
-    [0.96666667 1.         0.96666667 0.96666667 1.        ]
-    [0.96969697 1.         0.96969697 0.96969697 1.        ]
+    <div class="output_subarea output_html rendered_html output_result">
+    <div>
+    <style scoped>
+        .dataframe tbody tr th:only-of-type {
+            vertical-align: middle;
+        }
 
+        .dataframe tbody tr th {
+            vertical-align: top;
+        }
 
+        .dataframe thead th {
+            text-align: right;
+        }
+    </style>
+    <table border="1" class="dataframe">
+      <thead>
+        <tr style="text-align: right;">
+          <th></th>
+          <th>test_accuracy</th>
+          <th>test_precision_macro</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th>0</th>
+          <td>0.966667</td>
+          <td>0.969697</td>
+        </tr>
+        <tr>
+          <th>1</th>
+          <td>1.000000</td>
+          <td>1.000000</td>
+        </tr>
+        <tr>
+          <th>2</th>
+          <td>0.966667</td>
+          <td>0.969697</td>
+        </tr>
+        <tr>
+          <th>3</th>
+          <td>0.966667</td>
+          <td>0.969697</td>
+        </tr>
+        <tr>
+          <th>4</th>
+          <td>1.000000</td>
+          <td>1.000000</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+    </div>
+    <br />
+    <br />
 
-
-.. GENERATED FROM PYTHON SOURCE LINES 86-104
+.. GENERATED FROM PYTHON SOURCE LINES 93-111
 
 In scikit-learn, why do we recommend using ``cross_validate`` over ``cross_val_score``?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Here, for the :class:`~sklearn.svm.SVC`,
-the default score is the accuracy.
+Here, for the :class:`~sklearn.svm.SVC`, the default score is the accuracy.
 If the users want other scores to better understand their model such as the
 precision and the recall, they can specify it which is very convenient.
-Otherwise, they would have to run several ``cross_val_score`` with different
-``scoring`` parameters each time, which leads to more unnecessary compute.
+Otherwise, they would have to run several
+:func:`sklearn.model_selection.cross_val_score` with different ``scoring``
+parameters each time, which leads to more unnecessary compute.
 
 Why do we recommend using skore's ``cross_validate`` over scikit-learn's?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In the example above, what if the users ran scikit-learn's
-``cross_validate`` but forgot to manually add a crucial score for their use
-case such as the recall?
+:func:`sklearn.model_selection.cross_validate` but forgot to manually add a
+crucial score for their use case such as the recall?
 They would have to re-run the whole cross-validation experiment by adding this
 crucial score, which leads to more compute.
 
-.. GENERATED FROM PYTHON SOURCE LINES 106-118
+.. GENERATED FROM PYTHON SOURCE LINES 113-125
 
 Cross-validation in skore
 =========================
 
 In order to assist its users when programming, skore has implemented a
-:func:`~skore.cross_validate` function that wraps scikit-learn's
-:func:`~sklearn.model_selection.cross_validate`, to provide more
+:func:`skore.cross_validate` function that wraps scikit-learn's
+:func:`sklearn.model_selection.cross_validate`, to provide more
 context and facilitate the analysis.
 
 Classification task
@@ -219,7 +277,7 @@ Classification task
 
 Let us continue with the same use case.
 
-.. GENERATED FROM PYTHON SOURCE LINES 120-125
+.. GENERATED FROM PYTHON SOURCE LINES 127-132
 
 .. code-block:: Python
 
@@ -237,12 +295,12 @@ Let us continue with the same use case.
 
     <div class="output_subarea output_html rendered_html output_result">
     <div>                        <script type="text/javascript">window.PlotlyConfig = {MathJaxConfig: 'local'};</script>
-            <script charset="utf-8" src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>                <div id="1794490a-4474-48f9-9c9f-c723776e76cf" class="plotly-graph-div" style="height:100%; width:100%;"></div>            <script type="text/javascript">                                    window.PLOTLYENV=window.PLOTLYENV || {};                                    if (document.getElementById("1794490a-4474-48f9-9c9f-c723776e76cf")) {                    Plotly.newPlot(                        "1794490a-4474-48f9-9c9f-c723776e76cf",                        [{"hovertemplate":"%{y}","legendgroup":"group0","marker":{"color":"#636EFA"},"name":"test_score","showlegend":true,"visible":true,"x":[0,1,2,3,4],"y":[0.9666666666666667,1.0,0.9666666666666667,0.9666666666666667,1.0],"type":"bar"},{"hovertemplate":"%{y}","legendgroup":"group0","line":{"color":"#636EFA","dash":"dash"},"mode":"lines","name":"Average test_score","showlegend":false,"visible":true,"x":[-0.5,4.5],"y":[0.9800000000000001,0.9800000000000001],"type":"scatter"},{"hovertemplate":"%{y}","legendgroup":"group0","line":{"color":"#636EFA","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. test_score","showlegend":false,"visible":true,"x":[-0.5,4.5],"y":[0.9982574185835056,0.9982574185835056],"type":"scatter"},{"hovertemplate":"%{y}","legendgroup":"group0","line":{"color":"#636EFA","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. test_score","showlegend":false,"visible":true,"x":[-0.5,4.5],"y":[0.9617425814164946,0.9617425814164946],"type":"scatter"},{"hovertemplate":"%{y}","legendgroup":"group1","marker":{"color":"#EF553B"},"name":"test_recall_weighted","showlegend":true,"visible":"legendonly","x":[0,1,2,3,4],"y":[0.9666666666666667,1.0,0.9666666666666667,0.9666666666666667,1.0],"type":"bar"},{"hovertemplate":"%{y}","legendgroup":"group1","line":{"color":"#EF553B","dash":"dash"},"mode":"lines","name":"Average test_recall_weighted","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.9800000000000001,0.9800000000000001],"type":"scatter"},{"hovertemplate":"%{y}","legendgroup":"group1","line":{"color":"#EF553B","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. test_recall_weighted","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.9982574185835056,0.9982574185835056],"type":"scatter"},{"hovertemplate":"%{y}","legendgroup":"group1","line":{"color":"#EF553B","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. test_recall_weighted","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.9617425814164946,0.9617425814164946],"type":"scatter"},{"hovertemplate":"%{y}","legendgroup":"group2","marker":{"color":"#00CC96"},"name":"test_precision_weighted","showlegend":true,"visible":"legendonly","x":[0,1,2,3,4],"y":[0.9696969696969696,1.0,0.9696969696969696,0.9696969696969696,1.0],"type":"bar"},{"hovertemplate":"%{y}","legendgroup":"group2","line":{"color":"#00CC96","dash":"dash"},"mode":"lines","name":"Average test_precision_weighted","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.9818181818181818,0.9818181818181818],"type":"scatter"},{"hovertemplate":"%{y}","legendgroup":"group2","line":{"color":"#00CC96","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. test_precision_weighted","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.9984158350759141,0.9984158350759141],"type":"scatter"},{"hovertemplate":"%{y}","legendgroup":"group2","line":{"color":"#00CC96","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. test_precision_weighted","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.9652205285604495,0.9652205285604495],"type":"scatter"},{"customdata":["0:00:00.000835","0:00:00.000856","0:00:00.000815","0:00:00.000876","0:00:00.000822"],"hovertemplate":"%{customdata}\u003cextra\u003efit_time (timedelta)\u003c\u002fextra\u003e","legendgroup":"group3","marker":{"color":"#AB63FA"},"name":"fit_time (seconds)","showlegend":true,"visible":"legendonly","x":[0,1,2,3,4],"y":[0.0008347034454345703,0.0008556842803955078,0.0008149147033691406,0.0008764266967773438,0.0008215904235839844],"type":"bar"},{"customdata":["0:00:00.000835","0:00:00.000856","0:00:00.000815","0:00:00.000876","0:00:00.000822"],"hovertemplate":"%{customdata}\u003cextra\u003efit_time (timedelta)\u003c\u002fextra\u003e","legendgroup":"group3","line":{"color":"#AB63FA","dash":"dash"},"mode":"lines","name":"Average fit_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.0008406639099121094,0.0008406639099121094],"type":"scatter"},{"customdata":["0:00:00.000835","0:00:00.000856","0:00:00.000815","0:00:00.000876","0:00:00.000822"],"hovertemplate":"%{customdata}\u003cextra\u003efit_time (timedelta)\u003c\u002fextra\u003e","legendgroup":"group3","line":{"color":"#AB63FA","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. fit_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.0008659963747986752,0.0008659963747986752],"type":"scatter"},{"customdata":["0:00:00.000835","0:00:00.000856","0:00:00.000815","0:00:00.000876","0:00:00.000822"],"hovertemplate":"%{customdata}\u003cextra\u003efit_time (timedelta)\u003c\u002fextra\u003e","legendgroup":"group3","line":{"color":"#AB63FA","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. fit_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.0008153314450255435,0.0008153314450255435],"type":"scatter"},{"customdata":["0:00:00.002815","0:00:00.002798","0:00:00.002723","0:00:00.002716","0:00:00.002746"],"hovertemplate":"%{customdata}\u003cextra\u003escore_time (timedelta)\u003c\u002fextra\u003e","legendgroup":"group4","marker":{"color":"#FFA15A"},"name":"score_time (seconds)","showlegend":true,"visible":"legendonly","x":[0,1,2,3,4],"y":[0.0028154850006103516,0.0027976036071777344,0.0027229785919189453,0.002716064453125,0.002746105194091797],"type":"bar"},{"customdata":["0:00:00.002815","0:00:00.002798","0:00:00.002723","0:00:00.002716","0:00:00.002746"],"hovertemplate":"%{customdata}\u003cextra\u003escore_time (timedelta)\u003c\u002fextra\u003e","legendgroup":"group4","line":{"color":"#FFA15A","dash":"dash"},"mode":"lines","name":"Average score_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.0027596473693847655,0.0027596473693847655],"type":"scatter"},{"customdata":["0:00:00.002815","0:00:00.002798","0:00:00.002723","0:00:00.002716","0:00:00.002746"],"hovertemplate":"%{customdata}\u003cextra\u003escore_time (timedelta)\u003c\u002fextra\u003e","legendgroup":"group4","line":{"color":"#FFA15A","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. score_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.002804329517359348,0.002804329517359348],"type":"scatter"},{"customdata":["0:00:00.002815","0:00:00.002798","0:00:00.002723","0:00:00.002716","0:00:00.002746"],"hovertemplate":"%{customdata}\u003cextra\u003escore_time (timedelta)\u003c\u002fextra\u003e","legendgroup":"group4","line":{"color":"#FFA15A","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. score_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.002714965221410183,0.002714965221410183],"type":"scatter"}],                        {"template":{"data":{"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"heatmapgl":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmapgl"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"geo":{"bgcolor":"white","lakecolor":"white","landcolor":"#E5ECF6","showlakes":true,"showland":true,"subunitcolor":"white"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"light"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"bgcolor":"#E5ECF6","radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","gridwidth":2,"linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white"},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","gridwidth":2,"linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white"},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","gridwidth":2,"linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white"}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"ternary":{"aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"bgcolor":"#E5ECF6","caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"title":{"x":0.05},"xaxis":{"automargin":true,"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","zerolinewidth":2}}},"title":{"text":"Cross-validation results for each split"},"xaxis":{"dtick":1,"tickmode":"linear","title":{"text":"Split number"}},"yaxis":{"title":{"text":"Value"}}},                        {"responsive": true}                    )                };                            </script>        </div>
+            <script charset="utf-8" src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>                <div id="02b9e481-9faf-49d6-8993-4bf124785f95" class="plotly-graph-div" style="height:100%; width:100%;"></div>            <script type="text/javascript">                                    window.PLOTLYENV=window.PLOTLYENV || {};                                    if (document.getElementById("02b9e481-9faf-49d6-8993-4bf124785f95")) {                    Plotly.newPlot(                        "02b9e481-9faf-49d6-8993-4bf124785f95",                        [{"hovertemplate":"%{y}","legendgroup":"group0","marker":{"color":"#636EFA"},"name":"test_score","showlegend":true,"visible":true,"x":[0,1,2,3,4],"y":[0.9666666666666667,1.0,0.9666666666666667,0.9666666666666667,1.0],"type":"bar"},{"hovertemplate":"%{y}","legendgroup":"group0","line":{"color":"#636EFA","dash":"dash"},"mode":"lines","name":"Average test_score","showlegend":false,"visible":true,"x":[-0.5,4.5],"y":[0.9800000000000001,0.9800000000000001],"type":"scatter"},{"hovertemplate":"%{y}","legendgroup":"group0","line":{"color":"#636EFA","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. test_score","showlegend":false,"visible":true,"x":[-0.5,4.5],"y":[0.9982574185835056,0.9982574185835056],"type":"scatter"},{"hovertemplate":"%{y}","legendgroup":"group0","line":{"color":"#636EFA","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. test_score","showlegend":false,"visible":true,"x":[-0.5,4.5],"y":[0.9617425814164946,0.9617425814164946],"type":"scatter"},{"hovertemplate":"%{y}","legendgroup":"group1","marker":{"color":"#EF553B"},"name":"test_recall_weighted","showlegend":true,"visible":"legendonly","x":[0,1,2,3,4],"y":[0.9666666666666667,1.0,0.9666666666666667,0.9666666666666667,1.0],"type":"bar"},{"hovertemplate":"%{y}","legendgroup":"group1","line":{"color":"#EF553B","dash":"dash"},"mode":"lines","name":"Average test_recall_weighted","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.9800000000000001,0.9800000000000001],"type":"scatter"},{"hovertemplate":"%{y}","legendgroup":"group1","line":{"color":"#EF553B","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. test_recall_weighted","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.9982574185835056,0.9982574185835056],"type":"scatter"},{"hovertemplate":"%{y}","legendgroup":"group1","line":{"color":"#EF553B","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. test_recall_weighted","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.9617425814164946,0.9617425814164946],"type":"scatter"},{"hovertemplate":"%{y}","legendgroup":"group2","marker":{"color":"#00CC96"},"name":"test_precision_weighted","showlegend":true,"visible":"legendonly","x":[0,1,2,3,4],"y":[0.9696969696969696,1.0,0.9696969696969696,0.9696969696969696,1.0],"type":"bar"},{"hovertemplate":"%{y}","legendgroup":"group2","line":{"color":"#00CC96","dash":"dash"},"mode":"lines","name":"Average test_precision_weighted","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.9818181818181818,0.9818181818181818],"type":"scatter"},{"hovertemplate":"%{y}","legendgroup":"group2","line":{"color":"#00CC96","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. test_precision_weighted","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.9984158350759141,0.9984158350759141],"type":"scatter"},{"hovertemplate":"%{y}","legendgroup":"group2","line":{"color":"#00CC96","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. test_precision_weighted","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.9652205285604495,0.9652205285604495],"type":"scatter"},{"customdata":["0:00:00.000819","0:00:00.000835","0:00:00.000789","0:00:00.000824","0:00:00.000806"],"hovertemplate":"%{customdata}\u003cextra\u003efit_time (timedelta)\u003c\u002fextra\u003e","legendgroup":"group3","marker":{"color":"#AB63FA"},"name":"fit_time (seconds)","showlegend":true,"visible":"legendonly","x":[0,1,2,3,4],"y":[0.0008194446563720703,0.000835418701171875,0.0007894039154052734,0.0008244514465332031,0.0008063316345214844],"type":"bar"},{"customdata":["0:00:00.000819","0:00:00.000835","0:00:00.000789","0:00:00.000824","0:00:00.000806"],"hovertemplate":"%{customdata}\u003cextra\u003efit_time (timedelta)\u003c\u002fextra\u003e","legendgroup":"group3","line":{"color":"#AB63FA","dash":"dash"},"mode":"lines","name":"Average fit_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.0008150100708007813,0.0008150100708007813],"type":"scatter"},{"customdata":["0:00:00.000819","0:00:00.000835","0:00:00.000789","0:00:00.000824","0:00:00.000806"],"hovertemplate":"%{customdata}\u003cextra\u003efit_time (timedelta)\u003c\u002fextra\u003e","legendgroup":"group3","line":{"color":"#AB63FA","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. fit_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.0008327322868651346,0.0008327322868651346],"type":"scatter"},{"customdata":["0:00:00.000819","0:00:00.000835","0:00:00.000789","0:00:00.000824","0:00:00.000806"],"hovertemplate":"%{customdata}\u003cextra\u003efit_time (timedelta)\u003c\u002fextra\u003e","legendgroup":"group3","line":{"color":"#AB63FA","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. fit_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.0007972878547364279,0.0007972878547364279],"type":"scatter"},{"customdata":["0:00:00.002770","0:00:00.002746","0:00:00.002700","0:00:00.002817","0:00:00.002712"],"hovertemplate":"%{customdata}\u003cextra\u003escore_time (timedelta)\u003c\u002fextra\u003e","legendgroup":"group4","marker":{"color":"#FFA15A"},"name":"score_time (seconds)","showlegend":true,"visible":"legendonly","x":[0,1,2,3,4],"y":[0.0027697086334228516,0.002746105194091797,0.002700328826904297,0.002817392349243164,0.0027124881744384766],"type":"bar"},{"customdata":["0:00:00.002770","0:00:00.002746","0:00:00.002700","0:00:00.002817","0:00:00.002712"],"hovertemplate":"%{customdata}\u003cextra\u003escore_time (timedelta)\u003c\u002fextra\u003e","legendgroup":"group4","line":{"color":"#FFA15A","dash":"dash"},"mode":"lines","name":"Average score_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.002749204635620117,0.002749204635620117],"type":"scatter"},{"customdata":["0:00:00.002770","0:00:00.002746","0:00:00.002700","0:00:00.002817","0:00:00.002712"],"hovertemplate":"%{customdata}\u003cextra\u003escore_time (timedelta)\u003c\u002fextra\u003e","legendgroup":"group4","line":{"color":"#FFA15A","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. score_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.002796152819696152,0.002796152819696152],"type":"scatter"},{"customdata":["0:00:00.002770","0:00:00.002746","0:00:00.002700","0:00:00.002817","0:00:00.002712"],"hovertemplate":"%{customdata}\u003cextra\u003escore_time (timedelta)\u003c\u002fextra\u003e","legendgroup":"group4","line":{"color":"#FFA15A","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. score_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.002702256451544082,0.002702256451544082],"type":"scatter"}],                        {"template":{"data":{"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"heatmapgl":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmapgl"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"geo":{"bgcolor":"white","lakecolor":"white","landcolor":"#E5ECF6","showlakes":true,"showland":true,"subunitcolor":"white"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"light"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"bgcolor":"#E5ECF6","radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","gridwidth":2,"linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white"},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","gridwidth":2,"linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white"},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","gridwidth":2,"linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white"}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"ternary":{"aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"bgcolor":"#E5ECF6","caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"title":{"x":0.05},"xaxis":{"automargin":true,"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","zerolinewidth":2}}},"title":{"text":"Cross-validation results for each split"},"xaxis":{"dtick":1,"tickmode":"linear","title":{"text":"Split number"}},"yaxis":{"title":{"text":"Value"}}},                        {"responsive": true}                    )                };                            </script>        </div>
     </div>
     <br />
     <br />
 
-.. GENERATED FROM PYTHON SOURCE LINES 126-133
+.. GENERATED FROM PYTHON SOURCE LINES 133-140
 
 .. note::
   Because Plotly graphs currently do not properly render in our Sphinx
@@ -252,9 +310,12 @@ Let us continue with the same use case.
   Alternatively, we recommend zooming in / out in your browser window for the
   Plotly graphs to display properly.
 
-.. GENERATED FROM PYTHON SOURCE LINES 135-143
+.. GENERATED FROM PYTHON SOURCE LINES 142-153
 
 .. code-block:: Python
+
+    import matplotlib.image as mpimg
+    import matplotlib.pyplot as plt
 
     fig_plotly_clf.write_image("plot_03_cross_validate_clf.png", scale=4)
 
@@ -276,27 +337,32 @@ Let us continue with the same use case.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 144-156
+.. GENERATED FROM PYTHON SOURCE LINES 154-171
 
 |
-Skore's ``cross_validate`` advantages are the following:
+Skore's :func:`~skore.cross_validate` advantages are the following:
 
-* By default, it computes several useful scores without the need for the user to manually specify them. For classification, you can observe that it computed the accuracy, the precision, and the recall.
+* By default, it computes several useful scores without the need for the user to
+  manually specify them. For classification, you can observe that it computed the
+  accuracy, the precision, and the recall.
 
-* You automatically get some interactive Plotly graphs to better understand how your model behaves depending on the split. For example:
+* You automatically get some interactive Plotly graphs to better understand how your
+  model behaves depending on the split. For example:
 
   * You can compare the fitting and scoring times together for each split.
 
-  * You can compare the accuracy, precision, and recall scores together for each split.
+  * You can compare the accuracy, precision, and recall scores together for each
+    split.
 
-* The results and plots are automatically saved in your skore project, so that you can visualize them later in the UI for example.
+* The results and plots are automatically saved in your skore project, so that you can
+  visualize them later in the UI for example.
 
-.. GENERATED FROM PYTHON SOURCE LINES 158-160
+.. GENERATED FROM PYTHON SOURCE LINES 173-175
 
 Regression task
 ^^^^^^^^^^^^^^^
 
-.. GENERATED FROM PYTHON SOURCE LINES 162-167
+.. GENERATED FROM PYTHON SOURCE LINES 177-182
 
 For now, all cross-validation runs store their results in the same place, which might
 lead to comparing two different models that are actually not comparable (e.g.
@@ -304,7 +370,7 @@ comparing a regression with a classification).
 To remedy this, we clear the cross-validation information stored in skore before
 running another unrelated cross-validation:
 
-.. GENERATED FROM PYTHON SOURCE LINES 169-172
+.. GENERATED FROM PYTHON SOURCE LINES 184-187
 
 .. code-block:: Python
 
@@ -318,20 +384,23 @@ running another unrelated cross-validation:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 173-176
+.. GENERATED FROM PYTHON SOURCE LINES 188-191
 
 .. note::
   Soon, the storage of several unrelated cross-validation runs will be managed
   automatically.
 
-.. GENERATED FROM PYTHON SOURCE LINES 178-187
+.. GENERATED FROM PYTHON SOURCE LINES 193-206
 
 .. code-block:: Python
 
-    diabetes = datasets.load_diabetes()
+    from sklearn.datasets import load_diabetes
+    from sklearn.linear_model import Lasso
+
+    diabetes = load_diabetes()
     X = diabetes.data[:150]
     y = diabetes.target[:150]
-    lasso = linear_model.Lasso()
+    lasso = Lasso()
 
     cv_results = skore.cross_validate(lasso, X, y, cv=5, project=my_project_gs)
 
@@ -342,19 +411,39 @@ running another unrelated cross-validation:
 
 
 
+
 .. raw:: html
 
     <div class="output_subarea output_html rendered_html output_result">
     <div>                        <script type="text/javascript">window.PlotlyConfig = {MathJaxConfig: 'local'};</script>
-            <script charset="utf-8" src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>                <div id="2c0824e4-2107-4cff-ba30-5b0580aa9ef9" class="plotly-graph-div" style="height:100%; width:100%;"></div>            <script type="text/javascript">                                    window.PLOTLYENV=window.PLOTLYENV || {};                                    if (document.getElementById("2c0824e4-2107-4cff-ba30-5b0580aa9ef9")) {                    Plotly.newPlot(                        "2c0824e4-2107-4cff-ba30-5b0580aa9ef9",                        [{"hovertemplate":"%{y}","legendgroup":"group0","marker":{"color":"#636EFA"},"name":"test_score","showlegend":true,"visible":true,"x":[0,1,2,3,4],"y":[0.2982867487756391,0.22414919618930618,0.15480127210175387,0.2551973269039568,0.1710871514478407],"type":"bar"},{"hovertemplate":"%{y}","legendgroup":"group0","line":{"color":"#636EFA","dash":"dash"},"mode":"lines","name":"Average test_score","showlegend":false,"visible":true,"x":[-0.5,4.5],"y":[0.22070433908369935,0.22070433908369935],"type":"scatter"},{"hovertemplate":"%{y}","legendgroup":"group0","line":{"color":"#636EFA","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. test_score","showlegend":false,"visible":true,"x":[-0.5,4.5],"y":[0.27991950413745326,0.27991950413745326],"type":"scatter"},{"hovertemplate":"%{y}","legendgroup":"group0","line":{"color":"#636EFA","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. test_score","showlegend":false,"visible":true,"x":[-0.5,4.5],"y":[0.16148917402994548,0.16148917402994548],"type":"scatter"},{"hovertemplate":"%{y}","legendgroup":"group1","marker":{"color":"#EF553B"},"name":"test_r2","showlegend":true,"visible":"legendonly","x":[0,1,2,3,4],"y":[0.2982867487756391,0.22414919618930618,0.15480127210175387,0.2551973269039568,0.1710871514478407],"type":"bar"},{"hovertemplate":"%{y}","legendgroup":"group1","line":{"color":"#EF553B","dash":"dash"},"mode":"lines","name":"Average test_r2","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.22070433908369935,0.22070433908369935],"type":"scatter"},{"hovertemplate":"%{y}","legendgroup":"group1","line":{"color":"#EF553B","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. test_r2","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.27991950413745326,0.27991950413745326],"type":"scatter"},{"hovertemplate":"%{y}","legendgroup":"group1","line":{"color":"#EF553B","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. test_r2","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.16148917402994548,0.16148917402994548],"type":"scatter"},{"hovertemplate":"%{y}","legendgroup":"group2","marker":{"color":"#00CC96"},"name":"test_neg_root_mean_squared_error","showlegend":true,"visible":"legendonly","x":[0,1,2,3,4],"y":[-52.98271412620445,-69.93123859116155,-57.97111409545601,-68.286418279226,-71.77966037436696],"type":"bar"},{"hovertemplate":"%{y}","legendgroup":"group2","line":{"color":"#00CC96","dash":"dash"},"mode":"lines","name":"Average test_neg_root_mean_squared_error","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[-64.19022909328298,-64.19022909328298],"type":"scatter"},{"hovertemplate":"%{y}","legendgroup":"group2","line":{"color":"#00CC96","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. test_neg_root_mean_squared_error","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[-55.949731441964374,-55.949731441964374],"type":"scatter"},{"hovertemplate":"%{y}","legendgroup":"group2","line":{"color":"#00CC96","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. test_neg_root_mean_squared_error","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[-72.43072674460159,-72.43072674460159],"type":"scatter"},{"customdata":["0:00:00.000758","0:00:00.000614","0:00:00.000592","0:00:00.000592","0:00:00.000598"],"hovertemplate":"%{customdata}\u003cextra\u003efit_time (timedelta)\u003c\u002fextra\u003e","legendgroup":"group3","marker":{"color":"#AB63FA"},"name":"fit_time (seconds)","showlegend":true,"visible":"legendonly","x":[0,1,2,3,4],"y":[0.0007576942443847656,0.0006139278411865234,0.0005924701690673828,0.0005917549133300781,0.0005981922149658203],"type":"bar"},{"customdata":["0:00:00.000758","0:00:00.000614","0:00:00.000592","0:00:00.000592","0:00:00.000598"],"hovertemplate":"%{customdata}\u003cextra\u003efit_time (timedelta)\u003c\u002fextra\u003e","legendgroup":"group3","line":{"color":"#AB63FA","dash":"dash"},"mode":"lines","name":"Average fit_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.0006308078765869141,0.0006308078765869141],"type":"scatter"},{"customdata":["0:00:00.000758","0:00:00.000614","0:00:00.000592","0:00:00.000592","0:00:00.000598"],"hovertemplate":"%{customdata}\u003cextra\u003efit_time (timedelta)\u003c\u002fextra\u003e","legendgroup":"group3","line":{"color":"#AB63FA","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. fit_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.0007022987519977395,0.0007022987519977395],"type":"scatter"},{"customdata":["0:00:00.000758","0:00:00.000614","0:00:00.000592","0:00:00.000592","0:00:00.000598"],"hovertemplate":"%{customdata}\u003cextra\u003efit_time (timedelta)\u003c\u002fextra\u003e","legendgroup":"group3","line":{"color":"#AB63FA","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. fit_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.0005593170011760887,0.0005593170011760887],"type":"scatter"},{"customdata":["0:00:00.001312","0:00:00.001107","0:00:00.001194","0:00:00.001084","0:00:00.001200"],"hovertemplate":"%{customdata}\u003cextra\u003escore_time (timedelta)\u003c\u002fextra\u003e","legendgroup":"group4","marker":{"color":"#FFA15A"},"name":"score_time (seconds)","showlegend":true,"visible":"legendonly","x":[0,1,2,3,4],"y":[0.0013117790222167969,0.0011074542999267578,0.0011935234069824219,0.0010836124420166016,0.0011997222900390625],"type":"bar"},{"customdata":["0:00:00.001312","0:00:00.001107","0:00:00.001194","0:00:00.001084","0:00:00.001200"],"hovertemplate":"%{customdata}\u003cextra\u003escore_time (timedelta)\u003c\u002fextra\u003e","legendgroup":"group4","line":{"color":"#FFA15A","dash":"dash"},"mode":"lines","name":"Average score_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.0011792182922363281,0.0011792182922363281],"type":"scatter"},{"customdata":["0:00:00.001312","0:00:00.001107","0:00:00.001194","0:00:00.001084","0:00:00.001200"],"hovertemplate":"%{customdata}\u003cextra\u003escore_time (timedelta)\u003c\u002fextra\u003e","legendgroup":"group4","line":{"color":"#FFA15A","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. score_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.0012693403574523354,0.0012693403574523354],"type":"scatter"},{"customdata":["0:00:00.001312","0:00:00.001107","0:00:00.001194","0:00:00.001084","0:00:00.001200"],"hovertemplate":"%{customdata}\u003cextra\u003escore_time (timedelta)\u003c\u002fextra\u003e","legendgroup":"group4","line":{"color":"#FFA15A","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. score_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.0010890962270203208,0.0010890962270203208],"type":"scatter"}],                        {"template":{"data":{"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"heatmapgl":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmapgl"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"geo":{"bgcolor":"white","lakecolor":"white","landcolor":"#E5ECF6","showlakes":true,"showland":true,"subunitcolor":"white"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"light"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"bgcolor":"#E5ECF6","radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","gridwidth":2,"linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white"},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","gridwidth":2,"linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white"},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","gridwidth":2,"linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white"}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"ternary":{"aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"bgcolor":"#E5ECF6","caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"title":{"x":0.05},"xaxis":{"automargin":true,"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","zerolinewidth":2}}},"title":{"text":"Cross-validation results for each split"},"xaxis":{"dtick":1,"tickmode":"linear","title":{"text":"Split number"}},"yaxis":{"title":{"text":"Value"}}},                        {"responsive": true}                    )                };                            </script>        </div>
+            <script charset="utf-8" src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>                <div id="c1a4e539-310a-4415-95d5-a83cc10ec7b7" class="plotly-graph-div" style="height:100%; width:100%;"></div>            <script type="text/javascript">                                    window.PLOTLYENV=window.PLOTLYENV || {};                                    if (document.getElementById("c1a4e539-310a-4415-95d5-a83cc10ec7b7")) {                    Plotly.newPlot(                        "c1a4e539-310a-4415-95d5-a83cc10ec7b7",                        [{"hovertemplate":"%{y}","legendgroup":"group0","marker":{"color":"#636EFA"},"name":"test_score","showlegend":true,"visible":true,"x":[0,1,2,3,4],"y":[0.2982867487756391,0.22414919618930618,0.15480127210175387,0.2551973269039568,0.1710871514478407],"type":"bar"},{"hovertemplate":"%{y}","legendgroup":"group0","line":{"color":"#636EFA","dash":"dash"},"mode":"lines","name":"Average test_score","showlegend":false,"visible":true,"x":[-0.5,4.5],"y":[0.22070433908369935,0.22070433908369935],"type":"scatter"},{"hovertemplate":"%{y}","legendgroup":"group0","line":{"color":"#636EFA","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. test_score","showlegend":false,"visible":true,"x":[-0.5,4.5],"y":[0.27991950413745326,0.27991950413745326],"type":"scatter"},{"hovertemplate":"%{y}","legendgroup":"group0","line":{"color":"#636EFA","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. test_score","showlegend":false,"visible":true,"x":[-0.5,4.5],"y":[0.16148917402994548,0.16148917402994548],"type":"scatter"},{"hovertemplate":"%{y}","legendgroup":"group1","marker":{"color":"#EF553B"},"name":"test_r2","showlegend":true,"visible":"legendonly","x":[0,1,2,3,4],"y":[0.2982867487756391,0.22414919618930618,0.15480127210175387,0.2551973269039568,0.1710871514478407],"type":"bar"},{"hovertemplate":"%{y}","legendgroup":"group1","line":{"color":"#EF553B","dash":"dash"},"mode":"lines","name":"Average test_r2","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.22070433908369935,0.22070433908369935],"type":"scatter"},{"hovertemplate":"%{y}","legendgroup":"group1","line":{"color":"#EF553B","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. test_r2","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.27991950413745326,0.27991950413745326],"type":"scatter"},{"hovertemplate":"%{y}","legendgroup":"group1","line":{"color":"#EF553B","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. test_r2","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.16148917402994548,0.16148917402994548],"type":"scatter"},{"hovertemplate":"%{y}","legendgroup":"group2","marker":{"color":"#00CC96"},"name":"test_neg_root_mean_squared_error","showlegend":true,"visible":"legendonly","x":[0,1,2,3,4],"y":[-52.98271412620445,-69.93123859116155,-57.97111409545601,-68.286418279226,-71.77966037436696],"type":"bar"},{"hovertemplate":"%{y}","legendgroup":"group2","line":{"color":"#00CC96","dash":"dash"},"mode":"lines","name":"Average test_neg_root_mean_squared_error","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[-64.19022909328298,-64.19022909328298],"type":"scatter"},{"hovertemplate":"%{y}","legendgroup":"group2","line":{"color":"#00CC96","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. test_neg_root_mean_squared_error","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[-55.949731441964374,-55.949731441964374],"type":"scatter"},{"hovertemplate":"%{y}","legendgroup":"group2","line":{"color":"#00CC96","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. test_neg_root_mean_squared_error","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[-72.43072674460159,-72.43072674460159],"type":"scatter"},{"customdata":["0:00:00.000746","0:00:00.000610","0:00:00.000592","0:00:00.000611","0:00:00.000585"],"hovertemplate":"%{customdata}\u003cextra\u003efit_time (timedelta)\u003c\u002fextra\u003e","legendgroup":"group3","marker":{"color":"#AB63FA"},"name":"fit_time (seconds)","showlegend":true,"visible":"legendonly","x":[0,1,2,3,4],"y":[0.0007455348968505859,0.0006101131439208984,0.0005924701690673828,0.0006105899810791016,0.0005853176116943359],"type":"bar"},{"customdata":["0:00:00.000746","0:00:00.000610","0:00:00.000592","0:00:00.000611","0:00:00.000585"],"hovertemplate":"%{customdata}\u003cextra\u003efit_time (timedelta)\u003c\u002fextra\u003e","legendgroup":"group3","line":{"color":"#AB63FA","dash":"dash"},"mode":"lines","name":"Average fit_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.000628805160522461,0.000628805160522461],"type":"scatter"},{"customdata":["0:00:00.000746","0:00:00.000610","0:00:00.000592","0:00:00.000611","0:00:00.000585"],"hovertemplate":"%{customdata}\u003cextra\u003efit_time (timedelta)\u003c\u002fextra\u003e","legendgroup":"group3","line":{"color":"#AB63FA","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. fit_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.0006949837335222236,0.0006949837335222236],"type":"scatter"},{"customdata":["0:00:00.000746","0:00:00.000610","0:00:00.000592","0:00:00.000611","0:00:00.000585"],"hovertemplate":"%{customdata}\u003cextra\u003efit_time (timedelta)\u003c\u002fextra\u003e","legendgroup":"group3","line":{"color":"#AB63FA","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. fit_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.0005626265875226983,0.0005626265875226983],"type":"scatter"},{"customdata":["0:00:00.001185","0:00:00.001168","0:00:00.001098","0:00:00.001127","0:00:00.001081"],"hovertemplate":"%{customdata}\u003cextra\u003escore_time (timedelta)\u003c\u002fextra\u003e","legendgroup":"group4","marker":{"color":"#FFA15A"},"name":"score_time (seconds)","showlegend":true,"visible":"legendonly","x":[0,1,2,3,4],"y":[0.0011851787567138672,0.0011675357818603516,0.0010979175567626953,0.0011272430419921875,0.0010805130004882812],"type":"bar"},{"customdata":["0:00:00.001185","0:00:00.001168","0:00:00.001098","0:00:00.001127","0:00:00.001081"],"hovertemplate":"%{customdata}\u003cextra\u003escore_time (timedelta)\u003c\u002fextra\u003e","legendgroup":"group4","line":{"color":"#FFA15A","dash":"dash"},"mode":"lines","name":"Average score_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.0011316776275634766,0.0011316776275634766],"type":"scatter"},{"customdata":["0:00:00.001185","0:00:00.001168","0:00:00.001098","0:00:00.001127","0:00:00.001081"],"hovertemplate":"%{customdata}\u003cextra\u003escore_time (timedelta)\u003c\u002fextra\u003e","legendgroup":"group4","line":{"color":"#FFA15A","dash":"dot"},"mode":"lines","name":"Average + 1 std. dev. score_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.001176189999560911,0.001176189999560911],"type":"scatter"},{"customdata":["0:00:00.001185","0:00:00.001168","0:00:00.001098","0:00:00.001127","0:00:00.001081"],"hovertemplate":"%{customdata}\u003cextra\u003escore_time (timedelta)\u003c\u002fextra\u003e","legendgroup":"group4","line":{"color":"#FFA15A","dash":"dot"},"mode":"lines","name":"Average - 1 std. dev. score_time (seconds)","showlegend":false,"visible":"legendonly","x":[-0.5,4.5],"y":[0.0010871652555660423,0.0010871652555660423],"type":"scatter"}],                        {"template":{"data":{"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"heatmapgl":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmapgl"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"geo":{"bgcolor":"white","lakecolor":"white","landcolor":"#E5ECF6","showlakes":true,"showland":true,"subunitcolor":"white"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"light"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"bgcolor":"#E5ECF6","radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","gridwidth":2,"linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white"},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","gridwidth":2,"linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white"},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","gridwidth":2,"linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white"}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"ternary":{"aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"bgcolor":"#E5ECF6","caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"title":{"x":0.05},"xaxis":{"automargin":true,"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","zerolinewidth":2}}},"title":{"text":"Cross-validation results for each split"},"xaxis":{"dtick":1,"tickmode":"linear","title":{"text":"Split number"}},"yaxis":{"title":{"text":"Value"}}},                        {"responsive": true}                    )                };                            </script>        </div>
     </div>
     <br />
     <br />
 
+.. GENERATED FROM PYTHON SOURCE LINES 207-211
+
+Cleanup the project
+-------------------
+
+Remove the temporary directory:
+
+.. GENERATED FROM PYTHON SOURCE LINES 211-212
+
+.. code-block:: Python
+
+    temp_dir.cleanup()
+
+
+
+
+
+
+
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 1.743 seconds)
+   **Total running time of the script:** (0 minutes 1.585 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_03_cross_validate.py:
