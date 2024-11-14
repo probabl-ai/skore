@@ -6,7 +6,7 @@ Enhancing cross-validation
 ==========================
 
 This example illustrates the motivation and the use of skore's
-:func:`~skore.cross_validate` to get assistance when developing your
+:func:`skore.cross_validate` to get assistance when developing your
 ML/DS projects.
 """
 
@@ -45,8 +45,8 @@ my_project_gs = skore.load("my_project_cv.skore")
 #
 # Scikit-learn holds two functions for cross-validation:
 #
-# * :func:`~sklearn.model_selection.cross_val_score`
-# * :func:`~sklearn.model_selection.cross_validate`
+# * :func:`sklearn.model_selection.cross_val_score`
+# * :func:`sklearn.model_selection.cross_validate`
 #
 # Essentially, ``cross_val_score`` runs cross-validation for single metric
 # evaluation, while ``cross_validate`` runs cross-validation with multiple
@@ -107,8 +107,8 @@ print(scores["test_precision_macro"])
 # =========================
 #
 # In order to assist its users when programming, skore has implemented a
-# :func:`~skore.cross_validate` function that wraps scikit-learn's
-# :func:`~sklearn.model_selection.cross_validate`, to provide more
+# :func:`skore.cross_validate` function that wraps scikit-learn's
+# :func:`sklearn.model_selection.cross_validate`, to provide more
 # context and facilitate the analysis.
 #
 # Classification task
