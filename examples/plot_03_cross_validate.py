@@ -184,3 +184,8 @@ cv_results = skore.cross_validate(lasso, X, y, cv=5, project=my_project_gs)
 
 fig_plotly_reg = my_project_gs.get_item("cross_validation").plot
 fig_plotly_reg
+
+# %%
+# .. seealso::
+#   For tracking and comparing several runs of cross-validations on the same data, see
+#   :ref:`example_track_cv`.
