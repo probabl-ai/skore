@@ -2,7 +2,7 @@ name: Lint PR title
 
 on:
   pull_request:
-    types: [opened, reopened, edited]
+    types: [opened, reopened, edited, synchronize]
 
 permissions:
   pull-requests: read

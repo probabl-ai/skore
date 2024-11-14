@@ -6,19 +6,14 @@ from pathlib import Path
 from typing import Optional, Union
 
 from skore.cli import logger
+from skore.exceptions import (
+    InvalidProjectNameError,
+    ProjectAlreadyExistsError,
+    ProjectCreationError,
+    ProjectPermissionError,
+)
 from skore.project import load
 from skore.view.view import View
-
-
-class InvalidProjectNameError(Exception):
-    """The project name does not fit with one or more of the project name rules.
-
-    - The project name must start with an alphanumeric character, and must not contain
-    special characters other than '_' (underscore) and '-' (hyphen).
-    - The project name must be at most 255 characters long (including ".skore").
-    - The project name must not be a reserved OS file name.
-    For example, CON, AUX, NUL... on Windows.
-    """
 
 
 def validate_project_name(project_name: str) -> tuple[bool, Optional[Exception]]:
@@ -60,18 +55,6 @@ def validate_project_name(project_name: str) -> tuple[bool, Optional[Exception]]
     # on Unix systems.
 
     return True, None
-
-
-class ProjectCreationError(Exception):
-    """Project creation failed."""
-
-
-class ProjectAlreadyExistsError(Exception):
-    """A project with this name already exists."""
-
-
-class ProjectPermissionError(Exception):
-    """Permissions in the directory do not allow creating a file."""
 
 
 def __create(
