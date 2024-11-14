@@ -25,6 +25,7 @@ let unsavedViewsId: string = "";
 function onViewSelected(view: string) {
   projectStore.setCurrentView(view);
   isDropdownOpen.value = false;
+  populateViewList();
 }
 
 async function onViewRenamed(oldName: string, newName: string, item: EditableListItemModel) {
@@ -95,13 +96,17 @@ function onClickOutside(e: Event) {
   }
 }
 
-onMounted(async () => {
+function populateViewList() {
   views.value = Object.keys(projectStore.views).map((key) => ({
     name: key,
     isNamed: true,
     id: generateRandomId(),
     isSelected: key === projectStore.currentView,
   }));
+}
+
+onMounted(async () => {
+  populateViewList();
   document.addEventListener("click", onClickOutside);
 });
 
