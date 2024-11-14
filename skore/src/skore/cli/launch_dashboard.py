@@ -13,12 +13,6 @@ from skore.project import load
 from skore.ui.app import create_app
 
 
-class ProjectNotFound(Exception):
-    """Project was not found."""
-
-    project_path: Path
-
-
 def __launch(project_name: Union[str, Path], port: int, open_browser: bool):
     """Launch the UI to visualize a project.
 
