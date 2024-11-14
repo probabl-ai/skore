@@ -23,7 +23,7 @@ import skore
 temp_dir = tempfile.TemporaryDirectory(prefix="skore_example_")
 temp_dir_path = Path(temp_dir.name)
 
-my_project_gs = skore.create("my_project_cv.skore", working_dir=temp_dir)
+my_project_gs = skore.create("my_project_cv.skore", working_dir=temp_dir_path)
 
 # %%
 # Cross-validation in scikit-learn
