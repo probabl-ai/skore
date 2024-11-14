@@ -18,19 +18,19 @@ Creating a skore project, loading it, and launching the UI
 """
 
 # %%
-# From your shell, initialize a skore project, here named ``my_project``:
-
-# %%
+# We start by creating a temporary directory to store our project such that we can
+# easily clean it after executing this example. If you want to keep the project,
+# you have to skip this section.
 import tempfile
 from pathlib import Path
 
+temp_dir = tempfile.TemporaryDirectory(prefix="skore_example_")
+temp_dir_path = Path(temp_dir.name)
+
+# %%
+# create the skore project
 import skore
 
-# create a temporary directory that will be cleaned up automatically
-temp_dir = Path(tempfile.mkdtemp(prefix="skore_example_"))
-
-
-# create the skore project
 my_project = skore.create("my_project", working_dir=temp_dir)
 
 # %%
@@ -180,7 +180,4 @@ plt.show()
 # -------------------
 #
 # Remove the temporary directory:
-
-import shutil
-
-shutil.rmtree(temp_dir)
+temp_dir.cleanup()

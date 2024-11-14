@@ -12,6 +12,15 @@ of items that you can store in a skore :class:`~skore.Project`.
 # %%
 import io
 
+# Creating and loading a skore project
+# ====================================
+#
+# We start by creating a temporary directory to store our project such that we can
+# easily clean it after executing this example. If you want to keep the project,
+# you have to skip this section.
+import tempfile
+from pathlib import Path
+
 # %%
 # Creating and loading a skore project
 # ====================================
@@ -30,14 +39,18 @@ from sklearn.preprocessing import StandardScaler
 import skore
 from skore.item import MediaItem
 
-my_project_ui = skore.create("my_project_ui.skore")
+temp_dir = tempfile.TemporaryDirectory(prefix="skore_example_")
+temp_dir_path = Path(temp_dir.name)
+
+my_project_ui = skore.create("my_project_ui.skore", working_dir=temp_dir_path)
 
 
 # %%
 # Storing integers
 # ================
 #
-# Now, let us store our first object using :func:`~skore.Project.put`, for example an integer:
+# Now, let us store our first object using :func:`~skore.Project.put`, for example an
+# integer:
 
 # %%
 my_project_ui.put("my_int", 3)
@@ -51,7 +64,8 @@ my_project_ui.put("my_int", 3)
 my_project_ui.get("my_int")
 
 # %%
-# Careful; like in a traditional Python dictionary, the ``put`` method will *overwrite* past data if you use a key which already exists!
+# Careful; like in a traditional Python dictionary, the ``put`` method will *overwrite*
+# past data if you use a key which already exists!
 
 # %%
 my_project_ui.put("my_int", 30_000)
@@ -63,7 +77,8 @@ my_project_ui.put("my_int", 30_000)
 my_project_ui.get("my_int")
 
 # %%
-# By using the :func:`~skore.Project.delete_item` method, you can also delete an object so that your skore UI does not become cluttered:
+# By using the :func:`~skore.Project.delete_item` method, you can also delete an object
+# so that your skore UI does not become cluttered:
 
 # %%
 my_project_ui.put("my_int_2", 10)
@@ -91,7 +106,9 @@ my_project_ui.put("my_string", "Hello world!")
 my_project_ui.get("my_string")
 
 # %%
-# :func:`~skore.Project.get` infers the type of the inserted object by default. For example, strings are assumed to be in Markdown format. Hence, you can customize the display of your text:
+# :func:`~skore.Project.get` infers the type of the inserted object by default. For
+# example, strings are assumed to be in Markdown format. Hence, you can customize the
+# display of your text:
 
 # %%
 my_project_ui.put(
@@ -108,9 +125,11 @@ def my_func(x):
 )
 
 # %%
-# Moreover, you can also explicitly tell skore the media type of an object, for example in HTML:
+# Moreover, you can also explicitly tell skore the media type of an object, for example
+# in HTML:
 
 # %%
+
 my_project_ui.put_item(
     "my_string_3",
     MediaItem.factory(
@@ -165,6 +184,7 @@ my_dict
 # Numpy array:
 
 # %%
+
 my_arr = np.random.randn(3, 3)
 my_project_ui.put("my_arr", my_arr)
 my_arr
@@ -173,6 +193,7 @@ my_arr
 # Pandas data frame:
 
 # %%
+
 my_df = pd.DataFrame(np.random.randn(10, 5))
 my_project_ui.put("my_df", my_df)
 my_df.head()
@@ -181,12 +202,14 @@ my_df.head()
 # Storing data visualizations
 # ===========================
 #
-# Note that, in the dashboard, the interactivity of plots is supported, for example for Altair and Plotly.
+# Note that, in the dashboard, the interactivity of plots is supported, for example for
+# Altair and Plotly.
 
 # %%
 # Matplotlib figure:
 
 # %%
+
 x = np.linspace(0, 2, 100)
 
 fig, ax = plt.subplots(layout="constrained", dpi=200)
@@ -206,6 +229,7 @@ my_project_ui.put("my_figure", fig)
 # Altair chart:
 
 # %%
+
 num_points = 100
 df_plot = pd.DataFrame(
     {"x": np.random.randn(num_points), "y": np.random.randn(num_points)}
@@ -223,10 +247,11 @@ my_project_ui.put("my_altair_chart", my_altair_chart)
 
 # %%
 # .. note::
-#     For Plotly figures, some users reported the following error when running Plotly cells:
-#     ``ValueError: Mime type rendering requires nbformat>=4.2.0 but it is not installed``.
-#     This is a Plotly issue which is documented `here <https://github.com/plotly/plotly.py/issues/3285>`_;
-#     to solve it, we recommend installing nbformat in your environment, e.g. with:
+#     For Plotly figures, some users reported the following error when running Plotly
+#     cells: ``ValueError: Mime type rendering requires nbformat>=4.2.0 but it is not
+#     installed``. This is a Plotly issue which is documented `here
+#     <https://github.com/plotly/plotly.py/issues/3285>`_; to solve it, we recommend
+#     installing nbformat in your environment, e.g. with:
 #
 #     .. code-block:: console
 #
@@ -236,6 +261,7 @@ my_project_ui.put("my_altair_chart", my_altair_chart)
 # Plotly figure:
 
 # %%
+
 df = px.data.iris()
 fig = px.scatter(
     df, x=df.sepal_length, y=df.sepal_width, color=df.species, size=df.petal_length
@@ -269,6 +295,7 @@ my_project_ui.put("my_anim_plotly_fig", my_anim_plotly_fig)
 # PIL image:
 
 # %%
+
 my_pil_image = PIL.Image.new("RGB", (100, 100), color="red")
 with io.BytesIO() as output:
     my_pil_image.save(output, format="png")
@@ -279,11 +306,13 @@ my_project_ui.put("my_pil_image", my_pil_image)
 # Storing scikit-learn models and pipelines
 # =========================================
 #
-# As skore is developed by `Probabl <https://probabl.ai>`_, the spin-off of scikit-learn, skore treats scikit-learn models and pipelines as first-class citizens.
+# As skore is developed by `Probabl <https://probabl.ai>`_, the spin-off of
+# scikit-learn, skore treats scikit-learn models and pipelines as first-class citizens.
 #
 # First of all, you can store a scikit-learn model:
 
 # %%
+
 my_model = Lasso(alpha=2)
 my_project_ui.put("my_model", my_model)
 my_model
@@ -292,6 +321,7 @@ my_model
 # You can also store scikit-learn pipelines:
 
 # %%
+
 my_pipeline = Pipeline(
     [("standard_scaler", StandardScaler()), ("lasso", Lasso(alpha=2))]
 )
@@ -302,6 +332,7 @@ my_pipeline
 # Moreover, you can store fitted scikit-learn pipelines:
 
 # %%
+
 diabetes = load_diabetes()
 X = diabetes.data[:150]
 y = diabetes.target[:150]
@@ -309,3 +340,10 @@ my_pipeline.fit(X, y)
 
 my_project_ui.put("my_fitted_pipeline", my_pipeline)
 my_pipeline
+
+# %%
+# Cleanup the project
+# -------------------
+#
+# Remove the temporary directory:
+temp_dir.cleanup()
