@@ -21,16 +21,17 @@ Creating a skore project, loading it, and launching the UI
 # From your shell, initialize a skore project, here named ``my_project``:
 
 # %%
-import subprocess
 import tempfile
 from pathlib import Path
+
+import skore
 
 # create a temporary directory that will be cleaned up automatically
 temp_dir = Path(tempfile.mkdtemp(prefix="skore_example_"))
 
 
 # create the skore project
-subprocess.run(f"python3 -m skore create my_project --working-dir {temp_dir}".split())
+my_project = skore.create("my_project", working_dir=temp_dir)
 
 # %%
 # This will create a skore project directory named ``my_project.skore`` in your
@@ -49,9 +50,6 @@ subprocess.run(f"python3 -m skore create my_project --working-dir {temp_dir}".sp
 # Let us load the project and add an integer to it for example:
 
 # %%
-from skore import load
-
-my_project = load(temp_dir / "my_project.skore")
 my_project.put("my_int", 3)
 
 # %%
@@ -69,8 +67,8 @@ my_project.put("my_int", 3)
 # %%
 import numpy as np
 from sklearn.datasets import load_diabetes
-from sklearn.model_selection import GridSearchCV
 from sklearn.linear_model import Ridge
+from sklearn.model_selection import GridSearchCV
 
 diabetes = load_diabetes()
 X = diabetes.data[:150]
@@ -147,8 +145,8 @@ fig_plotly = my_project.get_item("cross_validation").plot
 #   we display its static image below.
 
 # %%
-import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
+import matplotlib.pyplot as plt
 
 fig_plotly.write_image("plot_01_cross_validation.png", scale=4)
 

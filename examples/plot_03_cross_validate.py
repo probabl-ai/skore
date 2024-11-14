@@ -11,33 +11,18 @@ ML/DS projects.
 """
 
 # %%
-import subprocess
 
-import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
-
-from sklearn import datasets, linear_model
-from sklearn import svm
+import matplotlib.pyplot as plt
+from sklearn import datasets, linear_model, svm
 from sklearn.model_selection import cross_validate as sklearn_cross_validate
 
 import skore
 
-
 # %%
 # Creating and loading the skore project
 # ======================================
-
-# %%
-
-# remove the skore project if it already exists
-subprocess.run("rm -rf my_project_cv.skore".split())
-
-# create the skore project
-subprocess.run("python3 -m skore create my_project_cv".split())
-
-
-# %%
-my_project_gs = skore.load("my_project_cv.skore")
+my_project_gs = skore.create("my_project_cv.skore")
 
 # %%
 # Cross-validation in scikit-learn

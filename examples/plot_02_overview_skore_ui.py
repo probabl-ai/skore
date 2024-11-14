@@ -10,40 +10,27 @@ of items that you can store in a skore :class:`~skore.Project`.
 """
 
 # %%
-import altair as alt
 import io
+
+# %%
+# Creating and loading a skore project
+# ====================================
+# %%
+import altair as alt
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import plotly.express as px
 import PIL
-
+import plotly.express as px
 from sklearn.datasets import load_diabetes
 from sklearn.linear_model import Lasso
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-from skore import load
+import skore
 from skore.item import MediaItem
 
-# %%
-# Creating and loading a skore project
-# ====================================
-
-# %%
-import subprocess
-
-# remove the skore project if it already exists
-subprocess.run("rm -rf my_project_ui.skore".split())
-
-# create the skore project
-subprocess.run("python3 -m skore create my_project_ui".split())
-
-
-# %%
-from skore import load
-
-my_project_ui = load("my_project_ui.skore")
+my_project_ui = skore.create("my_project_ui.skore")
 
 
 # %%
@@ -127,12 +114,11 @@ def my_func(x):
 my_project_ui.put_item(
     "my_string_3",
     MediaItem.factory(
-        "<p><h1>Title</h1> <b>bold</b>, <i>italic</i>, etc.</p>",
-        media_type="text/html"
+        "<p><h1>Title</h1> <b>bold</b>, <i>italic</i>, etc.</p>", media_type="text/html"
     ),
 )
 
-#%%
+# %%
 # .. note::
 #   We used :func:`~skore.Project.put_item` instead of :func:`~skore.Project.put`.
 
@@ -252,11 +238,7 @@ my_project_ui.put("my_altair_chart", my_altair_chart)
 # %%
 df = px.data.iris()
 fig = px.scatter(
-    df,
-    x=df.sepal_length,
-    y=df.sepal_width,
-    color=df.species,
-    size=df.petal_length
+    df, x=df.sepal_length, y=df.sepal_width, color=df.species, size=df.petal_length
 )
 
 my_project_ui.put("my_plotly_fig", fig)
