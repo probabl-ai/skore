@@ -225,23 +225,19 @@ def train_test_split(
         stratify=stratify,
     )
 
-    if len(arrays) >= 2:
+    if y is None:
         y = arrays[-1]
-        y_test = output[-1]
-    else:
-        y = None
-        y_test = None
+
     ml_task = _find_ml_task(y)
 
     kwargs = dict(
-        arrays=arrays,
+        arrays=new_arrays,
         test_size=test_size,
         train_size=train_size,
         random_state=random_state,
         shuffle=shuffle,
         stratify=stratify,
         y=y,
-        y_test=y_test,
         ml_task=ml_task,
     )
 
