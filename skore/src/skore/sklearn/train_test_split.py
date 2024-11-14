@@ -53,7 +53,24 @@ def _find_ml_task(y) -> MLTask:
     return "unknown"
 
 
-class HighClassImbalanceWarning(Warning):
+class TrainTestSplitWarning(Warning):
+    """Interface for a train-test-split warning."""
+
+    MSG: str
+
+    @staticmethod
+    def check(*args, **kwargs) -> bool:
+        """Perform the check.
+
+        Returns
+        -------
+        bool
+            True if the check passed, False otherwise.
+        """
+        ...
+
+
+class HighClassImbalanceWarning(TrainTestSplitWarning):
     """Check whether the test set has high class imbalance."""
 
     MSG = (
@@ -177,7 +194,7 @@ def train_test_split(
         new_arrays.append(X)
     if y is not None:
         new_arrays.append(y)
-        
+
     output = sklearn.model_selection.train_test_split(
         *new_arrays,
         test_size=test_size,
