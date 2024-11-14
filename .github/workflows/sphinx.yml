@@ -1,22 +1,24 @@
 name: Sphinx
 
-on:
-  pull_request:
-    paths:
-      - '.github/actions/sphinx/**'
-      - '.github/workflows/sphinx.yml'
-      - 'examples/**'
-      - 'sphinx/**'
-      - 'skore/**'
-  push:
-    branches:
-      - main
-    paths:
-      - '.github/actions/sphinx/**'
-      - '.github/workflows/sphinx.yml'
-      - 'examples/**'
-      - 'sphinx/**'
-      - 'skore/**'
+# on:
+#   pull_request:
+#     paths:
+#       - '.github/actions/sphinx/**'
+#       - '.github/workflows/sphinx.yml'
+#       - 'examples/**'
+#       - 'sphinx/**'
+#       - 'skore/**'
+#   push:
+#     branches:
+#       - main
+#     paths:
+#       - '.github/actions/sphinx/**'
+#       - '.github/workflows/sphinx.yml'
+#       - 'examples/**'
+#       - 'sphinx/**'
+#       - 'skore/**'
+
+on: [push]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -27,12 +29,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ssh-key: ${{ secrets.DEPLOY_KEY }}
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
           cache: 'pip'
       - uses: ./.github/actions/sphinx/build
-      - if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-        uses: ./.github/actions/sphinx/deploy
+      - uses: ./.github/actions/sphinx/deploy
+        with:
+          CONFIGURATION: ${{ secrets.RCLONE_CONFIG_DOCS }}
+      # - if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
