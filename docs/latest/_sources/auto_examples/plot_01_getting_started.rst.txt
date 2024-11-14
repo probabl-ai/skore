@@ -29,27 +29,49 @@ This getting started guide illustrates how to use skore and why:
 #. Track and visualize your ML/DS results using skore's :class:`~skore.Project` and UI.
 #. Get assistance when developing your ML/DS projects.
 
-   - Scikit-learn compatible :func:`~skore.cross_validate` provides insights and checks on cross-validation.
-
+   - Scikit-learn compatible :func:`skore.cross_validate` provides insights and checks
+     on cross-validation.
 
 Creating a skore project, loading it, and launching the UI
 ==========================================================
 
-.. GENERATED FROM PYTHON SOURCE LINES 21-22
+.. GENERATED FROM PYTHON SOURCE LINES 21-24
+
+We start by creating a temporary directory to store our project such that we can
+easily clean it after executing this example. If you want to keep the project,
+you have to skip this section.
+
+.. GENERATED FROM PYTHON SOURCE LINES 24-30
+
+.. code-block:: Python
+
+    import tempfile
+    from pathlib import Path
+
+    temp_dir = tempfile.TemporaryDirectory(prefix="skore_example_")
+    temp_dir_path = Path(temp_dir.name)
+
+
+
+
+
+
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 31-32
 
 From your shell, initialize a skore project, here named ``my_project``:
 
-.. GENERATED FROM PYTHON SOURCE LINES 24-32
+.. GENERATED FROM PYTHON SOURCE LINES 32-39
 
 .. code-block:: Python
 
     import subprocess
 
-    # remove the skore project if it already exists
-    subprocess.run("rm -rf my_project.skore".split())
-
     # create the skore project
-    subprocess.run("python3 -m skore create my_project".split())
+    subprocess.run(
+        f"python3 -m skore create my_project --working-dir {temp_dir.name}".split()
+    )
 
 
 
@@ -60,11 +82,11 @@ From your shell, initialize a skore project, here named ``my_project``:
  .. code-block:: none
 
 
-    CompletedProcess(args=['python3', '-m', 'skore', 'create', 'my_project'], returncode=0)
+    CompletedProcess(args=['python3', '-m', 'skore', 'create', 'my_project', '--working-dir', '/tmp/skore_example_yodpvwjy'], returncode=0)
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 33-47
+.. GENERATED FROM PYTHON SOURCE LINES 40-54
 
 This will create a skore project directory named ``my_project.skore`` in your
 current directory.
@@ -73,7 +95,7 @@ From your shell (in the same directory), start the UI locally:
 
 .. code-block:: bash
 
-    python -m skore launch "my_project"
+    python -m skore launch "path/to/my_project"
 
 This will automatically open a browser at the UI's location.
 
@@ -81,13 +103,13 @@ Now that the project exists, we can write some Python code (in the same
 directory) to add (:func:`~skore.Project.put`) some useful items in it.
 Let us load the project and add an integer to it for example:
 
-.. GENERATED FROM PYTHON SOURCE LINES 49-54
+.. GENERATED FROM PYTHON SOURCE LINES 56-61
 
 .. code-block:: Python
 
     from skore import load
 
-    my_project = load("my_project.skore")
+    my_project = load(temp_dir_path / "my_project.skore")
     my_project.put("my_int", 3)
 
 
@@ -97,7 +119,7 @@ Let us load the project and add an integer to it for example:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 55-61
+.. GENERATED FROM PYTHON SOURCE LINES 62-68
 
 Example of machine learning usage: hyperparameter sweep
 =======================================================
@@ -106,12 +128,12 @@ As an illustration of skore's usage with a machine learning motivation, let us
 perform a hyperparameter sweep and store relevant information in the skore
 project.
 
-.. GENERATED FROM PYTHON SOURCE LINES 63-65
+.. GENERATED FROM PYTHON SOURCE LINES 70-72
 
 We search for the ``alpha`` hyperparameter of a Ridge regression on the
 Diabetes dataset:
 
-.. GENERATED FROM PYTHON SOURCE LINES 67-83
+.. GENERATED FROM PYTHON SOURCE LINES 74-90
 
 .. code-block:: Python
 
@@ -572,12 +594,12 @@ Diabetes dataset:
     <br />
     <br />
 
-.. GENERATED FROM PYTHON SOURCE LINES 84-86
+.. GENERATED FROM PYTHON SOURCE LINES 91-93
 
 Now, we store the hyperparameter's metrics in a dataframe and make a custom
 plot:
 
-.. GENERATED FROM PYTHON SOURCE LINES 88-94
+.. GENERATED FROM PYTHON SOURCE LINES 95-101
 
 .. code-block:: Python
 
@@ -650,7 +672,7 @@ plot:
     <br />
     <br />
 
-.. GENERATED FROM PYTHON SOURCE LINES 95-105
+.. GENERATED FROM PYTHON SOURCE LINES 102-112
 
 .. code-block:: Python
 
@@ -676,13 +698,13 @@ plot:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 106-109
+.. GENERATED FROM PYTHON SOURCE LINES 113-116
 
 |
 Finally, we store some relevant information to our skore project, so that we
 can visualize them later in the skore UI for example:
 
-.. GENERATED FROM PYTHON SOURCE LINES 111-115
+.. GENERATED FROM PYTHON SOURCE LINES 118-122
 
 .. code-block:: Python
 
@@ -697,14 +719,14 @@ can visualize them later in the skore UI for example:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 116-131
+.. GENERATED FROM PYTHON SOURCE LINES 123-138
 
 Cross-validation with skore
 ===========================
 
 In order to assist its users when programming, skore has implemented a
-:func:`~skore.cross_validate` function that wraps scikit-learn's
-:func:`~sklearn.model_selection.cross_validate`, to provide more context and
+:func:`skore.cross_validate` function that wraps scikit-learn's
+:func:`sklearn.model_selection.cross_validate`, to provide more context and
 facilitate the analysis.
 
 For more information on the motivation behind skore's ``cross_validate``,
@@ -715,7 +737,7 @@ let us launch skore's cross-validation, which will automatically add
 (:func:`~skore.Project.put`)
 a ``cross_validation`` item with a plotly chart in your project.
 
-.. GENERATED FROM PYTHON SOURCE LINES 133-139
+.. GENERATED FROM PYTHON SOURCE LINES 140-146
 
 .. code-block:: Python
 
@@ -732,7 +754,7 @@ a ``cross_validation`` item with a plotly chart in your project.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 140-145
+.. GENERATED FROM PYTHON SOURCE LINES 147-152
 
 .. note::
   Because Plotly graphs currently do not properly render in our Sphinx
@@ -740,7 +762,7 @@ a ``cross_validation`` item with a plotly chart in your project.
   `a bug in Plotly <https://github.com/plotly/plotly.py/issues/4828>`_,
   we display its static image below.
 
-.. GENERATED FROM PYTHON SOURCE LINES 147-158
+.. GENERATED FROM PYTHON SOURCE LINES 154-165
 
 .. code-block:: Python
 
@@ -767,7 +789,7 @@ a ``cross_validation`` item with a plotly chart in your project.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 159-168
+.. GENERATED FROM PYTHON SOURCE LINES 166-175
 
 Manipulating the skore UI
 =========================
@@ -779,20 +801,39 @@ project, such as grid search or cross-validation results.
 #. From the *Items* section on the bottom left, you can add stored items to this view, either by clicking on ``+`` or by doing drag-and-drop.
 #. In the skore UI on the right, you can drag-and-drop items to re-order them, remove items, etc.
 
-.. GENERATED FROM PYTHON SOURCE LINES 170-172
+.. GENERATED FROM PYTHON SOURCE LINES 177-179
 
 .. image:: https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_10_31_skore_demo_compressed.gif
   :alt: Getting started with ``skore`` demo
 
-.. GENERATED FROM PYTHON SOURCE LINES 174-176
+.. GENERATED FROM PYTHON SOURCE LINES 181-183
 
 .. admonition:: Stay tuned for some new features!
   Feel free to join our `Discord <https://discord.gg/scBZerAGwW>`_.
 
+.. GENERATED FROM PYTHON SOURCE LINES 185-189
+
+Cleanup the project
+-------------------
+
+Remove the temporary directory:
+
+.. GENERATED FROM PYTHON SOURCE LINES 189-190
+
+.. code-block:: Python
+
+    temp_dir.cleanup()
+
+
+
+
+
+
+
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 11.077 seconds)
+   **Total running time of the script:** (0 minutes 7.316 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_01_getting_started.py:

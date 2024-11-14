@@ -1,23 +1,19 @@
 """Implement the "create project" feature."""
 
 import re
+import shutil
 from pathlib import Path
 from typing import Optional, Union
 
 from skore.cli import logger
+from skore.exceptions import (
+    InvalidProjectNameError,
+    ProjectAlreadyExistsError,
+    ProjectCreationError,
+    ProjectPermissionError,
+)
 from skore.project import load
 from skore.view.view import View
-
-
-class InvalidProjectNameError(Exception):
-    """The project name does not fit with one or more of the project name rules.
-
-    - The project name must start with an alphanumeric character, and must not contain
-    special characters other than '_' (underscore) and '-' (hyphen).
-    - The project name must be at most 255 characters long (including ".skore").
-    - The project name must not be a reserved OS file name.
-    For example, CON, AUX, NUL... on Windows.
-    """
 
 
 def validate_project_name(project_name: str) -> tuple[bool, Optional[Exception]]:
@@ -61,20 +57,10 @@ def validate_project_name(project_name: str) -> tuple[bool, Optional[Exception]]
     return True, None
 
 
-class ProjectCreationError(Exception):
-    """Project creation failed."""
-
-
-class ProjectAlreadyExistsError(Exception):
-    """A project with this name already exists."""
-
-
-class ProjectPermissionError(Exception):
-    """Permissions in the directory do not allow creating a file."""
-
-
 def __create(
-    project_name: Union[str, Path], working_dir: Optional[Path] = None
+    project_name: Union[str, Path],
+    working_dir: Optional[Path] = None,
+    overwrite: bool = False,
 ) -> Path:
     """Create a project file named according to `project_name`.
 
@@ -87,6 +73,9 @@ def __create(
         `working_dir`. If `project_name` is an absolute path, `working_dir` will have
         no effect. If set to None (the default), `working_dir` will be re-set to the
         current working directory.
+    overwrite : bool
+        If True, overwrite an existing project with the same name. If False, raise an
+        error if a project with the same name already exists.
 
     Returns
     -------
@@ -114,14 +103,17 @@ def __create(
         project_path.with_name(checked_project_name + ".skore")
     )
 
+    if project_directory.exists():
+        if not overwrite:
+            raise ProjectAlreadyExistsError(
+                f"Unable to create project file '{project_directory}' because a file "
+                "with that name already exists. Please choose a different name or "
+                "use the --overwrite flag with the CLI or overwrite=True with the API."
+            )
+        shutil.rmtree(project_directory)
+
     try:
-        project_directory.mkdir()
-    except FileExistsError as e:
-        raise ProjectAlreadyExistsError(
-            f"Unable to create project file '{project_directory}' because a file "
-            "with that name already exists. Please choose a different name or delete "
-            "the existing file."
-        ) from e
+        project_directory.mkdir(parents=True)
     except PermissionError as e:
         raise ProjectPermissionError(
             f"Unable to create project file '{project_directory}'. "
