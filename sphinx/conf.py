@@ -72,6 +72,13 @@ html_theme_options = {
     #     "image_light": "_static/skrub.svg",
     #     "image_dark": "_static/skrub.svg",
     # },
+    # When specified as a dictionary, the keys should follow glob-style patterns, as in
+    # https://www.sphinx-doc.org/en/master/usage/configuration.html#confval-exclude_patterns
+    # In particular, "**" specifies the default for all pages
+    # Use :html_theme.sidebar_secondary.remove: for file-wide removal
+    "secondary_sidebar_items": {
+        "**": ["page-toc", "sourcelink", "sg_download_links", "sg_launcher_links"]
+    },
     "external_links": [
         {
             "url": "https://probabl.ai",
