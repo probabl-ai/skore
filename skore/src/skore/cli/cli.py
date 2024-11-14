@@ -56,6 +56,11 @@ def cli(args: list[str]):
         ),
         default=None,
     )
+    parser_create.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="overwrite an existing project with the same name",
+    )
 
     subparsers.add_parser(
         "quickstart", help='Create a "project.skore" file and start the UI'
@@ -73,6 +78,7 @@ def cli(args: list[str]):
         __create(
             project_name=parsed_args.project_name,
             working_dir=parsed_args.working_dir,
+            overwrite=parsed_args.overwrite,
         )
     elif parsed_args.subcommand == "quickstart":
         __quickstart()
