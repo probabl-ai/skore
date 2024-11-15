@@ -32,8 +32,8 @@ function onBeforeLeave(el: Element) {
 .toast-notification-area {
   position: fixed;
   z-index: 9000;
-  top: 0;
   right: 0;
+  bottom: 0;
   width: 100dvw;
   padding: var(--spacing-20);
   pointer-events: none;
@@ -41,7 +41,7 @@ function onBeforeLeave(el: Element) {
   & .toasts {
     position: relative;
     display: flex;
-    flex-direction: column-reverse;
+    flex-direction: column;
     align-items: center;
     gap: var(--spacing-12);
 
@@ -60,7 +60,7 @@ function onBeforeLeave(el: Element) {
 
 .toasts-enter-from {
   opacity: 0;
-  transform: translateY(-30px);
+  transform: translateY(30px);
 }
 
 .toasts-leave-to {

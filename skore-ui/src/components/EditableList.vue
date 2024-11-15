@@ -2,10 +2,11 @@
 import EditableListItem from "@/components/EditableListItem.vue";
 
 export interface EditableListItemModel {
+  id: string;
   name: string;
   icon?: string;
   isNamed?: boolean;
-  id: string;
+  isSelected?: boolean;
 }
 
 export interface EditableListAction {
@@ -44,6 +45,7 @@ function onRename(oldName: string, newName: string, item: EditableListItemModel)
       :key="item.id"
       v-model="items[index]"
       :actions="props.actions"
+      :is-selected="item.isSelected"
       @action="onAction($event, item)"
       @select="emit('select', item.name)"
       @rename="onRename"
@@ -55,7 +57,6 @@ function onRename(oldName: string, newName: string, item: EditableListItemModel)
 .editable-list {
   display: flex;
   flex-direction: column;
-  padding: var(--spacing-16);
-  gap: var(--spacing-16);
+  gap: var(--spacing-4);
 }
 </style>
