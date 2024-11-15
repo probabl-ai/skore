@@ -31,10 +31,10 @@ repos:
     rev: v0.6.9
     hooks:
       - id: ruff
-        files: ^skore/(src|tests)/
+        files: ^(skore/(src|tests))|(examples)/
         args: [--fix]
       - id: ruff-format
-        files: ^skore/(src|tests)/
+        files: ^(skore/(src|tests))|(examples)/
 
   - repo: local
     hooks:
