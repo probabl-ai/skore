@@ -85,13 +85,17 @@ print(item_history.updated_at)
 import numpy as np
 import pandas as pd
 
-list_primitive, list_created_at, list_updated_at = zip(*[(elem.primitive, elem.created_at, elem.updated_at) for elem in item_histories])
+list_primitive, list_created_at, list_updated_at = zip(
+    *[(elem.primitive, elem.created_at, elem.updated_at) for elem in item_histories]
+)
 
-df_track = pd.DataFrame({
-    "primitive": list_primitive,
-    "created_at": list_created_at,
-    "updated_at": list_updated_at,
-})
+df_track = pd.DataFrame(
+    {
+        "primitive": list_primitive,
+        "created_at": list_created_at,
+        "updated_at": list_updated_at,
+    }
+)
 df_track.insert(0, "iteration_number", np.arange(len(df_track)))
 df_track["created_at"] = pd.to_datetime(df_track["created_at"])
 df_track["updated_at"] = pd.to_datetime(df_track["updated_at"])
@@ -111,7 +115,7 @@ fig = px.line(
     hover_data=df_track.columns,
     markers=True,
 )
-fig.update_layout(xaxis_type='category')
+fig.update_layout(xaxis_type="category")
 fig
 
 # %%
@@ -169,7 +173,9 @@ y = diabetes.target[:150]
 lasso = Lasso()
 
 for alpha in [0.5, 1, 2]:
-    cv_results = skore.cross_validate(Lasso(alpha=alpha), X, y, cv=5, project=my_project_track)
+    cv_results = skore.cross_validate(
+        Lasso(alpha=alpha), X, y, cv=5, project=my_project_track
+    )
 
 # %%
 # We can compare the metrics of each run of the cross-validation (on all splits):
@@ -177,3 +183,10 @@ for alpha in [0.5, 1, 2]:
 # %%
 fig_plotly = my_project_track.get_item("cross_validation_aggregated").plot
 fig_plotly
+
+# %%
+# Cleanup the project
+# -------------------
+#
+# Remove the temporary directory:
+temp_dir.cleanup()
