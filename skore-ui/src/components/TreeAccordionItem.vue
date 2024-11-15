@@ -1,18 +1,23 @@
 <script setup lang="ts">
-import { computed, inject, ref } from "vue";
+import { computed, inject, onMounted, ref, useTemplateRef, watch } from "vue";
 
 import { type TreeAccordionNode } from "@/components/TreeAccordion.vue";
 
 const props = defineProps<TreeAccordionNode>();
+const emitItemAction = inject<(action: string, itemName: string) => void>("emitItemAction");
 
 const isCollapsed = ref(false);
 const isDraggable = ref(false);
-const emitItemAction = inject<(action: string, itemName: string) => void>("emitItemAction");
+const childrenHeight = ref("Opx");
+const childrenContainer = useTemplateRef<HTMLDivElement>("childrenContainer");
 
 const hasChildren = computed(() => props.children?.length);
 const label = computed(() => {
   const segment = props.name.split("/");
   return segment[segment.length - 1];
+});
+const totalChildrenCount = computed(() => {
+  return countChildrenRecursively(props);
 });
 
 function toggleChildren() {
@@ -31,10 +36,6 @@ function countChildrenRecursively(node: TreeAccordionNode): number {
   }, 0);
 }
 
-const totalChildrenCount = computed(() => {
-  return countChildrenRecursively(props);
-});
-
 function onDragStart(event: DragEvent) {
   if (event.dataTransfer) {
     event.dataTransfer.setData("application/x-skore-item-name", props.name);
@@ -44,13 +45,31 @@ function onDragStart(event: DragEvent) {
 function onAction(action: string) {
   emitItemAction && emitItemAction(action, props.name);
 }
+
+function measureChildrenHeight() {
+  const h = childrenContainer.value?.clientHeight ?? 0;
+  childrenHeight.value = `${h}px`;
+}
+
+watch(
+  () => props.children,
+  () => {
+    measureChildrenHeight();
+  }
+);
+
+onMounted(() => {
+  measureChildrenHeight();
+});
 </script>
 
 <template>
   <div
     class="tree-accordion-item"
     :class="{ first: isRoot, enabled: props.enabled }"
-    :style="{ '--children-count': totalChildrenCount }"
+    :style="{
+      '--children-count': totalChildrenCount,
+    }"
     :data-name="props.name"
   >
     <div class="label-container" @click="toggleChildren">
@@ -87,7 +106,14 @@ function onAction(action: string) {
       </button>
     </div>
     <Transition name="toggle-children">
-      <div class="children" v-if="hasChildren && !isCollapsed">
+      <div
+        v-if="hasChildren && !isCollapsed"
+        class="children"
+        ref="childrenContainer"
+        :style="{
+          '--children-height': childrenHeight,
+        }"
+      >
         <TreeAccordionItem
           v-for="(child, index) in props.children"
           :key="index"
@@ -208,7 +234,7 @@ function onAction(action: string) {
     }
   }
 
-  .children {
+  & .children {
     position: relative;
     z-index: 1;
     display: flex;
@@ -226,7 +252,7 @@ function onAction(action: string) {
 
   & .toggle-children-enter-from,
   & .toggle-children-leave-to {
-    margin-top: calc((var(--label-height) + var(--spacing-6)) * var(--children-count) * -1);
+    margin-top: calc(var(--children-height) * -1);
     opacity: 0;
   }
 }
