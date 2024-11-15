@@ -73,7 +73,7 @@ you have to skip this section.
  .. code-block:: none
 
 
-    CompletedProcess(args=['python3', '-m', 'skore', 'create', 'my_project_ui', '--working-dir', '/tmp/skore_example_w6vlcbs3'], returncode=0)
+    CompletedProcess(args=['python3', '-m', 'skore', 'create', 'my_project_ui', '--working-dir', '/tmp/skore_example_o926z73z'], returncode=0)
 
 
 
@@ -460,9 +460,9 @@ Numpy array:
  .. code-block:: none
 
 
-    array([[ 1.05345452, -0.33125346, -0.52155986],
-           [-1.49521071, -0.07432493,  0.30096783],
-           [-1.25299598,  0.69699605,  1.45084171]])
+    array([[-0.1510416 , -0.09595045,  2.57572983],
+           [-1.44290927, -0.43199245, -0.90394943],
+           [ 3.19366996,  0.81142569, -0.65813647]])
 
 
 
@@ -516,43 +516,43 @@ Pandas data frame:
       <tbody>
         <tr>
           <th>0</th>
-          <td>0.573144</td>
-          <td>0.623056</td>
-          <td>1.038574</td>
-          <td>-1.223395</td>
-          <td>-1.311967</td>
+          <td>-0.553250</td>
+          <td>-1.037511</td>
+          <td>0.344572</td>
+          <td>-0.124828</td>
+          <td>0.118351</td>
         </tr>
         <tr>
           <th>1</th>
-          <td>2.056694</td>
-          <td>-0.011693</td>
-          <td>0.741528</td>
-          <td>0.567716</td>
-          <td>-0.493983</td>
+          <td>0.035065</td>
+          <td>-1.758432</td>
+          <td>-0.703589</td>
+          <td>-1.117504</td>
+          <td>0.390323</td>
         </tr>
         <tr>
           <th>2</th>
-          <td>-1.330297</td>
-          <td>-0.752938</td>
-          <td>0.191084</td>
-          <td>0.669227</td>
-          <td>-0.589090</td>
+          <td>0.540673</td>
+          <td>-0.431672</td>
+          <td>-0.448286</td>
+          <td>-0.003490</td>
+          <td>-1.177759</td>
         </tr>
         <tr>
           <th>3</th>
-          <td>1.484486</td>
-          <td>-1.342915</td>
-          <td>-0.080015</td>
-          <td>0.766039</td>
-          <td>-0.200800</td>
+          <td>1.108618</td>
+          <td>-0.963264</td>
+          <td>0.338944</td>
+          <td>-1.216301</td>
+          <td>-0.845810</td>
         </tr>
         <tr>
           <th>4</th>
-          <td>-0.936378</td>
-          <td>-0.265808</td>
-          <td>1.728336</td>
-          <td>-1.729644</td>
-          <td>-0.475056</td>
+          <td>-1.758399</td>
+          <td>1.514302</td>
+          <td>0.983255</td>
+          <td>-0.020762</td>
+          <td>1.604427</td>
         </tr>
       </tbody>
     </table>
@@ -2064,7 +2064,7 @@ Remove the temporary directory:
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 1.547 seconds)
+   **Total running time of the script:** (0 minutes 1.520 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_02_overview_skore_ui.py:
