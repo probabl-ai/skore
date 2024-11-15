@@ -142,25 +142,7 @@ from skore import cross_validate
 cv_results = cross_validate(Ridge(), X, y, cv=5, project=my_project)
 
 fig_plotly = my_project.get_item("cross_validation").plot
-
-# %%
-# .. note::
-#   Because Plotly graphs currently do not properly render in our Sphinx
-#   auto-examples docs engine due to
-#   `a bug in Plotly <https://github.com/plotly/plotly.py/issues/4828>`_,
-#   we display its static image below.
-
-# %%
-import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
-
-fig_plotly.write_image("plot_01_cross_validation.png", scale=4)
-
-img = mpimg.imread("plot_01_cross_validation.png")
-fig, ax = plt.subplots(layout="constrained", dpi=200)
-ax.axis("off")
-ax.imshow(img)
-plt.show()
+fig_plotly
 
 # %%
 # Manipulating the skore UI
