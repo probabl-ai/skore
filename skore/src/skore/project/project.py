@@ -265,7 +265,3 @@ class Project:
             The list of view keys. The list is empty if there is no view.
         """
         return self.view_repository.keys()
-
-
-class ProjectLoadError(Exception):
-    """Failed to load project."""

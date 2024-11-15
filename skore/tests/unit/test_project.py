@@ -17,12 +17,12 @@ from skore.exceptions import (
 )
 from skore.project import (
     Project,
-    ProjectLoadError,
     ProjectPutError,
     _validate_project_name,
     create,
     load,
 )
+from skore.project.load import ProjectLoadError
 from skore.view.view import View
 
 
