@@ -97,9 +97,6 @@ df_track = pd.DataFrame(
     }
 )
 df_track.insert(0, "iteration_number", np.arange(len(df_track)))
-df_track["created_at"] = pd.to_datetime(df_track["created_at"])
-df_track["updated_at"] = pd.to_datetime(df_track["updated_at"])
-
 df_track
 
 # %%
@@ -183,10 +180,3 @@ for alpha in [0.5, 1, 2]:
 # %%
 fig_plotly = my_project_track.get_item("cross_validation_aggregated").plot
 fig_plotly
-
-# %%
-# Cleanup the project
-# -------------------
-#
-# Remove the temporary directory:
-temp_dir.cleanup()
