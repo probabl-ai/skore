@@ -21,27 +21,6 @@ Overview of the skore UI
 This example provides an overview of the functionalities and the different types
 of items that you can store in a skore :class:`~skore.Project`.
 """
-
-# %%
-import altair as alt
-import io
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import plotly.express as px
-import PIL
-
-from sklearn.datasets import load_diabetes
-from sklearn.linear_model import Lasso
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
-
-from skore.item import MediaItem
-
-
-# %%
-# Creating and loading a skore project
-# ====================================
 import tempfile
 from pathlib import Path
 
@@ -137,6 +116,7 @@ def my_func(x):
 # in HTML:
 
 # %%
+from skore.item import MediaItem
 
 my_project_ui.put_item(
     "my_string_3",
@@ -192,6 +172,7 @@ my_dict
 # Numpy array:
 
 # %%
+import numpy as np
 
 my_arr = np.random.randn(3, 3)
 my_project_ui.put("my_arr", my_arr)
@@ -201,6 +182,7 @@ my_arr
 # Pandas data frame:
 
 # %%
+import pandas as pd
 
 my_df = pd.DataFrame(np.random.randn(10, 5))
 my_project_ui.put("my_df", my_df)
@@ -217,6 +199,7 @@ my_df.head()
 # Matplotlib figure:
 
 # %%
+import plotly as plt
 
 x = np.linspace(0, 2, 100)
 
@@ -237,6 +220,7 @@ my_project_ui.put("my_figure", fig)
 # Altair chart:
 
 # %%
+import altair as alt
 
 num_points = 100
 df_plot = pd.DataFrame(
@@ -269,6 +253,7 @@ my_project_ui.put("my_altair_chart", my_altair_chart)
 # Plotly figure:
 
 # %%
+import plotly.express as px
 
 df = px.data.iris()
 fig = px.scatter(
@@ -303,6 +288,9 @@ my_project_ui.put("my_anim_plotly_fig", my_anim_plotly_fig)
 # PIL image:
 
 # %%
+import io
+
+import PIL
 
 my_pil_image = PIL.Image.new("RGB", (100, 100), color="red")
 with io.BytesIO() as output:
@@ -320,6 +308,7 @@ my_project_ui.put("my_pil_image", my_pil_image)
 # First of all, you can store a scikit-learn model:
 
 # %%
+from sklearn.linear_model import Lasso
 
 my_model = Lasso(alpha=2)
 my_project_ui.put("my_model", my_model)
@@ -329,6 +318,8 @@ my_model
 # You can also store scikit-learn pipelines:
 
 # %%
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 
 my_pipeline = Pipeline(
     [("standard_scaler", StandardScaler()), ("lasso", Lasso(alpha=2))]
@@ -340,6 +331,7 @@ my_pipeline
 # Moreover, you can store fitted scikit-learn pipelines:
 
 # %%
+from sklearn.datasets import load_diabetes
 
 diabetes = load_diabetes()
 X = diabetes.data[:150]
@@ -362,12 +354,11 @@ import numpy as np
 import pandas as pd
 import PIL
 import plotly.express as px
+import skore
 from sklearn.datasets import load_diabetes
 from sklearn.linear_model import Lasso
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-
-import skore
 
 my_project_ui = skore.create("my_project_ui.skore", working_dir=temp_dir_path)
 
