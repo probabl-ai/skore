@@ -471,20 +471,26 @@ on cross-validation.</p></li>
 </ol>
 <section id="creating-a-skore-project-loading-it-and-launching-the-ui">
 <h2>Creating a skore project, loading it, and launching the UI<a class="headerlink" href="#creating-a-skore-project-loading-it-and-launching-the-ui" title="Link to this heading">#</a></h2>
-<p>From your shell, initialize a skore project, here named <code class="docutils literal notranslate"><span class="pre">my_project</span></code>:</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">subprocess</span>
-<span class="kn">import</span> <span class="nn">tempfile</span>
+<p>We start by creating a temporary directory to store our project such that we can
+easily clean it after executing this example. If you want to keep the project,
+you have to skip this section.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">tempfile</span>
 <span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
 
-<span class="c1"># create a temporary directory that will be cleaned up automatically</span>
-<span class="n">temp_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">tempfile</span><span class="o">.</span><span class="n">mkdtemp</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;skore_example_&quot;</span><span class="p">))</span>
-
-
-<span class="c1"># create the skore project</span>
-<span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;python3 -m skore create my_project --working-dir </span><span class="si">{</span><span class="n">temp_dir</span><span class="si">}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>
+<span class="n">temp_dir</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">TemporaryDirectory</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;skore_example_&quot;</span><span class="p">)</span>
+<span class="n">temp_dir_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">temp_dir</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>CompletedProcess(args=[&#39;python3&#39;, &#39;-m&#39;, &#39;skore&#39;, &#39;create&#39;, &#39;my_project&#39;, &#39;--working-dir&#39;, &#39;/tmp/skore_example_4fpcee7h&#39;], returncode=0)
+<p>From your shell, initialize a skore project, here named <code class="docutils literal notranslate"><span class="pre">my_project</span></code>:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">subprocess</span>
+
+<span class="c1"># create the skore project</span>
+<span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+    <span class="sa">f</span><span class="s2">&quot;python3 -m skore create my_project --working-dir </span><span class="si">{</span><span class="n">temp_dir</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>CompletedProcess(args=[&#39;python3&#39;, &#39;-m&#39;, &#39;skore&#39;, &#39;create&#39;, &#39;my_project&#39;, &#39;--working-dir&#39;, &#39;/tmp/skore_example_yodpvwjy&#39;], returncode=0)
 </pre></div>
 </div>
 <p>This will create a skore project directory named <code class="docutils literal notranslate"><span class="pre">my_project.skore</span></code> in your
@@ -499,7 +505,7 @@ directory) to add (<a class="reference internal" href="../generated/skore.Projec
 Let us load the project and add an integer to it for example:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">skore</span> <span class="kn">import</span> <a href="../generated/skore.load.html#skore.load" title="skore.load" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-function"><span class="n">load</span></a>
 
-<a href="../generated/skore.Project.html#skore.Project" title="skore.Project" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">my_project</span></a> <span class="o">=</span> <a href="../generated/skore.load.html#skore.load" title="skore.load" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-function"><span class="n">load</span></a><span class="p">(</span><span class="n">temp_dir</span> <span class="o">/</span> <span class="s2">&quot;my_project.skore&quot;</span><span class="p">)</span>
+<a href="../generated/skore.Project.html#skore.Project" title="skore.Project" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">my_project</span></a> <span class="o">=</span> <a href="../generated/skore.load.html#skore.load" title="skore.load" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-function"><span class="n">load</span></a><span class="p">(</span><span class="n">temp_dir_path</span> <span class="o">/</span> <span class="s2">&quot;my_project.skore&quot;</span><span class="p">)</span>
 <a href="../generated/skore.Project.html#skore.Project.put" title="skore.Project.put" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-method"><span class="n">my_project</span><span class="o">.</span><span class="n">put</span></a><span class="p">(</span><span class="s2">&quot;my_int&quot;</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -1097,12 +1103,10 @@ project, such as grid search or cross-validation results.</p>
 <section id="cleanup-the-project">
 <h3>Cleanup the project<a class="headerlink" href="#cleanup-the-project" title="Link to this heading">#</a></h3>
 <p>Remove the temporary directory:</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">shutil</span>
-
-<span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="n">temp_dir</span><span class="p">)</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">temp_dir</span><span class="o">.</span><span class="n">cleanup</span><span class="p">()</span>
 </pre></div>
 </div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 7.223 seconds)</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 7.316 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-01-getting-started-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/e97c5b0c37bdd66afd2a201f006613dd/plot_01_getting_started.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_01_getting_started.ipynb</span></code></a></p>

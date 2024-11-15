@@ -18,19 +18,23 @@ Creating a skore project, loading it, and launching the UI
 """
 
 # %%
-# From your shell, initialize a skore project, here named ``my_project``:
-
-# %%
-import subprocess
+# We start by creating a temporary directory to store our project such that we can
+# easily clean it after executing this example. If you want to keep the project,
+# you have to skip this section.
 import tempfile
 from pathlib import Path
 
-# create a temporary directory that will be cleaned up automatically
-temp_dir = Path(tempfile.mkdtemp(prefix="skore_example_"))
+temp_dir = tempfile.TemporaryDirectory(prefix="skore_example_")
+temp_dir_path = Path(temp_dir.name)
 
+# %%
+# From your shell, initialize a skore project, here named ``my_project``:
+import subprocess
 
 # create the skore project
-subprocess.run(f"python3 -m skore create my_project --working-dir {temp_dir}".split())
+subprocess.run(
+    f"python3 -m skore create my_project --working-dir {temp_dir.name}".split()
+)
 
 # %%
 # This will create a skore project directory named ``my_project.skore`` in your
@@ -51,7 +55,7 @@ subprocess.run(f"python3 -m skore create my_project --working-dir {temp_dir}".sp
 # %%
 from skore import load
 
-my_project = load(temp_dir / "my_project.skore")
+my_project = load(temp_dir_path / "my_project.skore")
 my_project.put("my_int", 3)
 
 # %%
@@ -182,7 +186,4 @@ plt.show()
 # -------------------
 #
 # Remove the temporary directory:
-
-import shutil
-
-shutil.rmtree(temp_dir)
+temp_dir.cleanup()
