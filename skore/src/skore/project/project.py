@@ -1,17 +1,8 @@
 """Define a Project."""
 
 import logging
-import re
-import shutil
-from pathlib import Path
 from typing import Any, Optional, Union
 
-from skore.exceptions import (
-    InvalidProjectNameError,
-    ProjectAlreadyExistsError,
-    ProjectCreationError,
-    ProjectPermissionError,
-)
 from skore.item import (
     CrossValidationItem,
     Item,
@@ -24,7 +15,6 @@ from skore.item import (
     SklearnBaseEstimatorItem,
     object_to_item,
 )
-from skore.persistence.disk_cache_storage import DirectoryDoesNotExist, DiskCacheStorage
 from skore.view.view import View
 from skore.view.view_repository import ViewRepository
 
@@ -279,173 +269,3 @@ class Project:
 
 class ProjectLoadError(Exception):
     """Failed to load project."""
-
-
-def load(project_name: Union[str, Path]) -> Project:
-    """Load an existing Project given a project name or path."""
-    # Transform a project name to a directory path:
-    # - Resolve relative path to current working directory,
-    # - Check that the file ends with the ".skore" extension,
-    #    - If not provided, it will be automatically appended,
-    # - If project name is an absolute path, we keep that path.
-
-    path = Path(project_name).resolve()
-
-    if path.suffix != ".skore":
-        path = path.parent / (path.name + ".skore")
-
-    if not Path(path).exists():
-        raise ProjectLoadError(f"Project '{path}' does not exist: did you create it?")
-
-    try:
-        # FIXME should those hardcoded string be factorized somewhere ?
-        item_storage = DiskCacheStorage(directory=Path(path) / "items")
-        item_repository = ItemRepository(storage=item_storage)
-        view_storage = DiskCacheStorage(directory=Path(path) / "views")
-        view_repository = ViewRepository(storage=view_storage)
-        project = Project(
-            item_repository=item_repository,
-            view_repository=view_repository,
-        )
-    except DirectoryDoesNotExist as e:
-        missing_directory = e.args[0].split()[1]
-        raise ProjectLoadError(
-            f"Project '{path}' is corrupted: "
-            f"directory '{missing_directory}' should exist. "
-            "Consider re-creating the project."
-        ) from e
-
-    return project
-
-
-def _validate_project_name(project_name: str) -> tuple[bool, Optional[Exception]]:
-    """Validate the project name (the part before ".skore").
-
-    Returns `(True, None)` if validation succeeded and `(False, Exception(...))`
-    otherwise.
-    """
-    # The project name (including the .skore extension) must be between 5 and 255
-    # characters long.
-    # FIXME: On Linux the OS already checks filename lengths
-    if len(project_name) + len(".skore") > 255:
-        return False, InvalidProjectNameError(
-            "Project name length cannot exceed 255 characters."
-        )
-
-    # Reserved Names: The following names are reserved and cannot be used:
-    # CON, PRN, AUX, NUL
-    # COM1, COM2, COM3, COM4, COM5, COM6, COM7, COM8, COM9
-    # LPT1, LPT2, LPT3, LPT4, LPT5, LPT6, LPT7, LPT8, LPT9
-    reserved_patterns = "|".join(["CON", "PRN", "AUX", "NUL", r"COM\d+", r"LPT\d+"])
-    if re.fullmatch(f"^({reserved_patterns})$", project_name):
-        return False, InvalidProjectNameError(
-            "Project name must not be a reserved OS filename."
-        )
-
-    # Allowed Characters:
-    # Alphanumeric characters (a-z, A-Z, 0-9)
-    # Underscore (_)
-    # Hyphen (-)
-    # Starting Character: The project name must start with an alphanumeric character.
-    if not re.fullmatch(r"^[a-zA-Z0-9][a-zA-Z0-9_-]*$", project_name):
-        return False, InvalidProjectNameError(
-            "Project name must contain only alphanumeric characters, '_' and '-'."
-        )
-
-    # Case Sensitivity: File names are case-insensitive on Windows and case-sensitive
-    # on Unix-based systems. The CLI should warn users about potential case conflicts
-    # on Unix systems.
-
-    return True, None
-
-
-def create(
-    project_name: Union[str, Path],
-    working_dir: Optional[Path] = None,
-    overwrite: bool = False,
-) -> Project:
-    """Create a project file named according to `project_name`.
-
-    Parameters
-    ----------
-    project_name : Path-like
-        Name of the project to be created, or a relative or absolute path.
-    working_dir : Path or None
-        If `project_name` is not an absolute path, it will be considered relative to
-        `working_dir`. If `project_name` is an absolute path, `working_dir` will have
-        no effect. If set to None (the default), `working_dir` will be re-set to the
-        current working directory.
-    overwrite : bool
-        If True, overwrite an existing project with the same name. If False, raise an
-        error if a project with the same name already exists.
-
-    Returns
-    -------
-    The project directory path
-    """
-    project_path = Path(project_name)
-
-    # Remove trailing ".skore" if it exists to check the name is valid
-    checked_project_name: str = project_path.name.split(".skore")[0]
-
-    validation_passed, validation_error = _validate_project_name(checked_project_name)
-    if not validation_passed:
-        raise ProjectCreationError(
-            f"Unable to create project file '{project_path}'."
-        ) from validation_error
-
-    # The file must end with the ".skore" extension.
-    # If not provided, it will be automatically appended.
-    # If project name is an absolute path, we keep that path
-
-    # NOTE: `working_dir` has no effect if `checked_project_name` is absolute
-    if working_dir is None:
-        working_dir = Path.cwd()
-    project_directory = working_dir / (
-        project_path.with_name(checked_project_name + ".skore")
-    )
-
-    if project_directory.exists():
-        if not overwrite:
-            raise ProjectAlreadyExistsError(
-                f"Unable to create project file '{project_directory}' because a file "
-                "with that name already exists. Please choose a different name or "
-                "use the --overwrite flag with the CLI or overwrite=True with the API."
-            )
-        shutil.rmtree(project_directory)
-
-    try:
-        project_directory.mkdir(parents=True)
-    except PermissionError as e:
-        raise ProjectPermissionError(
-            f"Unable to create project file '{project_directory}'. "
-            "Please check your permissions for the current directory."
-        ) from e
-    except Exception as e:
-        raise ProjectCreationError(
-            f"Unable to create project file '{project_directory}'."
-        ) from e
-
-    # Once the main project directory has been created, created the nested directories
-
-    items_dir = project_directory / "items"
-    try:
-        items_dir.mkdir()
-    except Exception as e:
-        raise ProjectCreationError(
-            f"Unable to create project file '{items_dir}'."
-        ) from e
-
-    views_dir = project_directory / "views"
-    try:
-        views_dir.mkdir()
-    except Exception as e:
-        raise ProjectCreationError(
-            f"Unable to create project file '{views_dir}'."
-        ) from e
-
-    p = load(project_directory)
-    p.put_view("default", View(layout=[]))
-
-    logger.info(f"Project file '{project_directory}' was successfully created.")
-    return p
