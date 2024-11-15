@@ -82,7 +82,7 @@ From your shell, initialize a skore project, here named ``my_project``:
  .. code-block:: none
 
 
-    CompletedProcess(args=['python3', '-m', 'skore', 'create', 'my_project', '--working-dir', '/tmp/skore_example_yodpvwjy'], returncode=0)
+    CompletedProcess(args=['python3', '-m', 'skore', 'create', 'my_project', '--working-dir', '/tmp/skore_example_ee6rrcxq'], returncode=0)
 
 
 
@@ -833,7 +833,7 @@ Remove the temporary directory:
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 7.316 seconds)
+   **Total running time of the script:** (0 minutes 7.791 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_01_getting_started.py:

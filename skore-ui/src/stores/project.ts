@@ -236,6 +236,10 @@ export const useProjectStore = defineStore("project", () => {
    * @param name the name of the new view
    */
   async function duplicateView(src: string, name: string) {
+    if (views.value[src] === undefined) {
+      console.error("View not found", src);
+      return;
+    }
     views.value[name] = [...views.value[src]];
     await _persistView(name, views.value[name]);
   }
@@ -257,10 +261,11 @@ export const useProjectStore = defineStore("project", () => {
    * @param name the name of the view to rename
    */
   async function renameView(name: string, newName: string) {
-    views.value[newName] = views.value[name];
-    delete views.value[name];
-    await deleteView(name);
-    await _persistView(newName, views.value[newName]);
+    if (name !== newName) {
+      views.value[newName] = [...views.value[name]];
+      await deleteView(name);
+      await _persistView(newName, views.value[newName]);
+    }
   }
 
   /**
