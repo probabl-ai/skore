@@ -10,34 +10,31 @@ for example tracking some ML metrics over time.
 """
 
 # %%
-import subprocess
-import time
-
-import matplotlib.image as mpimg
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import plotly.express as px
-from sklearn import datasets
-from sklearn.linear_model import Lasso
-
-import skore
-
-# %%
 # Creating and loading the skore project
 # ======================================
 
 # %%
+# We start by creating a temporary directory to store our project such that we can
+# easily clean it after executing this example. If you want to keep the project,
+# you have to skip this section.
+import tempfile
+from pathlib import Path
 
-# remove the skore project if it already exists
-subprocess.run("rm -rf my_project_track.skore".split())
-
-# create the skore project
-subprocess.run("python3 -m skore create my_project_track".split())
-
+temp_dir = tempfile.TemporaryDirectory(prefix="skore_example_")
+temp_dir_path = Path(temp_dir.name)
 
 # %%
-my_project_track = skore.load("my_project_track.skore")
+import subprocess
+
+# create the skore project
+subprocess.run(
+    f"python3 -m skore create my_project_track --working-dir {temp_dir.name}".split()
+)
+
+# %%
+from skore import load
+
+my_project_track = load(temp_dir_path / "my_project_track.skore")
 
 # %%
 # Tracking an integer
@@ -48,6 +45,8 @@ my_project_track = skore.load("my_project_track.skore")
 # being separated by 0.1 second:
 
 # %%
+import time
+
 my_project_track.put("my_int", 4)
 time.sleep(0.1)
 my_project_track.put("my_int", 9)
@@ -83,6 +82,9 @@ print(item_history.updated_at)
 # Let us construct a dataframe with the values and last updated times:
 
 # %%
+import numpy as np
+import pandas as pd
+
 list_primitive, list_created_at, list_updated_at = zip(*[(elem.primitive, elem.created_at, elem.updated_at) for elem in item_histories])
 
 df_track = pd.DataFrame({
@@ -100,6 +102,8 @@ df_track
 # Tracking the value of the item over time:
 
 # %%
+import plotly.express as px
+
 fig = px.line(
     df_track,
     x="iteration_number",
@@ -122,6 +126,9 @@ fig
 # We also display its static image:
 
 # %%
+import matplotlib.image as mpimg
+import matplotlib.pyplot as plt
+
 fig.write_image("plot_04_track.png", scale=4)
 
 img = mpimg.imread("plot_04_track.png")
@@ -129,6 +136,14 @@ fig, ax = plt.subplots(layout="constrained", dpi=200)
 ax.axis("off")
 ax.imshow(img)
 plt.show()
+
+# %%
+# |
+# Here, wo focused on `how` to use skore's tracking of history of items.
+# `Why` track items? For example, we could track some machine learning
+# scores over time to understand better which feature engineering works best.
+# In the following, we explore skore's :func:`skore.cross_validate` that natively
+# includes tracking.
 
 # %%
 # .. _example_track_cv:
@@ -141,9 +156,13 @@ plt.show()
 # Now, let us see how we can use the tracking of items with this function.
 
 # %%
-# Let us run several cross-validations.
+# Let us run several cross-validations:
 
 # %%
+from sklearn import datasets
+from sklearn.linear_model import Lasso
+import skore
+
 diabetes = datasets.load_diabetes()
 X = diabetes.data[:150]
 y = diabetes.target[:150]
