@@ -31,6 +31,9 @@ reporter = CrossValidationReporter(cv_results, X, y)
 reporter.plot.roc(backend="plotly")
 
 # %%
+reporter.plot.roc(backend="matplotlib")
+
+# %%
 # I probably would like to do the following:
 # project.put("reporter", reporter)
 
@@ -44,6 +47,16 @@ reporter = joblib.load(temp_dir_path / "reporter.joblib")
 reporter.plot.roc(backend="plotly")
 
 # %%
-reporter._cache
+reporter._cache  # stuff are still cached
+
+# %%
+reporter._hash
+
+# %%
+# Cleanup the project
+# -------------------
+#
+# Remove the temporary directory:
+temp_dir.cleanup()
 
 # %%
