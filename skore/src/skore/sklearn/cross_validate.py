@@ -6,13 +6,19 @@ function in order to enrich it with more information and enable more analysis.
 """
 
 import contextlib
+import time
 from typing import Literal, Optional
+
+import numpy as np
+from sklearn.utils._indexing import _safe_indexing
+from sklearn.utils._response import _check_response_method, _get_response_values
 
 from skore.item.cross_validation_item import (
     CrossValidationAggregationItem,
     CrossValidationItem,
 )
 from skore.project import Project
+from skore.sklearn._plot import RocCurveDisplay
 
 
 def _find_ml_task(
@@ -288,3 +294,202 @@ def cross_validate(*args, project: Optional[Project] = None, **kwargs) -> dict:
         stripped_cv_results[f"test_{scorers}"] = stripped_cv_results["test_score"]
 
     return stripped_cv_results
+
+
+def register_accessor(name, target_cls):
+    """Register an accessor for a class.
+
+    Parameters
+    ----------
+    name : str
+        The name of the accessor.
+    target_cls : type
+        The class to register the accessor for.
+    """
+
+    def decorator(accessor_cls):
+        def getter(self):
+            attr = f"_accessor_{accessor_cls.__name__}"
+            if not hasattr(self, attr):
+                setattr(self, attr, accessor_cls(self))
+            return getattr(self, attr)
+
+        setattr(target_cls, name, property(getter))
+        return accessor_cls
+
+    return decorator
+
+
+class CrossValidationReporter:
+    """Analyse the output of scikit-learn's cross_validate function.
+
+    Parameters
+    ----------
+    cv_results : dict
+        A dict of the form returned by scikit-learn's
+        :func:`~sklearn.model_selection.cross_validate` function.
+    data : {array-like, sparse matrix}
+        The data used to fit the estimator.
+    target : array-like
+        The target vector.
+    sample_weight : array-like, default=None
+        The sample weights.
+    """
+
+    def __init__(self, cv_results, data, target, sample_weight=None):
+        required_keys = {"estimator": "return_estimator", "indices": "return_indices"}
+        missing_keys = [key for key in required_keys if key not in cv_results]
+
+        if missing_keys:
+            missing_params = [f"{required_keys[key]}=True" for key in missing_keys]
+            raise RuntimeError(
+                f"The keys {missing_keys} are required in `cv_results` to create a "
+                f"`MetricsReporter` instance, but they are not found. You need "
+                f"to set {', '.join(missing_params)} in "
+                "`sklearn.model_selection.cross_validate()`."
+            )
+
+        self.cv_results = cv_results
+        self.data = data
+        self.target = target
+        self.sample_weight = sample_weight
+
+        self._rng = np.random.default_rng(time.time_ns())
+        # It could be included in cv_results but let's avoid to mutate it for the moment
+        self._hash = [
+            self._rng.integers(low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max)
+            for _ in range(len(cv_results["estimator"]))
+        ]
+        self._cache = {}
+
+    def _get_cached_response_values(
+        self,
+        *,
+        hash,
+        estimator,
+        X,
+        response_method,
+        pos_label=None,
+    ):
+        prediction_method = _check_response_method(estimator, response_method).__name__
+        cache_key = (hash, prediction_method)
+
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+
+        predictions, _ = _get_response_values(
+            estimator,
+            X=X,
+            response_method=prediction_method,
+            pos_label=pos_label,
+            return_response_method_used=False,
+        )
+        self._cache[cache_key] = predictions
+
+        return predictions
+
+
+@register_accessor("plot", CrossValidationReporter)
+class _PlotAccessor:
+    def __init__(self, parent):
+        self._parent = parent
+
+    def roc(
+        self,
+        positive_class=None,
+        name=None,
+        plot_chance_level=True,
+        chance_level_kw=None,
+        despine=True,
+        backend="matplotlib",
+    ):
+        """Plot the ROC curve.
+
+        Parameters
+        ----------
+        positive_class : str, default=None
+            The positive class.
+        name : str, default=None
+            The name of the plot.
+        plot_chance_level : bool, default=True
+            Whether to plot the chance level.
+        chance_level_kw : dict, default=None
+            The keyword arguments for the chance level.
+        despine : bool, default=True
+            Whether to despine the plot. Only relevant for matplotlib backend.
+        backend : {"matplotlib", "plotly"}, default="matplotlib"
+            The backend to use for plotting.
+
+        Returns
+        -------
+        matplotlib.figure.Figure or plotly.graph_objects.Figure
+            The ROC curve plot.
+        """
+        prediction_method = ["predict_proba", "decision_function"]
+
+        ax = None
+        for fold_idx, (hash, estimator, test_indices) in enumerate(
+            zip(
+                self._parent._hash,
+                self._parent.cv_results["estimator"],
+                self._parent.cv_results["indices"]["test"],
+            )
+        ):
+            y_pred = self._parent._get_cached_response_values(
+                hash=hash,
+                estimator=estimator,
+                X=self._parent.data,
+                response_method=prediction_method,
+                pos_label=positive_class,
+            )
+
+            y_true_split = _safe_indexing(self._parent.target, test_indices)
+            y_pred_split = _safe_indexing(y_pred, test_indices)
+            if self._parent.sample_weight is not None:
+                sample_weight_split = _safe_indexing(
+                    self._parent.sample_weight, test_indices
+                )
+            else:
+                sample_weight_split = None
+
+            cache_key = (hash, RocCurveDisplay.__name__)
+
+            # trick to have the chance level only in the last plot
+            if fold_idx == len(self._parent._hash) - 1:
+                plot_chance_level_ = plot_chance_level
+            else:
+                plot_chance_level_ = False
+
+            if name is None:
+                name_ = f"{estimator.__class__.__name__} - Fold {fold_idx}"
+            else:
+                name_ = f"{name} - Fold {fold_idx}"
+
+            if cache_key in self._parent._cache:
+                display = self._parent._cache[cache_key].plot(
+                    ax=ax,
+                    backend=backend,
+                    name=name_,
+                    plot_chance_level=plot_chance_level_,
+                    chance_level_kw=chance_level_kw,
+                    despine=despine,
+                )
+            else:
+                display = RocCurveDisplay.from_predictions(
+                    y_true_split,
+                    y_pred_split,
+                    sample_weight=sample_weight_split,
+                    pos_label=positive_class,
+                    ax=ax,
+                    backend=backend,
+                    name=name_,
+                    plot_chance_level=plot_chance_level_,
+                    chance_level_kw=chance_level_kw,
+                    despine=despine,
+                )
+                self._parent._cache[cache_key] = display
+
+            # overwrite for the subsequent plots
+            ax = display.ax_
+
+        return display.figure_
