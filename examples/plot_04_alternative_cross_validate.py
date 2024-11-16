@@ -1,3 +1,11 @@
+"""
+==========================================================================
+Using a reporting class with accessors to display cross-validation results
+==========================================================================
+
+Just an example.
+"""
+
 # %%
 import tempfile
 from pathlib import Path
@@ -28,6 +36,8 @@ cv_results = cross_validate(
     classifier, X, y, return_estimator=True, return_indices=True
 )
 reporter = CrossValidationReporter(cv_results, X, y)
+
+# %%
 reporter.plot.roc(backend="plotly")
 
 # %%
@@ -51,6 +61,12 @@ reporter._cache  # stuff are still cached
 
 # %%
 reporter._hash
+
+# %%
+reporter.metrics.accuracy()
+
+# %%
+reporter.metrics.precision(positive_class=1)
 
 # %%
 # Cleanup the project

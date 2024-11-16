@@ -10,8 +10,11 @@ import time
 from typing import Literal, Optional
 
 import numpy as np
+import pandas as pd
+from sklearn import metrics
 from sklearn.utils._indexing import _safe_indexing
 from sklearn.utils._response import _check_response_method, _get_response_values
+from sklearn.utils.metaestimators import available_if
 
 from skore.item.cross_validation_item import (
     CrossValidationAggregationItem,
@@ -361,6 +364,7 @@ class CrossValidationReporter:
             for _ in range(len(cv_results["estimator"]))
         ]
         self._cache = {}
+        self._ml_task = _find_ml_task(cv_results["estimator"][0], target)
 
     def _get_cached_response_values(
         self,
@@ -372,7 +376,7 @@ class CrossValidationReporter:
         pos_label=None,
     ):
         prediction_method = _check_response_method(estimator, response_method).__name__
-        cache_key = (hash, prediction_method)
+        cache_key = (hash, pos_label, prediction_method)
 
         if cache_key in self._cache:
             return self._cache[cache_key]
@@ -389,11 +393,31 @@ class CrossValidationReporter:
         return predictions
 
 
+def _check_supported_ml_task(supported_ml_tasks):
+    def check(accessor):
+        supported_task = any(
+            task in accessor._parent._ml_task for task in supported_ml_tasks
+        )
+
+        if not supported_task:
+            raise AttributeError(
+                f"The {accessor._parent._ml_task} task is not a supported task by "
+                f"function called. The supported tasks are {supported_ml_tasks}."
+            )
+
+        return True
+
+    return check
+
+
 @register_accessor("plot", CrossValidationReporter)
 class _PlotAccessor:
     def __init__(self, parent):
         self._parent = parent
 
+    @available_if(
+        _check_supported_ml_task(supported_ml_tasks=["binary-classification"])
+    )
     def roc(
         self,
         positive_class=None,
@@ -493,3 +517,101 @@ class _PlotAccessor:
             ax = display.ax_
 
         return display.figure_
+
+
+@register_accessor("metrics", CrossValidationReporter)
+class _MetricsAccessor:
+    def __init__(self, parent):
+        self._parent = parent
+
+    def report_stats(self, scoring=None, positive_class=None):
+        pass
+
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["binary-classification", "multiclass-classification"]
+        )
+    )
+    def accuracy(self):
+        scores = []
+        for hash, estimator, test_indices in zip(
+            self._parent._hash,
+            self._parent.cv_results["estimator"],
+            self._parent.cv_results["indices"]["test"],
+        ):
+            y_pred = self._parent._get_cached_response_values(
+                hash=hash,
+                estimator=estimator,
+                X=self._parent.data,
+                response_method="predict",
+                pos_label=None,
+            )
+
+            cache_key = (hash, "accuracy_score")
+
+            if cache_key in self._parent._cache:
+                accuracy = self._parent._cache[cache_key]
+            else:
+                y_true_split = _safe_indexing(self._parent.target, test_indices)
+                y_pred_split = _safe_indexing(y_pred, test_indices)
+                if self._parent.sample_weight is not None:
+                    sample_weight_split = _safe_indexing(
+                        self._parent.sample_weight, test_indices
+                    )
+                else:
+                    sample_weight_split = None
+
+                accuracy = metrics.accuracy_score(
+                    y_true_split, y_pred_split, sample_weight=sample_weight_split
+                )
+                self._parent._cache[cache_key] = accuracy
+
+            scores.append(accuracy)
+
+        return pd.Series(scores, name="accuracy")
+
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["binary-classification", "multiclass-classification"]
+        )
+    )
+    def precision(self, positive_class=1):
+        scores = []
+        for hash, estimator, test_indices in zip(
+            self._parent._hash,
+            self._parent.cv_results["estimator"],
+            self._parent.cv_results["indices"]["test"],
+        ):
+            y_pred = self._parent._get_cached_response_values(
+                hash=hash,
+                estimator=estimator,
+                X=self._parent.data,
+                response_method="predict",
+                pos_label=positive_class,
+            )
+
+            cache_key = (hash, positive_class, "precision_score")
+
+            if cache_key in self._parent._cache:
+                precision = self._parent._cache[cache_key]
+            else:
+                y_true_split = _safe_indexing(self._parent.target, test_indices)
+                y_pred_split = _safe_indexing(y_pred, test_indices)
+                if self._parent.sample_weight is not None:
+                    sample_weight_split = _safe_indexing(
+                        self._parent.sample_weight, test_indices
+                    )
+                else:
+                    sample_weight_split = None
+
+                precision = metrics.precision_score(
+                    y_true_split,
+                    y_pred_split,
+                    sample_weight=sample_weight_split,
+                    pos_label=positive_class,
+                )
+                self._parent._cache[cache_key] = precision
+
+            scores.append(precision)
+
+        return pd.Series(scores, name="precision")
