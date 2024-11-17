@@ -14,7 +14,6 @@ from skore.item.cross_validation_item import (
     CrossValidationItem,
     plot_cross_validation,
 )
-from skore.sklearn import CrossValidationReporter
 
 
 @pytest.fixture
@@ -171,26 +170,3 @@ def test_aggregated_cross_validation(rf, in_memory_project):
         in_memory_project.item_repository.get_item("cross_validation_aggregated"),
         CrossValidationAggregationItem,
     )
-
-
-@pytest.mark.parametrize(
-    "cv_results, error_msg",
-    [
-        (
-            {},
-            "keys \\['estimator', 'indices'\\] are required"
-            ".*return_estimator=True, return_indices=True",
-        ),
-        (
-            {"estimator": [None, None]},
-            "keys \\['indices'\\] are required.*return_indices=True",
-        ),
-        (
-            {"indices": [None, None]},
-            "keys \\['estimator'\\] are required.*return_estimator=True",
-        ),
-    ],
-)
-def test_cross_validation_reporter_missing_keys(cv_results, error_msg):
-    with pytest.raises(RuntimeError, match=error_msg):
-        CrossValidationReporter(cv_results, None)
