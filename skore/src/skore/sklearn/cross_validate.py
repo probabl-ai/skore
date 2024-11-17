@@ -444,6 +444,7 @@ class CrossValidationReporter:
         _add_accessor_methods_to_tree(tree, self.plot, "🎨", "plot")
         _add_accessor_methods_to_tree(tree, self.metrics, "📏", "metrics")
         _add_accessor_methods_to_tree(tree, self.inspection, "🔍", "inspection")
+        _add_accessor_methods_to_tree(tree, self.linting, "✔️", "linting")
 
         console.print(tree)
 
@@ -1050,3 +1051,26 @@ class _InspectionAccessor:
             raise NotImplementedError
 
         return pd.DataFrame(importances, columns=feature_names)
+
+
+@register_accessor("linting", CrossValidationReporter)
+class _LintingAccessor:
+    def __init__(self, parent):
+        self._parent = parent
+
+    def split_inspector(self):
+        """Inspect cross-validation splits and search for common issues."""
+        # TODO:
+        # - imbalanced classification in different folds
+        # - time series + shuffling might be problematic
+        # - underlying data structure destroy by the cross-validation making the problem
+        #   easier
+        # - data structure that can make the metric not useful (data imbalance,
+        #   scaling of the R^2 on different folds and cannot be compared, etc.)
+        pass
+
+    def data_inspector(self):
+        """Inspect the data and search for common issues."""
+        # TODO:
+        # - Could go back on skrub Table report here.
+        pass
