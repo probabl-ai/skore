@@ -29,6 +29,27 @@ from skore.project import Project
 from skore.sklearn._plot import RocCurveDisplay
 
 
+# TODO: this is really hacky, find a better solution
+def _patch_pandas_repr_html():
+    """Monkey patch pandas DataFrame _repr_html_ to apply custom styling."""
+    original_repr_html = pd.DataFrame._repr_html_
+
+    def new_repr_html(self):
+        html = original_repr_html(self)
+        if not isinstance(self.columns, pd.MultiIndex):
+            styled_df = self.style.apply_index(
+                _color_columns, axis="columns", level=[0]
+            )
+            return styled_df._repr_html_()
+        return html
+
+    pd.DataFrame._repr_html_ = new_repr_html
+
+
+# Apply the monkey patch
+_patch_pandas_repr_html()
+
+
 def _find_ml_task(
     estimator, y
 ) -> Literal[
@@ -639,11 +660,10 @@ class _MetricsAccessor:
         for metric in scoring:
             metric_fn = getattr(self, metric)
 
-            # Go from styler to dataframe by calling `.data`
             if "positive_class" in inspect.signature(metric_fn).parameters:
-                scores.append(metric_fn(positive_class=positive_class).data)
+                scores.append(metric_fn(positive_class=positive_class))
             else:
-                scores.append(metric_fn().data)
+                scores.append(metric_fn())
 
         has_multilevel = any(
             isinstance(score, pd.DataFrame) and isinstance(score.columns, pd.MultiIndex)
@@ -660,8 +680,7 @@ class _MetricsAccessor:
                         [(col, "") for col in score.columns]
                     )
 
-        df = pd.concat(scores, axis=1)
-        return df.style.apply_index(_color_columns, axis="columns", level=[0])
+        return pd.concat(scores, axis=1)
 
     def _compute_metric_scores(
         self,
@@ -744,8 +763,7 @@ class _MetricsAccessor:
                 ]
         else:
             columns = None
-        df = pd.DataFrame(scores, columns=columns)
-        return df.style.apply_index(_color_columns, axis="columns", level=[0])
+        return pd.DataFrame(scores, columns=columns)
 
     @available_if(
         _check_supported_ml_task(
