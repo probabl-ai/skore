@@ -29,7 +29,12 @@ from sklearn.model_selection import cross_validate
 from skore.sklearn import CrossValidationReporter
 
 X, y = datasets.make_classification(
-    n_samples=1_000, n_features=20, class_sep=0.5, random_state=42
+    n_samples=1_000,
+    n_features=20,
+    class_sep=0.5,
+    n_classes=2,
+    n_clusters_per_class=1,
+    random_state=42,
 )
 classifier = linear_model.LogisticRegression(max_iter=1_000)
 cv_results = cross_validate(
@@ -38,10 +43,11 @@ cv_results = cross_validate(
 reporter = CrossValidationReporter(cv_results, X, y)
 
 # %%
-reporter.plot.roc(backend="plotly")
+fig = reporter.plot.roc(backend="plotly")
+fig
 
 # %%
-reporter.plot.roc(backend="matplotlib")
+fig = reporter.plot.roc(backend="matplotlib")
 
 # %%
 # I probably would like to do the following:
@@ -54,7 +60,8 @@ joblib.dump(reporter, temp_dir_path / "reporter.joblib")
 
 # %%
 reporter = joblib.load(temp_dir_path / "reporter.joblib")
-reporter.plot.roc(backend="plotly")
+fig = reporter.plot.roc(backend="plotly")
+fig
 
 # %%
 reporter._cache  # stuff are still cached
@@ -66,7 +73,14 @@ reporter._hash
 reporter.metrics.accuracy()
 
 # %%
-reporter.metrics.precision(positive_class=1)
+reporter.metrics.precision(average="binary")
+
+# %%
+reporter.metrics.recall(average=None)
+
+# %%
+reporter.metrics.report_stats()
+
 
 # %%
 # Cleanup the project

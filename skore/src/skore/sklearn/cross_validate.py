@@ -6,6 +6,7 @@ function in order to enrich it with more information and enable more analysis.
 """
 
 import contextlib
+import inspect
 import time
 from typing import Literal, Optional
 
@@ -376,7 +377,12 @@ class CrossValidationReporter:
         pos_label=None,
     ):
         prediction_method = _check_response_method(estimator, response_method).__name__
-        cache_key = (hash, pos_label, prediction_method)
+        if prediction_method in ("predict_proba", "decision_function"):
+            # pos_label is only important in classification and with probabilities
+            # and decision functions
+            cache_key = (hash, pos_label, prediction_method)
+        else:
+            cache_key = (hash, prediction_method)
 
         if cache_key in self._cache:
             return self._cache[cache_key]
@@ -524,8 +530,130 @@ class _MetricsAccessor:
     def __init__(self, parent):
         self._parent = parent
 
-    def report_stats(self, scoring=None, positive_class=None):
-        pass
+    # TODO: should build on the `add_scorers` function
+    def report_stats(self, scoring=None, positive_class=1):
+        """Report statistics for the metrics.
+
+        Parameters
+        ----------
+        scoring : list of str, default=None
+            The metrics to report.
+        positive_class : int, default=1
+            The positive class.
+
+        Returns
+        -------
+        pd.DataFrame
+            The statistics for the metrics.
+        """
+        if scoring is None:
+            scoring = ["accuracy", "precision", "recall"]
+
+        scores = []
+
+        for metric in scoring:
+            metric_fn = getattr(self, metric)
+            import inspect
+
+            if "positive_class" in inspect.signature(metric_fn).parameters:
+                scores.append(metric_fn(positive_class=positive_class))
+            else:
+                scores.append(metric_fn())
+
+        has_multilevel = any(
+            isinstance(score, pd.DataFrame) and isinstance(score.columns, pd.MultiIndex)
+            for score in scores
+        )
+
+        if has_multilevel:
+            # Convert single-level dataframes to multi-level
+            for i, score in enumerate(scores):
+                if hasattr(score, "columns") and not isinstance(
+                    score.columns, pd.MultiIndex
+                ):
+                    scores[i].columns = pd.MultiIndex.from_tuples(
+                        [(col, "") for col in score.columns]
+                    )
+
+        return pd.concat(scores, axis=1)
+
+    def _compute_metric_scores(
+        self,
+        metric_fn,
+        *,
+        response_method,
+        pos_label=None,
+        metric_name=None,
+        **metric_kwargs,
+    ):
+        scores = []
+
+        for hash, estimator, test_indices in zip(
+            self._parent._hash,
+            self._parent.cv_results["estimator"],
+            self._parent.cv_results["indices"]["test"],
+        ):
+            y_pred = self._parent._get_cached_response_values(
+                hash=hash,
+                estimator=estimator,
+                X=self._parent.data,
+                response_method=response_method,
+                pos_label=pos_label,
+            )
+
+            cache_key = (hash, pos_label, metric_name)
+
+            if cache_key in self._parent._cache:
+                score = self._parent._cache[cache_key]
+            else:
+                y_true_split = _safe_indexing(self._parent.target, test_indices)
+                y_pred_split = _safe_indexing(y_pred, test_indices)
+
+                sample_weight_split = None
+                if self._parent.sample_weight is not None:
+                    sample_weight_split = _safe_indexing(
+                        self._parent.sample_weight, test_indices
+                    )
+
+                metric_params = inspect.signature(metric_fn).parameters
+                kwargs = {**metric_kwargs}
+                if "pos_label" in metric_params:
+                    kwargs.update(pos_label=pos_label)
+
+                score = metric_fn(
+                    y_true_split,
+                    y_pred_split,
+                    sample_weight=sample_weight_split,
+                    **kwargs,
+                )
+
+                self._parent._cache[cache_key] = score
+
+            scores.append(score)
+        scores = np.array(scores)
+
+        metric_name = metric_name or metric_fn.__name__
+
+        if self._parent._ml_task in [
+            "binary-classification",
+            "multiclass-classification",
+        ]:
+            if scores.ndim == 1:
+                columns = [metric_name]
+            else:
+                classes = self._parent.cv_results["estimator"][0].classes_
+                columns = [[metric_name] * len(classes), classes]
+        elif self._parent._ml_task == "regression":
+            if scores.ndim == 1:
+                columns = [metric_name]
+            else:
+                columns = [
+                    [metric_name] * scores.shape[1],
+                    [f"Output #{i}" for i in range(scores.shape[1])],
+                ]
+        else:
+            columns = None
+        return pd.DataFrame(scores, columns=columns)
 
     @available_if(
         _check_supported_ml_task(
@@ -533,85 +661,69 @@ class _MetricsAccessor:
         )
     )
     def accuracy(self):
-        scores = []
-        for hash, estimator, test_indices in zip(
-            self._parent._hash,
-            self._parent.cv_results["estimator"],
-            self._parent.cv_results["indices"]["test"],
-        ):
-            y_pred = self._parent._get_cached_response_values(
-                hash=hash,
-                estimator=estimator,
-                X=self._parent.data,
-                response_method="predict",
-                pos_label=None,
-            )
+        """Compute the accuracy score.
 
-            cache_key = (hash, "accuracy_score")
-
-            if cache_key in self._parent._cache:
-                accuracy = self._parent._cache[cache_key]
-            else:
-                y_true_split = _safe_indexing(self._parent.target, test_indices)
-                y_pred_split = _safe_indexing(y_pred, test_indices)
-                if self._parent.sample_weight is not None:
-                    sample_weight_split = _safe_indexing(
-                        self._parent.sample_weight, test_indices
-                    )
-                else:
-                    sample_weight_split = None
-
-                accuracy = metrics.accuracy_score(
-                    y_true_split, y_pred_split, sample_weight=sample_weight_split
-                )
-                self._parent._cache[cache_key] = accuracy
-
-            scores.append(accuracy)
-
-        return pd.Series(scores, name="accuracy")
+        Returns
+        -------
+        pd.DataFrame
+            The accuracy score.
+        """
+        return self._compute_metric_scores(
+            metrics.accuracy_score, response_method="predict", metric_name="accuracy"
+        )
 
     @available_if(
         _check_supported_ml_task(
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def precision(self, positive_class=1):
-        scores = []
-        for hash, estimator, test_indices in zip(
-            self._parent._hash,
-            self._parent.cv_results["estimator"],
-            self._parent.cv_results["indices"]["test"],
-        ):
-            y_pred = self._parent._get_cached_response_values(
-                hash=hash,
-                estimator=estimator,
-                X=self._parent.data,
-                response_method="predict",
-                pos_label=positive_class,
-            )
+    def precision(self, average="binary", positive_class=1):
+        """Compute the precision score.
 
-            cache_key = (hash, positive_class, "precision_score")
+        Parameters
+        ----------
+        average : {"binary", "micro", "macro", "weighted", "samples"}, default="binary"
+            The average to compute the precision score.
+        positive_class : int, default=1
+            The positive class.
 
-            if cache_key in self._parent._cache:
-                precision = self._parent._cache[cache_key]
-            else:
-                y_true_split = _safe_indexing(self._parent.target, test_indices)
-                y_pred_split = _safe_indexing(y_pred, test_indices)
-                if self._parent.sample_weight is not None:
-                    sample_weight_split = _safe_indexing(
-                        self._parent.sample_weight, test_indices
-                    )
-                else:
-                    sample_weight_split = None
+        Returns
+        -------
+        pd.DataFrame
+            The precision score.
+        """
+        return self._compute_metric_scores(
+            metrics.precision_score,
+            response_method="predict",
+            pos_label=positive_class,
+            metric_name="precision",
+            average=average,
+        )
 
-                precision = metrics.precision_score(
-                    y_true_split,
-                    y_pred_split,
-                    sample_weight=sample_weight_split,
-                    pos_label=positive_class,
-                )
-                self._parent._cache[cache_key] = precision
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["binary-classification", "multiclass-classification"]
+        )
+    )
+    def recall(self, average="binary", positive_class=1):
+        """Compute the recall score.
 
-            scores.append(precision)
+        Parameters
+        ----------
+        average : {"binary", "micro", "macro", "weighted", "samples"}, default="binary"
+            The average to compute the recall score.
+        positive_class : int, default=1
+            The positive class.
 
-        return pd.Series(scores, name="precision")
+        Returns
+        -------
+        pd.DataFrame
+            The recall score.
+        """
+        return self._compute_metric_scores(
+            metrics.recall_score,
+            response_method="predict",
+            pos_label=positive_class,
+            metric_name="recall",
+            average=average,
+        )

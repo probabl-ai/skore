@@ -1,5 +1,3 @@
-import inspect
-
 from sklearn.metrics import RocCurveDisplay
 
 
@@ -21,24 +19,14 @@ class RocCurveDisplay(RocCurveDisplay):
         despine=False,
         **kwargs,
     ):
-        # only in scikit-learn >= 1.6+
-        parent_plot = super().plot
-        plot_params = inspect.signature(parent_plot).parameters
-        plot_kwargs = {
-            "ax": ax,
-            "name": name,
-            "plot_chance_level": plot_chance_level,
-            "chance_level_kw": chance_level_kw,
-            **kwargs,
-        }
-
-        if "despine" in plot_params:
-            plot_kwargs["despine"] = despine
-            super().plot(**plot_kwargs)
-        else:
-            super().plot(**plot_kwargs)
-            if despine:
-                _despine_matplotlib_axis(self.ax_)
+        super().plot(
+            ax=ax,
+            name=name,
+            plot_chance_level=plot_chance_level,
+            chance_level_kw=chance_level_kw,
+        )
+        if despine:
+            _despine_matplotlib_axis(self.ax_)
 
         return self
 
@@ -131,5 +119,3 @@ class RocCurveDisplay(RocCurveDisplay):
             )
         else:
             raise ValueError(f"Backend '{backend}' is not supported.")
-
-        return self
