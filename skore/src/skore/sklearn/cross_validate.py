@@ -547,7 +547,15 @@ class _MetricsAccessor:
             The statistics for the metrics.
         """
         if scoring is None:
-            scoring = ["accuracy", "precision", "recall"]
+            # Equivalent to _get_scorers_to_add
+            if self._parent._ml_task == "binary-classification":
+                scoring = ["precision", "recall", "roc_auc", "brier_score"]
+            elif self._parent._ml_task == "multiclass-classification":
+                scoring = ["precision", "recall", "roc_auc"]
+                if hasattr(self._parent.cv_results["estimator"][0], "predict_proba"):
+                    scoring.append("log_loss")
+            else:
+                scoring = ["r2", "rmse"]
 
         scores = []
 
@@ -682,13 +690,17 @@ class _MetricsAccessor:
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def precision(self, average="binary", positive_class=1):
+    def precision(self, average="default", positive_class=1):
         """Compute the precision score.
 
         Parameters
         ----------
-        average : {"binary", "micro", "macro", "weighted", "samples"}, default="binary"
-            The average to compute the precision score.
+        average : {"default", "macro", "micro", "weighted", "samples"} or None, \
+                default="default"
+            The average to compute the precision score. By default, the average is
+            "binary" for binary classification and "weighted" for multiclass
+            classification.
+
         positive_class : int, default=1
             The positive class.
 
@@ -697,6 +709,12 @@ class _MetricsAccessor:
         pd.DataFrame
             The precision score.
         """
+        if average == "default":
+            if self._parent._ml_task == "binary-classification":
+                average = "binary"
+            else:
+                average = "weighted"
+
         return self._compute_metric_scores(
             metrics.precision_score,
             response_method="predict",
@@ -710,13 +728,16 @@ class _MetricsAccessor:
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def recall(self, average="binary", positive_class=1):
+    def recall(self, average="default", positive_class=1):
         """Compute the recall score.
 
         Parameters
         ----------
-        average : {"binary", "micro", "macro", "weighted", "samples"}, default="binary"
-            The average to compute the recall score.
+        average : {"default", "macro", "micro", "weighted", "samples"} or None, \
+                default="default"
+            The average to compute the recall score. By default, the average is
+            "binary" for binary classification and "weighted" for multiclass
+            classification.
         positive_class : int, default=1
             The positive class.
 
@@ -725,10 +746,124 @@ class _MetricsAccessor:
         pd.DataFrame
             The recall score.
         """
+        if average == "default":
+            if self._parent._ml_task == "binary-classification":
+                average = "binary"
+            else:
+                average = "weighted"
+
         return self._compute_metric_scores(
             metrics.recall_score,
             response_method="predict",
             pos_label=positive_class,
             metric_name="recall",
             average=average,
+        )
+
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["binary-classification", "multiclass-classification"]
+        )
+    )
+    def brier_score(self, positive_class=1):
+        """Compute the Brier score.
+
+        Parameters
+        ----------
+        positive_class : int, default=1
+            The positive class.
+
+        Returns
+        -------
+        pd.DataFrame
+            The Brier score.
+        """
+        return self._compute_metric_scores(
+            metrics.brier_score_loss,
+            response_method="predict_proba",
+            metric_name="Brier score",
+            pos_label=positive_class,
+        )
+
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["binary-classification", "multiclass-classification"]
+        )
+    )
+    def roc_auc(self, average="default"):
+        """Compute the ROC AUC score.
+
+        Parameters
+        ----------
+        average : {"default", "macro", "micro", "weighted", "samples"}, \
+                default="default"
+            The average to compute the ROC AUC score. By default, the average is
+            "macro" for binary classification and multiclass classification with
+            probability predictions and "weighted" for multiclass classification
+            with 1-vs-rest predictions.
+
+        Returns
+        -------
+        pd.DataFrame
+            The ROC AUC score.
+        """
+        if average == "default":
+            if self._parent._ml_task == "binary-classification":
+                average = "macro"
+                multi_class = "raise"
+            else:
+                average = "weighted"
+                multi_class = "ovr"  # FIXME: do we expose it or not?
+
+        return self._compute_metric_scores(
+            metrics.roc_auc_score,
+            response_method=["predict_proba", "decision_function"],
+            metric_name="ROC AUC",
+            average=average,
+            multi_class=multi_class,
+        )
+
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["binary-classification", "multiclass-classification"]
+        )
+    )
+    def log_loss(self):
+        """Compute the log loss score.
+
+        Returns
+        -------
+        pd.DataFrame
+            The log-loss.
+        """
+        return self._compute_metric_scores(
+            metrics.log_loss, response_method="predict_proba", metric_name="Log loss"
+        )
+
+    @available_if(_check_supported_ml_task(supported_ml_tasks=["regression"]))
+    def r2(self):
+        """Compute the R² score.
+
+        Returns
+        -------
+        pd.DataFrame
+            The R² score.
+        """
+        return self._compute_metric_scores(
+            metrics.r2_score, response_method="predict", metric_name="R²"
+        )
+
+    @available_if(_check_supported_ml_task(supported_ml_tasks=["regression"]))
+    def rmse(self):
+        """Compute the RMSE score.
+
+        Returns
+        -------
+        pd.DataFrame
+            The RMSE score.
+        """
+        return self._compute_metric_scores(
+            metrics.root_mean_squared_error,
+            response_method="predict",
+            metric_name="RMSE",
         )

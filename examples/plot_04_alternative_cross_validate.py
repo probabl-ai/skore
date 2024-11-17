@@ -32,7 +32,7 @@ X, y = datasets.make_classification(
     n_samples=1_000,
     n_features=20,
     class_sep=0.5,
-    n_classes=2,
+    n_classes=3,
     n_clusters_per_class=1,
     random_state=42,
 )
@@ -79,8 +79,31 @@ reporter.metrics.precision(average="binary")
 reporter.metrics.recall(average=None)
 
 # %%
+reporter.metrics.log_loss()
+
+# %%
+reporter.metrics.roc_auc()
+
+# %%
 reporter.metrics.report_stats()
 
+# %%
+from sklearn import datasets, linear_model
+from sklearn.model_selection import cross_validate
+from skore.sklearn import CrossValidationReporter
+
+X, y = datasets.make_regression(
+    n_samples=1_000, n_features=20, random_state=42, n_targets=1
+)
+regressor = linear_model.Lasso()
+cv_results = cross_validate(regressor, X, y, return_estimator=True, return_indices=True)
+reporter = CrossValidationReporter(cv_results, X, y)
+
+# %%
+reporter.metrics.rmse()
+
+# %%
+reporter.metrics.report_stats()
 
 # %%
 # Cleanup the project
