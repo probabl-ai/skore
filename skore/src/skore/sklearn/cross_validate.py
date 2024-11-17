@@ -601,7 +601,12 @@ class _MetricsAccessor:
                 pos_label=pos_label,
             )
 
-            cache_key = (hash, pos_label, metric_name)
+            cache_key = (hash, metric_name)
+            metric_params = inspect.signature(metric_fn).parameters
+            if "pos_label" in metric_params:
+                cache_key += (pos_label,)
+            if "average" in metric_params:
+                cache_key += (metric_kwargs["average"],)
 
             if cache_key in self._parent._cache:
                 score = self._parent._cache[cache_key]
