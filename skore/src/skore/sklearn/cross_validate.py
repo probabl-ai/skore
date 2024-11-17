@@ -12,6 +12,8 @@ from typing import Literal, Optional
 
 import numpy as np
 import pandas as pd
+from rich.console import Console
+from rich.tree import Tree
 from sklearn import metrics
 from sklearn.linear_model._base import LinearModel
 from sklearn.pipeline import Pipeline
@@ -402,9 +404,6 @@ class CrossValidationReporter:
 
     def help(self):
         """Display available plotting and metrics functions using rich."""
-        from rich.console import Console
-        from rich.tree import Tree
-
         console = Console()
         tree = Tree("🔧 Available tools with this cross-validation reporter")
 
@@ -583,6 +582,26 @@ class _PlotAccessor:
         pass
 
 
+# losses are red, scores are green
+METRIC_COLORS = {
+    "Accuracy": "green",
+    "Precision": "green",
+    "Recall": "green",
+    "Brier score": "red",
+    "ROC AUC": "green",
+    "Log loss": "red",
+    "R²": "green",
+    "RMSE": "red",
+}
+
+
+def _color_columns(style):
+    return [
+        (f"background-color: {METRIC_COLORS[col]};" if col in METRIC_COLORS else "")
+        for col in style
+    ]
+
+
 @register_accessor("metrics", CrossValidationReporter)
 class _MetricsAccessor:
     def __init__(self, parent):
@@ -619,12 +638,12 @@ class _MetricsAccessor:
 
         for metric in scoring:
             metric_fn = getattr(self, metric)
-            import inspect
 
+            # Go from styler to dataframe by calling `.data`
             if "positive_class" in inspect.signature(metric_fn).parameters:
-                scores.append(metric_fn(positive_class=positive_class))
+                scores.append(metric_fn(positive_class=positive_class).data)
             else:
-                scores.append(metric_fn())
+                scores.append(metric_fn().data)
 
         has_multilevel = any(
             isinstance(score, pd.DataFrame) and isinstance(score.columns, pd.MultiIndex)
@@ -641,7 +660,8 @@ class _MetricsAccessor:
                         [(col, "") for col in score.columns]
                     )
 
-        return pd.concat(scores, axis=1)
+        df = pd.concat(scores, axis=1)
+        return df.style.apply_index(_color_columns, axis="columns", level=[0])
 
     def _compute_metric_scores(
         self,
@@ -724,7 +744,8 @@ class _MetricsAccessor:
                 ]
         else:
             columns = None
-        return pd.DataFrame(scores, columns=columns)
+        df = pd.DataFrame(scores, columns=columns)
+        return df.style.apply_index(_color_columns, axis="columns", level=[0])
 
     @available_if(
         _check_supported_ml_task(
@@ -740,7 +761,7 @@ class _MetricsAccessor:
             The accuracy score.
         """
         return self._compute_metric_scores(
-            metrics.accuracy_score, response_method="predict", metric_name="accuracy"
+            metrics.accuracy_score, response_method="predict", metric_name="Accuracy"
         )
 
     @available_if(
@@ -777,7 +798,7 @@ class _MetricsAccessor:
             metrics.precision_score,
             response_method="predict",
             pos_label=positive_class,
-            metric_name="precision",
+            metric_name="Precision",
             average=average,
         )
 
@@ -814,7 +835,7 @@ class _MetricsAccessor:
             metrics.recall_score,
             response_method="predict",
             pos_label=positive_class,
-            metric_name="recall",
+            metric_name="Recall",
             average=average,
         )
 
