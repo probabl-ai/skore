@@ -13,6 +13,8 @@ from typing import Literal, Optional
 import numpy as np
 import pandas as pd
 from sklearn import metrics
+from sklearn.linear_model._base import LinearModel
+from sklearn.pipeline import Pipeline
 from sklearn.utils._indexing import _safe_indexing
 from sklearn.utils._response import _check_response_method, _get_response_values
 from sklearn.utils.metaestimators import available_if
@@ -398,6 +400,40 @@ class CrossValidationReporter:
 
         return predictions
 
+    def help(self):
+        """Display available plotting and metrics functions using rich."""
+        from rich.console import Console
+        from rich.tree import Tree
+
+        console = Console()
+        tree = Tree("📊 Available methods")
+
+        # Get available methods for plot accessor
+        plot_branch = tree.add("🎨 plot")
+        plot_methods = inspect.getmembers(self.plot, predicate=inspect.ismethod)
+        for name, method in plot_methods:
+            if not name.startswith("_") and not name.startswith("__"):
+                doc = (
+                    method.__doc__.split("\n")[0]
+                    if method.__doc__
+                    else "No description available"
+                )
+                plot_branch.add(f"[green]{name}[/green] - {doc}")
+
+        # Get available methods for metrics accessor
+        metrics_branch = tree.add("📏 metrics")
+        metrics_methods = inspect.getmembers(self.metrics, predicate=inspect.ismethod)
+        for name, method in metrics_methods:
+            if not name.startswith("_") and not name.startswith("__"):
+                doc = (
+                    method.__doc__.split("\n")[0]
+                    if method.__doc__
+                    else "No description available"
+                )
+                metrics_branch.add(f"[green]{name}[/green] - {doc}")
+
+        console.print(tree)
+
 
 def _check_supported_ml_task(supported_ml_tasks):
     def check(accessor):
@@ -409,6 +445,24 @@ def _check_supported_ml_task(supported_ml_tasks):
             raise AttributeError(
                 f"The {accessor._parent._ml_task} task is not a supported task by "
                 f"function called. The supported tasks are {supported_ml_tasks}."
+            )
+
+        return True
+
+    return check
+
+
+def _check_supported_estimator(supported_estimators):
+    def check(accessor):
+        estimators = accessor._parent.cv_results["estimator"]
+        if isinstance(estimators[0], Pipeline):
+            estimators = [est.steps[-1][1] for est in estimators]
+        supported_estimator = isinstance(estimators[0], supported_estimators)
+
+        if not supported_estimator:
+            raise AttributeError(
+                f"The {estimators[0].__class__.__name__} estimator is not supported "
+                "by the function called."
             )
 
         return True
@@ -523,6 +577,10 @@ class _PlotAccessor:
             ax = display.ax_
 
         return display.figure_
+
+    @available_if(_check_supported_estimator(supported_estimators=LinearModel))
+    def model_weights(self):
+        pass
 
 
 @register_accessor("metrics", CrossValidationReporter)

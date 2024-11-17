@@ -1,4 +1,5 @@
 from sklearn.metrics import RocCurveDisplay
+from sklearn.pipeline import Pipeline
 
 
 def _despine_matplotlib_axis(ax):
@@ -119,3 +120,32 @@ class RocCurveDisplay(RocCurveDisplay):
             )
         else:
             raise ValueError(f"Backend '{backend}' is not supported.")
+
+
+class WeightsDisplay:
+    def __init__(self, weights, feature_names):
+        self.weights = weights
+        self.feature_names = feature_names
+
+    def plot(self, ax=None, backend="matplotlib"):
+        if backend == "matplotlib":
+            return self._plot_matplotlib(ax=ax)
+        elif backend == "plotly":
+            return self._plot_plotly(ax=ax)
+        else:
+            raise ValueError(f"Backend '{backend}' is not supported.")
+
+    def _plot_matplotlib(self, ax=None):
+        pass
+
+    def _plot_plotly(self, ax=None):
+        pass
+
+    @classmethod
+    def from_cv_results(cls, cv_results):
+        estimators = cv_results["estimator"]
+        if isinstance(estimators[0], Pipeline):
+            estimators = [est.steps[-1][1] for est in estimators]
+        weights = [est.coef_ for est in estimators]
+        feature_names = estimators[0].feature_names_in_
+        return cls(weights, feature_names)

@@ -32,7 +32,7 @@ X, y = datasets.make_classification(
     n_samples=1_000,
     n_features=20,
     class_sep=0.5,
-    n_classes=3,
+    n_classes=2,
     n_clusters_per_class=1,
     random_state=42,
 )
@@ -41,6 +41,9 @@ cv_results = cross_validate(
     classifier, X, y, return_estimator=True, return_indices=True
 )
 reporter = CrossValidationReporter(cv_results, X, y)
+
+# %%
+reporter.help()
 
 # %%
 fig = reporter.plot.roc(backend="plotly")
@@ -99,6 +102,8 @@ regressor = linear_model.Lasso()
 cv_results = cross_validate(regressor, X, y, return_estimator=True, return_indices=True)
 reporter = CrossValidationReporter(cv_results, X, y)
 
+# %%
+reporter.help()
 # %%
 reporter.metrics.rmse()
 
