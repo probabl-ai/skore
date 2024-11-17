@@ -428,29 +428,22 @@ class CrossValidationReporter:
         console = Console()
         tree = Tree("🔧 Available tools with this cross-validation reporter")
 
-        # Get available methods for plot accessor
-        plot_branch = tree.add("🎨 plot")
-        plot_methods = inspect.getmembers(self.plot, predicate=inspect.ismethod)
-        for name, method in plot_methods:
-            if not name.startswith("_") and not name.startswith("__"):
-                doc = (
-                    method.__doc__.split("\n")[0]
-                    if method.__doc__
-                    else "No description available"
-                )
-                plot_branch.add(f"[green]{name}[/green] - {doc}")
+        def _add_accessor_methods_to_tree(tree, accessor, icon, accessor_name):
+            branch = tree.add(f"{icon} {accessor_name}")
+            methods = inspect.getmembers(accessor, predicate=inspect.ismethod)
+            for name, method in methods:
+                if not name.startswith("_") and not name.startswith("__"):
+                    doc = (
+                        method.__doc__.split("\n")[0]
+                        if method.__doc__
+                        else "No description available"
+                    )
+                    branch.add(f"[green]{name}[/green] - {doc}")
 
-        # Get available methods for metrics accessor
-        metrics_branch = tree.add("📏 metrics")
-        metrics_methods = inspect.getmembers(self.metrics, predicate=inspect.ismethod)
-        for name, method in metrics_methods:
-            if not name.startswith("_") and not name.startswith("__"):
-                doc = (
-                    method.__doc__.split("\n")[0]
-                    if method.__doc__
-                    else "No description available"
-                )
-                metrics_branch.add(f"[green]{name}[/green] - {doc}")
+        # Add methods for each accessor
+        _add_accessor_methods_to_tree(tree, self.plot, "🎨", "plot")
+        _add_accessor_methods_to_tree(tree, self.metrics, "📏", "metrics")
+        _add_accessor_methods_to_tree(tree, self.inspection, "🔍", "inspection")
 
         console.print(tree)
 
@@ -996,3 +989,64 @@ class _MetricsAccessor:
             response_method="predict",
             metric_name="RMSE",
         )
+
+
+@register_accessor("inspection", CrossValidationReporter)
+class _InspectionAccessor:
+    def __init__(self, parent):
+        self._parent = parent
+
+    # FIXME: we should some editorial choice here
+    def feature_importances(self, type="default"):
+        """Compute feature importances.
+
+        Parameters
+        ----------
+        type : {"default", "mdi", "permutation", "weights"}
+            The type of feature importances to compute. By default, we provide the
+            weights for linear models and the mean decrease in impurity for tree-based
+            models.
+
+        Returns
+        -------
+        pd.DataFrame
+            The feature importances.
+        """
+        estimators = self._parent.cv_results["estimator"]
+        if isinstance(estimators[0], Pipeline):
+            estimators = [est.steps[-1][1] for est in estimators]
+
+        if type == "default":
+            if hasattr(estimators[0], "coef_"):
+                type = "weights"
+            elif hasattr(estimators[0], "feature_importances_"):
+                type = "mdi"
+            else:
+                raise ValueError(
+                    "No default feature importances for "
+                    f"{estimators[0].__class__.__name__}."
+                )
+        elif type == "permutation":
+            # TODO: we need to compute the permutation importances.
+            # We need good caching and good parameter here.
+            # We should probably make it that this computation is shared with the
+            # plotting since this is quite expensive in terms of computation.
+            raise NotImplementedError(
+                "Permutation importances are not yet implemented."
+            )
+
+        if hasattr(estimators[0], "feature_names_in_"):
+            feature_names = estimators[0].feature_names_in_
+        else:
+            feature_names = [
+                f"Feature #{i}" for i in range(estimators[0].n_features_in_)
+            ]
+
+        if type == "weights":
+            importances = [est.coef_ for est in estimators]
+        elif type == "mdi":
+            importances = [est.feature_importances_ for est in estimators]
+        else:
+            raise NotImplementedError
+
+        return pd.DataFrame(importances, columns=feature_names)
