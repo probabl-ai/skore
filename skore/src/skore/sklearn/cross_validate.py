@@ -26,7 +26,7 @@ from skore.item.cross_validation_item import (
     CrossValidationItem,
 )
 from skore.project import Project
-from skore.sklearn._plot import RocCurveDisplay
+from skore.sklearn._plot import RocCurveDisplay, WeightsDisplay
 
 
 # TODO: this is really hacky, find a better solution
@@ -501,6 +501,7 @@ class _PlotAccessor:
     def roc(
         self,
         positive_class=None,
+        ax=None,
         name=None,
         plot_chance_level=True,
         chance_level_kw=None,
@@ -513,6 +514,8 @@ class _PlotAccessor:
         ----------
         positive_class : str, default=None
             The positive class.
+        ax : matplotlib.axes.Axes, default=None
+            The axes to plot on.
         name : str, default=None
             The name of the plot.
         plot_chance_level : bool, default=True
@@ -531,7 +534,6 @@ class _PlotAccessor:
         """
         prediction_method = ["predict_proba", "decision_function"]
 
-        ax = None
         for fold_idx, (hash, estimator, test_indices) in enumerate(
             zip(
                 self._parent._hash,
@@ -599,8 +601,38 @@ class _PlotAccessor:
         return display.figure_
 
     @available_if(_check_supported_estimator(supported_estimators=LinearModel))
-    def model_weights(self):
-        pass
+    def model_weights(
+        self, *, ax=None, style="boxplot", add_data_points=True, backend="matplotlib"
+    ):
+        """Plot the model weights.
+
+        This is only available for linear models with a `coef_` attribute.
+
+        Parameters
+        ----------
+        ax : matplotlib.axes.Axes, default=None
+            The axes to plot on.
+        style : {"boxplot", "violinplot"}, default="boxplot"
+            The style of the plot.
+        add_data_points : bool, default=False
+            Whether to add data points to the plot.
+        backend : {"matplotlib", "plotly"}, default="matplotlib"
+            The backend to use for plotting.
+
+        Returns
+        -------
+        matplotlib.figure.Figure
+            The model weights plot.
+        """
+        # no caching here since there is not computation to do
+        display = WeightsDisplay.from_cv_results(
+            self._parent.cv_results,
+            ax=ax,
+            style=style,
+            add_data_points=add_data_points,
+            backend=backend,
+        )
+        return display.figure_
 
 
 # losses are red, scores are green

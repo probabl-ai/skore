@@ -96,19 +96,37 @@ from sklearn.model_selection import cross_validate
 from skore.sklearn import CrossValidationReporter
 
 X, y = datasets.make_regression(
-    n_samples=1_000, n_features=20, random_state=42, n_targets=1
+    n_samples=1_000,
+    n_features=10,
+    random_state=42,
+    n_targets=1,
+    noise=100,
+    n_informative=5,
 )
-regressor = linear_model.Lasso()
+regressor = linear_model.Ridge()
 cv_results = cross_validate(regressor, X, y, return_estimator=True, return_indices=True)
 reporter = CrossValidationReporter(cv_results, X, y)
 
 # %%
 reporter.help()
+
 # %%
 reporter.metrics.rmse()
 
 # %%
 reporter.metrics.report_stats()
+
+# %%
+reporter.plot.model_weights()
+
+# %%
+reporter.plot.model_weights(style="violinplot", add_data_points=False)
+
+# %%
+reporter.plot.model_weights(backend="plotly")
+
+# %%
+reporter.plot.model_weights(backend="plotly", style="violinplot", add_data_points=True)
 
 # %%
 # Cleanup the project

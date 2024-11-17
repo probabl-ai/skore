@@ -90,6 +90,7 @@ sphinx = [
   "sphinx-design",
   "sphinx-gallery",
   "sphinx-copybutton",
+  "seaborn",
 ]
 
 [tool.pytest.ini_options]
@@ -148,6 +149,8 @@ extend-ignore-re = [
   "(?Rm)^.*(#|//)\\s*spellchecker:disable-line$",
   # Line block with `# spellchecker:<on|off>`
   "(?s)(#|//)\\s*spellchecker:off.*?\\n\\s*(#|//)\\s*spellchecker:on",
+  # something related to `whis` that is a matplotlib parameter
+  "whis",
 ]
 
 [tool.typos.files]

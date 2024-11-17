@@ -1,5 +1,27 @@
+import pandas as pd
 from sklearn.metrics import RocCurveDisplay
 from sklearn.pipeline import Pipeline
+from sklearn.utils._optional_dependencies import check_matplotlib_support
+
+
+def check_seaborn_support(caller_name):
+    """Raise ImportError with detailed error message if seaborn is not installed.
+
+    Plot utilities like any of the Display's plotting functions should lazily import
+    matplotlib and call this helper before any computation.
+
+    Parameters
+    ----------
+    caller_name : str
+        The name of the caller that requires matplotlib.
+    """
+    try:
+        import seaborn  # noqa
+    except ImportError as e:
+        raise ImportError(
+            f"{caller_name} requires seaborn. You can install seaborn with "
+            "`pip install seaborn`"
+        ) from e
 
 
 def _despine_matplotlib_axis(ax):
@@ -127,25 +149,116 @@ class WeightsDisplay:
         self.weights = weights
         self.feature_names = feature_names
 
-    def plot(self, ax=None, backend="matplotlib"):
+    def plot(
+        self, ax=None, *, style="boxplot", add_data_points=False, backend="matplotlib"
+    ):
         if backend == "matplotlib":
-            return self._plot_matplotlib(ax=ax)
+            return self._plot_matplotlib(
+                ax=ax, style=style, add_data_points=add_data_points
+            )
         elif backend == "plotly":
-            return self._plot_plotly(ax=ax)
+            return self._plot_plotly(
+                ax=ax, style=style, add_data_points=add_data_points
+            )
         else:
             raise ValueError(f"Backend '{backend}' is not supported.")
 
-    def _plot_matplotlib(self, ax=None):
-        pass
+    def _plot_matplotlib(self, ax=None, *, style="boxplot", add_data_points=False):
+        check_matplotlib_support(f"{self.__class__.__name__}.plot")
+        check_seaborn_support(f"{self.__class__.__name__}.plot")
+        import matplotlib.pyplot as plt
+        import seaborn as sns
 
-    def _plot_plotly(self, ax=None):
-        pass
+        if ax is None:
+            _, ax = plt.subplots()
+
+        df = pd.DataFrame(self.weights, columns=self.feature_names)
+        if style == "boxplot":
+            sns.boxplot(data=df, orient="h", color="tab:blue", whis=10, ax=ax)
+        elif style == "violinplot":
+            sns.violinplot(data=df, orient="h", color="tab:blue", ax=ax)
+        else:
+            raise ValueError(f"Style '{style}' is not supported.")
+
+        if add_data_points:
+            sns.stripplot(data=df, orient="h", palette="dark:k", alpha=0.8, ax=ax)
+
+        ax.axvline(x=0, color=".5", linestyle="--")
+        ax.set(xlabel="Feature weights", ylabel="Features")
+
+        self.ax_ = ax
+        self.figure_ = ax.figure
+        return self
+
+    def _plot_plotly(self, ax=None, *, style="boxplot", add_data_points=False):
+        import plotly.graph_objects as go
+
+        df = pd.DataFrame(self.weights, columns=self.feature_names)
+
+        fig = go.Figure() if ax is None else ax
+
+        # TODO: we could probably modify the dataframe to not have to loop here
+        for col in df.columns[::-1]:  # reverse order to match matplotlib
+            if style == "boxplot":
+                fig.add_trace(
+                    go.Box(
+                        x=df[col],
+                        name=col,
+                        orientation="h",
+                        whiskerwidth=1,
+                        line_color="rgb(65, 105, 225)",
+                        boxpoints="all" if add_data_points else False,
+                        jitter=0.3 if add_data_points else 0,
+                        pointpos=0 if add_data_points else None,
+                        marker=dict(color="rgb(0,0,0)") if add_data_points else None,
+                    )
+                )
+            elif style == "violinplot":
+                fig.add_trace(
+                    go.Violin(
+                        x=df[col],
+                        name=col,
+                        orientation="h",
+                        line_color="rgb(65, 105, 225)",
+                        box_visible=True,
+                        points="all" if add_data_points else False,
+                        pointpos=0 if add_data_points else None,
+                        marker=dict(color="rgb(0,0,0)") if add_data_points else None,
+                    )
+                )
+            else:
+                raise ValueError(f"Style '{style}' is not supported.")
+
+        fig.add_vline(x=0, line_dash="dash", line_color="gray")
+
+        fig.update_layout(
+            xaxis_title="Feature weights",
+            yaxis_title="Features",
+            showlegend=False,
+        )
+
+        self.ax_ = fig
+        self.figure_ = fig
+        return self
 
     @classmethod
-    def from_cv_results(cls, cv_results):
+    def from_cv_results(
+        cls,
+        cv_results,
+        *,
+        ax=None,
+        style="boxplot",
+        add_data_points=False,
+        backend="matplotlib",
+    ):
         estimators = cv_results["estimator"]
         if isinstance(estimators[0], Pipeline):
             estimators = [est.steps[-1][1] for est in estimators]
         weights = [est.coef_ for est in estimators]
-        feature_names = estimators[0].feature_names_in_
-        return cls(weights, feature_names)
+        if hasattr(estimators[0], "feature_names_in_"):
+            feature_names = estimators[0].feature_names_in_
+        else:
+            feature_names = [f"Feature #{i}" for i in range(len(weights[0]))]
+        return cls(weights, feature_names).plot(
+            ax=ax, style=style, add_data_points=add_data_points, backend=backend
+        )
