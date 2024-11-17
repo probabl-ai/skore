@@ -406,7 +406,7 @@ class CrossValidationReporter:
         from rich.tree import Tree
 
         console = Console()
-        tree = Tree("📊 Available methods")
+        tree = Tree("🔧 Available tools with this cross-validation reporter")
 
         # Get available methods for plot accessor
         plot_branch = tree.add("🎨 plot")
