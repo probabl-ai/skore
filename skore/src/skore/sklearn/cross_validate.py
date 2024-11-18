@@ -204,15 +204,50 @@ def cross_validate(*args, project: Optional[Project] = None, **kwargs) -> dict:
 
     Parameters
     ----------
-    *args
-        Positional arguments accepted by scikit-learn's
-        :func:`~sklearn.model_selection.cross_validate`,
-        such as ``estimator`` and ``X``.
-    project : Project, optional
+    estimator : estimator object implementing ‘fit’
+        The object to use to fit the data.
+
+    X : {array-like, sparse matrix} of shape (n_samples, n_features)
+        The data to fit. Can be for example a list, or an array.
+
+    y : array-like of shape (n_samples,) or (n_samples, n_outputs), default=None
+        The target variable to try to predict in the case of supervised learning.
+
+    project : Project, default=None
         A project to save cross-validation data into. If None, no save is performed.
-    **kwargs
-        Additional keyword arguments accepted by scikit-learn's
-        :func:`~sklearn.model_selection.cross_validate`.
+
+    groups : array-like of shape (n_samples,), default=None
+        See :func:`~sklearn.model_selection.cross_validate`.
+
+    scoring : str, callable, list, tuple, or dict, default=None
+        See :func:`~sklearn.model_selection.cross_validate`.
+
+    cv : int, cross-validation generator or an iterable, default=None
+        See :func:`~sklearn.model_selection.cross_validate`.
+
+    n_jobs : int, default=None
+        See :func:`~sklearn.model_selection.cross_validate`.
+
+    verbose : int, default=0
+        See :func:`~sklearn.model_selection.cross_validate`.
+
+    params : dict, default=None
+        See :func:`~sklearn.model_selection.cross_validate`.
+
+    pre_dispatch : int or str, default=’2*n_jobs’
+        See :func:`~sklearn.model_selection.cross_validate`.
+
+    return_train_score : bool, default=False
+        See :func:`~sklearn.model_selection.cross_validate`.
+
+    return_estimator : bool, default=False
+        See :func:`~sklearn.model_selection.cross_validate`.
+
+    return_indices : bool, default=False
+        See :func:`~sklearn.model_selection.cross_validate`.
+
+    error_score : 'raise' or numeric, default=np.nan
+        See :func:`~sklearn.model_selection.cross_validate`.
 
     Returns
     -------
