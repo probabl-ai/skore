@@ -14,26 +14,19 @@ of items that you can store in a skore :class:`~skore.Project`.
 # ====================================
 #
 # We start by creating a temporary directory to store our project such that we can
-# easily clean it after executing this example. If you want to keep the project,
-# you have to skip this section.
+# easily clean it after executing this example. If you want to keep the project, you
+# have to skip this section.
+
+# %%
 import tempfile
 from pathlib import Path
+
+import skore
 
 temp_dir = tempfile.TemporaryDirectory(prefix="skore_example_")
 temp_dir_path = Path(temp_dir.name)
 
-# %%
-import subprocess
-
-# create the skore project
-subprocess.run(
-    f"python3 -m skore create my_project --working-dir {temp_dir.name}".split()
-)
-
-# %%
-from skore import load
-
-my_project = load(temp_dir_path / "my_project.skore")
+my_project = skore.create("my_project.skore", working_dir=temp_dir_path)
 
 
 # %%
