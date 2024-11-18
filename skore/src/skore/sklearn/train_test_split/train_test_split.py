@@ -5,10 +5,12 @@ from __future__ import annotations
 import warnings
 from typing import TYPE_CHECKING, Any, Optional, Union
 
-import pandas
 from numpy.random import RandomState
 
 from skore.project import Project
+from skore.sklearn.train_test_split.warning.high_class_imbalance_warning import (
+    HighClassImbalanceWarning,
+)
 
 if TYPE_CHECKING:
     from skore.sklearn.cross_validate import MLTask
@@ -50,73 +52,6 @@ def _find_ml_task(y) -> MLTask:
         return "unknown"
 
     return "unknown"
-
-
-class TrainTestSplitWarning(Warning):
-    """Interface for a train-test-split warning."""
-
-    MSG: str
-
-    @staticmethod
-    def check(*args, **kwargs) -> bool:
-        """Perform the check.
-
-        Returns
-        -------
-        bool
-            True if the check passed, False otherwise.
-        """
-        ...
-
-
-class HighClassImbalanceWarning(TrainTestSplitWarning):
-    """Check whether the test set has high class imbalance."""
-
-    MSG = (
-        "It seems that you have a classification problem with a high class "
-        "imbalance. In this "
-        "case, using train_test_split may not be a good idea because of high  "
-        "variability in the scores obtained on the test set. "
-        "To tackle this challenge we suggest to use skore's "
-        "cross_validate function."
-    )
-
-    @staticmethod
-    def check(
-        y: Optional[ArrayLike],
-        stratify: Optional[ArrayLike],
-        ml_task: MLTask,
-        **kwargs,
-    ) -> bool:
-        """Check whether the test set has high class imbalance.
-
-        More precisely, we check whether the most populated class in `y` has
-        more than 3 times the size of the least populated class in `y`.
-        The other arguments are needed to see if the check is relevant. For
-        example, if `y` is a used for a regression task, then the check should
-        be skipped.
-
-        Parameters
-        ----------
-        y : array-like or None
-            A 1-dimensional target vector, as a list, numpy array, scipy sparse array,
-            or pandas dataframe.
-        stratify : array-like or None
-            An 1-dimensional target array to be used for stratification.
-        ml_task : MLTask
-            The type of machine-learning tasks being performed.
-
-        Returns
-        -------
-        bool
-            True if the check passed, False otherwise.
-        """
-        if stratify or (y is None or len(y) == 0) or ("classification" not in ml_task):
-            return True
-
-        class_counts = pandas.Series(y).value_counts()
-
-        return (max(class_counts) / min(class_counts)) < 3
 
 
 def train_test_split(
