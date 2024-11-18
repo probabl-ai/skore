@@ -28,14 +28,14 @@ import subprocess
 
 # create the skore project
 subprocess.run(
-    f"python3 -m skore create my_project_cv --working-dir {temp_dir.name}".split()
+    f"python3 -m skore create my_project --working-dir {temp_dir.name}".split()
 )
 
 
 # %%
 import skore
 
-my_project_gs = skore.load(temp_dir_path / "my_project_cv.skore")
+my_project = skore.load(temp_dir_path / "my_project.skore")
 
 # %%
 # Cross-validation in scikit-learn
@@ -124,9 +124,9 @@ test_scores
 # Let us continue with the same use case.
 
 # %%
-cv_results = skore.cross_validate(clf, X, y, cv=5, project=my_project_gs)
+cv_results = skore.cross_validate(clf, X, y, cv=5, project=my_project)
 
-fig_plotly_clf = my_project_gs.get_item("cross_validation").plot
+fig_plotly_clf = my_project.get_item("cross_validation").plot
 fig_plotly_clf
 
 # %%
@@ -160,8 +160,8 @@ fig_plotly_clf
 # running another unrelated cross-validation:
 
 # %%
-my_project_gs.delete_item("cross_validation")
-my_project_gs.delete_item("cross_validation_aggregated")
+my_project.delete_item("cross_validation")
+my_project.delete_item("cross_validation_aggregated")
 
 # %%
 # .. note::
@@ -177,9 +177,9 @@ X = diabetes.data[:150]
 y = diabetes.target[:150]
 lasso = Lasso()
 
-cv_results = skore.cross_validate(lasso, X, y, cv=5, project=my_project_gs)
+cv_results = skore.cross_validate(lasso, X, y, cv=5, project=my_project)
 
-fig_plotly_reg = my_project_gs.get_item("cross_validation").plot
+fig_plotly_reg = my_project.get_item("cross_validation").plot
 fig_plotly_reg
 
 # %%

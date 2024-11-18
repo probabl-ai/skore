@@ -1,9 +1,9 @@
 """
 .. _example_overview_skore_ui:
 
-========================
-Overview of the skore UI
-========================
+=============================
+Overview of the skore project
+=============================
 
 This example provides an overview of the functionalities and the different types
 of items that you can store in a skore :class:`~skore.Project`.
@@ -27,13 +27,13 @@ import subprocess
 
 # create the skore project
 subprocess.run(
-    f"python3 -m skore create my_project_ui --working-dir {temp_dir.name}".split()
+    f"python3 -m skore create my_project --working-dir {temp_dir.name}".split()
 )
 
 # %%
 from skore import load
 
-my_project_ui = load(temp_dir_path / "my_project_ui.skore")
+my_project = load(temp_dir_path / "my_project.skore")
 
 
 # %%
@@ -44,7 +44,7 @@ my_project_ui = load(temp_dir_path / "my_project_ui.skore")
 # integer:
 
 # %%
-my_project_ui.put("my_int", 3)
+my_project.put("my_int", 3)
 
 # %%
 # Here, the name of the object is ``my_int`` and the integer value is 3.
@@ -52,36 +52,36 @@ my_project_ui.put("my_int", 3)
 # You can read it from the project by using :func:`~skore.Project.get`:
 
 # %%
-my_project_ui.get("my_int")
+my_project.get("my_int")
 
 # %%
 # Careful; like in a traditional Python dictionary, the ``put`` method will *overwrite*
 # past data if you use a key which already exists!
 
 # %%
-my_project_ui.put("my_int", 30_000)
+my_project.put("my_int", 30_000)
 
 # %%
 # Let us check the updated value:
 
 # %%
-my_project_ui.get("my_int")
+my_project.get("my_int")
 
 # %%
 # By using the :func:`~skore.Project.delete_item` method, you can also delete an object
 # so that your skore UI does not become cluttered:
 
 # %%
-my_project_ui.put("my_int_2", 10)
+my_project.put("my_int_2", 10)
 
 # %%
-my_project_ui.delete_item("my_int_2")
+my_project.delete_item("my_int_2")
 
 # %%
 # You can display all the keys in your project:
 
 # %%
-my_project_ui.list_item_keys()
+my_project.list_item_keys()
 
 # %%
 # Storing strings and texts
@@ -91,10 +91,10 @@ my_project_ui.list_item_keys()
 # We just stored a integer, now let us store some text using strings!
 
 # %%
-my_project_ui.put("my_string", "Hello world!")
+my_project.put("my_string", "Hello world!")
 
 # %%
-my_project_ui.get("my_string")
+my_project.get("my_string")
 
 # %%
 # :func:`~skore.Project.get` infers the type of the inserted object by default. For
@@ -102,7 +102,7 @@ my_project_ui.get("my_string")
 # display of your text:
 
 # %%
-my_project_ui.put(
+my_project.put(
     "my_string_2",
     (
         """Hello world!, **bold**, *italic*, `code`
@@ -122,7 +122,7 @@ def my_func(x):
 # %%
 from skore.item import MediaItem
 
-my_project_ui.put_item(
+my_project.put_item(
     "my_string_3",
     MediaItem.factory(
         "<p><h1>Title</h1> <b>bold</b>, <i>italic</i>, etc.</p>", media_type="text/html"
@@ -137,7 +137,7 @@ my_project_ui.put_item(
 # Note that the media type is only used for the UI, and not in this notebook at hand:
 
 # %%
-my_project_ui.get("my_string_3")
+my_project.get("my_string_3")
 
 # %%
 # You can also conveniently use a Python f-string:
@@ -145,9 +145,7 @@ my_project_ui.get("my_string_3")
 # %%
 x = 2
 y = [1, 2, 3, 4]
-my_project_ui.put(
-    "my_string_4", f"The value of `x` is {x} and the value of `y` is {y}."
-)
+my_project.put("my_string_4", f"The value of `x` is {x} and the value of `y` is {y}.")
 
 # %%
 # Storing many kinds of data
@@ -158,7 +156,7 @@ my_project_ui.put(
 
 # %%
 my_list = [1, 2, 3, 4]
-my_project_ui.put("my_list", my_list)
+my_project.put("my_list", my_list)
 my_list
 
 # %%
@@ -169,7 +167,7 @@ my_dict = {
     "company": "probabl",
     "year": 2023,
 }
-my_project_ui.put("my_dict", my_dict)
+my_project.put("my_dict", my_dict)
 my_dict
 
 # %%
@@ -179,7 +177,7 @@ my_dict
 import numpy as np
 
 my_arr = np.random.randn(3, 3)
-my_project_ui.put("my_arr", my_arr)
+my_project.put("my_arr", my_arr)
 my_arr
 
 # %%
@@ -189,7 +187,7 @@ my_arr
 import pandas as pd
 
 my_df = pd.DataFrame(np.random.randn(10, 5))
-my_project_ui.put("my_df", my_df)
+my_project.put("my_df", my_df)
 my_df.head()
 
 # %%
@@ -217,7 +215,7 @@ ax.set_title("Simple Plot")
 ax.legend()
 plt.show()
 
-my_project_ui.put("my_figure", fig)
+my_project.put("my_figure", fig)
 
 # %%
 # |
@@ -225,6 +223,8 @@ my_project_ui.put("my_figure", fig)
 
 # %%
 import altair as alt
+
+alt.renderers.enable("default")
 
 num_points = 100
 df_plot = pd.DataFrame(
@@ -239,7 +239,7 @@ my_altair_chart = (
     .properties(title="My title")
 )
 
-my_project_ui.put("my_altair_chart", my_altair_chart)
+my_project.put("my_altair_chart", my_altair_chart)
 
 # %%
 # .. note::
@@ -264,7 +264,9 @@ fig = px.scatter(
     df, x=df.sepal_length, y=df.sepal_width, color=df.species, size=df.petal_length
 )
 
-my_project_ui.put("my_plotly_fig", fig)
+my_project.put("my_plotly_fig", fig)
+
+fig
 
 # %%
 # Animated Plotly figure:
@@ -286,7 +288,9 @@ my_anim_plotly_fig = px.scatter(
     range_y=[25, 90],
 )
 
-my_project_ui.put("my_anim_plotly_fig", my_anim_plotly_fig)
+my_project.put("my_anim_plotly_fig", my_anim_plotly_fig)
+
+my_anim_plotly_fig
 
 # %%
 # PIL image:
@@ -299,7 +303,7 @@ my_pil_image = PIL.Image.new("RGB", (100, 100), color="red")
 with io.BytesIO() as output:
     my_pil_image.save(output, format="png")
 
-my_project_ui.put("my_pil_image", my_pil_image)
+my_project.put("my_pil_image", my_pil_image)
 
 # %%
 # Storing scikit-learn models and pipelines
@@ -314,7 +318,7 @@ my_project_ui.put("my_pil_image", my_pil_image)
 from sklearn.linear_model import Lasso
 
 my_model = Lasso(alpha=2)
-my_project_ui.put("my_model", my_model)
+my_project.put("my_model", my_model)
 my_model
 
 # %%
@@ -327,7 +331,7 @@ from sklearn.preprocessing import StandardScaler
 my_pipeline = Pipeline(
     [("standard_scaler", StandardScaler()), ("lasso", Lasso(alpha=2))]
 )
-my_project_ui.put("my_pipeline", my_pipeline)
+my_project.put("my_pipeline", my_pipeline)
 my_pipeline
 
 # %%
@@ -341,7 +345,7 @@ X = diabetes.data[:150]
 y = diabetes.target[:150]
 my_pipeline.fit(X, y)
 
-my_project_ui.put("my_fitted_pipeline", my_pipeline)
+my_project.put("my_fitted_pipeline", my_pipeline)
 my_pipeline
 
 # %%
