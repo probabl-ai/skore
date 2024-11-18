@@ -70,6 +70,11 @@ def train_test_split(
     This is a wrapper over scikit-learn's `train_test_split https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html`_
     helper function, enriching it with various warnings that can be saved in a Project.
 
+    The signature is fully compatible with sklearn's `train_test_split`, and
+    some keyword arguments are added to make the detection of issues more accurate.
+    For instance, argument `y` has been added to pass the target explicitly, which
+    makes it easier to detect issues with the target.
+
     Parameters
     ----------
     *arrays : sequence of indexables with same length / shape[0]
@@ -79,7 +84,7 @@ def train_test_split(
         If not None, will be appended to the list of arrays passed positionally.
     y : array-like, optional
         If not None, will be appended to the list of arrays passed positionally, after
-        `X`.
+        `X`. If None, it is assumed that the last array in `arrays` is `y`.
     test_size : float or int, optional
         If float, should be between 0.0 and 1.0 and represent the proportion of
         the dataset to include in the test split. If int, represents the absolute number
