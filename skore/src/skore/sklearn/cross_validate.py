@@ -31,7 +31,7 @@ def _get_scorers_to_add(estimator, y) -> list[str]:
     scorers_to_add : list[str]
         A list of scorers
     """
-    ml_task = _find_ml_task(estimator, y)
+    ml_task = _find_ml_task(y, estimator)
 
     # Add scorers based on the ML task
     if ml_task == "regression":
