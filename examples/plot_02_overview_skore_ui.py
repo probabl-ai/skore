@@ -9,6 +9,13 @@ This example provides an overview of the functionalities and the different types
 of items that you can store in a skore :class:`~skore.Project`.
 """
 
+# %%
+# Creating and loading a skore project
+# ====================================
+#
+# We start by creating a temporary directory to store our project such that we can
+# easily clean it after executing this example. If you want to keep the project,
+# you have to skip this section.
 import tempfile
 from pathlib import Path
 
