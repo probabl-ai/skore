@@ -4,14 +4,15 @@ import logging
 
 import rich.logging
 
-from skore.project import Project, load
+from skore.project import Project, create, load
 from skore.sklearn import cross_validate
 from skore.utils._show_versions import show_versions
 
 __all__ = [
-    "Project",
+    "create",
     "cross_validate",
     "load",
+    "Project",
     "show_versions",
 ]
 

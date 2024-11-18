@@ -1,7 +1,6 @@
 """Define a Project."""
 
 import logging
-from pathlib import Path
 from typing import Any, Optional, Union
 
 from skore.item import (
@@ -16,7 +15,6 @@ from skore.item import (
     SklearnBaseEstimatorItem,
     object_to_item,
 )
-from skore.persistence.disk_cache_storage import DirectoryDoesNotExist, DiskCacheStorage
 from skore.view.view import View
 from skore.view.view_repository import ViewRepository
 
@@ -267,44 +265,3 @@ class Project:
             The list of view keys. The list is empty if there is no view.
         """
         return self.view_repository.keys()
-
-
-class ProjectLoadError(Exception):
-    """Failed to load project."""
-
-
-def load(project_name: Union[str, Path]) -> Project:
-    """Load an existing Project given a project name or path."""
-    # Transform a project name to a directory path:
-    # - Resolve relative path to current working directory,
-    # - Check that the file ends with the ".skore" extension,
-    #    - If not provided, it will be automatically appended,
-    # - If project name is an absolute path, we keep that path.
-
-    path = Path(project_name).resolve()
-
-    if path.suffix != ".skore":
-        path = path.parent / (path.name + ".skore")
-
-    if not Path(path).exists():
-        raise ProjectLoadError(f"Project '{path}' does not exist: did you create it?")
-
-    try:
-        # FIXME should those hardcoded string be factorized somewhere ?
-        item_storage = DiskCacheStorage(directory=Path(path) / "items")
-        item_repository = ItemRepository(storage=item_storage)
-        view_storage = DiskCacheStorage(directory=Path(path) / "views")
-        view_repository = ViewRepository(storage=view_storage)
-        project = Project(
-            item_repository=item_repository,
-            view_repository=view_repository,
-        )
-    except DirectoryDoesNotExist as e:
-        missing_directory = e.args[0].split()[1]
-        raise ProjectLoadError(
-            f"Project '{path}' is corrupted: "
-            f"directory '{missing_directory}' should exist. "
-            "Consider re-creating the project."
-        ) from e
-
-    return project

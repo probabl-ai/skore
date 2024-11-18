@@ -36,33 +36,20 @@ We start by creating a temporary directory to store our project such that we can
 easily clean it after executing this example. If you want to keep the project,
 you have to skip this section.
 
-.. GENERATED FROM PYTHON SOURCE LINES 19-25
+.. GENERATED FROM PYTHON SOURCE LINES 19-30
 
 .. code-block:: Python
 
     import tempfile
     from pathlib import Path
 
+    import skore
+
     temp_dir = tempfile.TemporaryDirectory(prefix="skore_example_")
     temp_dir_path = Path(temp_dir.name)
 
+    my_project_ui = skore.create("my_project_ui.skore", working_dir=temp_dir_path)
 
-
-
-
-
-
-
-.. GENERATED FROM PYTHON SOURCE LINES 26-33
-
-.. code-block:: Python
-
-    import subprocess
-
-    # create the skore project
-    subprocess.run(
-        f"python3 -m skore create my_project_ui --working-dir {temp_dir.name}".split()
-    )
 
 
 
@@ -72,28 +59,23 @@ you have to skip this section.
 
  .. code-block:: none
 
-
-    CompletedProcess(args=['python3', '-m', 'skore', 'create', 'my_project_ui', '--working-dir', '/tmp/skore_example_z07dc7ne'], returncode=0)
-
-
-
-.. GENERATED FROM PYTHON SOURCE LINES 34-39
-
-.. code-block:: Python
-
-    from skore import load
-
-    my_project_ui = load(temp_dir_path / "my_project_ui.skore")
-
-
+    [11/18/24 09:50:20] <Logger skore.project.project (INFO)> Project  create.py:148
+                                                              file                  
+                                                              '/tmp/sk              
+                                                              ore_exam              
+                                                              ple_y244              
+                                                              8drm/my_              
+                                                              project_              
+                                                              ui.skore              
+                                                              ' was                 
+                                                              successf              
+                                                              ully                  
+                                                              created.              
 
 
 
 
-
-
-
-.. GENERATED FROM PYTHON SOURCE LINES 40-45
+.. GENERATED FROM PYTHON SOURCE LINES 31-36
 
 Storing integers
 ================
@@ -101,7 +83,7 @@ Storing integers
 Now, let us store our first object using :func:`~skore.Project.put`, for example an
 integer:
 
-.. GENERATED FROM PYTHON SOURCE LINES 47-49
+.. GENERATED FROM PYTHON SOURCE LINES 38-40
 
 .. code-block:: Python
 
@@ -114,13 +96,13 @@ integer:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 50-53
+.. GENERATED FROM PYTHON SOURCE LINES 41-44
 
 Here, the name of the object is ``my_int`` and the integer value is 3.
 
 You can read it from the project by using :func:`~skore.Project.get`:
 
-.. GENERATED FROM PYTHON SOURCE LINES 55-57
+.. GENERATED FROM PYTHON SOURCE LINES 46-48
 
 .. code-block:: Python
 
@@ -139,12 +121,12 @@ You can read it from the project by using :func:`~skore.Project.get`:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 58-60
+.. GENERATED FROM PYTHON SOURCE LINES 49-51
 
 Careful; like in a traditional Python dictionary, the ``put`` method will *overwrite*
 past data if you use a key which already exists!
 
-.. GENERATED FROM PYTHON SOURCE LINES 62-64
+.. GENERATED FROM PYTHON SOURCE LINES 53-55
 
 .. code-block:: Python
 
@@ -157,11 +139,11 @@ past data if you use a key which already exists!
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 65-66
+.. GENERATED FROM PYTHON SOURCE LINES 56-57
 
 Let us check the updated value:
 
-.. GENERATED FROM PYTHON SOURCE LINES 68-70
+.. GENERATED FROM PYTHON SOURCE LINES 59-61
 
 .. code-block:: Python
 
@@ -180,12 +162,12 @@ Let us check the updated value:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 71-73
+.. GENERATED FROM PYTHON SOURCE LINES 62-64
 
 By using the :func:`~skore.Project.delete_item` method, you can also delete an object
 so that your skore UI does not become cluttered:
 
-.. GENERATED FROM PYTHON SOURCE LINES 75-77
+.. GENERATED FROM PYTHON SOURCE LINES 66-68
 
 .. code-block:: Python
 
@@ -198,7 +180,7 @@ so that your skore UI does not become cluttered:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 78-80
+.. GENERATED FROM PYTHON SOURCE LINES 69-71
 
 .. code-block:: Python
 
@@ -211,11 +193,11 @@ so that your skore UI does not become cluttered:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 81-82
+.. GENERATED FROM PYTHON SOURCE LINES 72-73
 
 You can display all the keys in your project:
 
-.. GENERATED FROM PYTHON SOURCE LINES 84-86
+.. GENERATED FROM PYTHON SOURCE LINES 75-77
 
 .. code-block:: Python
 
@@ -234,16 +216,16 @@ You can display all the keys in your project:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 87-89
+.. GENERATED FROM PYTHON SOURCE LINES 78-80
 
 Storing strings and texts
 =========================
 
-.. GENERATED FROM PYTHON SOURCE LINES 91-92
+.. GENERATED FROM PYTHON SOURCE LINES 82-83
 
 We just stored a integer, now let us store some text using strings!
 
-.. GENERATED FROM PYTHON SOURCE LINES 94-96
+.. GENERATED FROM PYTHON SOURCE LINES 85-87
 
 .. code-block:: Python
 
@@ -256,7 +238,7 @@ We just stored a integer, now let us store some text using strings!
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 97-99
+.. GENERATED FROM PYTHON SOURCE LINES 88-90
 
 .. code-block:: Python
 
@@ -275,13 +257,13 @@ We just stored a integer, now let us store some text using strings!
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 100-103
+.. GENERATED FROM PYTHON SOURCE LINES 91-94
 
 :func:`~skore.Project.get` infers the type of the inserted object by default. For
 example, strings are assumed to be in Markdown format. Hence, you can customize the
 display of your text:
 
-.. GENERATED FROM PYTHON SOURCE LINES 105-118
+.. GENERATED FROM PYTHON SOURCE LINES 96-109
 
 .. code-block:: Python
 
@@ -305,12 +287,12 @@ display of your text:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 119-121
+.. GENERATED FROM PYTHON SOURCE LINES 110-112
 
 Moreover, you can also explicitly tell skore the media type of an object, for example
 in HTML:
 
-.. GENERATED FROM PYTHON SOURCE LINES 123-132
+.. GENERATED FROM PYTHON SOURCE LINES 114-123
 
 .. code-block:: Python
 
@@ -330,16 +312,16 @@ in HTML:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 133-135
+.. GENERATED FROM PYTHON SOURCE LINES 124-126
 
 .. note::
   We used :func:`~skore.Project.put_item` instead of :func:`~skore.Project.put`.
 
-.. GENERATED FROM PYTHON SOURCE LINES 137-138
+.. GENERATED FROM PYTHON SOURCE LINES 128-129
 
 Note that the media type is only used for the UI, and not in this notebook at hand:
 
-.. GENERATED FROM PYTHON SOURCE LINES 140-142
+.. GENERATED FROM PYTHON SOURCE LINES 131-133
 
 .. code-block:: Python
 
@@ -358,11 +340,11 @@ Note that the media type is only used for the UI, and not in this notebook at ha
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 143-144
+.. GENERATED FROM PYTHON SOURCE LINES 134-135
 
 You can also conveniently use a Python f-string:
 
-.. GENERATED FROM PYTHON SOURCE LINES 146-152
+.. GENERATED FROM PYTHON SOURCE LINES 137-143
 
 .. code-block:: Python
 
@@ -379,16 +361,16 @@ You can also conveniently use a Python f-string:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 153-155
+.. GENERATED FROM PYTHON SOURCE LINES 144-146
 
 Storing many kinds of data
 ==========================
 
-.. GENERATED FROM PYTHON SOURCE LINES 157-158
+.. GENERATED FROM PYTHON SOURCE LINES 148-149
 
 Python list:
 
-.. GENERATED FROM PYTHON SOURCE LINES 160-164
+.. GENERATED FROM PYTHON SOURCE LINES 151-155
 
 .. code-block:: Python
 
@@ -409,11 +391,11 @@ Python list:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 165-166
+.. GENERATED FROM PYTHON SOURCE LINES 156-157
 
 Python dictionary:
 
-.. GENERATED FROM PYTHON SOURCE LINES 168-175
+.. GENERATED FROM PYTHON SOURCE LINES 159-166
 
 .. code-block:: Python
 
@@ -437,11 +419,11 @@ Python dictionary:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 176-177
+.. GENERATED FROM PYTHON SOURCE LINES 167-168
 
 Numpy array:
 
-.. GENERATED FROM PYTHON SOURCE LINES 179-185
+.. GENERATED FROM PYTHON SOURCE LINES 170-176
 
 .. code-block:: Python
 
@@ -460,17 +442,17 @@ Numpy array:
  .. code-block:: none
 
 
-    array([[-0.03490956,  0.66542005, -0.51754393],
-           [-0.92014024,  0.52494288,  0.27156237],
-           [-0.68250357, -0.27449652, -0.98037285]])
+    array([[-0.33751369,  1.33168896, -0.46138096],
+           [ 0.61933498, -0.91739407, -0.65630705],
+           [-0.7456099 , -0.1826067 , -0.56329599]])
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 186-187
+.. GENERATED FROM PYTHON SOURCE LINES 177-178
 
 Pandas data frame:
 
-.. GENERATED FROM PYTHON SOURCE LINES 189-195
+.. GENERATED FROM PYTHON SOURCE LINES 180-186
 
 .. code-block:: Python
 
@@ -516,43 +498,43 @@ Pandas data frame:
       <tbody>
         <tr>
           <th>0</th>
-          <td>-1.616565</td>
-          <td>1.938565</td>
-          <td>0.739541</td>
-          <td>0.590978</td>
-          <td>0.482429</td>
+          <td>1.855790</td>
+          <td>-1.097993</td>
+          <td>2.441157</td>
+          <td>-2.174174</td>
+          <td>-2.039056</td>
         </tr>
         <tr>
           <th>1</th>
-          <td>0.342073</td>
-          <td>1.190706</td>
-          <td>-1.164764</td>
-          <td>0.918999</td>
-          <td>-0.674598</td>
+          <td>-0.655700</td>
+          <td>-1.314721</td>
+          <td>0.665036</td>
+          <td>-0.830956</td>
+          <td>0.505500</td>
         </tr>
         <tr>
           <th>2</th>
-          <td>0.348923</td>
-          <td>0.666590</td>
-          <td>0.486164</td>
-          <td>-2.256706</td>
-          <td>-1.504788</td>
+          <td>-0.379435</td>
+          <td>-0.144108</td>
+          <td>-1.137438</td>
+          <td>-1.442765</td>
+          <td>-0.190787</td>
         </tr>
         <tr>
           <th>3</th>
-          <td>0.377046</td>
-          <td>0.449885</td>
-          <td>0.366409</td>
-          <td>-0.112638</td>
-          <td>0.296435</td>
+          <td>-1.976955</td>
+          <td>1.216869</td>
+          <td>-1.380377</td>
+          <td>-1.042264</td>
+          <td>0.209697</td>
         </tr>
         <tr>
           <th>4</th>
-          <td>0.048342</td>
-          <td>-0.832863</td>
-          <td>-0.978854</td>
-          <td>1.040329</td>
-          <td>1.619964</td>
+          <td>-0.676003</td>
+          <td>-0.825782</td>
+          <td>-1.278187</td>
+          <td>-0.598582</td>
+          <td>-0.030316</td>
         </tr>
       </tbody>
     </table>
@@ -561,7 +543,7 @@ Pandas data frame:
     <br />
     <br />
 
-.. GENERATED FROM PYTHON SOURCE LINES 196-201
+.. GENERATED FROM PYTHON SOURCE LINES 187-192
 
 Storing data visualizations
 ===========================
@@ -569,11 +551,11 @@ Storing data visualizations
 Note that, in the dashboard, the interactivity of plots is supported, for example for
 Altair and Plotly.
 
-.. GENERATED FROM PYTHON SOURCE LINES 203-204
+.. GENERATED FROM PYTHON SOURCE LINES 194-195
 
 Matplotlib figure:
 
-.. GENERATED FROM PYTHON SOURCE LINES 206-222
+.. GENERATED FROM PYTHON SOURCE LINES 197-213
 
 .. code-block:: Python
 
@@ -605,12 +587,12 @@ Matplotlib figure:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 223-225
+.. GENERATED FROM PYTHON SOURCE LINES 214-216
 
 |
 Altair chart:
 
-.. GENERATED FROM PYTHON SOURCE LINES 227-244
+.. GENERATED FROM PYTHON SOURCE LINES 218-235
 
 .. code-block:: Python
 
@@ -638,7 +620,7 @@ Altair chart:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 245-255
+.. GENERATED FROM PYTHON SOURCE LINES 236-246
 
 .. note::
     For Plotly figures, some users reported the following error when running Plotly
@@ -651,11 +633,11 @@ Altair chart:
 
         pip install --upgrade nbformat
 
-.. GENERATED FROM PYTHON SOURCE LINES 257-258
+.. GENERATED FROM PYTHON SOURCE LINES 248-249
 
 Plotly figure:
 
-.. GENERATED FROM PYTHON SOURCE LINES 260-269
+.. GENERATED FROM PYTHON SOURCE LINES 251-260
 
 .. code-block:: Python
 
@@ -675,11 +657,11 @@ Plotly figure:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 270-271
+.. GENERATED FROM PYTHON SOURCE LINES 261-262
 
 Animated Plotly figure:
 
-.. GENERATED FROM PYTHON SOURCE LINES 273-291
+.. GENERATED FROM PYTHON SOURCE LINES 264-282
 
 .. code-block:: Python
 
@@ -708,15 +690,16 @@ Animated Plotly figure:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 292-293
+.. GENERATED FROM PYTHON SOURCE LINES 283-284
 
 PIL image:
 
-.. GENERATED FROM PYTHON SOURCE LINES 295-304
+.. GENERATED FROM PYTHON SOURCE LINES 286-296
 
 .. code-block:: Python
 
     import io
+
     import PIL
 
     my_pil_image = PIL.Image.new("RGB", (100, 100), color="red")
@@ -732,7 +715,7 @@ PIL image:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 305-312
+.. GENERATED FROM PYTHON SOURCE LINES 297-304
 
 Storing scikit-learn models and pipelines
 =========================================
@@ -742,7 +725,7 @@ scikit-learn, skore treats scikit-learn models and pipelines as first-class citi
 
 First of all, you can store a scikit-learn model:
 
-.. GENERATED FROM PYTHON SOURCE LINES 314-320
+.. GENERATED FROM PYTHON SOURCE LINES 306-312
 
 .. code-block:: Python
 
@@ -1169,11 +1152,11 @@ First of all, you can store a scikit-learn model:
     <br />
     <br />
 
-.. GENERATED FROM PYTHON SOURCE LINES 321-322
+.. GENERATED FROM PYTHON SOURCE LINES 313-314
 
 You can also store scikit-learn pipelines:
 
-.. GENERATED FROM PYTHON SOURCE LINES 324-333
+.. GENERATED FROM PYTHON SOURCE LINES 316-325
 
 .. code-block:: Python
 
@@ -1605,11 +1588,11 @@ You can also store scikit-learn pipelines:
     <br />
     <br />
 
-.. GENERATED FROM PYTHON SOURCE LINES 334-335
+.. GENERATED FROM PYTHON SOURCE LINES 326-327
 
 Moreover, you can store fitted scikit-learn pipelines:
 
-.. GENERATED FROM PYTHON SOURCE LINES 337-347
+.. GENERATED FROM PYTHON SOURCE LINES 329-339
 
 .. code-block:: Python
 
@@ -2042,14 +2025,14 @@ Moreover, you can store fitted scikit-learn pipelines:
     <br />
     <br />
 
-.. GENERATED FROM PYTHON SOURCE LINES 348-352
+.. GENERATED FROM PYTHON SOURCE LINES 340-344
 
 Cleanup the project
 -------------------
 
 Remove the temporary directory:
 
-.. GENERATED FROM PYTHON SOURCE LINES 352-353
+.. GENERATED FROM PYTHON SOURCE LINES 344-345
 
 .. code-block:: Python
 
@@ -2064,7 +2047,7 @@ Remove the temporary directory:
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 1.536 seconds)
+   **Total running time of the script:** (0 minutes 0.780 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_02_overview_skore_ui.py:

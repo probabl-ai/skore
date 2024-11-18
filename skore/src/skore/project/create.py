@@ -1,22 +1,22 @@
-"""Implement the "create project" feature."""
+"""Create project helper."""
 
 import re
 import shutil
 from pathlib import Path
 from typing import Optional, Union
 
-from skore.cli import logger
 from skore.exceptions import (
     InvalidProjectNameError,
     ProjectAlreadyExistsError,
     ProjectCreationError,
     ProjectPermissionError,
 )
-from skore.project import load
+from skore.project.load import load
+from skore.project.project import Project, logger
 from skore.view.view import View
 
 
-def validate_project_name(project_name: str) -> tuple[bool, Optional[Exception]]:
+def _validate_project_name(project_name: str) -> tuple[bool, Optional[Exception]]:
     """Validate the project name (the part before ".skore").
 
     Returns `(True, None)` if validation succeeded and `(False, Exception(...))`
@@ -57,11 +57,11 @@ def validate_project_name(project_name: str) -> tuple[bool, Optional[Exception]]
     return True, None
 
 
-def __create(
+def create(
     project_name: Union[str, Path],
     working_dir: Optional[Path] = None,
     overwrite: bool = False,
-) -> Path:
+) -> Project:
     """Create a project file named according to `project_name`.
 
     Parameters
@@ -86,7 +86,7 @@ def __create(
     # Remove trailing ".skore" if it exists to check the name is valid
     checked_project_name: str = project_path.name.split(".skore")[0]
 
-    validation_passed, validation_error = validate_project_name(checked_project_name)
+    validation_passed, validation_error = _validate_project_name(checked_project_name)
     if not validation_passed:
         raise ProjectCreationError(
             f"Unable to create project file '{project_path}'."
