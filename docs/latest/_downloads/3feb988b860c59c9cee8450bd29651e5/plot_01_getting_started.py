@@ -41,7 +41,7 @@ my_project = skore.create("my_project", working_dir=temp_dir_path)
 #
 # .. code-block:: bash
 #
-#     python -m skore launch "path/to/my_project"
+#     skore launch "my_project"
 #
 # This will automatically open a browser at the UI's location.
 #
