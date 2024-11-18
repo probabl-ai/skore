@@ -47,7 +47,6 @@ my_project = skore.create("my_project", working_dir=temp_dir_path)
 #
 # Now that the project exists, we can write some Python code (in the same
 # directory) to add (:func:`~skore.Project.put`) some useful items in it.
-# Let us load the project and add an integer to it for example:
 
 # %%
 my_project.put("my_int", 3)
