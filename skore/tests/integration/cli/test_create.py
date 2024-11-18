@@ -5,7 +5,7 @@ import pytest
 
 def test_create_project_cli_default_argument(tmp_path):
     completed_process = subprocess.run(
-        f"python -m skore create --working-dir {tmp_path}".split(), capture_output=True
+        f"skore create --working-dir {tmp_path}".split(), capture_output=True
     )
     completed_process.check_returncode()
     assert (tmp_path / "project.skore").exists()
@@ -13,7 +13,7 @@ def test_create_project_cli_default_argument(tmp_path):
 
 def test_create_project_cli_ends_in_skore(tmp_path):
     completed_process = subprocess.run(
-        f"python -m skore create hello.skore --working-dir {tmp_path}".split(),
+        f"skore create hello.skore --working-dir {tmp_path}".split(),
         capture_output=True,
     )
     completed_process.check_returncode()
@@ -22,7 +22,7 @@ def test_create_project_cli_ends_in_skore(tmp_path):
 
 def test_create_project_cli_invalid_name(tmp_path):
     completed_process = subprocess.run(
-        f"python -m skore create hello.txt --working-dir {tmp_path}".split(),
+        f"skore create hello.txt --working-dir {tmp_path}".split(),
         capture_output=True,
     )
     with pytest.raises(subprocess.CalledProcessError):
