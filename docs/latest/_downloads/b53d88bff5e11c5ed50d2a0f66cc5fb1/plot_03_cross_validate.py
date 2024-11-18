@@ -20,22 +20,12 @@ ML/DS projects.
 import tempfile
 from pathlib import Path
 
+import skore
+
 temp_dir = tempfile.TemporaryDirectory(prefix="skore_example_")
 temp_dir_path = Path(temp_dir.name)
 
-# %%
-import subprocess
-
-# create the skore project
-subprocess.run(
-    f"python3 -m skore create my_project_cv --working-dir {temp_dir.name}".split()
-)
-
-
-# %%
-import skore
-
-my_project_gs = skore.load(temp_dir_path / "my_project_cv.skore")
+my_project_gs = skore.create("my_project_cv.skore", working_dir=temp_dir_path)
 
 # %%
 # Cross-validation in scikit-learn
@@ -128,27 +118,6 @@ cv_results = skore.cross_validate(clf, X, y, cv=5, project=my_project_gs)
 
 fig_plotly_clf = my_project_gs.get_item("cross_validation").plot
 fig_plotly_clf
-
-# %%
-# .. note::
-#   Because Plotly graphs currently do not properly render in our Sphinx
-#   auto-examples docs engine due to
-#   `a bug in Plotly <https://github.com/plotly/plotly.py/issues/4828>`_,
-#   we also display its static image below.
-#   Alternatively, we recommend zooming in / out in your browser window for the
-#   Plotly graphs to display properly.
-
-# %%
-import matplotlib.image as mpimg
-import matplotlib.pyplot as plt
-
-fig_plotly_clf.write_image("plot_03_cross_validate_clf.png", scale=4)
-
-img = mpimg.imread("plot_03_cross_validate_clf.png")
-fig, ax = plt.subplots(layout="constrained", dpi=200)
-ax.axis("off")
-ax.imshow(img)
-plt.show()
 
 # %%
 # |
