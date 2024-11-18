@@ -122,7 +122,6 @@ class HighClassImbalanceWarning(TrainTestSplitWarning):
 
 def train_test_split(
     *arrays: ArrayLike,
-    *,
     X: Optional[ArrayLike] = None,
     y: Optional[ArrayLike] = None,
     test_size: Optional[Union[int, float]] = None,
