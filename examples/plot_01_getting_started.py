@@ -28,13 +28,10 @@ temp_dir = tempfile.TemporaryDirectory(prefix="skore_example_")
 temp_dir_path = Path(temp_dir.name)
 
 # %%
-# From your shell, initialize a skore project, here named ``my_project``:
-import subprocess
-
 # create the skore project
-subprocess.run(
-    f"python3 -m skore create my_project --working-dir {temp_dir.name}".split()
-)
+import skore
+
+my_project = skore.create("my_project", working_dir=temp_dir_path)
 
 # %%
 # This will create a skore project directory named ``my_project.skore`` in your
@@ -50,12 +47,8 @@ subprocess.run(
 #
 # Now that the project exists, we can write some Python code (in the same
 # directory) to add (:func:`~skore.Project.put`) some useful items in it.
-# Let us load the project and add an integer to it for example:
 
 # %%
-from skore import load
-
-my_project = load(temp_dir_path / "my_project.skore")
 my_project.put("my_int", 3)
 
 # %%
@@ -73,8 +66,8 @@ my_project.put("my_int", 3)
 # %%
 import numpy as np
 from sklearn.datasets import load_diabetes
-from sklearn.model_selection import GridSearchCV
 from sklearn.linear_model import Ridge
+from sklearn.model_selection import GridSearchCV
 
 diabetes = load_diabetes()
 X = diabetes.data[:150]
