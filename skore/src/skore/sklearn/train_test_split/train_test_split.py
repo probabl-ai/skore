@@ -127,7 +127,7 @@ def train_test_split(
         stratify=stratify,
     )
 
-    if y is None:
+    if y is None and len(arrays) >= 2:
         y = arrays[-1]
 
     ml_task = _find_ml_task(y)
