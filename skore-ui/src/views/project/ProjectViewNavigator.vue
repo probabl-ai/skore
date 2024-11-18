@@ -69,8 +69,10 @@ async function onViewsListAction(action: string, item: EditableListItemModel) {
     }
     case "delete": {
       views.value.splice(views.value.indexOf(item), 1);
-      await projectStore.deleteView(item.name);
-      toastsStore.addToast("View deleted successfully", "success", { duration: 20 });
+      if (item.isNamed) {
+        await projectStore.deleteView(item.name);
+        toastsStore.addToast("View deleted successfully", "success", { duration: 20 });
+      }
       break;
     }
   }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, onMounted, ref, watch } from "vue";
+import { nextTick, onMounted, useTemplateRef, watch } from "vue";
 
 import DropdownButton from "@/components/DropdownButton.vue";
 import DropdownButtonItem from "@/components/DropdownButtonItem.vue";
@@ -14,7 +14,8 @@ const emit = defineEmits<{
 }>();
 
 const item = defineModel<EditableListItemModel>({ required: true });
-const label = ref<HTMLSpanElement>();
+const el = useTemplateRef<HTMLDivElement>("el");
+const label = useTemplateRef<HTMLSpanElement>("label");
 
 function renameItem(newName: string) {
   const oldName = item.value.name;
@@ -41,8 +42,11 @@ function focusAndSelect() {
   }
 }
 
-function onBlur() {
-  renameItem(label.value?.textContent ?? "unnamed");
+function onBlur(e: FocusEvent) {
+  const isInside = el.value && e.relatedTarget && el.value.contains(e.relatedTarget as Element);
+  if (!isInside) {
+    renameItem(label.value?.textContent ?? "unnamed");
+  }
 }
 
 function onLabelClicked() {
@@ -68,7 +72,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="editable-list-item">
+  <div class="editable-list-item" ref="el">
     <div class="label-container" @click="onLabelClicked">
       <span class="icon" v-if="item.icon" :class="item.icon" />
       <span
@@ -82,7 +86,7 @@ onMounted(() => {
       </span>
     </div>
     <div class="actions">
-      <DropdownButton icon="icon-more" :is-inline="true" align="right" v-if="item.isNamed">
+      <DropdownButton icon="icon-more" :is-inline="true" align="right">
         <DropdownButtonItem
           v-for="action in props.actions"
           :key="action.emitPayload"
