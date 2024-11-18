@@ -29,25 +29,11 @@ def test_check_high_class_imbalance(y):
     assert check is False
 
 
-@pytest.mark.parametrize(
-    "x,y,context",
-    [
-        pytest.param(
-            [[1]] * 4,
-            [0, 1, 1, 1],
-            pytest.warns(
-                HighClassImbalanceWarning, match=HighClassImbalanceWarning.MSG
-            ),
-            id="warn",
-        ),
-        pytest.param(
-            [[1]] * 4,
-            [0, 0, 1, 1],
-            contextlib.nullcontext(),
-            id="no-warn",
-        ),
-    ],
-)
-def test_train_test_split(x, y, context):
-    with context:
-        train_test_split(x, y)
+def test_train_test_split_warns():
+    with pytest.warns(HighClassImbalanceWarning, match=HighClassImbalanceWarning.MSG):
+        train_test_split([[1]] * 4, [0, 1, 1, 1])
+
+
+def test_train_test_split_no_warn():
+    with contextlib.nullcontext():
+        train_test_split([[1]] * 4, [0, 0, 1, 1])
