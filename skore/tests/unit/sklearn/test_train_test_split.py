@@ -3,7 +3,10 @@ import contextlib
 import numpy
 import pandas
 import pytest
-from skore.sklearn.train_test_split import HighClassImbalanceWarning, train_test_split
+from skore.sklearn.train_test_split.train_test_split import (
+    HighClassImbalanceWarning,
+    train_test_split,
+)
 
 my_list = [0] * 100 + [1] * 100 + [2] * 300
 
