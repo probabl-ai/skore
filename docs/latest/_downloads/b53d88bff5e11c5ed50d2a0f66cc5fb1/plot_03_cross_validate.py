@@ -130,27 +130,6 @@ fig_plotly_clf = my_project_gs.get_item("cross_validation").plot
 fig_plotly_clf
 
 # %%
-# .. note::
-#   Because Plotly graphs currently do not properly render in our Sphinx
-#   auto-examples docs engine due to
-#   `a bug in Plotly <https://github.com/plotly/plotly.py/issues/4828>`_,
-#   we also display its static image below.
-#   Alternatively, we recommend zooming in / out in your browser window for the
-#   Plotly graphs to display properly.
-
-# %%
-import matplotlib.image as mpimg
-import matplotlib.pyplot as plt
-
-fig_plotly_clf.write_image("plot_03_cross_validate_clf.png", scale=4)
-
-img = mpimg.imread("plot_03_cross_validate_clf.png")
-fig, ax = plt.subplots(layout="constrained", dpi=200)
-ax.axis("off")
-ax.imshow(img)
-plt.show()
-
-# %%
 # |
 # Skore's :func:`~skore.cross_validate` advantages are the following:
 #
