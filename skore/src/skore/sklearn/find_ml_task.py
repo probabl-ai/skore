@@ -3,14 +3,14 @@
 from skore.sklearn.types import MLTask
 
 
-def _find_ml_task(y, estimator) -> MLTask:
+def _find_ml_task(y, estimator=None) -> MLTask:
     """Guess the ML task being addressed based on a target array and an estimator.
 
     Parameters
     ----------
     y : numpy.ndarray
         A target vector.
-    estimator : sklearn.base.BaseEstimator
+    estimator : sklearn.base.BaseEstimator, optional
         An estimator.
 
     Returns
