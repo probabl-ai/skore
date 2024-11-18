@@ -6,21 +6,14 @@ function in order to enrich it with more information and enable more analysis.
 """
 
 import contextlib
-from typing import Literal, Optional
+from typing import Optional
 
 from skore.item.cross_validation_item import (
     CrossValidationAggregationItem,
     CrossValidationItem,
 )
 from skore.project import Project
-
-MLTask = Literal[
-    "binary-classification",
-    "multiclass-classification",
-    "regression",
-    "clustering",
-    "unknown",
-]
+from skore.sklearn.types import MLTask
 
 
 def _find_ml_task(estimator, y) -> MLTask:

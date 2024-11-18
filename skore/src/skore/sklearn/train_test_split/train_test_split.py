@@ -13,7 +13,7 @@ from skore.sklearn.train_test_split.warning.high_class_imbalance_warning import 
 )
 
 if TYPE_CHECKING:
-    from skore.sklearn.cross_validate import MLTask
+    from skore.sklearn.types import MLTask
 
     ArrayLike = Any
 
