@@ -1,0 +1,19 @@
+﻿:mod:`skore.item.primitive_item`.PrimitiveItem
+=====================================================
+
+.. rst-class:: side_comment
+
+    Usage examples at the bottom of this page.
+
+.. currentmodule:: skore.item.primitive_item
+
+.. autoclass:: PrimitiveItem
+   :inherited-members:
+
+   
+
+   
+
+.. raw:: html
+
+    <div class="clearer"></div>
