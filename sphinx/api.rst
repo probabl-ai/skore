@@ -16,6 +16,8 @@ These classes are meant for managing a Project.
     :nosignatures:
 
     Project
+    skore.item.primitive_item.PrimitiveItem
+
 
 .. autosummary::
     :toctree: generated/
