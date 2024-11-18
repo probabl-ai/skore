@@ -66,6 +66,7 @@ test = [
   "httpx",
   "matplotlib",
   "pandas",
+  "polars",
   "pillow",
   "plotly",
   "pre-commit",

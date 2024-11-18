@@ -85,11 +85,11 @@ gs_cv.fit(X, y)
 # plot:
 
 # %%
-import pandas as pd
+import polars as pl
 
-df = pd.DataFrame(gs_cv.cv_results_)
-df.insert(len(df.columns), "rmse", -df["mean_test_score"].values)
-df[["param_alpha", "rmse"]].head()
+df = pl.DataFrame(gs_cv.cv_results_)
+df = df.insert_column(df.shape[1], pl.Series("rmse", -df["mean_test_score"]))
+df.select(["param_alpha", "rmse"]).head(5)
 
 # %%
 import matplotlib.pyplot as plt
