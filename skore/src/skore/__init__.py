@@ -5,7 +5,7 @@ import logging
 import rich.logging
 
 from skore.project import Project, create, load
-from skore.sklearn import cross_validate
+from skore.sklearn import cross_validate, train_test_split
 from skore.utils._show_versions import show_versions
 
 __all__ = [
@@ -14,6 +14,7 @@ __all__ = [
     "load",
     "Project",
     "show_versions",
+    "train_test_split",
 ]
 
 
