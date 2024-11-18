@@ -72,24 +72,19 @@ def cli(args: Optional[list[str]] = None):
         args = sys.argv[1:]
     parsed_args: argparse.Namespace = parser.parse_args(args)
 
-    try:
-        if parsed_args.subcommand == "launch":
-            __launch(
-                project_name=parsed_args.project_name,
-                port=parsed_args.port,
-                open_browser=parsed_args.open_browser,
-            )
-        elif parsed_args.subcommand == "create":
-            create(
-                project_name=parsed_args.project_name,
-                working_dir=parsed_args.working_dir,
-                overwrite=parsed_args.overwrite,
-            )
-        elif parsed_args.subcommand == "quickstart":
-            __quickstart()
-        else:
-            parser.print_help()
-        return 0
-    except Exception:
-        raise
-        return 1
+    if parsed_args.subcommand == "launch":
+        __launch(
+            project_name=parsed_args.project_name,
+            port=parsed_args.port,
+            open_browser=parsed_args.open_browser,
+        )
+    elif parsed_args.subcommand == "create":
+        create(
+            project_name=parsed_args.project_name,
+            working_dir=parsed_args.working_dir,
+            overwrite=parsed_args.overwrite,
+        )
+    elif parsed_args.subcommand == "quickstart":
+        __quickstart()
+    else:
+        parser.print_help()
