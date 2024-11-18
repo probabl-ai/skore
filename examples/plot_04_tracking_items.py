@@ -116,30 +116,6 @@ fig.update_layout(xaxis_type="category")
 fig
 
 # %%
-# .. note::
-#   Because Plotly graphs currently do not properly render in our Sphinx
-#   auto-examples docs engine due to
-#   `a bug in Plotly <https://github.com/plotly/plotly.py/issues/4828>`_,
-#   we recommend zooming in / out in your browser window for the
-#   Plotly graphs to display properly.
-
-# %%
-# We also display its static image:
-
-# %%
-import matplotlib.image as mpimg
-import matplotlib.pyplot as plt
-
-fig.write_image("plot_04_track.png", scale=4)
-
-img = mpimg.imread("plot_04_track.png")
-fig, ax = plt.subplots(layout="constrained", dpi=200)
-ax.axis("off")
-ax.imshow(img)
-plt.show()
-
-# %%
-# |
 # Here, wo focused on `how` to use skore's tracking of history of items.
 # `Why` track items? For example, we could track some machine learning
 # scores over time to understand better which feature engineering works best.
