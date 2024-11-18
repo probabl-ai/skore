@@ -11,14 +11,19 @@ ML/DS projects.
 """
 
 # %%
+# Creating and loading the skore project
+# ======================================
+#
+# We start by creating a temporary directory to store our project such that we can
+# easily clean it after executing this example. If you want to keep the project,
+# you have to skip this section.
 import tempfile
 from pathlib import Path
 
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
-from sklearn.model_selection import cross_validate as sklearn_cross_validate
-
 import skore
+from sklearn.model_selection import cross_validate as sklearn_cross_validate
 
 temp_dir = tempfile.TemporaryDirectory(prefix="skore_example_")
 temp_dir_path = Path(temp_dir.name)

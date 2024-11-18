@@ -9,18 +9,6 @@ This example provides an overview of the functionalities and the different types
 of items that you can store in a skore :class:`~skore.Project`.
 """
 
-# %%
-# Creating and loading a skore project
-"""
-.. _example_overview_skore_ui:
-
-========================
-Overview of the skore UI
-========================
-
-This example provides an overview of the functionalities and the different types
-of items that you can store in a skore :class:`~skore.Project`.
-"""
 import tempfile
 from pathlib import Path
 
