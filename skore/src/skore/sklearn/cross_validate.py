@@ -199,7 +199,8 @@ def cross_validate(*args, project: Optional[Project] = None, **kwargs) -> dict:
     The dict returned by this function is a strict super-set of the one returned by
     scikit-learn's :func:`~sklearn.model_selection.cross_validate`.
 
-    For a user guide and in-depth example, see :ref:`example_cross_validate`.
+    For a user guide and in-depth example, see :ref:`example_cross_validate` and
+    :ref:`example_track_cv`.
 
     Parameters
     ----------

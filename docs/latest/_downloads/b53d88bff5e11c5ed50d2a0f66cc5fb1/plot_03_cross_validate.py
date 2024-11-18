@@ -20,22 +20,12 @@ ML/DS projects.
 import tempfile
 from pathlib import Path
 
+import skore
+
 temp_dir = tempfile.TemporaryDirectory(prefix="skore_example_")
 temp_dir_path = Path(temp_dir.name)
 
-# %%
-import subprocess
-
-# create the skore project
-subprocess.run(
-    f"python3 -m skore create my_project_cv --working-dir {temp_dir.name}".split()
-)
-
-
-# %%
-import skore
-
-my_project_gs = skore.load(temp_dir_path / "my_project_cv.skore")
+my_project_gs = skore.create("my_project_cv.skore", working_dir=temp_dir_path)
 
 # %%
 # Cross-validation in scikit-learn
