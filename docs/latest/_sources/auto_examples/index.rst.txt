@@ -39,10 +39,10 @@ They also serve as our user guide.
 
 .. only:: html
 
-  .. image:: /auto_examples/images/thumb/sphx_glr_plot_02_overview_skore_ui_thumb.png
+  .. image:: /auto_examples/images/thumb/sphx_glr_plot_02_overview_skore_project_thumb.png
     :alt:
 
-  :ref:`sphx_glr_auto_examples_plot_02_overview_skore_ui.py`
+  :ref:`sphx_glr_auto_examples_plot_02_overview_skore_project.py`
 
 .. raw:: html
 
@@ -95,7 +95,7 @@ They also serve as our user guide.
    :hidden:
 
    /auto_examples/plot_01_getting_started
-   /auto_examples/plot_02_overview_skore_ui
+   /auto_examples/plot_02_overview_skore_project
    /auto_examples/plot_03_cross_validate
    /auto_examples/plot_04_tracking_items
 
