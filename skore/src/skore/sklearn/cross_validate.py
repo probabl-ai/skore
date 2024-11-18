@@ -35,8 +35,7 @@ def _find_ml_task(estimator, y) -> MLTask:
 
     Returns
     -------
-    Literal["binary-classification", "multiclass-classification",
-    "regression", "clustering", "unknown"]
+    MLTask
         The guess of the kind of ML task being performed.
     """
     import sklearn.utils.multiclass
