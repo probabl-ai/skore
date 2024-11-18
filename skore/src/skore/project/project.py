@@ -81,11 +81,11 @@ class Project:
         """
         if isinstance(key, dict):
             for key_, value in key.items():
-                self.put_one(key_, value)
+                self.__put_one(key_, value)
         else:
-            self.put_one(key, value)
+            self.__put_one(key, value)
 
-    def put_one(self, key: str, value: Any):
+    def __put_one(self, key: str, value: Any):
         """Add a key-value pair to the Project.
 
         Parameters
