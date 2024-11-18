@@ -8,15 +8,15 @@ from skore.sklearn.train_test_split.train_test_split import (
     train_test_split,
 )
 
-my_list = [0] * 100 + [1] * 100 + [2] * 300
+target = [0] * 100 + [1] * 100 + [2] * 300
 
 
 @pytest.mark.parametrize(
     "y",
     [
-        pytest.param(my_list, id="list"),
-        pytest.param(pandas.Series(my_list), id="pandas-series"),
-        pytest.param(numpy.array(my_list), id="numpy"),
+        pytest.param(target, id="list"),
+        pytest.param(pandas.Series(target), id="pandas-series"),
+        pytest.param(numpy.array(target), id="numpy"),
     ],
 )
 def test_check_high_class_imbalance(y):
