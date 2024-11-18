@@ -28,13 +28,13 @@ import subprocess
 
 # create the skore project
 subprocess.run(
-    f"python3 -m skore create my_project_track --working-dir {temp_dir.name}".split()
+    f"python3 -m skore create my_project --working-dir {temp_dir.name}".split()
 )
 
 # %%
 from skore import load
 
-my_project_track = load(temp_dir_path / "my_project_track.skore")
+my_project = load(temp_dir_path / "my_project.skore")
 
 # %%
 # Tracking an integer
@@ -47,17 +47,17 @@ my_project_track = load(temp_dir_path / "my_project_track.skore")
 # %%
 import time
 
-my_project_track.put("my_int", 4)
+my_project.put("my_int", 4)
 time.sleep(0.1)
-my_project_track.put("my_int", 9)
+my_project.put("my_int", 9)
 time.sleep(0.1)
-my_project_track.put("my_int", 16)
+my_project.put("my_int", 16)
 
 # %%
 # Let us retrieve the history of this item:
 
 # %%
-item_histories = my_project_track.get_item_versions("my_int")
+item_histories = my_project.get_item_versions("my_int")
 
 # %%
 # Let us print the first history (first iteration) of this item:
@@ -133,7 +133,7 @@ fig
 # Now, let us see how we can use the tracking of items with this function.
 
 # %%
-# Let us run several cross-validations:
+# Let us run several cross-validations using several values of a hyperparameter:
 
 # %%
 from sklearn import datasets
@@ -147,12 +147,15 @@ lasso = Lasso()
 
 for alpha in [0.5, 1, 2]:
     cv_results = skore.cross_validate(
-        Lasso(alpha=alpha), X, y, cv=5, project=my_project_track
+        Lasso(alpha=alpha), X, y, cv=5, project=my_project
     )
 
 # %%
 # We can compare the metrics of each run of the cross-validation (on all splits):
 
 # %%
-fig_plotly = my_project_track.get_item("cross_validation_aggregated").plot
+fig_plotly = my_project.get_item("cross_validation_aggregated").plot
 fig_plotly
+
+# %%
+# Hence, we can observe that the first run, with ``alpha=0.5``, works better.
