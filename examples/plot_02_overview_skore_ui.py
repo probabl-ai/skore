@@ -19,21 +19,12 @@ of items that you can store in a skore :class:`~skore.Project`.
 import tempfile
 from pathlib import Path
 
+import skore
+
 temp_dir = tempfile.TemporaryDirectory(prefix="skore_example_")
 temp_dir_path = Path(temp_dir.name)
 
-# %%
-import subprocess
-
-# create the skore project
-subprocess.run(
-    f"python3 -m skore create my_project_ui --working-dir {temp_dir.name}".split()
-)
-
-# %%
-from skore import load
-
-my_project_ui = load(temp_dir_path / "my_project_ui.skore")
+my_project_ui = skore.create("my_project_ui.skore", working_dir=temp_dir_path)
 
 
 # %%
@@ -293,6 +284,7 @@ my_project_ui.put("my_anim_plotly_fig", my_anim_plotly_fig)
 
 # %%
 import io
+
 import PIL
 
 my_pil_image = PIL.Image.new("RGB", (100, 100), color="red")

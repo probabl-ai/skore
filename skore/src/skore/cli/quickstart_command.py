@@ -1,8 +1,9 @@
 """Implement the "quickstart" command."""
 
 from skore.cli import logger
-from skore.cli.create_project import ProjectAlreadyExistsError, __create
 from skore.cli.launch_dashboard import __launch
+from skore.exceptions import ProjectAlreadyExistsError
+from skore.project import create
 
 
 def __quickstart():
@@ -18,7 +19,7 @@ def __quickstart():
     project_name = "project.skore"
 
     try:
-        __create(project_name=project_name)
+        create(project_name=project_name)
     except ProjectAlreadyExistsError:
         logger.info(
             f"Project file '{project_name}' already exists. Skipping creation step."
