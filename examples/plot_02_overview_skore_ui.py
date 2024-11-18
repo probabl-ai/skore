@@ -28,7 +28,6 @@ temp_dir_path = Path(temp_dir.name)
 
 my_project = skore.create("my_project.skore", working_dir=temp_dir_path)
 
-
 # %%
 # Storing integers
 # ================
@@ -290,6 +289,7 @@ my_anim_plotly_fig
 
 # %%
 import io
+
 import PIL
 
 my_pil_image = PIL.Image.new("RGB", (100, 100), color="red")

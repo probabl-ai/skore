@@ -470,24 +470,26 @@ you have to skip this section.</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">tempfile</span>
 <span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
 
+<span class="kn">import</span> <span class="nn">skore</span>
+
 <span class="n">temp_dir</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">TemporaryDirectory</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;skore_example_&quot;</span><span class="p">)</span>
 <span class="n">temp_dir_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">temp_dir</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
-</pre></div>
-</div>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">subprocess</span>
 
-<span class="c1"># create the skore project</span>
-<span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
-    <span class="sa">f</span><span class="s2">&quot;python3 -m skore create my_project_ui --working-dir </span><span class="si">{</span><span class="n">temp_dir</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
-<span class="p">)</span>
+<a href="../generated/skore.Project.html#skore.Project" title="skore.Project" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">my_project_ui</span></a> <span class="o">=</span> <span class="n">skore</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s2">&quot;my_project_ui.skore&quot;</span><span class="p">,</span> <span class="n">working_dir</span><span class="o">=</span><span class="n">temp_dir_path</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>CompletedProcess(args=[&#39;python3&#39;, &#39;-m&#39;, &#39;skore&#39;, &#39;create&#39;, &#39;my_project_ui&#39;, &#39;--working-dir&#39;, &#39;/tmp/skore_example_z07dc7ne&#39;], returncode=0)
-</pre></div>
-</div>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">skore</span> <span class="kn">import</span> <a href="../generated/skore.load.html#skore.load" title="skore.load" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-function"><span class="n">load</span></a>
-
-<a href="../generated/skore.Project.html#skore.Project" title="skore.Project" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">my_project_ui</span></a> <span class="o">=</span> <a href="../generated/skore.load.html#skore.load" title="skore.load" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-function"><span class="n">load</span></a><span class="p">(</span><span class="n">temp_dir_path</span> <span class="o">/</span> <span class="s2">&quot;my_project_ui.skore&quot;</span><span class="p">)</span>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>[11/18/24 09:50:20] &lt;Logger skore.project.project (INFO)&gt; Project  create.py:148
+                                                          file
+                                                          &#39;/tmp/sk
+                                                          ore_exam
+                                                          ple_y244
+                                                          8drm/my_
+                                                          project_
+                                                          ui.skore
+                                                          &#39; was
+                                                          successf
+                                                          ully
+                                                          created.
 </pre></div>
 </div>
 </section>
@@ -626,9 +628,9 @@ in HTML:</p>
 <span class="n">my_arr</span>
 </pre></div>
 </div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>array([[-0.03490956,  0.66542005, -0.51754393],
-       [-0.92014024,  0.52494288,  0.27156237],
-       [-0.68250357, -0.27449652, -0.98037285]])
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>array([[-0.33751369,  1.33168896, -0.46138096],
+       [ 0.61933498, -0.91739407, -0.65630705],
+       [-0.7456099 , -0.1826067 , -0.56329599]])
 </pre></div>
 </div>
 <p>Pandas data frame:</p>
@@ -668,43 +670,43 @@ in HTML:</p>
   <tbody>
     <tr>
       <th>0</th>
-      <td>-1.616565</td>
-      <td>1.938565</td>
-      <td>0.739541</td>
-      <td>0.590978</td>
-      <td>0.482429</td>
+      <td>1.855790</td>
+      <td>-1.097993</td>
+      <td>2.441157</td>
+      <td>-2.174174</td>
+      <td>-2.039056</td>
     </tr>
     <tr>
       <th>1</th>
-      <td>0.342073</td>
-      <td>1.190706</td>
-      <td>-1.164764</td>
-      <td>0.918999</td>
-      <td>-0.674598</td>
+      <td>-0.655700</td>
+      <td>-1.314721</td>
+      <td>0.665036</td>
+      <td>-0.830956</td>
+      <td>0.505500</td>
     </tr>
     <tr>
       <th>2</th>
-      <td>0.348923</td>
-      <td>0.666590</td>
-      <td>0.486164</td>
-      <td>-2.256706</td>
-      <td>-1.504788</td>
+      <td>-0.379435</td>
+      <td>-0.144108</td>
+      <td>-1.137438</td>
+      <td>-1.442765</td>
+      <td>-0.190787</td>
     </tr>
     <tr>
       <th>3</th>
-      <td>0.377046</td>
-      <td>0.449885</td>
-      <td>0.366409</td>
-      <td>-0.112638</td>
-      <td>0.296435</td>
+      <td>-1.976955</td>
+      <td>1.216869</td>
+      <td>-1.380377</td>
+      <td>-1.042264</td>
+      <td>0.209697</td>
     </tr>
     <tr>
       <th>4</th>
-      <td>0.048342</td>
-      <td>-0.832863</td>
-      <td>-0.978854</td>
-      <td>1.040329</td>
-      <td>1.619964</td>
+      <td>-0.676003</td>
+      <td>-0.825782</td>
+      <td>-1.278187</td>
+      <td>-0.598582</td>
+      <td>-0.030316</td>
     </tr>
   </tbody>
 </table>
@@ -799,6 +801,7 @@ installing nbformat in your environment, e.g. with:</p>
 </div>
 <p>PIL image:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">io</span>
+
 <span class="kn">import</span> <span class="nn">PIL</span>
 
 <span class="n">my_pil_image</span> <span class="o">=</span> <span class="n">PIL</span><span class="o">.</span><span class="n">Image</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="s2">&quot;RGB&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">),</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">)</span>
@@ -2078,7 +2081,7 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">temp_dir</span><span class="o">.</span><span class="n">cleanup</span><span class="p">()</span>
 </pre></div>
 </div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 1.536 seconds)</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 0.780 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-02-overview-skore-ui-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/e7cbd7f6fc2c2626a6c20bf80bc30ea7/plot_02_overview_skore_ui.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_02_overview_skore_ui.ipynb</span></code></a></p>
