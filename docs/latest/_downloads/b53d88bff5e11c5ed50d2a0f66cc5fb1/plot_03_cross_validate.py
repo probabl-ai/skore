@@ -15,8 +15,10 @@ ML/DS projects.
 # ======================================
 #
 # We start by creating a temporary directory to store our project such that we can
-# easily clean it after executing this example. If you want to keep the project,
-# you have to skip this section.
+# easily clean it after executing this example. If you want to keep the project, you
+# have to skip this section.
+
+# %%
 import tempfile
 from pathlib import Path
 
@@ -25,7 +27,7 @@ import skore
 temp_dir = tempfile.TemporaryDirectory(prefix="skore_example_")
 temp_dir_path = Path(temp_dir.name)
 
-my_project_gs = skore.create("my_project_cv.skore", working_dir=temp_dir_path)
+my_project = skore.create("my_project.skore", working_dir=temp_dir_path)
 
 # %%
 # Cross-validation in scikit-learn
@@ -114,9 +116,9 @@ test_scores
 # Let us continue with the same use case.
 
 # %%
-cv_results = skore.cross_validate(clf, X, y, cv=5, project=my_project_gs)
+cv_results = skore.cross_validate(clf, X, y, cv=5, project=my_project)
 
-fig_plotly_clf = my_project_gs.get_item("cross_validation").plot
+fig_plotly_clf = my_project.get_item("cross_validation").plot
 fig_plotly_clf
 
 # %%
@@ -150,8 +152,8 @@ fig_plotly_clf
 # running another unrelated cross-validation:
 
 # %%
-my_project_gs.delete_item("cross_validation")
-my_project_gs.delete_item("cross_validation_aggregated")
+my_project.delete_item("cross_validation")
+my_project.delete_item("cross_validation_aggregated")
 
 # %%
 # .. note::
@@ -167,10 +169,15 @@ X = diabetes.data[:150]
 y = diabetes.target[:150]
 lasso = Lasso()
 
-cv_results = skore.cross_validate(lasso, X, y, cv=5, project=my_project_gs)
+cv_results = skore.cross_validate(lasso, X, y, cv=5, project=my_project)
 
-fig_plotly_reg = my_project_gs.get_item("cross_validation").plot
+fig_plotly_reg = my_project.get_item("cross_validation").plot
 fig_plotly_reg
+
+# %%
+# .. seealso::
+#   For tracking and comparing several runs of cross-validations on the same data, see
+#   :ref:`example_track_cv`.
 
 # %%
 # Cleanup the project
