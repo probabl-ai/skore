@@ -79,8 +79,17 @@ async function onViewsListAction(action: string, item: EditableListItemModel) {
 function onAddView() {
   const hasUnsavedViews = views.value.some((view) => !view.isNamed);
   if (!hasUnsavedViews) {
+    const search = /New view ?(\d+)?/;
+    const viewsNamedWithDefaultCount = views.value.reduce((acc, view) => {
+      const match = view.name.match(search);
+      if (match && match.length > 1) {
+        return parseInt(match[1] ?? 0) + 1;
+      }
+      return acc;
+    }, 0);
     const id = generateRandomId();
-    views.value.push({ name: "New view", isNamed: false, id });
+    const suffix = viewsNamedWithDefaultCount > 0 ? ` ${viewsNamedWithDefaultCount}` : "";
+    views.value.push({ name: `New view${suffix}`, isNamed: false, id });
     unsavedViewsId = id;
   }
 }
