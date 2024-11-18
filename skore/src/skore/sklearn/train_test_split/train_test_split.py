@@ -8,50 +8,13 @@ from typing import TYPE_CHECKING, Any, Optional, Union
 from numpy.random import RandomState
 
 from skore.project import Project
+from skore.sklearn.find_ml_task import _find_ml_task_train_test_split as _find_ml_task
 from skore.sklearn.train_test_split.warning.high_class_imbalance_warning import (
     HighClassImbalanceWarning,
 )
 
 if TYPE_CHECKING:
-    from skore.sklearn.types import MLTask
-
     ArrayLike = Any
-
-
-def _find_ml_task(y) -> MLTask:
-    """Guess the ML task being addressed based on a target array.
-
-    Parameters
-    ----------
-    y : numpy.ndarray
-        A 1-dimensional target vector.
-
-    Returns
-    -------
-    MLTask
-        The guess of the kind of ML task being performed.
-    """
-    import sklearn.utils.multiclass
-
-    if y is None:
-        # NOTE: The task might not be clustering
-        return "clustering"
-
-    type_of_target = sklearn.utils.multiclass.type_of_target(y)
-
-    if type_of_target == "binary":
-        return "binary-classification"
-
-    if type_of_target == "multiclass":
-        return "multiclass-classification"
-
-    if "continuous" in type_of_target:
-        return "regression"
-
-    if type_of_target == "unknown":
-        return "unknown"
-
-    return "unknown"
 
 
 def train_test_split(

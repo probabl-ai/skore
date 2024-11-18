@@ -44,3 +44,39 @@ def _find_ml_task(estimator, y) -> MLTask:
         return "regression"
 
     return "classification"
+
+
+def _find_ml_task_train_test_split(y) -> MLTask:
+    """Guess the ML task being addressed based on a target array.
+
+    Parameters
+    ----------
+    y : numpy.ndarray
+        A 1-dimensional target vector.
+
+    Returns
+    -------
+    MLTask
+        The guess of the kind of ML task being performed.
+    """
+    import sklearn.utils.multiclass
+
+    if y is None:
+        # NOTE: The task might not be clustering
+        return "clustering"
+
+    type_of_target = sklearn.utils.multiclass.type_of_target(y)
+
+    if type_of_target == "binary":
+        return "binary-classification"
+
+    if type_of_target == "multiclass":
+        return "multiclass-classification"
+
+    if "continuous" in type_of_target:
+        return "regression"
+
+    if type_of_target == "unknown":
+        return "unknown"
+
+    return "unknown"
