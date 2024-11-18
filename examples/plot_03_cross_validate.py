@@ -20,10 +20,7 @@ ML/DS projects.
 import tempfile
 from pathlib import Path
 
-import matplotlib.image as mpimg
-import matplotlib.pyplot as plt
 import skore
-from sklearn.model_selection import cross_validate as sklearn_cross_validate
 
 temp_dir = tempfile.TemporaryDirectory(prefix="skore_example_")
 temp_dir_path = Path(temp_dir.name)
@@ -61,6 +58,7 @@ clf = SVC(kernel="linear", C=1, random_state=0)
 # Single metric evaluation using :func:`sklearn.model_selection.cross_validate`:
 
 # %%
+from sklearn.model_selection import cross_validate as sklearn_cross_validate
 
 cv_results = sklearn_cross_validate(clf, X, y, cv=5)
 print(f"test_score: {cv_results['test_score']}")
@@ -131,6 +129,8 @@ fig_plotly_clf
 #   Plotly graphs to display properly.
 
 # %%
+import matplotlib.image as mpimg
+import matplotlib.pyplot as plt
 
 fig_plotly_clf.write_image("plot_03_cross_validate_clf.png", scale=4)
 
