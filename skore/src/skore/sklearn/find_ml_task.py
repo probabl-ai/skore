@@ -46,7 +46,7 @@ def _find_ml_task(estimator, y) -> MLTask:
     return "classification"
 
 
-def _find_ml_task_train_test_split(y) -> MLTask:
+def _find_ml_task_train_no_estimator(y) -> MLTask:
     """Guess the ML task being addressed based on a target array.
 
     Parameters
