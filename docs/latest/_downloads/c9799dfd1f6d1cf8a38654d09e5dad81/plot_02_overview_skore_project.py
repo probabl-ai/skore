@@ -1,5 +1,5 @@
 """
-.. _example_overview_skore_ui:
+.. _example_overview_skore_project:
 
 =============================
 Overview of the skore project
