@@ -42,6 +42,9 @@ Download = "https://pypi.org/project/skore/#files"
 Issues = "https://github.com/probabl-ai/skore/issues"
 "Release notes" = "https://github.com/probabl-ai/skore/releases"
 
+[project.scripts]
+skore = "skore.__main__:main"
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
