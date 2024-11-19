@@ -3,6 +3,23 @@ name: Deploy sphinx documentation
 inputs:
   CONFIGURATION:
     required: true
+  ACTION:
+    required: false
+    default: sync
+    type: choice
+    options:
+      - copy
+      - sync
+  PROVIDER:
+    required: false
+    default: scaleway
+  BUCKET:
+    required: false
+    default: prod-probabl-skore
+  SOURCE:
+    required: true
+  DESTINATION:
+    required: true
 
 runs:
   using: composite
@@ -16,6 +33,6 @@ runs:
     - shell: bash
       run: |
         rclone --config rclone.configuration \
-               sync \
-               sphinx/build/html/ \
-               scaleway:prod-probabl-skore/doc/latest/
+               ${{ inputs.ACTION }} \
+               ${{ inputs.SOURCE }} \
+               ${{ inputs.PROVIDER }}:${{ inputs.BUCKET }}/${{ inputs.DESTINATION }}

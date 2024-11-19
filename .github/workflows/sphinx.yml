@@ -17,6 +17,8 @@ name: Sphinx
 #       - 'examples/**'
 #       - 'sphinx/**'
 #       - 'skore/**'
+#   release:
+#     types: [released]
 
 on: [push]
 
@@ -25,7 +27,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  sphinx:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -34,7 +36,135 @@ jobs:
           python-version: '3.12'
           cache: 'pip'
       - uses: ./.github/actions/sphinx/build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sphinx-html-artifact
+          path: sphinx/build/html/
+
+  deploy-on-release:
+    runs-on: ubuntu-latest
+    # if: ${{ github.event_name == 'release' }}
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+
+      #
+      - shell: bash
+        id: tag-cutter
+        run: |
+          export GITHUB_REF_NAME=0.3.0
+          set -eu
+          if [[ "${GITHUB_REF_NAME}" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)?$ ]]; then
+              echo "MAJOR_DOT_MINOR=${BASH_REMATCH[1]}.${BASH_REMATCH[2]}" >> "${GITHUB_OUTPUT}"
+          fi
+
+      # si tag
+      #     récupérer version X.Y
+      #     build X.Y/
+      #     sync X.Y/
+      #
+      - uses: actions/download-artifact@v4
+        with:
+          name: sphinx-html-artifact
+          path: html/
       - uses: ./.github/actions/sphinx/deploy
         with:
           CONFIGURATION: ${{ secrets.RCLONE_CONFIG_DOCS }}
-      # - if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          SOURCE: html/
+          DESTINATION: ${{ steps.tag-cutter.outputs.MAJOR_DOT_MINOR }}/
+
+      #
+      # si tag
+      #     récupérer version X.Y
+      #     build versions.json (N versions max)
+      #     sync versions.json
+      #
+      - shell: python
+        run: |
+            import os
+            import requests
+            import operator
+            import json
+
+            url = os.environ["URL"]
+            current = os.environ["CURRENT"]
+
+            response = requests.get(f"{url}/versions.json")
+            response.raise_for_status()
+
+            history = set(map(operator.itemgetter("version"), response.json())) - {"dev"} | {current}
+            new = [
+                {
+                    "name": version,
+                    "version": version,
+                    "url": f"{url}/{version}/",
+                    "preferred": i == 1,
+                }
+                for i, version in enumerate(["dev"] + sorted(history, key=lambda x: float(x), reverse=True))
+                if i < 10
+            ]
+
+            with open("versions.json", "w", encoding="utf-8") as file:
+                json.dump(new, file, ensure_ascii=False, indent=4)
+
+            with open("index.html", "w", encoding="utf-8") as file:
+              file.write(
+                  f"""
+                  <head>
+                    <meta http-equiv=\"refresh\" content=\"0; url={new[1]["url"]}\"/>
+                  </head>
+                  """
+              )
+        env:
+          CURRENT: ${{ steps.tag-cutter.outputs.MAJOR_DOT_MINOR }}
+          URL: https://skore.probabl.ai
+
+      - uses: ./.github/actions/sphinx/deploy
+        with:
+          CONFIGURATION: ${{ secrets.RCLONE_CONFIG_DOCS }}
+          ACTION: copy
+          SOURCE: versions.json
+          DESTINATION:
+
+      # si tag
+      #     recuperer versions.json
+      #     build index.html
+      #     sync index.html
+      #
+
+      - uses: ./.github/actions/sphinx/deploy
+        with:
+          CONFIGURATION: ${{ secrets.RCLONE_CONFIG_DOCS }}
+          ACTION: copy
+          SOURCE: index.html
+          DESTINATION:
+
+
+  deploy-on-main-push:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: sphinx-html-artifact
+          path: html/
+      - uses: ./.github/actions/sphinx/deploy
+        with:
+          CONFIGURATION: ${{ secrets.RCLONE_CONFIG_DOCS }}
+          SOURCE: html/
+          DESTINATION: dev/
+
+      # si main.push
+      #     build dev/
+      #     sync dev/
+
+  clean:
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [deploy-on-release, deploy-on-main-push]
+    steps:
+      - uses: geekyeggo/delete-artifact@v5
+        with:
+          name: sphinx-html-artifact

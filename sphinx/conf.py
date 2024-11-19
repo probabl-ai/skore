@@ -110,8 +110,12 @@ html_theme_options = {
         },
     ],
     "announcement": "This code is still in development. <strong>The API is subject to change.</strong>",
-    "switcher": {"json_url": "_static/switcher.json", "version_match": version},
+    "switcher": {
+        "json_url": "https://skore.probabl.ai/versions.json",
+        "version_match": version,
+    },
     "check_switcher": True,
+    "show_version_warning_banner": True,
     "navbar_start": ["navbar-logo", "version-switcher"],
     "navbar_center": ["navbar-nav"],
     "navbar_end": ["theme-switcher"],
