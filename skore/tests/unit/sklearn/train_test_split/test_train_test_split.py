@@ -1,4 +1,3 @@
-import contextlib
 import warnings
 
 import pytest
@@ -31,12 +30,14 @@ def test_train_test_split_too_few_examples_warns():
 def test_train_test_split_no_y():
     """When calling `train_test_split` with one array argument,
     this array is assumed to be `X` and not `y`."""
-    with contextlib.nullcontext():
-        train_test_split([[1]] * 4)
+    warnings.simplefilter("error")
+
+    # Since the array is `X` and we do no checks on it, this should produce no
+    # warning
+    train_test_split([[1]] * 4)
 
 
 def test_train_test_split_no_warn():
     warnings.simplefilter("error")
 
-    with contextlib.nullcontext():
-        train_test_split([[1]] * 2000, [0] * 1000 + [1] * 1000, random_state=0)
+    train_test_split([[1]] * 2000, [0] * 1000 + [1] * 1000, random_state=0)
