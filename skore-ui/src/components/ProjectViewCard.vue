@@ -44,6 +44,9 @@ function isCurrentlySelectedVersion(index: number) {
 
 onMounted(() => {
   root.value?.addEventListener("animationend", onAnimationEnd);
+  if (props.updates?.length ?? 0 > 1) {
+    isLatestUpdate.value = props.currentUpdateIndex === (props.updates?.length ?? 0) - 1;
+  }
 });
 
 onBeforeUnmount(() => {
