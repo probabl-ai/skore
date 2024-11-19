@@ -37,3 +37,4 @@ These functions and classes enhance scikit-learn's ones.
     :nosignatures:
 
     cross_validate
+    train_test_split
