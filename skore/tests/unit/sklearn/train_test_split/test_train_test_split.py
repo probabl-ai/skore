@@ -15,6 +15,14 @@ def test_train_test_split_warns():
         train_test_split([[1]] * 4, [0, 1, 1, 1])
 
 
+def test_train_test_split_too_few_examples_warns():
+    with pytest.warns(
+        HighClassImbalanceTooFewExamplesWarning,
+        match=HighClassImbalanceTooFewExamplesWarning.MSG,
+    ):
+        train_test_split([[1]] * 4, [0, 1, 1, 1])
+
+
 def test_train_test_split_no_y():
     """When calling `train_test_split` with one array argument,
     this array is assumed to be `X` and not `y`."""
