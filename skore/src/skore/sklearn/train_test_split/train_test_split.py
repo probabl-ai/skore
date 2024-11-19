@@ -132,6 +132,8 @@ def train_test_split(
         stratify=stratify,
     )
 
+    y_labels = None
+    y_test = None
     if y is None and len(arrays) >= 2:
         y = arrays[-1]
         y_labels = np.unique(y)
