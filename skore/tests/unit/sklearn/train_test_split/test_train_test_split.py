@@ -53,3 +53,16 @@ def test_train_test_split_no_warn():
     warnings.simplefilter("error")
 
     train_test_split([[1]] * 2000, [0] * 1000 + [1] * 1000, random_state=0)
+
+
+def test_train_test_split_kwargs():
+    """Passing data by keyword arguments should produce the same results as passing
+    them by position."""
+    warnings.simplefilter("ignore")
+
+    X = [[1]] * 20
+    y = [0] * 10 + [1] * 10
+    output1 = train_test_split(X, y, random_state=0)
+    output2 = train_test_split(X=X, y=y, random_state=0)
+
+    assert output1 == output2
