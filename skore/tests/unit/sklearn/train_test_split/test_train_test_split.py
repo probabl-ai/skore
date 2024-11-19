@@ -20,6 +20,7 @@ def test_train_test_split_warns():
 
 def test_train_test_split_too_few_examples_warns():
     warnings.simplefilter("ignore")
+
     with pytest.warns(
         HighClassImbalanceTooFewExamplesWarning,
         match=HighClassImbalanceTooFewExamplesWarning.MSG,

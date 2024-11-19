@@ -5,11 +5,13 @@ from __future__ import annotations
 import warnings
 from typing import TYPE_CHECKING, Any, Optional, Union
 
+import numpy as np
 from numpy.random import RandomState
 
 from skore.project import Project
 from skore.sklearn.find_ml_task import _find_ml_task
 from skore.sklearn.train_test_split.warning import (
+    HighClassImbalanceTooFewExamplesWarning,
     HighClassImbalanceWarning,
 )
 
@@ -132,6 +134,8 @@ def train_test_split(
 
     if y is None and len(arrays) >= 2:
         y = arrays[-1]
+        y_labels = np.unique(y)
+        y_test = output[-1]
 
     ml_task = _find_ml_task(y)
 
@@ -143,10 +147,15 @@ def train_test_split(
         shuffle=shuffle,
         stratify=stratify,
         y=y,
+        y_test=y_test,
+        y_labels=y_labels,
         ml_task=ml_task,
     )
 
-    for warning_class in [HighClassImbalanceWarning]:
+    for warning_class in [
+        HighClassImbalanceWarning,
+        HighClassImbalanceTooFewExamplesWarning,
+    ]:
         check = warning_class.check(**kwargs)
 
         if check is False:
