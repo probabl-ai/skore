@@ -3,11 +3,11 @@ import { formatDistance } from "date-fns";
 import Simplebar from "simplebar-vue";
 import { onBeforeUnmount, onMounted, ref } from "vue";
 
-import DataFrameWidget from "@/components/DataFrameWidget.vue";
 import DraggableList from "@/components/DraggableList.vue";
 import HtmlSnippetWidget from "@/components/HtmlSnippetWidget.vue";
 import ImageWidget from "@/components/ImageWidget.vue";
 import MarkdownWidget from "@/components/MarkdownWidget.vue";
+import PerspectiveWidget from "@/components/PerspectiveWidget.vue";
 import PlotlyWidget from "@/components/PlotlyWidget.vue";
 import ProjectViewCard from "@/components/ProjectViewCard.vue";
 import SimpleButton from "@/components/SimpleButton.vue";
@@ -114,12 +114,9 @@ onBeforeUnmount(() => {
                 @card-removed="onCardRemoved(key)"
                 @update-selected="projectStore.setCurrentItemUpdateIndex(key, $event)"
               >
-                <DataFrameWidget
+                <PerspectiveWidget
                   v-if="mediaType === 'application/vnd.dataframe+json'"
-                  :columns="data.columns"
-                  :data="data.data"
-                  :index="data.index"
-                  :index-names="data.index_names"
+                  :data="data"
                 />
                 <ImageWidget
                   v-if="
