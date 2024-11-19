@@ -9,7 +9,7 @@ from numpy.random import RandomState
 
 from skore.project import Project
 from skore.sklearn.find_ml_task import _find_ml_task
-from skore.sklearn.train_test_split.warning.high_class_imbalance_warning import (
+from skore.sklearn.train_test_split.warning import (
     HighClassImbalanceWarning,
 )
 
