@@ -1,4 +1,5 @@
 import contextlib
+import warnings
 
 import pytest
 from skore.sklearn.train_test_split.train_test_split import (
@@ -11,11 +12,14 @@ from skore.sklearn.train_test_split.warning import (
 
 
 def test_train_test_split_warns():
+    warnings.simplefilter("ignore")
+
     with pytest.warns(HighClassImbalanceWarning, match=HighClassImbalanceWarning.MSG):
         train_test_split([[1]] * 4, [0, 1, 1, 1])
 
 
 def test_train_test_split_too_few_examples_warns():
+    warnings.simplefilter("ignore")
     with pytest.warns(
         HighClassImbalanceTooFewExamplesWarning,
         match=HighClassImbalanceTooFewExamplesWarning.MSG,
@@ -31,5 +35,7 @@ def test_train_test_split_no_y():
 
 
 def test_train_test_split_no_warn():
+    warnings.simplefilter("error")
+
     with contextlib.nullcontext():
-        train_test_split([[1]] * 4, [0, 0, 1, 1])
+        train_test_split([[1]] * 2000, [0] * 1000 + [1] * 1000, random_state=0)
