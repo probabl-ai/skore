@@ -27,8 +27,33 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  sphinx-version:
     runs-on: ubuntu-latest
+    outputs:
+      SPHINX_VERSION: ${{ steps.sphinx-version.outputs.SPHINX_VERSION }}
+    steps:
+      - shell: bash
+        id: sphinx-version
+        run: |
+          export GITHUB_EVENT_NAME=push
+          export GITHUB_REF_NAME=0.2.0
+
+          set -u
+
+          if [[ "${GITHUB_EVENT_NAME}" != "release" ]]; then
+              echo "SPHINX_VERSION=dev" >> "${GITHUB_OUTPUT}"
+              exit 0
+          fi
+
+          set -e
+
+          if [[ "${GITHUB_REF_NAME}" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)?$ ]]; then
+              echo "SPHINX_VERSION=${BASH_REMATCH[1]}.${BASH_REMATCH[2]}" >> "${GITHUB_OUTPUT}"
+          fi
+
+  sphinx-build:
+    runs-on: ubuntu-latest
+    needs: sphinx-version
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -36,27 +61,19 @@ jobs:
           python-version: '3.12'
           cache: 'pip'
       - uses: ./.github/actions/sphinx/build
+        with:
+          SPHINX_VERSION: ${{ needs.sphinx-version.outputs.SPHINX_VERSION }}
       - uses: actions/upload-artifact@v4
         with:
           name: sphinx-html-artifact
           path: sphinx/build/html/
 
-  deploy-on-release:
+  sphinx-deploy-on-release:
     runs-on: ubuntu-latest
-    # if: ${{ github.event_name == 'release' }}
-    needs: build
+    if: ${{ github.event_name == 'release' }}
+    needs: [sphinx-version, sphinx-build]
     steps:
       - uses: actions/checkout@v4
-
-      #
-      - shell: bash
-        id: tag-cutter
-        run: |
-          export GITHUB_REF_NAME=0.3.0
-          set -eu
-          if [[ "${GITHUB_REF_NAME}" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)?$ ]]; then
-              echo "MAJOR_DOT_MINOR=${BASH_REMATCH[1]}.${BASH_REMATCH[2]}" >> "${GITHUB_OUTPUT}"
-          fi
 
       # si tag
       #     récupérer version X.Y
@@ -71,7 +88,7 @@ jobs:
         with:
           CONFIGURATION: ${{ secrets.RCLONE_CONFIG_DOCS }}
           SOURCE: html/
-          DESTINATION: ${{ steps.tag-cutter.outputs.MAJOR_DOT_MINOR }}/
+          DESTINATION: ${{ needs.sphinx-version.outputs.SPHINX_VERSION }}/
 
       #
       # si tag
@@ -93,6 +110,8 @@ jobs:
             response.raise_for_status()
 
             history = set(map(operator.itemgetter("version"), response.json())) - {"dev"} | {current}
+            history = sorted(history, key=lambda x: float(x), reverse=True)[:10]
+
             new = [
                 {
                     "name": version,
@@ -100,8 +119,7 @@ jobs:
                     "url": f"{url}/{version}/",
                     "preferred": i == 1,
                 }
-                for i, version in enumerate(["dev"] + sorted(history, key=lambda x: float(x), reverse=True))
-                if i < 10
+                for i, version in enumerate(["dev"] + history)
             ]
 
             with open("versions.json", "w", encoding="utf-8") as file:
@@ -116,8 +134,8 @@ jobs:
                   """
               )
         env:
-          CURRENT: ${{ steps.tag-cutter.outputs.MAJOR_DOT_MINOR }}
-          URL: https://skore.probabl.ai
+          CURRENT: ${{ needs.sphinx-version.outputs.SPHINX_VERSION }}
+          URL: https://skore.probabl.ai  # !
 
       - uses: ./.github/actions/sphinx/deploy
         with:
@@ -139,11 +157,10 @@ jobs:
           SOURCE: index.html
           DESTINATION:
 
-
-  deploy-on-main-push:
+  sphinx-deploy-on-main-push:
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-    needs: build
+    # if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    needs: sphinx-build
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -160,10 +177,10 @@ jobs:
       #     build dev/
       #     sync dev/
 
-  clean:
+  sphinx-clean:
     runs-on: ubuntu-latest
     if: always()
-    needs: [deploy-on-release, deploy-on-main-push]
+    needs: [sphinx-deploy-on-release, sphinx-deploy-on-main-push]
     steps:
       - uses: geekyeggo/delete-artifact@v5
         with:

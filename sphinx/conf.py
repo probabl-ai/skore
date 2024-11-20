@@ -6,16 +6,19 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
+import os
+
 project = "skore"
 copyright = "2024, Probabl"
 author = "Probabl"
-version = "0.3"  # dynamic
-release = "0.3.0"  # dynamic
+version = os.environ["SPHINX_VERSION"]
+release = os.environ["SPHINX_VERSION"]
 
 # 0.1/
 # 0.2/
 # 0.3/
 # dev/
+# latest/
 # index.html
 # versions.json
 
@@ -118,7 +121,7 @@ html_theme_options = {
     "show_version_warning_banner": True,
     "navbar_start": ["navbar-logo", "version-switcher"],
     "navbar_center": ["navbar-nav"],
-    "navbar_end": ["theme-switcher"],
+    "navbar_end": ["theme-switcher", "navbar-icon-links"],
 }
 
 # Plausible Analytics
