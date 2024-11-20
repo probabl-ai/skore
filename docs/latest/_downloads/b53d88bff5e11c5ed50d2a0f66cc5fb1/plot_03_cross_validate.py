@@ -122,7 +122,6 @@ fig_plotly_clf = my_project.get_item("cross_validation").plot
 fig_plotly_clf
 
 # %%
-# |
 # Skore's :func:`~skore.cross_validate` advantages are the following:
 #
 # * By default, it computes several useful scores without the need for the user to
