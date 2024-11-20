@@ -10,21 +10,33 @@ from skore.sklearn.train_test_split.warning import (
 )
 
 
-def test_train_test_split_warns():
+def case_high_class_imbalance():
+    args = ([[1]] * 4, [0, 1, 1, 1])
+    kwargs = {}
+    return args, kwargs, HighClassImbalanceWarning
+
+
+def case_high_class_imbalance_too_few_examples():
+    args = ([[1]] * 4, [0, 1, 1, 1])
+    kwargs = {}
+    return args, kwargs, HighClassImbalanceTooFewExamplesWarning
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        case_high_class_imbalance,
+        case_high_class_imbalance_too_few_examples,
+    ],
+)
+def test_train_test_split_warns(params):
+    """When train_test_split is called with these args and kwargs, the corresponding
+    warning should fire."""
     warnings.simplefilter("ignore")
+    args, kwargs, warning_cls = params()
 
-    with pytest.warns(HighClassImbalanceWarning, match=HighClassImbalanceWarning.MSG):
-        train_test_split([[1]] * 4, [0, 1, 1, 1])
-
-
-def test_train_test_split_too_few_examples_warns():
-    warnings.simplefilter("ignore")
-
-    with pytest.warns(
-        HighClassImbalanceTooFewExamplesWarning,
-        match=HighClassImbalanceTooFewExamplesWarning.MSG,
-    ):
-        train_test_split([[1]] * 4, [0, 1, 1, 1])
+    with pytest.warns(warning_cls):
+        train_test_split(*args, **kwargs)
 
 
 def test_train_test_split_no_y():
