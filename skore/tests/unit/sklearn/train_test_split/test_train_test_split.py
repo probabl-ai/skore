@@ -7,6 +7,7 @@ from skore.sklearn.train_test_split.train_test_split import (
 from skore.sklearn.train_test_split.warning import (
     HighClassImbalanceTooFewExamplesWarning,
     HighClassImbalanceWarning,
+    RandomStateUnsetWarning,
     StratifyWarning,
 )
 
@@ -29,12 +30,20 @@ def case_stratify():
     return args, kwargs, StratifyWarning
 
 
+def case_random_state_unset():
+    # By default shuffle is True and random_state is None
+    args = ([[1]] * 4, [0, 1, 1, 1])
+    kwargs = {}
+    return args, kwargs, RandomStateUnsetWarning
+
+
 @pytest.mark.parametrize(
     "params",
     [
         case_high_class_imbalance,
         case_high_class_imbalance_too_few_examples,
         case_stratify,
+        case_random_state_unset,
     ],
 )
 def test_train_test_split_warns(params):
@@ -54,7 +63,7 @@ def test_train_test_split_no_y():
 
     # Since the array is `X` and we do no checks on it, this should produce no
     # warning
-    train_test_split([[1]] * 4)
+    train_test_split([[1]] * 4, random_state=0)
 
 
 def test_train_test_split_no_warn():
