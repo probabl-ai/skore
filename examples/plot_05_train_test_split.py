@@ -39,7 +39,14 @@ my_project = skore.create("my_project.skore", working_dir=temp_dir_path)
 #
 # .. code-block:: python
 #
-#     sklearn.model_selection.train_test_split(*arrays, test_size=None, train_size=None, random_state=None, shuffle=True, stratify=None)
+#     sklearn.model_selection.train_test_split(
+#         *arrays,
+#         test_size=None,
+#         train_size=None,
+#         random_state=None,
+#         shuffle=True,
+#         stratify=None
+#     )
 #
 # where ``*arrays`` is a Python *args (it allows you to pass a varying number of
 # positional arguments) and the scikit-learn doc indicates that it is ``a sequence of
