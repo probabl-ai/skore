@@ -1,26 +1,32 @@
 name: Sphinx
 
-# on:
-#   pull_request:
-#     paths:
-#       - '.github/actions/sphinx/**'
-#       - '.github/workflows/sphinx.yml'
-#       - 'examples/**'
-#       - 'sphinx/**'
-#       - 'skore/**'
-#   push:
-#     branches:
-#       - main
-#     paths:
-#       - '.github/actions/sphinx/**'
-#       - '.github/workflows/sphinx.yml'
-#       - 'examples/**'
-#       - 'sphinx/**'
-#       - 'skore/**'
-#   release:
-#     types: [released]
+# 0.1/
+# 0.2/
+# 0.3/
+# dev/
+# latest/
+# index.html
+# versions.json
 
-on: [push]
+on:
+  pull_request:
+    paths:
+      - '.github/actions/sphinx/**'
+      - '.github/workflows/sphinx.yml'
+      - 'examples/**'
+      - 'sphinx/**'
+      - 'skore/**'
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/actions/sphinx/**'
+      - '.github/workflows/sphinx.yml'
+      - 'examples/**'
+      - 'sphinx/**'
+      - 'skore/**'
+  release:
+    types: [released]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -35,9 +41,6 @@ jobs:
       - shell: bash
         id: sphinx-version
         run: |
-          export GITHUB_EVENT_NAME=push
-          export GITHUB_REF_NAME=0.2.0
-
           set -u
 
           if [[ "${GITHUB_EVENT_NAME}" != "release" ]]; then
@@ -159,7 +162,7 @@ jobs:
 
   sphinx-deploy-on-main-push:
     runs-on: ubuntu-latest
-    # if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     needs: sphinx-build
     steps:
       - uses: actions/checkout@v4

@@ -14,14 +14,6 @@ author = "Probabl"
 version = os.environ["SPHINX_VERSION"]
 release = os.environ["SPHINX_VERSION"]
 
-# 0.1/
-# 0.2/
-# 0.3/
-# dev/
-# latest/
-# index.html
-# versions.json
-
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
@@ -75,12 +67,15 @@ numpydoc_show_class_members = False
 
 html_title = "skore"
 
-# html_additional_pages = {"index": "index.html"}
-
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
 html_theme_options = {
+    # "logo": {
+    #     "image_relative": "_static/skrub.svg",
+    #     "image_light": "_static/skrub.svg",
+    #     "image_dark": "_static/skrub.svg",
+    # },
     # When specified as a dictionary, the keys should follow glob-style patterns, as in
     # https://www.sphinx-doc.org/en/master/usage/configuration.html#confval-exclude_patterns
     # In particular, "**" specifies the default for all pages
