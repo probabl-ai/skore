@@ -71,8 +71,11 @@ from sklearn.model_selection import train_test_split as sklearn_train_test_split
 X_train, X_test, y_train, y_test = sklearn_train_test_split(
     X, y, test_size=0.2, random_state=0
 )
-print(X_train, y_train)
-print(X_test, y_test)
+print(X_train)
+print(y_train)
+
+print(X_test)
+print(y_test)
 
 # %%
 # Notice the shuffling that is done by default.
