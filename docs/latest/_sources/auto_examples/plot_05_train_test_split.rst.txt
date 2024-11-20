@@ -59,12 +59,12 @@ have to skip this section.
 
  .. code-block:: none
 
-    [11/20/24 15:22:49] <Logger skore.project.project (INFO)> Project  create.py:148
+                        <Logger skore.project.project (INFO)> Project  create.py:148
                                                               file                  
                                                               '/tmp/sk              
                                                               ore_exam              
-                                                              ple_4t68              
-                                                              0ij8/my_              
+                                                              ple_gkmb              
+                                                              zqbg/my_              
                                                               project.              
                                                               skore'                
                                                               was                   
