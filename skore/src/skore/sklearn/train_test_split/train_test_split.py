@@ -30,13 +30,16 @@ def train_test_split(
 ):
     """Perform train-test-split of data.
 
-    This is a wrapper over scikit-learn's `train_test_split https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html`_
-    helper function, enriching it with various warnings that can be saved in a Project.
+    This is a wrapper over scikit-learn's
+    :func:`sklearn.model_selection.train_test_split` helper function,
+    enriching it with various warnings that can be saved in a skore Project.
 
-    The signature is fully compatible with sklearn's `train_test_split`, and
+    The signature is fully compatible with sklearn's ``train_test_split``, and
     some keyword arguments are added to make the detection of issues more accurate.
-    For instance, argument `y` has been added to pass the target explicitly, which
+    For instance, argument ``y`` has been added to pass the target explicitly, which
     makes it easier to detect issues with the target.
+
+    See the :ref:`example_train_test_split` example.
 
     Parameters
     ----------
@@ -47,7 +50,7 @@ def train_test_split(
         If not None, will be appended to the list of arrays passed positionally.
     y : array-like, optional
         If not None, will be appended to the list of arrays passed positionally, after
-        `X`. If None, it is assumed that the last array in `arrays` is `y`.
+        ``X``. If None, it is assumed that the last array in ``arrays`` is ``y``.
     test_size : float or int, optional
         If float, should be between 0.0 and 1.0 and represent the proportion of
         the dataset to include in the test split. If int, represents the absolute number
@@ -75,17 +78,17 @@ def train_test_split(
     splitting : list
         List containing train-test split of inputs.
         The length of the list is twice the number of arrays passed, including
-        the X and y keyword arguments. If arrays are passed positionally as well
-        as through X and y, the output arrays are ordered as follows: first the
-        arrays passed positionally, in the order they were passed, then X if it
-        was passed, then y if it was passed.
+        the ``X`` and ``y`` keyword arguments. If arrays are passed positionally as well
+        as through ``X`` and ``y``, the output arrays are ordered as follows: first the
+        arrays passed positionally, in the order they were passed, then ``X`` if it
+        was passed, then ``y`` if it was passed.
 
     Examples
     --------
     >>> import numpy as np
     >>> X, y = np.arange(10).reshape((5, 2)), range(5)
 
-    # Drop-in replacement for sklearn train_test_split
+    >>> # Drop-in replacement for sklearn train_test_split
     >>> X_train, X_test, y_train, y_test = train_test_split(X, y,
     ...     test_size=0.33, random_state=42)
     >>> X_train
@@ -93,7 +96,7 @@ def train_test_split(
            [0, 1],
            [6, 7]])
 
-    # Explicit X and y, makes detection of problems easier
+    >>> # Explicit X and y, makes detection of problems easier
     >>> X_train, X_test, y_train, y_test = train_test_split(X=X, y=y,
     ...     test_size=0.33, random_state=42)
     >>> X_train
@@ -101,7 +104,7 @@ def train_test_split(
            [0, 1],
            [6, 7]])
 
-    # When passing X and y explicitly, X is returned before y
+    >>> # When passing X and y explicitly, X is returned before y
     >>> arr = np.arange(10).reshape((5, 2))
     >>> arr_train, arr_test, X_train, X_test, y_train, y_test = train_test_split(
     ...     arr, y=y, X=X, test_size=0.33, random_state=42)
