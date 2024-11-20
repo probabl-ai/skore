@@ -33,7 +33,7 @@ def test_create_project_cli_invalid_name(tmp_path):
 def test_create_project_cli_overwrite(tmp_path):
     """Check the behaviour of the `overwrite` flag/parameter."""
     completed_process = subprocess.run(
-        f"python -m skore create --working-dir {tmp_path}".split(),
+        f"skore create --working-dir {tmp_path}".split(),
         capture_output=True,
     )
     completed_process.check_returncode()
@@ -41,7 +41,7 @@ def test_create_project_cli_overwrite(tmp_path):
 
     # calling the same command without overwriting should fail
     completed_process = subprocess.run(
-        f"python -m skore create --working-dir {tmp_path}".split(),
+        f"skore create --working-dir {tmp_path}".split(),
         capture_output=True,
     )
     with pytest.raises(subprocess.CalledProcessError):
@@ -50,7 +50,7 @@ def test_create_project_cli_overwrite(tmp_path):
 
     # calling the same command with overwriting should succeed
     completed_process = subprocess.run(
-        f"python -m skore create --working-dir {tmp_path} --overwrite".split(),
+        f"skore create --working-dir {tmp_path} --overwrite".split(),
         capture_output=True,
     )
     completed_process.check_returncode()
