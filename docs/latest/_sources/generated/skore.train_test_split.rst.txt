@@ -1,0 +1,10 @@
+﻿:mod:`skore`.train_test_split
+==========================================
+
+.. currentmodule:: skore
+
+.. autofunction:: train_test_split
+
+.. raw:: html
+
+    <div class="clearer"></div>
