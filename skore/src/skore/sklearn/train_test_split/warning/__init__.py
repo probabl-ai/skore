@@ -18,6 +18,6 @@ TRAIN_TEST_SPLIT_WARNINGS = [
 
 __all__ = [
     "TRAIN_TEST_SPLIT_WARNINGS",
-    HighClassImbalanceTooFewExamplesWarning.__name__,
-    HighClassImbalanceWarning.__name__,
+    "HighClassImbalanceTooFewExamplesWarning",
+    "HighClassImbalanceWarning",
 ]
