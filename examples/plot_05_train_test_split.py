@@ -59,7 +59,8 @@ my_project = skore.create("my_project.skore", working_dir=temp_dir_path)
 import numpy as np
 
 X, y = np.arange(10).reshape((5, 2)), range(5)
-print(X, y)
+print(X)
+print(y)
 
 # %%
 # In scikit-learn, the most common usage is the following:
