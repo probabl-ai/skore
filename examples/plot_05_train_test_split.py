@@ -155,6 +155,11 @@ print(X_train, "\n", y_train, "\n", X_test, "\n", y_test)
 # Automatic diagnostics: raising methodological warnings
 # ------------------------------------------------------
 #
+# In this section, we show how skore can provide methodological checks.
+#
+# Class-imbalance
+# ^^^^^^^^^^^^^^^
+#
 # In machine learning, class-imbalance (the classes in a dataset are not equally
 # represented) requires a specific modelling.
 # For example, in a dataset with 95% majority class (class ``1``) and 5% minority class
@@ -162,11 +167,11 @@ print(X_train, "\n", y_train, "\n", X_test, "\n", y_test)
 # accuracy, while it would be useless for identifying examples of class ``0``.
 # Hence, it is important to detect when we have class-imbalance.
 #
-# Suppose that we have imbalanced data :
+# Suppose that we have imbalanced data:
 
 # %%
-X = [[1]] * 4
-y = [0, 1, 1, 1]
+X = [[1]] * 100
+y = [0] * 25 + [1] * 75
 
 # %%
 # In that case, :func:`skore.train_test_split` raises a warning telling the user that
@@ -180,4 +185,27 @@ X_train, X_test, y_train, y_test = skore.train_test_split(
 # %%
 # Hence, skore recommends the users to take into account this class-imbalance, that
 # they might have missed, in their modelling strategy.
-# skore provides methodological checks.
+
+# %%
+# Moreover, skore also detects class-imbalance with a class that has too few samples:
+
+X = [[1]] * 4
+y = [0, 1, 1, 1]
+
+X_train, X_test, y_train, y_test = skore.train_test_split(
+    X=X, y=y, test_size=0.2, random_state=0
+)
+
+# %%
+# Shuffling without a random state
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+# For `reproducible results across executions
+# <https://scikit-learn.org/stable/common_pitfalls.html#controlling-randomness>`_,
+# skore recommends the use of the ``random_state`` parameter when shuffling
+# (remember that ``shuffle=True`` by default):
+
+X = [[1]] * 4
+y = [0] * 2 + [1] * 2
+
+X_train, X_test, y_train, y_test = skore.train_test_split(X=X, y=y, test_size=0.2)
