@@ -10,14 +10,17 @@ from .high_class_imbalance_too_few_examples_warning import (
 from .high_class_imbalance_warning import (
     HighClassImbalanceWarning,
 )
+from .stratify_is_set import StratifyWarning
 
 TRAIN_TEST_SPLIT_WARNINGS = [
     HighClassImbalanceTooFewExamplesWarning,
     HighClassImbalanceWarning,
+    StratifyWarning,
 ]
 
 __all__ = [
     "TRAIN_TEST_SPLIT_WARNINGS",
     "HighClassImbalanceTooFewExamplesWarning",
     "HighClassImbalanceWarning",
+    "StratifyWarning",
 ]

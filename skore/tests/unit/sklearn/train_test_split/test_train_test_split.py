@@ -7,6 +7,7 @@ from skore.sklearn.train_test_split.train_test_split import (
 from skore.sklearn.train_test_split.warning import (
     HighClassImbalanceTooFewExamplesWarning,
     HighClassImbalanceWarning,
+    StratifyWarning,
 )
 
 
@@ -22,11 +23,18 @@ def case_high_class_imbalance_too_few_examples():
     return args, kwargs, HighClassImbalanceTooFewExamplesWarning
 
 
+def case_stratify():
+    args = ([0] * 10 + [1] * 10,)
+    kwargs = dict(stratify=[0] * 10 + [1] * 10)
+    return args, kwargs, StratifyWarning
+
+
 @pytest.mark.parametrize(
     "params",
     [
         case_high_class_imbalance,
         case_high_class_imbalance_too_few_examples,
+        case_stratify,
     ],
 )
 def test_train_test_split_warns(params):
