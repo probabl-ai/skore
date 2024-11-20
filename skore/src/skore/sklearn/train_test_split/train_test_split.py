@@ -10,10 +10,7 @@ from numpy.random import RandomState
 
 from skore.project import Project
 from skore.sklearn.find_ml_task import _find_ml_task
-from skore.sklearn.train_test_split.warning import (
-    HighClassImbalanceTooFewExamplesWarning,
-    HighClassImbalanceWarning,
-)
+from skore.sklearn.train_test_split.warning import TRAIN_TEST_SPLIT_WARNINGS
 
 if TYPE_CHECKING:
     ArrayLike = Any
@@ -154,10 +151,7 @@ def train_test_split(
         ml_task=ml_task,
     )
 
-    for warning_class in [
-        HighClassImbalanceWarning,
-        HighClassImbalanceTooFewExamplesWarning,
-    ]:
+    for warning_class in TRAIN_TEST_SPLIT_WARNINGS:
         check = warning_class.check(**kwargs)
 
         if check is False:
