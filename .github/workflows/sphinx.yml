@@ -1,12 +1,21 @@
 name: Sphinx
 
-# 0.1/
-# 0.2/
-# 0.3/
-# dev/
-# latest/
-# index.html
-# versions.json
+# Sphinx documentation, from building to deploying on S3:
+
+# -- x -- x -- x -- x -- x -- >
+#    |                   |
+#   0.1/                0.2/
+#   dev/ dev/ dev/ dev/ dev/
+
+# For instance, with 3 releases, the S3 buckets looks like:
+# .
+# ├── 0.1/
+# ├── 0.2/
+# ├── 0.3/
+# ├── dev/
+# ├── index.html
+# └── versions.json
+
 
 on:
   pull_request:
@@ -71,18 +80,12 @@ jobs:
           name: sphinx-html-artifact
           path: sphinx/build/html/
 
-  sphinx-deploy-on-release:
+  sphinx-deploy-html:
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'release' }}
+    if: ${{ (github.event_name == 'release') || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
     needs: [sphinx-version, sphinx-build]
     steps:
       - uses: actions/checkout@v4
-
-      # si tag
-      #     récupérer version X.Y
-      #     build X.Y/
-      #     sync X.Y/
-      #
       - uses: actions/download-artifact@v4
         with:
           name: sphinx-html-artifact
@@ -93,12 +96,12 @@ jobs:
           SOURCE: html/
           DESTINATION: ${{ needs.sphinx-version.outputs.SPHINX_VERSION }}/
 
-      #
-      # si tag
-      #     récupérer version X.Y
-      #     build versions.json (N versions max)
-      #     sync versions.json
-      #
+  sphinx-deploy-root-files:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'release' }}
+    needs: [sphinx-version, sphinx-build, sphinx-deploy-html]
+    steps:
+      - uses: actions/checkout@v4
       - shell: python
         run: |
             import os
@@ -106,7 +109,7 @@ jobs:
             import operator
             import json
 
-            url = os.environ["URL"]
+            url = "https://skore.probabl.ai"
             current = os.environ["CURRENT"]
 
             response = requests.get(f"{url}/versions.json")
@@ -125,10 +128,12 @@ jobs:
                 for i, version in enumerate(["dev"] + history)
             ]
 
-            with open("versions.json", "w", encoding="utf-8") as file:
+            os.mkdir("artifacts")
+
+            with open("artifacts/versions.json", "w", encoding="utf-8") as file:
                 json.dump(new, file, ensure_ascii=False, indent=4)
 
-            with open("index.html", "w", encoding="utf-8") as file:
+            with open("artifacts/index.html", "w", encoding="utf-8") as file:
               file.write(
                   f"""
                   <head>
@@ -138,52 +143,17 @@ jobs:
               )
         env:
           CURRENT: ${{ needs.sphinx-version.outputs.SPHINX_VERSION }}
-          URL: https://skore.probabl.ai  # !
-
       - uses: ./.github/actions/sphinx/deploy
         with:
           CONFIGURATION: ${{ secrets.RCLONE_CONFIG_DOCS }}
           ACTION: copy
-          SOURCE: versions.json
+          SOURCE: artifacts/
           DESTINATION:
-
-      # si tag
-      #     recuperer versions.json
-      #     build index.html
-      #     sync index.html
-      #
-
-      - uses: ./.github/actions/sphinx/deploy
-        with:
-          CONFIGURATION: ${{ secrets.RCLONE_CONFIG_DOCS }}
-          ACTION: copy
-          SOURCE: index.html
-          DESTINATION:
-
-  sphinx-deploy-on-main-push:
-    runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-    needs: sphinx-build
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          name: sphinx-html-artifact
-          path: html/
-      - uses: ./.github/actions/sphinx/deploy
-        with:
-          CONFIGURATION: ${{ secrets.RCLONE_CONFIG_DOCS }}
-          SOURCE: html/
-          DESTINATION: dev/
-
-      # si main.push
-      #     build dev/
-      #     sync dev/
 
   sphinx-clean:
     runs-on: ubuntu-latest
     if: always()
-    needs: [sphinx-deploy-on-release, sphinx-deploy-on-main-push]
+    needs: [sphinx-version, sphinx-build, sphinx-deploy-html, sphinx-deploy-root-files]
     steps:
       - uses: geekyeggo/delete-artifact@v5
         with:
