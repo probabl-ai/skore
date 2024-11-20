@@ -103,7 +103,7 @@ X_train, X_test, y_train, y_test = sklearn_train_test_split(
 )
 
 # %%
-# where ``y`` and ``X`` are inverted in the arguments and no warning is returned.
+# but Python will not catch this mistake for us.
 # This is where skore comes in handy.
 
 # %%
