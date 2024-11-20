@@ -108,7 +108,8 @@ X_train, X_test, y_train, y_test = sklearn_train_test_split(
 # --------------------------------------------------------
 
 # %%
-# First of all, naturally, it can be used as a simple drop-in replacement for sklearn:
+# First of all, naturally, it can be used as a simple drop-in replacement for
+# scikit-learn:
 
 # %%
 X_train, X_test, y_train, y_test = skore.train_test_split(
@@ -125,7 +126,8 @@ print(X_test, y_test)
 #   skore version as a drop-in replacement of scikit-learn.
 
 # %%
-# It allows users to explicit ``X`` and ``y``, making detection of issues easier:
+# Contrary to scikit-learn, skore allows users to explicit the``X`` and ``y``, making
+# detection of eventual issues easier:
 
 # %%
 X_train, X_test, y_train, y_test = skore.train_test_split(
@@ -135,8 +137,8 @@ print(X_train, y_train)
 print(X_test, y_test)
 
 # %%
-# Moreover, when passing ``X`` and ``y`` explicitly, ``X`` is always returned before
-# ``y``, even when they are inverted:
+# Moreover, when passing ``X`` and ``y`` explicitly, the ``X``'s are always returned
+# before the ``y``'s, even when they are inverted:
 
 # %%
 arr = np.arange(10).reshape((5, 2))
@@ -175,3 +177,4 @@ X_train, X_test, y_train, y_test = skore.train_test_split(
 # %%
 # Hence, skore recommends the users to take into account this class-imbalance, that
 # they might have missed, in their modelling strategy.
+# skore provides methodological checks.
