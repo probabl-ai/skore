@@ -95,7 +95,7 @@ print(y_test)
 #
 #   TypeError: got an unexpected keyword argument 'X'
 #
-# In general, in Python, positional arguments are useful to prevent typos such as:
+# In general, in Python, keyword arguments are useful to prevent typos. For example, in the following, ``X`` and ``y`` are reversed:
 
 # %%
 X_train, X_test, y_train, y_test = sklearn_train_test_split(
