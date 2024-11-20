@@ -24,6 +24,18 @@ def case_high_class_imbalance_too_few_examples():
     return args, kwargs, HighClassImbalanceTooFewExamplesWarning
 
 
+def case_high_class_imbalance_too_few_examples_kwargs():
+    args = ()
+    kwargs = dict(X=[[1]] * 4, y=[0, 1, 1, 1])
+    return args, kwargs, HighClassImbalanceTooFewExamplesWarning
+
+
+def case_high_class_imbalance_too_few_examples_kwargs_mixed():
+    args = ([[1]] * 4,)
+    kwargs = dict(y=[0, 1, 1, 1])
+    return args, kwargs, HighClassImbalanceTooFewExamplesWarning
+
+
 def case_stratify():
     args = ([0] * 10 + [1] * 10,)
     kwargs = dict(stratify=[0] * 10 + [1] * 10)
@@ -42,6 +54,8 @@ def case_random_state_unset():
     [
         case_high_class_imbalance,
         case_high_class_imbalance_too_few_examples,
+        case_high_class_imbalance_too_few_examples_kwargs,
+        case_high_class_imbalance_too_few_examples_kwargs_mixed,
         case_stratify,
         case_random_state_unset,
     ],
