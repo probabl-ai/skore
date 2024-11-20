@@ -58,8 +58,9 @@ my_project = skore.create("my_project.skore", working_dir=temp_dir_path)
 # %%
 import numpy as np
 
-X, y = np.arange(10).reshape((5, 2)), range(5)
-print(X, "\n", y)
+X = np.arange(10).reshape((5, 2))
+y = np.arange(5)
+print(f"{X}\n{y}")
 
 # %%
 # In scikit-learn, the most common usage is the following:
@@ -70,7 +71,7 @@ from sklearn.model_selection import train_test_split as sklearn_train_test_split
 X_train, X_test, y_train, y_test = sklearn_train_test_split(
     X, y, test_size=0.2, random_state=0
 )
-print(X_train, "\n", y_train, "\n", X_test, "\n", y_test)
+print(f"{X_train}\n{y_train}\n{X_test}\n{y_test}")
 
 # %%
 # Notice the shuffling that is done by default.
@@ -96,6 +97,7 @@ print(X_train, "\n", y_train, "\n", X_test, "\n", y_test)
 X_train, X_test, y_train, y_test = sklearn_train_test_split(
     y, X, test_size=0.2, random_state=0
 )
+print(f"{X_train}\n{y_train}\n{X_test}\n{y_test}")
 
 # %%
 # but Python will not catch this mistake for us.
@@ -110,6 +112,10 @@ X_train, X_test, y_train, y_test = sklearn_train_test_split(
 # :func:`sklearn.model_selection.train_test_split`.
 
 # %%
+X = np.arange(10_000).reshape((5_000, 2))
+y = [0] * 2_500 + [1] * 2_500
+
+# %%
 # Expliciting the positional arguments for ``X`` and ``y``
 # --------------------------------------------------------
 
@@ -121,7 +127,6 @@ X_train, X_test, y_train, y_test = sklearn_train_test_split(
 X_train, X_test, y_train, y_test = skore.train_test_split(
     X, y, test_size=0.2, random_state=0
 )
-print(X_train, "\n", y_train, "\n", X_test, "\n", y_test)
 
 # %%
 # .. note::
@@ -138,18 +143,22 @@ print(X_train, "\n", y_train, "\n", X_test, "\n", y_test)
 X_train, X_test, y_train, y_test = skore.train_test_split(
     X=X, y=y, test_size=0.2, random_state=0
 )
-print(X_train, "\n", y_train, "\n", X_test, "\n", y_test)
+X_train_explicit = X_train.copy()
 
 # %%
 # Moreover, when passing ``X`` and ``y`` explicitly, the ``X``'s are always returned
 # before the ``y``'s, even when they are inverted:
 
 # %%
-arr = np.arange(10).reshape((5, 2))
+arr = X.copy()
 arr_train, arr_test, X_train, X_test, y_train, y_test = skore.train_test_split(
     arr, y=y, X=X, test_size=0.2, random_state=0
 )
-print(X_train, "\n", y_train, "\n", X_test, "\n", y_test)
+X_train_explicit_inverted = X_train.copy()
+
+print("When expliciting, with the small typo, are the `X_train`'s still the same?")
+print(np.allclose(X_train_explicit, X_train_explicit_inverted))
+
 
 # %%
 # Automatic diagnostics: raising methodological warnings
@@ -170,12 +179,12 @@ print(X_train, "\n", y_train, "\n", X_test, "\n", y_test)
 # Suppose that we have imbalanced data:
 
 # %%
-X = [[1]] * 100
-y = [0] * 25 + [1] * 75
+X = np.arange(10_000).reshape((5_000, 2))
+y = [0] * 4_000 + [1] * 1_000
 
 # %%
-# In that case, :func:`skore.train_test_split` raises a warning telling the user that
-# there is class imbalance:
+# In that case, :func:`skore.train_test_split` raises a ``HighClassImbalanceWarning``
+# warning telling the user that there is class imbalance:
 
 # %%
 X_train, X_test, y_train, y_test = skore.train_test_split(
@@ -187,10 +196,11 @@ X_train, X_test, y_train, y_test = skore.train_test_split(
 # they might have missed, in their modelling strategy.
 
 # %%
-# Moreover, skore also detects class-imbalance with a class that has too few samples:
+# Moreover, skore also detects class-imbalance with a class that has too few samples
+# with a ``HighClassImbalanceTooFewExamplesWarning`` warning:
 
-X = [[1]] * 4
-y = [0, 1, 1, 1]
+X = np.arange(400).reshape((200, 2))
+y = [0] * 150 + [1] * 50
 
 X_train, X_test, y_train, y_test = skore.train_test_split(
     X=X, y=y, test_size=0.2, random_state=0
@@ -203,9 +213,10 @@ X_train, X_test, y_train, y_test = skore.train_test_split(
 # For `reproducible results across executions
 # <https://scikit-learn.org/stable/common_pitfalls.html#controlling-randomness>`_,
 # skore recommends the use of the ``random_state`` parameter when shuffling
-# (remember that ``shuffle=True`` by default):
+# (remember that ``shuffle=True`` by default) with a ``RandomStateUnsetWarning``
+# warning:
 
-X = [[1]] * 4
-y = [0] * 2 + [1] * 2
+X = np.arange(10_000).reshape((5_000, 2))
+y = [0] * 2_500 + [1] * 2_500
 
 X_train, X_test, y_train, y_test = skore.train_test_split(X=X, y=y, test_size=0.2)
