@@ -69,7 +69,7 @@ class HighClassImbalanceTooFewExamplesWarning(TrainTestSplitWarning):
         if (
             stratify
             or (y_test is None or len(y_test) == 0)
-            or (y_labels is None or len(y_test) == 0)
+            or (y_labels is None or len(y_labels) == 0)
             or ("classification" not in ml_task)
         ):
             return True
