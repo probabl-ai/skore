@@ -33,7 +33,7 @@ my_project = skore.create("my_project.skore", working_dir=temp_dir_path)
 # Train-test split in scikit-learn
 # ================================
 #
-# Scikit-learn holds a function for splitting the data into a training and a testing
+# Scikit-learn has a function for splitting the data into train and test
 # sets: :func:`sklearn.model_selection.train_test_split`.
 # Its signature is the following:
 #
