@@ -52,8 +52,12 @@ class TimeBasedColumnWarning(TrainTestSplitWarning):
         if not hasattr(X, "columns"):
             return None
 
-        # NOTE: Only works for pandas DataFrames currently
-        for col, dtype in X.dtypes.items():
-            if re.search("datetime", str(type(dtype)), flags=re.IGNORECASE):
-                df_name = X.name if hasattr(X, "name") else None
-                return TimeBasedColumnWarning._MSG(df_name, col)
+        dtypes = [(col, X[col].dtype) for col in X.columns]
+        datetime_columns = [
+            col
+            for col, dtype in dtypes
+            if re.search("datetime", str(type(dtype)), flags=re.IGNORECASE)
+        ]
+        if datetime_columns:
+            df_name = X.name if hasattr(X, "name") else None
+            return TimeBasedColumnWarning._MSG(df_name, datetime_columns[0])

@@ -2,6 +2,7 @@ import warnings
 from datetime import datetime
 
 import pandas
+import polars
 import pytest
 from skore.sklearn.train_test_split.train_test_split import (
     train_test_split,
@@ -75,6 +76,15 @@ def case_time_based_column():
     return args, kwargs, TimeBasedColumnWarning
 
 
+def case_time_based_column_polars():
+    X = polars.DataFrame(
+        {"ints": [0, 1], "dates": [datetime(2024, 11, 25), datetime(2024, 11, 26)]}
+    )
+    args = (X,)
+    kwargs = {}
+    return args, kwargs, TimeBasedColumnWarning
+
+
 @pytest.mark.parametrize(
     "params",
     [
@@ -87,6 +97,7 @@ def case_time_based_column():
         case_shuffle_true,
         case_shuffle_none,
         case_time_based_column,
+        case_time_based_column_polars,
     ],
 )
 def test_train_test_split_warns(params):
