@@ -63,8 +63,8 @@ have to skip this section.
                                                               file                  
                                                               '/tmp/sk              
                                                               ore_exam              
-                                                              ple_gkmb              
-                                                              zqbg/my_              
+                                                              ple_zaco              
+                                                              9g95/my_              
                                                               project.              
                                                               skore'                
                                                               was                   
@@ -399,7 +399,7 @@ skore provides methodological checks.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.026 seconds)
+   **Total running time of the script:** (0 minutes 0.047 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_05_train_test_split.py:
