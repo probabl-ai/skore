@@ -27,8 +27,6 @@ Then, you can install skore by using `pip`:
 pip install -U skore
 ```
 
-**Warning:** For Windows users, the encoding must be set to [UTF-8](https://docs.python.org/3/using/windows.html#utf-8-mode): see [PYTHONUTF8](https://docs.python.org/3/using/cmdline.html#envvar-PYTHONUTF8).
-
 ## 🚀 Quick start
 
 (For more information on how and why to use skore, see our [documentation](https://probabl-ai.github.io/skore/latest/auto_examples/index.html).)
