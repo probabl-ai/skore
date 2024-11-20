@@ -3,6 +3,9 @@
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
+import os
+import re
+
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
@@ -43,6 +46,43 @@ html_js_files = [
     "js/sg_plotly_resize.js",
 ]
 
+class SubSectionTitleOrder:
+    """Sort example gallery by title of subsection.
+
+    Assumes README.txt exists for all subsections and uses the subsection with
+    dashes, '---', as the adornment.
+    """
+
+    def __init__(self, src_dir):
+        self.src_dir = src_dir
+        self.regex = re.compile(r"^([\w ]+)\n-", re.MULTILINE)
+
+    def __repr__(self):
+        return "<%s>" % (self.__class__.__name__,)
+
+    def __call__(self, directory):
+        src_path = os.path.normpath(os.path.join(self.src_dir, directory))
+
+        # Forces Release Highlights to the top
+        if os.path.basename(src_path) == "release_highlights":
+            return "0"
+
+        readme = os.path.join(src_path, "README.txt")
+
+        try:
+            with open(readme, "r") as f:
+                content = f.read()
+        except FileNotFoundError:
+            return directory
+
+        title_match = self.regex.search(content)
+        if title_match is not None:
+            return title_match.group(1)
+        return directory
+
+sg_examples_dir = "../examples"
+
+
 # sphinx_gallery options
 sphinx_gallery_conf = {
     "examples_dirs": "../examples",  # path to example scripts
@@ -53,7 +93,8 @@ sphinx_gallery_conf = {
     'reference_url': {
         # The module you locally document uses None
         'skore': None,
-        }
+        },
+    "subsection_order": SubSectionTitleOrder(sg_examples_dir),
 }
 
 # intersphinx configuration
