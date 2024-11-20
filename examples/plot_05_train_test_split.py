@@ -165,9 +165,9 @@ print(X_test, y_test)
 #
 # In machine learning, class-imbalance (the classes in a dataset are not equally
 # represented) requires a specific modelling.
-# For example, in a dataset with 95% majority class and 5% minority class, a dummy model that
-# always predicts "class 1" will have a 95% accuracy, while it would be
-# useless for identifying examples of class 0.
+# For example, in a dataset with 95% majority class (class ``1``) and 5% minority class
+# (class ``0``), a dummy model that always predicts class ``1`` will have a 95%
+# accuracy, while it would be useless for identifying examples of class ``0``.
 # Hence, it is important to detect when we have class-imbalance.
 #
 # Suppose that we have imbalanced data :
