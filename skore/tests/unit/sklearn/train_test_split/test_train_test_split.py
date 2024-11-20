@@ -1,5 +1,7 @@
 import warnings
+from datetime import datetime
 
+import pandas
 import pytest
 from skore.sklearn.train_test_split.train_test_split import (
     train_test_split,
@@ -10,6 +12,7 @@ from skore.sklearn.train_test_split.warning import (
     RandomStateUnsetWarning,
     ShuffleTrueWarning,
     StratifyWarning,
+    TimeBasedColumnWarning,
 )
 
 
@@ -62,6 +65,16 @@ def case_shuffle_none():
     return args, kwargs, ShuffleTrueWarning
 
 
+def case_time_based_column():
+    """If a column has dtype "datetime", the warning should fire"""
+    X = pandas.DataFrame(
+        {"ints": [0, 1], "dates": [datetime(2024, 11, 25), datetime(2024, 11, 26)]}
+    )
+    args = (X,)
+    kwargs = {}
+    return args, kwargs, TimeBasedColumnWarning
+
+
 @pytest.mark.parametrize(
     "params",
     [
@@ -73,6 +86,7 @@ def case_shuffle_none():
         case_random_state_unset,
         case_shuffle_true,
         case_shuffle_none,
+        case_time_based_column,
     ],
 )
 def test_train_test_split_warns(params):

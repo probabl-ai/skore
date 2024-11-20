@@ -129,6 +129,9 @@ def train_test_split(
         stratify=stratify,
     )
 
+    if X is None:
+        X = arrays[0] if len(arrays) == 1 else arrays[-2]
+
     if y is None and len(arrays) >= 2:
         y = arrays[-1]
 
@@ -148,6 +151,7 @@ def train_test_split(
         random_state=random_state,
         shuffle=shuffle,
         stratify=stratify,
+        X=X,
         y=y,
         y_test=y_test,
         y_labels=y_labels,
