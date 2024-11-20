@@ -81,7 +81,7 @@ print(y_test)
 # Notice the shuffling that is done by default.
 
 # %%
-# In scikit-learn, the user can not explicitly set the design matrix ``X`` and
+# In scikit-learn, the user cannot explicitly set the design matrix ``X`` and
 # the target ``y``. The following:
 #
 # .. code-block:: python
