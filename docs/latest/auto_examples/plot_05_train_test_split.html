@@ -481,12 +481,12 @@ have to skip this section.</p>
 <a href="../generated/skore.Project.html#skore.Project" title="skore.Project" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">my_project</span></a> <span class="o">=</span> <span class="n">skore</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s2">&quot;my_project.skore&quot;</span><span class="p">,</span> <span class="n">working_dir</span><span class="o">=</span><span class="n">temp_dir_path</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>[11/20/24 10:56:00] &lt;Logger skore.project.project (INFO)&gt; Project  create.py:148
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>[11/20/24 15:22:49] &lt;Logger skore.project.project (INFO)&gt; Project  create.py:148
                                                           file
                                                           &#39;/tmp/sk
                                                           ore_exam
-                                                          ple_m55i
-                                                          s6qx/my_
+                                                          ple_4t68
+                                                          0ij8/my_
                                                           project.
                                                           skore&#39;
                                                           was
@@ -581,7 +581,11 @@ scikit-learn:</p>
 <span class="nb">print</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">y_test</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>[[0 1]
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>/opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/skore/sklearn/train_test_split/train_test_split.py:158: HighClassImbalanceTooFewExamplesWarning:
+
+It seems that you have a classification problem with at least one class with fewer than 100 examples in the test set. In this case, using train_test_split may not be a good idea because of high variability in the scores obtained on the test set. We suggest three options to tackle this challenge: you can increase test_size, collect more data, or use skore&#39;s cross_validate function.
+
+[[0 1]
  [2 3]
  [6 7]
  [8 9]]
@@ -652,7 +656,7 @@ there is class imbalance:</p>
 <span class="p">)</span>
 </pre></div>
 </div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>/opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/skore/sklearn/train_test_split/train_test_split.py:153: HighClassImbalanceWarning:
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>/opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/skore/sklearn/train_test_split/train_test_split.py:158: HighClassImbalanceWarning:
 
 It seems that you have a classification problem with a high class imbalance. In this case, using train_test_split may not be a good idea because of high variability in the scores obtained on the test set. To tackle this challenge we suggest to use skore&#39;s cross_validate function.
 </pre></div>
@@ -660,7 +664,7 @@ It seems that you have a classification problem with a high class imbalance. In 
 <p>Hence, skore recommends the users to take into account this class-imbalance, that
 they might have missed, in their modelling strategy.
 skore provides methodological checks.</p>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 0.025 seconds)</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 0.026 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-05-train-test-split-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/4b860fd94d1a8cca99a690486b997717/plot_05_train_test_split.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_05_train_test_split.ipynb</span></code></a></p>
