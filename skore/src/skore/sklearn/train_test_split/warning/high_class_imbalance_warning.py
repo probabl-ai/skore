@@ -25,7 +25,7 @@ class HighClassImbalanceWarning(TrainTestSplitWarning):
     MSG = (
         "It seems that you have a classification problem with a high class "
         "imbalance. In this "
-        "case, using train_test_split may not be a good idea because of high  "
+        "case, using train_test_split may not be a good idea because of high "
         "variability in the scores obtained on the test set. "
         "To tackle this challenge we suggest to use skore's "
         "cross_validate function."
