@@ -59,8 +59,7 @@ my_project = skore.create("my_project.skore", working_dir=temp_dir_path)
 import numpy as np
 
 X, y = np.arange(10).reshape((5, 2)), range(5)
-print(X)
-print(y)
+print(X, "\n", y)
 
 # %%
 # In scikit-learn, the most common usage is the following:
@@ -71,11 +70,7 @@ from sklearn.model_selection import train_test_split as sklearn_train_test_split
 X_train, X_test, y_train, y_test = sklearn_train_test_split(
     X, y, test_size=0.2, random_state=0
 )
-print(X_train)
-print(y_train)
-
-print(X_test)
-print(y_test)
+print(X_train, "\n", y_train, "\n", X_test, "\n", y_test)
 
 # %%
 # Notice the shuffling that is done by default.
@@ -126,8 +121,7 @@ X_train, X_test, y_train, y_test = sklearn_train_test_split(
 X_train, X_test, y_train, y_test = skore.train_test_split(
     X, y, test_size=0.2, random_state=0
 )
-print(X_train, y_train)
-print(X_test, y_test)
+print(X_train, "\n", y_train, "\n", X_test, "\n", y_test)
 
 # %%
 # .. note::
@@ -137,15 +131,14 @@ print(X_test, y_test)
 #   skore version as a drop-in replacement of scikit-learn.
 
 # %%
-# Contrary to scikit-learn, skore allows users to explicit the``X`` and ``y``, making
+# Contrary to scikit-learn, skore allows users to explicit the ``X`` and ``y``, making
 # detection of eventual issues easier:
 
 # %%
 X_train, X_test, y_train, y_test = skore.train_test_split(
     X=X, y=y, test_size=0.2, random_state=0
 )
-print(X_train, y_train)
-print(X_test, y_test)
+print(X_train, "\n", y_train, "\n", X_test, "\n", y_test)
 
 # %%
 # Moreover, when passing ``X`` and ``y`` explicitly, the ``X``'s are always returned
@@ -156,8 +149,7 @@ arr = np.arange(10).reshape((5, 2))
 arr_train, arr_test, X_train, X_test, y_train, y_test = skore.train_test_split(
     arr, y=y, X=X, test_size=0.2, random_state=0
 )
-print(X_train, y_train)
-print(X_test, y_test)
+print(X_train, "\n", y_train, "\n", X_test, "\n", y_test)
 
 # %%
 # Automatic diagnostics: raising methodological warnings
