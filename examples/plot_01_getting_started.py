@@ -12,15 +12,17 @@ This getting started guide illustrates how to use skore and why:
 
    - Scikit-learn compatible :func:`skore.cross_validate` provides insights and checks
      on cross-validation.
-
-Creating a skore project, loading it, and launching the UI
-==========================================================
 """
 
 # %%
-# We start by creating a temporary directory to store our project such that we can
-# easily clean it after executing this example. If you want to keep the project,
-# you have to skip this section.
+# Creating and loading the skore project, and launching the skore UI
+# ==================================================================
+
+# %%
+# We start by creating a temporary directory to store our project so that we can
+# easily clean it after executing this example:
+
+# %%
 import tempfile
 from pathlib import Path
 
@@ -28,8 +30,9 @@ temp_dir = tempfile.TemporaryDirectory(prefix="skore_example_")
 temp_dir_path = Path(temp_dir.name)
 
 # %%
-# Creating the skore project:
+# We create and load the skore project from this temporary directory:
 
+# %%
 import skore
 
 my_project = skore.create("my_project", working_dir=temp_dir_path)

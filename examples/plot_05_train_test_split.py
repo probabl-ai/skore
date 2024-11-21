@@ -13,21 +13,25 @@ ML/DS projects.
 # %%
 # Creating and loading the skore project
 # ======================================
-#
-# We start by creating a temporary directory to store our project such that we can
-# easily clean it after executing this example. If you want to keep the project, you
-# have to skip this section.
+
+# %%
+# We start by creating a temporary directory to store our project so that we can
+# easily clean it after executing this example:
 
 # %%
 import tempfile
 from pathlib import Path
 
-import skore
-
 temp_dir = tempfile.TemporaryDirectory(prefix="skore_example_")
 temp_dir_path = Path(temp_dir.name)
 
-my_project = skore.create("my_project.skore", working_dir=temp_dir_path)
+# %%
+# We create and load the skore project from this temporary directory:
+
+# %%
+import skore
+
+my_project = skore.create("my_project", working_dir=temp_dir_path)
 
 # %%
 # Train-test split in scikit-learn
@@ -218,3 +222,12 @@ X = np.arange(10_000).reshape((5_000, 2))
 y = [0] * 2_500 + [1] * 2_500
 
 X_train, X_test, y_train, y_test = skore.train_test_split(X=X, y=y, test_size=0.2)
+
+# %%
+# Cleanup the project
+# -------------------
+#
+# Removing the temporary directory:
+
+# %%
+temp_dir.cleanup()
