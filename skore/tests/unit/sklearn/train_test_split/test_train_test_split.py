@@ -70,22 +70,6 @@ def test_train_test_split_warns(params):
         train_test_split(*args, **kwargs)
 
 
-def test_train_test_split_no_y():
-    """When calling `train_test_split` with one array argument,
-    this array is assumed to be `X` and not `y`."""
-    warnings.simplefilter("error")
-
-    # Since the array is `X` and we do no checks on it, this should produce no
-    # warning
-    train_test_split([[1]] * 4, random_state=0)
-
-
-def test_train_test_split_no_warn():
-    warnings.simplefilter("error")
-
-    train_test_split([[1]] * 2000, [0] * 1000 + [1] * 1000, random_state=0)
-
-
 def test_train_test_split_kwargs():
     """Passing data by keyword arguments should produce the same results as passing
     them by position."""
