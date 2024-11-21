@@ -91,7 +91,7 @@ cv_results = skore.cross_validate(clf, X, y, cv=5, project=my_project)
 You will automatically be able to visualize some key metrics (although you might have forgotten to specify all of them):
 ![GIF: short demo of skore](https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_11_21_cross_val_comp.gif)
 
-There is also a train-test split function that enhances scikit-learn.
+There is also a train-test split function that enhances scikit-learn. See more in our [documentation](https://probabl-ai.github.io/skore/).
 
 ## 🔨 Contributing
 
