@@ -28,7 +28,8 @@ temp_dir = tempfile.TemporaryDirectory(prefix="skore_example_")
 temp_dir_path = Path(temp_dir.name)
 
 # %%
-# create the skore project
+# Creating the skore project:
+
 import skore
 
 my_project = skore.create("my_project", working_dir=temp_dir_path)
@@ -160,5 +161,7 @@ fig_plotly
 # Cleanup the project
 # -------------------
 #
-# Remove the temporary directory:
+# Removing the temporary directory:
+
+# %%
 temp_dir.cleanup()
