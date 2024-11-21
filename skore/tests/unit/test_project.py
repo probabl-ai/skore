@@ -6,6 +6,7 @@ import numpy
 import numpy.testing
 import pandas
 import pandas.testing
+import polars
 import pytest
 from matplotlib import pyplot as plt
 from PIL import Image
@@ -76,6 +77,27 @@ def test_put_pandas_series(in_memory_project):
     series = pandas.Series([0, 1, 2], index=pandas.Index([0, 1, 2], name="myIndex"))
     in_memory_project.put("pandas_series", series)
     pandas.testing.assert_series_equal(in_memory_project.get("pandas_series"), series)
+
+
+def test_put_polars_dataframe(in_memory_project):
+    dataframe = polars.DataFrame(
+        {
+            "A": [1, 2, 3],
+            "B": [4, 5, 6],
+            "C": [7, 8, 9],
+        },
+    )
+
+    in_memory_project.put("polars_dataframe", dataframe)
+    polars.testing.assert_frame_equal(
+        in_memory_project.get("polars_dataframe"), dataframe
+    )
+
+
+def test_put_polars_series(in_memory_project):
+    series = polars.Series("my_series", [0, 1, 2])
+    in_memory_project.put("polars_series", series)
+    polars.testing.assert_series_equal(in_memory_project.get("polars_series"), series)
 
 
 def test_put_numpy_array(in_memory_project):
