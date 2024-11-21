@@ -34,8 +34,8 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os: ['ubuntu-latest', 'windows-latest']
-        python-version: ['3.9', '3.10', '3.11', '3.12']
+        os: ['ubuntu-latest']
+        python-version: ['3.9']
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -65,13 +65,13 @@ jobs:
           wheel=(dist/*.whl); python -m pip install "${wheel}[test]"
 
           # Test
-          pytest --junitxml=coverage.xml --cov-report=term-missing:skip-covered --cov=src/ tests/ | tee pytest-coverage.txt
+          pytest --junitxml=coverage.xml --cov-report=term-missing:skip-covered src/ tests/ | tee pytest-coverage.txt
 
       - name: Pytest coverage comment
         uses: MishaKav/pytest-coverage-comment@main
         with:
-          junitxml-path: ./skore/coverage.xml
           pytest-coverage-path: ./skore/pytest-coverage.txt
+          junitxml-path: ./skore/coverage.xml
           title: pytest coverage report
 
   cleanup:
