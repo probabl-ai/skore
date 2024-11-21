@@ -65,9 +65,15 @@ jobs:
           wheel=(dist/*.whl); python -m pip install "${wheel}[test]"
 
           # Test
-          python -m pytest src/ tests/
+          python -m pytest --cov-report=xml src/ tests/ | tee pytest-coverage.txt
         env:
           PYTHONUTF8: 1
+      - name: Pytest coverage comment
+        uses: MishaKav/pytest-coverage-comment@main
+        with:
+          pytest-xml-coverage-path: ./skore/coverage.xml
+          report-only-changed-files: true
+          title: pytest coverage report
 
   cleanup:
     runs-on: ubuntu-latest
