@@ -10,11 +10,10 @@
 With skore, data scientists can:
 1. Track and visualize their ML/DS results.
 2. Get assistance when developing their ML/DS projects.
-    - Scikit-learn compatible `skore.cross_validate()` provides insights and checks on
-      cross-validation.
+    - Scikit-learn compatible `skore.cross_validate()` and `skore.train_test_split()` provide insights and checks on cross-validation and train-test-split.
 
 These are only the first features: skore is a work in progress and aims to be an end-to-end library for data scientists.
-Stay tuned, and join [our Discord](https://discord.probabl.ai) if you want to give us feedback!
+Stay tuned! Feedbacks are welcome: please feel free to join [our Discord](https://discord.probabl.ai).
 
 ![GIF: short demo of skore](https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_10_31_skore_demo_compressed.gif)
 
@@ -29,19 +28,40 @@ pip install -U skore
 
 ## 🚀 Quick start
 
-(For more information on how and why to use skore, see our [documentation](https://probabl-ai.github.io/skore/latest/auto_examples/index.html).)
+> **Note:** For more information on how and why to use skore, see our [documentation](https://probabl-ai.github.io/skore/).
 
-1. From your shell, initialize a skore project, here named `my_project`:
-```bash
-skore create "my_project"
+### Manipulating the skore UI
+
+1. From your Python code, create and load a skore project, here named `my_project`:
+```python
+import skore
+my_project = skore.create("my_project")
 ```
 This will create a skore project directory named `my_project.skore` in your current working directory.
 
-2. Now that the project file exists, from your Python code (in the same directory), load the project so that you can read from and write to it, for example you can store an integer:
+2. Start storing some items, for example you can store an integer:
 ```python
-from skore import load
-project = load("my_project.skore")
 project.put("my_int", 3)
+```
+or the result of a scikit-learn grid search:
+```python
+import numpy as np
+from sklearn.datasets import load_diabetes
+from sklearn.linear_model import Ridge
+from sklearn.model_selection import GridSearchCV
+
+diabetes = load_diabetes()
+X = diabetes.data[:150]
+y = diabetes.target[:150]
+
+gs_cv = GridSearchCV(
+    Ridge(),
+    param_grid={"alpha": np.logspace(-3, 5, 50)},
+    scoring="neg_root_mean_squared_error",
+)
+gs_cv.fit(X, y)
+
+my_project.put("my_gs_cv", gs_cv)
 ```
 
 3. Finally, from your shell (in the same directory), start the UI locally:
@@ -52,6 +72,26 @@ This will automatically open a browser at the UI's location:
 1. On the top left, by default, you can observe that you are in a _View_ called `default`. You can rename this view or create another one.
 2. From the _Items_ section on the bottom left, you can add stored items to this view, either by clicking on `+` or by doing drag-and-drop.
 3. In the skore UI on the right, you can drag-and-drop items to re-order them, remove items, etc.
+
+### Get assistance when developing your ML/DS projects
+
+By using `skore.cross_validate()`:
+```python
+import skore
+my_project = skore.create("my_project")
+
+from sklearn.datasets import load_iris
+from sklearn.svm import SVC
+
+X, y = load_iris(return_X_y=True)
+clf = SVC(kernel="linear", C=1, random_state=0)
+
+cv_results = skore.cross_validate(clf, X, y, cv=5, project=my_project)
+```
+You will automatically be able to visualize some key metrics (although you might have forgotten to specify all of them):
+![GIF: short demo of skore](https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_11_21_cross_val_comp.gif)
+
+There is also a train-test split function that enhances scikit-learn.
 
 ## 🔨 Contributing
 
