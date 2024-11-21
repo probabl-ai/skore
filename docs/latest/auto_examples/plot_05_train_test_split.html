@@ -478,21 +478,21 @@ have to skip this section.</p>
 <span class="n">temp_dir</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">TemporaryDirectory</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;skore_example_&quot;</span><span class="p">)</span>
 <span class="n">temp_dir_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">temp_dir</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 
-<a href="../generated/skore.Project.html#skore.Project" title="skore.Project" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">my_project</span></a> <span class="o">=</span> <span class="n">skore</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s2">&quot;my_project.skore&quot;</span><span class="p">,</span> <span class="n">working_dir</span><span class="o">=</span><span class="n">temp_dir_path</span><span class="p">)</span>
+<a href="../generated/skore.Project.html#skore.Project" title="skore.Project" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">my_project</span></a> <span class="o">=</span> <a href="../generated/skore.create.html#skore.create" title="skore.create" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-function"><span class="n">skore</span><span class="o">.</span><span class="n">create</span></a><span class="p">(</span><span class="s2">&quot;my_project.skore&quot;</span><span class="p">,</span> <span class="n">working_dir</span><span class="o">=</span><span class="n">temp_dir_path</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>&lt;Logger skore.project.project (INFO)&gt; Project  create.py:148
-                                      file
-                                      &#39;/tmp/sk
-                                      ore_exam
-                                      ple_z16z
-                                      7rvj/my_
-                                      project.
-                                      skore&#39;
-                                      was
-                                      successf
-                                      ully
-                                      created.
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>[11/21/24 12:07:05] &lt;Logger skore.project.project (INFO)&gt; Project  create.py:148
+                                                          file
+                                                          &#39;/tmp/sk
+                                                          ore_exam
+                                                          ple_t665
+                                                          1ys6/my_
+                                                          project.
+                                                          skore&#39;
+                                                          was
+                                                          successf
+                                                          ully
+                                                          created.
 </pre></div>
 </div>
 </section>
@@ -517,16 +517,17 @@ positional arguments) and the scikit-learn doc indicates that it is <code class=
 <p>Let us construct a design matrix <code class="docutils literal notranslate"><span class="pre">X</span></code> and target <code class="docutils literal notranslate"><span class="pre">y</span></code> to illustrate our point:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
-<span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">)),</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+<span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">X</span><span class="w"> </span><span class="si">= }</span><span class="se">\n</span><span class="si">{</span><span class="n">y</span><span class="w"> </span><span class="si">= }</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>[[0 1]
- [2 3]
- [4 5]
- [6 7]
- [8 9]]
- range(0, 5)
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>X = array([[0, 1],
+       [2, 3],
+       [4, 5],
+       [6, 7],
+       [8, 9]])
+y = array([0, 1, 2, 3, 4])
 </pre></div>
 </div>
 <p>In scikit-learn, the most common usage is the following:</p>
@@ -535,16 +536,16 @@ positional arguments) and the scikit-learn doc indicates that it is <code class=
 <span class="n">X_train</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">y_test</span> <span class="o">=</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html#sklearn.model_selection.train_test_split" title="sklearn.model_selection.train_test_split" class="sphx-glr-backref-module-sklearn-model_selection sphx-glr-backref-type-py-function"><span class="n">sklearn_train_test_split</span></a><span class="p">(</span>
     <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span>
 <span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">y_test</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">X_train</span><span class="w"> </span><span class="si">= }</span><span class="se">\n</span><span class="si">{</span><span class="n">y_train</span><span class="w"> </span><span class="si">= }</span><span class="se">\n</span><span class="si">{</span><span class="n">X_test</span><span class="w"> </span><span class="si">= }</span><span class="se">\n</span><span class="si">{</span><span class="n">y_test</span><span class="w"> </span><span class="si">= }</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>[[0 1]
- [2 3]
- [6 7]
- [8 9]]
- [0, 1, 3, 4]
- [[4 5]]
- [2]
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>X_train = array([[0, 1],
+       [2, 3],
+       [6, 7],
+       [8, 9]])
+y_train = array([0, 1, 3, 4])
+X_test = array([[4, 5]])
+y_test = array([2])
 </pre></div>
 </div>
 <p>Notice the shuffling that is done by default.</p>
@@ -562,6 +563,16 @@ the target <code class="docutils literal notranslate"><span class="pre">y</span>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">X_train</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">y_test</span> <span class="o">=</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html#sklearn.model_selection.train_test_split" title="sklearn.model_selection.train_test_split" class="sphx-glr-backref-module-sklearn-model_selection sphx-glr-backref-type-py-function"><span class="n">sklearn_train_test_split</span></a><span class="p">(</span>
     <span class="n">y</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span>
 <span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">X_train</span><span class="w"> </span><span class="si">= }</span><span class="se">\n</span><span class="si">{</span><span class="n">y_train</span><span class="w"> </span><span class="si">= }</span><span class="se">\n</span><span class="si">{</span><span class="n">X_test</span><span class="w"> </span><span class="si">= }</span><span class="se">\n</span><span class="si">{</span><span class="n">y_test</span><span class="w"> </span><span class="si">= }</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>X_train = array([0, 1, 3, 4])
+y_train = array([[0, 1],
+       [2, 3],
+       [6, 7],
+       [8, 9]])
+X_test = array([2])
+y_test = array([[4, 5]])
 </pre></div>
 </div>
 <p>but Python will not catch this mistake for us.
@@ -571,6 +582,10 @@ This is where skore comes in handy.</p>
 <h2>Train-test split in skore<a class="headerlink" href="#train-test-split-in-skore" title="Link to this heading">#</a></h2>
 <p>skore has its own <a class="reference internal" href="../generated/skore.train_test_split.html#skore.train_test_split" title="skore.train_test_split"><code class="xref py py-func docutils literal notranslate"><span class="pre">skore.train_test_split()</span></code></a> that wraps scikit-learn’s
 <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html#sklearn.model_selection.train_test_split" title="(in scikit-learn v1.5)"><code class="xref py py-func docutils literal notranslate"><span class="pre">sklearn.model_selection.train_test_split()</span></code></a>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">10_000</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">5_000</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+<span class="n">y</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="mi">2_500</span> <span class="o">+</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="mi">2_500</span>
+</pre></div>
+</div>
 <section id="expliciting-the-positional-arguments-for-x-and-y">
 <h3>Expliciting the positional arguments for <code class="docutils literal notranslate"><span class="pre">X</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code><a class="headerlink" href="#expliciting-the-positional-arguments-for-x-and-y" title="Link to this heading">#</a></h3>
 <p>First of all, naturally, it can be used as a simple drop-in replacement for
@@ -578,20 +593,6 @@ scikit-learn:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">X_train</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">y_test</span> <span class="o">=</span> <a href="../generated/skore.train_test_split.html#skore.train_test_split" title="skore.train_test_split" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-function"><span class="n">skore</span><span class="o">.</span><span class="n">train_test_split</span></a><span class="p">(</span>
     <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span>
 <span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">y_test</span><span class="p">)</span>
-</pre></div>
-</div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>/opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/skore/sklearn/train_test_split/train_test_split.py:161: HighClassImbalanceTooFewExamplesWarning:
-
-It seems that you have a classification problem with at least one class with fewer than 100 examples in the test set. In this case, using train_test_split may not be a good idea because of high variability in the scores obtained on the test set. We suggest three options to tackle this challenge: you can increase test_size, collect more data, or use skore&#39;s cross_validate function.
-
-[[0 1]
- [2 3]
- [6 7]
- [8 9]]
- [0, 1, 3, 4]
- [[4 5]]
- [2]
 </pre></div>
 </div>
 <div class="admonition note">
@@ -601,65 +602,65 @@ It seems that you have a classification problem with at least one class with few
 skore version as a drop-in replacement of scikit-learn.</p>
 </div>
 <p>Contrary to scikit-learn, skore allows users to explicit the <code class="docutils literal notranslate"><span class="pre">X</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code>, making
-detection of eventual issues easier:</p>
+detection of potential issues easier:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">X_train</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">y_test</span> <span class="o">=</span> <a href="../generated/skore.train_test_split.html#skore.train_test_split" title="skore.train_test_split" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-function"><span class="n">skore</span><span class="o">.</span><span class="n">train_test_split</span></a><span class="p">(</span>
     <span class="n">X</span><span class="o">=</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span>
 <span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">y_test</span><span class="p">)</span>
-</pre></div>
-</div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>/opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/skore/sklearn/train_test_split/train_test_split.py:161: HighClassImbalanceTooFewExamplesWarning:
-
-It seems that you have a classification problem with at least one class with fewer than 100 examples in the test set. In this case, using train_test_split may not be a good idea because of high variability in the scores obtained on the test set. We suggest three options to tackle this challenge: you can increase test_size, collect more data, or use skore&#39;s cross_validate function.
-
-[[0 1]
- [2 3]
- [6 7]
- [8 9]]
- [0, 1, 3, 4]
- [[4 5]]
- [2]
+<span class="n">X_train_explicit</span> <span class="o">=</span> <span class="n">X_train</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 </pre></div>
 </div>
 <p>Moreover, when passing <code class="docutils literal notranslate"><span class="pre">X</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code> explicitly, the <code class="docutils literal notranslate"><span class="pre">X</span></code>’s are always returned
 before the <code class="docutils literal notranslate"><span class="pre">y</span></code>’s, even when they are inverted:</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">arr</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 <span class="n">arr_train</span><span class="p">,</span> <span class="n">arr_test</span><span class="p">,</span> <span class="n">X_train</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">y_test</span> <span class="o">=</span> <a href="../generated/skore.train_test_split.html#skore.train_test_split" title="skore.train_test_split" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-function"><span class="n">skore</span><span class="o">.</span><span class="n">train_test_split</span></a><span class="p">(</span>
     <span class="n">arr</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">,</span> <span class="n">X</span><span class="o">=</span><span class="n">X</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span>
 <span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">y_test</span><span class="p">)</span>
+<span class="n">X_train_explicit_inverted</span> <span class="o">=</span> <span class="n">X_train</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;When expliciting, with the small typo, are the `X_train`&#39;s still the same?&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">X_train_explicit</span><span class="p">,</span> <span class="n">X_train_explicit_inverted</span><span class="p">))</span>
 </pre></div>
 </div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>/opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/skore/sklearn/train_test_split/train_test_split.py:161: HighClassImbalanceTooFewExamplesWarning:
-
-It seems that you have a classification problem with at least one class with fewer than 100 examples in the test set. In this case, using train_test_split may not be a good idea because of high variability in the scores obtained on the test set. We suggest three options to tackle this challenge: you can increase test_size, collect more data, or use skore&#39;s cross_validate function.
-
-[[0 1]
- [2 3]
- [6 7]
- [8 9]]
- [0, 1, 3, 4]
- [[4 5]]
- [2]
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>When expliciting, with the small typo, are the `X_train`&#39;s still the same?
+True
 </pre></div>
 </div>
 </section>
 <section id="automatic-diagnostics-raising-methodological-warnings">
 <h3>Automatic diagnostics: raising methodological warnings<a class="headerlink" href="#automatic-diagnostics-raising-methodological-warnings" title="Link to this heading">#</a></h3>
-<p>In machine learning, class-imbalance (the classes in a dataset are not equally
+<p>In this section, we show how skore can provide methodological checks.</p>
+<section id="class-imbalance">
+<h4>Class imbalance<a class="headerlink" href="#class-imbalance" title="Link to this heading">#</a></h4>
+<p>In machine learning, class imbalance (the classes in a dataset are not equally
 represented) requires a specific modelling.
 For example, in a dataset with 95% majority class (class <code class="docutils literal notranslate"><span class="pre">1</span></code>) and 5% minority class
 (class <code class="docutils literal notranslate"><span class="pre">0</span></code>), a dummy model that always predicts class <code class="docutils literal notranslate"><span class="pre">1</span></code> will have a 95%
 accuracy, while it would be useless for identifying examples of class <code class="docutils literal notranslate"><span class="pre">0</span></code>.
-Hence, it is important to detect when we have class-imbalance.</p>
-<p>Suppose that we have imbalanced data :</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">X</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">*</span> <span class="mi">4</span>
-<span class="n">y</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+Hence, it is important to detect when we have class imbalance.</p>
+<p>Suppose that we have imbalanced data:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">10_000</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">5_000</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+<span class="n">y</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="mi">4_000</span> <span class="o">+</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="mi">1_000</span>
 </pre></div>
 </div>
-<p>In that case, <a class="reference internal" href="../generated/skore.train_test_split.html#skore.train_test_split" title="skore.train_test_split"><code class="xref py py-func docutils literal notranslate"><span class="pre">skore.train_test_split()</span></code></a> raises a warning telling the user that
-there is class imbalance:</p>
+<p>In that case, <a class="reference internal" href="../generated/skore.train_test_split.html#skore.train_test_split" title="skore.train_test_split"><code class="xref py py-func docutils literal notranslate"><span class="pre">skore.train_test_split()</span></code></a> raises a <code class="docutils literal notranslate"><span class="pre">HighClassImbalanceWarning</span></code>:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">X_train</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">y_test</span> <span class="o">=</span> <a href="../generated/skore.train_test_split.html#skore.train_test_split" title="skore.train_test_split" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-function"><span class="n">skore</span><span class="o">.</span><span class="n">train_test_split</span></a><span class="p">(</span>
+    <span class="n">X</span><span class="o">=</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>/opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/skore/sklearn/train_test_split/train_test_split.py:161: HighClassImbalanceWarning:
+
+It seems that you have a classification problem with a high class imbalance. In this case, using train_test_split may not be a good idea because of high variability in the scores obtained on the test set. To tackle this challenge we suggest to use skore&#39;s cross_validate function.
+</pre></div>
+</div>
+<p>Hence, skore recommends the users to take into account this class imbalance, that
+they might have missed, in their modelling strategy.</p>
+<p>Moreover, skore also detects class imbalance with a class that has too few samples
+with a <code class="docutils literal notranslate"><span class="pre">HighClassImbalanceTooFewExamplesWarning</span></code>:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">400</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">200</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+<span class="n">y</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="mi">150</span> <span class="o">+</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="mi">50</span>
+
+<span class="n">X_train</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">y_test</span> <span class="o">=</span> <a href="../generated/skore.train_test_split.html#skore.train_test_split" title="skore.train_test_split" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-function"><span class="n">skore</span><span class="o">.</span><span class="n">train_test_split</span></a><span class="p">(</span>
     <span class="n">X</span><span class="o">=</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span>
 <span class="p">)</span>
 </pre></div>
@@ -673,10 +674,24 @@ It seems that you have a classification problem with at least one class with few
 It seems that you have a classification problem with a high class imbalance. In this case, using train_test_split may not be a good idea because of high variability in the scores obtained on the test set. To tackle this challenge we suggest to use skore&#39;s cross_validate function.
 </pre></div>
 </div>
-<p>Hence, skore recommends the users to take into account this class-imbalance, that
-they might have missed, in their modelling strategy.
-skore provides methodological checks.</p>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 0.025 seconds)</p>
+</section>
+<section id="shuffling-without-a-random-state">
+<h4>Shuffling without a random state<a class="headerlink" href="#shuffling-without-a-random-state" title="Link to this heading">#</a></h4>
+<p>For <a class="reference external" href="https://scikit-learn.org/stable/common_pitfalls.html#controlling-randomness">reproducible results across executions</a>,
+skore recommends the use of the <code class="docutils literal notranslate"><span class="pre">random_state</span></code> parameter when shuffling
+(remember that <code class="docutils literal notranslate"><span class="pre">shuffle=True</span></code> by default) with a <code class="docutils literal notranslate"><span class="pre">RandomStateUnsetWarning</span></code>:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">10_000</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">5_000</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+<span class="n">y</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="mi">2_500</span> <span class="o">+</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="mi">2_500</span>
+
+<span class="n">X_train</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">y_test</span> <span class="o">=</span> <a href="../generated/skore.train_test_split.html#skore.train_test_split" title="skore.train_test_split" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-function"><span class="n">skore</span><span class="o">.</span><span class="n">train_test_split</span></a><span class="p">(</span><span class="n">X</span><span class="o">=</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>/opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/skore/sklearn/train_test_split/train_test_split.py:161: RandomStateUnsetWarning:
+
+We recommend setting the parameter `random_state`. This will ensure the reproducibility of your work.
+</pre></div>
+</div>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 0.043 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-05-train-test-split-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/4b860fd94d1a8cca99a690486b997717/plot_05_train_test_split.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_05_train_test_split.ipynb</span></code></a></p>
@@ -689,6 +704,7 @@ skore provides methodological checks.</p>
 </div>
 </div>
 <p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
 </section>
 </section>
 </section>
@@ -744,7 +760,11 @@ skore provides methodological checks.</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#train-test-split-in-scikit-learn">Train-test split in scikit-learn</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#train-test-split-in-skore">Train-test split in skore</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#expliciting-the-positional-arguments-for-x-and-y">Expliciting the positional arguments for <code class="docutils literal notranslate"><span class="pre">X</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#automatic-diagnostics-raising-methodological-warnings">Automatic diagnostics: raising methodological warnings</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#automatic-diagnostics-raising-methodological-warnings">Automatic diagnostics: raising methodological warnings</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#class-imbalance">Class imbalance</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#shuffling-without-a-random-state">Shuffling without a random state</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
