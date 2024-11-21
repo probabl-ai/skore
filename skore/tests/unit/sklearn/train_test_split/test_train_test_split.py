@@ -8,6 +8,7 @@ from skore.sklearn.train_test_split.warning import (
     HighClassImbalanceTooFewExamplesWarning,
     HighClassImbalanceWarning,
     RandomStateUnsetWarning,
+    ShuffleTrueWarning,
     StratifyWarning,
 )
 
@@ -49,6 +50,12 @@ def case_random_state_unset():
     return args, kwargs, RandomStateUnsetWarning
 
 
+def case_shuffle_true():
+    args = ([[1]] * 4, [0, 1, 1, 1])
+    kwargs = dict(shuffle=True)
+    return args, kwargs, ShuffleTrueWarning
+
+
 @pytest.mark.parametrize(
     "params",
     [
@@ -58,6 +65,7 @@ def case_random_state_unset():
         case_high_class_imbalance_too_few_examples_kwargs_mixed,
         case_stratify,
         case_random_state_unset,
+        case_shuffle_true,
     ],
 )
 def test_train_test_split_warns(params):
