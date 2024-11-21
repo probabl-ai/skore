@@ -2,6 +2,11 @@ name: Reusable skore workflow
 
 on: [workflow_call]
 
+defaults:
+  run:
+    shell: "bash"
+    working-directory: "./skore"
+
 jobs:
   # build-skore-ui:
   #   runs-on: ubuntu-latest
