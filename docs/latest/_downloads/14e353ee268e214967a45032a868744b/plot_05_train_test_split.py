@@ -58,8 +58,9 @@ my_project = skore.create("my_project.skore", working_dir=temp_dir_path)
 # %%
 import numpy as np
 
-X, y = np.arange(10).reshape((5, 2)), range(5)
-print(X, "\n", y)
+X = np.arange(10).reshape((5, 2))
+y = np.arange(5)
+print(f"{X = }\n{y = }")
 
 # %%
 # In scikit-learn, the most common usage is the following:
@@ -70,7 +71,7 @@ from sklearn.model_selection import train_test_split as sklearn_train_test_split
 X_train, X_test, y_train, y_test = sklearn_train_test_split(
     X, y, test_size=0.2, random_state=0
 )
-print(X_train, "\n", y_train, "\n", X_test, "\n", y_test)
+print(f"{X_train = }\n{y_train = }\n{X_test = }\n{y_test = }")
 
 # %%
 # Notice the shuffling that is done by default.
@@ -96,6 +97,7 @@ print(X_train, "\n", y_train, "\n", X_test, "\n", y_test)
 X_train, X_test, y_train, y_test = sklearn_train_test_split(
     y, X, test_size=0.2, random_state=0
 )
+print(f"{X_train = }\n{y_train = }\n{X_test = }\n{y_test = }")
 
 # %%
 # but Python will not catch this mistake for us.
@@ -110,6 +112,10 @@ X_train, X_test, y_train, y_test = sklearn_train_test_split(
 # :func:`sklearn.model_selection.train_test_split`.
 
 # %%
+X = np.arange(10_000).reshape((5_000, 2))
+y = [0] * 2_500 + [1] * 2_500
+
+# %%
 # Expliciting the positional arguments for ``X`` and ``y``
 # --------------------------------------------------------
 
@@ -121,7 +127,6 @@ X_train, X_test, y_train, y_test = sklearn_train_test_split(
 X_train, X_test, y_train, y_test = skore.train_test_split(
     X, y, test_size=0.2, random_state=0
 )
-print(X_train, "\n", y_train, "\n", X_test, "\n", y_test)
 
 # %%
 # .. note::
@@ -132,45 +137,53 @@ print(X_train, "\n", y_train, "\n", X_test, "\n", y_test)
 
 # %%
 # Contrary to scikit-learn, skore allows users to explicit the ``X`` and ``y``, making
-# detection of eventual issues easier:
+# detection of potential issues easier:
 
 # %%
 X_train, X_test, y_train, y_test = skore.train_test_split(
     X=X, y=y, test_size=0.2, random_state=0
 )
-print(X_train, "\n", y_train, "\n", X_test, "\n", y_test)
+X_train_explicit = X_train.copy()
 
 # %%
 # Moreover, when passing ``X`` and ``y`` explicitly, the ``X``'s are always returned
 # before the ``y``'s, even when they are inverted:
 
 # %%
-arr = np.arange(10).reshape((5, 2))
+arr = X.copy()
 arr_train, arr_test, X_train, X_test, y_train, y_test = skore.train_test_split(
     arr, y=y, X=X, test_size=0.2, random_state=0
 )
-print(X_train, "\n", y_train, "\n", X_test, "\n", y_test)
+X_train_explicit_inverted = X_train.copy()
+
+print("When expliciting, with the small typo, are the `X_train`'s still the same?")
+print(np.allclose(X_train_explicit, X_train_explicit_inverted))
+
 
 # %%
 # Automatic diagnostics: raising methodological warnings
 # ------------------------------------------------------
 #
-# In machine learning, class-imbalance (the classes in a dataset are not equally
+# In this section, we show how skore can provide methodological checks.
+#
+# Class imbalance
+# ^^^^^^^^^^^^^^^
+#
+# In machine learning, class imbalance (the classes in a dataset are not equally
 # represented) requires a specific modelling.
 # For example, in a dataset with 95% majority class (class ``1``) and 5% minority class
 # (class ``0``), a dummy model that always predicts class ``1`` will have a 95%
 # accuracy, while it would be useless for identifying examples of class ``0``.
-# Hence, it is important to detect when we have class-imbalance.
+# Hence, it is important to detect when we have class imbalance.
 #
-# Suppose that we have imbalanced data :
+# Suppose that we have imbalanced data:
 
 # %%
-X = [[1]] * 4
-y = [0, 1, 1, 1]
+X = np.arange(10_000).reshape((5_000, 2))
+y = [0] * 4_000 + [1] * 1_000
 
 # %%
-# In that case, :func:`skore.train_test_split` raises a warning telling the user that
-# there is class imbalance:
+# In that case, :func:`skore.train_test_split` raises a ``HighClassImbalanceWarning``:
 
 # %%
 X_train, X_test, y_train, y_test = skore.train_test_split(
@@ -178,6 +191,30 @@ X_train, X_test, y_train, y_test = skore.train_test_split(
 )
 
 # %%
-# Hence, skore recommends the users to take into account this class-imbalance, that
+# Hence, skore recommends the users to take into account this class imbalance, that
 # they might have missed, in their modelling strategy.
-# skore provides methodological checks.
+
+# %%
+# Moreover, skore also detects class imbalance with a class that has too few samples
+# with a ``HighClassImbalanceTooFewExamplesWarning``:
+
+X = np.arange(400).reshape((200, 2))
+y = [0] * 150 + [1] * 50
+
+X_train, X_test, y_train, y_test = skore.train_test_split(
+    X=X, y=y, test_size=0.2, random_state=0
+)
+
+# %%
+# Shuffling without a random state
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+# For `reproducible results across executions
+# <https://scikit-learn.org/stable/common_pitfalls.html#controlling-randomness>`_,
+# skore recommends the use of the ``random_state`` parameter when shuffling
+# (remember that ``shuffle=True`` by default) with a ``RandomStateUnsetWarning``:
+
+X = np.arange(10_000).reshape((5_000, 2))
+y = [0] * 2_500 + [1] * 2_500
+
+X_train, X_test, y_train, y_test = skore.train_test_split(X=X, y=y, test_size=0.2)
