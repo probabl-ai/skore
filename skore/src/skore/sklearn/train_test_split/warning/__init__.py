@@ -11,13 +11,15 @@ from .high_class_imbalance_warning import (
     HighClassImbalanceWarning,
 )
 from .random_state_unset_warning import RandomStateUnsetWarning
-from .stratify_is_set import StratifyWarning
+from .shuffle_true_warning import ShuffleTrueWarning
+from .stratify_is_set_warning import StratifyWarning
 
 TRAIN_TEST_SPLIT_WARNINGS = [
     HighClassImbalanceTooFewExamplesWarning,
     HighClassImbalanceWarning,
     StratifyWarning,
     RandomStateUnsetWarning,
+    ShuffleTrueWarning,
 ]
 
 __all__ = [
@@ -26,4 +28,5 @@ __all__ = [
     "HighClassImbalanceWarning",
     "StratifyWarning",
     "RandomStateUnsetWarning",
+    "ShuffleTrueWarning",
 ]
