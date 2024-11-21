@@ -117,6 +117,13 @@ my_project.put("my_df", df)
 my_project.put("my_fig", fig)
 
 # %%
+# .. seealso::
+#
+#   For more information about about the functionalities and the different types
+#   of items that we can store in a :class:`~skore.Project`,
+#   see :ref:`example_overview_skore_project`.
+
+# %%
 # Cross-validation with skore
 # ===========================
 #
@@ -124,9 +131,6 @@ my_project.put("my_fig", fig)
 # :func:`skore.cross_validate` function that wraps scikit-learn's
 # :func:`sklearn.model_selection.cross_validate`, to provide more context and
 # facilitate the analysis.
-#
-# For more information on the motivation behind skore's ``cross_validate``,
-# see :ref:`example_cross_validate`.
 #
 # On the same previous data and a Ridge regressor (with default ``alpha`` value),
 # let us launch skore's cross-validation, which will automatically add
@@ -140,6 +144,12 @@ cv_results = cross_validate(Ridge(), X, y, cv=5, project=my_project)
 
 fig_plotly = my_project.get_item("cross_validation").plot
 fig_plotly
+
+# %%
+# .. seealso::
+#
+#   For more information about the motivation and usage of :func:`skore.cross_validate`,
+#   see :ref:`example_cross_validate`.
 
 # %%
 # Manipulating the skore UI
