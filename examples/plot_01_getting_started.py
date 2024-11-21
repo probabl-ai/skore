@@ -172,7 +172,7 @@ fig_plotly
 #   :alt: Getting started with ``skore`` demo
 
 # %%
-# .. note::
+# .. tip::
 #   Stay tuned for some new features!
 #   Feel free to join our `Discord <https://discord.gg/scBZerAGwW>`_!
 
