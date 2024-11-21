@@ -38,10 +38,10 @@ import skore
 my_project = skore.create("my_project", working_dir=temp_dir_path)
 
 # %%
-# This will create a skore project directory named ``my_project.skore`` in your
+# This will create a skore project directory named ``my_project.skore`` in our
 # current directory.
 #
-# From your shell (in the same directory), start the UI locally:
+# From our shell (in the same directory), start the UI locally:
 #
 # .. code-block:: bash
 #
@@ -148,17 +148,23 @@ fig_plotly
 # The skore UI is a very efficient tool to track and visualize the items in your
 # project, such as grid search or cross-validation results.
 #
-# #. On the top left, by default, you can observe that you are in a *View* called ``default``. You can rename this view or create another one.
-# #. From the *Items* section on the bottom left, you can add stored items to this view, either by clicking on ``+`` or by doing drag-and-drop.
-# #. In the skore UI on the right, you can drag-and-drop items to re-order them, remove items, etc.
+# #.  On the top left, by default, you can observe that you are in a *View* called
+#     ``default``. You can rename this view or create another one.
+#
+# #.  From the *Items* section on the bottom left, you can add stored items to this
+#     view, either by clicking on ``+`` or by doing drag-and-drop.
+#
+# #.  In the skore UI on the right, you can drag-and-drop items to re-order them,
+#     remove items, etc.
 
 # %%
 # .. image:: https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_10_31_skore_demo_compressed.gif
 #   :alt: Getting started with ``skore`` demo
 
 # %%
-# .. admonition:: Stay tuned for some new features!
-#   Feel free to join our `Discord <https://discord.gg/scBZerAGwW>`_.
+# .. note::
+#   Stay tuned for some new features!
+#   Feel free to join our `Discord <https://discord.gg/scBZerAGwW>`_!
 
 # %%
 # Cleanup the project

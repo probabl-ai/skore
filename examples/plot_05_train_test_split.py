@@ -6,8 +6,7 @@ Enhancing train-test split
 ==========================
 
 This example illustrates the motivation and the use of skore's
-:func:`skore.train_test_split` to get assistance when developing your
-ML/DS projects.
+:func:`skore.train_test_split` to get assistance when developing ML/DS projects.
 """
 
 # %%
@@ -95,7 +94,8 @@ print(f"{X_train = }\n{y_train = }\n{X_test = }\n{y_test = }")
 #
 #   TypeError: got an unexpected keyword argument 'X'
 #
-# In general, in Python, keyword arguments are useful to prevent typos. For example, in the following, ``X`` and ``y`` are reversed:
+# In general, in Python, keyword arguments are useful to prevent typos. For example,
+# in the following, ``X`` and ``y`` are reversed:
 
 # %%
 X_train, X_test, y_train, y_test = sklearn_train_test_split(
