@@ -39,8 +39,8 @@ class Project:
     def put(self, key: Union[str, dict[str, Any]], value: Optional[Any] = None):
         """Add one or more key-value pairs to the Project.
 
-        If ``key`` is a string, then `put` adds the single ``key``-``value`` pair
-        mapping to the Project.
+        If ``key`` is a string, then :func:`~skore.Project.put` adds the single
+        ``key``-``value`` pair mapping to the Project.
         If ``key`` is a dict, it is interpreted as multiple key-value pairs to add to
         the Project.
         If an item with the same key already exists, its value is replaced by the new

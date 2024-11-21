@@ -142,12 +142,13 @@ def _strip_cv_results_scores(cv_results: dict, added_scorers: list[str]) -> dict
 def cross_validate(*args, project: Optional[Project] = None, **kwargs) -> dict:
     """Evaluate estimator by cross-validation and output UI-friendly object.
 
-    This function wraps scikit-learn's :func:`~sklearn.model_selection.cross_validate`
+    This function wraps scikit-learn's :func:`sklearn.model_selection.cross_validate`
     function, to provide more context and facilitate the analysis.
-    As such, the arguments are the same as scikit-learn's ``cross_validate`` function.
+    As such, the arguments are the same as the
+    :func:`sklearn.model_selection.cross_validate` function.
 
     The dict returned by this function is a strict super-set of the one returned by
-    scikit-learn's :func:`~sklearn.model_selection.cross_validate`.
+    :func:`sklearn.model_selection.cross_validate`.
 
     For a user guide and in-depth example, see :ref:`example_cross_validate` and
     :ref:`example_track_cv`.
@@ -164,7 +165,7 @@ def cross_validate(*args, project: Optional[Project] = None, **kwargs) -> dict:
     *   Save the result to ``project``, if available
 
     *   Clean the cross-validation results so that the output of the function is as
-        close as possible to sklearn's
+        close as possible to scikit-learn's
 
     *   Return the clean cross-validation results.
 
@@ -183,43 +184,43 @@ def cross_validate(*args, project: Optional[Project] = None, **kwargs) -> dict:
         A project to save cross-validation data into. If None, no save is performed.
 
     groups : array-like of shape (n_samples,), default=None
-        See :func:`~sklearn.model_selection.cross_validate`.
+        See :func:`sklearn.model_selection.cross_validate`.
 
     scoring : str, callable, list, tuple, or dict, default=None
-        See :func:`~sklearn.model_selection.cross_validate`.
+        See :func:`sklearn.model_selection.cross_validate`.
 
     cv : int, cross-validation generator or an iterable, default=None
-        See :func:`~sklearn.model_selection.cross_validate`.
+        See :func:`sklearn.model_selection.cross_validate`.
 
     n_jobs : int, default=None
-        See :func:`~sklearn.model_selection.cross_validate`.
+        See :func:`sklearn.model_selection.cross_validate`.
 
     verbose : int, default=0
-        See :func:`~sklearn.model_selection.cross_validate`.
+        See :func:`sklearn.model_selection.cross_validate`.
 
     params : dict, default=None
-        See :func:`~sklearn.model_selection.cross_validate`.
+        See :func:`sklearn.model_selection.cross_validate`.
 
     pre_dispatch : int or str, default=’2*n_jobs’
-        See :func:`~sklearn.model_selection.cross_validate`.
+        See :func:`sklearn.model_selection.cross_validate`.
 
     return_train_score : bool, default=False
-        See :func:`~sklearn.model_selection.cross_validate`.
+        See :func:`sklearn.model_selection.cross_validate`.
 
     return_estimator : bool, default=False
-        See :func:`~sklearn.model_selection.cross_validate`.
+        See :func:`sklearn.model_selection.cross_validate`.
 
     return_indices : bool, default=False
-        See :func:`~sklearn.model_selection.cross_validate`.
+        See :func:`sklearn.model_selection.cross_validate`.
 
     error_score : 'raise' or numeric, default=np.nan
-        See :func:`~sklearn.model_selection.cross_validate`.
+        See :func:`sklearn.model_selection.cross_validate`.
 
     Returns
     -------
     cv_results : dict
         A dict of the form returned by scikit-learn's
-        :func:`~sklearn.model_selection.cross_validate` function.
+        :func:`sklearn.model_selection.cross_validate` function.
 
     Examples
     --------
