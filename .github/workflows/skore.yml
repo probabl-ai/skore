@@ -65,8 +65,18 @@ jobs:
           wheel=(dist/*.whl); python -m pip install "${wheel}[test]"
 
           # Test
-          pytest --junitxml=coverage.xml --cov=skore src/ tests/ | tee pytest-coverage.txt
+          pytest --no-cov src/ tests/
 
+  skore-coverage:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: 'bash'
+        working-directory: './skore-ui'
+    steps:
+      - name: pytest coverage
+        run: |
+          pytest --junitxml=coverage.xml --cov=skore src/ tests/ | tee pytest-coverage.txt
       - name: Pytest coverage comment
         uses: MishaKav/pytest-coverage-comment@main
         with:
