@@ -70,7 +70,7 @@ jobs:
       - name: Pytest coverage comment
         uses: MishaKav/pytest-coverage-comment@main
         with:
-          pytest-xml-coverage-path: ./skore/coverage.xml
+          junitxml-path: ./skore/coverage.xml
           report-only-changed-files: true
           title: pytest coverage report
 
