@@ -52,14 +52,13 @@ my_project.put("my_int", 16)
 # %%
 # .. note::
 #
-#   If we had not created a temporary project and had launched the skore
-#   dashboard with:
+#   We could launch the skore dashboard with:
 #
 #   .. code-block:: bash
 #
 #       skore launch "my_project"
 #
-#   from the skore UI, we could visualize the different histories of the ``my_int``
+#   and, from the skore UI, we could visualize the different histories of the ``my_int``
 #   item:
 #
 #   .. image:: https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_11_21_tracking_comp.gif

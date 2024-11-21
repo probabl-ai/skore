@@ -153,13 +153,20 @@ def cross_validate(*args, project: Optional[Project] = None, **kwargs) -> dict:
     :ref:`example_track_cv`.
 
     More precisely, this function does the following:
-    - Detect the ML task being performed, based on the estimator and data
-    - Based on the ML task, add appropriate metrics to compute during cross-validation
-    - Perform the cross-validation itself
-    - Save the result to `project`, if available
-    - Clean the cross-validation results so that the output of the function is as close
-    as possible to sklearn's
-    - Return the clean cross-validation results.
+
+    *   Detect the ML task being performed, based on the estimator and data
+
+    *   Based on the ML task, add appropriate metrics to compute during
+        cross-validation
+
+    *   Perform the cross-validation itself
+
+    *   Save the result to ``project``, if available
+
+    *   Clean the cross-validation results so that the output of the function is as
+        close as possible to sklearn's
+
+    *   Return the clean cross-validation results.
 
     Parameters
     ----------
