@@ -65,7 +65,8 @@ jobs:
           wheel=(dist/*.whl); python -m pip install "${wheel}[test]"
 
           # Test
-          python -m pytest --cov-report=xml src/ tests/ | tee pytest-coverage.txt
+          pytest --junitxml=coverage.xml --cov-report=term-missing:skip-covered --cov=src/ tests/ | tee pytest-coverage.txt
+
       - name: Pytest coverage comment
         uses: MishaKav/pytest-coverage-comment@main
         with:
