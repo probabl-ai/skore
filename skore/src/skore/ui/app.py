@@ -1,5 +1,6 @@
 """FastAPI factory used to create the API to interact with stores."""
 
+import sys
 from typing import Optional
 
 from fastapi import APIRouter, FastAPI
@@ -45,6 +46,15 @@ def create_app(
     # Should be after the API routes to avoid shadowing previous routes.
     static_path = get_static_path()
     if static_path.exists():
+        # The mimetypes module may fail to set the
+        # correct MIME type for javascript files.
+        # More info on this here: https://github.com/encode/starlette/issues/829
+        # So force it...
+        if "win" in sys.platform:
+            import mimetypes
+
+            mimetypes.add_type("application/javascript", ".js")
+
         app.mount(
             "/",
             StaticFiles(
