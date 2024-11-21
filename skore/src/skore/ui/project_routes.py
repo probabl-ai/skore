@@ -4,6 +4,7 @@ import base64
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any
+from venv import logger
 
 from fastapi import APIRouter, HTTPException, Request, status
 
@@ -121,5 +122,8 @@ async def delete_view(request: Request, key: str):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="View not found"
         ) from None
+
+    if True:
+        logger.info(msg="yo")
 
     return __serialize_project(project)
