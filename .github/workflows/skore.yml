@@ -70,10 +70,6 @@ jobs:
   skore-coverage:
     # needs: test-skore
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: "bash"
-        working-directory: "./skore"
     steps:
       - name: pwd
         run: |
