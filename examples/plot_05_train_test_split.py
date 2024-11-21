@@ -184,7 +184,7 @@ y = [0] * 4_000 + [1] * 1_000
 
 # %%
 # In that case, :func:`skore.train_test_split` raises a ``HighClassImbalanceWarning``
-# telling the user that there is class imbalance:
+# warning the user that there is class imbalance:
 
 # %%
 X_train, X_test, y_train, y_test = skore.train_test_split(
