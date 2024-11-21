@@ -110,6 +110,7 @@ addopts = [
   "--ignore=doc",
   "--ignore=examples",
   "--ignore=notebooks",
+  "--ignore=hatch",
 ]
 
 [tool.ruff]
