@@ -183,8 +183,7 @@ X = np.arange(10_000).reshape((5_000, 2))
 y = [0] * 4_000 + [1] * 1_000
 
 # %%
-# In that case, :func:`skore.train_test_split` raises a ``HighClassImbalanceWarning``
-# warning the user that there is class imbalance:
+# In that case, :func:`skore.train_test_split` raises a ``HighClassImbalanceWarning``:
 
 # %%
 X_train, X_test, y_train, y_test = skore.train_test_split(
@@ -197,7 +196,7 @@ X_train, X_test, y_train, y_test = skore.train_test_split(
 
 # %%
 # Moreover, skore also detects class imbalance with a class that has too few samples
-# with a ``HighClassImbalanceTooFewExamplesWarning`` warning:
+# with a ``HighClassImbalanceTooFewExamplesWarning``:
 
 X = np.arange(400).reshape((200, 2))
 y = [0] * 150 + [1] * 50
@@ -213,8 +212,7 @@ X_train, X_test, y_train, y_test = skore.train_test_split(
 # For `reproducible results across executions
 # <https://scikit-learn.org/stable/common_pitfalls.html#controlling-randomness>`_,
 # skore recommends the use of the ``random_state`` parameter when shuffling
-# (remember that ``shuffle=True`` by default) with a ``RandomStateUnsetWarning``
-# warning:
+# (remember that ``shuffle=True`` by default) with a ``RandomStateUnsetWarning``:
 
 X = np.arange(10_000).reshape((5_000, 2))
 y = [0] * 2_500 + [1] * 2_500
