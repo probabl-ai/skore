@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>skore.load &#8212; skore</title>
+    <title>skore.create &#8212; skore</title>
   
   
   
@@ -51,12 +51,12 @@
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=fd10adb8"></script>
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'generated/skore.load';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'generated/skore.create';</script>
     <script src="../_static/js/sg_plotly_resize.js?v=b4668e2c"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="skore.cross_validate" href="skore.cross_validate.html" />
-    <link rel="prev" title="skore.create" href="skore.create.html" />
+    <link rel="next" title="skore.load" href="skore.load.html" />
+    <link rel="prev" title="skore.item.primitive_item.PrimitiveItem" href="skore.item.primitive_item.PrimitiveItem.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="" />
@@ -399,8 +399,8 @@
 <li class="toctree-l1"><a class="reference internal" href="skore.item.primitive_item.PrimitiveItem.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore.item.primitive_item</span></code>.PrimitiveItem</a></li>
 </ul>
 <ul class="current nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="skore.create.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore</span></code>.create</a></li>
-<li class="toctree-l1 current active"><a class="current reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore</span></code>.load</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore</span></code>.create</a></li>
+<li class="toctree-l1"><a class="reference internal" href="skore.load.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore</span></code>.load</a></li>
 </ul>
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="skore.cross_validate.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore</span></code>.cross_validate</a></li>
@@ -443,7 +443,7 @@
     
     <li class="breadcrumb-item"><a href="../api.html" class="nav-link">API</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore</span></code>.load</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore</span></code>.create</span></li>
   </ul>
 </nav>
 </div>
@@ -460,12 +460,33 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="skore-load">
-<h1><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore</span></code>.load<a class="headerlink" href="#skore-load" title="Link to this heading">#</a></h1>
+  <section id="skore-create">
+<h1><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore</span></code>.create<a class="headerlink" href="#skore-create" title="Link to this heading">#</a></h1>
 <dl class="py function">
-<dt class="sig sig-object py" id="skore.load">
-<span class="sig-prename descclassname"><span class="pre">skore.</span></span><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">project_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Path</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="skore.Project.html#skore.Project" title="skore.project.project.Project"><span class="pre">Project</span></a></span></span><a class="headerlink" href="#skore.load" title="Link to this definition">#</a></dt>
-<dd><p>Load an existing Project given a project name or path.</p>
+<dt class="sig sig-object py" id="skore.create">
+<span class="sig-prename descclassname"><span class="pre">skore.</span></span><span class="sig-name descname"><span class="pre">create</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">project_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">working_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="skore.Project.html#skore.Project" title="skore.project.project.Project"><span class="pre">Project</span></a></span></span><a class="headerlink" href="#skore.create" title="Link to this definition">#</a></dt>
+<dd><p>Create a project file named according to <cite>project_name</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>project_name</strong><span class="classifier">Path-like</span></dt><dd><p>Name of the project to be created, or a relative or absolute path.</p>
+</dd>
+<dt><strong>working_dir</strong><span class="classifier">Path or None</span></dt><dd><p>If <cite>project_name</cite> is not an absolute path, it will be considered relative to
+<cite>working_dir</cite>. If <cite>project_name</cite> is an absolute path, <cite>working_dir</cite> will have
+no effect. If set to None (the default), <cite>working_dir</cite> will be re-set to the
+current working directory.</p>
+</dd>
+<dt><strong>overwrite</strong><span class="classifier">bool</span></dt><dd><p>If True, overwrite an existing project with the same name. If False, raise an
+error if a project with the same name already exists.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt>The project directory path</dt><dd></dd>
+</dl>
+</dd>
+</dl>
 </dd></dl>
 
 <div class="clearer"></div></section>
@@ -481,20 +502,20 @@
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="skore.create.html"
+       href="skore.item.primitive_item.PrimitiveItem.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore</span></code>.create</p>
+        <p class="prev-next-title"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore.item.primitive_item</span></code>.PrimitiveItem</p>
       </div>
     </a>
     <a class="right-next"
-       href="skore.cross_validate.html"
+       href="skore.load.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore</span></code>.cross_validate</p>
+        <p class="prev-next-title"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore</span></code>.load</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -517,14 +538,14 @@
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#skore.load"><code class="docutils literal notranslate"><span class="pre">load()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#skore.create"><code class="docutils literal notranslate"><span class="pre">create()</span></code></a></li>
 </ul>
   </nav></div>
 
   <div class="sidebar-secondary-item">
 
   <div class="tocsection sourcelink">
-    <a href="../_sources/generated/skore.load.rst.txt">
+    <a href="../_sources/generated/skore.create.rst.txt">
       <i class="fa-solid fa-file-lines"></i> Show Source
     </a>
   </div>
