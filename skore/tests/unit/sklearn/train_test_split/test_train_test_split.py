@@ -8,6 +8,7 @@ from skore.sklearn.train_test_split.warning import (
     HighClassImbalanceTooFewExamplesWarning,
     HighClassImbalanceWarning,
     RandomStateUnsetWarning,
+    ShuffleTrueWarning,
     StratifyWarning,
 )
 
@@ -49,6 +50,18 @@ def case_random_state_unset():
     return args, kwargs, RandomStateUnsetWarning
 
 
+def case_shuffle_true():
+    args = ([[1]] * 4, [0, 1, 1, 1])
+    kwargs = dict(shuffle=True)
+    return args, kwargs, ShuffleTrueWarning
+
+
+def case_shuffle_none():
+    args = ([[1]] * 4, [0, 1, 1, 1])
+    kwargs = {}
+    return args, kwargs, ShuffleTrueWarning
+
+
 @pytest.mark.parametrize(
     "params",
     [
@@ -58,6 +71,8 @@ def case_random_state_unset():
         case_high_class_imbalance_too_few_examples_kwargs_mixed,
         case_stratify,
         case_random_state_unset,
+        case_shuffle_true,
+        case_shuffle_none,
     ],
 )
 def test_train_test_split_warns(params):
@@ -68,22 +83,6 @@ def test_train_test_split_warns(params):
 
     with pytest.warns(warning_cls):
         train_test_split(*args, **kwargs)
-
-
-def test_train_test_split_no_y():
-    """When calling `train_test_split` with one array argument,
-    this array is assumed to be `X` and not `y`."""
-    warnings.simplefilter("error")
-
-    # Since the array is `X` and we do no checks on it, this should produce no
-    # warning
-    train_test_split([[1]] * 4, random_state=0)
-
-
-def test_train_test_split_no_warn():
-    warnings.simplefilter("error")
-
-    train_test_split([[1]] * 2000, [0] * 1000 + [1] * 1000, random_state=0)
 
 
 def test_train_test_split_kwargs():
