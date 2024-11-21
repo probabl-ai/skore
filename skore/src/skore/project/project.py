@@ -11,6 +11,8 @@ from skore.item import (
     NumpyArrayItem,
     PandasDataFrameItem,
     PandasSeriesItem,
+    PolarsDataFrameItem,
+    PolarsSeriesItem,
     PrimitiveItem,
     SklearnBaseEstimatorItem,
     object_to_item,
@@ -139,6 +141,10 @@ class Project:
         elif isinstance(item, PandasDataFrameItem):
             return item.dataframe
         elif isinstance(item, PandasSeriesItem):
+            return item.series
+        elif isinstance(item, PolarsDataFrameItem):
+            return item.dataframe
+        elif isinstance(item, PolarsSeriesItem):
             return item.series
         elif isinstance(item, SklearnBaseEstimatorItem):
             return item.estimator

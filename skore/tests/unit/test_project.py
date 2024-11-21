@@ -7,6 +7,7 @@ import numpy.testing
 import pandas
 import pandas.testing
 import polars
+import polars.testing
 import pytest
 from matplotlib import pyplot as plt
 from PIL import Image
