@@ -7,14 +7,14 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        shell: 'bash'
-        working-directory: './skore-ui'
+        shell: "bash"
+        working-directory: "./skore-ui"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
+          cache: "npm"
           cache-dependency-path: skore-ui/package-lock.json
       - shell: bash
         run: |
@@ -29,20 +29,20 @@ jobs:
     needs: build-skore-ui
     defaults:
       run:
-        shell: 'bash'
-        working-directory: './skore'
+        shell: "bash"
+        working-directory: "./skore"
     strategy:
       fail-fast: true
       matrix:
-        os: ['ubuntu-latest', 'windows-latest']
-        python-version: ['3.9', '3.10', '3.11', '3.12']
+        os: ["ubuntu-latest", "windows-latest"]
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-          cache: 'pip'
+          cache: "pip"
       - name: Download package distributions
         uses: actions/download-artifact@v4
         with:
@@ -68,11 +68,12 @@ jobs:
           pytest --no-cov src/ tests/
 
   skore-coverage:
+    needs: test-skore
     runs-on: ubuntu-latest
     defaults:
       run:
-        shell: 'bash'
-        working-directory: './skore-ui'
+        shell: "bash"
+        working-directory: "./skore"
     steps:
       - name: pytest coverage
         run: |
