@@ -66,8 +66,6 @@ jobs:
 
           # Test
           python -m pytest src/ tests/
-        env:
-          PYTHONUTF8: 1
 
   cleanup:
     runs-on: ubuntu-latest
