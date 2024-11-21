@@ -98,9 +98,9 @@ sphinx = [
 [tool.pytest.ini_options]
 addopts = [
   "--doctest-modules",
-  # "--cov=src/",
-  # "--cov=tests/",
-  # "--cov-branch",
+  "--cov=src/",
+  "--cov=tests/",
+  "--cov-branch",
   "--import-mode=importlib",
   "--no-header",
   "--verbosity=2",
