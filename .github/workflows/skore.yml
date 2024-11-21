@@ -66,8 +66,6 @@ jobs:
 
           # Test
           python -m pytest --cov-report=xml src/ tests/ | tee pytest-coverage.txt
-        env:
-          PYTHONUTF8: 1
       - name: Pytest coverage comment
         uses: MishaKav/pytest-coverage-comment@main
         with:
