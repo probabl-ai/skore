@@ -39,4 +39,4 @@ class ShuffleTrueWarning(TrainTestSplitWarning):
         bool
             True if the check passed, False otherwise.
         """
-        return not shuffle
+        return shuffle is False

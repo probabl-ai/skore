@@ -56,6 +56,12 @@ def case_shuffle_true():
     return args, kwargs, ShuffleTrueWarning
 
 
+def case_shuffle_none():
+    args = ([[1]] * 4, [0, 1, 1, 1])
+    kwargs = {}
+    return args, kwargs, ShuffleTrueWarning
+
+
 @pytest.mark.parametrize(
     "params",
     [
@@ -66,6 +72,7 @@ def case_shuffle_true():
         case_stratify,
         case_random_state_unset,
         case_shuffle_true,
+        case_shuffle_none,
     ],
 )
 def test_train_test_split_warns(params):
