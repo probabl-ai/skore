@@ -24,6 +24,7 @@ These classes are meant for managing a Project.
     :template: function.rst
     :nosignatures:
 
+    create
     load
 
 Get assistance when developing ML/DS projects
