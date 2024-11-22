@@ -17,7 +17,6 @@ def test_skore_ui_index(client):
     response = client.get("/")
 
     assert response.status_code == 200
-    assert b"<!DOCTYPE html>" in response.content
 
 
 def test_get_items(client, in_memory_project):

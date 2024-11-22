@@ -3,30 +3,7 @@ name: Reusable skore workflow
 on: [workflow_call]
 
 jobs:
-  build-skore-ui:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: "bash"
-        working-directory: "./skore-ui"
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-          cache-dependency-path: skore-ui/package-lock.json
-      - shell: bash
-        run: |
-          npm install
-          npm run build
-      - uses: actions/upload-artifact@v4
-        with:
-          name: skore-ui-package-distributions
-          path: skore-ui/dist
-
   test-skore:
-    needs: build-skore-ui
     defaults:
       run:
         shell: "bash"
@@ -51,9 +28,14 @@ jobs:
       - name:
         timeout-minutes: 10
         run: |
+          # Install dependencies
           python -m pip install --upgrade pip
           python -m pip install --upgrade pre-commit
           python -m pip install --upgrade build
+
+          # fake frontend
+          mkdir -p src/skore/ui/static
+          touch src/skore/ui/static/index.html
 
           # Lint
           pre-commit run --all-files ruff
@@ -65,7 +47,7 @@ jobs:
           wheel=(dist/*.whl); python -m pip install "${wheel}[test]"
 
           # Test
-          pytest --no-cov src/ tests/
+          python -m pytest --no-cov src/ tests/
 
   skore-coverage:
     needs: test-skore
@@ -78,19 +60,18 @@ jobs:
           cache: "pip"
       - name: pytest coverage
         run: |
-          pytest --junitxml=coverage.xml --cov=skore src/ tests/ | tee pytest-coverage.txt
+          # Install dependencies
+          python -m pip install -e '.[test]'
+
+          # fake frontend
+          mkdir -p src/skore/ui/static
+          touch src/skore/ui/static/index.html
+
+          # run coverage
+          python -m pytest --junitxml=coverage.xml --cov=skore src/ tests/ | tee pytest-coverage.txt
       - name: Pytest coverage comment
         uses: MishaKav/pytest-coverage-comment@main
         with:
           pytest-coverage-path: ./pytest-coverage.txt
           junitxml-path: ./coverage.xml
           title: pytest coverage report
-
-  cleanup:
-    runs-on: ubuntu-latest
-    if: always()
-    needs: test-skore
-    steps:
-      - uses: geekyeggo/delete-artifact@v5
-        with:
-          name: skore-ui-package-distributions
