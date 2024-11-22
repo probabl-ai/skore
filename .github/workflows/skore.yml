@@ -4,6 +4,9 @@ on: [workflow_call]
 
 jobs:
   test-skore:
+    defaults:
+      run:
+        shell: "bash"
     strategy:
       fail-fast: true
       matrix:
