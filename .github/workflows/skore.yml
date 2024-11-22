@@ -20,11 +20,6 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: "pip"
-      - name: Download package distributions
-        uses: actions/download-artifact@v4
-        with:
-          name: skore-ui-package-distributions
-          path: skore/src/skore/ui/static
       - name:
         timeout-minutes: 10
         run: |
