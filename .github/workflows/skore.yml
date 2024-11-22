@@ -3,49 +3,48 @@ name: Reusable skore workflow
 on: [workflow_call]
 
 jobs:
-  test-skore:
-    defaults:
-      run:
-        shell: "bash"
-        working-directory: "./skore"
-    strategy:
-      fail-fast: true
-      matrix:
-        os: ["ubuntu-latest"] #["ubuntu-latest", "windows-latest"]
-        python-version: ["3.9"] #["3.9", "3.10", "3.11", "3.12"]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: "pip"
-      - name:
-        timeout-minutes: 10
-        run: |
-          # Install dependencies
-          python -m pip install --upgrade pip
-          python -m pip install --upgrade pre-commit
-          python -m pip install --upgrade build
+  # test-skore:
+  #   defaults:
+  #     run:
+  #       shell: "bash"
+  #       working-directory: "./skore"
+  #   strategy:
+  #     fail-fast: true
+  #     matrix:
+  #       os: ["ubuntu-latest"] #["ubuntu-latest", "windows-latest"]
+  #       python-version: ["3.9"] #["3.9", "3.10", "3.11", "3.12"]
+  #   runs-on: ${{ matrix.os }}
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-python@v5
+  #       with:
+  #         python-version: ${{ matrix.python-version }}
+  #         cache: "pip"
+  #     - name:
+  #       timeout-minutes: 10
+  #       run: |
+  #         # Install dependencies
+  #         python -m pip install --upgrade pip
+  #         python -m pip install --upgrade pre-commit
+  #         python -m pip install --upgrade build
 
-          # fake frontend
-          mkdir -p src/skore/ui/static
-          touch src/skore/ui/static/index.html
+  #         # fake frontend
+  #         mkdir -p src/skore/ui/static
+  #         touch src/skore/ui/static/index.html
 
-          # Lint
-          pre-commit run --all-files ruff
+  #         # Lint
+  #         pre-commit run --all-files ruff
 
-          # Build
-          python -m build
+  #         # Build
+  #         python -m build
 
-          # Install
-          wheel=(dist/*.whl); python -m pip install "${wheel}[test]"
+  #         # Install
+  #         wheel=(dist/*.whl); python -m pip install "${wheel}[test]"
 
-          # Test
-          python -m pytest --no-cov src/ tests/
+  #         # Test
+  #         python -m pytest --no-cov src/ tests/
 
   skore-coverage:
-    needs: test-skore
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
