@@ -4,19 +4,29 @@
 ==========================
 Getting started with skore
 ==========================
-
-This getting started guide illustrates how to use skore and why:
-
-#. Track and visualize your ML/DS results using skore's :class:`~skore.Project` and UI.
-#. Get assistance when developing your ML/DS projects.
-
-   - Scikit-learn compatible :func:`skore.cross_validate` provides insights and checks
-     on cross-validation.
 """
 
 # %%
-# Creating and loading the skore project, and launching the skore UI
-# ==================================================================
+# This getting started guide illustrates how to use skore and why:
+#
+# #. Track and visualize your ML/DS results using skore's :class:`~skore.Project` and UI.
+#
+# #. Machine learning diagnostics: get assistance when developing your ML/DS projects.
+#
+#    * Scikit-learn compatible :func:`skore.cross_validate` and
+#      :func:`skore.train_test_split` provide insights and checks on cross-validation
+#      and train-test-split.
+
+# %%
+# Track and visualize: skore project and UI
+# =========================================
+#
+# A key feature of skore is its :class:`~skore.Project` that allows to store
+# items of many types then visualize them in a dashboard called the skore UI.
+
+# %%
+# Creating and loading a skore project, and launching the skore UI
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 # %%
 # We start by creating a temporary directory to store our project so that we can
@@ -41,7 +51,18 @@ my_project = skore.create("my_project", working_dir=temp_dir_path)
 # This will create a skore project directory named ``my_project.skore`` in our
 # current directory.
 #
-# From our shell (in the same directory), start the UI locally:
+# .. note::
+#
+#   If we did not wish for our skore project to be stored in a *temporary* folder, we
+#   could simply create the project in the current directory with:
+#
+#   .. code-block:: python
+#
+#     import skore
+#
+#     my_project = skore.create("my_project")
+#
+# Then, from our shell (in the same directory), we can start the UI locally:
 #
 # .. code-block:: bash
 #
@@ -56,12 +77,12 @@ my_project = skore.create("my_project", working_dir=temp_dir_path)
 my_project.put("my_int", 3)
 
 # %%
-# Example of machine learning usage: hyperparameter sweep
-# =======================================================
+# skore project and storage: example of hyperparameter sweep
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
-# As an illustration of skore's usage with a machine learning motivation, let us
-# perform a hyperparameter sweep and store relevant information in the skore
-# project.
+# As an illustration of the usage of the skore project and storage with a machine
+# learning motivation, let us perform a hyperparameter sweep and store relevant
+# information in the skore project.
 
 # %%
 # We search for the ``alpha`` hyperparameter of a Ridge regression on the
@@ -119,13 +140,57 @@ my_project.put("my_fig", fig)
 # %%
 # .. seealso::
 #
-#   For more information about about the functionalities and the different types
-#   of items that we can store in a :class:`~skore.Project`,
+#   For more information about the functionalities and the different types
+#   of items that we can store in a skore :class:`~skore.Project`,
 #   see :ref:`example_overview_skore_project`.
 
 # %%
+# Manipulating the skore UI
+# ^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+# The skore UI is a very efficient tool to track and visualize the items in your
+# project, such as grid search or cross-validation results.
+#
+# #.  On the top left, by default, you can observe that you are in a *View* called
+#     ``default``. You can rename this view or create another one.
+#
+# #.  From the *Items* section on the bottom left, you can add stored items to this
+#     view, either by clicking on ``+`` or by doing drag-and-drop.
+#
+# #.  In the skore UI on the right, you can drag-and-drop items to re-order them,
+#     remove items, etc.
+#
+# .. image:: https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_10_31_skore_demo_compressed.gif
+#   :alt: Getting started with ``skore`` demo
+
+# %%
+# Tracking the history of items
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+# skore does not overwrite items with the same name, instead it stores their history so
+# that, from the skore UI, we could visualize their different histories:
+#
+# .. image:: https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_11_21_tracking_comp.gif
+#   :alt: Tracking the history of an item from the skore UI
+#
+# This functionality is very useful to never loose some key machine learning metrics,
+# for example.
+#
+# .. seealso::
+#
+#   For more information about the tracking some items using their history,
+#   see :ref:`example_historization_items`.
+
+# %%
+# Machine learning diagnostics: enhancing scikit-learn functions
+# ==============================================================
+#
+# skore wraps some key scikit-learn functions to provide automatically provide
+# diagnostics and checks when using them, as a way to facilitate good practices.
+
+# %%
 # Cross-validation with skore
-# ===========================
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # In order to assist its users when programming, skore has implemented a
 # :func:`skore.cross_validate` function that wraps scikit-learn's
@@ -152,29 +217,32 @@ fig_plotly
 #   see :ref:`example_cross_validate`.
 
 # %%
-# Manipulating the skore UI
-# =========================
+# Train-test split with skore
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
-# The skore UI is a very efficient tool to track and visualize the items in your
-# project, such as grid search or cross-validation results.
+# skore has implemented a :func:`skore.train_test_split` function that wraps
+# scikit-learn's :func:`sklearn.model_selection.train_test_split`.
 #
-# #.  On the top left, by default, you can observe that you are in a *View* called
-#     ``default``. You can rename this view or create another one.
-#
-# #.  From the *Items* section on the bottom left, you can add stored items to this
-#     view, either by clicking on ``+`` or by doing drag-and-drop.
-#
-# #.  In the skore UI on the right, you can drag-and-drop items to re-order them,
-#     remove items, etc.
+# For example, it can raise warnings when there is class imbalance in the data:
 
 # %%
-# .. image:: https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_10_31_skore_demo_compressed.gif
-#   :alt: Getting started with ``skore`` demo
+X = np.arange(400).reshape((200, 2))
+y = [0] * 150 + [1] * 50
+
+X_train, X_test, y_train, y_test = skore.train_test_split(
+    X=X, y=y, test_size=0.2, random_state=0
+)
 
 # %%
-# .. tip::
-#   Stay tuned for some new features!
-#   Feel free to join our `Discord <https://discord.gg/scBZerAGwW>`_!
+# .. seealso::
+#
+#   For more information about the motivation and usage of
+#   :func:`skore.train_test_split`, see :ref:`example_train_test_split`.
+
+# %%
+# .. admonition:: Stay tuned for some new features!
+#
+#    Feel free to join our `Discord <https://discord.gg/scBZerAGwW>`_!
 
 # %%
 # Cleanup the project
