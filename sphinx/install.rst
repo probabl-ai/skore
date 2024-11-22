@@ -16,10 +16,6 @@ Then, you can install skore by using ``pip``:
 
 You can check skore's latest version on `PyPI <https://pypi.org/project/skore/>`_.
 
-.. warning::
-
-    For Windows users, the encoding must be set to `UTF-8 <https://docs.python.org/3/using/windows.html#utf-8-mode>`_: see `PYTHONUTF8 <https://docs.python.org/3/using/cmdline.html#envvar-PYTHONUTF8>`_.
-
 .. admonition:: What's next?
 
    See our :ref:`example_getting_started` example!

@@ -1,0 +1,10 @@
+﻿:mod:`skore`.create
+================================
+
+.. currentmodule:: skore
+
+.. autofunction:: create
+
+.. raw:: html
+
+    <div class="clearer"></div>
