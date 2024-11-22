@@ -56,11 +56,19 @@ jobs:
       - name: pytest coverage
         run: |
           # Install dependencies
-          python -m pip install -e '.[test]'
+          python -m pip install --upgrade pip
+          python -m pip install --upgrade pre-commit
+          python -m pip install --upgrade build
 
           # fake frontend
           mkdir -p src/skore/ui/static
           touch src/skore/ui/static/index.html
+
+          # Build
+          python -m build
+
+          # Install
+          wheel=(dist/*.whl); python -m pip install "${wheel}[test]"
 
           # run coverage
           python -m pytest --junitxml=coverage.xml --cov=skore src/ tests/ | tee pytest-coverage.txt
