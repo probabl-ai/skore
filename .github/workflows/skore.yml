@@ -54,6 +54,8 @@ jobs:
           cache: "pip"
       - name: pytest coverage
         run: |
+          cd skore
+
           # Install dependencies
           python -m pip install --upgrade pip
           python -m pip install --upgrade pre-commit
