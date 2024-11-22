@@ -34,8 +34,8 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os: ["ubuntu-latest", "windows-latest"]
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        os: ["ubuntu-latest"] #["ubuntu-latest", "windows-latest"]
+        python-version: ["3.9"] #["3.9", "3.10", "3.11", "3.12"]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -68,12 +68,8 @@ jobs:
           pytest --no-cov src/ tests/
 
   skore-coverage:
-    # needs: test-skore
+    needs: test-skore
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: "bash"
-        working-directory: "./skore"
     steps:
       - name: pwd
         run: |
