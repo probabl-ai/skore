@@ -464,30 +464,30 @@ to download the full example code.</p>
 <section class="sphx-glr-example-title" id="enhancing-train-test-split">
 <span id="example-train-test-split"></span><span id="sphx-glr-auto-examples-plot-05-train-test-split-py"></span><h1>Enhancing train-test split<a class="headerlink" href="#enhancing-train-test-split" title="Link to this heading">#</a></h1>
 <p>This example illustrates the motivation and the use of skore’s
-<a class="reference internal" href="../generated/skore.train_test_split.html#skore.train_test_split" title="skore.train_test_split"><code class="xref py py-func docutils literal notranslate"><span class="pre">skore.train_test_split()</span></code></a> to get assistance when developing your
-ML/DS projects.</p>
+<a class="reference internal" href="../generated/skore.train_test_split.html#skore.train_test_split" title="skore.train_test_split"><code class="xref py py-func docutils literal notranslate"><span class="pre">skore.train_test_split()</span></code></a> to get assistance when developing ML/DS projects.</p>
 <section id="creating-and-loading-the-skore-project">
 <h2>Creating and loading the skore project<a class="headerlink" href="#creating-and-loading-the-skore-project" title="Link to this heading">#</a></h2>
-<p>We start by creating a temporary directory to store our project such that we can
-easily clean it after executing this example. If you want to keep the project, you
-have to skip this section.</p>
+<p>We start by creating a temporary directory to store our project so that we can
+easily clean it after executing this example:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">tempfile</span>
 <span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
 
-<span class="kn">import</span> <span class="nn">skore</span>
-
 <span class="n">temp_dir</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">TemporaryDirectory</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;skore_example_&quot;</span><span class="p">)</span>
 <span class="n">temp_dir_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">temp_dir</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
-
-<a href="../generated/skore.Project.html#skore.Project" title="skore.Project" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">my_project</span></a> <span class="o">=</span> <a href="../generated/skore.create.html#skore.create" title="skore.create" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-function"><span class="n">skore</span><span class="o">.</span><span class="n">create</span></a><span class="p">(</span><span class="s2">&quot;my_project.skore&quot;</span><span class="p">,</span> <span class="n">working_dir</span><span class="o">=</span><span class="n">temp_dir_path</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>[11/22/24 16:27:18] &lt;Logger skore.project.project (INFO)&gt; Project  create.py:148
+<p>We create and load the skore project from this temporary directory:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">skore</span>
+
+<a href="../generated/skore.Project.html#skore.Project" title="skore.Project" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">my_project</span></a> <span class="o">=</span> <a href="../generated/skore.create.html#skore.create" title="skore.create" class="sphx-glr-backref-module-skore sphx-glr-backref-type-py-function"><span class="n">skore</span><span class="o">.</span><span class="n">create</span></a><span class="p">(</span><span class="s2">&quot;my_project&quot;</span><span class="p">,</span> <span class="n">working_dir</span><span class="o">=</span><span class="n">temp_dir_path</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>[11/25/24 16:37:15] &lt;Logger skore.project.project (INFO)&gt; Project  create.py:148
                                                           file
                                                           &#39;/tmp/sk
                                                           ore_exam
-                                                          ple_76k5
-                                                          dy_1/my_
+                                                          ple_14kr
+                                                          7y0s/my_
                                                           project.
                                                           skore&#39;
                                                           was
@@ -512,7 +512,7 @@ Its signature is the following:</p>
 <span class="p">)</span>
 </pre></div>
 </div>
-<p>where <code class="docutils literal notranslate"><span class="pre">*arrays</span></code> is a Python <a href="#id1"><span class="problematic" id="id2">*</span></a>args (it allows you to pass a varying number of
+<p>where <code class="docutils literal notranslate"><span class="pre">*arrays</span></code> is a Python <code class="docutils literal notranslate"><span class="pre">*args</span></code> (it allows you to pass a varying number of
 positional arguments) and the scikit-learn doc indicates that it is <code class="docutils literal notranslate"><span class="pre">a</span> <span class="pre">sequence</span> <span class="pre">of</span>
 <span class="pre">indexables</span> <span class="pre">with</span> <span class="pre">same</span> <span class="pre">length</span> <span class="pre">/</span> <span class="pre">shape[0]</span></code>.</p>
 <p>Let us construct a design matrix <code class="docutils literal notranslate"><span class="pre">X</span></code> and target <code class="docutils literal notranslate"><span class="pre">y</span></code> to illustrate our point:</p>
@@ -560,7 +560,8 @@ the target <code class="docutils literal notranslate"><span class="pre">y</span>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="ne">TypeError</span><span class="p">:</span> <span class="n">got</span> <span class="n">an</span> <span class="n">unexpected</span> <span class="n">keyword</span> <span class="n">argument</span> <span class="s1">&#39;X&#39;</span>
 </pre></div>
 </div>
-<p>In general, in Python, keyword arguments are useful to prevent typos. For example, in the following, <code class="docutils literal notranslate"><span class="pre">X</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code> are reversed:</p>
+<p>In general, in Python, keyword arguments are useful to prevent typos. For example,
+in the following, <code class="docutils literal notranslate"><span class="pre">X</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code> are reversed:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">X_train</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">y_test</span> <span class="o">=</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html#sklearn.model_selection.train_test_split" title="sklearn.model_selection.train_test_split" class="sphx-glr-backref-module-sklearn-model_selection sphx-glr-backref-type-py-function"><span class="n">sklearn_train_test_split</span></a><span class="p">(</span>
     <span class="n">y</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span>
 <span class="p">)</span>
@@ -581,7 +582,7 @@ This is where skore comes in handy.</p>
 </section>
 <section id="train-test-split-in-skore">
 <h2>Train-test split in skore<a class="headerlink" href="#train-test-split-in-skore" title="Link to this heading">#</a></h2>
-<p>skore has its own <a class="reference internal" href="../generated/skore.train_test_split.html#skore.train_test_split" title="skore.train_test_split"><code class="xref py py-func docutils literal notranslate"><span class="pre">skore.train_test_split()</span></code></a> that wraps scikit-learn’s
+<p>Skore has its own <a class="reference internal" href="../generated/skore.train_test_split.html#skore.train_test_split" title="skore.train_test_split"><code class="xref py py-func docutils literal notranslate"><span class="pre">skore.train_test_split()</span></code></a> that wraps scikit-learn’s
 <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html#sklearn.model_selection.train_test_split" title="(in scikit-learn v1.5)"><code class="xref py py-func docutils literal notranslate"><span class="pre">sklearn.model_selection.train_test_split()</span></code></a>.</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">10_000</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">5_000</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
 <span class="n">y</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="mi">2_500</span> <span class="o">+</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="mi">2_500</span>
@@ -718,6 +719,14 @@ We recommend setting the parameter `random_state`. This will ensure the reproduc
 We detected that the `shuffle` parameter is set to `True` either explicitly or from its default value. In case of time-ordered events (even if they are independent), this will result in inflated model performance evaluation because natural drift will not be taken into account. We recommend setting the shuffle parameter to `False` in order to ensure the evaluation process is really representative of your production release process.
 </pre></div>
 </div>
+</section>
+</section>
+<section id="cleanup-the-project">
+<h3>Cleanup the project<a class="headerlink" href="#cleanup-the-project" title="Link to this heading">#</a></h3>
+<p>Removing the temporary directory:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">temp_dir</span><span class="o">.</span><span class="n">cleanup</span><span class="p">()</span>
+</pre></div>
+</div>
 <p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 0.040 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-05-train-test-split-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
@@ -731,7 +740,6 @@ We detected that the `shuffle` parameter is set to `True` either explicitly or f
 </div>
 </div>
 <p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
-</section>
 </section>
 </section>
 </section>
@@ -792,6 +800,7 @@ We detected that the `shuffle` parameter is set to `True` either explicitly or f
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#shuffling-without-a-random-state">Shuffling without a random state</a></li>
 </ul>
 </li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cleanup-the-project">Cleanup the project</a></li>
 </ul>
 </li>
 </ul>
