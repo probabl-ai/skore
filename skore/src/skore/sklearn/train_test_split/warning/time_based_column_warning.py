@@ -29,10 +29,10 @@ class TimeBasedColumnWarning(TrainTestSplitWarning):
 
         return (
             f"We detected a time-based column {column_info} in your data. "
-            "We recommend using scikit-learn's TimeSeriesSplit instead of train_test_split. "
-            "Otherwise you might train on future data to predict the past, or get "
-            "inflated model performance evaluation because natural drift will not be "
-            "taken into account."
+            "We recommend using scikit-learn's TimeSeriesSplit instead of "
+            "train_test_split. Otherwise you might train on future data to "
+            "predict the past, or get inflated model performance evaluation "
+            "because natural drift will not be taken into account."
         )
 
     @staticmethod
