@@ -1,21 +1,51 @@
 name: Sphinx
 
-# Sphinx documentation, from building to deploying on S3:
 
-# -- x -- x -- x -- x -- x -- >
-#    |                   |
-#   0.1/                0.2/
-#   dev/ dev/ dev/ dev/ dev/
-
-# For instance, with 3 releases, the S3 buckets looks like:
-# .
-# ├── 0.1/
-# ├── 0.2/
-# ├── 0.3/
-# ├── dev/
-# ├── index.html
-# └── versions.json
-
+# **How it works**
+# ================
+#
+# After each __commit__ on the `main` branch, the documentation is built and deployed on the `S3:dev/` directory.
+# After each __release__, the documentation is built and deployed to the `S3:version/` directory, the version being
+# a subpart of the tag `MAJOR.MINOR.BUGFIX`: `MAJOR.MINOR`.
+#
+# For instance, with the following timeline:
+#
+#        dev/ dev/ dev/ dev/ dev/
+#        0.1/                0.2/
+# main -- x -- x -- x -- x -- x -- >
+#         |                   |
+# tag    0.1                 0.2
+#
+# The S3 bucket looks like:
+#     .
+#     ├── 0.1/
+#     ├── 0.2/
+#     ├── dev/
+#     ├── index.html
+#     └── versions.json
+#
+# **Q&A**
+# =======
+#
+# ### `dev/`, why?
+# It contains the most up-to-date documentation, i.e. the documentation of code that is not released but committed on the main branch.
+#
+# ### Version the documentation on `MAJOR.MINOR, why not on `MAJOR`?
+# Currently, we add new features at a minor level. This way, we can separate documentation between two features.
+#
+# ### Only on release (not on release-candidate), why?
+# The release-candidates are documented in the `dev/` directory. We don't want to create noise with explicit directory for such tags.
+#
+# ### How to change an old version of the documentation?
+# You can create tags wherever you want, i.e. on separate branches.
+# For example, you can create a branch from an old tag (`0.1.5`), modify the documentation and create a new tag (`0.1.6`).
+# The corresponding documentation will be automatically updated (`0.1`).
+#
+# **Side-notes**
+# ==============
+#
+# Only the 10 latest versions are listed in sphinx version-switcher.
+# But, the bucket remains unchanged. You need to manually prune the bucket to remove older versions that are no longer listed.
 
 on:
   pull_request:
