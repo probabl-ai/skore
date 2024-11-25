@@ -37,7 +37,7 @@ class TimeBasedColumnWarning(TrainTestSplitWarning):
 
     @staticmethod
     def check(X: ArrayLike, **kwargs) -> Union[str, None]:
-        """Check whether ``X`` contains a time-based column.
+        """Check whether the design matrix ``X`` contains a time-based column.
 
         Parameters
         ----------
