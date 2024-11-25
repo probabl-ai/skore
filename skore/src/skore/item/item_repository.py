@@ -12,7 +12,6 @@ if TYPE_CHECKING:
     from skore.item.item import Item
     from skore.persistence.abstract_storage import AbstractStorage
 
-
 from skore.item.cross_validation_item import (
     CrossValidationAggregationItem,
     CrossValidationItem,
@@ -23,6 +22,7 @@ from skore.item.pandas_dataframe_item import PandasDataFrameItem
 from skore.item.pandas_series_item import PandasSeriesItem
 from skore.item.primitive_item import PrimitiveItem
 from skore.item.sklearn_base_estimator_item import SklearnBaseEstimatorItem
+from skore.item.skrub_table_report_item import SkrubTableReportItem
 
 
 class ItemRepository:
@@ -44,6 +44,7 @@ class ItemRepository:
         "CrossValidationItem": CrossValidationItem,
         "CrossValidationAggregationItem": CrossValidationAggregationItem,
         "SklearnBaseEstimatorItem": SklearnBaseEstimatorItem,
+        "SkrubTableReportItem": SkrubTableReportItem,
     }
 
     def __init__(self, storage: AbstractStorage):

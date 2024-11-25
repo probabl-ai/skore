@@ -78,6 +78,7 @@ test = [
   "pytest-randomly",
   "ruff",
   "scikit-learn",
+  "skrub",
 ]
 
 sphinx = [

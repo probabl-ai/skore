@@ -14,6 +14,7 @@ from skore.item.pandas_dataframe_item import PandasDataFrameItem
 from skore.item.pandas_series_item import PandasSeriesItem
 from skore.item.primitive_item import PrimitiveItem
 from skore.item.sklearn_base_estimator_item import SklearnBaseEstimatorItem
+from skore.item.skrub_table_report_item import SkrubTableReportItem
 
 
 def object_to_item(object: Any) -> Item:
@@ -25,6 +26,7 @@ def object_to_item(object: Any) -> Item:
         NumpyArrayItem,
         SklearnBaseEstimatorItem,
         MediaItem,
+        SkrubTableReportItem,
     ):
         with suppress(ImportError, ItemTypeError):
             # ImportError:
@@ -49,5 +51,6 @@ __all__ = [
     "PandasSeriesItem",
     "PrimitiveItem",
     "SklearnBaseEstimatorItem",
+    "SkrubTableReportItem",
     "object_to_item",
 ]
