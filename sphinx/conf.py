@@ -108,6 +108,14 @@ html_theme_options = {
     "announcement": "This code is still in development. <strong>The API is subject to change.</strong>",
 }
 
+# Plausible Analytics
+html_theme_options["analytics"] = {
+    # The domain you'd like to use for this analytics instance
+    "plausible_analytics_domain": "skore.probabl.ai",
+    # The analytics script that is served by Plausible
+    "plausible_analytics_url": "https://plausible.io/js/script.js",
+}
+
 # Sphinx remove the sidebar from some pages
 html_sidebars = {
   "install": [],

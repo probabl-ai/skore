@@ -41,7 +41,7 @@ This will create a skore project directory named `my_project.skore` in your curr
 
 2. Start storing some items, for example you can store an integer:
 ```python
-project.put("my_int", 3)
+my_project.put("my_int", 3)
 ```
 or the result of a scikit-learn grid search:
 ```python
