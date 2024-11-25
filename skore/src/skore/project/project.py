@@ -160,7 +160,7 @@ class Project:
 
         Parameters
         ----------
-        key: str
+        key : str
             The key corresponding to the item to get.
 
         Returns
