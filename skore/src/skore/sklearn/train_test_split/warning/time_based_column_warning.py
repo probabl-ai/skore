@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 
 class TimeBasedColumnWarning(TrainTestSplitWarning):
-    """Check whether ``X`` contains a time-based column."""
+    """Check whether the design matrix ``X`` contains a time-based column."""
 
     @staticmethod
     def _MSG(df_name, offending_column_name):
