@@ -127,7 +127,7 @@ fig_plotly_clf
 # %%
 # Skore's :func:`~skore.cross_validate` advantages are the following:
 #
-# * By default, it computes several useful scores without the need for the users to
+# * By default, it computes several useful scores without the need to
 #   manually specify them. For classification, one can observe that it computed the
 #   accuracy, the precision, and the recall.
 #
