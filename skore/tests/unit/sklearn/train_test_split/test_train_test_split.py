@@ -85,6 +85,16 @@ def case_time_based_column_polars():
     return args, kwargs, TimeBasedColumnWarning
 
 
+def case_time_based_column_polars_dates():
+    X = polars.DataFrame(
+        {"ints": [0, 1], "dates": [datetime(2024, 11, 25), datetime(2024, 11, 26)]},
+        schema={"ints": polars.Int8, "dates": polars.Date},
+    )
+    args = (X,)
+    kwargs = {}
+    return args, kwargs, TimeBasedColumnWarning
+
+
 @pytest.mark.parametrize(
     "params",
     [
@@ -98,6 +108,7 @@ def case_time_based_column_polars():
         case_shuffle_none,
         case_time_based_column,
         case_time_based_column_polars,
+        case_time_based_column_polars_dates,
     ],
 )
 def test_train_test_split_warns(params):

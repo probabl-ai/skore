@@ -56,7 +56,7 @@ class TimeBasedColumnWarning(TrainTestSplitWarning):
         datetime_columns = [
             col
             for col, dtype in dtypes
-            if re.search("datetime", str(type(dtype)), flags=re.IGNORECASE)
+            if re.search("date", str(type(dtype)), flags=re.IGNORECASE)
         ]
         if datetime_columns:
             df_name = X.name if hasattr(X, "name") else None
