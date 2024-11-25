@@ -20,15 +20,15 @@ class TimeBasedColumnWarning(TrainTestSplitWarning):
     """Check whether the design matrix ``X`` contains a time-based column."""
 
     @staticmethod
-    def _MSG(df_name, offending_column_name):
-        column_info = (
-            f"(column {offending_column_name}, dataframe {offending_column_name})"
-            if df_name is not None
-            else f"(column {offending_column_name})"
-        )
+    def _MSG(df_name: str, offending_column_names: list[str]) -> str:
+        s = "" if len(offending_column_names) == 1 else "s"
+
+        df_name_info = "" if df_name is None else f', dataframe "{df_name}"'
+
+        column_info = f"(column{s} {', '.join(offending_column_names)}{df_name_info})"
 
         return (
-            f"We detected a time-based column {column_info} in your data. "
+            f"We detected some time-based columns {column_info} in your data. "
             "We recommend using scikit-learn's TimeSeriesSplit instead of "
             "train_test_split. Otherwise you might train on future data to "
             "predict the past, or get inflated model performance evaluation "
@@ -54,10 +54,10 @@ class TimeBasedColumnWarning(TrainTestSplitWarning):
 
         dtypes = [(col, X[col].dtype) for col in X.columns]
         datetime_columns = [
-            col
+            f'"{col}"'
             for col, dtype in dtypes
             if re.search("date", str(type(dtype)), flags=re.IGNORECASE)
         ]
         if datetime_columns:
             df_name = X.name if hasattr(X, "name") else None
-            return TimeBasedColumnWarning._MSG(df_name, datetime_columns[0])
+            return TimeBasedColumnWarning._MSG(df_name, datetime_columns)

@@ -76,6 +76,23 @@ def case_time_based_column():
     return args, kwargs, TimeBasedColumnWarning
 
 
+def case_time_based_columns_several():
+    """If a column has dtype "datetime", the warning should fire"""
+    X = pandas.DataFrame(
+        {
+            "ints": [0, 1],
+            "dates1": [datetime(2024, 11, 25), datetime(2024, 11, 26)],
+            # NOTE: Column name is an int
+            2: [datetime(2024, 11, 25), datetime(2024, 11, 26)],
+        }
+    )
+    # NOTE: DataFrame has a name
+    X.name = "my_df"
+    args = (X,)
+    kwargs = {}
+    return args, kwargs, TimeBasedColumnWarning
+
+
 def case_time_based_column_polars():
     X = polars.DataFrame(
         {"ints": [0, 1], "dates": [datetime(2024, 11, 25), datetime(2024, 11, 26)]}
@@ -107,6 +124,7 @@ def case_time_based_column_polars_dates():
         case_shuffle_true,
         case_shuffle_none,
         case_time_based_column,
+        case_time_based_columns_several,
         case_time_based_column_polars,
         case_time_based_column_polars_dates,
     ],
