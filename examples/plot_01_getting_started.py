@@ -77,7 +77,7 @@ my_project = skore.create("my_project", working_dir=temp_dir_path)
 my_project.put("my_int", 3)
 
 # %%
-# skore project and storage: example of hyperparameter sweep
+# Skore project and storage: example of hyperparameter sweep
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # As an illustration of the usage of the skore project and storage with a machine
@@ -167,7 +167,7 @@ my_project.put("my_fig", fig)
 # Tracking the history of items
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
-# skore does not overwrite items with the same name, instead it stores their history so
+# Skore does not overwrite items with the same name, instead it stores their history so
 # that, from the skore UI, we could visualize their different histories:
 #
 # .. image:: https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_11_21_tracking_comp.gif
@@ -185,7 +185,7 @@ my_project.put("my_fig", fig)
 # Machine learning diagnostics: enhancing scikit-learn functions
 # ==============================================================
 #
-# skore wraps some key scikit-learn functions to automatically provide
+# Skore wraps some key scikit-learn functions to automatically provide
 # diagnostics and checks when using them, as a way to facilitate good practices.
 
 # %%
@@ -222,7 +222,7 @@ fig_plotly
 # Train-test split with skore
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
-# skore has implemented a :func:`skore.train_test_split` function that wraps
+# Skore has implemented a :func:`skore.train_test_split` function that wraps
 # scikit-learn's :func:`sklearn.model_selection.train_test_split`.
 #
 # For example, it can raise warnings when there is class imbalance in the data to

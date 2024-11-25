@@ -64,6 +64,13 @@ my_project.put("my_int", 30_000)
 my_project.get("my_int")
 
 # %%
+# .. seealso::
+#
+#   Skore does not exactly *overwrite*, but stores the history of items.
+#   For more information about the tracking of items using their history,
+#   see :ref:`example_historization_items`.
+
+# %%
 # By using the :func:`~skore.Project.delete_item` method, we can also delete an object
 # so that our skore UI does not become cluttered:
 

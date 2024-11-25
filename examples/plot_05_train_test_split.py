@@ -51,7 +51,7 @@ my_project = skore.create("my_project", working_dir=temp_dir_path)
 #         stratify=None
 #     )
 #
-# where ``*arrays`` is a Python *args (it allows you to pass a varying number of
+# where ``*arrays`` is a Python ``*args`` (it allows you to pass a varying number of
 # positional arguments) and the scikit-learn doc indicates that it is ``a sequence of
 # indexables with same length / shape[0]``.
 
@@ -112,7 +112,7 @@ print(f"{X_train = }\n{y_train = }\n{X_test = }\n{y_test = }")
 # =========================
 
 # %%
-# skore has its own :func:`skore.train_test_split` that wraps scikit-learn's
+# Skore has its own :func:`skore.train_test_split` that wraps scikit-learn's
 # :func:`sklearn.model_selection.train_test_split`.
 
 # %%
