@@ -205,6 +205,18 @@ export const useProjectStore = defineStore("project", () => {
       }
     }
 
+    // sort items alphabetically
+    function sortNode(node: TreeNode) {
+      node.children.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
+      for (const child of node.children) {
+        sortNode(child);
+      }
+    }
+
+    for (const node of tree) {
+      sortNode(node);
+    }
+
     // add (self) to the name of the node if it is the same as the name of the key
     function addSelf(node: TreeNode) {
       if (keys.includes(node.name) && node.children.length > 0) {
