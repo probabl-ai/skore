@@ -178,14 +178,14 @@ my_project.put("my_fig", fig)
 #
 # .. seealso::
 #
-#   For more information about the tracking some items using their history,
+#   For more information about the tracking of items using their history,
 #   see :ref:`example_historization_items`.
 
 # %%
 # Machine learning diagnostics: enhancing scikit-learn functions
 # ==============================================================
 #
-# skore wraps some key scikit-learn functions to provide automatically provide
+# skore wraps some key scikit-learn functions to automatically provide
 # diagnostics and checks when using them, as a way to facilitate good practices.
 
 # %%
@@ -194,13 +194,12 @@ my_project.put("my_fig", fig)
 #
 # In order to assist its users when programming, skore has implemented a
 # :func:`skore.cross_validate` function that wraps scikit-learn's
-# :func:`sklearn.model_selection.cross_validate`, to provide more context and
-# facilitate the analysis.
+# :func:`sklearn.model_selection.cross_validate`.
 #
 # On the same previous data and a Ridge regressor (with default ``alpha`` value),
 # let us launch skore's cross-validation, which will automatically add
 # (:func:`~skore.Project.put`)
-# a ``cross_validation`` item with a plotly chart in your project.
+# a ``cross_validation`` item with a plotly chart in our project.
 
 # %%
 from skore import cross_validate
@@ -209,6 +208,9 @@ cv_results = cross_validate(Ridge(), X, y, cv=5, project=my_project)
 
 fig_plotly = my_project.get_item("cross_validation").plot
 fig_plotly
+
+# %%
+# Hence, we can observe some key metrics and get insights on our cross-validation.
 
 # %%
 # .. seealso::
@@ -223,7 +225,8 @@ fig_plotly
 # skore has implemented a :func:`skore.train_test_split` function that wraps
 # scikit-learn's :func:`sklearn.model_selection.train_test_split`.
 #
-# For example, it can raise warnings when there is class imbalance in the data:
+# For example, it can raise warnings when there is class imbalance in the data to
+# provide methodological advice:
 
 # %%
 X = np.arange(400).reshape((200, 2))
