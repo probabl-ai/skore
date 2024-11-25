@@ -155,7 +155,7 @@ my_project.put("my_fig", fig)
 #     ``default``. You can rename this view or create another one.
 #
 # #.  From the *Items* section on the bottom left, you can add stored items to this
-#     view, either by clicking on ``+`` or by doing drag-and-drop.
+#     view, either by clicking on ``+`` or by dragging an item to the right.
 #
 # #.  In the skore UI on the right, you can drag-and-drop items to re-order them,
 #     remove items, etc.
