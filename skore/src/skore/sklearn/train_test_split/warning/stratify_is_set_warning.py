@@ -5,7 +5,7 @@ This warning is shown when `stratify` is set.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from skore.sklearn.train_test_split.warning.train_test_split_warning import (
     TrainTestSplitWarning,
@@ -26,7 +26,7 @@ class StratifyWarning(TrainTestSplitWarning):
     )
 
     @staticmethod
-    def check(stratify: Optional[ArrayLike], **kwargs) -> bool:
+    def check(stratify: Optional[ArrayLike], **kwargs) -> Union[str, None]:
         """Check whether stratify is set.
 
         Parameters
@@ -36,7 +36,8 @@ class StratifyWarning(TrainTestSplitWarning):
 
         Returns
         -------
-        bool
-            True if the check passed, False otherwise.
+        warning
+            None if the check passed, otherwise the warning message.
         """
-        return not stratify
+        if stratify:
+            return StratifyWarning.MSG

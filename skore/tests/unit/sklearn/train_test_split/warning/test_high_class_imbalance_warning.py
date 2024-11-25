@@ -17,10 +17,10 @@ target = [0] * 100 + [1] * 100 + [2] * 300
     ],
 )
 def test_check_high_class_imbalance(y):
-    check = HighClassImbalanceWarning.check(
+    warning = HighClassImbalanceWarning.check(
         y=y,
         stratify=None,
         ml_task="multiclass-classification",
     )
 
-    assert check is False
+    assert warning is not None

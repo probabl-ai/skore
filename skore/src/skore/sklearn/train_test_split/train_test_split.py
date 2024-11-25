@@ -155,11 +155,9 @@ def train_test_split(
     )
 
     for warning_class in TRAIN_TEST_SPLIT_WARNINGS:
-        check = warning_class.check(**kwargs)
+        warning = warning_class.check(**kwargs)
 
-        if check is False:
-            warnings.warn(
-                message=warning_class.MSG, category=warning_class, stacklevel=1
-            )
+        if warning is not None:
+            warnings.warn(message=warning, category=warning_class, stacklevel=1)
 
     return output
