@@ -173,7 +173,7 @@ my_project.put("my_fig", fig)
 # .. image:: https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_11_21_tracking_comp.gif
 #   :alt: Tracking the history of an item from the skore UI
 #
-# This functionality is very useful to never loose some key machine learning metrics,
+# This functionality is very useful to never lose some key machine learning metrics,
 # for example.
 #
 # .. seealso::
