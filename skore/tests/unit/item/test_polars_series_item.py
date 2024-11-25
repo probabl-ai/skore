@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from polars import Index, MultiIndex, Series
+from polars import Series
 from polars.testing import assert_series_equal
 from skore.item import ItemTypeError, PolarsSeriesItem
 
@@ -16,30 +16,24 @@ class TestPolarsSeriesItem:
 
     @pytest.mark.order(0)
     def test_factory(self, mock_nowstr):
-        series = Series([0, 1, 2], Index([0, 1, 2], name="myIndex"))
+        series = Series([0, 1, 2])
 
-        orient = PolarsSeriesItem.ORIENT
-        index_json = series.index.to_frame(index=False).to_json(orient=orient)
-        series_json = series.reset_index(drop=True).to_json(orient=orient)
+        series_json = series.to_frame().write_json()
 
         item = PolarsSeriesItem.factory(series)
 
-        assert item.index_json == index_json
         assert item.series_json == series_json
         assert item.created_at == mock_nowstr
         assert item.updated_at == mock_nowstr
 
     @pytest.mark.order(1)
     def test_series(self, mock_nowstr):
-        series = Series([0, 1, 2], Index([0, 1, 2], name="myIndex"))
+        series = Series([0, 1, 2])
 
-        orient = PolarsSeriesItem.ORIENT
-        index_json = series.index.to_frame(index=False).to_json(orient=orient)
-        series_json = series.reset_index(drop=True).to_json(orient=orient)
+        series_json = series.to_frame().write_json()
 
         item1 = PolarsSeriesItem.factory(series)
         item2 = PolarsSeriesItem(
-            index_json=index_json,
             series_json=series_json,
             created_at=mock_nowstr,
             updated_at=mock_nowstr,
@@ -50,28 +44,21 @@ class TestPolarsSeriesItem:
 
     @pytest.mark.order(1)
     def test_series_with_complex_object(self, mock_nowstr):
-        series = Series([np.array([1])], Index([0], name="myIndex"))
+        series = Series([np.array([1, 2])])
         item = PolarsSeriesItem.factory(series)
 
-        assert type(item.series.iloc[0]) is list
+        assert isinstance(item.series[0], Series)
 
     @pytest.mark.order(1)
     def test_series_with_integer_indexes_name_and_multiindex(self, mock_nowstr):
         series = Series(
             [">70", ">70"],
-            MultiIndex.from_arrays(
-                [["france", "usa"], ["paris", "nyc"], ["1", "1"]],
-                names=(0, "city", "district"),
-            ),
         )
 
-        orient = PolarsSeriesItem.ORIENT
-        index_json = series.index.to_frame(index=False).to_json(orient=orient)
-        series_json = series.reset_index(drop=True).to_json(orient=orient)
+        series_json = series.to_frame().write_json()
 
         item1 = PolarsSeriesItem.factory(series)
         item2 = PolarsSeriesItem(
-            index_json=index_json,
             series_json=series_json,
             created_at=mock_nowstr,
             updated_at=mock_nowstr,
