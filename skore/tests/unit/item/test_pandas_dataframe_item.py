@@ -53,7 +53,8 @@ class TestPandasDataFrameItem:
         dataframe = DataFrame([{"key": np.array([1])}], Index([0], name="myIndex"))
         item = PandasDataFrameItem.factory(dataframe)
 
-        assert isinstance(item.dataframe["key"].iloc[0], list)
+        # NOTE: isinstance would not work because numpy.array is an instance of list
+        assert type(item.dataframe["key"].iloc[0]) is list
 
     @pytest.mark.order(1)
     def test_dataframe_with_integer_columns_name_and_multiindex(self, mock_nowstr):

@@ -53,7 +53,8 @@ class TestPandasSeriesItem:
         series = Series([np.array([1])], Index([0], name="myIndex"))
         item = PandasSeriesItem.factory(series)
 
-        assert isinstance(item.series.iloc[0], list)
+        # NOTE: isinstance would not work because numpy.array is an instance of list
+        assert type(item.series.iloc[0]) is list
 
     @pytest.mark.order(1)
     def test_series_with_integer_indexes_name_and_multiindex(self, mock_nowstr):
