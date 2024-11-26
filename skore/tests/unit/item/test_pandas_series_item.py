@@ -53,6 +53,7 @@ class TestPandasSeriesItem:
         series = Series([np.array([1])], Index([0], name="myIndex"))
         item = PandasSeriesItem.factory(series)
 
+        # NOTE: isinstance would not work because numpy.array is an instance of list
         assert type(item.series.iloc[0]) is list
 
     @pytest.mark.order(1)

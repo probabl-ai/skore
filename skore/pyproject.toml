@@ -12,6 +12,7 @@ dependencies = [
   "diskcache",
   "fastapi",
   "plotly>=5,<6",
+  "pyarrow",
   "rich",
   "skops",
   "uvicorn",
