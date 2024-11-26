@@ -13,6 +13,7 @@ from .high_class_imbalance_warning import (
 from .random_state_unset_warning import RandomStateUnsetWarning
 from .shuffle_true_warning import ShuffleTrueWarning
 from .stratify_is_set_warning import StratifyWarning
+from .time_based_column_warning import TimeBasedColumnWarning
 
 TRAIN_TEST_SPLIT_WARNINGS = [
     HighClassImbalanceTooFewExamplesWarning,
@@ -20,6 +21,7 @@ TRAIN_TEST_SPLIT_WARNINGS = [
     StratifyWarning,
     RandomStateUnsetWarning,
     ShuffleTrueWarning,
+    TimeBasedColumnWarning,
 ]
 
 __all__ = [
@@ -29,4 +31,5 @@ __all__ = [
     "StratifyWarning",
     "RandomStateUnsetWarning",
     "ShuffleTrueWarning",
+    "TimeBasedColumnWarning",
 ]

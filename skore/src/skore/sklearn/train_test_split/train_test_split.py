@@ -129,6 +129,9 @@ def train_test_split(
         stratify=stratify,
     )
 
+    if X is None:
+        X = arrays[0] if len(arrays) == 1 else arrays[-2]
+
     if y is None and len(arrays) >= 2:
         y = arrays[-1]
 
@@ -148,6 +151,7 @@ def train_test_split(
         random_state=random_state,
         shuffle=shuffle,
         stratify=stratify,
+        X=X,
         y=y,
         y_test=y_test,
         y_labels=y_labels,
@@ -155,11 +159,9 @@ def train_test_split(
     )
 
     for warning_class in TRAIN_TEST_SPLIT_WARNINGS:
-        check = warning_class.check(**kwargs)
+        warning = warning_class.check(**kwargs)
 
-        if check is False:
-            warnings.warn(
-                message=warning_class.MSG, category=warning_class, stacklevel=1
-            )
+        if warning is not None:
+            warnings.warn(message=warning, category=warning_class, stacklevel=1)
 
     return output

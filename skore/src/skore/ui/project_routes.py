@@ -15,6 +15,8 @@ from skore.item.media_item import MediaItem
 from skore.item.numpy_array_item import NumpyArrayItem
 from skore.item.pandas_dataframe_item import PandasDataFrameItem
 from skore.item.pandas_series_item import PandasSeriesItem
+from skore.item.polars_dataframe_item import PolarsDataFrameItem
+from skore.item.polars_series_item import PolarsSeriesItem
 from skore.item.primitive_item import PrimitiveItem
 from skore.item.sklearn_base_estimator_item import SklearnBaseEstimatorItem
 from skore.item.skrub_table_report_item import SkrubTableReportItem
@@ -57,6 +59,12 @@ def __serialize_project(project: Project) -> SerializedProject:
                 value = item.dataframe.to_dict(orient="tight")
                 media_type = "application/vnd.dataframe+json"
             elif isinstance(item, PandasSeriesItem):
+                value = item.series.to_list()
+                media_type = "text/markdown"
+            elif isinstance(item, PolarsDataFrameItem):
+                value = item.dataframe.to_pandas().to_dict(orient="tight")
+                media_type = "application/vnd.dataframe+json"
+            elif isinstance(item, PolarsSeriesItem):
                 value = item.series.to_list()
                 media_type = "text/markdown"
             elif isinstance(item, SklearnBaseEstimatorItem):

@@ -12,6 +12,8 @@ from skore.item.media_item import MediaItem
 from skore.item.numpy_array_item import NumpyArrayItem
 from skore.item.pandas_dataframe_item import PandasDataFrameItem
 from skore.item.pandas_series_item import PandasSeriesItem
+from skore.item.polars_dataframe_item import PolarsDataFrameItem
+from skore.item.polars_series_item import PolarsSeriesItem
 from skore.item.primitive_item import PrimitiveItem
 from skore.item.sklearn_base_estimator_item import SklearnBaseEstimatorItem
 from skore.item.skrub_table_report_item import SkrubTableReportItem
@@ -23,6 +25,8 @@ def object_to_item(object: Any) -> Item:
         PrimitiveItem,
         PandasDataFrameItem,
         PandasSeriesItem,
+        PolarsDataFrameItem,
+        PolarsSeriesItem,
         NumpyArrayItem,
         SklearnBaseEstimatorItem,
         MediaItem,
@@ -49,6 +53,8 @@ __all__ = [
     "NumpyArrayItem",
     "PandasDataFrameItem",
     "PandasSeriesItem",
+    "PolarsDataFrameItem",
+    "PolarsSeriesItem",
     "PrimitiveItem",
     "SklearnBaseEstimatorItem",
     "SkrubTableReportItem",
