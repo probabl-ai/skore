@@ -71,6 +71,7 @@ test = [
   "pandas",
   "pillow",
   "plotly",
+  "polars",
   "pre-commit",
   "pytest",
   "pytest-cov",

@@ -5,7 +5,7 @@ This warning is shown when a dataset exhibits a high class imbalance.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 import pandas
 
@@ -37,7 +37,7 @@ class HighClassImbalanceWarning(TrainTestSplitWarning):
         stratify: Optional[ArrayLike],
         ml_task: MLTask,
         **kwargs,
-    ) -> bool:
+    ) -> Union[str, None]:
         """Check whether the test set has high class imbalance.
 
         More precisely, we check whether the most populated class in `y` has
@@ -58,12 +58,15 @@ class HighClassImbalanceWarning(TrainTestSplitWarning):
 
         Returns
         -------
-        bool
-            True if the check passed, False otherwise.
+        warning
+            None if the check passed, otherwise the warning message.
         """
         if stratify or (y is None or len(y) == 0) or ("classification" not in ml_task):
-            return True
+            return None
 
         class_counts = pandas.Series(y).value_counts()
 
-        return (max(class_counts) / min(class_counts)) < 3
+        if (max(class_counts) / min(class_counts)) < 3:
+            return None
+
+        return HighClassImbalanceWarning.MSG
