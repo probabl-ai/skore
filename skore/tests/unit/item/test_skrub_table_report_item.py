@@ -13,7 +13,7 @@ class TestSkrubTableReportItem:
         report = TableReport(df)
         item = SkrubTableReportItem.factory(report)
 
-        assert item.html_snippet == report.html_snippet()
+        assert item.media_bytes == report.html_snippet().encode()
         assert item.created_at == mock_nowstr
         assert item.updated_at == mock_nowstr
 
