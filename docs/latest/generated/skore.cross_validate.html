@@ -407,6 +407,9 @@
 <li class="toctree-l1 current active"><a class="current reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore</span></code>.cross_validate</a></li>
 <li class="toctree-l1"><a class="reference internal" href="skore.train_test_split.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore</span></code>.train_test_split</a></li>
 </ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="skore.item.cross_validation_item.CrossValidationItem.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore.item.cross_validation_item</span></code>.CrossValidationItem</a></li>
+</ul>
 </div>
 </nav></div>
     </div>
@@ -467,21 +470,25 @@
 <dt class="sig sig-object py" id="skore.cross_validate">
 <span class="sig-prename descclassname"><span class="pre">skore.</span></span><span class="sig-name descname"><span class="pre">cross_validate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">project</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="skore.Project.html#skore.Project" title="skore.project.project.Project"><span class="pre">Project</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#skore.cross_validate" title="Link to this definition">#</a></dt>
 <dd><p>Evaluate estimator by cross-validation and output UI-friendly object.</p>
-<p>This function wraps scikit-learn’s <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="(in scikit-learn v1.5)"><code class="xref py py-func docutils literal notranslate"><span class="pre">cross_validate()</span></code></a>
+<p>This function wraps scikit-learn’s <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="(in scikit-learn v1.5)"><code class="xref py py-func docutils literal notranslate"><span class="pre">sklearn.model_selection.cross_validate()</span></code></a>
 function, to provide more context and facilitate the analysis.
-As such, the arguments are the same as scikit-learn’s <code class="docutils literal notranslate"><span class="pre">cross_validate</span></code> function.</p>
+As such, the arguments are the same as the
+<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="(in scikit-learn v1.5)"><code class="xref py py-func docutils literal notranslate"><span class="pre">sklearn.model_selection.cross_validate()</span></code></a> function.</p>
 <p>The dict returned by this function is a strict super-set of the one returned by
-scikit-learn’s <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="(in scikit-learn v1.5)"><code class="xref py py-func docutils literal notranslate"><span class="pre">cross_validate()</span></code></a>.</p>
+<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="(in scikit-learn v1.5)"><code class="xref py py-func docutils literal notranslate"><span class="pre">sklearn.model_selection.cross_validate()</span></code></a>.</p>
 <p>For a user guide and in-depth example, see <a class="reference internal" href="../auto_examples/plot_03_cross_validate.html#example-cross-validate"><span class="std std-ref">Enhancing cross-validation</span></a> and
 <a class="reference internal" href="../auto_examples/plot_04_tracking_items.html#example-track-cv"><span class="std std-ref">Tracking the results of several runs of skore.cross_validate()</span></a>.</p>
-<p>More precisely, this function does the following:
-- Detect the ML task being performed, based on the estimator and data
-- Based on the ML task, add appropriate metrics to compute during cross-validation
-- Perform the cross-validation itself
-- Save the result to <cite>project</cite>, if available
-- Clean the cross-validation results so that the output of the function is as close
-as possible to sklearn’s
-- Return the clean cross-validation results.</p>
+<p>More precisely, this function does the following:</p>
+<ul class="simple">
+<li><p>Detect the ML task being performed, based on the estimator and data</p></li>
+<li><p>Based on the ML task, add appropriate metrics to compute during
+cross-validation</p></li>
+<li><p>Perform the cross-validation itself</p></li>
+<li><p>Save the result to <code class="docutils literal notranslate"><span class="pre">project</span></code>, if available</p></li>
+<li><p>Clean the cross-validation results so that the output of the function is as
+close as possible to scikit-learn’s</p></li>
+<li><p>Return the clean cross-validation results.</p></li>
+</ul>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
@@ -493,34 +500,34 @@ as possible to sklearn’s
 </dd>
 <dt><strong>project</strong><span class="classifier">Project, default=None</span></dt><dd><p>A project to save cross-validation data into. If None, no save is performed.</p>
 </dd>
-<dt><strong>groups</strong><span class="classifier">array-like of shape (n_samples,), default=None</span></dt><dd><p>See <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="(in scikit-learn v1.5)"><code class="xref py py-func docutils literal notranslate"><span class="pre">cross_validate()</span></code></a>.</p>
+<dt><strong>groups</strong><span class="classifier">array-like of shape (n_samples,), default=None</span></dt><dd><p>See <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="(in scikit-learn v1.5)"><code class="xref py py-func docutils literal notranslate"><span class="pre">sklearn.model_selection.cross_validate()</span></code></a>.</p>
 </dd>
-<dt><strong>scoring</strong><span class="classifier">str, callable, list, tuple, or dict, default=None</span></dt><dd><p>See <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="(in scikit-learn v1.5)"><code class="xref py py-func docutils literal notranslate"><span class="pre">cross_validate()</span></code></a>.</p>
+<dt><strong>scoring</strong><span class="classifier">str, callable, list, tuple, or dict, default=None</span></dt><dd><p>See <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="(in scikit-learn v1.5)"><code class="xref py py-func docutils literal notranslate"><span class="pre">sklearn.model_selection.cross_validate()</span></code></a>.</p>
 </dd>
-<dt><strong>cv</strong><span class="classifier">int, cross-validation generator or an iterable, default=None</span></dt><dd><p>See <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="(in scikit-learn v1.5)"><code class="xref py py-func docutils literal notranslate"><span class="pre">cross_validate()</span></code></a>.</p>
+<dt><strong>cv</strong><span class="classifier">int, cross-validation generator or an iterable, default=None</span></dt><dd><p>See <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="(in scikit-learn v1.5)"><code class="xref py py-func docutils literal notranslate"><span class="pre">sklearn.model_selection.cross_validate()</span></code></a>.</p>
 </dd>
-<dt><strong>n_jobs</strong><span class="classifier">int, default=None</span></dt><dd><p>See <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="(in scikit-learn v1.5)"><code class="xref py py-func docutils literal notranslate"><span class="pre">cross_validate()</span></code></a>.</p>
+<dt><strong>n_jobs</strong><span class="classifier">int, default=None</span></dt><dd><p>See <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="(in scikit-learn v1.5)"><code class="xref py py-func docutils literal notranslate"><span class="pre">sklearn.model_selection.cross_validate()</span></code></a>.</p>
 </dd>
-<dt><strong>verbose</strong><span class="classifier">int, default=0</span></dt><dd><p>See <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="(in scikit-learn v1.5)"><code class="xref py py-func docutils literal notranslate"><span class="pre">cross_validate()</span></code></a>.</p>
+<dt><strong>verbose</strong><span class="classifier">int, default=0</span></dt><dd><p>See <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="(in scikit-learn v1.5)"><code class="xref py py-func docutils literal notranslate"><span class="pre">sklearn.model_selection.cross_validate()</span></code></a>.</p>
 </dd>
-<dt><strong>params</strong><span class="classifier">dict, default=None</span></dt><dd><p>See <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="(in scikit-learn v1.5)"><code class="xref py py-func docutils literal notranslate"><span class="pre">cross_validate()</span></code></a>.</p>
+<dt><strong>params</strong><span class="classifier">dict, default=None</span></dt><dd><p>See <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="(in scikit-learn v1.5)"><code class="xref py py-func docutils literal notranslate"><span class="pre">sklearn.model_selection.cross_validate()</span></code></a>.</p>
 </dd>
-<dt><strong>pre_dispatch</strong><span class="classifier">int or str, default=’2*n_jobs’</span></dt><dd><p>See <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="(in scikit-learn v1.5)"><code class="xref py py-func docutils literal notranslate"><span class="pre">cross_validate()</span></code></a>.</p>
+<dt><strong>pre_dispatch</strong><span class="classifier">int or str, default=’2*n_jobs’</span></dt><dd><p>See <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="(in scikit-learn v1.5)"><code class="xref py py-func docutils literal notranslate"><span class="pre">sklearn.model_selection.cross_validate()</span></code></a>.</p>
 </dd>
-<dt><strong>return_train_score</strong><span class="classifier">bool, default=False</span></dt><dd><p>See <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="(in scikit-learn v1.5)"><code class="xref py py-func docutils literal notranslate"><span class="pre">cross_validate()</span></code></a>.</p>
+<dt><strong>return_train_score</strong><span class="classifier">bool, default=False</span></dt><dd><p>See <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="(in scikit-learn v1.5)"><code class="xref py py-func docutils literal notranslate"><span class="pre">sklearn.model_selection.cross_validate()</span></code></a>.</p>
 </dd>
-<dt><strong>return_estimator</strong><span class="classifier">bool, default=False</span></dt><dd><p>See <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="(in scikit-learn v1.5)"><code class="xref py py-func docutils literal notranslate"><span class="pre">cross_validate()</span></code></a>.</p>
+<dt><strong>return_estimator</strong><span class="classifier">bool, default=False</span></dt><dd><p>See <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="(in scikit-learn v1.5)"><code class="xref py py-func docutils literal notranslate"><span class="pre">sklearn.model_selection.cross_validate()</span></code></a>.</p>
 </dd>
-<dt><strong>return_indices</strong><span class="classifier">bool, default=False</span></dt><dd><p>See <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="(in scikit-learn v1.5)"><code class="xref py py-func docutils literal notranslate"><span class="pre">cross_validate()</span></code></a>.</p>
+<dt><strong>return_indices</strong><span class="classifier">bool, default=False</span></dt><dd><p>See <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="(in scikit-learn v1.5)"><code class="xref py py-func docutils literal notranslate"><span class="pre">sklearn.model_selection.cross_validate()</span></code></a>.</p>
 </dd>
-<dt><strong>error_score</strong><span class="classifier">‘raise’ or numeric, default=np.nan</span></dt><dd><p>See <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="(in scikit-learn v1.5)"><code class="xref py py-func docutils literal notranslate"><span class="pre">cross_validate()</span></code></a>.</p>
+<dt><strong>error_score</strong><span class="classifier">‘raise’ or numeric, default=np.nan</span></dt><dd><p>See <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="(in scikit-learn v1.5)"><code class="xref py py-func docutils literal notranslate"><span class="pre">sklearn.model_selection.cross_validate()</span></code></a>.</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><dl class="simple">
 <dt><strong>cv_results</strong><span class="classifier">dict</span></dt><dd><p>A dict of the form returned by scikit-learn’s
-<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="(in scikit-learn v1.5)"><code class="xref py py-func docutils literal notranslate"><span class="pre">cross_validate()</span></code></a> function.</p>
+<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="(in scikit-learn v1.5)"><code class="xref py py-func docutils literal notranslate"><span class="pre">sklearn.model_selection.cross_validate()</span></code></a> function.</p>
 </dd>
 </dl>
 </dd>

@@ -407,6 +407,9 @@
 <li class="toctree-l1"><a class="reference internal" href="skore.cross_validate.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore</span></code>.cross_validate</a></li>
 <li class="toctree-l1"><a class="reference internal" href="skore.train_test_split.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore</span></code>.train_test_split</a></li>
 </ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="skore.item.cross_validation_item.CrossValidationItem.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">skore.item.cross_validation_item</span></code>.CrossValidationItem</a></li>
+</ul>
 </div>
 </nav></div>
     </div>
@@ -639,8 +642,8 @@
 <dt class="sig sig-object py" id="skore.Project.put">
 <span class="sig-name descname"><span class="pre">put</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#skore.Project.put" title="Link to this definition">#</a></dt>
 <dd><p>Add one or more key-value pairs to the Project.</p>
-<p>If <code class="docutils literal notranslate"><span class="pre">key</span></code> is a string, then <cite>put</cite> adds the single <code class="docutils literal notranslate"><span class="pre">key</span></code>-<code class="docutils literal notranslate"><span class="pre">value</span></code> pair
-mapping to the Project.
+<p>If <code class="docutils literal notranslate"><span class="pre">key</span></code> is a string, then <a class="reference internal" href="#skore.Project.put" title="skore.Project.put"><code class="xref py py-func docutils literal notranslate"><span class="pre">put()</span></code></a> adds the single
+<code class="docutils literal notranslate"><span class="pre">key</span></code>-<code class="docutils literal notranslate"><span class="pre">value</span></code> pair mapping to the Project.
 If <code class="docutils literal notranslate"><span class="pre">key</span></code> is a dict, it is interpreted as multiple key-value pairs to add to
 the Project.
 If an item with the same key already exists, its value is replaced by the new

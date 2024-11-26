@@ -70,7 +70,7 @@ skore launch "my_project"
 ```
 This will automatically open a browser at the UI's location:
 1. On the top left, by default, you can observe that you are in a _View_ called `default`. You can rename this view or create another one.
-2. From the _Items_ section on the bottom left, you can add stored items to this view, either by clicking on `+` or by doing drag-and-drop.
+2. From the _Items_ section on the bottom left, you can add stored items to this view, either by clicking on `+` or by dragging an item to the right.
 3. In the skore UI on the right, you can drag-and-drop items to re-order them, remove items, etc.
 
 ### Get assistance when developing your ML/DS projects

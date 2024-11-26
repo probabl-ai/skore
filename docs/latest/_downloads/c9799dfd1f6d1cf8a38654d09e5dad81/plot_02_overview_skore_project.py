@@ -6,27 +6,31 @@ Overview of the skore project
 =============================
 
 This example provides an overview of the functionalities and the different types
-of items that you can store in a skore :class:`~skore.Project`.
+of items that we can store in a skore :class:`~skore.Project`.
 """
 
 # %%
-# Creating and loading a skore project
-# ====================================
-#
-# We start by creating a temporary directory to store our project such that we can
-# easily clean it after executing this example. If you want to keep the project, you
-# have to skip this section.
+# Creating and loading the skore project
+# ======================================
+
+# %%
+# We start by creating a temporary directory to store our project so that we can
+# easily clean it after executing this example:
 
 # %%
 import tempfile
 from pathlib import Path
 
-import skore
-
 temp_dir = tempfile.TemporaryDirectory(prefix="skore_example_")
 temp_dir_path = Path(temp_dir.name)
 
-my_project = skore.create("my_project.skore", working_dir=temp_dir_path)
+# %%
+# We create and load the skore project from this temporary directory:
+
+# %%
+import skore
+
+my_project = skore.create("my_project", working_dir=temp_dir_path)
 
 # %%
 # Storing integers
@@ -41,27 +45,34 @@ my_project.put("my_int", 3)
 # %%
 # Here, the name of the object is ``my_int`` and the integer value is 3.
 #
-# You can read it from the project by using :func:`~skore.Project.get`:
+# We can read it from the project by using :func:`~skore.Project.get`:
 
 # %%
 my_project.get("my_int")
 
 # %%
 # Careful; like in a traditional Python dictionary, the ``put`` method will *overwrite*
-# past data if you use a key which already exists!
+# past data if we use a key that already exists!
 
 # %%
 my_project.put("my_int", 30_000)
 
 # %%
-# Let us check the updated value:
+# We can check the updated value:
 
 # %%
 my_project.get("my_int")
 
 # %%
-# By using the :func:`~skore.Project.delete_item` method, you can also delete an object
-# so that your skore UI does not become cluttered:
+# .. seealso::
+#
+#   Skore does not exactly *overwrite*, but stores the history of items.
+#   For more information about the tracking of items using their history,
+#   see :ref:`example_historization_items`.
+
+# %%
+# By using the :func:`~skore.Project.delete_item` method, we can also delete an object
+# so that our skore UI does not become cluttered:
 
 # %%
 my_project.put("my_int_2", 10)
@@ -70,7 +81,7 @@ my_project.put("my_int_2", 10)
 my_project.delete_item("my_int_2")
 
 # %%
-# You can display all the keys in your project:
+# We can display all the keys in our project:
 
 # %%
 my_project.list_item_keys()
@@ -90,8 +101,8 @@ my_project.get("my_string")
 
 # %%
 # :func:`~skore.Project.get` infers the type of the inserted object by default. For
-# example, strings are assumed to be in Markdown format. Hence, you can customize the
-# display of your text:
+# example, strings are assumed to be in Markdown format. Hence, we can customize the
+# display of our text:
 
 # %%
 my_project.put(
@@ -108,7 +119,7 @@ def my_func(x):
 )
 
 # %%
-# Moreover, you can also explicitly tell skore the media type of an object, for example
+# Moreover, we can also explicitly tell skore the media type of an object, for example
 # in HTML:
 
 # %%
@@ -132,7 +143,7 @@ my_project.put_item(
 my_project.get("my_string_3")
 
 # %%
-# You can also conveniently use a Python f-string:
+# We can also conveniently use a Python f-string:
 
 # %%
 x = 2
@@ -239,7 +250,7 @@ my_project.put("my_altair_chart", my_altair_chart)
 #     cells: ``ValueError: Mime type rendering requires nbformat>=4.2.0 but it is not
 #     installed``. This is a Plotly issue which is documented `here
 #     <https://github.com/plotly/plotly.py/issues/3285>`_; to solve it, we recommend
-#     installing nbformat in your environment, e.g. with:
+#     installing ``nbformat`` in your environment, e.g. with:
 #
 #     .. code-block:: console
 #
@@ -305,7 +316,7 @@ my_project.put("my_pil_image", my_pil_image)
 # As skore is developed by `Probabl <https://probabl.ai>`_, the spin-off of
 # scikit-learn, skore treats scikit-learn models and pipelines as first-class citizens.
 #
-# First of all, you can store a scikit-learn model:
+# First of all, we can store a scikit-learn model:
 
 # %%
 from sklearn.linear_model import Lasso
@@ -315,7 +326,7 @@ my_project.put("my_model", my_model)
 my_model
 
 # %%
-# You can also store scikit-learn pipelines:
+# We can also store scikit-learn pipelines:
 
 # %%
 from sklearn.pipeline import Pipeline
@@ -328,7 +339,7 @@ my_project.put("my_pipeline", my_pipeline)
 my_pipeline
 
 # %%
-# Moreover, you can store fitted scikit-learn pipelines:
+# Moreover, we can store fitted scikit-learn pipelines:
 
 # %%
 from sklearn.datasets import load_diabetes
@@ -345,5 +356,7 @@ my_pipeline
 # Cleanup the project
 # -------------------
 #
-# Remove the temporary directory:
+# Removing the temporary directory:
+
+# %%
 temp_dir.cleanup()

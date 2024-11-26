@@ -25,31 +25,46 @@ Enhancing train-test split
 ==========================
 
 This example illustrates the motivation and the use of skore's
-:func:`skore.train_test_split` to get assistance when developing your
-ML/DS projects.
+:func:`skore.train_test_split` to get assistance when developing ML/DS projects.
 
-.. GENERATED FROM PYTHON SOURCE LINES 14-20
+.. GENERATED FROM PYTHON SOURCE LINES 13-15
 
 Creating and loading the skore project
 ======================================
 
-We start by creating a temporary directory to store our project such that we can
-easily clean it after executing this example. If you want to keep the project, you
-have to skip this section.
+.. GENERATED FROM PYTHON SOURCE LINES 17-19
 
-.. GENERATED FROM PYTHON SOURCE LINES 22-32
+We start by creating a temporary directory to store our project so that we can
+easily clean it after executing this example:
+
+.. GENERATED FROM PYTHON SOURCE LINES 21-27
 
 .. code-block:: Python
 
     import tempfile
     from pathlib import Path
 
-    import skore
-
     temp_dir = tempfile.TemporaryDirectory(prefix="skore_example_")
     temp_dir_path = Path(temp_dir.name)
 
-    my_project = skore.create("my_project.skore", working_dir=temp_dir_path)
+
+
+
+
+
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 28-29
+
+We create and load the skore project from this temporary directory:
+
+.. GENERATED FROM PYTHON SOURCE LINES 31-35
+
+.. code-block:: Python
+
+    import skore
+
+    my_project = skore.create("my_project", working_dir=temp_dir_path)
 
 
 
@@ -59,12 +74,12 @@ have to skip this section.
 
  .. code-block:: none
 
-    [11/22/24 16:27:18] <Logger skore.project.project (INFO)> Project  create.py:148
+    [11/25/24 16:37:15] <Logger skore.project.project (INFO)> Project  create.py:148
                                                               file                  
                                                               '/tmp/sk              
                                                               ore_exam              
-                                                              ple_76k5              
-                                                              dy_1/my_              
+                                                              ple_14kr              
+                                                              7y0s/my_              
                                                               project.              
                                                               skore'                
                                                               was                   
@@ -75,7 +90,7 @@ have to skip this section.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 33-54
+.. GENERATED FROM PYTHON SOURCE LINES 36-57
 
 Train-test split in scikit-learn
 ================================
@@ -95,15 +110,15 @@ Its signature is the following:
         stratify=None
     )
 
-where ``*arrays`` is a Python *args (it allows you to pass a varying number of
+where ``*arrays`` is a Python ``*args`` (it allows you to pass a varying number of
 positional arguments) and the scikit-learn doc indicates that it is ``a sequence of
 indexables with same length / shape[0]``.
 
-.. GENERATED FROM PYTHON SOURCE LINES 56-57
+.. GENERATED FROM PYTHON SOURCE LINES 59-60
 
 Let us construct a design matrix ``X`` and target ``y`` to illustrate our point:
 
-.. GENERATED FROM PYTHON SOURCE LINES 59-65
+.. GENERATED FROM PYTHON SOURCE LINES 62-68
 
 .. code-block:: Python
 
@@ -131,11 +146,11 @@ Let us construct a design matrix ``X`` and target ``y`` to illustrate our point:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 66-67
+.. GENERATED FROM PYTHON SOURCE LINES 69-70
 
 In scikit-learn, the most common usage is the following:
 
-.. GENERATED FROM PYTHON SOURCE LINES 69-76
+.. GENERATED FROM PYTHON SOURCE LINES 72-79
 
 .. code-block:: Python
 
@@ -165,11 +180,11 @@ In scikit-learn, the most common usage is the following:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 77-78
+.. GENERATED FROM PYTHON SOURCE LINES 80-81
 
 Notice the shuffling that is done by default.
 
-.. GENERATED FROM PYTHON SOURCE LINES 80-95
+.. GENERATED FROM PYTHON SOURCE LINES 83-99
 
 In scikit-learn, the user cannot explicitly set the design matrix ``X`` and
 the target ``y``. The following:
@@ -185,9 +200,10 @@ would return:
 
   TypeError: got an unexpected keyword argument 'X'
 
-In general, in Python, keyword arguments are useful to prevent typos. For example, in the following, ``X`` and ``y`` are reversed:
+In general, in Python, keyword arguments are useful to prevent typos. For example,
+in the following, ``X`` and ``y`` are reversed:
 
-.. GENERATED FROM PYTHON SOURCE LINES 97-102
+.. GENERATED FROM PYTHON SOURCE LINES 101-106
 
 .. code-block:: Python
 
@@ -215,22 +231,22 @@ In general, in Python, keyword arguments are useful to prevent typos. For exampl
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 103-105
+.. GENERATED FROM PYTHON SOURCE LINES 107-109
 
 but Python will not catch this mistake for us.
 This is where skore comes in handy.
 
-.. GENERATED FROM PYTHON SOURCE LINES 107-109
+.. GENERATED FROM PYTHON SOURCE LINES 111-113
 
 Train-test split in skore
 =========================
 
-.. GENERATED FROM PYTHON SOURCE LINES 111-113
+.. GENERATED FROM PYTHON SOURCE LINES 115-117
 
-skore has its own :func:`skore.train_test_split` that wraps scikit-learn's
+Skore has its own :func:`skore.train_test_split` that wraps scikit-learn's
 :func:`sklearn.model_selection.train_test_split`.
 
-.. GENERATED FROM PYTHON SOURCE LINES 115-118
+.. GENERATED FROM PYTHON SOURCE LINES 119-122
 
 .. code-block:: Python
 
@@ -244,17 +260,17 @@ skore has its own :func:`skore.train_test_split` that wraps scikit-learn's
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 119-121
+.. GENERATED FROM PYTHON SOURCE LINES 123-125
 
 Expliciting the positional arguments for ``X`` and ``y``
 --------------------------------------------------------
 
-.. GENERATED FROM PYTHON SOURCE LINES 123-125
+.. GENERATED FROM PYTHON SOURCE LINES 127-129
 
 First of all, naturally, it can be used as a simple drop-in replacement for
 scikit-learn:
 
-.. GENERATED FROM PYTHON SOURCE LINES 127-131
+.. GENERATED FROM PYTHON SOURCE LINES 131-135
 
 .. code-block:: Python
 
@@ -278,7 +294,7 @@ scikit-learn:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 132-137
+.. GENERATED FROM PYTHON SOURCE LINES 136-141
 
 .. note::
 
@@ -286,12 +302,12 @@ scikit-learn:
   :func:`sklearn.model_selection.train_test_split`, so the user can just use the
   skore version as a drop-in replacement of scikit-learn.
 
-.. GENERATED FROM PYTHON SOURCE LINES 139-141
+.. GENERATED FROM PYTHON SOURCE LINES 143-145
 
 Contrary to scikit-learn, skore allows users to explicit the ``X`` and ``y``, making
 detection of potential issues easier:
 
-.. GENERATED FROM PYTHON SOURCE LINES 143-148
+.. GENERATED FROM PYTHON SOURCE LINES 147-152
 
 .. code-block:: Python
 
@@ -316,12 +332,12 @@ detection of potential issues easier:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 149-151
+.. GENERATED FROM PYTHON SOURCE LINES 153-155
 
 Moreover, when passing ``X`` and ``y`` explicitly, the ``X``'s are always returned
 before the ``y``'s, even when they are inverted:
 
-.. GENERATED FROM PYTHON SOURCE LINES 153-163
+.. GENERATED FROM PYTHON SOURCE LINES 157-167
 
 .. code-block:: Python
 
@@ -353,7 +369,7 @@ before the ``y``'s, even when they are inverted:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 164-180
+.. GENERATED FROM PYTHON SOURCE LINES 168-184
 
 Automatic diagnostics: raising methodological warnings
 ------------------------------------------------------
@@ -372,7 +388,7 @@ Hence, it is important to detect when we have class imbalance.
 
 Suppose that we have imbalanced data:
 
-.. GENERATED FROM PYTHON SOURCE LINES 182-185
+.. GENERATED FROM PYTHON SOURCE LINES 186-189
 
 .. code-block:: Python
 
@@ -386,11 +402,11 @@ Suppose that we have imbalanced data:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 186-187
+.. GENERATED FROM PYTHON SOURCE LINES 190-191
 
 In that case, :func:`skore.train_test_split` raises a ``HighClassImbalanceWarning``:
 
-.. GENERATED FROM PYTHON SOURCE LINES 189-193
+.. GENERATED FROM PYTHON SOURCE LINES 193-197
 
 .. code-block:: Python
 
@@ -418,17 +434,17 @@ In that case, :func:`skore.train_test_split` raises a ``HighClassImbalanceWarnin
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 194-196
+.. GENERATED FROM PYTHON SOURCE LINES 198-200
 
 Hence, skore recommends the users to take into account this class imbalance, that
 they might have missed, in their modelling strategy.
 
-.. GENERATED FROM PYTHON SOURCE LINES 198-200
+.. GENERATED FROM PYTHON SOURCE LINES 202-204
 
 Moreover, skore also detects class imbalance with a class that has too few samples
 with a ``HighClassImbalanceTooFewExamplesWarning``:
 
-.. GENERATED FROM PYTHON SOURCE LINES 200-208
+.. GENERATED FROM PYTHON SOURCE LINES 204-212
 
 .. code-block:: Python
 
@@ -464,7 +480,7 @@ with a ``HighClassImbalanceTooFewExamplesWarning``:
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 209-216
+.. GENERATED FROM PYTHON SOURCE LINES 213-220
 
 Shuffling without a random state
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -474,7 +490,7 @@ For `reproducible results across executions
 skore recommends the use of the ``random_state`` parameter when shuffling
 (remember that ``shuffle=True`` by default) with a ``RandomStateUnsetWarning``:
 
-.. GENERATED FROM PYTHON SOURCE LINES 216-221
+.. GENERATED FROM PYTHON SOURCE LINES 220-226
 
 .. code-block:: Python
 
@@ -483,6 +499,7 @@ skore recommends the use of the ``random_state`` parameter when shuffling
     y = [0] * 2_500 + [1] * 2_500
 
     X_train, X_test, y_train, y_test = skore.train_test_split(X=X, y=y, test_size=0.2)
+
 
 
 
@@ -498,6 +515,25 @@ skore recommends the use of the ``random_state`` parameter when shuffling
     /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/skore/sklearn/train_test_split/train_test_split.py:161: ShuffleTrueWarning:
 
     We detected that the `shuffle` parameter is set to `True` either explicitly or from its default value. In case of time-ordered events (even if they are independent), this will result in inflated model performance evaluation because natural drift will not be taken into account. We recommend setting the shuffle parameter to `False` in order to ensure the evaluation process is really representative of your production release process.
+
+
+
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 227-231
+
+Cleanup the project
+-------------------
+
+Removing the temporary directory:
+
+.. GENERATED FROM PYTHON SOURCE LINES 233-234
+
+.. code-block:: Python
+
+    temp_dir.cleanup()
+
+
 
 
 
