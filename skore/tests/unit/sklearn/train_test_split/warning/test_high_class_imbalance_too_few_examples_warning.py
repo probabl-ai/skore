@@ -14,4 +14,4 @@ def test_check_high_class_imbalance_too_few_examples():
         ml_task="multiclass-classification",
     )
 
-    assert warning is not None
+    assert warning == HighClassImbalanceTooFewExamplesWarning.MSG

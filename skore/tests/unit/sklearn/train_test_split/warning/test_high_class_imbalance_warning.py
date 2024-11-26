@@ -23,4 +23,4 @@ def test_check_high_class_imbalance(y):
         ml_task="multiclass-classification",
     )
 
-    assert warning is not None
+    assert warning == HighClassImbalanceWarning.MSG
