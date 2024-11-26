@@ -30,8 +30,8 @@ class SkrubTableReportItem(MediaItem):
 
         Parameters
         ----------
-        primitive : Primitive
-            The primitive value to store.
+        table_report : TableReport
+            The report to store.
 
         Returns
         -------
