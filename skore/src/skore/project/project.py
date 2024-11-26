@@ -11,6 +11,8 @@ from skore.item import (
     NumpyArrayItem,
     PandasDataFrameItem,
     PandasSeriesItem,
+    PolarsDataFrameItem,
+    PolarsSeriesItem,
     PrimitiveItem,
     SklearnBaseEstimatorItem,
     object_to_item,
@@ -140,6 +142,10 @@ class Project:
             return item.dataframe
         elif isinstance(item, PandasSeriesItem):
             return item.series
+        elif isinstance(item, PolarsDataFrameItem):
+            return item.dataframe
+        elif isinstance(item, PolarsSeriesItem):
+            return item.series
         elif isinstance(item, SklearnBaseEstimatorItem):
             return item.estimator
         elif isinstance(item, CrossValidationItem):
@@ -154,7 +160,7 @@ class Project:
 
         Parameters
         ----------
-        key: str
+        key : str
             The key corresponding to the item to get.
 
         Returns
