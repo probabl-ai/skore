@@ -224,6 +224,33 @@ y = [0] * 2_500 + [1] * 2_500
 X_train, X_test, y_train, y_test = skore.train_test_split(X=X, y=y, test_size=0.2)
 
 # %%
+# Time series
+# ^^^^^^^^^^^
+
+# %%
+from datetime import datetime
+import pandas as pd
+
+X = pd.DataFrame(
+    {"ints": [0, 1], "dates": [datetime(2024, 11, 25), datetime(2024, 11, 26)]}
+)
+X_train, X_test = skore.train_test_split(X=X, test_size=0.2, random_state=0)
+
+# %%
+from sklearn.datasets import fetch_openml
+
+bike_sharing = fetch_openml("Bike_Sharing_Demand", version=2, as_frame=True)
+df = bike_sharing.frame
+X = df.drop("count", axis="columns")
+y = df["count"] / df["count"].max()
+X
+
+# %%
+X_train, X_test, y_train, y_test = skore.train_test_split(
+    X=X, y=y, test_size=0.2, random_state=0
+)
+
+# %%
 # Cleanup the project
 # -------------------
 #
