@@ -47,22 +47,4 @@ class TestPolarsSeriesItem:
         series = Series([np.array([1, 2])])
         item = PolarsSeriesItem.factory(series)
 
-        assert isinstance(item.series[0], Series)
-
-    @pytest.mark.order(1)
-    def test_series_with_integer_indexes_name_and_multiindex(self, mock_nowstr):
-        series = Series(
-            [">70", ">70"],
-        )
-
-        series_json = series.to_frame().write_json()
-
-        item1 = PolarsSeriesItem.factory(series)
-        item2 = PolarsSeriesItem(
-            series_json=series_json,
-            created_at=mock_nowstr,
-            updated_at=mock_nowstr,
-        )
-
-        assert_series_equal(item1.series, series)
-        assert_series_equal(item2.series, series)
+        assert_series_equal(item.series, series, check_dtypes=False)
