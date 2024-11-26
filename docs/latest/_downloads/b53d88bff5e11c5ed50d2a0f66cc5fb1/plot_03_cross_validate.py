@@ -6,28 +6,31 @@ Enhancing cross-validation
 ==========================
 
 This example illustrates the motivation and the use of skore's
-:func:`skore.cross_validate` to get assistance when developing your
-ML/DS projects.
+:func:`skore.cross_validate` to get assistance when developing ML/DS projects.
 """
 
 # %%
 # Creating and loading the skore project
 # ======================================
-#
-# We start by creating a temporary directory to store our project such that we can
-# easily clean it after executing this example. If you want to keep the project, you
-# have to skip this section.
+
+# %%
+# We start by creating a temporary directory to store our project so that we can
+# easily clean it after executing this example:
 
 # %%
 import tempfile
 from pathlib import Path
 
-import skore
-
 temp_dir = tempfile.TemporaryDirectory(prefix="skore_example_")
 temp_dir_path = Path(temp_dir.name)
 
-my_project = skore.create("my_project.skore", working_dir=temp_dir_path)
+# %%
+# We create and load the skore project from this temporary directory:
+
+# %%
+import skore
+
+my_project = skore.create("my_project", working_dir=temp_dir_path)
 
 # %%
 # Cross-validation in scikit-learn
@@ -124,19 +127,19 @@ fig_plotly_clf
 # %%
 # Skore's :func:`~skore.cross_validate` advantages are the following:
 #
-# * By default, it computes several useful scores without the need for the user to
-#   manually specify them. For classification, you can observe that it computed the
+# * By default, it computes several useful scores without the need to
+#   manually specify them. For classification, one can observe that it computed the
 #   accuracy, the precision, and the recall.
 #
-# * You automatically get some interactive Plotly graphs to better understand how your
+# * We automatically get some interactive Plotly graphs to better understand how our
 #   model behaves depending on the split. For example:
 #
-#   * You can compare the fitting and scoring times together for each split.
+#   * We can compare the fitting and scoring times together for each split.
 #
-#   * You can compare the accuracy, precision, and recall scores together for each
+#   * We can compare the accuracy, precision, and recall scores together for each
 #     split.
 #
-# * The results and plots are automatically saved in your skore project, so that you can
+# * The results and plots are automatically saved in our skore project, so that we can
 #   visualize them later in the UI for example.
 
 # %%
@@ -182,5 +185,7 @@ fig_plotly_reg
 # Cleanup the project
 # -------------------
 #
-# Remove the temporary directory:
+# Removing the temporary directory:
+
+# %%
 temp_dir.cleanup()

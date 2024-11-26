@@ -6,28 +6,31 @@ Enhancing train-test split
 ==========================
 
 This example illustrates the motivation and the use of skore's
-:func:`skore.train_test_split` to get assistance when developing your
-ML/DS projects.
+:func:`skore.train_test_split` to get assistance when developing ML/DS projects.
 """
 
 # %%
 # Creating and loading the skore project
 # ======================================
-#
-# We start by creating a temporary directory to store our project such that we can
-# easily clean it after executing this example. If you want to keep the project, you
-# have to skip this section.
+
+# %%
+# We start by creating a temporary directory to store our project so that we can
+# easily clean it after executing this example:
 
 # %%
 import tempfile
 from pathlib import Path
 
-import skore
-
 temp_dir = tempfile.TemporaryDirectory(prefix="skore_example_")
 temp_dir_path = Path(temp_dir.name)
 
-my_project = skore.create("my_project.skore", working_dir=temp_dir_path)
+# %%
+# We create and load the skore project from this temporary directory:
+
+# %%
+import skore
+
+my_project = skore.create("my_project", working_dir=temp_dir_path)
 
 # %%
 # Train-test split in scikit-learn
@@ -48,7 +51,7 @@ my_project = skore.create("my_project.skore", working_dir=temp_dir_path)
 #         stratify=None
 #     )
 #
-# where ``*arrays`` is a Python *args (it allows you to pass a varying number of
+# where ``*arrays`` is a Python ``*args`` (it allows you to pass a varying number of
 # positional arguments) and the scikit-learn doc indicates that it is ``a sequence of
 # indexables with same length / shape[0]``.
 
@@ -91,7 +94,8 @@ print(f"{X_train = }\n{y_train = }\n{X_test = }\n{y_test = }")
 #
 #   TypeError: got an unexpected keyword argument 'X'
 #
-# In general, in Python, keyword arguments are useful to prevent typos. For example, in the following, ``X`` and ``y`` are reversed:
+# In general, in Python, keyword arguments are useful to prevent typos. For example,
+# in the following, ``X`` and ``y`` are reversed:
 
 # %%
 X_train, X_test, y_train, y_test = sklearn_train_test_split(
@@ -108,7 +112,7 @@ print(f"{X_train = }\n{y_train = }\n{X_test = }\n{y_test = }")
 # =========================
 
 # %%
-# skore has its own :func:`skore.train_test_split` that wraps scikit-learn's
+# Skore has its own :func:`skore.train_test_split` that wraps scikit-learn's
 # :func:`sklearn.model_selection.train_test_split`.
 
 # %%
@@ -218,3 +222,12 @@ X = np.arange(10_000).reshape((5_000, 2))
 y = [0] * 2_500 + [1] * 2_500
 
 X_train, X_test, y_train, y_test = skore.train_test_split(X=X, y=y, test_size=0.2)
+
+# %%
+# Cleanup the project
+# -------------------
+#
+# Removing the temporary directory:
+
+# %%
+temp_dir.cleanup()
