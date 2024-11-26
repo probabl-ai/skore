@@ -3,19 +3,19 @@
 This module defines an interface for warnings shown in :func:`~skore.train_test_split`.
 """
 
+from typing import Union
+
 
 class TrainTestSplitWarning(Warning):
     """Interface for a train-test-split warning."""
 
-    MSG: str
-
     @staticmethod
-    def check(*args, **kwargs) -> bool:
+    def check(*args, **kwargs) -> Union[str, None]:
         """Perform the check.
 
         Returns
         -------
-        bool
-            True if the check passed, False otherwise.
+        warning
+            None if the check passed, otherwise the warning message.
         """
         ...

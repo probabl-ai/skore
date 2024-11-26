@@ -1,4 +1,4 @@
-""""High class imbalance (too few examples) warning.
+"""'High class imbalance (too few examples)' warning.
 
 This warning is shown when some class in a dataset has too few examples in the test set.
 """
@@ -6,7 +6,7 @@ This warning is shown when some class in a dataset has too few examples in the t
 from __future__ import annotations
 
 from collections import Counter
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from skore.sklearn.train_test_split.warning.train_test_split_warning import (
     TrainTestSplitWarning,
@@ -36,7 +36,7 @@ class HighClassImbalanceTooFewExamplesWarning(TrainTestSplitWarning):
         y_labels: Optional[ArrayLike],
         ml_task: MLTask,
         **kwargs,
-    ) -> bool:
+    ) -> Union[str, None]:
         """Check whether the test set has too few examples in one class.
 
         More precisely, we check whether some class in `y_labels` has
@@ -63,8 +63,8 @@ class HighClassImbalanceTooFewExamplesWarning(TrainTestSplitWarning):
 
         Returns
         -------
-        bool
-            True if the check passed, False otherwise.
+        warning
+            None if the check passed, otherwise the warning message.
         """
         if (
             stratify
@@ -72,8 +72,11 @@ class HighClassImbalanceTooFewExamplesWarning(TrainTestSplitWarning):
             or (y_labels is None or len(y_labels) == 0)
             or ("classification" not in ml_task)
         ):
-            return True
+            return None
 
         counts = Counter(y_test)
 
-        return all(counts.get(class_, 0) >= 100 for class_ in y_labels)
+        if all(counts.get(class_, 0) >= 100 for class_ in y_labels):
+            return None
+
+        return HighClassImbalanceTooFewExamplesWarning.MSG
