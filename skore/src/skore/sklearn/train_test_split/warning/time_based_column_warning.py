@@ -53,6 +53,8 @@ class TimeBasedColumnWarning(TrainTestSplitWarning):
             return None
 
         dtypes = [(col, X[col].dtype) for col in X.columns]
+        # NOTE: Searching by regex allows us to avoid depending explicitly
+        # on Pandas or Polars
         datetime_columns = [
             f'"{col}"'
             for col, dtype in dtypes
