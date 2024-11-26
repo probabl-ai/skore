@@ -74,12 +74,12 @@ We create and load the skore project from this temporary directory:
 
  .. code-block:: none
 
-    [11/25/24 16:37:15] <Logger skore.project.project (INFO)> Project  create.py:148
+    [11/26/24 13:46:10] <Logger skore.project.project (INFO)> Project  create.py:148
                                                               file                  
                                                               '/tmp/sk              
                                                               ore_exam              
-                                                              ple_14kr              
-                                                              7y0s/my_              
+                                                              ple_72bz              
+                                                              sw9q/my_              
                                                               project.              
                                                               skore'                
                                                               was                   
@@ -286,7 +286,7 @@ scikit-learn:
 
  .. code-block:: none
 
-    /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/skore/sklearn/train_test_split/train_test_split.py:161: ShuffleTrueWarning:
+    /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/skore/sklearn/train_test_split/train_test_split.py:165: ShuffleTrueWarning:
 
     We detected that the `shuffle` parameter is set to `True` either explicitly or from its default value. In case of time-ordered events (even if they are independent), this will result in inflated model performance evaluation because natural drift will not be taken into account. We recommend setting the shuffle parameter to `False` in order to ensure the evaluation process is really representative of your production release process.
 
@@ -324,7 +324,7 @@ detection of potential issues easier:
 
  .. code-block:: none
 
-    /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/skore/sklearn/train_test_split/train_test_split.py:161: ShuffleTrueWarning:
+    /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/skore/sklearn/train_test_split/train_test_split.py:165: ShuffleTrueWarning:
 
     We detected that the `shuffle` parameter is set to `True` either explicitly or from its default value. In case of time-ordered events (even if they are independent), this will result in inflated model performance evaluation because natural drift will not be taken into account. We recommend setting the shuffle parameter to `False` in order to ensure the evaluation process is really representative of your production release process.
 
@@ -359,7 +359,7 @@ before the ``y``'s, even when they are inverted:
 
  .. code-block:: none
 
-    /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/skore/sklearn/train_test_split/train_test_split.py:161: ShuffleTrueWarning:
+    /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/skore/sklearn/train_test_split/train_test_split.py:165: ShuffleTrueWarning:
 
     We detected that the `shuffle` parameter is set to `True` either explicitly or from its default value. In case of time-ordered events (even if they are independent), this will result in inflated model performance evaluation because natural drift will not be taken into account. We recommend setting the shuffle parameter to `False` in order to ensure the evaluation process is really representative of your production release process.
 
@@ -422,11 +422,11 @@ In that case, :func:`skore.train_test_split` raises a ``HighClassImbalanceWarnin
 
  .. code-block:: none
 
-    /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/skore/sklearn/train_test_split/train_test_split.py:161: HighClassImbalanceWarning:
+    /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/skore/sklearn/train_test_split/train_test_split.py:165: HighClassImbalanceWarning:
 
     It seems that you have a classification problem with a high class imbalance. In this case, using train_test_split may not be a good idea because of high variability in the scores obtained on the test set. To tackle this challenge we suggest to use skore's cross_validate function.
 
-    /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/skore/sklearn/train_test_split/train_test_split.py:161: ShuffleTrueWarning:
+    /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/skore/sklearn/train_test_split/train_test_split.py:165: ShuffleTrueWarning:
 
     We detected that the `shuffle` parameter is set to `True` either explicitly or from its default value. In case of time-ordered events (even if they are independent), this will result in inflated model performance evaluation because natural drift will not be taken into account. We recommend setting the shuffle parameter to `False` in order to ensure the evaluation process is really representative of your production release process.
 
@@ -464,15 +464,15 @@ with a ``HighClassImbalanceTooFewExamplesWarning``:
 
  .. code-block:: none
 
-    /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/skore/sklearn/train_test_split/train_test_split.py:161: HighClassImbalanceTooFewExamplesWarning:
+    /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/skore/sklearn/train_test_split/train_test_split.py:165: HighClassImbalanceTooFewExamplesWarning:
 
     It seems that you have a classification problem with at least one class with fewer than 100 examples in the test set. In this case, using train_test_split may not be a good idea because of high variability in the scores obtained on the test set. We suggest three options to tackle this challenge: you can increase test_size, collect more data, or use skore's cross_validate function.
 
-    /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/skore/sklearn/train_test_split/train_test_split.py:161: HighClassImbalanceWarning:
+    /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/skore/sklearn/train_test_split/train_test_split.py:165: HighClassImbalanceWarning:
 
     It seems that you have a classification problem with a high class imbalance. In this case, using train_test_split may not be a good idea because of high variability in the scores obtained on the test set. To tackle this challenge we suggest to use skore's cross_validate function.
 
-    /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/skore/sklearn/train_test_split/train_test_split.py:161: ShuffleTrueWarning:
+    /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/skore/sklearn/train_test_split/train_test_split.py:165: ShuffleTrueWarning:
 
     We detected that the `shuffle` parameter is set to `True` either explicitly or from its default value. In case of time-ordered events (even if they are independent), this will result in inflated model performance evaluation because natural drift will not be taken into account. We recommend setting the shuffle parameter to `False` in order to ensure the evaluation process is really representative of your production release process.
 
@@ -508,11 +508,11 @@ skore recommends the use of the ``random_state`` parameter when shuffling
 
  .. code-block:: none
 
-    /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/skore/sklearn/train_test_split/train_test_split.py:161: RandomStateUnsetWarning:
+    /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/skore/sklearn/train_test_split/train_test_split.py:165: RandomStateUnsetWarning:
 
     We recommend setting the parameter `random_state`. This will ensure the reproducibility of your work.
 
-    /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/skore/sklearn/train_test_split/train_test_split.py:161: ShuffleTrueWarning:
+    /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/skore/sklearn/train_test_split/train_test_split.py:165: ShuffleTrueWarning:
 
     We detected that the `shuffle` parameter is set to `True` either explicitly or from its default value. In case of time-ordered events (even if they are independent), this will result in inflated model performance evaluation because natural drift will not be taken into account. We recommend setting the shuffle parameter to `False` in order to ensure the evaluation process is really representative of your production release process.
 
@@ -542,7 +542,7 @@ Removing the temporary directory:
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.040 seconds)
+   **Total running time of the script:** (0 minutes 0.041 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_05_train_test_split.py:
