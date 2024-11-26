@@ -15,6 +15,10 @@ if TYPE_CHECKING:
     import polars
 
 
+class PolarsToJSONError(Exception):
+    """Something happened while converting a polars DataFrame to JSON."""
+
+
 class PolarsDataFrameItem(Item):
     """
     A class to represent a polars DataFrame item.
@@ -86,4 +90,9 @@ class PolarsDataFrameItem(Item):
         if not isinstance(dataframe, polars.DataFrame):
             raise ItemTypeError(f"Type '{dataframe.__class__}' is not supported.")
 
-        return cls(dataframe_json=dataframe.write_json())
+        try:
+            dataframe_json = dataframe.write_json()
+        except Exception as e:
+            raise PolarsToJSONError("Conversion to JSON failed") from e
+
+        return cls(dataframe_json=dataframe_json)

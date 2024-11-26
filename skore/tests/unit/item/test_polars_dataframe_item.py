@@ -3,6 +3,7 @@ import pytest
 from polars import DataFrame
 from polars.testing import assert_frame_equal
 from skore.item import ItemTypeError, PolarsDataFrameItem
+from skore.item.polars_dataframe_item import PolarsToJSONError
 
 
 class TestPolarsDataFrameItem:
@@ -42,6 +43,6 @@ class TestPolarsDataFrameItem:
 
     def test_dataframe_with_complex_object(self, mock_nowstr):
         dataframe = DataFrame([{"key": np.array([1, 2])}])
-        item = PolarsDataFrameItem.factory(dataframe)
 
-        assert isinstance(item.dataframe["key"].iloc[0], list)
+        with pytest.raises(PolarsToJSONError):
+            PolarsDataFrameItem.factory(dataframe)
