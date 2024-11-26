@@ -1,6 +1,7 @@
 """'Time-based column' warning.
 
 This warning is shown when ``X`` contains a time-based column.
+Currently, only pandas and polars DataFrames are supported.
 """
 
 from __future__ import annotations
@@ -17,7 +18,10 @@ if TYPE_CHECKING:
 
 
 class TimeBasedColumnWarning(TrainTestSplitWarning):
-    """Check whether the design matrix ``X`` contains a time-based column."""
+    """Check whether the design matrix ``X`` contains a time-based column.
+
+    Currently, only pandas and polars DataFrames are supported.
+    """
 
     @staticmethod
     def _MSG(df_name: str, offending_column_names: list[str]) -> str:
@@ -38,6 +42,8 @@ class TimeBasedColumnWarning(TrainTestSplitWarning):
     @staticmethod
     def check(X: ArrayLike, **kwargs) -> Union[str, None]:
         """Check whether the design matrix ``X`` contains a time-based column.
+
+        Currently, only pandas and polars DataFrames are supported.
 
         Parameters
         ----------
