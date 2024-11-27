@@ -24,7 +24,7 @@ class SkrubTableReportItem(MediaItem):
     """
 
     @classmethod
-    def factory(cls, table_report: TableReport) -> SkrubTableReportItem:  # type: ignore[override]
+    def factory(cls, table_report: TableReport) -> MediaItem:  # type: ignore[override]
         """
         Create a new SkrubTableReportItem with the current timestamp.
 
