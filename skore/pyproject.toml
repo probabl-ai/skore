@@ -80,6 +80,7 @@ test = [
   "pytest-randomly",
   "ruff",
   "scikit-learn",
+  "skrub",
 ]
 
 sphinx = [
@@ -88,6 +89,7 @@ sphinx = [
   "matplotlib",
   "numpydoc",
   "pandas",
+  "polars",
   "kaleido",
   "pydata-sphinx-theme",
   "scikit-learn",
