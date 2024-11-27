@@ -199,10 +199,9 @@ my_df_pandas.head()
 # %%
 import polars as pl
 
-data = {"a": [1, 2], "b": [3, 4]}
-my_df_polars = pl.DataFrame(data)
+my_df_polars = pl.DataFrame(np.random.randn(10, 5))
 my_project.put("my_df_polars", my_df_polars)
-my_df_polars
+my_df_polars.head()
 
 # %%
 # Storing data visualizations
