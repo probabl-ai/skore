@@ -33,42 +33,44 @@ pip install -U skore
 ### Manipulating the skore UI
 
 1. From your Python code, create and load a skore project, here named `my_project`:
-```python
-import skore
-my_project = skore.create("my_project")
-```
+    ```python
+    import skore
+    my_project = skore.create("my_project")
+    ```
 This will create a skore project directory named `my_project.skore` in your current working directory.
 
 2. Start storing some items, for example you can store an integer:
-```python
-my_project.put("my_int", 3)
-```
-or the result of a scikit-learn grid search:
-```python
-import numpy as np
-from sklearn.datasets import load_diabetes
-from sklearn.linear_model import Ridge
-from sklearn.model_selection import GridSearchCV
-
-diabetes = load_diabetes()
-X = diabetes.data[:150]
-y = diabetes.target[:150]
-
-gs_cv = GridSearchCV(
-    Ridge(),
-    param_grid={"alpha": np.logspace(-3, 5, 50)},
-    scoring="neg_root_mean_squared_error",
-)
-gs_cv.fit(X, y)
-
-my_project.put("my_gs_cv", gs_cv)
-```
+    ```python
+    my_project.put("my_int", 3)
+    ```
+    or the result of a scikit-learn grid search:
+    ```python
+    import numpy as np
+    from sklearn.datasets import load_diabetes
+    from sklearn.linear_model import Ridge
+    from sklearn.model_selection import GridSearchCV
+    
+    diabetes = load_diabetes()
+    X = diabetes.data[:150]
+    y = diabetes.target[:150]
+    
+    gs_cv = GridSearchCV(
+        Ridge(),
+        param_grid={"alpha": np.logspace(-3, 5, 50)},
+        scoring="neg_root_mean_squared_error",
+    )
+    gs_cv.fit(X, y)
+    
+    my_project.put("my_gs_cv", gs_cv)
+    ```
 
 3. Finally, from your shell (in the same directory), start the UI locally:
-```bash
-skore launch "my_project"
-```
-This will automatically open a browser at the UI's location:
+    ```bash
+    skore launch "my_project"
+    ```
+    This will automatically open a browser at the UI's location.
+
+On the UI:
 1. On the top left, by default, you can observe that you are in a _View_ called `default`. You can rename this view or create another one.
 2. From the _Items_ section on the bottom left, you can add stored items to this view, either by clicking on `+` or by dragging an item to the right.
 3. In the skore UI on the right, you can drag-and-drop items to re-order them, remove items, etc.
