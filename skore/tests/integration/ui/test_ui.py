@@ -1,3 +1,5 @@
+import pandas
+import polars
 import pytest
 from fastapi.testclient import TestClient
 from skore.ui.app import create_app
@@ -63,3 +65,43 @@ def test_delete_view(client, in_memory_project):
 def test_delete_view_missing(client):
     response = client.delete("/api/project/views?key=hello")
     assert response.status_code == 404
+
+
+def test_serialize_pandas_dataframe_with_missing_values(client, in_memory_project):
+    pandas_df = pandas.DataFrame([1, 2, 3, 4, None, float("nan")])
+    in_memory_project.put("🐼", pandas_df)
+
+    response = client.get("/api/project/items")
+    assert response.status_code == 200
+    project = response.json()
+    assert len(project["items"]["🐼"][0]["value"]["data"]) == 6
+
+
+def test_serialize_polars_dataframe_with_missing_values(client, in_memory_project):
+    polars_df = polars.DataFrame([1, 2, 3, 4, None, float("nan")], strict=False)
+    in_memory_project.put("🐻‍❄️", polars_df)
+
+    response = client.get("/api/project/items")
+    assert response.status_code == 200
+    project = response.json()
+    assert len(project["items"]["🐻‍❄️"][0]["value"]["data"]) == 6
+
+
+def test_serialize_pandas_series_with_missing_values(client, in_memory_project):
+    pandas_series = pandas.Series([1, 2, 3, 4, None, float("nan")])
+    in_memory_project.put("🐼", pandas_series)
+
+    response = client.get("/api/project/items")
+    assert response.status_code == 200
+    project = response.json()
+    assert len(project["items"]["🐼"][0]["value"]) == 6
+
+
+def test_serialize_polars_series_with_missing_values(client, in_memory_project):
+    polars_df = polars.Series([1, 2, 3, 4, None, float("nan")], strict=False)
+    in_memory_project.put("🐻‍❄️", polars_df)
+
+    response = client.get("/api/project/items")
+    assert response.status_code == 200
+    project = response.json()
+    assert len(project["items"]["🐻‍❄️"][0]["value"]) == 6

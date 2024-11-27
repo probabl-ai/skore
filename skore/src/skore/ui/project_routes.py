@@ -1,9 +1,11 @@
 """The definition of API routes to list project items and get them."""
 
+from __future__ import annotations
+
 import base64
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from fastapi import APIRouter, HTTPException, Request, status
 
@@ -21,6 +23,9 @@ from skore.item.primitive_item import PrimitiveItem
 from skore.item.sklearn_base_estimator_item import SklearnBaseEstimatorItem
 from skore.project import Project
 from skore.view.view import Layout, View
+
+if TYPE_CHECKING:
+    import pandas  # type: ignore
 
 router = APIRouter(prefix="/project")
 
@@ -46,6 +51,9 @@ class SerializedProject:
 def __serialize_project(project: Project) -> SerializedProject:
     items = defaultdict(list)
 
+    def pandas_dataframe_to_serializable(df: pandas.DataFrame):
+        return df.fillna("NaN").to_dict(orient="tight")
+
     for key in project.list_item_keys():
         for item in project.get_item_versions(key):
             if isinstance(item, PrimitiveItem):
@@ -55,13 +63,13 @@ def __serialize_project(project: Project) -> SerializedProject:
                 value = item.array.tolist()
                 media_type = "text/markdown"
             elif isinstance(item, PandasDataFrameItem):
-                value = item.dataframe.fillna("missing value").to_dict(orient="tight")
+                value = pandas_dataframe_to_serializable(item.dataframe)
                 media_type = "application/vnd.dataframe+json"
             elif isinstance(item, PandasSeriesItem):
-                value = item.series.to_list()
+                value = item.series.fillna("NaN").to_list()
                 media_type = "text/markdown"
             elif isinstance(item, PolarsDataFrameItem):
-                value = item.dataframe.to_pandas().to_dict(orient="tight")
+                value = pandas_dataframe_to_serializable(item.dataframe.to_pandas())
                 media_type = "application/vnd.dataframe+json"
             elif isinstance(item, PolarsSeriesItem):
                 value = item.series.to_list()
