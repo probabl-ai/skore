@@ -19,7 +19,6 @@ from skore.item.polars_dataframe_item import PolarsDataFrameItem
 from skore.item.polars_series_item import PolarsSeriesItem
 from skore.item.primitive_item import PrimitiveItem
 from skore.item.sklearn_base_estimator_item import SklearnBaseEstimatorItem
-from skore.item.skrub_table_report_item import SkrubTableReportItem
 from skore.project import Project
 from skore.view.view import Layout, View
 
@@ -73,9 +72,6 @@ def __serialize_project(project: Project) -> SerializedProject:
             elif isinstance(item, MediaItem):
                 value = base64.b64encode(item.media_bytes).decode()
                 media_type = item.media_type
-            elif isinstance(item, SkrubTableReportItem):
-                value = item.html_snippet
-                media_type = "text/html"
             elif isinstance(
                 item, (CrossValidationItem, CrossValidationAggregationItem)
             ):

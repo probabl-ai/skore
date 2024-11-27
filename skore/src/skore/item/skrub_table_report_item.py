@@ -1,8 +1,4 @@
-"""Define SkrubTableReportItem.
-
-SkrubTableReportItems represents a skrub TableReport item
-with creation and update timestamps.
-"""
+"""SkrubTableReportItem."""
 
 from __future__ import annotations
 
@@ -15,31 +11,21 @@ if TYPE_CHECKING:
     from skrub import TableReport
 
 
-class SkrubTableReportItem(MediaItem):
+def factory(table_report: TableReport) -> MediaItem:
     """
-    A class to represent a skrub TableReport.
+    Create a new MediaItem instance from a skrub TableReport.
 
-    This class encapsulates a skrub TableReport
-    along with its creation and update timestamps.
+    Parameters
+    ----------
+    table_report : TableReport
+        The report to store.
+
+    Returns
+    -------
+    MediaItem
+        A new MediaItem instance.
     """
+    if not hasattr(table_report, "html_snippet"):
+        raise ItemTypeError(f"Type '{table_report.__class__}' is not supported.")
 
-    @classmethod
-    def factory(cls, table_report: TableReport) -> MediaItem:  # type: ignore[override]
-        """
-        Create a new SkrubTableReportItem with the current timestamp.
-
-        Parameters
-        ----------
-        table_report : TableReport
-            The report to store.
-
-        Returns
-        -------
-        SkrubTableReportItem
-            A new SkrubTableReportItem instance.
-        """
-        if getattr(table_report, "html_snippet", None) is None:
-            raise ItemTypeError(f"Type '{table_report.__class__}' is not supported.")
-
-        html = table_report.html_snippet()
-        return super().factory_str(html, media_type="text/html")  # type: ignore
+    return MediaItem.factory_str(table_report.html_snippet(), media_type="text/html")
