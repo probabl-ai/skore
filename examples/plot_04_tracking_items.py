@@ -156,25 +156,33 @@ fig
 # Here, let us see how we can use the tracking of items with this function.
 
 # %%
-# We run several cross-validations using several values of a hyperparameter:
+# Let us load some data:
 
 # %%
 from sklearn import datasets
-from sklearn.linear_model import Lasso
-import skore
 
-diabetes = datasets.load_diabetes()
-X = diabetes.data[:150]
-y = diabetes.target[:150]
-lasso = Lasso()
-
-for alpha in [0.5, 1, 2]:
-    cv_results = skore.cross_validate(
-        Lasso(alpha=alpha), X, y, cv=5, project=my_project
-    )
+X, y = datasets.load_diabetes(return_X_y=True)
+X, y = X[:150], y[:150]
 
 # %%
-# We can compare the metrics of each run of the cross-validation (on all splits):
+# Suppose that some users are coding in their draft notebook and are iterating on some
+# cross-validations in separate cells and forgot to store the intermediate results:
+
+# %%
+import skore
+from sklearn.linear_model import Lasso
+
+skore.cross_validate(Lasso(alpha=0.5), X, y, cv=5, project=my_project)
+
+# %%
+skore.cross_validate(Lasso(alpha=1), X, y, cv=5, project=my_project)
+
+# %%
+skore.cross_validate(Lasso(alpha=2), X, y, cv=5, project=my_project)
+
+# %%
+# Thanks to the storage of the results by :func:`skore.cross_validate` (done when
+# specifying the ``project`` argument), we can compare the metrics of each run of thecross-validation (on all splits):
 
 # %%
 fig_plotly = my_project.get_item("cross_validation_aggregated").plot
@@ -182,6 +190,12 @@ fig_plotly
 
 # %%
 # Hence, we can observe that the first run, with ``alpha=0.5``, works better.
+
+# %%
+# .. note::
+#   The good practice, instead of running several cross-validations with different
+#   values of the hyperparameter, would have been to use a
+#   :func:`sklearn.model_selection.GridSearchCV`.
 
 # %%
 # Cleanup the project
