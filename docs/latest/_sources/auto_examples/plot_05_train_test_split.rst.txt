@@ -74,12 +74,12 @@ We create and load the skore project from this temporary directory:
 
  .. code-block:: none
 
-                        <Logger skore.project.project (INFO)> Project  create.py:148
+    [11/27/24 13:39:44] <Logger skore.project.project (INFO)> Project  create.py:148
                                                               file                  
                                                               '/tmp/sk              
                                                               ore_exam              
-                                                              ple_r797              
-                                                              uy8d/my_              
+                                                              ple_mi0p              
+                                                              xra1/my_              
                                                               project.              
                                                               skore'                
                                                               was                   
@@ -542,7 +542,7 @@ Removing the temporary directory:
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.039 seconds)
+   **Total running time of the script:** (0 minutes 0.042 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_05_train_test_split.py:

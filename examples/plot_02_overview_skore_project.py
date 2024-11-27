@@ -189,9 +189,19 @@ my_arr
 # %%
 import pandas as pd
 
-my_df = pd.DataFrame(np.random.randn(10, 5))
-my_project.put("my_df", my_df)
-my_df.head()
+my_df_pandas = pd.DataFrame(np.random.randn(10, 5))
+my_project.put("my_df_pandas", my_df_pandas)
+my_df_pandas.head()
+
+# %%
+# Polars data frame:
+
+# %%
+import polars as pl
+
+my_df_polars = pl.DataFrame(np.random.randn(10, 5))
+my_project.put("my_df_polars", my_df_polars)
+my_df_polars.head()
 
 # %%
 # Storing data visualizations
