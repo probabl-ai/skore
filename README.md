@@ -10,7 +10,7 @@
 With skore, data scientists can:
 1. Track and visualize their ML/DS results.
 2. Get assistance when developing their ML/DS projects.
-    - Scikit-learn compatible `skore.cross_validate()` and `skore.train_test_split()` provide insights and checks on cross-validation and train-test-split.
+    - Scikit-learn compatible `skore.cross_validate()` and `skore.train_test_split()` provide insights and checks on cross-validation and train-test split.
 
 These are only the first features: skore is a work in progress and aims to be an end-to-end library for data scientists.
 Stay tuned! Feedbacks are welcome: please feel free to join [our Discord](https://discord.probabl.ai).
@@ -49,18 +49,18 @@ This will create a skore project directory named `my_project.skore` in your curr
     from sklearn.datasets import load_diabetes
     from sklearn.linear_model import Ridge
     from sklearn.model_selection import GridSearchCV
-    
+
     diabetes = load_diabetes()
     X = diabetes.data[:150]
     y = diabetes.target[:150]
-    
+
     gs_cv = GridSearchCV(
         Ridge(),
         param_grid={"alpha": np.logspace(-3, 5, 50)},
         scoring="neg_root_mean_squared_error",
     )
     gs_cv.fit(X, y)
-    
+
     my_project.put("my_gs_cv", gs_cv)
     ```
 
