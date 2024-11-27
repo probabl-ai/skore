@@ -29,6 +29,7 @@ const document = computed(() => {
         }
         body {
           -webkit-font-smoothing: antialiased;
+          font-family: Geist, sans-serif;
         }
       </style>
     </head>

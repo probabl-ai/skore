@@ -349,6 +349,7 @@ export const useProjectStore = defineStore("project", () => {
           if (
             [
               "text/markdown",
+              "text/html",
               "application/vnd.dataframe+json",
               "application/vnd.sklearn.estimator+html",
               "image/png",
