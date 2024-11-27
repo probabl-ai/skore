@@ -182,7 +182,8 @@ skore.cross_validate(Lasso(alpha=2), X, y, cv=5, project=my_project)
 
 # %%
 # Thanks to the storage of the results by :func:`skore.cross_validate` (done when
-# specifying the ``project`` argument), we can compare the metrics of each run of thecross-validation (on all splits):
+# specifying the ``project`` argument), we can compare the metrics of each
+# cross-validation run (on all splits):
 
 # %%
 fig_plotly = my_project.get_item("cross_validation_aggregated").plot
