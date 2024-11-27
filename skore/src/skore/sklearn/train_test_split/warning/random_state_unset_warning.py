@@ -28,7 +28,7 @@ class RandomStateUnsetWarning(TrainTestSplitWarning):
         shuffle: bool,
         random_state: Optional[Union[int, RandomState]],
         **kwargs,
-    ) -> bool:
+    ) -> Union[str, None]:
         """Check whether ``random_state`` is set.
 
         Parameters
@@ -42,7 +42,8 @@ class RandomStateUnsetWarning(TrainTestSplitWarning):
 
         Returns
         -------
-        bool
-            True if the check passed, False otherwise.
+        warning
+            None if the check passed, otherwise the warning message.
         """
-        return not (shuffle and random_state is None)
+        if shuffle and random_state is None:
+            return RandomStateUnsetWarning.MSG
