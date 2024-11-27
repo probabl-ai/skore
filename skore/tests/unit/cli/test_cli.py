@@ -26,6 +26,6 @@ def test_cli_launch(monkeypatch):
     assert not launch_open_browser
 
 
-def test_cli_launch_no_project_name(monkeypatch):
+def test_cli_launch_no_project_name():
     with pytest.raises(SystemExit):
         cli(["launch", "--port", 0, "--no-open-browser"])
