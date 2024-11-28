@@ -2,11 +2,13 @@ name: Reusable skore workflow
 
 on: [workflow_call]
 
+defaults:
+  run:
+    shell: "bash"
+    working-directory: "./skore"
+
 jobs:
   test-skore:
-    defaults:
-      run:
-        shell: "bash"
     strategy:
       fail-fast: true
       matrix:
@@ -22,16 +24,10 @@ jobs:
       - name:
         timeout-minutes: 10
         run: |
-          cd skore
-
           # Install dependencies
           python -m pip install --upgrade pip
           python -m pip install --upgrade pre-commit
           python -m pip install --upgrade build
-
-          # fake frontend
-          mkdir -p src/skore/ui/static
-          touch src/skore/ui/static/index.html
 
           # Lint
           pre-commit run --all-files ruff
@@ -55,17 +51,11 @@ jobs:
           cache: "pip"
       - name: pytest coverage
         run: |
-          cd skore
-
           # Install dependencies
           python -m pip install --upgrade pip
           python -m pip install --upgrade pre-commit
           python -m pip install --upgrade build
           python -m pip install -e .[test]
-
-          # fake frontend
-          mkdir -p src/skore/ui/static
-          touch src/skore/ui/static/index.html
 
           # run coverage
           python -m pytest --junitxml=coverage.xml --cov=skore src/ tests/ | tee pytest-coverage.txt

@@ -13,12 +13,6 @@ def test_app_state(client):
     assert client.app.state.project is not None
 
 
-def test_skore_ui_index(client):
-    response = client.get("/")
-
-    assert response.status_code == 200
-
-
 def test_get_items(client, in_memory_project):
     response = client.get("/api/project/items")
 
