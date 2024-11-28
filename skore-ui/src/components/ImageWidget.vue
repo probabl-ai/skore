@@ -10,7 +10,9 @@ interface ImageWidgetProps {
 const props = withDefaults(defineProps<ImageWidgetProps>(), {
   alt: "",
 });
-const src = computed(() => `data:${props.mediaType};base64,${props.base64Src}`);
+const src = computed(() => {
+  return `data:${props.mediaType},${props.base64Src}`;
+});
 </script>
 
 <template>
