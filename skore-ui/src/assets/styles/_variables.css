@@ -17,6 +17,7 @@
   --spacing-4: 0.28rem;
   --spacing-6: 0.57rem;
   --spacing-8: 0.85rem;
+  --spacing-10: 1.06rem;
   --spacing-12: 1.14rem;
   --spacing-16: 1.42rem;
   --spacing-20: 1.71rem;
@@ -58,6 +59,7 @@
     --color-icon-secondary: #a2a2a2;
     --color-icon-tertiary: #3043f0;
     --color-icon-quartenary: #7481f5;
+    --color-icon-navigation-selected: #2e2e2e;
 
     /* strokes */
     --color-stroke-background-primary: #292a2a;
@@ -81,6 +83,7 @@
     --color-text-secondary: #616271;
     --color-text-tertiary: #f08b30;
     --color-text-button-primary: #fff;
+    --color-icon-navigation-selected: #e2e4fa;
 
     /* icons */
     --color-icon-primary: #f08b30;

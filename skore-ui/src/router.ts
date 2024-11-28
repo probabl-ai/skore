@@ -14,11 +14,17 @@ const router = createRouter({
       path: "/",
       name: "view-builder",
       component: ProjectView,
+      meta: {
+        icon: "icon-pie-chart",
+      },
     },
     {
       path: "/components",
       name: "components",
       component: () => import("./views/ComponentsView.vue"),
+      meta: {
+        icon: "icon-gift",
+      },
     },
   ],
 });

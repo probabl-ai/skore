@@ -1,15 +1,27 @@
 <script setup lang="ts">
-import { RouterView } from "vue-router";
+import { RouterView, useRoute, useRouter } from "vue-router";
 
 import AppToolbar from "@/components/AppToolbar.vue";
 import LoadingBars from "@/components/LoadingBars.vue";
 import ModalDialog from "@/components/ModalDialog.vue";
+import NavigationButton from "@/components/NavigationButton.vue";
 import ToastNotificationArea from "@/components/ToastNotificationArea.vue";
+
+const route = useRoute();
+const router = useRouter();
 </script>
 
 <template>
   <div class="skore">
-    <AppToolbar />
+    <AppToolbar>
+      <NavigationButton
+        v-for="(r, i) in router.getRoutes()"
+        :key="i"
+        :icon="`${r.meta['icon']}`"
+        :is-selected="r.name == route.name"
+        :to="r.path"
+      />
+    </AppToolbar>
     <RouterView v-slot="{ Component }">
       <template v-if="Component">
         <Transition name="fade">
@@ -36,8 +48,8 @@ import ToastNotificationArea from "@/components/ToastNotificationArea.vue";
 
   .loader {
     display: flex;
-    width: 100dvw;
     height: 100dvh;
+    flex: 1;
     align-items: center;
     justify-content: center;
   }
