@@ -344,33 +344,21 @@ export const useProjectStore = defineStore("project", () => {
             ? getItemUpdate(key, currentItemUpdateIndex[key])
             : items.value[key];
         if (item) {
-          const mediaType = item.media_type || "";
-          let data;
-          if (
-            [
-              "text/markdown",
-              "text/html",
-              "application/vnd.dataframe+json",
-              "application/vnd.sklearn.estimator+html",
-              "image/png",
-              "image/jpeg",
-              "image/webp",
-              "image/svg+xml",
-            ].includes(mediaType)
-          ) {
-            data = item.value;
-          } else {
+          const isBase64 = item.media_type.endsWith(";base64");
+          const isImage = item.media_type.startsWith("image/");
+          let data = item.value;
+          if (isBase64 && !isImage) {
             data = atob(item.value);
-            if (mediaType.includes("json")) {
-              data = JSON.parse(data);
-            }
+          }
+          if (item.media_type.includes("+json")) {
+            data = JSON.parse(data);
           }
           const createdAt = new Date(item.created_at);
           const updatedAt = new Date(item.updated_at);
           r.push({
             id: key,
             key,
-            mediaType,
+            mediaType: item.media_type,
             data,
             createdAt,
             updatedAt,

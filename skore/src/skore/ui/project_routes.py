@@ -71,12 +71,12 @@ def __serialize_project(project: Project) -> SerializedProject:
                 media_type = "application/vnd.sklearn.estimator+html"
             elif isinstance(item, MediaItem):
                 value = base64.b64encode(item.media_bytes).decode()
-                media_type = item.media_type
+                media_type = f"{item.media_type};base64"
             elif isinstance(
                 item, (CrossValidationItem, CrossValidationAggregationItem)
             ):
                 value = base64.b64encode(item.plot_bytes).decode()
-                media_type = "application/vnd.plotly.v1+json"
+                media_type = "application/vnd.plotly.v1+json;base64"
             else:
                 raise ValueError(f"Item {item} is not a known item type.")
 
