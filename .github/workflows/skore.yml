@@ -41,8 +41,9 @@ jobs:
           # Test
           python -m pytest --no-cov src/ tests/
 
-  skore-coverage:
+  coverage-skore:
     runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
