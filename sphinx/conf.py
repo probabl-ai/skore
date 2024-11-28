@@ -12,7 +12,7 @@ project = "skore"
 copyright = "2024, Probabl"
 author = "Probabl"
 version = os.environ["SPHINX_VERSION"]
-release = os.environ["SPHINX_VERSION"]
+release = os.environ["SPHINX_RELEASE"]
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

@@ -75,6 +75,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       SPHINX_VERSION: ${{ steps.sphinx-version.outputs.SPHINX_VERSION }}
+      SPHINX_RELEASE: ${{ steps.sphinx-version.outputs.SPHINX_RELEASE }}
     steps:
       - shell: bash
         id: sphinx-version
@@ -83,6 +84,7 @@ jobs:
 
           if [[ "${GITHUB_EVENT_NAME}" != "release" ]]; then
               echo "SPHINX_VERSION=dev" >> "${GITHUB_OUTPUT}"
+              echo "SPHINX_RELEASE=0.0.0+dev" >> "${GITHUB_OUTPUT}"
               exit 0
           fi
 
@@ -90,6 +92,7 @@ jobs:
 
           if [[ "${GITHUB_REF_NAME}" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)?$ ]]; then
               echo "SPHINX_VERSION=${BASH_REMATCH[1]}.${BASH_REMATCH[2]}" >> "${GITHUB_OUTPUT}"
+              echo "SPHINX_RELEASE=${GITHUB_REF_NAME}" >> "${GITHUB_OUTPUT}"
           fi
 
   sphinx-build:
@@ -104,6 +107,7 @@ jobs:
       - uses: ./.github/actions/sphinx/build
         with:
           SPHINX_VERSION: ${{ needs.sphinx-version.outputs.SPHINX_VERSION }}
+          SPHINX_RELEASE: ${{ needs.sphinx-version.outputs.SPHINX_RELEASE }}
       - uses: actions/upload-artifact@v4
         with:
           name: sphinx-html-artifact

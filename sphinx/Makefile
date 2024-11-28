@@ -2,6 +2,7 @@
 #
 
 export SPHINX_VERSION ?= dev
+export SPHINX_RELEASE ?= 0.0.0+dev
 
 # You can set these variables from the command line, and also
 # from the environment for the first two.
