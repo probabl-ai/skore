@@ -2,55 +2,29 @@ name: Reusable skore workflow
 
 on: [workflow_call]
 
-jobs:
-  build-skore-ui:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: 'bash'
-        working-directory: './skore-ui'
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: skore-ui/package-lock.json
-      - shell: bash
-        run: |
-          npm install
-          npm run build
-      - uses: actions/upload-artifact@v4
-        with:
-          name: skore-ui-package-distributions
-          path: skore-ui/dist
+defaults:
+  run:
+    shell: "bash"
+    working-directory: "./skore"
 
+jobs:
   test-skore:
-    needs: build-skore-ui
-    defaults:
-      run:
-        shell: 'bash'
-        working-directory: './skore'
     strategy:
       fail-fast: true
       matrix:
-        os: ['ubuntu-latest', 'windows-latest']
-        python-version: ['3.9', '3.10', '3.11', '3.12']
+        os: ["ubuntu-latest", "windows-latest"]
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-          cache: 'pip'
-      - name: Download package distributions
-        uses: actions/download-artifact@v4
-        with:
-          name: skore-ui-package-distributions
-          path: skore/src/skore/ui/static
+          cache: "pip"
       - name:
         timeout-minutes: 10
         run: |
+          # Install dependencies
           python -m pip install --upgrade pip
           python -m pip install --upgrade pre-commit
           python -m pip install --upgrade build
@@ -65,13 +39,29 @@ jobs:
           wheel=(dist/*.whl); python -m pip install "${wheel}[test]"
 
           # Test
-          python -m pytest src/ tests/
+          python -m pytest --no-cov src/ tests/
 
-  cleanup:
+  skore-coverage:
     runs-on: ubuntu-latest
-    if: always()
-    needs: test-skore
     steps:
-      - uses: geekyeggo/delete-artifact@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          name: skore-ui-package-distributions
+          python-version: 3.12
+          cache: "pip"
+      - name: pytest coverage
+        run: |
+          # Install dependencies
+          python -m pip install --upgrade pip
+          python -m pip install --upgrade pre-commit
+          python -m pip install --upgrade build
+          python -m pip install -e .[test]
+
+          # run coverage
+          python -m pytest --junitxml=coverage.xml --cov=skore src/ tests/ | tee pytest-coverage.txt
+      - name: Pytest coverage comment
+        uses: MishaKav/pytest-coverage-comment@main
+        with:
+          pytest-coverage-path: ./skore/pytest-coverage.txt
+          junitxml-path: ./skore/coverage.xml
+          title: pytest coverage report
