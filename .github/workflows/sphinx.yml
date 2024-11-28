@@ -44,8 +44,7 @@ name: Sphinx
 # **Side-notes**
 # ==============
 #
-# Only the 10 latest versions are listed in sphinx version-switcher.
-# But, the bucket remains unchanged. You need to manually prune the bucket to remove older versions that are no longer listed.
+# Only the 10 latest versions are listed in sphinx version-switcher to avoid overloading, but the bucket remains unchanged.
 
 on:
   pull_request:
