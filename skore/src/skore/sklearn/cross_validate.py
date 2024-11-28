@@ -116,7 +116,12 @@ def _add_scorers(scorers, scorers_to_add):
     return new_scorers, added_scorers
 
 
-def _strip_cv_results_scores(cv_results: dict, added_scorers: list[str]) -> dict:
+def _strip_cv_results_scores(
+    cv_results: dict,
+    added_scorers: list[str],
+    return_estimator: bool,
+    return_indices: bool,
+) -> dict:
     """Remove information about `added_scorers` in `cv_results`.
 
     Parameters
@@ -125,18 +130,32 @@ def _strip_cv_results_scores(cv_results: dict, added_scorers: list[str]) -> dict
         A dict of the form returned by scikit-learn's cross_validate function.
     added_scorers : list[str]
         A list of scorers in `cv_results` which should be removed.
+    return_estimator : bool
+        Whether to keep the "estimator" key or not.
+    return_indices : bool
+        Whether to keep the "indices" key or not.
 
     Returns
     -------
     dict
-        A new cv_results dict, with the specified scorers information removed.
+        A new cv_results dict, with the specified information removed.
     """
+    _cv_results = cv_results.copy()
+
+    if return_estimator is not True:
+        del _cv_results["estimator"]
+
+    if return_indices is not True:
+        del _cv_results["indices"]
+
     # Takes care both of train and test scores
-    return {
+    _cv_results = {
         k: v
-        for k, v in cv_results.items()
+        for k, v in _cv_results.items()
         if not any(added_scorer in k for added_scorer in added_scorers)
     }
+
+    return _cv_results
 
 
 def cross_validate(*args, project: Optional[Project] = None, **kwargs) -> dict:
@@ -401,6 +420,8 @@ class CrossValidationReporter:
         self.y = args[2] if len(args) == 3 else kwargs.get("y")
 
         self.scorers = kwargs.pop("scoring", None)
+        return_estimator = kwargs.pop("return_estimator", None)
+        return_indices = kwargs.pop("return_indices", None)
 
         # Extend scorers with other relevant scorers
         scorers_to_add = _get_scorers_to_add(self.estimator, self.y)
@@ -410,6 +431,8 @@ class CrossValidationReporter:
             *args,
             **kwargs,
             scoring=self._scorers,
+            return_estimator=True,
+            return_indices=True,
         )
 
         # Remove information related to our scorers, so that our return value is
@@ -417,6 +440,8 @@ class CrossValidationReporter:
         self.cv_results = _strip_cv_results_scores(
             cv_results=self._cv_results,
             added_scorers=added_scorers,
+            return_estimator=return_estimator,
+            return_indices=return_indices,
         )
 
         # Add explicit metric to result (rather than just "test_score")
