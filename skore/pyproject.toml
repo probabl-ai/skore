@@ -1,13 +1,9 @@
 [project]
 name = "skore"
 description = "Tooling and assistance for data scientists to \"Own Your Data Science\""
-dynamic = [
-  "license",
-  "readme",
-  "version"
-]
+dynamic = ["license", "readme", "version"]
 requires-python = ">=3.9, <3.13"
-maintainers = [{name = "skore developers", email="skore@signal.probabl.ai"}]
+maintainers = [{ name = "skore developers", email = "skore@signal.probabl.ai" }]
 dependencies = [
   "diskcache",
   "fastapi",
@@ -17,7 +13,7 @@ dependencies = [
   "skops",
   "uvicorn",
 ]
-classifiers=[
+classifiers = [
   "Intended Audience :: Science/Research",
   "Intended Audience :: Developers",
   "License :: OSI Approved :: MIT License",
@@ -116,11 +112,14 @@ addopts = [
   "--ignore=notebooks",
 ]
 
+[tool.coverage.run]
+omit = [
+  "tests/*",
+]
+
 [tool.ruff]
 src = ["skore"]
-exclude = [
-  "doc"
-]
+exclude = ["doc"]
 
 [tool.ruff.lint]
 select = [
@@ -158,9 +157,7 @@ extend-ignore-re = [
 ]
 
 [tool.typos.files]
-extend-exclude = [
-  "*.min.js",
-]
+extend-exclude = ["*.min.js"]
 
 [tool.typos.default.extend-words]
 # acronym for "False Positive Rate"

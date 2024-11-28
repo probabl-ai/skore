@@ -115,28 +115,32 @@ onBeforeUnmount(() => {
                 @update-selected="projectStore.setCurrentItemUpdateIndex(key, $event)"
               >
                 <DataFrameWidget
-                  v-if="mediaType === 'application/vnd.dataframe+json'"
+                  v-if="mediaType.startsWith('application/vnd.dataframe+json')"
                   :columns="data.columns"
                   :data="data.data"
                   :index="data.index"
                   :index-names="data.index_names"
                 />
                 <ImageWidget
-                  v-if="
-                    ['image/svg+xml', 'image/png', 'image/jpeg', 'image/webp'].includes(mediaType)
-                  "
+                  v-if="mediaType.startsWith('image/')"
                   :mediaType="mediaType"
                   :base64-src="data"
                   :alt="key.toString()"
                 />
-                <MarkdownWidget v-if="mediaType === 'text/markdown'" :source="data" />
-                <VegaWidget v-if="mediaType === 'application/vnd.vega.v5+json'" :spec="data" />
-                <PlotlyWidget v-if="mediaType === 'application/vnd.plotly.v1+json'" :spec="data" />
+                <MarkdownWidget v-if="mediaType.startsWith('text/markdown')" :source="data" />
+                <VegaWidget
+                  v-if="mediaType.startsWith('application/vnd.vega.v5+json')"
+                  :spec="data"
+                />
+                <PlotlyWidget
+                  v-if="mediaType.startsWith('application/vnd.plotly.v1+json')"
+                  :spec="data"
+                />
                 <HtmlSnippetWidget
-                  v-if="mediaType === 'application/vnd.sklearn.estimator+html'"
+                  v-if="mediaType.startsWith('application/vnd.sklearn.estimator+html')"
                   :src="data"
                 />
-                <HtmlSnippetWidget v-if="mediaType === 'text/html'" :src="data" />
+                <HtmlSnippetWidget v-if="mediaType.startsWith('text/html')" :src="data" />
               </ProjectViewCard>
             </template>
           </DraggableList>
