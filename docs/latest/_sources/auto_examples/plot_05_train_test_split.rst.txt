@@ -74,12 +74,12 @@ We create and load the skore project from this temporary directory:
 
  .. code-block:: none
 
-    [11/27/24 14:57:45] <Logger skore.project.project (INFO)> Project  create.py:148
+                        <Logger skore.project.project (INFO)> Project  create.py:148
                                                               file                  
                                                               '/tmp/sk              
                                                               ore_exam              
-                                                              ple_lgzm              
-                                                              wrk_/my_              
+                                                              ple_pk1z              
+                                                              2gzz/my_              
                                                               project.              
                                                               skore'                
                                                               was                   
@@ -520,14 +520,56 @@ skore recommends the use of the ``random_state`` parameter when shuffling
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 227-231
+.. GENERATED FROM PYTHON SOURCE LINES 227-229
+
+Time series data
+^^^^^^^^^^^^^^^^
+
+.. GENERATED FROM PYTHON SOURCE LINES 231-237
+
+Now, let us assume that we have `time series data
+<https://scikit-learn.org/stable/modules/cross_validation.html#cross-validation-of-time-series-data>`_:
+the data is somewhat time-ordered.
+As one can not shuffle time (time only moves in one direction: forward), we
+recommend using :func:`sklearn.model_selection.TimeSeriesSplit` instead of
+:func:`sklearn.model_selection.train_test_split` (or :func:`skore.train_test_split`).
+
+.. GENERATED FROM PYTHON SOURCE LINES 239-247
+
+.. code-block:: Python
+
+    from datetime import datetime
+    import pandas as pd
+
+    X = pd.DataFrame(
+        {"ints": [0, 1], "dates": [datetime(2024, 11, 25), datetime(2024, 11, 26)]}
+    )
+    X_train, X_test = skore.train_test_split(X=X, test_size=0.2, random_state=0)
+
+
+
+
+
+.. rst-class:: sphx-glr-script-out
+
+ .. code-block:: none
+
+    /opt/hostedtoolcache/Python/3.12.7/x64/lib/python3.12/site-packages/skore/sklearn/train_test_split/train_test_split.py:165: TimeBasedColumnWarning:
+
+    We detected some time-based columns (column "dates") in your data. We recommend using scikit-learn's TimeSeriesSplit instead of train_test_split. Otherwise you might train on future data to predict the past, or get inflated model performance evaluation because natural drift will not be taken into account.
+
+
+
+
+
+.. GENERATED FROM PYTHON SOURCE LINES 248-252
 
 Cleanup the project
 -------------------
 
 Removing the temporary directory:
 
-.. GENERATED FROM PYTHON SOURCE LINES 233-234
+.. GENERATED FROM PYTHON SOURCE LINES 254-255
 
 .. code-block:: Python
 
@@ -542,7 +584,7 @@ Removing the temporary directory:
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.041 seconds)
+   **Total running time of the script:** (0 minutes 0.043 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_05_train_test_split.py:

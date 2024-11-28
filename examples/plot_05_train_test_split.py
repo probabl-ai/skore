@@ -224,6 +224,27 @@ y = [0] * 2_500 + [1] * 2_500
 X_train, X_test, y_train, y_test = skore.train_test_split(X=X, y=y, test_size=0.2)
 
 # %%
+# Time series data
+# ^^^^^^^^^^^^^^^^
+
+# %%
+# Now, let us assume that we have `time series data
+# <https://scikit-learn.org/stable/modules/cross_validation.html#cross-validation-of-time-series-data>`_:
+# the data is somewhat time-ordered.
+# As one can not shuffle time (time only moves in one direction: forward), we
+# recommend using :func:`sklearn.model_selection.TimeSeriesSplit` instead of
+# :func:`sklearn.model_selection.train_test_split` (or :func:`skore.train_test_split`).
+
+# %%
+from datetime import datetime
+import pandas as pd
+
+X = pd.DataFrame(
+    {"ints": [0, 1], "dates": [datetime(2024, 11, 25), datetime(2024, 11, 26)]}
+)
+X_train, X_test = skore.train_test_split(X=X, test_size=0.2, random_state=0)
+
+# %%
 # Cleanup the project
 # -------------------
 #
