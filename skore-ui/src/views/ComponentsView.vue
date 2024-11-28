@@ -528,6 +528,7 @@ const isCached = ref(false);
           <div>icon-left-double-chevron <span class="icon-left-double-chevron"></span></div>
           <div>icon-plus <span class="icon-plus"></span></div>
           <div>icon-history <span class="icon-history"></span></div>
+          <div>icon-list-sparkle <span class="icon-list-sparkle"></span></div>
         </div>
       </TabsItem>
       <TabsItem :value="12">

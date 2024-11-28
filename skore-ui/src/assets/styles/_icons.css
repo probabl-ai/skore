@@ -27,122 +27,126 @@
   text-transform: none;
 }
 
-.icon-history::before {
+.icon-check::before {
   content: "\e900";
 }
 
-.icon-check::before {
+.icon-list-sparkle::before {
   content: "\e901";
 }
 
-.icon-left-double-chevron::before {
+.icon-history::before {
   content: "\e902";
 }
 
-.icon-handle::before {
+.icon-left-double-chevron::before {
   content: "\e903";
 }
 
-.icon-more::before {
+.icon-handle::before {
   content: "\e904";
 }
 
-.icon-branch::before {
+.icon-more::before {
   content: "\e905";
 }
 
-.icon-trash::before {
+.icon-branch::before {
   content: "\e906";
 }
 
-.icon-edit::before {
+.icon-trash::before {
   content: "\e907";
 }
 
-.icon-copy::before {
+.icon-edit::before {
   content: "\e908";
 }
 
-.icon-pill::before {
+.icon-copy::before {
   content: "\e909";
 }
 
-.icon-new-document::before {
+.icon-pill::before {
   content: "\e90a";
 }
 
-.icon-recent-document::before {
+.icon-new-document::before {
   content: "\e90b";
 }
 
-.icon-plus::before {
+.icon-recent-document::before {
   content: "\e90c";
 }
 
-.icon-plus-circle::before {
+.icon-plus::before {
   content: "\e90d";
 }
 
-.icon-warning::before {
+.icon-plus-circle::before {
   content: "\e90e";
 }
 
-.icon-warning-circle::before {
+.icon-warning::before {
   content: "\e90f";
 }
 
-.icon-info-circle::before {
+.icon-warning-circle::before {
   content: "\e910";
 }
 
-.icon-error-circle::before {
+.icon-info-circle::before {
   content: "\e911";
 }
 
-.icon-success-circle::before {
+.icon-error-circle::before {
   content: "\e912";
 }
 
-.icon-search::before {
+.icon-success-circle::before {
   content: "\e913";
 }
 
-.icon-maximize::before {
+.icon-search::before {
   content: "\e914";
 }
 
-.icon-folder::before {
+.icon-maximize::before {
   content: "\e915";
 }
 
-.icon-plot::before {
+.icon-folder::before {
   content: "\e916";
 }
 
-.icon-text::before {
+.icon-plot::before {
   content: "\e917";
 }
 
-.icon-gift::before {
+.icon-text::before {
   content: "\e918";
 }
 
-.icon-pie-chart::before {
+.icon-gift::before {
   content: "\e919";
 }
 
-.icon-chevron-left::before {
+.icon-pie-chart::before {
   content: "\e91a";
 }
 
-.icon-chevron-down::before {
+.icon-chevron-left::before {
   content: "\e91b";
 }
 
-.icon-chevron-right::before {
+.icon-chevron-down::before {
   content: "\e91c";
 }
 
-.icon-chevron-up::before {
+.icon-chevron-right::before {
   content: "\e91d";
+}
+
+.icon-chevron-up::before {
+  content: "\e91e";
 }

@@ -7,14 +7,16 @@ import SkoreLogo from "@/components/icons/SkoreLogo.vue";
     <div class="logo">
       <SkoreLogo />
     </div>
-    <nav></nav>
+    <nav>
+      <slot></slot>
+    </nav>
   </div>
 </template>
 
 <style scoped>
 .app-toolbar {
   display: flex;
-  width: 60px;
+  min-width: 60px;
   height: 100dvh;
   flex-direction: column;
   border-right: solid var(--stroke-width-md) var(--color-stroke-background-primary);
@@ -29,7 +31,12 @@ import SkoreLogo from "@/components/icons/SkoreLogo.vue";
   }
 
   & nav {
+    display: flex;
     flex: 1;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--spacing-12) 0;
+    gap: var(--spacing-10);
   }
 }
 </style>
