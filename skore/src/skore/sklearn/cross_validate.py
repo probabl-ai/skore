@@ -17,7 +17,7 @@ from skore.sklearn.find_ml_task import _find_ml_task
 
 
 def _get_scorers_to_add(estimator, y) -> list[str]:
-    """Get a list of scorers based on `estimator` and `y`.
+    """Get a list of scorers based on ``estimator`` and ``y``.
 
     Parameters
     ----------
