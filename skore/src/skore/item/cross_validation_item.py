@@ -252,8 +252,9 @@ class CrossValidationItem(Item):
     """
     A class to represent the output of a cross-validation workflow.
 
-    This class encapsulates the output of scikit-learn's cross-validate function along
-    with its creation and update timestamps.
+    This class encapsulates the output of the
+    :func:`sklearn.model_selection.cross_validate` function along with its creation and
+    update timestamps.
     """
 
     def __init__(
@@ -272,14 +273,16 @@ class CrossValidationItem(Item):
         Parameters
         ----------
         cv_results_serialized : dict
-            The dict output of scikit-learn's cross_validate function,
-            in a form suitable for serialization.
+            The dict output of the :func:`sklearn.model_selection.cross_validate`
+            function, in a form suitable for serialization.
         estimator_info : dict
             The estimator that was cross-validated.
         X_info : dict
-            A summary of the data, input of scikit-learn's cross_validation function.
+            A summary of the data, input of the
+            :func:`sklearn.model_selection.cross_validate` function.
         y_info : dict
-            A summary of the target, input of scikit-learn's cross_validation function.
+            A summary of the target, input of the
+            :func:`sklearn.model_selection.cross_validate` function.
         plot_bytes : bytes
             A plot of the cross-validation results, in the form of bytes.
         created_at : str
@@ -313,9 +316,11 @@ class CrossValidationItem(Item):
         estimator : sklearn.base.BaseEstimator,
             The estimator that was cross-validated.
         X
-            The data, input of scikit-learn's cross_validation function.
+            The data, input of the :func:`sklearn.model_selection.cross_validate`
+            function.
         y
-            The target, input of scikit-learn's cross_validation function.
+            The target, input of the :func:`sklearn.model_selection.cross_validate`
+            function.
 
         Returns
         -------
