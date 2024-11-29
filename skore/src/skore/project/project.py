@@ -166,7 +166,7 @@ class Project:
         Returns
         -------
         item : Item
-            The Item corresponding to key ``key``.
+            The Item corresponding to ``key``.
 
         Raises
         ------
@@ -179,7 +179,7 @@ class Project:
         """
         Get all the versions of an item associated with ``key`` from the Project.
 
-        The list is ordered from oldest to newest "put" date.
+        The list is ordered from oldest to newest :func:`~skore.Project.put` date.
 
         Parameters
         ----------
@@ -189,7 +189,7 @@ class Project:
         Returns
         -------
         list[Item]
-            The list of items corresponding to key ``key``.
+            The list of items corresponding to ``key``.
 
         Raises
         ------
