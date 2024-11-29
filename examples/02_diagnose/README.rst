@@ -1,5 +1,5 @@
 Diagnose and visualize
 ----------------------
 
-This section of examples illustrate skore can help data scientists improve their
+These examples illustrate how skore can help data scientists to improve their
 machine learning modelling thanks to diagnostics.
