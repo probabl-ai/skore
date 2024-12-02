@@ -98,9 +98,6 @@
   <div class="pst-async-banner-revealer d-none">
   <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
 </div>
-<aside class="bd-header-announcement" aria-label="Announcement">
-  <div class="bd-header-announcement__content">This code is still in development. <strong>The API is subject to change.</strong></div>
-</aside>
 
   
     <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
@@ -544,7 +541,7 @@
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>item</strong><span class="classifier">Item</span></dt><dd><p>The Item corresponding to key <code class="docutils literal notranslate"><span class="pre">key</span></code>.</p>
+<dt><strong>item</strong><span class="classifier">Item</span></dt><dd><p>The Item corresponding to <code class="docutils literal notranslate"><span class="pre">key</span></code>.</p>
 </dd>
 </dl>
 </dd>
@@ -561,7 +558,7 @@
 <dt class="sig sig-object py" id="skore.Project.get_item_versions">
 <span class="sig-name descname"><span class="pre">get_item_versions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">Item</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#skore.Project.get_item_versions" title="Link to this definition">#</a></dt>
 <dd><p>Get all the versions of an item associated with <code class="docutils literal notranslate"><span class="pre">key</span></code> from the Project.</p>
-<p>The list is ordered from oldest to newest “put” date.</p>
+<p>The list is ordered from oldest to newest <a class="reference internal" href="#skore.Project.put" title="skore.Project.put"><code class="xref py py-func docutils literal notranslate"><span class="pre">put()</span></code></a> date.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
@@ -571,7 +568,7 @@
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><dl class="simple">
-<dt>list[Item]</dt><dd><p>The list of items corresponding to key <code class="docutils literal notranslate"><span class="pre">key</span></code>.</p>
+<dt>list[Item]</dt><dd><p>The list of items corresponding to <code class="docutils literal notranslate"><span class="pre">key</span></code>.</p>
 </dd>
 </dl>
 </dd>
