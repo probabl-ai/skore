@@ -9,7 +9,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.multiclass import OneVsOneClassifier
 from sklearn.svm import SVC
 from skore import CrossValidationReporter
-from skore.item.cross_validation_item import plot_cross_validation
+from skore.item.cross_validation_item import CrossValidationItem, plot_cross_validation
 
 
 @pytest.fixture
@@ -162,3 +162,26 @@ def test_aggregated_cross_validation(rf, in_memory_project):
     project.put("cv", reporter)
     project.put("cv", reporter)
     assert False
+
+
+def prepare_cv():
+    from sklearn import datasets, linear_model
+
+    diabetes = datasets.load_diabetes()
+    X = diabetes.data[:150]
+    y = diabetes.target[:150]
+    lasso = linear_model.Lasso()
+
+    return lasso, X, y
+
+
+def test_put_cross_validation_reporter(in_memory_project):
+    project = in_memory_project
+
+    lasso, X, y = prepare_cv()
+    reporter = CrossValidationReporter(lasso, X, y, cv=3)
+
+    project.put("cross-validation", reporter)
+
+    assert "cross-validation" in project
+    assert isinstance(project.get_item("cross-validation"), CrossValidationItem)
