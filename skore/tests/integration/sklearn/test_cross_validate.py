@@ -8,12 +8,8 @@ from sklearn.cluster import KMeans
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.multiclass import OneVsOneClassifier
 from sklearn.svm import SVC
-from skore import cross_validate
-from skore.item.cross_validation_item import (
-    CrossValidationAggregationItem,
-    CrossValidationItem,
-    plot_cross_validation,
-)
+from skore import CrossValidationReporter
+from skore.item.cross_validation_item import plot_cross_validation
 
 
 @pytest.fixture
@@ -56,14 +52,12 @@ class TestInputScorers:
         ],
     )
     def test_scorer(self, rf, in_memory_project, scoring):
-        cv_results = cross_validate(*rf, scoring=scoring, project=in_memory_project)
+        reporter = CrossValidationReporter(*rf, scoring=scoring)
+        cv_results = reporter.cv_results
         cv_results_sklearn = sklearn.model_selection.cross_validate(
             *rf, scoring=scoring
         )
 
-        assert isinstance(
-            in_memory_project.get_item("cross_validation"), CrossValidationItem
-        )
         assert set(cv_results.keys()).issuperset(cv_results_sklearn.keys())
         assert all(len(v) == 5 for v in cv_results.values())
 
@@ -81,12 +75,10 @@ class TestInputDataType:
     def test_data_type(self, rf, in_memory_project, convert_args):
         args = convert_args(*rf)
 
-        cv_results = cross_validate(*args, project=in_memory_project)
+        reporter = CrossValidationReporter(*args)
+        cv_results = reporter.cv_results
         cv_results_sklearn = sklearn.model_selection.cross_validate(*args)
 
-        assert isinstance(
-            in_memory_project.get_item("cross_validation"), CrossValidationItem
-        )
         assert set(cv_results.keys()).issuperset(cv_results_sklearn.keys())
         assert all(len(v) == 5 for v in cv_results.values())
 
@@ -140,12 +132,11 @@ class TestMLTask:
     )
     def test_cross_validate(self, in_memory_project, get_args):
         args = get_args(self)
-        cv_results = cross_validate(*args, project=in_memory_project)
+
+        reporter = CrossValidationReporter(*args)
+        cv_results = reporter.cv_results
         cv_results_sklearn = sklearn.model_selection.cross_validate(*args)
 
-        assert isinstance(
-            in_memory_project.get_item("cross_validation"), CrossValidationItem
-        )
         assert set(cv_results.keys()).issuperset(cv_results_sklearn.keys())
         assert all(len(v) == 5 for v in cv_results.values())
 
@@ -164,9 +155,10 @@ def test_plot_cross_validation():
 
 
 def test_aggregated_cross_validation(rf, in_memory_project):
+    project = in_memory_project
     args = rf
-    cross_validate(*args, project=in_memory_project)
-    assert isinstance(
-        in_memory_project.item_repository.get_item("cross_validation_aggregated"),
-        CrossValidationAggregationItem,
-    )
+    reporter = CrossValidationReporter(*args)
+
+    project.put("cv", reporter)
+    project.put("cv", reporter)
+    assert False
