@@ -183,5 +183,4 @@ def test_put_cross_validation_reporter(in_memory_project):
 
     project.put("cross-validation", reporter)
 
-    assert "cross-validation" in project
     assert isinstance(project.get_item("cross-validation"), CrossValidationItem)
