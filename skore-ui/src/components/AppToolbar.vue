@@ -16,7 +16,7 @@ import SkoreLogo from "@/components/icons/SkoreLogo.vue";
 <style scoped>
 .app-toolbar {
   display: flex;
-  min-width: 60px;
+  min-width: var(--width-toolbar);
   height: 100dvh;
   flex-direction: column;
   border-right: solid var(--stroke-width-md) var(--color-stroke-background-primary);
@@ -24,7 +24,7 @@ import SkoreLogo from "@/components/icons/SkoreLogo.vue";
 
   & .logo {
     display: flex;
-    height: var(--header-height);
+    height: var(--height-header);
     align-items: center;
     justify-content: center;
     border-bottom: solid var(--stroke-width-md) var(--color-stroke-background-primary);

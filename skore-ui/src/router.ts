@@ -1,6 +1,7 @@
 import { createRouter, createWebHashHistory, type RouteRecordRaw } from "vue-router";
 
-import ProjectView from "./views/project/ProjectView.vue";
+import ActivityFeedView from "@/views/ActivityFeedView.vue";
+import ProjectView from "@/views/project/ProjectView.vue";
 
 export enum ROUTE_NAMES {
   VIEW_BUILDER = "view-builder",
@@ -14,6 +15,14 @@ const routes: RouteRecordRaw[] = [
     component: ProjectView,
     meta: {
       icon: "icon-pie-chart",
+    },
+  },
+  {
+    path: "/activity",
+    name: "activity-feed",
+    component: ActivityFeedView,
+    meta: {
+      icon: "icon-list-sparkle",
     },
   },
 ];

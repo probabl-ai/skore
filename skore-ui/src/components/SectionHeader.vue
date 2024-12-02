@@ -34,7 +34,7 @@ const emit = defineEmits(["action"]);
 <style scoped>
 .header {
   display: flex;
-  height: var(--header-height);
+  height: var(--height-header);
   align-items: center;
   justify-content: space-between;
   padding: var(--spacing-12);
