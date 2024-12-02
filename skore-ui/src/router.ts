@@ -1,6 +1,6 @@
 import { createRouter, createWebHashHistory, type RouteRecordRaw } from "vue-router";
 
-import ActivityFeedView from "@/views/ActivityFeedView.vue";
+import ActivityFeedView from "@/views/activity/ActivityFeedView.vue";
 import ProjectView from "@/views/project/ProjectView.vue";
 
 export enum ROUTE_NAMES {

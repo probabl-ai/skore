@@ -27,126 +27,130 @@
   text-transform: none;
 }
 
-.icon-check::before {
+.icon-copy::before {
   content: "\e900";
 }
 
-.icon-list-sparkle::before {
+.icon-branch::before {
   content: "\e901";
 }
 
-.icon-history::before {
+.icon-check::before {
   content: "\e902";
 }
 
-.icon-left-double-chevron::before {
+.icon-chevron-down::before {
   content: "\e903";
 }
 
-.icon-handle::before {
+.icon-chevron-left::before {
   content: "\e904";
 }
 
-.icon-more::before {
+.icon-chevron-right::before {
   content: "\e905";
 }
 
-.icon-branch::before {
+.icon-chevron-up::before {
   content: "\e906";
 }
 
-.icon-trash::before {
+.icon-edit::before {
   content: "\e907";
 }
 
-.icon-edit::before {
+.icon-error-circle::before {
   content: "\e908";
 }
 
-.icon-copy::before {
+.icon-folder::before {
   content: "\e909";
 }
 
-.icon-pill::before {
+.icon-gift::before {
   content: "\e90a";
 }
 
-.icon-new-document::before {
+.icon-handle::before {
   content: "\e90b";
 }
 
-.icon-recent-document::before {
+.icon-history::before {
   content: "\e90c";
 }
 
-.icon-plus::before {
+.icon-info-circle::before {
   content: "\e90d";
 }
 
-.icon-plus-circle::before {
+.icon-left-double-chevron::before {
   content: "\e90e";
 }
 
-.icon-warning::before {
+.icon-list-sparkle::before {
   content: "\e90f";
 }
 
-.icon-warning-circle::before {
+.icon-maximize::before {
   content: "\e910";
 }
 
-.icon-info-circle::before {
+.icon-more::before {
   content: "\e911";
 }
 
-.icon-error-circle::before {
+.icon-new-document::before {
   content: "\e912";
 }
 
-.icon-success-circle::before {
+.icon-pie-chart::before {
   content: "\e913";
 }
 
-.icon-search::before {
+.icon-pill::before {
   content: "\e914";
 }
 
-.icon-maximize::before {
+.icon-playground::before {
   content: "\e915";
 }
 
-.icon-folder::before {
+.icon-plot::before {
   content: "\e916";
 }
 
-.icon-plot::before {
+.icon-plus-circle::before {
   content: "\e917";
 }
 
-.icon-text::before {
+.icon-plus::before {
   content: "\e918";
 }
 
-.icon-gift::before {
+.icon-recent-document::before {
   content: "\e919";
 }
 
-.icon-pie-chart::before {
+.icon-search::before {
   content: "\e91a";
 }
 
-.icon-chevron-left::before {
+.icon-success-circle::before {
   content: "\e91b";
 }
 
-.icon-chevron-down::before {
+.icon-text::before {
   content: "\e91c";
 }
 
-.icon-chevron-right::before {
+.icon-trash::before {
   content: "\e91d";
 }
 
-.icon-chevron-up::before {
+.icon-warning-circle::before {
   content: "\e91e";
+}
+
+.icon-warning::before {
+  content: "\e91f";
 }

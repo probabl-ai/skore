@@ -529,6 +529,7 @@ const isCached = ref(false);
           <div>icon-plus <span class="icon-plus"></span></div>
           <div>icon-history <span class="icon-history"></span></div>
           <div>icon-list-sparkle <span class="icon-list-sparkle"></span></div>
+          <div>icon-playground <span class="icon-playground"></span></div>
         </div>
       </TabsItem>
       <TabsItem :value="12">
