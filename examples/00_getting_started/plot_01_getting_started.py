@@ -25,11 +25,23 @@ Getting started with skore
 # items of many types then visualize them in a dashboard called the skore UI.
 
 # %%
-# Creating and loading a skore project, and launching the skore UI
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# Setup: creating and loading a skore project, and launching the skore UI
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 # %%
-# We start by creating a temporary directory to store our project so that we can
+# .. note::
+#
+#   If we do not wish for our skore project to be stored in a *temporary* folder, we
+#   can simply create and load the project in the current directory with:
+#
+#   .. code-block:: python
+#
+#     import skore
+#
+#     my_project = skore.create("my_project")
+
+# %%
+# Here, we start by creating a temporary directory to store our project so that we can
 # easily clean it after executing this example:
 
 # %%
@@ -40,48 +52,44 @@ temp_dir = tempfile.TemporaryDirectory(prefix="skore_example_")
 temp_dir_path = Path(temp_dir.name)
 
 # %%
-# We create and load the skore project from this temporary directory:
+# Then, we create and load the skore project from this temporary directory:
 
 # %%
 import skore
 
-my_project = skore.create("my_project", working_dir=temp_dir_path)
+my_project = skore.create("my_project", overwrite=True)  # , working_dir=temp_dir_path
 
 # %%
 # This will create a skore project directory named ``my_project.skore`` in our
 # current directory.
 #
-# .. note::
-#
-#   If we did not wish for our skore project to be stored in a *temporary* folder, we
-#   could simply create the project in the current directory with:
-#
-#   .. code-block:: python
-#
-#     import skore
-#
-#     my_project = skore.create("my_project")
-#
-# Then, from our shell (in the same directory), we can start the UI locally:
+# Then, *from our shell* (in the same directory), we can start the UI locally:
 #
 # .. code-block:: bash
 #
-#     skore launch "my_project"
+#     $ skore launch "my_project"
 #
 # This will automatically open a browser at the UI's location.
 #
 # Now that the project exists, we can write some Python code (in the same
-# directory) to add (:func:`~skore.Project.put`) some useful items in it.
+# directory) to add (:func:`~skore.Project.put`) some useful items in it,
+# with a key-value convention:
 
 # %%
 my_project.put("my_int", 3)
+
+# %%
+# We can retrieve the value of an item:
+
+# %%
+my_project.get("my_int")
 
 # %%
 # Skore project and storage: example of hyperparameter sweep
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # As an illustration of the usage of the skore project and storage with a machine
-# learning motivation, let us perform a hyperparameter sweep and store relevant
+# learning motivation, let us perform a hyperparameter sweep and store some relevant
 # information in the skore project.
 
 # %%
@@ -94,9 +102,7 @@ from sklearn.datasets import load_diabetes
 from sklearn.linear_model import Ridge
 from sklearn.model_selection import GridSearchCV
 
-diabetes = load_diabetes()
-X = diabetes.data[:150]
-y = diabetes.target[:150]
+X, y = load_diabetes(return_X_y=True)
 
 gs_cv = GridSearchCV(
     Ridge(),
@@ -129,7 +135,7 @@ plt.show()
 
 # %%
 # |
-# Finally, we store some relevant information to our skore project, so that we
+# Finally, we store some relevant information in our skore project, so that we
 # can visualize them later in the skore UI for example:
 
 # %%
@@ -151,10 +157,10 @@ my_project.put("my_fig", fig)
 # The skore UI is a very efficient tool to track and visualize the items in your
 # project, such as grid search or cross-validation results.
 #
-# #.  On the top left, by default, you can observe that you are in a *View* called
+# #.  On the top menu, by default, you can observe that you are in a *View* called
 #     ``default``. You can rename this view or create another one.
 #
-# #.  From the *Items* section on the bottom left, you can add stored items to this
+# #.  From the *Items* section on the left, you can add stored items to this
 #     view, either by clicking on ``+`` or by dragging an item to the right.
 #
 # #.  In the skore UI on the right, you can drag-and-drop items to re-order them,
