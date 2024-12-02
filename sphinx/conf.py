@@ -6,11 +6,13 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
+import os
+
 project = "skore"
 copyright = "2024, Probabl"
 author = "Probabl"
-# version = "0"
-# release = "0"
+version = os.environ["SPHINX_VERSION"]
+release = os.environ["SPHINX_RELEASE"]
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -50,10 +52,10 @@ sphinx_gallery_conf = {
     "within_subsection_order": "FileNameSortKey",  # See https://sphinx-gallery.github.io/stable/configuration.html#sorting-gallery-examples for alternatives
     "show_memory": False,
     "write_computation_times": False,
-    'reference_url': {
+    "reference_url": {
         # The module you locally document uses None
-        'skore': None,
-        }
+        "skore": None,
+    },
 }
 
 # intersphinx configuration
@@ -105,7 +107,15 @@ html_theme_options = {
             "icon": "fa-brands fa-discord",
         },
     ],
-    # "announcement": "This code is still in development. <strong>The API is subject to change.</strong>",
+    "switcher": {
+        "json_url": "https://skore.probabl.ai/versions.json",
+        "version_match": version,
+    },
+    "check_switcher": True,
+    "show_version_warning_banner": True,
+    "navbar_start": ["navbar-logo", "version-switcher"],
+    "navbar_center": ["navbar-nav"],
+    "navbar_end": ["theme-switcher", "navbar-icon-links"],
 }
 
 # Plausible Analytics
@@ -118,10 +128,10 @@ html_theme_options["analytics"] = {
 
 # Sphinx remove the sidebar from some pages
 html_sidebars = {
-  "install": [],
-  "getting_started": [],
-  "user_guide": [],
-  "contributor_guide": [],
+    "install": [],
+    "getting_started": [],
+    "user_guide": [],
+    "contributor_guide": [],
 }
 
 # Sphinx-Copybutton configuration

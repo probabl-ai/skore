@@ -1,4 +1,11 @@
 name: Build sphinx documentation
+
+inputs:
+  SPHINX_VERSION:
+    required: true
+  SPHINX_RELEASE:
+    required: true
+
 runs:
   using: composite
   steps:
@@ -9,4 +16,7 @@ runs:
         python -m pip install '.[sphinx]'
     - working-directory: sphinx
       shell: bash
-      run: make html
+      run: >
+        SPHINX_VERSION=${{ inputs.SPHINX_VERSION }}
+        SPHINX_RELEASE=${{ inputs.SPHINX_RELEASE }}
+        make html

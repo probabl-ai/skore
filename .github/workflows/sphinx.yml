@@ -1,5 +1,51 @@
 name: Sphinx
 
+
+# **How it works**
+# ================
+#
+# After each __commit__ on the `main` branch, the documentation is built and deployed on the `S3:dev/` directory.
+# After each __release__, the documentation is built and deployed to the `S3:version/` directory, the version being
+# a subpart of the tag `MAJOR.MINOR.BUGFIX`: `MAJOR.MINOR`.
+#
+# For instance, with the following timeline:
+#
+#        dev/ dev/ dev/ dev/ dev/
+#        0.1/                0.2/
+# main -- x -- x -- x -- x -- x -- >
+#         |                   |
+# tag    0.1                 0.2
+#
+# The S3 bucket looks like:
+#     .
+#     ├── 0.1/
+#     ├── 0.2/
+#     ├── dev/
+#     ├── index.html
+#     └── versions.json
+#
+# **Q&A**
+# =======
+#
+# ### `dev/`, why?
+# It contains the most up-to-date documentation, i.e. the documentation of code that is not released but committed on the main branch.
+#
+# ### Version the documentation on `MAJOR.MINOR, why not on `MAJOR`?
+# Currently, we add new features at a minor level. This way, we can separate documentation between two features.
+#
+# ### Only on release (not on release-candidate), why?
+# The release-candidates are documented in the `dev/` directory. We don't want to create noise with explicit directory for such tags.
+#
+# ### How to change an old version of the documentation?
+# You can create tags wherever you want, i.e. on separate branches.
+# For example, you can create a branch from an old tag (`0.1.5`), modify the documentation and create a new tag (`0.1.6`).
+# The corresponding documentation will be automatically updated (`0.1`).
+#
+# **Side-notes**
+# ==============
+#
+# Only the 10 latest versions are listed in sphinx version-switcher to avoid overloading, but the bucket remains unchanged.
+
 on:
   pull_request:
     paths:
@@ -17,22 +63,131 @@ on:
       - 'examples/**'
       - 'sphinx/**'
       - 'skore/**'
+  release:
+    types: [released]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  sphinx:
+  sphinx-version:
     runs-on: ubuntu-latest
+    outputs:
+      SPHINX_VERSION: ${{ steps.sphinx-version.outputs.SPHINX_VERSION }}
+      SPHINX_RELEASE: ${{ steps.sphinx-version.outputs.SPHINX_RELEASE }}
+    steps:
+      - shell: bash
+        id: sphinx-version
+        run: |
+          set -u
+
+          if [[ "${GITHUB_EVENT_NAME}" != "release" ]]; then
+              echo "SPHINX_VERSION=dev" >> "${GITHUB_OUTPUT}"
+              echo "SPHINX_RELEASE=0.0.0+dev" >> "${GITHUB_OUTPUT}"
+              exit 0
+          fi
+
+          set -e
+
+          if [[ "${GITHUB_REF_NAME}" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)?$ ]]; then
+              echo "SPHINX_VERSION=${BASH_REMATCH[1]}.${BASH_REMATCH[2]}" >> "${GITHUB_OUTPUT}"
+              echo "SPHINX_RELEASE=${GITHUB_REF_NAME}" >> "${GITHUB_OUTPUT}"
+          fi
+
+  sphinx-build:
+    runs-on: ubuntu-latest
+    needs: sphinx-version
     steps:
       - uses: actions/checkout@v4
-        with:
-          ssh-key: ${{ secrets.DEPLOY_KEY }}
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
           cache: 'pip'
       - uses: ./.github/actions/sphinx/build
-      - if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-        uses: ./.github/actions/sphinx/deploy
+        with:
+          SPHINX_VERSION: ${{ needs.sphinx-version.outputs.SPHINX_VERSION }}
+          SPHINX_RELEASE: ${{ needs.sphinx-version.outputs.SPHINX_RELEASE }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sphinx-html-artifact
+          path: sphinx/build/html/
+
+  sphinx-deploy-html:
+    runs-on: ubuntu-latest
+    if: ${{ (github.event_name == 'release') || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
+    needs: [sphinx-version, sphinx-build]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: sphinx-html-artifact
+          path: html/
+      - uses: ./.github/actions/sphinx/deploy
+        with:
+          CONFIGURATION: ${{ secrets.RCLONE_CONFIG_DOCS }}
+          SOURCE: html/
+          DESTINATION: ${{ needs.sphinx-version.outputs.SPHINX_VERSION }}/
+
+  sphinx-deploy-root-files:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'release' }}
+    needs: [sphinx-version, sphinx-build, sphinx-deploy-html]
+    steps:
+      - uses: actions/checkout@v4
+      - shell: python
+        run: |
+            import os
+            import requests
+            import operator
+            import json
+
+            url = "https://skore.probabl.ai"
+            current = os.environ["CURRENT"]
+
+            response = requests.get(f"{url}/versions.json")
+            response.raise_for_status()
+
+            history = set(map(operator.itemgetter("version"), response.json())) - {"dev"} | {current}
+            history = sorted(history, key=lambda x: float(x), reverse=True)[:10]
+
+            new = [
+                {
+                    "name": version,
+                    "version": version,
+                    "url": f"{url}/{version}/",
+                    "preferred": i == 1,
+                }
+                for i, version in enumerate(["dev"] + history)
+            ]
+
+            os.mkdir("artifacts")
+
+            with open("artifacts/versions.json", "w", encoding="utf-8") as file:
+                json.dump(new, file, ensure_ascii=False, indent=4)
+
+            with open("artifacts/index.html", "w", encoding="utf-8") as file:
+              file.write(
+                  f"""
+                  <head>
+                    <meta http-equiv=\"refresh\" content=\"0; url={new[1]["url"]}\"/>
+                  </head>
+                  """
+              )
+        env:
+          CURRENT: ${{ needs.sphinx-version.outputs.SPHINX_VERSION }}
+      - uses: ./.github/actions/sphinx/deploy
+        with:
+          CONFIGURATION: ${{ secrets.RCLONE_CONFIG_DOCS }}
+          ACTION: copy
+          SOURCE: artifacts/
+          DESTINATION:
+
+  sphinx-clean:
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [sphinx-version, sphinx-build, sphinx-deploy-html, sphinx-deploy-root-files]
+    steps:
+      - uses: geekyeggo/delete-artifact@v5
+        with:
+          name: sphinx-html-artifact
