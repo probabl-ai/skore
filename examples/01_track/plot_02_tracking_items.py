@@ -142,17 +142,17 @@ fig
 #
 # * The last updated time can help us reproduce an iteration of a key metric.
 #
-# In the following, we explore skore's :func:`skore.cross_validate` that natively
+# In the following, we explore skore's :class:`skore.CrossValidationReporter` that natively
 # includes tracking.
 
 # %%
 # .. _example_track_cv:
-# Tracking the results of several runs of :func:`skore.cross_validate`
-# ====================================================================
+# Tracking the results of several runs of :class:`skore.CrossValidationReporter`
+# ==============================================================================
 
 # %%
 # The :ref:`example_cross_validate` example explains why and how to use the
-# :func:`skore.cross_validate` function.
+# :class:`skore.CrossValidationReporter` class.
 # Here, let us see how we can use the tracking of items with this function.
 
 # %%
@@ -172,21 +172,27 @@ X, y = X[:150], y[:150]
 import skore
 from sklearn.linear_model import Lasso
 
-skore.cross_validate(Lasso(alpha=0.5), X, y, cv=5, project=my_project)
+reporter = skore.CrossValidationReporter(Lasso(alpha=0.5), X, y, cv=5)
+my_project.put("cross_validation", reporter)
 
 # %%
-skore.cross_validate(Lasso(alpha=1), X, y, cv=5, project=my_project)
+reporter = skore.CrossValidationReporter(Lasso(alpha=1), X, y, cv=5)
+my_project.put("cross_validation", reporter)
 
 # %%
-skore.cross_validate(Lasso(alpha=2), X, y, cv=5, project=my_project)
+reporter = skore.CrossValidationReporter(Lasso(alpha=2), X, y, cv=5)
+my_project.put("cross_validation", reporter)
 
 # %%
-# Thanks to the storage of the results by :func:`skore.cross_validate` (done when
-# specifying the ``project`` argument), we can compare the metrics of each
+# Thanks to the storage in skore, we can compare the metrics of each
 # cross-validation run (on all splits):
 
 # %%
-fig_plotly = my_project.get_item("cross_validation_aggregated").plot
+from skore.item.cross_validation_item import CrossValidationAggregationItem
+
+aggregated_cv_results = CrossValidationAggregationItem.factory(my_project.get_item_versions("cross_validation"))
+
+fig_plotly = aggregated_cv_results.plot
 fig_plotly
 
 # %%

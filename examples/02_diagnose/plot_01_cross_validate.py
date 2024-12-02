@@ -6,7 +6,7 @@ Enhancing cross-validation
 ==========================
 
 This example illustrates the motivation and the use of skore's
-:func:`skore.cross_validate` to get assistance when developing ML/DS projects.
+:class:`skore.CrossValidationReporter` to get assistance when developing ML/DS projects.
 """
 
 # %%
@@ -95,8 +95,8 @@ test_scores
 # :func:`sklearn.model_selection.cross_val_score` with different ``scoring``
 # parameters each time, which leads to more unnecessary compute.
 #
-# Why do we recommend using skore's ``cross_validate`` over scikit-learn's?
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# Why do we recommend using skore's ``CrossValidationReporter`` over scikit-learn's ``cross_validate``?
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # In the example above, what if the users ran scikit-learn's
 # :func:`sklearn.model_selection.cross_validate` but forgot to manually add a
@@ -109,7 +109,7 @@ test_scores
 # =========================
 #
 # In order to assist its users when programming, skore has implemented a
-# :func:`skore.cross_validate` function that wraps scikit-learn's
+# :class:`skore.CrossValidationReporter` class that wraps scikit-learn's
 # :func:`sklearn.model_selection.cross_validate`, to provide more
 # context and facilitate the analysis.
 #
@@ -119,48 +119,30 @@ test_scores
 # Let us continue with the same use case.
 
 # %%
-cv_results = skore.cross_validate(clf, X, y, cv=5, project=my_project)
+reporter = skore.CrossValidationReporter(clf, X, y, cv=5)
+my_project.put("cross_validation_classification", reporter)
 
-fig_plotly_clf = my_project.get_item("cross_validation").plot
+fig_plotly_clf = my_project.get_item("cross_validation_classification").plot
 fig_plotly_clf
 
 # %%
-# Skore's :func:`~skore.cross_validate` advantages are the following:
+# Skore's :class:`~skore.CrossValidationReporter` advantages are the following:
 #
 # * By default, it computes several useful scores without the need to
 #   manually specify them. For classification, one can observe that it computed the
 #   accuracy, the precision, and the recall.
 #
-# * We automatically get some interactive Plotly graphs to better understand how our
+# * Upon `put`, we automatically get some interactive Plotly graphs to better understand how our
 #   model behaves depending on the split. For example:
 #
 #   * We can compare the fitting and scoring times together for each split.
 #
 #   * We can compare the accuracy, precision, and recall scores together for each
 #     split.
-#
-# * The results and plots are automatically saved in our skore project, so that we can
-#   visualize them later in the UI for example.
 
 # %%
 # Regression task
 # ^^^^^^^^^^^^^^^
-
-# %%
-# For now, all cross-validation runs store their results in the same place, which might
-# lead to comparing two different models that are actually not comparable (e.g.
-# comparing a regression with a classification).
-# To remedy this, we clear the cross-validation information stored in skore before
-# running another unrelated cross-validation:
-
-# %%
-my_project.delete_item("cross_validation")
-my_project.delete_item("cross_validation_aggregated")
-
-# %%
-# .. note::
-#   Soon, the storage of several unrelated cross-validation runs will be managed
-#   automatically.
 
 # %%
 from sklearn.datasets import load_diabetes
@@ -171,9 +153,10 @@ X = diabetes.data[:150]
 y = diabetes.target[:150]
 lasso = Lasso()
 
-cv_results = skore.cross_validate(lasso, X, y, cv=5, project=my_project)
+reporter = skore.CrossValidationReporter(lasso, X, y, cv=5)
+my_project.put("cross_validation_regression", reporter)
 
-fig_plotly_reg = my_project.get_item("cross_validation").plot
+fig_plotly_reg = my_project.get_item("cross_validation_regression").plot
 fig_plotly_reg
 
 # %%
