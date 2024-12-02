@@ -31,6 +31,7 @@ def object_to_item(object: Any) -> Item:
         SklearnBaseEstimatorItem,
         MediaItem,
         SkrubTableReportItem,
+        CrossValidationItem,
     ):
         with suppress(ImportError, ItemTypeError):
             # ImportError:

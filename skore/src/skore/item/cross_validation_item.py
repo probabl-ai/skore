@@ -15,9 +15,12 @@ import plotly.graph_objects
 import plotly.io
 
 from skore.item.item import Item, ItemTypeError
+from skore.item.media_item import lazy_is_instance
 
 if TYPE_CHECKING:
     import sklearn.base
+
+    CrossValidationReporter = Any
 
 
 def plot_cross_validation(cv_results: dict) -> plotly.graph_objects.Figure:
@@ -299,7 +302,53 @@ class CrossValidationItem(Item):
         self.plot_bytes = plot_bytes
 
     @classmethod
-    def factory(
+    def factory(cls, *args, **kwargs):
+        """
+        Create a new CrossValidationItem instance.
+
+        Redirects to one of the underlying `factor_*` class methods depending
+        on the arguments
+
+        Returns
+        -------
+        CrossValidationItem
+            A new CrossValidationItem instance.
+        """
+        if args:
+            if lazy_is_instance(
+                args[0],
+                "skore.sklearn.cross_validation_reporter.CrossValidationReporter",
+            ):
+                return cls.factory_cross_validation_reporter(args[0])
+
+            raise ItemTypeError(
+                "Arguments to CrossValidationItem.factory are not supported."
+            )
+        return cls.factory_raw(*args, **kwargs)
+
+    @classmethod
+    def factory_cross_validation_reporter(cls, reporter: CrossValidationReporter):
+        """
+        Create a new CrossValidationItem instance from a CrossValidationReporter.
+
+        Parameters
+        ----------
+        reporter : CrossValidationReporter
+
+        Returns
+        -------
+        CrossValidationItem
+            A new CrossValidationItem instance.
+        """
+        return CrossValidationItem.factory_raw(
+            cv_results=reporter._cv_results,
+            estimator=reporter.estimator,
+            X=reporter.X,
+            y=reporter.y,
+        )
+
+    @classmethod
+    def factory_raw(
         cls,
         cv_results: dict,
         estimator: sklearn.base.BaseEstimator,
@@ -307,7 +356,7 @@ class CrossValidationItem(Item):
         y: Target | None,
     ) -> CrossValidationItem:
         """
-        Create a new CrossValidationItem instance.
+        Create a new ``CrossValidationItem`` instance.
 
         Parameters
         ----------
