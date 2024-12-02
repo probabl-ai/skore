@@ -37,7 +37,8 @@
   --animation-easing: ease;
 
   /* sizes */
-  --header-height: 44px;
+  --height-header: 44px;
+  --width-toolbar: 60px;
 }
 
 @media (prefers-color-scheme: dark) {

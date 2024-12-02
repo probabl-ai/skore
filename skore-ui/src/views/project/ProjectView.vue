@@ -171,9 +171,7 @@ onBeforeUnmount(() => {
 main {
   display: flex;
   overflow: hidden;
-  width: 100vw;
   min-width: 0;
-  height: 100vh;
   flex-direction: row;
 
   &.project-view {

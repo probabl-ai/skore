@@ -22,11 +22,13 @@ const router = useRouter();
         :to="r.path"
       />
     </AppToolbar>
-    <RouterView v-slot="{ Component }">
+    <RouterView v-slot="{ Component, route }">
       <template v-if="Component">
-        <Transition name="fade">
-          <Suspense>
-            <component :is="Component" />
+        <Transition name="fade" mode="out-in">
+          <Suspense timeout="0">
+            <template #default>
+              <component :is="Component" :key="route.path" />
+            </template>
             <template #fallback>
               <div class="loader">
                 <LoadingBars />
@@ -45,6 +47,11 @@ const router = useRouter();
 .skore {
   display: flex;
   flex-direction: row;
+
+  main {
+    width: calc(100dvw - var(--width-toolbar));
+    height: 100vh;
+  }
 
   .loader {
     display: flex;

@@ -195,14 +195,18 @@ onMounted(() => {
     },
   });
 
-  container.value!.addEventListener("dragover", onDragOver);
-  container.value!.addEventListener("dragleave", onDragLeave);
+  if (container.value) {
+    container.value.addEventListener("dragover", onDragOver);
+    container.value.addEventListener("dragleave", onDragLeave);
+  }
   window.addEventListener("dragend", onDragLeave);
 });
 
 onBeforeUnmount(() => {
-  container.value!.removeEventListener("dragover", onDragOver);
-  container.value!.removeEventListener("dragleave", onDragLeave);
+  if (container.value) {
+    container.value.removeEventListener("dragover", onDragOver);
+    container.value.removeEventListener("dragleave", onDragLeave);
+  }
   window.removeEventListener("dragend", onDragLeave);
   draggable.unset();
 });
