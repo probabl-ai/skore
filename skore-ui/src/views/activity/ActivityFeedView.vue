@@ -9,6 +9,7 @@ import PlotlyWidget from "@/components/PlotlyWidget.vue";
 import VegaWidget from "@/components/VegaWidget.vue";
 import type { PresentableItem } from "@/stores/project";
 import ActivityFeedCardHeader from "@/views/activity/ActivityFeedCardHeader.vue";
+import ActivityFeedCurvedArrow from "@/views/activity/ActivityFeedCurvedArrow.vue";
 
 type Fake = Partial<PresentableItem & { name: string; datetime: string; icon: string }>;
 const fakes: Fake[] = [
@@ -88,6 +89,7 @@ const fakes: Fake[] = [
       <h2>Find all your activity, right below.</h2>
       <div class="items">
         <div class="item" v-for="({ icon, datetime, name, mediaType, data }, i) in fakes" :key="i">
+          <ActivityFeedCurvedArrow :has-arrow="i === 0" />
           <ActivityFeedCardHeader :icon="icon!" :datetime="datetime!" :name="name!" />
           <DataFrameWidget
             v-if="mediaType!.startsWith('application/vnd.dataframe+json')"
@@ -125,7 +127,7 @@ const fakes: Fake[] = [
     height: 100dvh;
     padding: var(--spacing-24) 11%;
 
-    h1 {
+    & h1 {
       color: var(--color-text-primary);
       font-size: var(--font-size-lg);
       font-weight: var(--font-weight-medium);
@@ -133,7 +135,7 @@ const fakes: Fake[] = [
       word-wrap: break-word;
     }
 
-    h2 {
+    & h2 {
       color: var(--color-text-secondary);
       font-size: var(--font-size-xs);
       font-weight: var(--font-weight-regular);
@@ -141,11 +143,29 @@ const fakes: Fake[] = [
       word-wrap: break-word;
     }
 
-    .items {
+    & .items {
       display: flex;
       flex-direction: column;
       margin: var(--spacing-24) 0;
       gap: var(--spacing-20);
+
+      & .item {
+        position: relative;
+
+        & .arrow {
+          position: absolute;
+          bottom: 0;
+          left: -21px;
+          overflow: visible;
+          height: calc(100% + var(--spacing-20) + 20px);
+        }
+
+        &:first-child {
+          & .arrow {
+            height: 100%;
+          }
+        }
+      }
     }
   }
 }
