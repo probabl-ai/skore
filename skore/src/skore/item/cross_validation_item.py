@@ -167,6 +167,7 @@ def plot_cross_validation_aggregation(
     _cv_results = cv_results_items_versions.copy()
 
     df = pandas.DataFrame([v.cv_results_serialized for v in _cv_results])
+    df = df.drop(columns=["indices", "estimator"], errors="ignore")
     df = df.apply(pandas.Series.explode)
     df = df.reset_index(names="run_number")
 
