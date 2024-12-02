@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import Simplebar from "simplebar-vue";
+
 import DataFrameWidget from "@/components/DataFrameWidget.vue";
 import HtmlSnippetWidget from "@/components/HtmlSnippetWidget.vue";
 import ImageWidget from "@/components/ImageWidget.vue";
@@ -81,62 +83,70 @@ const fakes: Fake[] = [
 
 <template>
   <main class="activity-feed">
-    <h1>Activity feed</h1>
-    <h2>Find all your activity, right below.</h2>
-    <div class="items">
-      <div class="item" v-for="({ icon, datetime, name, mediaType, data }, i) in fakes" :key="i">
-        <ActivityFeedCardHeader :icon="icon!" :datetime="datetime!" :name="name!" />
-        <DataFrameWidget
-          v-if="mediaType!.startsWith('application/vnd.dataframe+json')"
-          :columns="data.columns"
-          :data="data.data"
-          :index="data.index"
-          :index-names="data.indexNames"
-        />
-        <ImageWidget
-          v-if="mediaType!.startsWith('image/')"
-          :mediaType="mediaType!"
-          :base64-src="data"
-          :alt="name"
-        />
-        <MarkdownWidget v-if="mediaType!.startsWith('text/markdown')" :source="data" />
-        <VegaWidget v-if="mediaType!.startsWith('application/vnd.vega.v5+json')" :spec="data" />
-        <PlotlyWidget v-if="mediaType!.startsWith('application/vnd.plotly.v1+json')" :spec="data" />
-        <HtmlSnippetWidget
-          v-if="mediaType!.startsWith('application/vnd.sklearn.estimator+html')"
-          :src="data"
-        />
-        <HtmlSnippetWidget v-if="mediaType!.startsWith('text/html')" :src="data" />
+    <Simplebar class="activity-feed-container">
+      <h1>Activity feed</h1>
+      <h2>Find all your activity, right below.</h2>
+      <div class="items">
+        <div class="item" v-for="({ icon, datetime, name, mediaType, data }, i) in fakes" :key="i">
+          <ActivityFeedCardHeader :icon="icon!" :datetime="datetime!" :name="name!" />
+          <DataFrameWidget
+            v-if="mediaType!.startsWith('application/vnd.dataframe+json')"
+            :columns="data.columns"
+            :data="data.data"
+            :index="data.index"
+            :index-names="data.indexNames"
+          />
+          <ImageWidget
+            v-if="mediaType!.startsWith('image/')"
+            :mediaType="mediaType!"
+            :base64-src="data"
+            :alt="name"
+          />
+          <MarkdownWidget v-if="mediaType!.startsWith('text/markdown')" :source="data" />
+          <VegaWidget v-if="mediaType!.startsWith('application/vnd.vega.v5+json')" :spec="data" />
+          <PlotlyWidget
+            v-if="mediaType!.startsWith('application/vnd.plotly.v1+json')"
+            :spec="data"
+          />
+          <HtmlSnippetWidget
+            v-if="mediaType!.startsWith('application/vnd.sklearn.estimator+html')"
+            :src="data"
+          />
+          <HtmlSnippetWidget v-if="mediaType!.startsWith('text/html')" :src="data" />
+        </div>
       </div>
-    </div>
+    </Simplebar>
   </main>
 </template>
 
 <style scoped>
 .activity-feed {
-  padding: var(--spacing-24) 11%;
+  & .activity-feed-container {
+    height: 100dvh;
+    padding: var(--spacing-24) 11%;
 
-  h1 {
-    color: var(--color-text-primary);
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-medium);
-    letter-spacing: var(--letter-spacing);
-    word-wrap: break-word;
-  }
+    h1 {
+      color: var(--color-text-primary);
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-medium);
+      letter-spacing: var(--letter-spacing);
+      word-wrap: break-word;
+    }
 
-  h2 {
-    color: var(--color-text-secondary);
-    font-size: var(--font-size-xs);
-    font-weight: var(--font-weight-regular);
-    letter-spacing: var(--letter-spacing);
-    word-wrap: break-word;
-  }
+    h2 {
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-regular);
+      letter-spacing: var(--letter-spacing);
+      word-wrap: break-word;
+    }
 
-  .items {
-    display: flex;
-    flex-direction: column;
-    margin: var(--spacing-24) 0;
-    gap: var(--spacing-20);
+    .items {
+      display: flex;
+      flex-direction: column;
+      margin: var(--spacing-24) 0;
+      gap: var(--spacing-20);
+    }
   }
 }
 </style>
