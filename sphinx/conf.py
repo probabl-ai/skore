@@ -107,7 +107,6 @@ html_theme_options = {
             "icon": "fa-brands fa-discord",
         },
     ],
-    "announcement": "This code is still in development. <strong>The API is subject to change.</strong>",
     "switcher": {
         "json_url": "https://skore.probabl.ai/versions.json",
         "version_match": version,
