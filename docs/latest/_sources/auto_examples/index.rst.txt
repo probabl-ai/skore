@@ -8,6 +8,34 @@ Examples
 Below is a gallery of narrated notebook examples on how and why to use skore.
 They also serve as our user guide.
 
+.. toctree::
+    :maxdepth: 1
+    :caption: Contents:
+
+    00_getting_started/README
+    01_track/README
+    02_diagnose/README
+
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbnails">
+
+.. thumbnail-parent-div-open
+
+.. thumbnail-parent-div-close
+
+.. raw:: html
+
+    </div>
+
+Getting started
+---------------
+
+We recommend first having a look at this example that serves as an overall and gentle
+introduction to skore.
+
 
 
 .. raw:: html
@@ -22,10 +50,10 @@ They also serve as our user guide.
 
 .. only:: html
 
-  .. image:: /auto_examples/images/thumb/sphx_glr_plot_01_getting_started_thumb.png
+  .. image:: /auto_examples/00_getting_started/images/thumb/sphx_glr_plot_01_getting_started_thumb.png
     :alt:
 
-  :ref:`sphx_glr_auto_examples_plot_01_getting_started.py`
+  :ref:`sphx_glr_auto_examples_00_getting_started_plot_01_getting_started.py`
 
 .. raw:: html
 
@@ -33,16 +61,35 @@ They also serve as our user guide.
     </div>
 
 
+.. thumbnail-parent-div-close
+
+.. raw:: html
+
+    </div>
+
+Track
+-----
+
+These examples illustrate the skore Project and UI.
+
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbnails">
+
+.. thumbnail-parent-div-open
+
 .. raw:: html
 
     <div class="sphx-glr-thumbcontainer" tooltip="This example provides an overview of the functionalities and the different types of items that we can store in a skore Project.">
 
 .. only:: html
 
-  .. image:: /auto_examples/images/thumb/sphx_glr_plot_02_overview_skore_project_thumb.png
+  .. image:: /auto_examples/01_track/images/thumb/sphx_glr_plot_01_overview_skore_project_thumb.png
     :alt:
 
-  :ref:`sphx_glr_auto_examples_plot_02_overview_skore_project.py`
+  :ref:`sphx_glr_auto_examples_01_track_plot_01_overview_skore_project.py`
 
 .. raw:: html
 
@@ -52,14 +99,51 @@ They also serve as our user guide.
 
 .. raw:: html
 
+    <div class="sphx-glr-thumbcontainer" tooltip="This example illustrates how skore can be used to track some items using their history, for example tracking some ML metrics over time.">
+
+.. only:: html
+
+  .. image:: /auto_examples/01_track/images/thumb/sphx_glr_plot_02_tracking_items_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_examples_01_track_plot_02_tracking_items.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Tracking items using their history</div>
+    </div>
+
+
+.. thumbnail-parent-div-close
+
+.. raw:: html
+
+    </div>
+
+Diagnose
+--------
+
+These examples illustrate how skore can help data scientists to improve their
+machine learning modelling thanks to diagnostics.
+
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbnails">
+
+.. thumbnail-parent-div-open
+
+.. raw:: html
+
     <div class="sphx-glr-thumbcontainer" tooltip="This example illustrates the motivation and the use of skore&#x27;s skore.cross_validate to get assistance when developing ML/DS projects.">
 
 .. only:: html
 
-  .. image:: /auto_examples/images/thumb/sphx_glr_plot_03_cross_validate_thumb.png
+  .. image:: /auto_examples/02_diagnose/images/thumb/sphx_glr_plot_01_cross_validate_thumb.png
     :alt:
 
-  :ref:`sphx_glr_auto_examples_plot_03_cross_validate.py`
+  :ref:`sphx_glr_auto_examples_02_diagnose_plot_01_cross_validate.py`
 
 .. raw:: html
 
@@ -69,31 +153,14 @@ They also serve as our user guide.
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This example illustrates how skore can be used to track some items using their history, for example tracking some ML metrics over time.">
-
-.. only:: html
-
-  .. image:: /auto_examples/images/thumb/sphx_glr_plot_04_tracking_items_thumb.png
-    :alt:
-
-  :ref:`sphx_glr_auto_examples_plot_04_tracking_items.py`
-
-.. raw:: html
-
-      <div class="sphx-glr-thumbnail-title">Tracking items using their history</div>
-    </div>
-
-
-.. raw:: html
-
     <div class="sphx-glr-thumbcontainer" tooltip="This example illustrates the motivation and the use of skore&#x27;s skore.train_test_split to get assistance when developing ML/DS projects.">
 
 .. only:: html
 
-  .. image:: /auto_examples/images/thumb/sphx_glr_plot_05_train_test_split_thumb.png
+  .. image:: /auto_examples/02_diagnose/images/thumb/sphx_glr_plot_02_train_test_split_thumb.png
     :alt:
 
-  :ref:`sphx_glr_auto_examples_plot_05_train_test_split.py`
+  :ref:`sphx_glr_auto_examples_02_diagnose_plot_02_train_test_split.py`
 
 .. raw:: html
 
@@ -110,12 +177,12 @@ They also serve as our user guide.
 
 .. toctree::
    :hidden:
+   :includehidden:
 
-   /auto_examples/plot_01_getting_started
-   /auto_examples/plot_02_overview_skore_project
-   /auto_examples/plot_03_cross_validate
-   /auto_examples/plot_04_tracking_items
-   /auto_examples/plot_05_train_test_split
+
+   /auto_examples/00_getting_started/index.rst
+   /auto_examples/01_track/index.rst
+   /auto_examples/02_diagnose/index.rst
 
 
 .. only:: html

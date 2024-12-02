@@ -1,19 +1,38 @@
 name: Deploy sphinx documentation
-permissions:
-  contents: write
+
+inputs:
+  CONFIGURATION:
+    required: true
+  ACTION:
+    required: false
+    default: sync
+    type: choice
+    options:
+      - copy
+      - sync
+  PROVIDER:
+    required: false
+    default: scaleway
+  BUCKET:
+    required: false
+    default: prod-probabl-skore
+  SOURCE:
+    required: true
+  DESTINATION:
+    required: true
+
 runs:
   using: composite
   steps:
     - shell: bash
       run: |
-        rm -rf docs/latest
-        mv sphinx/build/html docs/latest
+        sudo apt-get update
+        sudo apt-get install -y rclone
+    - shell: bash
+      run: echo "${{ inputs.CONFIGURATION }}" > rclone.configuration
     - shell: bash
       run: |
-        git config user.name 'github-actions[bot]'
-        git config user.email 'github-actions[bot]@users.noreply.github.com'
-        git config commit.cleanup 'verbatim'
-
-        git add docs/latest
-        git commit -m $'docs: Build documentation triggered by ${{ github.sha }}\n\n\nskip-checks:true'
-        git push
+        rclone --config rclone.configuration \
+               ${{ inputs.ACTION }} \
+               ${{ inputs.SOURCE }} \
+               ${{ inputs.PROVIDER }}:${{ inputs.BUCKET }}/${{ inputs.DESTINATION }}
