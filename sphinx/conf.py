@@ -61,6 +61,7 @@ sphinx_gallery_conf = {
 # intersphinx configuration
 intersphinx_mapping = {
     "sklearn": ("https://scikit-learn.org/stable/", None),
+    "skrub": ("https://skrub-data.org/stable/", None),
 }
 
 numpydoc_show_class_members = False
