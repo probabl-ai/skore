@@ -2,7 +2,6 @@ import numpy
 import pandas
 import pytest
 import sklearn.model_selection
-from numpy import array
 from sklearn import datasets, linear_model
 from sklearn.cluster import KMeans
 from sklearn.ensemble import RandomForestClassifier
@@ -12,7 +11,6 @@ from skore import CrossValidationReporter
 from skore.item.cross_validation_item import (
     CrossValidationAggregationItem,
     CrossValidationItem,
-    plot_cross_validation,
 )
 
 
@@ -143,19 +141,6 @@ class TestMLTask:
 
         assert set(cv_results.keys()).issuperset(cv_results_sklearn.keys())
         assert all(len(v) == 5 for v in cv_results.values())
-
-
-def test_plot_cross_validation():
-    cv_results = {
-        "fit_time": array([0.00058246, 0.00041819, 0.00039363]),
-        "score_time": array([0.00101399, 0.00072646, 0.00072432]),
-        "test_score": array([0.3315057, 0.08022103, 0.03531816]),
-        "test_r2": array([0.3315057, 0.08022103, 0.03531816]),
-        "test_neg_mean_squared_error": array(
-            [-3635.52042005, -3573.35050281, -6114.77901585]
-        ),
-    }
-    plot_cross_validation(cv_results)
 
 
 def test_aggregated_cross_validation(rf, in_memory_project):
