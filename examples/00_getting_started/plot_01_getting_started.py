@@ -203,17 +203,13 @@ my_project.put("my_fig", fig)
 # :func:`sklearn.model_selection.cross_validate`.
 #
 # On the same previous data and a Ridge regressor (with default ``alpha`` value),
-# let us create a skore CrossValidationReporter, which will automatically compute a plotly chart when we
-# :func:`~skore.Project.put` it in our project.
+# let us create a CrossValidationReporter.
 
 # %%
 from skore import CrossValidationReporter
 
 reporter = CrossValidationReporter(Ridge(), X, y, cv=5)
-
-my_project.put("cross_validation", reporter)
-fig_plotly = my_project.get_item("cross_validation").plot
-fig_plotly
+reporter.plot
 
 # %%
 # Hence, we can observe some key metrics and get insights on our cross-validation.
