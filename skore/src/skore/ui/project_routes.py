@@ -158,10 +158,10 @@ async def get_activity(
     request: Request,
     after: datetime = datetime(1, 1, 1, 0, 0, 0, 0, timezone.utc),
 ):
-    """Send all recent as a JSON array.
+    """Send all recent activity as a JSON array.
 
     The activity is composed of all the items and their versions created after the
-    datetime `after`.
+    datetime `after`, sorted from newest to oldest.
     """
     project = request.app.state.project
     return sorted(
