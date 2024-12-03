@@ -1,3 +1,5 @@
+import datetime
+
 import numpy
 import pandas
 import polars
@@ -37,6 +39,7 @@ def test_get_items(client, in_memory_project):
         "items": {
             "test": [
                 {
+                    "name": "test",
                     "media_type": "text/markdown",
                     "value": item.primitive,
                     "created_at": item.created_at,
@@ -104,6 +107,7 @@ def test_serialize_polars_series_with_missing_values(client, in_memory_project):
     assert len(project["items"]["🐻‍❄️"][0]["value"]) == 6
 
 
+<<<<<<< HEAD
 def test_serialize_numpy_array(client, in_memory_project):
     np_array = numpy.array([1, 2, 3, 4])
     in_memory_project.put("np array", np_array)
@@ -141,3 +145,29 @@ def test_serialize_media_item(client, in_memory_project):
     assert "image" in project["items"]["img"][0]["media_type"]
     assert project["items"]["html"][0]["value"] == html
     assert project["items"]["media html"][0]["value"] == html
+
+def test_activity_feed(client, in_memory_project):
+    for i in range(5):
+        in_memory_project.put(f"{i}", i)
+
+    response = client.get("/api/project/activity")
+    assert response.status_code == 200
+    assert [(item["name"], item["value"]) for item in response.json()] == [
+        ("4", 4),
+        ("3", 3),
+        ("2", 2),
+        ("1", 1),
+        ("0", 0),
+    ]
+
+    now = datetime.datetime.now(tz=datetime.timezone.utc)
+
+    in_memory_project.put("4", 5)
+    in_memory_project.put("5", 5)
+
+    response = client.get("/api/project/activity", params={"after": now})
+    assert response.status_code == 200
+    assert [(item["name"], item["value"]) for item in response.json()] == [
+        ("5", 5),
+        ("4", 5),
+    ]
