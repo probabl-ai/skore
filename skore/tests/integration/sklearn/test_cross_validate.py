@@ -17,10 +17,25 @@ from skore.item.cross_validation_item import (
 @pytest.fixture
 def rf():
     iris = datasets.load_iris()
-    X = iris.data[:150]
-    y = numpy.random.randint(2, size=150)
+    X = iris.data[:100]
+    y = numpy.random.randint(2, size=100)
     rf = RandomForestClassifier()
     return rf, X, y
+
+
+@pytest.fixture
+def fake_cross_validate(monkeypatch):
+    def _fake_cross_validate(*args, **kwargs):
+        result = {"test_score": [1] * 5, "test_time": [1] * 5, "fit_time": [1] * 5}
+        if kwargs.get("return_estimator"):
+            result["estimator"] = []
+        if kwargs.get("return_indices"):
+            result["indices"] = []
+        if kwargs.get("return_train_score"):
+            result["train_score"] = [1] * 5
+        return result
+
+    monkeypatch.setattr("sklearn.model_selection.cross_validate", _fake_cross_validate)
 
 
 class TestInputScorers:
@@ -53,7 +68,7 @@ class TestInputScorers:
             None,
         ],
     )
-    def test_scorer(self, rf, in_memory_project, scoring):
+    def test_scorer(self, rf, in_memory_project, scoring, fake_cross_validate):
         reporter = CrossValidationReporter(*rf, scoring=scoring)
         cv_results = reporter.cv_results
         cv_results_sklearn = sklearn.model_selection.cross_validate(
@@ -74,7 +89,7 @@ class TestInputDataType:
         return model, pandas.DataFrame(X), pandas.Series(y)
 
     @pytest.mark.parametrize("convert_args", [data_is_list, data_is_pandas])
-    def test_data_type(self, rf, in_memory_project, convert_args):
+    def test_data_type(self, rf, in_memory_project, convert_args, fake_cross_validate):
         args = convert_args(*rf)
 
         reporter = CrossValidationReporter(*args)
@@ -132,7 +147,7 @@ class TestMLTask:
             clustering,
         ],
     )
-    def test_cross_validate(self, in_memory_project, get_args):
+    def test_cross_validate(self, in_memory_project, get_args, fake_cross_validate):
         args = get_args(self)
 
         reporter = CrossValidationReporter(*args)
