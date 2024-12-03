@@ -155,7 +155,7 @@ onMounted(() => {
       flex: 1;
       flex-direction: row;
       align-items: center;
-      cursor: help;
+      cursor: pointer;
       transition: background-color var(--animation-duration) var(--animation-easing);
 
       & .children-indicator {
