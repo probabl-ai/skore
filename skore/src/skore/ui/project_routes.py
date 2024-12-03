@@ -78,8 +78,12 @@ def __serialize_project(project: Project) -> SerializedProject:
                 value = item.estimator_html_repr
                 media_type = "application/vnd.sklearn.estimator+html"
             elif isinstance(item, MediaItem):
-                value = base64.b64encode(item.media_bytes).decode()
-                media_type = f"{item.media_type};base64"
+                if "text" in item.media_type:
+                    value = item.media_bytes.decode(encoding=item.media_encoding)
+                    media_type = f"{item.media_type}"
+                else:
+                    value = base64.b64encode(item.media_bytes).decode()
+                    media_type = f"{item.media_type};base64"
             elif isinstance(
                 item, (CrossValidationItem, CrossValidationAggregationItem)
             ):

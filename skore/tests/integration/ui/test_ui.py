@@ -1,7 +1,11 @@
+import numpy
 import pandas
 import polars
 import pytest
 from fastapi.testclient import TestClient
+from PIL import Image
+from sklearn.linear_model import Lasso
+from skore.item.media_item import MediaItem
 from skore.ui.app import create_app
 from skore.view.view import View
 
@@ -98,3 +102,42 @@ def test_serialize_polars_series_with_missing_values(client, in_memory_project):
     assert response.status_code == 200
     project = response.json()
     assert len(project["items"]["🐻‍❄️"][0]["value"]) == 6
+
+
+def test_serialize_numpy_array(client, in_memory_project):
+    np_array = numpy.array([1, 2, 3, 4])
+    in_memory_project.put("np array", np_array)
+
+    response = client.get("/api/project/items")
+    assert response.status_code == 200
+    project = response.json()
+    assert len(project["items"]["np array"][0]["value"]) == 4
+
+
+def test_serialize_sklearn_estimator(client, in_memory_project):
+    estimator = Lasso()
+    in_memory_project.put("estimator", estimator)
+
+    response = client.get("/api/project/items")
+    assert response.status_code == 200
+    project = response.json()
+    assert project["items"]["estimator"][0]["value"] is not None
+
+
+def test_serialize_media_item(client, in_memory_project):
+    imarray = numpy.random.rand(100, 100, 3) * 255
+    img = Image.fromarray(imarray.astype("uint8")).convert("RGBA")
+    in_memory_project.put("img", img)
+
+    html = "<h1>éàªªUœALDXIWDŸΩΩ</h1>"
+    in_memory_project.put("html", html)
+    in_memory_project.put_item(
+        "media html", MediaItem.factory_str(html, media_type="text/html")
+    )
+
+    response = client.get("/api/project/items")
+    assert response.status_code == 200
+    project = response.json()
+    assert "image" in project["items"]["img"][0]["media_type"]
+    assert project["items"]["html"][0]["value"] == html
+    assert project["items"]["media html"][0]["value"] == html
