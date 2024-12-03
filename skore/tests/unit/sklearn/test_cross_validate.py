@@ -1,4 +1,4 @@
-from skore.sklearn.cross_validation_reporter import CrossValidationReporter
+from skore.sklearn.cross_validation import CrossValidationReporter
 
 
 def prepare_cv():
