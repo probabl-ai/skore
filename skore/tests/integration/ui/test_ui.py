@@ -107,7 +107,6 @@ def test_serialize_polars_series_with_missing_values(client, in_memory_project):
     assert len(project["items"]["🐻‍❄️"][0]["value"]) == 6
 
 
-<<<<<<< HEAD
 def test_serialize_numpy_array(client, in_memory_project):
     np_array = numpy.array([1, 2, 3, 4])
     in_memory_project.put("np array", np_array)
@@ -145,6 +144,7 @@ def test_serialize_media_item(client, in_memory_project):
     assert "image" in project["items"]["img"][0]["media_type"]
     assert project["items"]["html"][0]["value"] == html
     assert project["items"]["media html"][0]["value"] == html
+
 
 def test_activity_feed(client, in_memory_project):
     for i in range(5):
