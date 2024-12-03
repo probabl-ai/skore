@@ -47,11 +47,11 @@ onBeforeUnmount(() => {
       <div class="items">
         <div
           class="item"
-          v-for="({ icon, name, created_at, media_type, value }, i) in items"
-          :key="created_at"
+          v-for="({ icon, name, updated_at, media_type, value }, i) in items"
+          :key="updated_at"
         >
           <ActivityFeedCurvedArrow :has-arrow="i === 0" />
-          <ActivityFeedCardHeader :icon="icon" :datetime="created_at" :name="name" />
+          <ActivityFeedCardHeader :icon="icon" :datetime="updated_at" :name="name" />
           <DataFrameWidget
             v-if="media_type.startsWith('application/vnd.dataframe+json')"
             :columns="value.columns"
