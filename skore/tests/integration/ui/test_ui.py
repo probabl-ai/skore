@@ -146,9 +146,22 @@ def test_serialize_media_item(client, in_memory_project):
     assert project["items"]["media html"][0]["value"] == html
 
 
-def test_activity_feed(client, in_memory_project):
+def test_activity_feed(monkeypatch, client, in_memory_project):
+    class MockDatetime:
+        NOW = datetime.datetime.now(tz=datetime.timezone.utc)
+        TIMEDELTA = datetime.timedelta(days=1)
+
+        def __init__(self, *args, **kwargs): ...
+
+        @staticmethod
+        def now(*args, **kwargs):
+            MockDatetime.NOW += MockDatetime.TIMEDELTA
+            return MockDatetime.NOW
+
+    monkeypatch.setattr("skore.item.item.datetime", MockDatetime)
+
     for i in range(5):
-        in_memory_project.put(f"{i}", i)
+        in_memory_project.put(str(i), i)
 
     response = client.get("/api/project/activity")
     assert response.status_code == 200
@@ -160,7 +173,7 @@ def test_activity_feed(client, in_memory_project):
         ("0", 0),
     ]
 
-    now = datetime.datetime.now(tz=datetime.timezone.utc)
+    now = MockDatetime.NOW  # increments now
 
     in_memory_project.put("4", 5)
     in_memory_project.put("5", 5)
