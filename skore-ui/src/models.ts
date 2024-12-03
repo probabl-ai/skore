@@ -4,6 +4,7 @@
  * It's contributed by a user python side.
  */
 export interface ProjectItem {
+  name: string;
   media_type: string;
   value: any;
   updated_at: string;
@@ -22,3 +23,5 @@ export interface Project {
   items: { [key: string]: ProjectItem[] };
   views: { [key: string]: Layout };
 }
+
+export type ActivityFeed = ProjectItem[];

@@ -1,4 +1,4 @@
-import type { Layout, Project } from "@/models";
+import type { ActivityFeed, Layout, Project } from "@/models";
 import { useToastsStore } from "@/stores/toasts";
 
 const { protocol, hostname, port: windowPort } = window.location;
@@ -60,4 +60,19 @@ export async function deleteView(view: string) {
   } catch (error) {
     reportError(getErrorMessage(error));
   }
+}
+
+export async function fetchActivityFeed(after?: string): Promise<ActivityFeed | null> {
+  try {
+    let url = `${BASE_URL}/project/activity`;
+    if (after) {
+      url += `?after=${after}`;
+    }
+    const r = await fetch(url);
+    checkResponseStatus(r, 200);
+    return await r.json();
+  } catch (error) {
+    reportError(getErrorMessage(error));
+  }
+  return null;
 }

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import Simplebar from "simplebar-vue";
+import { onBeforeUnmount, ref } from "vue";
 
 import DataFrameWidget from "@/components/DataFrameWidget.vue";
 import HtmlSnippetWidget from "@/components/HtmlSnippetWidget.vue";
@@ -7,79 +8,32 @@ import ImageWidget from "@/components/ImageWidget.vue";
 import MarkdownWidget from "@/components/MarkdownWidget.vue";
 import PlotlyWidget from "@/components/PlotlyWidget.vue";
 import VegaWidget from "@/components/VegaWidget.vue";
-import type { PresentableItem } from "@/stores/project";
+import type { ProjectItem } from "@/models";
+import { fetchActivityFeed } from "@/services/api";
+import { poll } from "@/services/utils";
 import ActivityFeedCardHeader from "@/views/activity/ActivityFeedCardHeader.vue";
 import ActivityFeedCurvedArrow from "@/views/activity/ActivityFeedCurvedArrow.vue";
 
-type Fake = Partial<PresentableItem & { name: string; datetime: string; icon: string }>;
-const fakes: Fake[] = [
-  {
-    name: "mlkj",
-    datetime: "2019-02-11T03:27:21+01:00",
-    icon: "icon-pill",
-    mediaType: "text/markdown",
-    data: "# hello\n- lorem\n- ipsum",
-  },
-  {
-    name: "azert",
-    datetime: "2019-04-27T10:25:22+01:00",
-    icon: "icon-playground",
-    mediaType: "text/markdown",
-    data: "# hello\n- lorem\n- ipsum",
-  },
-  {
-    name: "cvbn",
-    datetime: "2019-08-01T21:13:28+01:00",
-    icon: "icon-pill",
-    mediaType: "text/markdown",
-    data: "# hello\n- lorem\n- ipsum",
-  },
-  {
-    name: "poiu",
-    datetime: "2019-06-16T20:58:12+01:00",
-    icon: "icon-pill",
-    mediaType: "text/markdown",
-    data: "# hello\n- lorem\n- ipsum",
-  },
-  {
-    name: "qsdf",
-    datetime: "2019-02-11T03:27:21+01:00",
-    icon: "icon-pill",
-    mediaType: "text/markdown",
-    data: "# hello\n- lorem\n- ipsum",
-  },
-  {
-    name: "vghui",
-    datetime: "2019-06-21T22:23:42+01:00",
-    icon: "icon-pill",
-    mediaType: "text/markdown",
-    data: "# hello\n- lorem\n- ipsum",
-  },
-  {
-    name: "pokjnb",
-    datetime: "2019-06-21T22:23:49+01:00",
-    icon: "icon-pill",
-    mediaType: "text/html",
-    data: "<h1>yooo</h1>",
-  },
-  {
-    name: "pokjnb",
-    datetime: "2019-06-21T22:23:49+01:00",
-    icon: "icon-pill",
-    mediaType: "application/vnd.dataframe+json",
-    data: {
-      index: [],
-      columns: ["A", "B", "C", "D"],
-      data: [
-        [1, 2, 3, 4],
-        [1, 2, 3, 4],
-        [1, 2, 3, 4],
-        [1, 2, 3, 4],
-      ],
-      indexNames: [],
-    },
-  },
-];
+type PresentableItem = ProjectItem & { icon: string };
+
+const items = ref<PresentableItem[]>([]);
+let lastFetchTime = new Date(1, 1, 1, 0, 0, 0, 0);
+
+async function fetch() {
+  const now = new Date();
+  const feed = await fetchActivityFeed(lastFetchTime.toISOString());
+  lastFetchTime = now;
+  if (feed !== null) {
+    const newItems = feed.map((i) => ({ ...i, icon: "" }));
+    items.value.unshift(...newItems);
+  }
+}
+
+const stopPolling = await poll(fetch, 1500);
+
+onBeforeUnmount(() => {
+  stopPolling();
+});
 </script>
 
 <template>
@@ -88,33 +42,37 @@ const fakes: Fake[] = [
       <h1>Activity feed</h1>
       <h2>Find all your activity, right below.</h2>
       <div class="items">
-        <div class="item" v-for="({ icon, datetime, name, mediaType, data }, i) in fakes" :key="i">
+        <div
+          class="item"
+          v-for="({ icon, name, created_at, media_type, value }, i) in items"
+          :key="i"
+        >
           <ActivityFeedCurvedArrow :has-arrow="i === 0" />
-          <ActivityFeedCardHeader :icon="icon!" :datetime="datetime!" :name="name!" />
+          <ActivityFeedCardHeader :icon="icon!" :datetime="created_at" :name="name" />
           <DataFrameWidget
-            v-if="mediaType!.startsWith('application/vnd.dataframe+json')"
-            :columns="data.columns"
-            :data="data.data"
-            :index="data.index"
-            :index-names="data.indexNames"
+            v-if="media_type.startsWith('application/vnd.dataframe+json')"
+            :columns="value.columns"
+            :data="value.data"
+            :index="value.index"
+            :index-names="value.indexNames"
           />
           <ImageWidget
-            v-if="mediaType!.startsWith('image/')"
-            :mediaType="mediaType!"
-            :base64-src="data"
+            v-if="media_type.startsWith('image/')"
+            :mediaType="media_type"
+            :base64-src="value"
             :alt="name"
           />
-          <MarkdownWidget v-if="mediaType!.startsWith('text/markdown')" :source="data" />
-          <VegaWidget v-if="mediaType!.startsWith('application/vnd.vega.v5+json')" :spec="data" />
+          <MarkdownWidget v-if="media_type.startsWith('text/markdown')" :source="value" />
+          <VegaWidget v-if="media_type.startsWith('application/vnd.vega.v5+json')" :spec="value" />
           <PlotlyWidget
-            v-if="mediaType!.startsWith('application/vnd.plotly.v1+json')"
-            :spec="data"
+            v-if="media_type.startsWith('application/vnd.plotly.v1+json')"
+            :spec="value"
           />
           <HtmlSnippetWidget
-            v-if="mediaType!.startsWith('application/vnd.sklearn.estimator+html')"
-            :src="data"
+            v-if="media_type.startsWith('application/vnd.sklearn.estimator+html')"
+            :src="value"
           />
-          <HtmlSnippetWidget v-if="mediaType!.startsWith('text/html')" :src="data" />
+          <HtmlSnippetWidget v-if="media_type.startsWith('text/html')" :src="value" />
         </div>
       </div>
     </Simplebar>
