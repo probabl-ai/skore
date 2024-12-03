@@ -204,6 +204,19 @@ my_project.put("my_df_polars", my_df_polars)
 my_df_polars.head()
 
 # %%
+# Skrub :class:`~skrub.TableReport`:
+
+# %%
+from skrub.datasets import fetch_employee_salaries
+from skrub import TableReport
+
+dataset = fetch_employee_salaries()
+employees_df, salaries = dataset.X, dataset.y
+my_tablereport = TableReport(employees_df)
+my_project.put("my_tablereport", my_tablereport)
+my_tablereport
+
+# %%
 # Storing data visualizations
 # ===========================
 #

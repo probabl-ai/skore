@@ -93,6 +93,7 @@ sphinx = [
   "sphinx-design",
   "sphinx-gallery",
   "sphinx-copybutton",
+  "skrub",
 ]
 
 [tool.pytest.ini_options]
