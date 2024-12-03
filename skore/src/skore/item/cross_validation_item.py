@@ -15,7 +15,6 @@ import plotly.graph_objects
 import plotly.io
 
 from skore.item.item import Item, ItemTypeError
-from skore.item.media_item import lazy_is_instance
 
 if TYPE_CHECKING:
     import sklearn.base
@@ -214,10 +213,7 @@ class CrossValidationItem(Item):
         CrossValidationItem
             A new CrossValidationItem instance.
         """
-        if not lazy_is_instance(
-            reporter,
-            "skore.sklearn.cross_validation_reporter.CrossValidationReporter",
-        ):
+        if reporter.__class__.__name__ != "CrossValidationReporter":
             raise ItemTypeError(
                 "Arguments to CrossValidationItem.factory are not supported."
             )
