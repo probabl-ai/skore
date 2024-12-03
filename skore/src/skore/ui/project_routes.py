@@ -79,7 +79,7 @@ def __serialize_project(project: Project) -> SerializedProject:
                 media_type = "application/vnd.sklearn.estimator+html"
             elif isinstance(item, MediaItem):
                 if "text" in item.media_type:
-                    value = item.media_bytes.decode()
+                    value = item.media_bytes.decode(encoding=item.media_encoding)
                     media_type = f"{item.media_type}"
                 else:
                     value = base64.b64encode(item.media_bytes).decode()
