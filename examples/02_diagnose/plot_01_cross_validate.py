@@ -120,10 +120,7 @@ test_scores
 
 # %%
 reporter = skore.CrossValidationReporter(clf, X, y, cv=5)
-my_project.put("cross_validation_classification", reporter)
-
-fig_plotly_clf = my_project.get_item("cross_validation_classification").plot
-fig_plotly_clf
+reporter.plot
 
 # %%
 # Skore's :class:`~skore.CrossValidationReporter` advantages are the following:
@@ -132,7 +129,7 @@ fig_plotly_clf
 #   manually specify them. For classification, one can observe that it computed the
 #   accuracy, the precision, and the recall.
 #
-# * Upon `put`, we automatically get some interactive Plotly graphs to better understand how our
+# * We automatically get some interactive Plotly graphs to better understand how our
 #   model behaves depending on the split. For example:
 #
 #   * We can compare the fitting and scoring times together for each split.
@@ -154,10 +151,13 @@ y = diabetes.target[:150]
 lasso = Lasso()
 
 reporter = skore.CrossValidationReporter(lasso, X, y, cv=5)
-my_project.put("cross_validation_regression", reporter)
+reporter.plot
 
-fig_plotly_reg = my_project.get_item("cross_validation_regression").plot
-fig_plotly_reg
+# %%
+# You can also access the plot after you've stored the ``CrossValidationReporter``:
+my_project.put("cross_validation_regression", reporter)
+cv_item = my_project.get_item("cross_validation_regression")
+cv_item.plot
 
 # %%
 # .. seealso::
