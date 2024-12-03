@@ -114,7 +114,7 @@ def test_serialize_numpy_array(client, in_memory_project):
     assert len(project["items"]["np array"][0]["value"]) == 4
 
 
-def test_serilialize_sklearn_estimator(client, in_memory_project):
+def test_serialize_sklearn_estimator(client, in_memory_project):
     estimator = Lasso()
     in_memory_project.put("estimator", estimator)
 
