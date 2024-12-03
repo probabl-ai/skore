@@ -1,7 +1,13 @@
+import datetime
+
+import numpy
 import pandas
 import polars
 import pytest
 from fastapi.testclient import TestClient
+from PIL import Image
+from sklearn.linear_model import Lasso
+from skore.item.media_item import MediaItem
 from skore.ui.app import create_app
 from skore.view.view import View
 
@@ -33,6 +39,7 @@ def test_get_items(client, in_memory_project):
         "items": {
             "test": [
                 {
+                    "name": "test",
                     "media_type": "text/markdown",
                     "value": item.primitive,
                     "created_at": item.created_at,
@@ -98,3 +105,82 @@ def test_serialize_polars_series_with_missing_values(client, in_memory_project):
     assert response.status_code == 200
     project = response.json()
     assert len(project["items"]["🐻‍❄️"][0]["value"]) == 6
+
+
+def test_serialize_numpy_array(client, in_memory_project):
+    np_array = numpy.array([1, 2, 3, 4])
+    in_memory_project.put("np array", np_array)
+
+    response = client.get("/api/project/items")
+    assert response.status_code == 200
+    project = response.json()
+    assert len(project["items"]["np array"][0]["value"]) == 4
+
+
+def test_serialize_sklearn_estimator(client, in_memory_project):
+    estimator = Lasso()
+    in_memory_project.put("estimator", estimator)
+
+    response = client.get("/api/project/items")
+    assert response.status_code == 200
+    project = response.json()
+    assert project["items"]["estimator"][0]["value"] is not None
+
+
+def test_serialize_media_item(client, in_memory_project):
+    imarray = numpy.random.rand(100, 100, 3) * 255
+    img = Image.fromarray(imarray.astype("uint8")).convert("RGBA")
+    in_memory_project.put("img", img)
+
+    html = "<h1>éàªªUœALDXIWDŸΩΩ</h1>"
+    in_memory_project.put("html", html)
+    in_memory_project.put_item(
+        "media html", MediaItem.factory_str(html, media_type="text/html")
+    )
+
+    response = client.get("/api/project/items")
+    assert response.status_code == 200
+    project = response.json()
+    assert "image" in project["items"]["img"][0]["media_type"]
+    assert project["items"]["html"][0]["value"] == html
+    assert project["items"]["media html"][0]["value"] == html
+
+
+def test_activity_feed(monkeypatch, client, in_memory_project):
+    class MockDatetime:
+        NOW = datetime.datetime.now(tz=datetime.timezone.utc)
+        TIMEDELTA = datetime.timedelta(days=1)
+
+        def __init__(self, *args, **kwargs): ...
+
+        @staticmethod
+        def now(*args, **kwargs):
+            MockDatetime.NOW += MockDatetime.TIMEDELTA
+            return MockDatetime.NOW
+
+    monkeypatch.setattr("skore.item.item.datetime", MockDatetime)
+
+    for i in range(5):
+        in_memory_project.put(str(i), i)
+
+    response = client.get("/api/project/activity")
+    assert response.status_code == 200
+    assert [(item["name"], item["value"]) for item in response.json()] == [
+        ("4", 4),
+        ("3", 3),
+        ("2", 2),
+        ("1", 1),
+        ("0", 0),
+    ]
+
+    now = MockDatetime.NOW  # increments now
+
+    in_memory_project.put("4", 5)
+    in_memory_project.put("5", 5)
+
+    response = client.get("/api/project/activity", params={"after": now})
+    assert response.status_code == 200
+    assert [(item["name"], item["value"]) for item in response.json()] == [
+        ("5", 5),
+        ("4", 5),
+    ]
