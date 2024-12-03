@@ -5,6 +5,7 @@ This class represents the output of a cross-validation workflow.
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 from functools import cached_property
 from typing import TYPE_CHECKING, Any
@@ -194,15 +195,9 @@ class CrossValidationItem(Item):
             A new CrossValidationItem instance.
         """
         if args:
-            if lazy_is_instance(
-                args[0],
-                "skore.sklearn.cross_validation_reporter.CrossValidationReporter",
-            ):
+            with contextlib.suppress(ItemTypeError):
                 return cls.factory_cross_validation_reporter(args[0])
 
-            raise ItemTypeError(
-                "Arguments to CrossValidationItem.factory are not supported."
-            )
         return cls.factory_raw(*args, **kwargs)
 
     @classmethod
@@ -219,6 +214,13 @@ class CrossValidationItem(Item):
         CrossValidationItem
             A new CrossValidationItem instance.
         """
+        if not lazy_is_instance(
+            reporter,
+            "skore.sklearn.cross_validation_reporter.CrossValidationReporter",
+        ):
+            raise ItemTypeError(
+                "Arguments to CrossValidationItem.factory are not supported."
+            )
         return CrossValidationItem.factory_raw(
             cv_results=reporter._cv_results,
             estimator=reporter.estimator,
