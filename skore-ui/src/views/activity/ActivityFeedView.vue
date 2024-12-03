@@ -24,12 +24,15 @@ async function fetch() {
   const feed = await fetchActivityFeed(lastFetchTime.toISOString());
   lastFetchTime = now;
   if (feed !== null) {
-    const newItems = feed.map((i) => ({ ...i, icon: "" }));
+    const newItems = feed.map((i) => ({
+      ...i,
+      icon: i.media_type.startsWith("text") ? "icon-pill" : "icon-playground",
+    }));
     items.value.unshift(...newItems);
   }
 }
 
-const stopPolling = await poll(fetch, 1500);
+const stopPolling = await poll(fetch, 1000);
 
 onBeforeUnmount(() => {
   stopPolling();
@@ -45,10 +48,10 @@ onBeforeUnmount(() => {
         <div
           class="item"
           v-for="({ icon, name, created_at, media_type, value }, i) in items"
-          :key="i"
+          :key="created_at"
         >
           <ActivityFeedCurvedArrow :has-arrow="i === 0" />
-          <ActivityFeedCardHeader :icon="icon!" :datetime="created_at" :name="name" />
+          <ActivityFeedCardHeader :icon="icon" :datetime="created_at" :name="name" />
           <DataFrameWidget
             v-if="media_type.startsWith('application/vnd.dataframe+json')"
             :columns="value.columns"
