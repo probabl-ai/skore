@@ -232,7 +232,7 @@ X_train, X_test, y_train, y_test = skore.train_test_split(X=X, y=y, test_size=0.
 # <https://scikit-learn.org/stable/modules/cross_validation.html#cross-validation-of-time-series-data>`_:
 # the data is somewhat time-ordered.
 # As one can not shuffle time (time only moves in one direction: forward), we
-# recommend using :func:`sklearn.model_selection.TimeSeriesSplit` instead of
+# recommend using :class:`sklearn.model_selection.TimeSeriesSplit` instead of
 # :func:`sklearn.model_selection.train_test_split` (or :func:`skore.train_test_split`).
 
 # %%
