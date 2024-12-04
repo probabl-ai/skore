@@ -154,7 +154,6 @@ onBeforeUnmount(() => {
 <style scoped>
 @media (prefers-color-scheme: dark) {
   main {
-    --sad-face-image: url("../../assets/images/sad-face-dark.svg");
     --not-found-image: url("../../assets/images/not-found-dark.png");
     --editor-placeholder-image: url("../../assets/images/editor-placeholder-dark.svg");
   }
@@ -162,7 +161,6 @@ onBeforeUnmount(() => {
 
 @media (prefers-color-scheme: light) {
   main {
-    --sad-face-image: url("../../assets/images/sad-face-light.svg");
     --not-found-image: url("../../assets/images/not-found-light.png");
     --editor-placeholder-image: url("../../assets/images/editor-placeholder-light.svg");
   }
