@@ -175,3 +175,13 @@ export function debounce(func: Function, wait: number, immediate: boolean) {
     }, wait);
   };
 }
+
+/**
+ * From an unknown this function does its best to return a message.
+ * @param error the unknow error
+ * @returns an error string
+ */
+export function getErrorMessage(error: unknown) {
+  if (error instanceof Error) return error.message;
+  return String(error);
+}

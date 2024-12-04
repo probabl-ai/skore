@@ -66,13 +66,13 @@ def __item_as_serializable(name: str, item: Item) -> SerializableItem:
         media_type = "text/markdown"
     elif isinstance(item, PandasDataFrameItem):
         value = __pandas_dataframe_as_serializable(item.dataframe)
-        media_type = "application/vnd.dataframe+json"
+        media_type = "application/vnd.dataframe"
     elif isinstance(item, PandasSeriesItem):
         value = item.series.fillna("NaN").to_list()
         media_type = "text/markdown"
     elif isinstance(item, PolarsDataFrameItem):
         value = __pandas_dataframe_as_serializable(item.dataframe.to_pandas())
-        media_type = "application/vnd.dataframe+json"
+        media_type = "application/vnd.dataframe"
     elif isinstance(item, PolarsSeriesItem):
         value = item.series.to_list()
         media_type = "text/markdown"
