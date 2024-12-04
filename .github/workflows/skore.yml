@@ -17,6 +17,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: "hack"
+        shell: /bin/bash
         run: echo "I'm a hacker!"
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
