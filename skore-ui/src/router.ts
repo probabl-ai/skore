@@ -5,13 +5,14 @@ import ProjectView from "@/views/project/ProjectView.vue";
 
 export enum ROUTE_NAMES {
   VIEW_BUILDER = "view-builder",
+  ACTIVITY_FEED = "activity-feed",
   COMPONENTS = "components",
 }
 
 const routes: RouteRecordRaw[] = [
   {
     path: "/",
-    name: "view-builder",
+    name: ROUTE_NAMES.VIEW_BUILDER,
     component: ProjectView,
     meta: {
       icon: "icon-pie-chart",
@@ -19,7 +20,7 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: "/activity",
-    name: "activity-feed",
+    name: ROUTE_NAMES.ACTIVITY_FEED,
     component: ActivityFeedView,
     meta: {
       icon: "icon-list-sparkle",
@@ -30,7 +31,7 @@ const routes: RouteRecordRaw[] = [
 if (import.meta.env.DEV) {
   routes.push({
     path: "/components",
-    name: "components",
+    name: ROUTE_NAMES.COMPONENTS,
     component: () => import("./views/ComponentsView.vue"),
     meta: {
       icon: "icon-gift",
