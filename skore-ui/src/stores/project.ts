@@ -350,7 +350,7 @@ export const useProjectStore = defineStore("project", () => {
           if (isBase64 && !isImage) {
             data = atob(item.value);
           }
-          if (item.media_type.includes("+json")) {
+          if (typeof data === "string" && item.media_type.includes("+json")) {
             data = JSON.parse(data);
           }
           const createdAt = new Date(item.created_at);
