@@ -170,13 +170,13 @@ onBeforeUnmount(() => {
 
 @media (prefers-color-scheme: light) {
   .activity-feed .placeholder .inner {
-    background-image: url("../../assets/images/activity-feed-palceholder-light.svg");
+    background-image: url("../../assets/images/activity-feed-placeholder-light.svg");
   }
 }
 
 @media (prefers-color-scheme: dark) {
   .activity-feed .placeholder .inner {
-    background-image: url("../../assets/images/activity-feed-palceholder-dark.svg");
+    background-image: url("../../assets/images/activity-feed-placeholder-dark.svg");
   }
 }
 </style>
