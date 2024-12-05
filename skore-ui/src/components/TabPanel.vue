@@ -50,7 +50,7 @@ onMounted(() => {
 .tab-panel {
   & .tab-selector {
     display: flex;
-    flex-direction: row;
+    flex-flow: row wrap;
     border: solid var(--stroke-width-md) var(--color-stroke-background-primary);
     background-color: var(--color-background-secondary);
     border-top-left-radius: var(--radius-md);
