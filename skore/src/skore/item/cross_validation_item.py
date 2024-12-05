@@ -223,7 +223,7 @@ class CrossValidationItem(Item):
             estimator=reporter.estimator,
             X=reporter.X,
             y=reporter.y,
-            plot_bytes=plotly.io.to_json(reporter.plot, engine="json").encode("utf-8"),
+            plot=reporter.plot,
         )
 
     @classmethod
@@ -233,7 +233,7 @@ class CrossValidationItem(Item):
         estimator: sklearn.base.BaseEstimator,
         X: Data,
         y: Target | None,
-        plot_bytes: bytes,
+        plot: plotly.graph_objects.Figure,
     ) -> CrossValidationItem:
         """
         Create a new ``CrossValidationItem`` instance.
@@ -250,9 +250,8 @@ class CrossValidationItem(Item):
         y
             The target, input of the :func:`sklearn.model_selection.cross_validate`
             function.
-        plot_bytes : bytes
-            A plot of the cross-validation results, in bytes form.
-            The plot is assumed to have been made with plotly.
+        plot_bytes : plotly.graph_objects.Figure
+            A plot of the cross-validation results.
 
         Returns
         -------
@@ -288,6 +287,8 @@ class CrossValidationItem(Item):
             "nb_cols": X_array.shape[1],
             "hash": _hash_numpy(X_array),
         }
+
+        plot_bytes = plotly.io.to_json(plot, engine="json").encode("utf-8")
 
         return cls(
             cv_results_serialized=cv_results_serialized,
