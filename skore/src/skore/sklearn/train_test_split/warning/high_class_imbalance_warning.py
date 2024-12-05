@@ -5,9 +5,8 @@ This warning is shown when a dataset exhibits a high class imbalance.
 
 from __future__ import annotations
 
+from collections import Counter
 from typing import TYPE_CHECKING, Any, Optional, Union
-
-import pandas
 
 from skore.sklearn.train_test_split.warning.train_test_split_warning import (
     TrainTestSplitWarning,
@@ -64,9 +63,10 @@ class HighClassImbalanceWarning(TrainTestSplitWarning):
         if stratify or (y is None or len(y) == 0) or ("classification" not in ml_task):
             return None
 
-        class_counts = pandas.Series(y).value_counts()
+        counter = Counter(y)
+        counter = sorted(counter.values())
 
-        if (max(class_counts) / min(class_counts)) < 3:
+        if (counter[-1] / counter[0]) < 3:
             return None
 
         return HighClassImbalanceWarning.MSG
