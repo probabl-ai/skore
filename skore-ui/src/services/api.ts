@@ -1,15 +1,11 @@
 import type { ActivityFeed, Layout, Project } from "@/models";
+import { getErrorMessage } from "@/services/utils";
 import { useToastsStore } from "@/stores/toasts";
 
 const { protocol, hostname, port: windowPort } = window.location;
 // In the general case we expect the webapp to run at the same port as the API
 const port = import.meta.env.DEV ? 22140 : windowPort;
 export const BASE_URL = `${protocol}//${hostname}:${port}/api`;
-
-function getErrorMessage(error: unknown) {
-  if (error instanceof Error) return error.message;
-  return String(error);
-}
 
 function reportError(message: string) {
   const toastsStore = useToastsStore();

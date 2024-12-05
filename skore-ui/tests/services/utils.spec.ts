@@ -2,6 +2,7 @@ import {
   debounce,
   generateRandomId,
   generateRandomMultiple,
+  getErrorMessage,
   isDeepEqual,
   isString,
   isUserInDarkMode,
@@ -115,5 +116,16 @@ describe("utils", () => {
     const debounced = debounce(f, 10, true);
     debounced();
     expect(f).toBeCalledTimes(1);
+  });
+
+  it("Can get error message from errors", () => {
+    const e = new Error("my message");
+    expect(getErrorMessage(e)).toEqual(e.message);
+
+    try {
+      throw "coucou";
+    } catch (error) {
+      expect(getErrorMessage(error)).toEqual("coucou");
+    }
   });
 });

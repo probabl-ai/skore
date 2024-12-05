@@ -3,7 +3,7 @@ import { ref, shallowRef, watch } from "vue";
 
 import { type Layout, type Project, type ProjectItem } from "@/models";
 import { deleteView as deleteViewApi, fetchProject, putView } from "@/services/api";
-import { poll } from "@/services/utils";
+import { getErrorMessage, poll } from "@/services/utils";
 
 export interface TreeNode {
   name: string;
@@ -347,18 +347,24 @@ export const useProjectStore = defineStore("project", () => {
           const isBase64 = item.media_type.endsWith(";base64");
           const isImage = item.media_type.startsWith("image/");
           let data = item.value;
-          if (isBase64 && !isImage) {
-            data = atob(item.value);
-          }
-          if (item.media_type.includes("+json")) {
-            data = JSON.parse(data);
+          let mediaType = item.media_type;
+          try {
+            if (isBase64 && !isImage) {
+              data = atob(item.value);
+            }
+            if (typeof data == "string" && item.media_type.includes("json")) {
+              data = JSON.parse(data);
+            }
+          } catch (error) {
+            data = `\`\`\`\n${getErrorMessage(error)}\n\`\`\``;
+            mediaType = "text/markdown";
           }
           const createdAt = new Date(item.created_at);
           const updatedAt = new Date(item.updated_at);
           r.push({
             id: key,
             key,
-            mediaType: item.media_type,
+            mediaType,
             data,
             createdAt,
             updatedAt,

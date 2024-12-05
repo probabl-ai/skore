@@ -115,7 +115,7 @@ onBeforeUnmount(() => {
                 @update-selected="projectStore.setCurrentItemUpdateIndex(key, $event)"
               >
                 <DataFrameWidget
-                  v-if="mediaType.startsWith('application/vnd.dataframe+json')"
+                  v-if="mediaType.startsWith('application/vnd.dataframe')"
                   :columns="data.columns"
                   :data="data.data"
                   :index="data.index"
@@ -127,7 +127,13 @@ onBeforeUnmount(() => {
                   :base64-src="data"
                   :alt="key.toString()"
                 />
-                <MarkdownWidget v-if="mediaType.startsWith('text/markdown')" :source="data" />
+                <MarkdownWidget
+                  v-if="
+                    mediaType.startsWith('text/markdown') ||
+                    mediaType.startsWith('application/json')
+                  "
+                  :source="data"
+                />
                 <VegaWidget
                   v-if="mediaType.startsWith('application/vnd.vega.v5+json')"
                   :spec="data"
