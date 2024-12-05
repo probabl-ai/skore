@@ -614,7 +614,7 @@ const isCached = ref(false);
       </TabsItem>
       <TabsItem :value="15">
         <TabPanel>
-          <TabPanelContent name="hello">hello</TabPanelContent>
+          <TabPanelContent name="hello" icon="icon-gift">hello</TabPanelContent>
           <TabPanelContent name="hallo">hallo</TabPanelContent>
           <TabPanelContent name="halo">halo</TabPanelContent>
           <TabPanelContent name="wesh">wesh</TabPanelContent>

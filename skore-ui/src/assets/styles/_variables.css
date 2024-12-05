@@ -30,6 +30,7 @@
 
   /* strokes */
   --stroke-width-md: 1px;
+  --stroke-width-lg: 2px;
 
   /* animations */
   --animation-duration: 0.3s;
