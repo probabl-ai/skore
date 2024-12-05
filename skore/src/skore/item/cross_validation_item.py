@@ -215,9 +215,10 @@ class CrossValidationItem(Item):
         """
         if reporter.__class__.__name__ != "CrossValidationReporter":
             raise ItemTypeError(
-                "Arguments to CrossValidationItem.factory are not supported."
+                f"Type '{reporter.__class__}' is not supported, "
+                "only 'CrossValidationReporter' is."
             )
-        return CrossValidationItem.factory_raw(
+        return cls.factory_raw(
             cv_results=reporter._cv_results,
             estimator=reporter.estimator,
             X=reporter.X,
