@@ -1,27 +1,47 @@
+import type { ProjectItemDto } from "@/dto";
+import { getErrorMessage } from "@/services/utils";
+
 /**
- * A project item is a single item in the project.
- *
- * It's contributed by a user python side.
+ * A `PresentableItem` is a view model based on a ProjectItemDto.
  */
-export interface ProjectItem {
+export interface PresentableItem {
   name: string;
-  media_type: string;
-  value: any;
-  updated_at: string;
-  created_at: string;
+  mediaType: string;
+  data: any;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 /**
- * A layout is a list of keys that are visible in a view
+ * Deserialize an object received from the backend.
+ * @param dto a backend received dto
+ * @returns a presentable data
  */
-export type Layout = string[];
+export function deserializeProjectItemDto(dto: ProjectItemDto): PresentableItem {
+  const isBase64 = dto.media_type.endsWith(";base64");
+  const isImage = dto.media_type.startsWith("image/");
 
-/**
- * A project is a collection of items and views
- */
-export interface Project {
-  items: { [key: string]: ProjectItem[] };
-  views: { [key: string]: Layout };
+  let data = dto.value;
+  let mediaType = dto.media_type;
+  try {
+    if (isBase64 && !isImage) {
+      data = atob(data);
+    }
+    if (typeof data == "string" && dto.media_type.includes("json")) {
+      data = JSON.parse(data);
+    }
+  } catch (error) {
+    data = `\`\`\`\n${getErrorMessage(error)}\n\`\`\``;
+    mediaType = "text/markdown";
+  }
+
+  const createdAt = new Date(dto.created_at);
+  const updatedAt = new Date(dto.updated_at);
+  return {
+    name: dto.name,
+    mediaType,
+    data,
+    createdAt,
+    updatedAt,
+  };
 }
-
-export type ActivityFeed = ProjectItem[];

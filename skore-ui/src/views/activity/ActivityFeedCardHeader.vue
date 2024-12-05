@@ -1,16 +1,15 @@
 <script setup lang="ts">
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
 import { computed } from "vue";
 
 const props = defineProps<{
   icon: string;
   name: string;
-  datetime: string;
+  datetime: Date;
 }>();
 
-const datetime = computed(() => parseISO(props.datetime));
-const date = computed(() => format(datetime.value, "yyyy/MM/dd"));
-const time = computed(() => format(datetime.value, "HH:mm:ss"));
+const date = computed(() => format(props.datetime, "yyyy/MM/dd"));
+const time = computed(() => format(props.datetime, "HH:mm:ss"));
 </script>
 
 <template>

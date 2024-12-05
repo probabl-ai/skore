@@ -1,22 +1,17 @@
 <script setup lang="ts">
 import Simplebar from "simplebar-vue";
-import { onBeforeUnmount, ref } from "vue";
+import { onBeforeUnmount, shallowRef } from "vue";
 
-import DataFrameWidget from "@/components/DataFrameWidget.vue";
-import HtmlSnippetWidget from "@/components/HtmlSnippetWidget.vue";
-import ImageWidget from "@/components/ImageWidget.vue";
-import MarkdownWidget from "@/components/MarkdownWidget.vue";
-import PlotlyWidget from "@/components/PlotlyWidget.vue";
-import VegaWidget from "@/components/VegaWidget.vue";
-import type { ProjectItem } from "@/models";
+import MediaWidgetSelector from "@/components/MediaWidgetSelector.vue";
+import { deserializeProjectItemDto, type PresentableItem } from "@/models";
 import { fetchActivityFeed } from "@/services/api";
 import { poll } from "@/services/utils";
 import ActivityFeedCardHeader from "@/views/activity/ActivityFeedCardHeader.vue";
 import ActivityFeedCurvedArrow from "@/views/activity/ActivityFeedCurvedArrow.vue";
 
-type PresentableItem = ProjectItem & { icon: string };
+type ActivityPresentableItem = PresentableItem & { icon: string };
 
-const items = ref<PresentableItem[]>([]);
+const items = shallowRef<ActivityPresentableItem[]>([]);
 let lastFetchTime = new Date(1, 1, 1, 0, 0, 0, 0);
 
 async function fetch() {
@@ -25,10 +20,10 @@ async function fetch() {
   lastFetchTime = now;
   if (feed !== null) {
     const newItems = feed.map((i) => ({
-      ...i,
+      ...deserializeProjectItemDto(i),
       icon: i.media_type.startsWith("text") ? "icon-pill" : "icon-playground",
     }));
-    items.value.unshift(...newItems);
+    items.value = [...newItems, ...items.value];
   }
 }
 
@@ -49,38 +44,16 @@ onBeforeUnmount(() => {
           <div class="items" v-if="items.length > 0">
             <div
               class="item"
-              v-for="({ icon, name, updated_at, media_type, value }, i) in items"
-              :key="updated_at"
+              v-for="(item, i) in items"
+              :key="`${item.name}-${item.updatedAt.getTime()}`"
             >
               <ActivityFeedCurvedArrow :has-arrow="i === 0" />
-              <ActivityFeedCardHeader :icon="icon" :datetime="updated_at" :name="name" />
-              <DataFrameWidget
-                v-if="media_type.startsWith('application/vnd.dataframe+json')"
-                :columns="value.columns"
-                :data="value.data"
-                :index="value.index"
-                :index-names="value.indexNames"
+              <ActivityFeedCardHeader
+                :icon="item.icon"
+                :datetime="item.updatedAt"
+                :name="item.name"
               />
-              <ImageWidget
-                v-if="media_type.startsWith('image/')"
-                :mediaType="media_type"
-                :base64-src="value"
-                :alt="name"
-              />
-              <MarkdownWidget v-if="media_type.startsWith('text/markdown')" :source="value" />
-              <VegaWidget
-                v-if="media_type.startsWith('application/vnd.vega.v5+json')"
-                :spec="value"
-              />
-              <PlotlyWidget
-                v-if="media_type.startsWith('application/vnd.plotly.v1+json')"
-                :spec="value"
-              />
-              <HtmlSnippetWidget
-                v-if="media_type.startsWith('application/vnd.sklearn.estimator+html')"
-                :src="value"
-              />
-              <HtmlSnippetWidget v-if="media_type.startsWith('text/html')" :src="value" />
+              <MediaWidgetSelector :item="item" />
             </div>
           </div>
           <div class="placeholder" v-else>

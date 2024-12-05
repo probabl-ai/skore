@@ -1,4 +1,4 @@
-import type { ProjectItem } from "@/models";
+import type { ProjectItemDto } from "@/dto";
 import { fetchProject } from "@/services/api";
 import { useProjectStore } from "@/stores/project";
 import { createTestingPinia } from "@pinia/testing";
@@ -12,7 +12,7 @@ function makeFakeViewItem() {
     value: "",
     updated_at: epoch,
     created_at: epoch,
-  } as ProjectItem;
+  } as ProjectItemDto;
 }
 
 vi.mock("@/services/api", () => {
@@ -91,20 +91,20 @@ describe("Project store", () => {
     expect(d.createdAt.toISOString()).toEqual(h1.created_at);
     expect(d.updatedAt.toISOString()).toEqual(h1.updated_at);
     expect(d.data).toEqual(h1.value);
-    expect(d.key).toEqual("a");
+    expect(d.name).toEqual("a");
 
     projectStore.setCurrentItemUpdateIndex("a", 1);
     d = projectStore.currentViewItems[0];
     expect(d.createdAt.toISOString()).toEqual(h2.created_at);
     expect(d.updatedAt.toISOString()).toEqual(h2.updated_at);
     expect(d.data).toEqual(h2.value);
-    expect(d.key).toEqual("a");
+    expect(d.name).toEqual("a");
 
     projectStore.setCurrentItemUpdateIndex("a", 2);
     d = projectStore.currentViewItems[0];
     expect(d.createdAt.toISOString()).toEqual(h3.created_at);
     expect(d.updatedAt.toISOString()).toEqual(h3.updated_at);
     expect(d.data).toEqual(h3.value);
-    expect(d.key).toEqual("a");
+    expect(d.name).toEqual("a");
   });
 });

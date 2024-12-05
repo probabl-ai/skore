@@ -3,19 +3,15 @@ import { formatDistance } from "date-fns";
 import Simplebar from "simplebar-vue";
 import { onBeforeUnmount, onMounted, ref } from "vue";
 
-import DataFrameWidget from "@/components/DataFrameWidget.vue";
 import DraggableList from "@/components/DraggableList.vue";
-import HtmlSnippetWidget from "@/components/HtmlSnippetWidget.vue";
-import ImageWidget from "@/components/ImageWidget.vue";
-import MarkdownWidget from "@/components/MarkdownWidget.vue";
-import PlotlyWidget from "@/components/PlotlyWidget.vue";
+import MediaWidgetSelector from "@/components/MediaWidgetSelector.vue";
 import ProjectViewCard from "@/components/ProjectViewCard.vue";
 import SimpleButton from "@/components/SimpleButton.vue";
-import VegaWidget from "@/components/VegaWidget.vue";
 import { useProjectStore } from "@/stores/project";
 import { useToastsStore } from "@/stores/toasts";
 import ProjectItemList from "@/views/project/ProjectItemList.vue";
 import ProjectViewNavigator from "@/views/project/ProjectViewNavigator.vue";
+
 const props = defineProps({
   showCardActions: {
     type: Boolean,
@@ -102,51 +98,19 @@ onBeforeUnmount(() => {
             @drop="onItemDrop($event)"
             @dragover.prevent
           >
-            <template #item="{ key, mediaType, data, createdAt, updates }">
+            <template #item="{ name, mediaType, data, createdAt, updatedAt, updates }">
               <ProjectViewCard
-                :key="key"
-                :title="key.toString()"
+                :key="name"
+                :title="name"
                 :subtitle="getItemSubtitle(createdAt)"
                 :showActions="props.showCardActions"
                 :updates="updates"
-                :current-update-index="projectStore.getCurrentItemUpdateIndex(key)"
-                :data-name="key"
-                @card-removed="onCardRemoved(key)"
-                @update-selected="projectStore.setCurrentItemUpdateIndex(key, $event)"
+                :current-update-index="projectStore.getCurrentItemUpdateIndex(name)"
+                :data-name="name"
+                @card-removed="onCardRemoved(name)"
+                @update-selected="projectStore.setCurrentItemUpdateIndex(name, $event)"
               >
-                <DataFrameWidget
-                  v-if="mediaType.startsWith('application/vnd.dataframe')"
-                  :columns="data.columns"
-                  :data="data.data"
-                  :index="data.index"
-                  :index-names="data.index_names"
-                />
-                <ImageWidget
-                  v-if="mediaType.startsWith('image/')"
-                  :mediaType="mediaType"
-                  :base64-src="data"
-                  :alt="key.toString()"
-                />
-                <MarkdownWidget
-                  v-if="
-                    mediaType.startsWith('text/markdown') ||
-                    mediaType.startsWith('application/json')
-                  "
-                  :source="data"
-                />
-                <VegaWidget
-                  v-if="mediaType.startsWith('application/vnd.vega.v5+json')"
-                  :spec="data"
-                />
-                <PlotlyWidget
-                  v-if="mediaType.startsWith('application/vnd.plotly.v1+json')"
-                  :spec="data"
-                />
-                <HtmlSnippetWidget
-                  v-if="mediaType.startsWith('application/vnd.sklearn.estimator+html')"
-                  :src="data"
-                />
-                <HtmlSnippetWidget v-if="mediaType.startsWith('text/html')" :src="data" />
+                <MediaWidgetSelector :item="{ name, mediaType, data, createdAt, updatedAt }" />
               </ProjectViewCard>
             </template>
           </DraggableList>

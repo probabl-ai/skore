@@ -1,4 +1,4 @@
-import type { ActivityFeed, Layout, Project } from "@/models";
+import type { ActivityFeedDto, LayoutDto, ProjectDto } from "@/dto";
 import { getErrorMessage } from "@/services/utils";
 import { useToastsStore } from "@/stores/toasts";
 
@@ -19,7 +19,7 @@ function checkResponseStatus(r: Response, attendedStatusCode: number) {
   }
 }
 
-export async function fetchProject(): Promise<Project | null> {
+export async function fetchProject(): Promise<ProjectDto | null> {
   try {
     const r = await fetch(`${BASE_URL}/project/items`);
     checkResponseStatus(r, 200);
@@ -30,7 +30,7 @@ export async function fetchProject(): Promise<Project | null> {
   return null;
 }
 
-export async function putView(view: string, layout: Layout): Promise<Project | null> {
+export async function putView(view: string, layout: LayoutDto): Promise<ProjectDto | null> {
   try {
     const r = await fetch(`${BASE_URL}/project/views?key=${view}`, {
       method: "PUT",
@@ -58,7 +58,7 @@ export async function deleteView(view: string) {
   }
 }
 
-export async function fetchActivityFeed(after?: string): Promise<ActivityFeed | null> {
+export async function fetchActivityFeed(after?: string): Promise<ActivityFeedDto | null> {
   try {
     let url = `${BASE_URL}/project/activity`;
     if (after) {
