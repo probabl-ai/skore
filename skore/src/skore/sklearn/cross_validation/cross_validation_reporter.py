@@ -98,6 +98,9 @@ class CrossValidationReporter:
     y : array-like or None
         The target variable, or None if not provided.
 
+    plot : plotly.graph_objects.Figure
+        A plot of the cross-validation results.
+
     Examples
     --------
     >>> def prepare_cv():
