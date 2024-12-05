@@ -22,6 +22,8 @@ import ImageWidget from "@/components/ImageWidget.vue";
 import MarkdownWidget from "@/components/MarkdownWidget.vue";
 import SectionHeader from "@/components/SectionHeader.vue";
 import SimpleButton from "@/components/SimpleButton.vue";
+import TabPanel from "@/components/TabPanel.vue";
+import TabPanelContent from "@/components/TabPanelContent.vue";
 import Tabs from "@/components/TabsWidget.vue";
 import TabsItem from "@/components/TabsWidgetItem.vue";
 import TextInput from "@/components/TextInput.vue";
@@ -257,6 +259,7 @@ const isCached = ref(false);
         'draggable list',
         'cacheable component',
         'tooltip',
+        'tabs',
       ]"
     >
       <TabsItem :value="0">
@@ -608,6 +611,14 @@ const isCached = ref(false);
             bottom end
           </FloatingTooltip>
         </div>
+      </TabsItem>
+      <TabsItem :value="15">
+        <TabPanel>
+          <TabPanelContent name="hello">hello</TabPanelContent>
+          <TabPanelContent name="hallo">hallo</TabPanelContent>
+          <TabPanelContent name="halo">halo</TabPanelContent>
+          <TabPanelContent name="wesh">wesh</TabPanelContent>
+        </TabPanel>
       </TabsItem>
     </Tabs>
   </main>
