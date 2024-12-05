@@ -6,8 +6,9 @@ import { setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const epoch = new Date("1970-01-01T00:00:00Z").toISOString();
-function makeFakeViewItem() {
+function makeFakeViewItem(name: string) {
   return {
+    name,
     media_type: "text/markdown",
     value: "",
     updated_at: epoch,
@@ -42,11 +43,11 @@ describe("Project store", () => {
 
     const project = {
       items: {
-        a: [makeFakeViewItem()],
-        "a/b": [makeFakeViewItem()],
-        "a/b/d": [makeFakeViewItem()],
-        "a/b/e": [makeFakeViewItem()],
-        "a/b/f/g": [makeFakeViewItem()],
+        a: [makeFakeViewItem("a")],
+        "a/b": [makeFakeViewItem("a/b")],
+        "a/b/d": [makeFakeViewItem("a/b/d")],
+        "a/b/e": [makeFakeViewItem("a/b/e")],
+        "a/b/f/g": [makeFakeViewItem("a/b/f/g")],
       },
       views: {},
     };
@@ -76,9 +77,9 @@ describe("Project store", () => {
   it("Can get the history of an item", async () => {
     const projectStore = useProjectStore();
 
-    const h1 = makeFakeViewItem();
-    const h2 = makeFakeViewItem();
-    const h3 = makeFakeViewItem();
+    const h1 = makeFakeViewItem("a");
+    const h2 = makeFakeViewItem("a");
+    const h3 = makeFakeViewItem("a");
     const project = {
       items: {
         a: [h1, h2, h3],
