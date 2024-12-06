@@ -8,10 +8,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.multiclass import OneVsOneClassifier
 from sklearn.svm import SVC
 from skore import CrossValidationReporter
-from skore.item.cross_validation_item import (
-    CrossValidationAggregationItem,
-    CrossValidationItem,
-)
+from skore.item.cross_validation_aggregation_item import CrossValidationAggregationItem
+from skore.item.cross_validation_item import CrossValidationItem
 
 
 @pytest.fixture

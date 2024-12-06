@@ -188,7 +188,7 @@ my_project.put("cross_validation", reporter)
 # cross-validation run (on all splits):
 
 # %%
-from skore.item.cross_validation_item import CrossValidationAggregationItem
+from skore.item.cross_validation_aggregation_item import CrossValidationAggregationItem
 
 aggregated_cv_results = CrossValidationAggregationItem.factory(my_project.get_item_versions("cross_validation"))
 
