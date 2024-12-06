@@ -1,4 +1,4 @@
-import type { ProjectItem } from "@/models";
+import type { ProjectItemDto } from "@/dto";
 import { fetchProject } from "@/services/api";
 import { useProjectStore } from "@/stores/project";
 import { createTestingPinia } from "@pinia/testing";
@@ -6,13 +6,14 @@ import { setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const epoch = new Date("1970-01-01T00:00:00Z").toISOString();
-function makeFakeViewItem() {
+function makeFakeViewItem(name: string) {
   return {
+    name,
     media_type: "text/markdown",
     value: "",
     updated_at: epoch,
     created_at: epoch,
-  } as ProjectItem;
+  } as ProjectItemDto;
 }
 
 vi.mock("@/services/api", () => {
@@ -42,11 +43,11 @@ describe("Project store", () => {
 
     const project = {
       items: {
-        a: [makeFakeViewItem()],
-        "a/b": [makeFakeViewItem()],
-        "a/b/d": [makeFakeViewItem()],
-        "a/b/e": [makeFakeViewItem()],
-        "a/b/f/g": [makeFakeViewItem()],
+        a: [makeFakeViewItem("a")],
+        "a/b": [makeFakeViewItem("a/b")],
+        "a/b/d": [makeFakeViewItem("a/b/d")],
+        "a/b/e": [makeFakeViewItem("a/b/e")],
+        "a/b/f/g": [makeFakeViewItem("a/b/f/g")],
       },
       views: {},
     };
@@ -76,9 +77,9 @@ describe("Project store", () => {
   it("Can get the history of an item", async () => {
     const projectStore = useProjectStore();
 
-    const h1 = makeFakeViewItem();
-    const h2 = makeFakeViewItem();
-    const h3 = makeFakeViewItem();
+    const h1 = makeFakeViewItem("a");
+    const h2 = makeFakeViewItem("a");
+    const h3 = makeFakeViewItem("a");
     const project = {
       items: {
         a: [h1, h2, h3],
@@ -91,20 +92,20 @@ describe("Project store", () => {
     expect(d.createdAt.toISOString()).toEqual(h1.created_at);
     expect(d.updatedAt.toISOString()).toEqual(h1.updated_at);
     expect(d.data).toEqual(h1.value);
-    expect(d.key).toEqual("a");
+    expect(d.name).toEqual("a");
 
     projectStore.setCurrentItemUpdateIndex("a", 1);
     d = projectStore.currentViewItems[0];
     expect(d.createdAt.toISOString()).toEqual(h2.created_at);
     expect(d.updatedAt.toISOString()).toEqual(h2.updated_at);
     expect(d.data).toEqual(h2.value);
-    expect(d.key).toEqual("a");
+    expect(d.name).toEqual("a");
 
     projectStore.setCurrentItemUpdateIndex("a", 2);
     d = projectStore.currentViewItems[0];
     expect(d.createdAt.toISOString()).toEqual(h3.created_at);
     expect(d.updatedAt.toISOString()).toEqual(h3.updated_at);
     expect(d.data).toEqual(h3.value);
-    expect(d.key).toEqual("a");
+    expect(d.name).toEqual("a");
   });
 });

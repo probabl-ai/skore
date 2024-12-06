@@ -17,6 +17,6 @@ body {
   }
 
   &::before {
-    background-color: var(--color-text-tertiary);
+    background-color: var(--color-background-branding);
   }
 }
