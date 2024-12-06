@@ -17,24 +17,32 @@ export interface PrimaryResults {
   scalarResults: ScalarResult[];
   tabularResults: TabularResult[];
 }
+
+export interface Plot {
+  name: string;
+}
 </script>
 
 <script setup lang="ts">
+import CrossValidationReportPlots from "@/components/CrossValidationReportPlots.vue";
 import CrossValidationReportResults from "@/components/CrossValidationReportResults.vue";
 import TabPanel from "@/components/TabPanel.vue";
 import TabPanelContent from "@/components/TabPanelContent.vue";
 
-const fake: PrimaryResults = {
+const results: PrimaryResults = {
   scalarResults: [
     { name: "toto", value: 4.32 },
     { name: "tata", value: 4.32 },
     { name: "titi", value: 4.32, fold: 1 },
     { name: "tutu", value: 4.32 },
     { name: "stab", value: 0.002, label: "Good" },
+    { name: "titi", value: 4.32, fold: 1 },
+    { name: "tutu", value: 4.32 },
+    { name: "stab", value: 0.002, label: "Good" },
   ],
   tabularResults: [
     {
-      name: "a",
+      name: "abracadara",
       columns: ["Accuracy", "Precision", "Recall", "F1 Score"],
       data: [
         [0.8, 0.4, 0.5, 0.6],
@@ -57,6 +65,8 @@ const fake: PrimaryResults = {
     },
   ],
 };
+
+const plots: Plot[] = [{ name: "plot 1" }, { name: "plot 2" }];
 </script>
 
 <template>
@@ -64,11 +74,13 @@ const fake: PrimaryResults = {
     <TabPanel>
       <TabPanelContent name="Primary Results" icon="icon-bar-chart">
         <CrossValidationReportResults
-          :scalar-results="fake.scalarResults"
-          :tabular-results="fake.tabularResults"
+          :scalar-results="results.scalarResults"
+          :tabular-results="results.tabularResults"
         />
       </TabPanelContent>
-      <TabPanelContent name="Additional plots" icon="icon-large-bar-chart"></TabPanelContent>
+      <TabPanelContent name="Plots" icon="icon-large-bar-chart">
+        <CrossValidationReportPlots :plots="plots" />
+      </TabPanelContent>
       <TabPanelContent name="Storage/Details" icon="icon-hard-drive"></TabPanelContent>
     </TabPanel>
   </div>

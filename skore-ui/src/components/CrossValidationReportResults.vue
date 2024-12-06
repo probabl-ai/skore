@@ -115,6 +115,12 @@ const currentTabularResult = computed<TabularResult>(() => {
           vertical-align: middle;
         }
       }
+
+      & .dropdown {
+        & button {
+          padding: var(--spacing-6) var(--spacing-10);
+        }
+      }
     }
 
     & table {
