@@ -47,6 +47,8 @@ def plot_cross_validation(cv_results: dict) -> plotly.graph_objects.Figure:
     dict_labels = {
         "fit_time": "fit_time (seconds)",
         "score_time": "score_time (seconds)",
+        "fit_time_per_data_point": "fit_time_per_data_point (seconds)",
+        "score_time_per_data_point": "score_time_per_data_point (seconds)",
     }
 
     fig = go.Figure()
@@ -65,12 +67,12 @@ def plot_cross_validation(cv_results: dict) -> plotly.graph_objects.Figure:
             # we show a different hover text
             hovertemplate=(
                 "%{customdata}" f"<extra>{col_name} (timedelta)</extra>"
-                if col_name.endswith("_time")
+                if ("fit_time" in col_name or "score_time" in col_name)
                 else "%{y}"
             ),
             customdata=(
                 [str(timedelta(seconds=x)) for x in df[col_name].values]
-                if col_name.endswith("_time")
+                if ("fit_time" in col_name or "score_time" in col_name)
                 else None
             ),
         )
