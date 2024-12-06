@@ -8,7 +8,7 @@ import { onBeforeUnmount, onMounted, ref, useTemplateRef } from "vue";
 import DynamicContentRasterizer from "@/components/DynamicContentRasterizer.vue";
 
 interface Item {
-  id: string;
+  name: string;
   [key: string]: any;
 }
 
@@ -195,14 +195,18 @@ onMounted(() => {
     },
   });
 
-  container.value!.addEventListener("dragover", onDragOver);
-  container.value!.addEventListener("dragleave", onDragLeave);
+  if (container.value) {
+    container.value.addEventListener("dragover", onDragOver);
+    container.value.addEventListener("dragleave", onDragLeave);
+  }
   window.addEventListener("dragend", onDragLeave);
 });
 
 onBeforeUnmount(() => {
-  container.value!.removeEventListener("dragover", onDragOver);
-  container.value!.removeEventListener("dragleave", onDragLeave);
+  if (container.value) {
+    container.value.removeEventListener("dragover", onDragOver);
+    container.value.removeEventListener("dragleave", onDragLeave);
+  }
   window.removeEventListener("dragend", onDragLeave);
   draggable.unset();
 });
@@ -210,7 +214,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="draggable" :class="{ dragging: movingItemIndex !== -1 }" ref="container">
-    <div v-for="(item, index) in items" class="item" :key="item.id">
+    <div v-for="(item, index) in items" class="item" :key="item.name">
       <div class="handle" :data-index="index"><span class="icon-handle" /></div>
       <div class="content-wrapper">
         <div

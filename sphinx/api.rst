@@ -40,7 +40,6 @@ These functions and classes enhance scikit-learn's ones.
     :template: function.rst
     :nosignatures:
 
-    cross_validate
     train_test_split
 
 .. autosummary::
@@ -48,4 +47,5 @@ These functions and classes enhance scikit-learn's ones.
     :template: class.rst
     :nosignatures:
 
+    CrossValidationReporter
     item.cross_validation_item.CrossValidationItem

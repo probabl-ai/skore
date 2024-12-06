@@ -13,7 +13,7 @@ Getting started with skore
 #
 # #. Machine learning diagnostics: get assistance when developing your ML/DS projects.
 #
-#    * Scikit-learn compatible :func:`skore.cross_validate` and
+#    * Scikit-learn compatible :class:`skore.CrossValidationReporter` and
 #      :func:`skore.train_test_split` provide insights and checks on cross-validation
 #      and train-test-split.
 
@@ -166,7 +166,7 @@ my_project.put("my_fig", fig)
 # #.  In the skore UI on the right, you can drag-and-drop items to re-order them,
 #     remove items, etc.
 #
-# .. image:: https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_10_31_skore_demo_compressed.gif
+# .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_10_31_skore_demo_compressed.gif
 #   :alt: Getting started with ``skore`` demo
 
 # %%
@@ -176,7 +176,7 @@ my_project.put("my_fig", fig)
 # Skore does not overwrite items with the same name, instead it stores their history so
 # that, from the skore UI, we could visualize their different histories:
 #
-# .. image:: https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_11_21_tracking_comp.gif
+# .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_11_21_tracking_comp.gif
 #   :alt: Tracking the history of an item from the skore UI
 #
 # This functionality is very useful to never lose some key machine learning metrics,
@@ -199,21 +199,17 @@ my_project.put("my_fig", fig)
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # In order to assist its users when programming, skore has implemented a
-# :func:`skore.cross_validate` function that wraps scikit-learn's
+# :class:`skore.CrossValidationReporter` function that wraps scikit-learn's
 # :func:`sklearn.model_selection.cross_validate`.
 #
 # On the same previous data and a Ridge regressor (with default ``alpha`` value),
-# let us launch skore's cross-validation, which will automatically add
-# (:func:`~skore.Project.put`)
-# a ``cross_validation`` item with a plotly chart in our project.
+# let us create a CrossValidationReporter.
 
 # %%
-from skore import cross_validate
+from skore import CrossValidationReporter
 
-cv_results = cross_validate(Ridge(), X, y, cv=5, project=my_project)
-
-fig_plotly = my_project.get_item("cross_validation").plot
-fig_plotly
+reporter = CrossValidationReporter(Ridge(), X, y, cv=5)
+reporter.plot
 
 # %%
 # Hence, we can observe some key metrics and get insights on our cross-validation.
@@ -221,7 +217,7 @@ fig_plotly
 # %%
 # .. seealso::
 #
-#   For more information about the motivation and usage of :func:`skore.cross_validate`,
+#   For more information about the motivation and usage of :class:`skore.CrossValidationReporter`,
 #   see :ref:`example_cross_validate`.
 
 # %%

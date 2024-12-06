@@ -201,7 +201,7 @@ const lastSelectedItem = ref<string | null>(null);
 
 function addItemToDraggableList(i: number) {
   draggableListData.value.splice(i, 0, {
-    id: `${i}`,
+    name: `${i}`,
     color: `hsl(${(360 / 25) * i}deg, 90%, 50%)`,
     content: Array.from(
       { length: Math.floor(Math.random() * 10) + 1 }, // Random number of items between 1 and 10
@@ -212,7 +212,7 @@ function addItemToDraggableList(i: number) {
 
 const draggableListData = ref(
   Array.from({ length: 25 }, (v, i) => ({
-    id: `${i}`,
+    name: `${i}`,
     color: `hsl(${(360 / 25) * i}deg, 90%, 50%)`,
     content: Array.from(
       { length: Math.floor(Math.random() * 10) + 1 }, // Random number of items between 1 and 10
@@ -501,7 +501,7 @@ const isCached = ref(false);
         </div>
       </TabPanelContent>
       <TabPanelContent name="draggable">
-        <div>Item order: {{ draggableListData.map((item) => item.id).join(", ") }}</div>
+        <div>Item order: {{ draggableListData.map((item) => item.name).join(", ") }}</div>
         <div>Drop position: {{ currentDropPosition }}</div>
         <div>
           <SimpleButton
@@ -521,7 +521,7 @@ const isCached = ref(false);
             @drop="onItemDrop($event)"
             @dragover.prevent
           >
-            <template #item="{ id, color, content }">
+            <template #item="{ name: id, color, content }">
               <div :style="{ backgroundColor: color, color: 'white' }">
                 <span>ID: {{ id }}</span>
                 <ul>

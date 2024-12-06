@@ -1,30 +1,25 @@
 import { defineStore } from "pinia";
 import { ref, shallowRef, watch } from "vue";
 
-import { type Layout, type Project, type ProjectItem } from "@/models";
+import { type LayoutDto, type ProjectDto, type ProjectItemDto } from "@/dto";
+import { deserializeProjectItemDto, type PresentableItem } from "@/models";
 import { deleteView as deleteViewApi, fetchProject, putView } from "@/services/api";
-import { getErrorMessage, poll } from "@/services/utils";
+import { poll } from "@/services/utils";
 
 export interface TreeNode {
   name: string;
   children: TreeNode[];
 }
 
-export interface PresentableItem {
-  id: string;
-  key: string;
-  mediaType: string;
-  data: any;
-  createdAt: Date;
-  updatedAt: Date;
+type ProjectPresentableItem = PresentableItem & {
   updates: string[];
-}
+};
 
 export const useProjectStore = defineStore("project", () => {
   // this objects are not deeply reactive as they may be very large
-  const items = shallowRef<{ [key: string]: ProjectItem } | null>(null);
-  const currentViewItems = shallowRef<PresentableItem[]>([]);
-  const views = ref<{ [key: string]: Layout }>({});
+  const items = shallowRef<{ [key: string]: ProjectItemDto } | null>(null);
+  const currentViewItems = shallowRef<ProjectPresentableItem[]>([]);
+  const views = ref<{ [key: string]: LayoutDto }>({});
   const currentView = ref<string | null>(null);
   const itemsUpdates = ref<{ [key: string]: string[] }>({});
   let currentItemUpdateIndex: { [key: string]: number } = {};
@@ -121,9 +116,9 @@ export const useProjectStore = defineStore("project", () => {
    *
    * @param p data received from the backend
    */
-  async function setProject(p: Project) {
+  async function setProject(p: ProjectDto) {
     const historyByKey: { [key: string]: string[] } = {};
-    const latestItemByKey: { [key: string]: ProjectItem } = {};
+    const latestItemByKey: { [key: string]: ProjectItemDto } = {};
     for (const [key, value] of Object.entries(p.items)) {
       latestItemByKey[key] = value[value.length - 1];
       historyByKey[key] = value.map((item) => item.updated_at);
@@ -298,7 +293,7 @@ export const useProjectStore = defineStore("project", () => {
   function getItemUpdate(key: string, index: number) {
     const r = sessionStorage.getItem(`items/${key}`);
     if (r) {
-      return JSON.parse(r)[index] as ProjectItem;
+      return JSON.parse(r)[index] as ProjectItemDto;
     }
     return null;
   }
@@ -320,7 +315,7 @@ export const useProjectStore = defineStore("project", () => {
    */
   function getCurrentItemUpdateIndex(key: string) {
     if (currentItemUpdateIndex[key] === undefined) {
-      const updates = currentViewItems.value.find((item) => item.key === key)?.updates;
+      const updates = currentViewItems.value.find((item) => item.name === key)?.updates;
       if (updates) {
         return updates.length - 1;
       } else {
@@ -335,7 +330,7 @@ export const useProjectStore = defineStore("project", () => {
    * @returns a list of items with their metadata
    */
   function _updatePresentableItemsInView() {
-    const r: PresentableItem[] = [];
+    const r: ProjectPresentableItem[] = [];
     if (items.value !== null && currentView.value !== null) {
       const v = views.value[currentView.value];
       for (const key of v) {
@@ -344,30 +339,8 @@ export const useProjectStore = defineStore("project", () => {
             ? getItemUpdate(key, currentItemUpdateIndex[key])
             : items.value[key];
         if (item) {
-          const isBase64 = item.media_type.endsWith(";base64");
-          const isImage = item.media_type.startsWith("image/");
-          let data = item.value;
-          let mediaType = item.media_type;
-          try {
-            if (isBase64 && !isImage) {
-              data = atob(item.value);
-            }
-            if (typeof data == "string" && item.media_type.includes("json")) {
-              data = JSON.parse(data);
-            }
-          } catch (error) {
-            data = `\`\`\`\n${getErrorMessage(error)}\n\`\`\``;
-            mediaType = "text/markdown";
-          }
-          const createdAt = new Date(item.created_at);
-          const updatedAt = new Date(item.updated_at);
           r.push({
-            id: key,
-            key,
-            mediaType,
-            data,
-            createdAt,
-            updatedAt,
+            ...deserializeProjectItemDto(item),
             updates: itemsUpdates.value[key],
           });
         }
@@ -381,7 +354,7 @@ export const useProjectStore = defineStore("project", () => {
    * @param view the view to persist
    * @param layout the layout to persist
    */
-  async function _persistView(view: string, layout: Layout) {
+  async function _persistView(view: string, layout: LayoutDto) {
     if (items.value && views.value) {
       const r = await putView(view, layout);
       if (r) {
@@ -393,7 +366,7 @@ export const useProjectStore = defineStore("project", () => {
   /**
    * Save the items to the session storage.
    */
-  function _saveItemsToSessionStorage(items: { [key: string]: ProjectItem[] }) {
+  function _saveItemsToSessionStorage(items: { [key: string]: ProjectItemDto[] }) {
     for (const [key, value] of Object.entries(items)) {
       sessionStorage.setItem(`items/${key}`, JSON.stringify(value));
     }
@@ -407,15 +380,15 @@ export const useProjectStore = defineStore("project", () => {
     () => currentViewItems.value,
     async (value, oldValue) => {
       // Compare arrays by mapping to keys and checking if they're in the same order
-      const newKeys = value.map((item) => item.key);
-      const oldKeys = oldValue.map((item) => item.key);
+      const newKeys = value.map((item) => item.name);
+      const oldKeys = oldValue.map((item) => item.name);
 
       const arraysMatch =
         newKeys.length === oldKeys.length && newKeys.every((key, index) => key === oldKeys[index]);
 
       if (!arraysMatch && currentView.value !== null) {
         const name = currentView.value;
-        views.value[name] = [...currentViewItems.value.map((item) => item.key)];
+        views.value[name] = [...currentViewItems.value.map((item) => item.name)];
         await _persistView(name, views.value[name]);
       }
     }

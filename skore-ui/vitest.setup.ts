@@ -1,12 +1,14 @@
-import { afterAll, beforeAll } from "vitest";
+import { vi } from "vitest";
 import "vitest-canvas-mock";
 
-beforeAll(() => {
+vi.hoisted(() => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   (global.window as any).getComputedStyle = (e) => {
     return {};
   };
-});
-afterAll(() => {
-  delete (global.window as any).getComputedStyle;
+
+  // required because plotly depends on URL.createObjectURL
+  const mockObjectURL = vi.fn();
+  window.URL.createObjectURL = mockObjectURL;
+  window.URL.revokeObjectURL = mockObjectURL;
 });
