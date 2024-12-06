@@ -11,7 +11,10 @@ const props = withDefaults(defineProps<ImageWidgetProps>(), {
   alt: "",
 });
 const src = computed(() => {
-  return `data:${props.mediaType},${props.base64Src}`;
+  const mediaType = props.mediaType.includes(";base64")
+    ? props.mediaType
+    : `${props.mediaType};base64`;
+  return `data:${mediaType},${props.base64Src}`;
 });
 </script>
 

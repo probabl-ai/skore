@@ -90,6 +90,7 @@ onBeforeUnmount(() => {
       :label="props.label"
       :icon="props.icon"
       :is-inline="props.isInline"
+      :icon-position="props.iconPosition"
       @click="isOpen = !isOpen"
       ref="reference"
     />
