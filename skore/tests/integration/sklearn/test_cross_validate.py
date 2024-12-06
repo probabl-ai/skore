@@ -24,11 +24,11 @@ def rf():
 @pytest.fixture
 def fake_cross_validate(monkeypatch):
     def _fake_cross_validate(*args, **kwargs):
-        result = {"test_score": [1] * 5, "test_time": [1] * 5, "fit_time": [1] * 5}
+        result = {"test_score": [1] * 5, "score_time": [1] * 5, "fit_time": [1] * 5}
         if kwargs.get("return_estimator"):
             result["estimator"] = []
         if kwargs.get("return_indices"):
-            result["indices"] = []
+            result["indices"] = {"train": [[1] * 5] * 5, "test": [[1] * 5] * 5}
         if kwargs.get("return_train_score"):
             result["train_score"] = [1] * 5
         return result
