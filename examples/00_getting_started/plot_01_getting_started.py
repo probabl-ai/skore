@@ -166,7 +166,7 @@ my_project.put("my_fig", fig)
 # #.  In the skore UI on the right, you can drag-and-drop items to re-order them,
 #     remove items, etc.
 #
-# .. image:: https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_10_31_skore_demo_compressed.gif
+# .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_10_31_skore_demo_compressed.gif
 #   :alt: Getting started with ``skore`` demo
 
 # %%
@@ -176,7 +176,7 @@ my_project.put("my_fig", fig)
 # Skore does not overwrite items with the same name, instead it stores their history so
 # that, from the skore UI, we could visualize their different histories:
 #
-# .. image:: https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_11_21_tracking_comp.gif
+# .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_11_21_tracking_comp.gif
 #   :alt: Tracking the history of an item from the skore UI
 #
 # This functionality is very useful to never lose some key machine learning metrics,

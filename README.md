@@ -15,7 +15,7 @@ With skore, data scientists can:
 These are only the first features: skore is a work in progress and aims to be an end-to-end library for data scientists.
 Stay tuned! Feedbacks are welcome: please feel free to join [our Discord](https://discord.probabl.ai).
 
-![GIF: short demo of skore](https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_10_31_skore_demo_compressed.gif)
+![GIF: short demo of skore](https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_10_31_skore_demo_compressed.gif)
 
 ## ⚙️ Installation
 
@@ -91,7 +91,7 @@ clf = SVC(kernel="linear", C=1, random_state=0)
 cv_results = skore.cross_validate(clf, X, y, cv=5, project=my_project)
 ```
 You will automatically be able to visualize some key metrics (although you might have forgotten to specify all of them):
-![GIF: short demo of skore](https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_11_21_cross_val_comp.gif)
+![GIF: short demo of skore](https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_11_21_cross_val_comp.gif)
 
 There is also a train-test split function that enhances scikit-learn. See more in our [documentation](https://skore.probabl.ai).
 
