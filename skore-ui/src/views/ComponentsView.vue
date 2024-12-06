@@ -12,6 +12,7 @@ import spec from "@/assets/fixtures/vega.json";
 import base64Png from "@/assets/images/button-background.png?base64";
 import base64Svg from "@/assets/images/editor-placeholder-dark.svg?base64";
 
+import CrossValidationReport from "@/components/CrossValidationReport.vue";
 import DataFrameWidget from "@/components/DataFrameWidget.vue";
 import DraggableList from "@/components/DraggableList.vue";
 import DropdownButton from "@/components/DropdownButton.vue";
@@ -459,35 +460,44 @@ const isCached = ref(false);
       </TabPanelContent>
       <TabPanelContent name="icons">
         <div class="icons">
-          <div>icon-trash <span class="icon-trash"></span></div>
-          <div>icon-more <span class="icon-more"></span></div>
-          <div>icon-branch <span class="icon-branch"></span></div>
-          <div>icon-edit <span class="icon-edit"></span></div>
-          <div>icon-copy <span class="icon-copy"></span></div>
-          <div>icon-pill <span class="icon-pill"></span></div>
-          <div>icon-new-document <span class="icon-new-document"></span></div>
-          <div>icon-recent-document <span class="icon-recent-document"></span></div>
-          <div>icon-plus-circle <span class="icon-plus-circle"></span></div>
-          <div>icon-warning-circle <span class="icon-warning-circle"></span></div>
-          <div>icon-info-circle <span class="icon-info-circle"></span></div>
-          <div>icon-error-circle <span class="icon-error-circle"></span></div>
-          <div>icon-success-circle <span class="icon-success-circle"></span></div>
-          <div>icon-warning <span class="icon-warning"></span></div>
-          <div>icon-search <span class="icon-search"></span></div>
-          <div>icon-maximize <span class="icon-maximize"></span></div>
-          <div>icon-folder <span class="icon-folder"></span></div>
-          <div>icon-plot <span class="icon-plot"></span></div>
-          <div>icon-text <span class="icon-text"></span></div>
-          <div>icon-gift <span class="icon-gift"></span></div>
-          <div>icon-pie-chart <span class="icon-pie-chart"></span></div>
-          <div>icon-chevron-left <span class="icon-chevron-left"></span></div>
-          <div>icon-chevron-down <span class="icon-chevron-down"></span></div>
-          <div>icon-chevron-right <span class="icon-chevron-right"></span></div>
-          <div>icon-chevron-up <span class="icon-chevron-up"></span></div>
-          <div>icon-handle <span class="icon-handle"></span></div>
-          <div>icon-left-double-chevron <span class="icon-left-double-chevron"></span></div>
-          <div>icon-plus <span class="icon-plus"></span></div>
-          <div>icon-history <span class="icon-history"></span></div>
+          <div>icon-bar-chart <i class="icon icon-bar-chart"></i></div>
+          <div>icon-branch <i class="icon icon-branch"></i></div>
+          <div>icon-calendar <i class="icon icon-calendar"></i></div>
+          <div>icon-check <i class="icon icon-check"></i></div>
+          <div>icon-chevron-down <i class="icon icon-chevron-down"></i></div>
+          <div>icon-chevron-left <i class="icon icon-chevron-left"></i></div>
+          <div>icon-chevron-right <i class="icon icon-chevron-right"></i></div>
+          <div>icon-chevron-up <i class="icon icon-chevron-up"></i></div>
+          <div>icon-copy <i class="icon icon-copy"></i></div>
+          <div>icon-dashboard <i class="icon icon-dashboard"></i></div>
+          <div>icon-edit <i class="icon icon-edit"></i></div>
+          <div>icon-error-circle <i class="icon icon-error-circle"></i></div>
+          <div>icon-folder <i class="icon icon-folder"></i></div>
+          <div>icon-gift <i class="icon icon-gift"></i></div>
+          <div>icon-handle <i class="icon icon-handle"></i></div>
+          <div>icon-hard-drive <i class="icon icon-hard-drive"></i></div>
+          <div>icon-history <i class="icon icon-history"></i></div>
+          <div>icon-info-circle <i class="icon icon-info-circle"></i></div>
+          <div>icon-large-bar-chart <i class="icon icon-large-bar-chart"></i></div>
+          <div>icon-left-double-chevron <i class="icon icon-left-double-chevron"></i></div>
+          <div>icon-list-sparkle <i class="icon icon-list-sparkle"></i></div>
+          <div>icon-maximize <i class="icon icon-maximize"></i></div>
+          <div>icon-more <i class="icon icon-more"></i></div>
+          <div>icon-new-document <i class="icon icon-new-document"></i></div>
+          <div>icon-pie-chart <i class="icon icon-pie-chart"></i></div>
+          <div>icon-pill <i class="icon icon-pill"></i></div>
+          <div>icon-playground <i class="icon icon-playground"></i></div>
+          <div>icon-plot <i class="icon icon-plot"></i></div>
+          <div>icon-plus-circle <i class="icon icon-plus-circle"></i></div>
+          <div>icon-plus <i class="icon icon-plus"></i></div>
+          <div>icon-podium <i class="icon icon-podium"></i></div>
+          <div>icon-recent-document <i class="icon icon-recent-document"></i></div>
+          <div>icon-search <i class="icon icon-search"></i></div>
+          <div>icon-success-circle <i class="icon icon-success-circle"></i></div>
+          <div>icon-text <i class="icon icon-text"></i></div>
+          <div>icon-trash <i class="icon icon-trash"></i></div>
+          <div>icon-warning-circle <i class="icon icon-warning-circle"></i></div>
+          <div>icon-warning <i class="icon icon-warning"></i></div>
         </div>
       </TabPanelContent>
       <TabPanelContent name="draggable">
@@ -568,6 +578,9 @@ const isCached = ref(false);
             bottom end
           </FloatingTooltip>
         </div>
+      </TabPanelContent>
+      <TabPanelContent name="cross val" class="cross-val">
+        <CrossValidationReport />
       </TabPanelContent>
     </TabPanel>
   </main>
@@ -666,5 +679,9 @@ main {
   padding: 40px;
   gap: 40px;
   grid-template-columns: 1fr 1fr 1fr;
+}
+
+.cross-val {
+  padding: var(--spacing-8);
 }
 </style>
