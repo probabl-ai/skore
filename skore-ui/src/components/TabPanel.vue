@@ -59,7 +59,7 @@ onMounted(() => {
     & .tab-selector-element {
       padding: var(--spacing-8) var(--spacing-12);
       border-bottom: solid var(--stroke-width-lg) transparent;
-      color: var(--color-text-secondary);
+      color: var(--color-text-primary);
       cursor: pointer;
       font-size: var(--font-size-xs);
       transition:
@@ -72,8 +72,8 @@ onMounted(() => {
       }
 
       &.selected {
-        border-bottom: solid var(--stroke-width-lg) var(--color-icon-tertiary);
-        color: var(--color-icon-tertiary);
+        border-bottom: solid var(--stroke-width-lg) var(--color-stroke-background-branding);
+        color: var(--color-text-branding);
       }
     }
   }

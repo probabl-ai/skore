@@ -3,6 +3,7 @@ export interface ScalarResult {
   name: string;
   value: number;
   fold?: number;
+  label?: string;
 }
 
 export interface TabularResult {
@@ -29,6 +30,7 @@ const fake: PrimaryResults = {
     { name: "tata", value: 4.32 },
     { name: "titi", value: 4.32, fold: 1 },
     { name: "tutu", value: 4.32 },
+    { name: "stab", value: 0.002, label: "Good" },
   ],
   tabularResults: [
     {

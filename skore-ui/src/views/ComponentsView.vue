@@ -311,6 +311,10 @@ const isCached = ref(false);
             <SimpleButton icon="icon-pie-chart" />
             button with icon
           </p>
+          <p>
+            <SimpleButton label="hey ho" icon="icon-pie-chart" icon-position="right" />
+            button with icon on the right
+          </p>
           <hr />
           <p>
             <DropdownButton label="hey ho" icon="icon-pie-chart" :is-primary="true">
@@ -363,15 +367,15 @@ const isCached = ref(false);
           <hr />
           <p>
             <SimpleButton label="hey ho" :is-inline="true" />
-            inline button with extra classes
+            inline button
           </p>
           <p>
-            <DropdownButton icon="icon-pie-chart" label="red-button" :is-inline="true">
+            <DropdownButton icon="icon-pie-chart" label="button" :is-inline="true">
               <DropdownButtonItem label="hey ho" icon="icon-pie-chart" />
               <DropdownButtonItem icon="icon-pie-chart" />
               <DropdownButtonItem label="hey ho" />
             </DropdownButton>
-            inline dropdown button with icon and extra classes
+            inline dropdown button with icon
           </p>
         </div>
       </TabPanelContent>
