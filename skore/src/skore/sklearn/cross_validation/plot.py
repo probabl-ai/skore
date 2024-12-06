@@ -5,8 +5,6 @@ from __future__ import annotations
 import contextlib
 from typing import TYPE_CHECKING
 
-import numpy
-
 if TYPE_CHECKING:
     import plotly.graph_objects
 
@@ -53,6 +51,10 @@ def plot_cross_validation(cv_results: dict) -> plotly.graph_objects.Figure:
         "score_time_per_data_point": "score_time_per_data_point (seconds)",
     }
 
+    def linspace(lo, hi, num):
+        interval = (hi - lo) / num
+        return [lo + k * interval for k in range(0, num + 1)]
+
     fig = go.Figure()
 
     for col_i, col_name in enumerate(df.columns):
@@ -60,7 +62,7 @@ def plot_cross_validation(cv_results: dict) -> plotly.graph_objects.Figure:
         bar_color = plotly.colors.qualitative.Plotly[
             col_i % len(plotly.colors.qualitative.Plotly)
         ]
-        bar_x = numpy.linspace(min(df.index) - 0.5, max(df.index) + 0.5, num=10)
+        bar_x = linspace(min(df.index) - 0.5, max(df.index) + 0.5, num=10)
 
         common_kwargs = dict(
             visible=True if col_i == 0 else "legendonly",
