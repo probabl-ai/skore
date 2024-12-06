@@ -5,6 +5,8 @@ from __future__ import annotations
 import contextlib
 from typing import TYPE_CHECKING
 
+import numpy
+
 if TYPE_CHECKING:
     import plotly.graph_objects
 
@@ -58,7 +60,7 @@ def plot_cross_validation(cv_results: dict) -> plotly.graph_objects.Figure:
         bar_color = plotly.colors.qualitative.Plotly[
             col_i % len(plotly.colors.qualitative.Plotly)
         ]
-        bar_x = [min(df.index) - 0.5, max(df.index) + 0.5]
+        bar_x = numpy.linspace(min(df.index) - 0.5, max(df.index) + 0.5, num=10)
 
         common_kwargs = dict(
             visible=True if col_i == 0 else "legendonly",
@@ -96,7 +98,7 @@ def plot_cross_validation(cv_results: dict) -> plotly.graph_objects.Figure:
                 # Mean line
                 go.Scatter(
                     x=bar_x,
-                    y=[avg_value, avg_value],
+                    y=[avg_value] * 10,
                     name=f"Average {metric_name}",
                     line=dict(dash="dash", color=bar_color),
                     showlegend=False,
@@ -106,7 +108,7 @@ def plot_cross_validation(cv_results: dict) -> plotly.graph_objects.Figure:
                 # +1 std line
                 go.Scatter(
                     x=bar_x,
-                    y=[avg_value + std_value, avg_value + std_value],
+                    y=[avg_value + std_value] * 10,
                     name=f"Average + 1 std. dev. {metric_name}",
                     line=dict(dash="dot", color=bar_color),
                     showlegend=False,
@@ -116,7 +118,7 @@ def plot_cross_validation(cv_results: dict) -> plotly.graph_objects.Figure:
                 # -1 std line
                 go.Scatter(
                     x=bar_x,
-                    y=[avg_value - std_value, avg_value - std_value],
+                    y=[avg_value - std_value] * 10,
                     name=f"Average - 1 std. dev. {metric_name}",
                     line=dict(dash="dot", color=bar_color),
                     showlegend=False,
