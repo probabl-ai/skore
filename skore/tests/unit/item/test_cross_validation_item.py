@@ -1,4 +1,5 @@
 import numpy
+import plotly.graph_objects
 import pytest
 from skore.item import CrossValidationItem, ItemTypeError
 
@@ -15,6 +16,7 @@ class TestCrossValidationItem:
                 estimator=None,
                 X=None,
                 y=None,
+                plot=None,
             )
 
     def test_factory(self, monkeypatch, mock_nowstr):
@@ -35,6 +37,7 @@ class TestCrossValidationItem:
             estimator=MyEstimator(),
             X=[[1.0]],
             y=[1],
+            plot=plotly.graph_objects.Figure()
         )
 
         assert item.cv_results_serialized == {"test_score": [1, 2, 3]}

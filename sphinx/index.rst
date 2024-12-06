@@ -9,7 +9,7 @@ With skore, data scientists can:
 #. Track and visualize their ML/DS results.
 #. Get assistance when developing their ML/DS projects.
 
-   -  Scikit-learn compatible :func:`skore.cross_validate` and
+   -  Scikit-learn compatible :class:`skore.CrossValidationReporter` and
       :func:`skore.train_test_split` provide insights and checks on cross-validation
       and train-test-split.
 
