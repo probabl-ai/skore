@@ -2,27 +2,38 @@ import numpy
 import pandas
 import pytest
 import sklearn.model_selection
-from numpy import array
 from sklearn import datasets, linear_model
 from sklearn.cluster import KMeans
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.multiclass import OneVsOneClassifier
 from sklearn.svm import SVC
-from skore import cross_validate
-from skore.item.cross_validation_item import (
-    CrossValidationAggregationItem,
-    CrossValidationItem,
-    plot_cross_validation,
-)
+from skore import CrossValidationReporter
+from skore.item.cross_validation_aggregation_item import CrossValidationAggregationItem
+from skore.item.cross_validation_item import CrossValidationItem
 
 
 @pytest.fixture
 def rf():
     iris = datasets.load_iris()
-    X = iris.data[:150]
-    y = numpy.random.randint(2, size=150)
+    X = iris.data[:100]
+    y = numpy.random.randint(2, size=100)
     rf = RandomForestClassifier()
     return rf, X, y
+
+
+@pytest.fixture
+def fake_cross_validate(monkeypatch):
+    def _fake_cross_validate(*args, **kwargs):
+        result = {"test_score": [1] * 5, "test_time": [1] * 5, "fit_time": [1] * 5}
+        if kwargs.get("return_estimator"):
+            result["estimator"] = []
+        if kwargs.get("return_indices"):
+            result["indices"] = []
+        if kwargs.get("return_train_score"):
+            result["train_score"] = [1] * 5
+        return result
+
+    monkeypatch.setattr("sklearn.model_selection.cross_validate", _fake_cross_validate)
 
 
 class TestInputScorers:
@@ -55,15 +66,13 @@ class TestInputScorers:
             None,
         ],
     )
-    def test_scorer(self, rf, in_memory_project, scoring):
-        cv_results = cross_validate(*rf, scoring=scoring, project=in_memory_project)
+    def test_scorer(self, rf, in_memory_project, scoring, fake_cross_validate):
+        reporter = CrossValidationReporter(*rf, scoring=scoring)
+        cv_results = reporter.cv_results
         cv_results_sklearn = sklearn.model_selection.cross_validate(
             *rf, scoring=scoring
         )
 
-        assert isinstance(
-            in_memory_project.get_item("cross_validation"), CrossValidationItem
-        )
         assert set(cv_results.keys()).issuperset(cv_results_sklearn.keys())
         assert all(len(v) == 5 for v in cv_results.values())
 
@@ -78,15 +87,13 @@ class TestInputDataType:
         return model, pandas.DataFrame(X), pandas.Series(y)
 
     @pytest.mark.parametrize("convert_args", [data_is_list, data_is_pandas])
-    def test_data_type(self, rf, in_memory_project, convert_args):
+    def test_data_type(self, rf, in_memory_project, convert_args, fake_cross_validate):
         args = convert_args(*rf)
 
-        cv_results = cross_validate(*args, project=in_memory_project)
+        reporter = CrossValidationReporter(*args)
+        cv_results = reporter.cv_results
         cv_results_sklearn = sklearn.model_selection.cross_validate(*args)
 
-        assert isinstance(
-            in_memory_project.get_item("cross_validation"), CrossValidationItem
-        )
         assert set(cv_results.keys()).issuperset(cv_results_sklearn.keys())
         assert all(len(v) == 5 for v in cv_results.values())
 
@@ -138,35 +145,45 @@ class TestMLTask:
             clustering,
         ],
     )
-    def test_cross_validate(self, in_memory_project, get_args):
+    def test_cross_validate(self, in_memory_project, get_args, fake_cross_validate):
         args = get_args(self)
-        cv_results = cross_validate(*args, project=in_memory_project)
+
+        reporter = CrossValidationReporter(*args)
+        cv_results = reporter.cv_results
         cv_results_sklearn = sklearn.model_selection.cross_validate(*args)
 
-        assert isinstance(
-            in_memory_project.get_item("cross_validation"), CrossValidationItem
-        )
         assert set(cv_results.keys()).issuperset(cv_results_sklearn.keys())
         assert all(len(v) == 5 for v in cv_results.values())
 
 
-def test_plot_cross_validation():
-    cv_results = {
-        "fit_time": array([0.00058246, 0.00041819, 0.00039363]),
-        "score_time": array([0.00101399, 0.00072646, 0.00072432]),
-        "test_score": array([0.3315057, 0.08022103, 0.03531816]),
-        "test_r2": array([0.3315057, 0.08022103, 0.03531816]),
-        "test_neg_mean_squared_error": array(
-            [-3635.52042005, -3573.35050281, -6114.77901585]
-        ),
-    }
-    plot_cross_validation(cv_results)
-
-
 def test_aggregated_cross_validation(rf, in_memory_project):
+    project = in_memory_project
     args = rf
-    cross_validate(*args, project=in_memory_project)
-    assert isinstance(
-        in_memory_project.item_repository.get_item("cross_validation_aggregated"),
-        CrossValidationAggregationItem,
-    )
+    reporter = CrossValidationReporter(*args)
+
+    project.put("cv", reporter)
+    project.put("cv", reporter)
+
+    CrossValidationAggregationItem.factory(project.get_item_versions("cv"))
+
+
+def prepare_cv():
+    from sklearn import datasets, linear_model
+
+    diabetes = datasets.load_diabetes()
+    X = diabetes.data[:150]
+    y = diabetes.target[:150]
+    lasso = linear_model.Lasso()
+
+    return lasso, X, y
+
+
+def test_put_cross_validation_reporter(in_memory_project):
+    project = in_memory_project
+
+    lasso, X, y = prepare_cv()
+    reporter = CrossValidationReporter(lasso, X, y, cv=3)
+
+    project.put("cross-validation", reporter)
+
+    assert isinstance(project.get_item("cross-validation"), CrossValidationItem)

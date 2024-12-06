@@ -11,6 +11,8 @@ from typing import TYPE_CHECKING, Any
 from fastapi import APIRouter, HTTPException, Request, status
 
 from skore.item import (
+    CrossValidationAggregationItem,
+    CrossValidationItem,
     Item,
     MediaItem,
     NumpyArrayItem,
@@ -20,10 +22,6 @@ from skore.item import (
     PolarsSeriesItem,
     PrimitiveItem,
     SklearnBaseEstimatorItem,
-)
-from skore.item.cross_validation_item import (
-    CrossValidationAggregationItem,
-    CrossValidationItem,
 )
 from skore.project import Project
 from skore.view.view import Layout, View
