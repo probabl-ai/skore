@@ -27,6 +27,10 @@
   text-transform: none;
 }
 
+.icon-hard-drive::before {
+  content: "\e90f";
+}
+
 .icon-bar-chart::before {
   content: "\e900";
 }
@@ -85,10 +89,6 @@
 
 .icon-handle::before {
   content: "\e90e";
-}
-
-.icon-hard-drive::before {
-  content: "\e90f";
 }
 
 .icon-history::before {
