@@ -50,9 +50,7 @@ This will create a skore project directory named `my_project.skore` in your curr
     from sklearn.linear_model import Ridge
     from sklearn.model_selection import GridSearchCV
 
-    diabetes = load_diabetes()
-    X = diabetes.data[:150]
-    y = diabetes.target[:150]
+    X, y = load_diabetes(return_X_y=True)
 
     gs_cv = GridSearchCV(
         Ridge(),
