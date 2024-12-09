@@ -68,14 +68,6 @@ def __cross_validation_item_as_serializable(item: CrossValidationItem) -> dict:
 
     scalar_results = mean_cv_results
 
-    # plots
-    # {
-    #     "cv_results": {
-    #         "value": base64.b64encode(item.plot_bytes).decode(),
-    #         "media_type": "application/vnd.plotly.v1+json;base64",
-    #     },
-    # },
-
     return {
         "scalar_results": scalar_results,
         "tabular_results": [tabular_results],
@@ -85,7 +77,24 @@ def __cross_validation_item_as_serializable(item: CrossValidationItem) -> dict:
                 "value": json.loads(item.plot_bytes.decode("utf-8")),
             }
         ],
-        "sections": [],
+        "sections": [
+            {
+                "title": "Model",
+                "icon": "string",
+                "items": [
+                    {
+                        "name": "Estimator parameters",
+                        "description": "Core model configuration used for training",
+                        "value": "???, `{estimator.__class__.__name__}`",
+                    },
+                    {
+                        "name": "Cross-validation parameters",
+                        "description": "Controls how data is split and validated",
+                        "value": "??? 5-fold CV",
+                    }
+                ],
+            }
+        ],
     }
 
 
