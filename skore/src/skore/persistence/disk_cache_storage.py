@@ -42,7 +42,8 @@ class DiskCacheStorage(AbstractStorage):
         """
         if not directory.exists():
             raise DirectoryDoesNotExist(f"Directory {directory} does not exist.")
-        self.storage = Cache(directory)
+
+        self.directory = directory
 
     def __getitem__(self, key: str) -> Any:
         """
@@ -63,7 +64,8 @@ class DiskCacheStorage(AbstractStorage):
         KeyError
             If the key is not found in the storage.
         """
-        return self.storage[key]
+        with Cache(self.directory) as storage:
+            return storage[key]
 
     def __setitem__(self, key: str, value: Any):
         """
@@ -76,7 +78,8 @@ class DiskCacheStorage(AbstractStorage):
         value : Any
             The value to store.
         """
-        self.storage[key] = value
+        with Cache(self.directory) as storage:
+            storage[key] = value
 
     def __delitem__(self, key: str):
         """
@@ -92,7 +95,8 @@ class DiskCacheStorage(AbstractStorage):
         KeyError
             If the key is not found in the storage.
         """
-        del self.storage[key]
+        with Cache(self.directory) as storage:
+            del storage[key]
 
     def keys(self) -> Iterator[str]:
         """
@@ -103,7 +107,8 @@ class DiskCacheStorage(AbstractStorage):
         Iterator[str]
             An iterator yielding all keys in the storage.
         """
-        return self.storage.iterkeys()
+        with Cache(self.directory) as storage:
+            return storage.iterkeys()
 
     def values(self) -> Iterator[Any]:
         """
@@ -114,8 +119,9 @@ class DiskCacheStorage(AbstractStorage):
         Iterator[Any]
             An iterator yielding all values in the storage.
         """
-        for key in self.storage.iterkeys():
-            yield self.storage[key]
+        with Cache(self.directory) as storage:
+            for key in storage.iterkeys():
+                yield storage[key]
 
     def items(self) -> Iterator[tuple[str, Any]]:
         """
@@ -126,8 +132,9 @@ class DiskCacheStorage(AbstractStorage):
         Iterator[tuple[str, Any]]
             An iterator yielding all (key, value) pairs in the storage.
         """
-        for key in self.storage.iterkeys():
-            yield (key, self.storage[key])
+        with Cache(self.directory) as storage:
+            for key in storage.iterkeys():
+                yield (key, storage[key])
 
     def __repr__(self) -> str:
         """
@@ -138,4 +145,4 @@ class DiskCacheStorage(AbstractStorage):
         str
             A string representation of the storage.
         """
-        return f"DiskCacheStorage(directory='{self.storage.directory}')"
+        return f"DiskCacheStorage(directory='{self.directory}')"
