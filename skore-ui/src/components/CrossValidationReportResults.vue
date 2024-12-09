@@ -46,20 +46,22 @@ const currentTabularResult = computed<TabularResult>(() => {
         </DropdownButton>
       </div>
       <div class="result">
-        <table>
-          <thead>
-            <tr>
-              <th>Fold</th>
-              <th v-for="(column, i) in currentTabularResult.columns" :key="i">{{ column }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(row, i) in currentTabularResult.data" :key="i">
-              <td>Fold {{ i + 1 }}</td>
-              <td v-for="(value, j) in row" :key="j">{{ value }}</td>
-            </tr>
-          </tbody>
-        </table>
+        <Simplebar>
+          <table>
+            <thead>
+              <tr>
+                <th>Fold</th>
+                <th v-for="(column, i) in currentTabularResult.columns" :key="i">{{ column }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(row, i) in currentTabularResult.data" :key="i">
+                <td>Fold&nbsp;{{ i + 1 }}</td>
+                <td v-for="(value, j) in row" :key="j">{{ value }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </Simplebar>
       </div>
     </div>
   </div>
@@ -131,7 +133,7 @@ const currentTabularResult = computed<TabularResult>(() => {
       text-align: right;
 
       & thead tr th {
-        padding: var(--spacing-4);
+        padding: var(--spacing-6) var(--spacing-10);
         border: solid var(--stroke-width-md) var(--color-stroke-background-primary);
         border-bottom-color: var(--color-background-primary);
         background-color: var(--color-background-secondary);
@@ -139,9 +141,11 @@ const currentTabularResult = computed<TabularResult>(() => {
         font-weight: var(--font-weight-medium);
 
         &:first-child {
+          position: sticky;
+          left: 0;
           width: var(--fold-column-width);
           border-left: none;
-          text-align: left;
+          text-align: center;
         }
 
         &:last-child {
@@ -154,10 +158,12 @@ const currentTabularResult = computed<TabularResult>(() => {
         font-weight: var(--font-weight-regular);
 
         & td {
-          padding: var(--spacing-4);
+          padding: var(--spacing-6) var(--spacing-10);
           border: solid var(--stroke-width-md) var(--color-stroke-background-primary);
 
           &:first-child {
+            position: sticky;
+            left: 0;
             width: var(--fold-column-width);
             border-bottom-color: var(--color-background-primary);
             border-left: none;

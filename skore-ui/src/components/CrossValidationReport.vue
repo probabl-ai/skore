@@ -43,12 +43,14 @@ const results: PrimaryResults = {
   tabularResults: [
     {
       name: "abracadara",
-      columns: ["Accuracy", "Precision", "Recall", "F1 Score"],
+      columns: Array.from({ length: 50 }, (_, i) => i),
       data: [
-        [0.8, 0.4, 0.5, 0.6],
-        [0.8, 0.4, 0.5, 0.6],
-        [0.8, 0.4, 0.5, 0.6],
-        [0.8, 0.4, 0.5, 0.6],
+        Array.from({ length: 50 }, () => Math.random().toFixed(4)),
+        Array.from({ length: 50 }, () => Math.random().toFixed(4)),
+        Array.from({ length: 50 }, () => Math.random().toFixed(4)),
+        Array.from({ length: 50 }, () => Math.random().toFixed(4)),
+        Array.from({ length: 50 }, () => Math.random().toFixed(4)),
+        Array.from({ length: 50 }, () => Math.random().toFixed(4)),
       ],
       favorability: "higher-is-better",
     },
