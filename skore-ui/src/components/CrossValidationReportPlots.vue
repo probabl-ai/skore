@@ -5,6 +5,7 @@ import { computed, ref } from "vue";
 import type { Plot } from "@/components/CrossValidationReport.vue";
 import DropdownButton from "@/components/DropdownButton.vue";
 import DropdownButtonItem from "@/components/DropdownButtonItem.vue";
+import PlotlyWidget from "@/components/PlotlyWidget.vue";
 
 const props = defineProps<{ plots: Plot[] }>();
 const currentPlotIndex = ref(0);
@@ -33,7 +34,9 @@ const currentPlot = computed<Plot>(() => {
         </Simplebar>
       </DropdownButton>
     </div>
-    <div class="plot"></div>
+    <div class="plot">
+      <PlotlyWidget :spec="currentPlot.value" />
+    </div>
   </div>
 </template>
 
