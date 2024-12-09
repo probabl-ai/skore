@@ -4,6 +4,7 @@ export interface ScalarResult {
   value: number;
   fold?: number;
   label?: string;
+  description?: string;
 }
 
 export interface TabularResult {
@@ -49,10 +50,10 @@ const results: PrimaryResults = {
     { name: "tata", value: 4.32 },
     { name: "titi", value: 4.32, fold: 1 },
     { name: "tutu", value: 4.32 },
-    { name: "stab", value: 0.002, label: "Good" },
+    { name: "stab", value: 0.4, label: "Good" },
     { name: "titi", value: 4.32, fold: 1 },
     { name: "tutu", value: 4.32 },
-    { name: "stab", value: 0.002, label: "Good" },
+    { name: "stab", value: 0.9, label: "Good", description: "your blabla is good" },
   ],
   tabularResults: [
     {

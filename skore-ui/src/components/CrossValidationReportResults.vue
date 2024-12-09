@@ -5,6 +5,7 @@ import { computed, ref } from "vue";
 import type { PrimaryResults, TabularResult } from "@/components/CrossValidationReport.vue";
 import DropdownButton from "@/components/DropdownButton.vue";
 import DropdownButtonItem from "@/components/DropdownButtonItem.vue";
+import StaticRange from "./StaticRange.vue";
 
 const props = defineProps<PrimaryResults>();
 const currentTabularResultIndex = ref(0);
@@ -18,7 +19,12 @@ const currentTabularResult = computed<TabularResult>(() => {
     <div class="scalar-results">
       <div v-for="(result, i) in props.scalarResults" :key="i" class="result">
         <div class="name">{{ result.name }}</div>
-        <div class="value">
+        <div class="labeled-value" v-if="result.label">
+          <div class="label">{{ result.label }}</div>
+          <StaticRange :value="result.value" />
+          <div class="description">{{ result.description }}</div>
+        </div>
+        <div class="value" v-else>
           {{ result.value }}
           <span v-if="result.fold" class="fold">(Fold {{ result.fold + 1 }})</span>
         </div>
@@ -88,6 +94,16 @@ const currentTabularResult = computed<TabularResult>(() => {
       & .name {
         color: var(--color-text-secondary);
         font-size: var(--font-size-xs);
+      }
+
+      & .labeled-value {
+        color: var(--color-text-primary);
+        font-size: var(--font-size-xlg);
+
+        & .description {
+          color: var(--color-text-secondary);
+          font-size: var(--font-size-xxs);
+        }
       }
 
       & .value {
