@@ -42,7 +42,7 @@ const results: PrimaryResults = {
   ],
   tabularResults: [
     {
-      name: "abracadara",
+      name: "abracadaraabracadaraabracadaraabracadara",
       columns: Array.from({ length: 50 }, (_, i) => i),
       data: [
         Array.from({ length: 50 }, () => Math.random().toFixed(4)),

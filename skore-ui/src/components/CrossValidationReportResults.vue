@@ -105,6 +105,7 @@ const currentTabularResult = computed<TabularResult>(() => {
   & .tabular-results {
     & .header {
       display: flex;
+      align-items: center;
       justify-content: space-between;
       padding: var(--spacing-16) var(--spacing-10);
 

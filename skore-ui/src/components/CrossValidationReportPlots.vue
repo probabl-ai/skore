@@ -41,6 +41,7 @@ const currentPlot = computed<Plot>(() => {
 .cross-validation-report-plots {
   & .header {
     display: flex;
+    align-items: center;
     justify-content: space-between;
     padding: var(--spacing-16) var(--spacing-10);
 
@@ -51,6 +52,12 @@ const currentPlot = computed<Plot>(() => {
       & .icon {
         color: var(--color-text-branding);
         vertical-align: middle;
+      }
+    }
+
+    & .dropdown {
+      & button {
+        padding: var(--spacing-6) var(--spacing-10);
       }
     }
   }
