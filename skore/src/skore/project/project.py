@@ -144,13 +144,8 @@ class Project:
         ProjectPutError
             If the key-value pair cannot be saved properly.
         """
-        try:
-            item = object_to_item(value)
-            self.put_item(key, item)
-        except (NotImplementedError, TypeError) as e:
-            raise ProjectPutError(
-                "Key-value pair could not be inserted in the Project"
-            ) from e
+        item = object_to_item(value)
+        self.put_item(key, item)
 
     def put_item(self, key: str, item: Item):
         """Add an Item to the Project."""
