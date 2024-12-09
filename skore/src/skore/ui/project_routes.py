@@ -11,7 +11,6 @@ from typing import TYPE_CHECKING, Any
 from fastapi import APIRouter, HTTPException, Request, status
 
 from skore.item import (
-    CrossValidationAggregationItem,
     CrossValidationItem,
     Item,
     MediaItem,
@@ -84,7 +83,7 @@ def __item_as_serializable(name: str, item: Item) -> SerializableItem:
         else:
             value = base64.b64encode(item.media_bytes).decode()
             media_type = f"{item.media_type};base64"
-    elif isinstance(item, (CrossValidationItem, CrossValidationAggregationItem)):
+    elif isinstance(item, CrossValidationItem):
         value = base64.b64encode(item.plot_bytes).decode()
         media_type = "application/vnd.plotly.v1+json;base64"
     else:
