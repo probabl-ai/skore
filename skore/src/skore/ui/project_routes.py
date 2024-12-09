@@ -85,7 +85,7 @@ def __item_as_serializable(name: str, item: Item) -> SerializableItem:
             media_type = f"{item.media_type};base64"
     elif isinstance(item, CrossValidationItem):
         value = {
-            "cv_results": item._cv_results,
+            "cv_results": item.cv_results_serialized,
             "plots": {
                 "cv_results": {
                     "value": base64.b64encode(item.plot_bytes).decode(),
