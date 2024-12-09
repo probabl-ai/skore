@@ -502,6 +502,7 @@ const isCached = ref(false);
           <div>icon-trash <i class="icon icon-trash"></i></div>
           <div>icon-warning-circle <i class="icon icon-warning-circle"></i></div>
           <div>icon-warning <i class="icon icon-warning"></i></div>
+          <div>icon-square-cursor <i class="icon icon-square-cursor"></i></div>
         </div>
       </TabPanelContent>
       <TabPanelContent name="draggable">

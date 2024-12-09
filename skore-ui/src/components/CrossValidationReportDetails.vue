@@ -1,20 +1,27 @@
 <script setup lang="ts">
+import MarkdownIt from "markdown-it";
+
 import type { DetailSection } from "@/components/CrossValidationReport.vue";
 
 const props = defineProps<{ sections: DetailSection[] }>();
+const renderer = MarkdownIt();
+
+function itemAsHtml(v: string) {
+  return renderer.render(v);
+}
 </script>
 
 <template>
   <div class="cross-validation-report-details">
     <div class="section" v-for="section in props.sections" :key="section.title">
-      <div class="title">{{ section.title }}</div>
+      <div class="title"><i class="icon" :class="section.icon" />{{ section.title }}</div>
       <div class="items">
         <div class="item" v-for="item in section.items" :key="item.name">
           <div class="name-and-description">
             <div class="name">{{ item.name }}</div>
             <dvi class="description">{{ item.description }}</dvi>
           </div>
-          <div class="value">{{ item.value }}</div>
+          <div class="value" v-html="itemAsHtml(item.value)" />
         </div>
       </div>
     </div>
@@ -26,9 +33,20 @@ const props = defineProps<{ sections: DetailSection[] }>();
   padding: var(--spacing-16);
 
   & .section {
+    display: flex;
+    flex-direction: column;
+    padding-bottom: var(--spacing-24);
+    gap: var(--spacing-16);
+
     & .title {
+      margin-bottom: var(--spacing-4);
       color: var(--color-text-primary);
       font-size: var(--font-size-sm);
+
+      & .icon {
+        padding-right: var(--spacing-4);
+        color: var(--color-text-branding);
+      }
     }
 
     & .items {
@@ -39,7 +57,7 @@ const props = defineProps<{ sections: DetailSection[] }>();
 
       & .item {
         display: flex;
-        flex-direction: column;
+        flex-direction: row;
         align-items: center;
         justify-content: space-between;
 
@@ -52,8 +70,21 @@ const props = defineProps<{ sections: DetailSection[] }>();
         }
 
         & .value {
-          color: var(--color-text-branding);
+          color: var(--color-text-secondary);
           text-align: right;
+
+          & em,
+          & code {
+            color: var(--color-text-branding);
+          }
+
+          & code {
+            display: inline-block;
+            padding: var(--spacing-4);
+            border-radius: var(--radius-xs);
+            background-color: rgb(from var(--color-text-branding) r g b / 20%);
+            font-family: GeistMono, monospace;
+          }
         }
       }
     }

@@ -27,6 +27,10 @@
   text-transform: none;
 }
 
+.icon-square-cursor::before {
+  content: "\e926";
+}
+
 .icon-hard-drive::before {
   content: "\e90f";
 }
@@ -63,7 +67,7 @@
   content: "\e907";
 }
 
-.icon-error-circle::before {
+.icon-copy::before {
   content: "\e908";
 }
 
@@ -73,6 +77,10 @@
 
 .icon-edit::before {
   content: "\e90a";
+}
+
+.icon-error-circle::before {
+  content: "\e90b";
 }
 
 .icon-folder::before {

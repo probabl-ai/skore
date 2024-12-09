@@ -31,6 +31,7 @@ export interface DetailSectionItem {
 
 export interface DetailSection {
   title: string;
+  icon: string;
   items: DetailSectionItem[];
 }
 </script>
@@ -752,6 +753,51 @@ const plots: Plot[] = [
     value: secondFakePlot,
   },
 ];
+
+const sections: DetailSection[] = [
+  {
+    title: "Model",
+    icon: "icon-square-cursor",
+    items: [
+      {
+        name: "Estimator parameters:",
+        description: "Core model configuration used for training",
+        value: "`RandomForestClassifier` *100* trees, max_depth *10*",
+      },
+      {
+        name: "Estimator parameters:",
+        description: "Core model configuration used for training",
+        value: "`RandomForestClassifier` *100* trees, max_depth *10*",
+      },
+      {
+        name: "Estimator parameters:",
+        description: "Core model configuration used for training",
+        value: "`RandomForestClassifier` *100* trees, max_depth *10*",
+      },
+    ],
+  },
+  {
+    title: "bla bla",
+    icon: "icon-text",
+    items: [
+      {
+        name: "Estimator parameters:",
+        description: "Core model configuration used for training",
+        value: "`RandomForestClassifier` *100* trees, max_depth *10*",
+      },
+      {
+        name: "Estimator parameters:",
+        description: "Core model configuration used for training",
+        value: "`RandomForestClassifier` *100* trees, max_depth *10*",
+      },
+      {
+        name: "Estimator parameters:",
+        description: "Core model configuration used for training",
+        value: "`RandomForestClassifier` *100* trees, max_depth *10*",
+      },
+    ],
+  },
+];
 </script>
 
 <template>
@@ -767,7 +813,7 @@ const plots: Plot[] = [
         <CrossValidationReportPlots :plots="plots" />
       </TabPanelContent>
       <TabPanelContent name="Storage/Details" icon="icon-hard-drive">
-        <CrossValidationReportDetails :sections="[]" />
+        <CrossValidationReportDetails :sections="sections" />
       </TabPanelContent>
     </TabPanel>
   </div>
