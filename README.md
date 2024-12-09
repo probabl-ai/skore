@@ -1,5 +1,3 @@
-# 👋 Welcome to `skore`
-
 <div style="text-align: center;">
     <img width="45%" src="https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/Logo_Skore_Light@2x.svg" alt="skore logo">
 </div>
@@ -10,6 +8,8 @@
 [![downloads](https://static.pepy.tech/badge/skore/month)](https://pepy.tech/projects/skore)
 ![license](https://img.shields.io/pypi/l/skore)
 [![Discord](https://img.shields.io/badge/Discord-%235865F2.svg?logo=discord&logoColor=white)](https://discord.probabl.ai/)
+
+# 👋 Welcome to `skore`
 
 With skore, data scientists can:
 1. Track and visualize their ML/DS results.
