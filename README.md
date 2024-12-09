@@ -15,7 +15,7 @@ With skore, data scientists can:
 These are only the first features: skore is a work in progress and aims to be an end-to-end library for data scientists.
 Stay tuned! Feedbacks are welcome: please feel free to join [our Discord](https://discord.probabl.ai).
 
-![GIF: short demo of skore](https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_10_31_skore_demo_compressed.gif)
+![GIF: short demo of skore](https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_05_skore_demo_comp.gif)
 
 ## ⚙️ Installation
 
@@ -50,9 +50,7 @@ This will create a skore project directory named `my_project.skore` in your curr
     from sklearn.linear_model import Ridge
     from sklearn.model_selection import GridSearchCV
 
-    diabetes = load_diabetes()
-    X = diabetes.data[:150]
-    y = diabetes.target[:150]
+    X, y = load_diabetes(return_X_y=True)
 
     gs_cv = GridSearchCV(
         Ridge(),

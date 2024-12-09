@@ -141,6 +141,22 @@ class CrossValidationReporter:
             return_indices=True,
         )
 
+        self._cv_results["fit_time_per_data_point"] = [
+            time / nb_points
+            for time, nb_points in zip(
+                self._cv_results["fit_time"],
+                map(len, self._cv_results["indices"]["train"]),
+            )
+        ]
+
+        self._cv_results["score_time_per_data_point"] = [
+            time / nb_points
+            for time, nb_points in zip(
+                self._cv_results["score_time"],
+                map(len, self._cv_results["indices"]["test"]),
+            )
+        ]
+
         # Remove information related to our scorers, so that our return value is
         # the same as sklearn's
         self.cv_results = _strip_cv_results_scores(
