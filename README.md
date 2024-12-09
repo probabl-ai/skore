@@ -13,7 +13,7 @@ With skore, data scientists can:
     - Scikit-learn compatible `skore.cross_validate()` and `skore.train_test_split()` provide insights and checks on cross-validation and train-test split.
 
 These are only the first features: skore is a work in progress and aims to be an end-to-end library for data scientists.
-Stay tuned! Feedbacks are welcome: please feel free to join [our Discord](https://discord.probabl.ai).
+Stay tuned! Feedback is welcome: please feel free to join [our Discord](https://discord.probabl.ai).
 
 ![GIF: short demo of skore](https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_05_skore_demo_comp.gif)
 
