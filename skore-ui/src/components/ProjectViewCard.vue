@@ -78,7 +78,7 @@ onBeforeUnmount(() => {
           align="right"
           v-if="props.updates && props.updates.length > 1"
         >
-          <Simplebar class="history-items">
+          <Simplebar>
             <DropdownButtonItem
               v-for="(item, index) in Array.from(props.updates).reverse()"
               :key="index"
@@ -162,11 +162,6 @@ onBeforeUnmount(() => {
       & .dropdown,
       & .button {
         font-size: var(--font-size-md);
-      }
-
-      & .history-items {
-        max-height: 40dvh;
-        font-size: var(--font-size-sm);
       }
     }
   }

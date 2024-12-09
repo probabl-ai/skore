@@ -23,7 +23,7 @@ const currentPlot = computed<Plot>(() => {
         icon-position="right"
         :label="currentPlot.name"
       >
-        <Simplebar class="history-items">
+        <Simplebar>
           <DropdownButtonItem
             v-for="(result, i) in props.plots"
             :key="i"

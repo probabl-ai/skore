@@ -35,7 +35,7 @@ const currentTabularResult = computed<TabularResult>(() => {
           icon-position="right"
           :label="currentTabularResult.name"
         >
-          <Simplebar class="history-items">
+          <Simplebar>
             <DropdownButtonItem
               v-for="(result, i) in props.tabularResults"
               :key="i"
