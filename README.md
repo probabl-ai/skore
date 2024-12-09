@@ -9,8 +9,6 @@
 ![license](https://img.shields.io/pypi/l/skore)
 [![Discord](https://img.shields.io/badge/Discord-%235865F2.svg?logo=discord&logoColor=white)](https://discord.probabl.ai/)
 
-# 👋 Welcome
-
 With skore, data scientists can:
 1. Track and visualize their ML/DS results.
 2. Get assistance when developing their ML/DS projects.
