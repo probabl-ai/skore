@@ -51,8 +51,11 @@ class SerializableProject:
 
 
 def __cross_validation_item_as_serializable(item: CrossValidationItem) -> dict:
+    cv_results = item.cv_results_serialized
+    cv_results.pop("indices", None)
+
     return {
-        "cv_results": item.cv_results_serialized,
+        "cv_results": cv_results,
         "plots": {
             "cv_results": {
                 "value": base64.b64encode(item.plot_bytes).decode(),
