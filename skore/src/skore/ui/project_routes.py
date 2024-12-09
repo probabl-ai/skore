@@ -84,8 +84,16 @@ def __item_as_serializable(name: str, item: Item) -> SerializableItem:
             value = base64.b64encode(item.media_bytes).decode()
             media_type = f"{item.media_type};base64"
     elif isinstance(item, CrossValidationItem):
-        value = base64.b64encode(item.plot_bytes).decode()
-        media_type = "application/vnd.plotly.v1+json;base64"
+        value = {
+            "cv_results": item._cv_results,
+            "plots": {
+                "cv_results": {
+                    "value": base64.b64encode(item.plot_bytes).decode(),
+                    "media_type": "application/vnd.plotly.v1+json;base64",
+                },
+            },
+        }
+        media_type = "application/vnd.skore.cross_validation+json"
     else:
         raise ValueError(f"Item {item} is not a known item type.")
 
