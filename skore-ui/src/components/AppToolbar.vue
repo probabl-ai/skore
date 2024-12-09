@@ -28,6 +28,10 @@ import SkoreLogo from "@/components/icons/SkoreLogo.vue";
     align-items: center;
     justify-content: center;
     border-bottom: solid var(--stroke-width-md) var(--color-stroke-background-primary);
+
+    & svg {
+      width: calc(var(--width-toolbar) * 0.8);
+    }
   }
 
   & nav {
