@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import operator
+import statistics
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
@@ -54,8 +55,11 @@ def __cross_validation_item_as_serializable(item: CrossValidationItem) -> dict:
     cv_results = item.cv_results_serialized
     cv_results.pop("indices", None)
 
+    mean_cv_results = {f"mean_{k}": statistics.mean(v) for k, v in cv_results.items()}
+
     return {
         "cv_results": cv_results,
+        "mean_cv_results": mean_cv_results,
         "plots": {
             "cv_results": {
                 "value": base64.b64encode(item.plot_bytes).decode(),
