@@ -68,6 +68,8 @@ def __cross_validation_item_as_serializable(item: CrossValidationItem) -> dict:
 
     scalar_results = mean_cv_results
 
+    estimator_params = f"`{item.estimator_info["name"]}` {', '.join(f"{k}: {v}" for k, v in item.estimator_info["params"].items())}"
+
     return {
         "scalar_results": scalar_results,
         "tabular_results": [tabular_results],
@@ -85,13 +87,13 @@ def __cross_validation_item_as_serializable(item: CrossValidationItem) -> dict:
                     {
                         "name": "Estimator parameters",
                         "description": "Core model configuration used for training",
-                        "value": "???, `{estimator.__class__.__name__}`",
+                        "value": estimator_params,
                     },
                     {
                         "name": "Cross-validation parameters",
                         "description": "Controls how data is split and validated",
                         "value": "??? 5-fold CV",
-                    }
+                    },
                 ],
             }
         ],

@@ -189,7 +189,7 @@ class CrossValidationItem(Item):
 
         estimator_info = {
             "name": estimator.__class__.__name__,
-            "params": repr(estimator.get_params()),
+            "params": estimator.get_params(),
         }
 
         y_array = y if isinstance(y, numpy.ndarray) else numpy.array(y)
