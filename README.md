@@ -1,5 +1,5 @@
 <div style="text-align: center;">
-    <img width="45%" src="https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/Logo_Skore_Light@2x.svg" alt="skore logo">
+    <img width="200" src="https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/Logo_Skore_Light@2x.svg" alt="skore logo">
 </div>
 
 ![ci](https://github.com/probabl-ai/skore/actions/workflows/ci.yml/badge.svg?event=push)
