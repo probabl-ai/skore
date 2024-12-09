@@ -154,7 +154,7 @@ reporter = skore.CrossValidationReporter(lasso, X, y, cv=5)
 reporter.plot
 
 # %%
-# You can also access the plot after you've stored the ``CrossValidationReporter``:
+# We can also access the plot after we have stored the ``CrossValidationReporter``:
 my_project.put("cross_validation_regression", reporter)
 cv_item = my_project.get_item("cross_validation_regression")
 cv_item.plot

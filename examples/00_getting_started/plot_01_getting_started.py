@@ -179,8 +179,13 @@ my_project.put("my_fig", fig)
 # .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_11_21_tracking_comp.gif
 #   :alt: Tracking the history of an item from the skore UI
 #
-# This functionality is very useful to never lose some key machine learning metrics,
-# for example.
+# There is also an activity feed functionality:
+#
+# .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_09_skore_activity_feed.png
+#   :alt: Activity feed on the skore UI
+#
+# These tracking functionalities are very useful to never lose some key machine
+# learning metrics, for example.
 #
 # .. seealso::
 #
@@ -203,7 +208,7 @@ my_project.put("my_fig", fig)
 # :func:`sklearn.model_selection.cross_validate`.
 #
 # On the same previous data and a Ridge regressor (with default ``alpha`` value),
-# let us create a CrossValidationReporter.
+# let us create a ``CrossValidationReporter``.
 
 # %%
 from skore import CrossValidationReporter
@@ -217,8 +222,9 @@ reporter.plot
 # %%
 # .. seealso::
 #
-#   For more information about the motivation and usage of :class:`skore.CrossValidationReporter`,
-#   see :ref:`example_cross_validate`.
+#   More features exist for cross-validation.
+#   For more information about the motivation and usage of
+#   :class:`skore.CrossValidationReporter`, see :ref:`example_cross_validate`.
 
 # %%
 # Train-test split with skore
@@ -239,8 +245,34 @@ X_train, X_test, y_train, y_test = skore.train_test_split(
 )
 
 # %%
+# Now, let us load a dataset containing some time series data:
+
+# %%
+from skrub.datasets import fetch_employee_salaries
+
+dataset = fetch_employee_salaries()
+X, y = dataset.X, dataset.y
+X["date_first_hired"] = pd.to_datetime(X["date_first_hired"])
+X.head(2)
+
+# %%
+# We can observe that there is a ``date_first_hired`` which is time-based.
+# Now, let us apply :func:`skore.train_test_split` on this data:
+
+# %%
+X_train, X_test, y_train, y_test = skore.train_test_split(
+    X, y, random_state=0, shuffle=False
+)
+
+# %%
+# We get a ``TimeBasedColumnWarning`` advising us to use
+# :class:`sklearn.model_selection.TimeSeriesSplit` instead!
+
+
+# %%
 # .. seealso::
 #
+#   More methodological advice exists.
 #   For more information about the motivation and usage of
 #   :func:`skore.train_test_split`, see :ref:`example_train_test_split`.
 
