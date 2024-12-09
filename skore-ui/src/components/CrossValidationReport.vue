@@ -11,7 +11,6 @@ export interface TabularResult {
   name: string;
   columns: any[];
   data: any[][];
-  favorability: "higher-is-better" | "lower-is-better";
 }
 
 export interface PrimaryResults {
@@ -67,7 +66,6 @@ const results: PrimaryResults = {
         Array.from({ length: 50 }, () => Math.random().toFixed(4)),
         Array.from({ length: 50 }, () => Math.random().toFixed(4)),
       ],
-      favorability: "higher-is-better",
     },
     {
       name: "b",
@@ -78,7 +76,6 @@ const results: PrimaryResults = {
         [0.8, 0.4, 0.5, 0.6],
         [0.8, 0.4, 0.5, 0.6],
       ],
-      favorability: "lower-is-better",
     },
   ],
 };
