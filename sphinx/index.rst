@@ -29,7 +29,7 @@ We are a product team working at `Probabl <https://probabl.ai>`_ and our motto i
 - Discord: http://discord.probabl.ai
 - Status: under development, API is subject to change.
 
-.. image:: /_static/images/2024_10_31_skore_demo_compressed.gif
+.. image:: /_static/images/2024_12_05_skore_demo_comp.gif
    :alt: Getting started with skore demo
 
 .. currentmodule:: skore

@@ -166,7 +166,7 @@ my_project.put("my_fig", fig)
 # #.  In the skore UI on the right, you can drag-and-drop items to re-order them,
 #     remove items, etc.
 #
-# .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_10_31_skore_demo_compressed.gif
+# .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_05_skore_demo_comp.gif
 #   :alt: Getting started with ``skore`` demo
 
 # %%
