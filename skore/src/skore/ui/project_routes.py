@@ -50,6 +50,18 @@ class SerializableProject:
     views: dict[str, Layout]
 
 
+def __cross_validation_item_as_serializable(item: CrossValidationItem) -> dict:
+    return {
+        "cv_results": item.cv_results_serialized,
+        "plots": {
+            "cv_results": {
+                "value": base64.b64encode(item.plot_bytes).decode(),
+                "media_type": "application/vnd.plotly.v1+json;base64",
+            },
+        },
+    }
+
+
 def __pandas_dataframe_as_serializable(df: pandas.DataFrame):
     return df.fillna("NaN").to_dict(orient="tight")
 
@@ -84,15 +96,7 @@ def __item_as_serializable(name: str, item: Item) -> SerializableItem:
             value = base64.b64encode(item.media_bytes).decode()
             media_type = f"{item.media_type};base64"
     elif isinstance(item, CrossValidationItem):
-        value = {
-            "cv_results": item.cv_results_serialized,
-            "plots": {
-                "cv_results": {
-                    "value": base64.b64encode(item.plot_bytes).decode(),
-                    "media_type": "application/vnd.plotly.v1+json;base64",
-                },
-            },
-        }
+        value = __cross_validation_item_as_serializable(item)
         media_type = "application/vnd.skore.cross_validation+json"
     else:
         raise ValueError(f"Item {item} is not a known item type.")
