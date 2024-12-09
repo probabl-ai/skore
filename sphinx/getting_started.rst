@@ -19,7 +19,7 @@ current working directory.
 
 Now that the project file exists, from your Python code (in the same directory),
 load the project so that you can read from and write to it, for example you can
-store an integer: 
+store an integer:
 
 .. code-block:: python
 
@@ -38,5 +38,5 @@ This will automatically open a browser at the UI's location:
 #. On the top left, by default, you can observe that you are in a *View* called ``default``. You can rename this view or create another one.
 #. From the *Items* section on the bottom left, you can add stored items to this view, either by clicking on ``+`` or by doing drag-and-drop.
 
-.. image:: https://raw.githubusercontent.com/sylvaincom/sylvaincom.github.io/master/files/probabl/skore/2024_12_05_skore_demo_comp.gif
+.. image:: /_static/images/2024_10_30_skore_demo.gif
    :alt: Getting started with ``skore`` demo

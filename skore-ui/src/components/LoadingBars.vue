@@ -95,6 +95,6 @@
 
 <style>
 svg {
-  fill: var(--text-color-title);
+  fill: var(--color-background-branding);
 }
 </style>

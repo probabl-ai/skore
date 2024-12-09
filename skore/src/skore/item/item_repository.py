@@ -13,10 +13,8 @@ if TYPE_CHECKING:
     from skore.persistence.abstract_storage import AbstractStorage
 
 
-from skore.item.cross_validation_item import (
-    CrossValidationAggregationItem,
-    CrossValidationItem,
-)
+from skore.item.cross_validation_aggregation_item import CrossValidationAggregationItem
+from skore.item.cross_validation_item import CrossValidationItem
 from skore.item.media_item import MediaItem
 from skore.item.numpy_array_item import NumpyArrayItem
 from skore.item.pandas_dataframe_item import PandasDataFrameItem
