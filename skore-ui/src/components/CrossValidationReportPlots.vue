@@ -2,20 +2,22 @@
 import Simplebar from "simplebar-vue";
 import { computed, ref } from "vue";
 
-import type { Plot } from "@/components/CrossValidationReport.vue";
 import DropdownButton from "@/components/DropdownButton.vue";
 import DropdownButtonItem from "@/components/DropdownButtonItem.vue";
 import PlotlyWidget from "@/components/PlotlyWidget.vue";
+import type { PlotDto } from "@/dto";
 
-const props = defineProps<{ plots: Plot[] }>();
+const props = defineProps<{ plots: PlotDto[] }>();
 const currentPlotIndex = ref(0);
-const currentPlot = computed<Plot>(() => {
+const currentPlot = computed<PlotDto>(() => {
   return props.plots[currentPlotIndex.value];
 });
 </script>
 
 <template>
-  <div class="cross-validation-report-plots">
+  <div class="cross-validation-report-plots"
+    v-if="currentPlot"
+  >
     <div class="header">
       <div class="name"><i class="icon icon-bar-chart" /> {{ currentPlot.name }}</div>
       <DropdownButton
@@ -25,12 +27,14 @@ const currentPlot = computed<Plot>(() => {
         :label="currentPlot.name"
       >
         <Simplebar>
-          <DropdownButtonItem
-            v-for="(result, i) in props.plots"
-            :key="i"
-            :label="result.name"
-            @click="currentPlotIndex = i"
-          />
+          <div v-if="props.plots.length > 1">
+            <DropdownButtonItem
+              v-for="(result, i) in props.plots"
+              :key="i"
+              :label="result.name"
+              @click="currentPlotIndex = i"
+            />
+          </div>
         </Simplebar>
       </DropdownButton>
     </div>

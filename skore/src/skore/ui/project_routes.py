@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import json
 import operator
 import statistics
 from dataclasses import dataclass
@@ -54,18 +55,37 @@ class SerializableProject:
 def __cross_validation_item_as_serializable(item: CrossValidationItem) -> dict:
     cv_results = item.cv_results_serialized
     cv_results.pop("indices", None)
+    tabular_results = {
+        "name": "Cross validation results",
+        "columns": list(cv_results.keys()),
+        "data": list(zip(*cv_results.values())),
+    }
 
-    mean_cv_results = {f"mean_{k}": statistics.mean(v) for k, v in cv_results.items()}
+    mean_cv_results = [
+        {"name": f"mean_{k}", "value": statistics.mean(v)}
+        for k, v in cv_results.items()
+    ]
+
+    scalar_results = mean_cv_results
+
+    # plots
+    # {
+    #     "cv_results": {
+    #         "value": base64.b64encode(item.plot_bytes).decode(),
+    #         "media_type": "application/vnd.plotly.v1+json;base64",
+    #     },
+    # },
 
     return {
-        "cv_results": cv_results,
-        "mean_cv_results": mean_cv_results,
-        "plots": {
-            "cv_results": {
-                "value": base64.b64encode(item.plot_bytes).decode(),
-                "media_type": "application/vnd.plotly.v1+json;base64",
-            },
-        },
+        "scalar_results": scalar_results,
+        "tabular_results": [tabular_results],
+        "plots": [
+            {
+                "name": "cross-validation results",
+                "value": json.loads(item.plot_bytes.decode("utf-8")),
+            }
+        ],
+        "sections": [],
     }
 
 

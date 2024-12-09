@@ -1,9 +1,8 @@
 <script setup lang="ts">
+import type { DetailSectionDto } from "@/dto";
 import MarkdownIt from "markdown-it";
 
-import type { DetailSection } from "@/components/CrossValidationReport.vue";
-
-const props = defineProps<{ sections: DetailSection[] }>();
+const props = defineProps<{ sections: DetailSectionDto[] }>();
 const renderer = MarkdownIt();
 
 function itemAsHtml(v: string) {

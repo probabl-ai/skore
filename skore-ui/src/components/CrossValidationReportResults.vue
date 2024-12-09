@@ -2,14 +2,14 @@
 import Simplebar from "simplebar-vue";
 import { computed, ref } from "vue";
 
-import type { PrimaryResults, TabularResult } from "@/components/CrossValidationReport.vue";
 import DropdownButton from "@/components/DropdownButton.vue";
 import DropdownButtonItem from "@/components/DropdownButtonItem.vue";
-import StaticRange from "./StaticRange.vue";
+import StaticRange from "@/components/StaticRange.vue";
+import type { PrimaryResultsDto, TabularResultDto } from "@/dto";
 
-const props = defineProps<PrimaryResults>();
+const props = defineProps<PrimaryResultsDto>();
 const currentTabularResultIndex = ref(0);
-const currentTabularResult = computed<TabularResult>(() => {
+const currentTabularResult = computed<TabularResultDto>(() => {
   return props.tabularResults[currentTabularResultIndex.value];
 });
 </script>
@@ -30,16 +30,17 @@ const currentTabularResult = computed<TabularResult>(() => {
         </div>
       </div>
     </div>
-    <div class="tabular-results">
+    <div class="tabular-results" v-if="currentTabularResult">
       <div class="header">
         <div class="name">
           <i class="icon icon-large-bar-chart" /> {{ currentTabularResult.name }}
         </div>
         <DropdownButton
+          v-if="props.tabularResults.length > 1"
+          :label="currentTabularResult.name"
           icon="icon-chevron-down"
           align="left"
           icon-position="right"
-          :label="currentTabularResult.name"
         >
           <Simplebar>
             <DropdownButtonItem
