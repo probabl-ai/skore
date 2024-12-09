@@ -38,5 +38,5 @@ This will automatically open a browser at the UI's location:
 #. On the top left, by default, you can observe that you are in a *View* called ``default``. You can rename this view or create another one.
 #. From the *Items* section on the bottom left, you can add stored items to this view, either by clicking on ``+`` or by doing drag-and-drop.
 
-.. image:: /_static/images/2024_10_30_skore_demo.gif
+.. image:: /_static/images/2024_12_05_skore_demo_comp.gif
    :alt: Getting started with ``skore`` demo
