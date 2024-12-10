@@ -66,7 +66,8 @@ def __cross_validation_item_as_serializable(item: CrossValidationItem) -> dict:
     }
 
     def metric_title(metric):
-        title = f"Mean {metric.replace("_", " ")}"
+        m = metric.replace("_", " ")
+        title = f"Mean {m}"
         if title.endswith(" time"):
             title = title + " (seconds)"
         return title
