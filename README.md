@@ -119,5 +119,8 @@ See [CONTRIBUTING.rst](https://github.com/probabl-ai/skore/blob/main/CONTRIBUTIN
 Brought to you by
 
 <a href="https://probabl.ai" target="_blank">
-    <img width="120" src="https://sylvaincom.github.io/files/probabl/Logo-orange.png" alt="Probabl logo">
+    <picture>
+        <source srcset="https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/Probabl-logo-orange.png" media="(prefers-color-scheme: dark)">
+        <img width="120" src="https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/Probabl-logo-blue.png" alt="Probabl logo">
+    </picture>
 </a>
