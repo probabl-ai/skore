@@ -24,7 +24,6 @@ from skore.project import (
 )
 from skore.project.create import _validate_project_name
 from skore.project.load import ProjectLoadError
-from skore.project.project import ProjectPutError
 from skore.view.view import View
 
 
@@ -182,8 +181,9 @@ def test_put_kwargs(in_memory_project):
 
 
 def test_put_wrong_key_type(in_memory_project):
-    with pytest.raises(ProjectPutError):
+    with pytest.raises(TypeError):
         in_memory_project.put(key=2, value=1)
+
     assert in_memory_project.list_item_keys() == []
 
 
@@ -251,7 +251,7 @@ def test_put_several_happy_path(in_memory_project):
 
 
 def test_put_several_some_errors(in_memory_project):
-    with pytest.raises(ProjectPutError):
+    with pytest.raises(TypeError):
         in_memory_project.put({0: "hello", 1: "hello", 2: "hello"})
     assert in_memory_project.list_item_keys() == []
 
@@ -264,27 +264,36 @@ def test_put_several_nested(in_memory_project):
 
 def test_put_several_error(in_memory_project):
     """If some key-value pairs are wrong, add all that are valid and print a warning."""
-    with pytest.raises(ProjectPutError):
-        in_memory_project.put({"a": "foo", "b": (lambda: "unsupported object")})
+    with pytest.raises(NotImplementedError):
+        in_memory_project.put(
+            {
+                "a": "foo",
+                "b": (lambda: "unsupported object"),
+            }
+        )
+
     assert in_memory_project.list_item_keys() == ["a"]
 
 
 def test_put_key_is_a_tuple(in_memory_project):
     """If key is not a string, warn."""
-    with pytest.raises(ProjectPutError):
+    with pytest.raises(TypeError):
         in_memory_project.put(("a", "foo"), ("b", "bar"))
+
     assert in_memory_project.list_item_keys() == []
 
 
 def test_put_key_is_a_set(in_memory_project):
     """Cannot use an unhashable type as a key."""
-    with pytest.raises(ProjectPutError):
+    with pytest.raises(TypeError):
         in_memory_project.put(set(), "hello")
+
+    assert in_memory_project.list_item_keys() == []
 
 
 def test_put_wrong_key_and_value_raise(in_memory_project):
     """When `on_error` is "raise", raise the first error that occurs."""
-    with pytest.raises(ProjectPutError):
+    with pytest.raises(TypeError):
         in_memory_project.put(0, (lambda: "unsupported object"))
 
 
