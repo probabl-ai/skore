@@ -7,7 +7,7 @@ import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
 from sklearn.linear_model import Lasso
-from skore.item.media_item import MediaItem
+from skore.item import MediaItem, PrimitiveItem
 from skore.ui.app import create_app
 from skore.view.view import View
 
@@ -31,8 +31,8 @@ def test_get_items(client, in_memory_project):
     in_memory_project.put("test", "version_2")
 
     items = in_memory_project.get_item_versions("test")
-
     response = client.get("/api/project/items")
+
     assert response.status_code == 200
     assert response.json() == {
         "views": {},
@@ -42,11 +42,41 @@ def test_get_items(client, in_memory_project):
                     "name": "test",
                     "media_type": "text/markdown",
                     "value": item.primitive,
+                    "error": False,
+                    "traceback": None,
                     "created_at": item.created_at,
                     "updated_at": item.updated_at,
                 }
                 for item in items
             ],
+        },
+    }
+
+
+def test_get_items_with_unserializable_object(monkeypatch, client, in_memory_project):
+    monkeypatch.setattr("skore.ui.project_routes.format_exc", lambda: "<traceback>")
+
+    in_memory_project.put_item("test", PrimitiveItem(object))
+
+    item = in_memory_project.get_item("test")
+    response = client.get("/api/project/items")
+
+    assert item.primitive is object
+    assert response.status_code == 200
+    assert response.json() == {
+        "views": {},
+        "items": {
+            "test": [
+                {
+                    "name": "test",
+                    "media_type": "text/markdown",
+                    "value": None,
+                    "error": True,
+                    "traceback": "<traceback>",
+                    "updated_at": item.updated_at,
+                    "created_at": item.created_at,
+                },
+            ]
         },
     }
 
@@ -146,7 +176,7 @@ def test_serialize_media_item(client, in_memory_project):
     assert project["items"]["media html"][0]["value"] == html
 
 
-def test_activity_feed(monkeypatch, client, in_memory_project):
+def test_activity(monkeypatch, client, in_memory_project):
     class MockDatetime:
         NOW = datetime.datetime.now(tz=datetime.timezone.utc)
         TIMEDELTA = datetime.timedelta(days=1)
