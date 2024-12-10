@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import contextlib
 import hashlib
-from collections.abc import Iterable
 from functools import cached_property
 from typing import TYPE_CHECKING, Any, Union
 
@@ -16,11 +15,9 @@ import plotly.graph_objects
 import plotly.io
 
 from skore.item.item import Item, ItemTypeError
+from skore.sklearn.cross_validation import CrossValidationReporter
 
 if TYPE_CHECKING:
-    import sklearn.base
-
-    CrossValidationReporter = Any
     CVSplitter = Any
 
 
@@ -101,26 +98,7 @@ class CrossValidationItem(Item):
         self.cv_info = cv_info
 
     @classmethod
-    def factory(cls, *args, **kwargs):
-        """
-        Create a new CrossValidationItem instance.
-
-        Redirects to one of the underlying `factor_*` class methods depending
-        on the arguments
-
-        Returns
-        -------
-        CrossValidationItem
-            A new CrossValidationItem instance.
-        """
-        if args:
-            with contextlib.suppress(ItemTypeError):
-                return cls.factory_cross_validation_reporter(args[0])
-
-        return cls.factory_raw(*args, **kwargs)
-
-    @classmethod
-    def factory_cross_validation_reporter(cls, reporter: CrossValidationReporter):
+    def factory(cls, reporter: CrossValidationReporter):  # type: ignore
         """
         Create a new CrossValidationItem instance from a CrossValidationReporter.
 
@@ -133,57 +111,18 @@ class CrossValidationItem(Item):
         CrossValidationItem
             A new CrossValidationItem instance.
         """
-        if reporter.__class__.__name__ != "CrossValidationReporter":
+        if not isinstance(reporter, CrossValidationReporter):
             raise ItemTypeError(
                 f"Type '{reporter.__class__}' is not supported, "
                 "only 'CrossValidationReporter' is."
             )
-        return cls.factory_raw(
-            cv_results=reporter._cv_results,
-            estimator=reporter.estimator,
-            X=reporter.X,
-            y=reporter.y,
-            plot=reporter.plot,
-            cv=reporter.cv,
-        )
 
-    @classmethod
-    def factory_raw(
-        cls,
-        cv_results: dict,
-        estimator: sklearn.base.BaseEstimator,
-        X: Data,
-        y: Union[Target, None],
-        plot: plotly.graph_objects.Figure,
-        cv: Union[int, CVSplitter, Iterable],
-    ) -> CrossValidationItem:
-        """
-        Create a new ``CrossValidationItem`` instance.
-
-        Parameters
-        ----------
-        cv_results : dict
-            The dict output of scikit-learn's cross_validate function.
-        estimator : sklearn.base.BaseEstimator,
-            The estimator that was cross-validated.
-        X
-            The data, input of the :func:`sklearn.model_selection.cross_validate`
-            function.
-        y
-            The target, input of the :func:`sklearn.model_selection.cross_validate`
-            function.
-        plot_bytes : plotly.graph_objects.Figure
-            A plot of the cross-validation results.
-        cv : int, cross-validation generator or an iterable, default=None
-            See :func:`sklearn.model_selection.cross_validate`.
-
-        Returns
-        -------
-        CrossValidationItem
-            A new CrossValidationItem instance.
-        """
-        if not isinstance(cv_results, dict):
-            raise ItemTypeError(f"Type '{cv_results.__class__}' is not supported.")
+        cv_results = reporter._cv_results
+        estimator = reporter.estimator
+        X = reporter.X
+        y = reporter.y
+        plot = reporter.plot
+        cv = reporter.cv
 
         cv_results_serialized = {}
         for k, v in cv_results.items():
