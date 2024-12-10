@@ -134,6 +134,9 @@ reporter.plot
 #
 #   * We can compare the fitting and scoring times together for each split.
 #
+#   * Moreover, we can focus on the times per data points as the train and
+#     test splits usually have a different number of samples.
+#
 #   * We can compare the accuracy, precision, and recall scores together for each
 #     split.
 
@@ -145,9 +148,7 @@ reporter.plot
 from sklearn.datasets import load_diabetes
 from sklearn.linear_model import Lasso
 
-diabetes = load_diabetes()
-X = diabetes.data[:150]
-y = diabetes.target[:150]
+X, y = load_diabetes(return_X_y=True)
 lasso = Lasso()
 
 reporter = skore.CrossValidationReporter(lasso, X, y, cv=5)
