@@ -6,7 +6,6 @@ from contextlib import suppress
 from typing import Any
 
 from skore.item import skrub_table_report_item as SkrubTableReportItem
-from skore.item.cross_validation_aggregation_item import CrossValidationAggregationItem
 from skore.item.cross_validation_item import CrossValidationItem
 from skore.item.item import Item, ItemTypeError
 from skore.item.item_repository import ItemRepository
@@ -49,7 +48,6 @@ def object_to_item(object: Any) -> Item:
 
 __all__ = [
     "CrossValidationItem",
-    "CrossValidationAggregationItem",
     "Item",
     "ItemRepository",
     "MediaItem",

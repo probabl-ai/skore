@@ -2,7 +2,14 @@
 import { autoUpdate, offset, useFloating, type Placement } from "@floating-ui/vue";
 import { ref } from "vue";
 
-const props = defineProps<{ text?: string; placement?: Placement }>();
+interface FloatingTooltipProps {
+  text?: string;
+  placement?: Placement;
+  enabled?: boolean;
+}
+const props = withDefaults(defineProps<FloatingTooltipProps>(), {
+  enabled: true,
+});
 
 const isHover = ref(false);
 const reference = ref<HTMLElement>();
@@ -11,6 +18,7 @@ const { floatingStyles } = useFloating(reference, floating, {
   middleware: [offset(10)],
   placement: props.placement ?? "bottom",
   whileElementsMounted: autoUpdate,
+  strategy: "fixed",
 });
 </script>
 
@@ -24,7 +32,7 @@ const { floatingStyles } = useFloating(reference, floating, {
     <slot></slot>
     <Transition name="fade">
       <span
-        v-if="isHover"
+        v-if="isHover && enabled"
         ref="floating"
         class="floating-tooltip-content"
         :class="props.placement"

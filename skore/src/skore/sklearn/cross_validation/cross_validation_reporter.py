@@ -124,6 +124,7 @@ class CrossValidationReporter:
         self.estimator = args[0] if len(args) >= 1 else kwargs.get("estimator")
         self.X = args[1] if len(args) >= 2 else kwargs.get("X")
         self.y = args[2] if len(args) == 3 else kwargs.get("y")
+        self.cv = kwargs.get("cv")
 
         self.scorers = kwargs.pop("scoring", None)
         return_estimator = kwargs.pop("return_estimator", None)

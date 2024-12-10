@@ -8,7 +8,6 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.multiclass import OneVsOneClassifier
 from sklearn.svm import SVC
 from skore import CrossValidationReporter
-from skore.item.cross_validation_aggregation_item import CrossValidationAggregationItem
 from skore.item.cross_validation_item import CrossValidationItem
 
 
@@ -154,17 +153,6 @@ class TestMLTask:
 
         assert set(cv_results.keys()).issuperset(cv_results_sklearn.keys())
         assert all(len(v) == 5 for v in cv_results.values())
-
-
-def test_aggregated_cross_validation(rf, in_memory_project):
-    project = in_memory_project
-    args = rf
-    reporter = CrossValidationReporter(*args)
-
-    project.put("cv", reporter)
-    project.put("cv", reporter)
-
-    CrossValidationAggregationItem.factory(project.get_item_versions("cv"))
 
 
 def prepare_cv():
