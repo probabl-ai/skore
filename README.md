@@ -87,12 +87,13 @@ import skore
 from sklearn.datasets import load_iris
 from sklearn.svm import SVC
 
-my_project = skore.create("my_project")
+my_project = skore.create("my_project", overwrite=True)
 
 X, y = load_iris(return_X_y=True)
 clf = SVC(kernel="linear", C=1, random_state=0)
 
-reporter = skore.CrossValidationReporter(clf, X, y, cv=5, project=my_project)
+reporter = skore.CrossValidationReporter(clf, X, y, cv=5)
+my_project.put("cv_reporter", reporter)
 reporter.plot
 ```
 You will automatically be able to visualize some key metrics (although you might have forgotten to specify all of them):
