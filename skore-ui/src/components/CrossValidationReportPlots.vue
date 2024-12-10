@@ -15,26 +15,23 @@ const currentPlot = computed<PlotDto>(() => {
 </script>
 
 <template>
-  <div class="cross-validation-report-plots"
-    v-if="currentPlot"
-  >
+  <div class="cross-validation-report-plots" v-if="currentPlot">
     <div class="header">
       <div class="name"><i class="icon icon-bar-chart" /> {{ currentPlot.name }}</div>
       <DropdownButton
+        v-if="props.plots.length > 1"
         icon="icon-chevron-down"
         align="left"
         icon-position="right"
         :label="currentPlot.name"
       >
         <Simplebar>
-          <div v-if="props.plots.length > 1">
-            <DropdownButtonItem
-              v-for="(result, i) in props.plots"
-              :key="i"
-              :label="result.name"
-              @click="currentPlotIndex = i"
-            />
-          </div>
+          <DropdownButtonItem
+            v-for="(result, i) in props.plots"
+            :key="i"
+            :label="result.name"
+            @click="currentPlotIndex = i"
+          />
         </Simplebar>
       </DropdownButton>
     </div>

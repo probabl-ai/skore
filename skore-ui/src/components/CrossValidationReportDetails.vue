@@ -3,7 +3,7 @@ import type { DetailSectionDto } from "@/dto";
 import MarkdownIt from "markdown-it";
 
 const props = defineProps<{ sections: DetailSectionDto[] }>();
-const renderer = MarkdownIt();
+const renderer = MarkdownIt({ html: true });
 
 function itemAsHtml(v: string) {
   return renderer.render(v);
@@ -57,7 +57,6 @@ function itemAsHtml(v: string) {
       & .item {
         display: flex;
         flex-direction: row;
-        align-items: center;
         justify-content: space-between;
 
         & .name {
@@ -70,11 +69,13 @@ function itemAsHtml(v: string) {
 
         & .value {
           color: var(--color-text-secondary);
-          text-align: right;
+          font-family: GeistMono, monospace;
 
           & em,
           & code {
             color: var(--color-text-branding);
+            font-style: normal;
+            font-weight: var(--font-weight-medium);
           }
 
           & code {
@@ -82,7 +83,10 @@ function itemAsHtml(v: string) {
             padding: var(--spacing-4);
             border-radius: var(--radius-xs);
             background-color: rgb(from var(--color-text-branding) r g b / 20%);
-            font-family: GeistMono, monospace;
+          }
+
+          & ul {
+            padding-left: 15px;
           }
         }
       }

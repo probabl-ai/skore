@@ -1,32 +1,76 @@
 <script setup lang="ts">
 import Simplebar from "simplebar-vue";
-import { computed, ref } from "vue";
+import { computed, ref, useTemplateRef } from "vue";
 
+import FloatingTooltip from "@/components//FloatingTooltip.vue";
 import DropdownButton from "@/components/DropdownButton.vue";
 import DropdownButtonItem from "@/components/DropdownButtonItem.vue";
 import StaticRange from "@/components/StaticRange.vue";
 import type { PrimaryResultsDto, TabularResultDto } from "@/dto";
+import { isElementOverflowing } from "@/services/utils";
 
 const props = defineProps<PrimaryResultsDto>();
 const currentTabularResultIndex = ref(0);
 const currentTabularResult = computed<TabularResultDto>(() => {
   return props.tabularResults[currentTabularResultIndex.value];
 });
+const scalarResultsDivs = useTemplateRef<HTMLDivElement[]>("scalarResultsDivs");
+
+function exponential(x: number) {
+  if (typeof x !== "number") {
+    return x;
+  }
+  const expoForm = x.toExponential(2);
+  const [_, expo] = expoForm.split("e");
+  if (Math.abs(parseInt(expo)) < 2) {
+    return x.toFixed(2);
+  } else {
+    return expoForm;
+  }
+}
+
+function isNameTooltipEnabled(index: number) {
+  if (scalarResultsDivs.value) {
+    const name = scalarResultsDivs.value[index].querySelector(".name");
+    if (name) {
+      return isElementOverflowing(name);
+    }
+  }
+  return false;
+}
 </script>
 
 <template>
   <div class="cross-validation-report-result">
     <div class="scalar-results">
-      <div v-for="(result, i) in props.scalarResults" :key="i" class="result">
-        <div class="name">{{ result.name }}</div>
+      <div
+        v-for="(result, i) in props.scalarResults"
+        :key="i"
+        class="result"
+        ref="scalarResultsDivs"
+      >
+        <FloatingTooltip placement="bottom" :enabled="isNameTooltipEnabled(i)">
+          <div class="name">{{ result.name }}</div>
+          <template #tooltipContent>
+            <span class="name-tooltip">{{ result.name }}</span>
+          </template>
+        </FloatingTooltip>
         <div class="labeled-value" v-if="result.label">
           <div class="label">{{ result.label }}</div>
           <StaticRange :value="result.value" />
           <div class="description">{{ result.description }}</div>
         </div>
         <div class="value" v-else>
-          {{ result.value }}
-          <span v-if="result.fold" class="fold">(Fold {{ result.fold + 1 }})</span>
+          <FloatingTooltip placement="bottom-start">
+            <div>{{ exponential(result.value) }}</div>
+            <div v-if="result.stddev" class="fold">± {{ exponential(result.stddev) }}</div>
+            <template #tooltipContent>
+              <div class="value-tooltip">
+                <div>Mean: {{ result.value }}</div>
+                <div v-if="result.stddev">Std dev: {{ result.stddev }}</div>
+              </div>
+            </template>
+          </FloatingTooltip>
         </div>
       </div>
     </div>
@@ -64,7 +108,14 @@ const currentTabularResult = computed<TabularResultDto>(() => {
             <tbody>
               <tr v-for="(row, i) in currentTabularResult.data" :key="i">
                 <td>Fold&nbsp;{{ i + 1 }}</td>
-                <td v-for="(value, j) in row" :key="j">{{ value }}</td>
+                <td v-for="(value, j) in row" :key="j">
+                  <FloatingTooltip placement="left">
+                    {{ exponential(value) }}
+                    <template #tooltipContent>
+                      <span class="value-tooltip">{{ value }}</span>
+                    </template>
+                  </FloatingTooltip>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -89,12 +140,21 @@ const currentTabularResult = computed<TabularResultDto>(() => {
     }
 
     & .result {
+      overflow: hidden;
       padding: var(--spacing-8) var(--spacing-10);
       background-color: var(--color-background-primary);
 
       & .name {
+        overflow: hidden;
         color: var(--color-text-secondary);
         font-size: var(--font-size-xs);
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        word-break: break-all;
+
+        & .name-tooltip {
+          font-size: var(--font-size-xxs);
+        }
       }
 
       & .labeled-value {
@@ -111,8 +171,13 @@ const currentTabularResult = computed<TabularResultDto>(() => {
         color: var(--color-text-primary);
         font-size: var(--font-size-xlg);
 
+        & .value-tooltip {
+          color: var(--color-text-primary);
+          font-size: var(--font-size-xs);
+        }
+
         & .fold {
-          color: var(--color-background-branding);
+          color: var(--color-text-primary);
           font-size: var(--font-size-xs);
         }
       }
@@ -181,6 +246,7 @@ const currentTabularResult = computed<TabularResultDto>(() => {
 
           &:first-child {
             position: sticky;
+            z-index: 2;
             left: 0;
             width: var(--fold-column-width);
             border-bottom-color: var(--color-background-primary);

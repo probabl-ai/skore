@@ -7,8 +7,9 @@ from __future__ import annotations
 
 import contextlib
 import hashlib
+from collections.abc import Iterable
 from functools import cached_property
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Union
 
 import numpy
 import plotly.graph_objects
@@ -20,6 +21,7 @@ if TYPE_CHECKING:
     import sklearn.base
 
     CrossValidationReporter = Any
+    CVSplitter = Any
 
 
 def _hash_numpy(arr: numpy.ndarray) -> str:
@@ -58,10 +60,11 @@ class CrossValidationItem(Item):
         cv_results_serialized: dict,
         estimator_info: dict,
         X_info: dict,
-        y_info: dict,
+        y_info: Union[dict, None],
         plot_bytes: bytes,
-        created_at: str | None = None,
-        updated_at: str | None = None,
+        cv_info: dict,
+        created_at: Union[str, None] = None,
+        updated_at: Union[str, None] = None,
     ):
         """
         Initialize a CrossValidationItem.
@@ -81,6 +84,8 @@ class CrossValidationItem(Item):
             :func:`sklearn.model_selection.cross_validate` function.
         plot_bytes : bytes
             A plot of the cross-validation results, in the form of bytes.
+        cv_info: dict
+            A dict containing cross validation splitting strategy params.
         created_at : str
             The creation timestamp in ISO format.
         updated_at : str
@@ -93,6 +98,7 @@ class CrossValidationItem(Item):
         self.X_info = X_info
         self.y_info = y_info
         self.plot_bytes = plot_bytes
+        self.cv_info = cv_info
 
     @classmethod
     def factory(cls, *args, **kwargs):
@@ -138,6 +144,7 @@ class CrossValidationItem(Item):
             X=reporter.X,
             y=reporter.y,
             plot=reporter.plot,
+            cv=reporter.cv,
         )
 
     @classmethod
@@ -146,8 +153,9 @@ class CrossValidationItem(Item):
         cv_results: dict,
         estimator: sklearn.base.BaseEstimator,
         X: Data,
-        y: Target | None,
+        y: Union[Target, None],
         plot: plotly.graph_objects.Figure,
+        cv: Union[int, CVSplitter, Iterable],
     ) -> CrossValidationItem:
         """
         Create a new ``CrossValidationItem`` instance.
@@ -166,6 +174,8 @@ class CrossValidationItem(Item):
             function.
         plot_bytes : plotly.graph_objects.Figure
             A plot of the cross-validation results.
+        cv : int, cross-validation generator or an iterable, default=None
+            See :func:`sklearn.model_selection.cross_validate`.
 
         Returns
         -------
@@ -189,7 +199,8 @@ class CrossValidationItem(Item):
 
         estimator_info = {
             "name": estimator.__class__.__name__,
-            "params": estimator.get_params(),
+            "module": estimator.__module__,
+            "params": {k: repr(v) for k, v in estimator.get_params().items()},
         }
 
         y_array = y if isinstance(y, numpy.ndarray) else numpy.array(y)
@@ -204,12 +215,24 @@ class CrossValidationItem(Item):
 
         plot_bytes = plotly.io.to_json(plot, engine="json").encode("utf-8")
 
+        cv_info: dict[str, str] = {}
+        if isinstance(cv, int):
+            cv_info["n_splits"] = repr(cv)
+        elif cv is None:
+            cv_info["n_splits"] = "unknown"
+        else:
+            for attr_name in ["n_splits", "shuffle", "random_state"]:
+                with contextlib.suppress(AttributeError):
+                    attr = getattr(cv, attr_name)
+                    cv_info[attr_name] = repr(attr)
+
         return cls(
             cv_results_serialized=cv_results_serialized,
             estimator_info=estimator_info,
             X_info=X_info,
             y_info=y_info,
             plot_bytes=plot_bytes,
+            cv_info=cv_info,
         )
 
     @cached_property

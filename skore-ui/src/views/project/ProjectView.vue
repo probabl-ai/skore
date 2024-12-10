@@ -148,7 +148,7 @@ main {
 
     & .left-panel {
       display: flex;
-      width: 292px;
+      width: 200px;
       flex-direction: column;
       flex-shrink: 0;
       border-right: solid 1px var(--color-stroke-background-primary);

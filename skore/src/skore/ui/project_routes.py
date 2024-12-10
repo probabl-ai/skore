@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import base64
+import copy
+import importlib
 import json
 import operator
+import re
 import statistics
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -53,22 +56,62 @@ class SerializableProject:
 
 
 def __cross_validation_item_as_serializable(item: CrossValidationItem) -> dict:
-    cv_results = item.cv_results_serialized
+    cv_results = copy.deepcopy(item.cv_results_serialized)
     cv_results.pop("indices", None)
+
     tabular_results = {
         "name": "Cross validation results",
         "columns": list(cv_results.keys()),
         "data": list(zip(*cv_results.values())),
     }
 
+    def metric_title(metric):
+        title = f"Mean {metric.replace("_", " ")}"
+        if title.endswith(" time"):
+            title = title + " (seconds)"
+        return title
+
     mean_cv_results = [
-        {"name": f"mean_{k}", "value": statistics.mean(v)}
+        {
+            "name": metric_title(k),
+            "value": statistics.mean(v),
+            "stddev": statistics.stdev(v),
+        }
         for k, v in cv_results.items()
     ]
 
     scalar_results = mean_cv_results
 
-    estimator_params = f"`{item.estimator_info["name"]}` {', '.join(f"{k}: {v}" for k, v in item.estimator_info["params"].items())}"
+    _estimator_params = item.estimator_info["params"].items()
+
+    try:
+        estimator_module = importlib.import_module(item.estimator_info["module"])
+        EstimatorClass = getattr(estimator_module, item.estimator_info["name"])
+        default_estimator_params = {
+            k: repr(v) for k, v in EstimatorClass().get_params().items()
+        }
+    except Exception:
+        default_estimator_params = {}
+
+    estimator_params = {}
+    for k, v in _estimator_params:
+        if k in default_estimator_params and default_estimator_params[k] == v:
+            estimator_params[k] = f"{v} (default)"
+        else:
+            estimator_params[k] = f"*{v}*"
+
+    params_as_str = "\n".join(f"- {k}: {v}" for k, v in estimator_params.items())
+    name = item.estimator_info["name"]
+    module = re.sub(r"\.\_.+", "", item.estimator_info["module"])
+    estimator_doc_target = (
+        f"https://scikit-learn.org/stable/modules/generated/{module}.{name}.html"
+    )
+    estimator_doc_link = (
+        f'<a href="{estimator_doc_target}" target="_blank"><code>{name}</code></a>'
+    )
+    estimator_params_as_str = f"{estimator_doc_link}\n{params_as_str}"
+
+    cv_params_as_str = ", ".join(f"{k}: *{v}*" for k, v in item.cv_info.items())
 
     return {
         "scalar_results": scalar_results,
@@ -82,17 +125,17 @@ def __cross_validation_item_as_serializable(item: CrossValidationItem) -> dict:
         "sections": [
             {
                 "title": "Model",
-                "icon": "string",
+                "icon": "icon-square-cursor",
                 "items": [
                     {
                         "name": "Estimator parameters",
                         "description": "Core model configuration used for training",
-                        "value": estimator_params,
+                        "value": estimator_params_as_str,
                     },
                     {
                         "name": "Cross-validation parameters",
                         "description": "Controls how data is split and validated",
-                        "value": "??? 5-fold CV",
+                        "value": cv_params_as_str,
                     },
                 ],
             }

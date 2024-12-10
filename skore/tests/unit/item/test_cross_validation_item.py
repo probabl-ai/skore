@@ -17,6 +17,7 @@ class TestCrossValidationItem:
                 X=None,
                 y=None,
                 plot=None,
+                cv=3,
             )
 
     def test_factory(self, monkeypatch, mock_nowstr):
@@ -37,11 +38,12 @@ class TestCrossValidationItem:
             estimator=MyEstimator(),
             X=[[1.0]],
             y=[1],
-            plot=plotly.graph_objects.Figure()
+            plot=plotly.graph_objects.Figure(),
+            cv=3,
         )
 
         assert item.cv_results_serialized == {"test_score": [1, 2, 3]}
-        assert item.estimator_info == {"name": "MyEstimator", "params": "{}"}
+        assert item.estimator_info == {"name": "MyEstimator", "params": {}}
         assert item.X_info == {"nb_cols": 1, "nb_rows": 1, "hash": ""}
         assert item.y_info == {"hash": ""}
         assert isinstance(item.plot_bytes, bytes)

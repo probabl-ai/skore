@@ -185,3 +185,13 @@ export function getErrorMessage(error: unknown) {
   if (error instanceof Error) return error.message;
   return String(error);
 }
+
+/**
+ * Check if an element overflows.
+ * @param element the dom element to check
+ * @returns true if the elements overflows false otherwise
+ */
+export function isElementOverflowing(element: Element) {
+  const { scrollHeight, clientHeight, scrollWidth, clientWidth } = element;
+  return scrollHeight > clientHeight || scrollWidth > clientWidth;
+}

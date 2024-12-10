@@ -34,7 +34,7 @@ export type ActivityFeedDto = ProjectItemDto[];
 export interface ScalarResultDto {
   name: string;
   value: number;
-  fold?: number;
+  stddev?: number;
   label?: string;
   description?: string;
 }

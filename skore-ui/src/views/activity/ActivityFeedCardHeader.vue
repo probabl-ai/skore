@@ -24,6 +24,7 @@ const time = computed(() => format(props.datetime, "HH:mm:ss"));
   display: flex;
   flex-direction: row;
   justify-content: space-between;
+  margin-bottom: var(--spacing-4);
 
   & .name {
     color: var(--color-text-primary);
