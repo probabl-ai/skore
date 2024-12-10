@@ -9,13 +9,14 @@ Getting started with skore
 # %%
 # This getting started guide illustrates how to use skore and why:
 #
-# #. Track and visualize your ML/DS results using skore's :class:`~skore.Project` and UI.
+# #.    Track and visualize your ML/DS results using skore's :class:`~skore.Project`
+#       (for storage) and UI (dashboard).
 #
 # #. Machine learning diagnostics: get assistance when developing your ML/DS projects.
 #
 #    * Scikit-learn compatible :class:`skore.CrossValidationReporter` and
 #      :func:`skore.train_test_split` provide insights and checks on cross-validation
-#      and train-test-split.
+#      and train-test-split to avoid common pitfalls and suggest some best practices.
 
 # %%
 # Track and visualize: skore project and UI
@@ -55,7 +56,7 @@ temp_dir = tempfile.TemporaryDirectory(prefix="skore_example_")
 temp_dir_path = Path(temp_dir.name)
 
 # %%
-# We create and load the skore project from this temporary directory:
+# Then, we create and load the skore project from this temporary directory:
 
 # %%
 import skore
@@ -85,12 +86,12 @@ my_project.put("my_int", 3)
 my_project.get("my_int")
 
 # %%
-# Skore project and storage: example of hyperparameter sweep
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# Skore project: storing some items
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
-# As an illustration of the usage of the skore project and storage with a machine
-# learning motivation, let us perform a hyperparameter sweep and store relevant
-# information in the skore project.
+# As an illustration of the usage of the skore project with a machine learning
+# motivation, let us perform a hyperparameter sweep and store relevant information
+# in the skore project.
 
 # %%
 # We search for the ``alpha`` hyperparameter of a Ridge regression on the
@@ -135,8 +136,8 @@ plt.show()
 
 # %%
 # |
-# Finally, we store some relevant information to our skore project, so that we
-# can visualize them later in the skore UI for example:
+# Finally, we store these relevant items in our skore project, so that we
+# can visualize them later, in the skore UI for example:
 
 # %%
 my_project.put("my_gs_cv", gs_cv)
@@ -151,14 +152,16 @@ my_project.put("my_fig", fig)
 #   see :ref:`example_overview_skore_project`.
 
 # %%
-# Manipulating the skore UI
-# ^^^^^^^^^^^^^^^^^^^^^^^^^
+# Skore UI: visualizing items
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
-# The skore UI is a very efficient tool to track and visualize the items in your
+# The skore UI is a very efficient tool to track and visualize the items stored in your
 # project, such as grid search or cross-validation results.
 #
 # #.  On the top menu, by default, you can observe that you are in a *View* called
 #     ``default``. You can rename this view or create another one.
+#     For example, you can have a specific view for data preprocessing and another one
+#     for model interpretation.
 #
 # #.  From the *Items* section on the left, you can add stored items to this
 #     view, either by clicking on ``+`` or by dragging an item to the right.
@@ -173,19 +176,24 @@ my_project.put("my_fig", fig)
 # Tracking the history of items
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
-# Skore does not overwrite items with the same name, instead it stores their history so
-# that, from the skore UI, we could visualize their different histories:
+# Skore does not overwrite items with the same name (key value), instead it stores
+# their history so that, from the skore UI, we could visualize their different
+# histories:
 #
 # .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_11_21_tracking_comp.gif
 #   :alt: Tracking the history of an item from the skore UI
 #
-# There is also an activity feed functionality:
+# |
+# There is also an activity feed functionality on the left side bar:
 #
 # .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_09_skore_activity_feed.png
 #   :alt: Activity feed on the skore UI
 #
-# These tracking functionalities are very useful to never lose some key machine
-# learning metrics, for example.
+# |
+# These tracking functionalities are very useful to:
+#
+# * never lose some key machine learning metrics,
+# * and observe the evolution over time / runs.
 #
 # .. seealso::
 #
@@ -197,7 +205,8 @@ my_project.put("my_fig", fig)
 # ==============================================================
 #
 # Skore wraps some key scikit-learn functions to automatically provide
-# diagnostics and checks when using them, as a way to facilitate good practices.
+# diagnostics and checks when using them, as a way to facilitate good practices
+# and avoid common pitfalls.
 
 # %%
 # Cross-validation with skore
@@ -217,7 +226,12 @@ reporter = CrossValidationReporter(Ridge(), X, y, cv=5)
 reporter.plot
 
 # %%
-# Hence, we can observe some key metrics and get insights on our cross-validation.
+# Hence:
+#
+# * we can automatically observe some key visualizations and get insights on our
+#   cross-validation,
+# * and some well-chosen metrics are automatically computed for us, without the need to
+#   manually set them.
 
 # %%
 # .. seealso::
@@ -245,6 +259,8 @@ X_train, X_test, y_train, y_test = skore.train_test_split(
 )
 
 # %%
+# In particular, there is a ``HighClassImbalanceWarning``.
+#
 # Now, let us load a dataset containing some time series data:
 
 # %%
@@ -267,19 +283,25 @@ X_train, X_test, y_train, y_test = skore.train_test_split(
 # %%
 # We get a ``TimeBasedColumnWarning`` advising us to use
 # :class:`sklearn.model_selection.TimeSeriesSplit` instead!
+# Indeed, we should not shuffle time-ordered data!
 
 
 # %%
 # .. seealso::
 #
-#   More methodological advice exists.
+#   More methodological advice is available.
 #   For more information about the motivation and usage of
 #   :func:`skore.train_test_split`, see :ref:`example_train_test_split`.
 
 # %%
-# .. admonition:: Stay tuned for some new features!
+# .. admonition:: Stay tuned!
 #
-#    Feel free to join our `Discord <https://discord.gg/scBZerAGwW>`_!
+#   These are only the initial features: skore is a work in progress and aims to be
+#   an end-to-end library for data scientists.
+#
+#   Feedbacks are welcome: please feel free to join our
+#   `Discord <http://discord.probabl.ai>`_ or
+#   `create an issue <https://github.com/probabl-ai/skore/issues>`_.
 
 # %%
 # Cleanup the project
