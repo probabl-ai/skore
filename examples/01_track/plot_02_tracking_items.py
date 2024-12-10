@@ -209,7 +209,7 @@ fig_plotly
 # .. note::
 #   The good practice, instead of running several cross-validations with different
 #   values of the hyperparameter, would have been to use a
-#   :func:`sklearn.model_selection.GridSearchCV`.
+#   :class:`sklearn.model_selection.GridSearchCV`.
 
 # %%
 # Cleanup the project
