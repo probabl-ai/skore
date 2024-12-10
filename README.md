@@ -15,7 +15,7 @@
 With skore, data scientists can:
 1. Track and visualize their ML/DS results.
 2. Get assistance when developing their ML/DS projects.
-    - Scikit-learn compatible `skore.cross_validate()` and `skore.train_test_split()` provide insights and checks on cross-validation and train-test split.
+    - Scikit-learn compatible `skore.CrossValidationReporter` and `skore.train_test_split()` provide insights and checks on cross-validation and train-test split.
 
 These are only the first features: skore is a work in progress and aims to be an end-to-end library for data scientists.
 Stay tuned! Feedbacks are welcome: please feel free to join [our Discord](https://discord.probabl.ai).
@@ -80,18 +80,21 @@ On the UI:
 
 ### Get assistance when developing your ML/DS projects
 
-By using `skore.cross_validate()`:
+By using `skore.CrossValidationReporter`:
 ```python
 import skore
-my_project = skore.create("my_project")
 
 from sklearn.datasets import load_iris
 from sklearn.svm import SVC
 
+my_project = skore.create("my_project", overwrite=True)
+
 X, y = load_iris(return_X_y=True)
 clf = SVC(kernel="linear", C=1, random_state=0)
 
-cv_results = skore.cross_validate(clf, X, y, cv=5, project=my_project)
+reporter = skore.CrossValidationReporter(clf, X, y, cv=5)
+my_project.put("cv_reporter", reporter)
+reporter.plot
 ```
 You will automatically be able to visualize some key metrics (although you might have forgotten to specify all of them):
 ![GIF: short demo of skore](https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_11_21_cross_val_comp.gif)

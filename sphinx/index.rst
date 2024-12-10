@@ -16,7 +16,9 @@ With skore, data scientists can:
 These are only the initial features: skore is a work in progress and aims to be
 an end-to-end library for data scientists.
 Stay tuned!
-Feedbacks are welcome: please feel free to join our `Discord <http://discord.probabl.ai>`_ or `create an issue <https://github.com/probabl-ai/skore/issues>`_.
+Feedbacks are welcome: please feel free to join our
+`Discord <http://discord.probabl.ai>`_ or
+`create an issue <https://github.com/probabl-ai/skore/issues>`_.
 
 .. admonition:: Where to start?
 

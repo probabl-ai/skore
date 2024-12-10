@@ -63,6 +63,11 @@ my_project.put("my_int", 16)
 #
 #   .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_11_21_tracking_comp.gif
 #       :alt: Tracking the history of an item from the skore UI
+#
+#   There is also an activity feed functionality:
+#
+#   .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_09_skore_activity_feed.png
+#       :alt: Activity feed on the skore UI
 
 # %%
 # We retrieve the history of the ``my_int`` item:
@@ -190,7 +195,9 @@ my_project.put("cross_validation", reporter)
 # %%
 from skore.item.cross_validation_aggregation_item import CrossValidationAggregationItem
 
-aggregated_cv_results = CrossValidationAggregationItem.factory(my_project.get_item_versions("cross_validation"))
+aggregated_cv_results = CrossValidationAggregationItem.factory(
+    my_project.get_item_versions("cross_validation")
+)
 
 fig_plotly = aggregated_cv_results.plot
 fig_plotly
@@ -202,7 +209,7 @@ fig_plotly
 # .. note::
 #   The good practice, instead of running several cross-validations with different
 #   values of the hyperparameter, would have been to use a
-#   :func:`sklearn.model_selection.GridSearchCV`.
+#   :class:`sklearn.model_selection.GridSearchCV`.
 
 # %%
 # Cleanup the project
