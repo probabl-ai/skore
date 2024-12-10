@@ -230,19 +230,29 @@ X_train, X_test, y_train, y_test = skore.train_test_split(X=X, y=y, test_size=0.
 # %%
 # Now, let us assume that we have `time series data
 # <https://scikit-learn.org/stable/modules/cross_validation.html#cross-validation-of-time-series-data>`_:
-# the data is somewhat time-ordered.
-# As one can not shuffle time (time only moves in one direction: forward), we
-# recommend using :class:`sklearn.model_selection.TimeSeriesSplit` instead of
-# :func:`sklearn.model_selection.train_test_split` (or :func:`skore.train_test_split`).
+# the data is somewhat time-ordered:
 
 # %%
-from datetime import datetime
 import pandas as pd
+from skrub.datasets import fetch_employee_salaries
 
-X = pd.DataFrame(
-    {"ints": [0, 1], "dates": [datetime(2024, 11, 25), datetime(2024, 11, 26)]}
+dataset = fetch_employee_salaries()
+X, y = dataset.X, dataset.y
+X["date_first_hired"] = pd.to_datetime(X["date_first_hired"])
+X.head(2)
+
+# %%
+# We can observe that there is a ``date_first_hired`` which is time-based.
+#
+# As one can not shuffle time (time only moves in one direction: forward), we
+# recommend using :class:`sklearn.model_selection.TimeSeriesSplit` instead of
+# :func:`sklearn.model_selection.train_test_split` (or :func:`skore.train_test_split`)
+# with a ``TimeBasedColumnWarning``:
+
+# %%
+X_train, X_test, y_train, y_test = skore.train_test_split(
+    X, y, random_state=0, shuffle=False
 )
-X_train, X_test = skore.train_test_split(X=X, test_size=0.2, random_state=0)
 
 # %%
 # Cleanup the project
