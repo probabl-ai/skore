@@ -72,11 +72,10 @@ html_title = "skore"
 # further.  For a list of options available for each theme, see the
 # documentation.
 html_theme_options = {
-    # "logo": {
-    #     "image_relative": "_static/skrub.svg",
-    #     "image_light": "_static/skrub.svg",
-    #     "image_dark": "_static/skrub.svg",
-    # },
+    "logo": {
+        "image_light": "_static/images/Logo_Skore_Light@2x.svg",
+        "image_dark": "_static/images/Logo_Skore_Dark@2x.svg",
+    },
     # When specified as a dictionary, the keys should follow glob-style patterns, as in
     # https://www.sphinx-doc.org/en/master/usage/configuration.html#confval-exclude_patterns
     # In particular, "**" specifies the default for all pages
