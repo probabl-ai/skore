@@ -60,8 +60,15 @@ sphinx_gallery_conf = {
 
 # intersphinx configuration
 intersphinx_mapping = {
+    "python": ("https://docs.python.org/3", None),
+    "numpy": ("https://numpy.org/doc/stable", None),
+    "scipy": ("https://docs.scipy.org/doc/scipy", None),
+    "matplotlib": ("https://matplotlib.org/stable", None),
     "sklearn": ("https://scikit-learn.org/stable/", None),
     "skrub": ("https://skrub-data.org/stable/", None),
+    "pandas": ("http://pandas.pydata.org/pandas-docs/stable", None),
+    "polars": ("https://docs.pola.rs/py-polars/html", None),
+    "seaborn": ("http://seaborn.pydata.org", None),
 }
 
 numpydoc_show_class_members = False
