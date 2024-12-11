@@ -98,7 +98,7 @@ class CrossValidationItem(Item):
         self.cv_info = cv_info
 
     @classmethod
-    def factory(cls, reporter: CrossValidationReporter):  # type: ignore
+    def factory(cls, reporter):
         """
         Create a new CrossValidationItem instance from a CrossValidationReporter.
 
