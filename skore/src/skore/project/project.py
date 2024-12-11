@@ -116,6 +116,14 @@ class Project:
         value : Any, optional
             The value to associate with ``key`` in the Project.
             If ``key`` is a dict, this argument is ignored.
+
+        Raises
+        ------
+        TypeError
+            If the combination of parameters are not valid.
+
+        NotImplementedError
+            If the value type is not supported.
         """
         if value is not MISSING:
             key_to_item = {key: value}
