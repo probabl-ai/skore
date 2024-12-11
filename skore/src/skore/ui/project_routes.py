@@ -57,6 +57,7 @@ class SerializableProject:
 
 
 def __cross_validation_item_as_serializable(item: CrossValidationItem) -> dict:
+    # Get tabular results (the cv results in a dataframe-like structure)
     cv_results = copy.deepcopy(item.cv_results_serialized)
     cv_results.pop("indices", None)
 
@@ -66,6 +67,7 @@ def __cross_validation_item_as_serializable(item: CrossValidationItem) -> dict:
         "data": list(zip(*cv_results.values())),
     }
 
+    # Get scalar results (summary statistics of the cv results)
     def metric_title(metric):
         m = metric.replace("_", " ")
         title = f"Mean {m}"
@@ -84,8 +86,14 @@ def __cross_validation_item_as_serializable(item: CrossValidationItem) -> dict:
 
     scalar_results = mean_cv_results
 
+    # Get estimator details (class name, parameters)
     _estimator_params = item.estimator_info["params"].items()
 
+    # Figure out the default parameters of the estimator,
+    # so that we can highlight the non-default ones in the UI
+
+    # This is done by instantiating the class with no arguments and
+    # computing the diff between the default and ours
     try:
         estimator_module = importlib.import_module(item.estimator_info["module"])
         EstimatorClass = getattr(estimator_module, item.estimator_info["name"])
@@ -103,6 +111,9 @@ def __cross_validation_item_as_serializable(item: CrossValidationItem) -> dict:
             estimator_params[k] = f"*{v}*"
 
     params_as_str = "\n".join(f"- {k}: {v}" for k, v in estimator_params.items())
+
+    # If the estimator is from sklearn, make the class name a hyperlink
+    # to the relevant docs
     name = item.estimator_info["name"]
     module = re.sub(r"\.\_.+", "", item.estimator_info["module"])
     if module.startswith("sklearn"):
@@ -117,6 +128,7 @@ def __cross_validation_item_as_serializable(item: CrossValidationItem) -> dict:
 
     estimator_params_as_str = f"{estimator_doc_link}\n{params_as_str}"
 
+    # Get cross-validation details
     cv_params_as_str = ", ".join(f"{k}: *{v}*" for k, v in item.cv_info.items())
 
     return {
