@@ -1,10 +1,10 @@
 <div align="center">
-  
+
   <picture>
     <source srcset="https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/Logo_Skore_Dark@2x.svg" media="(prefers-color-scheme: dark)">
     <img width="200" src="https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/Logo_Skore_Light@2x.svg" alt="skore logo">
   </picture>
-  
+
   <h2>Your scikit-learn Modeling Companion</h2>
 
 __Elevate ML Development with Tracking and Built-in Recommended Practices__ \
@@ -42,6 +42,8 @@ Skore is just at the beginning of its journey, but we’re shipping fast! Freque
 
 ## 🚀 Quick start
 
+### Installation
+
 First of all, we recommend using a [virtual environment (venv)](https://docs.python.org/3/tutorial/venv.html). You need `python>=3.9`.
 
 Then, you can install skore by using `pip`:
@@ -51,7 +53,6 @@ pip install -U skore
 
 ### Get assistance when developing your ML/DS projects
 
-
 1. From your Python code, create and load a skore project:
     ```python
     import skore
@@ -60,18 +61,18 @@ pip install -U skore
     This will create a skore project directory named `my_project.skore` in your current working directory.
 
 2. Evaluate your model using `skore.CrossValidationReporter`:
-    ```python 
+    ```python
     from sklearn.datasets import load_iris
     from sklearn.svm import SVC
-  
+
     X, y = load_iris(return_X_y=True)
     clf = SVC(kernel="linear", C=1, random_state=0)
-    
+
     reporter = skore.CrossValidationReporter(clf, X, y, cv=5)
-  
+
     # Store the results in the project
     my_project.put("cv_reporter", reporter)
-  
+
     # Display the result in your notebook
     reporter.plot
     ```
@@ -90,7 +91,7 @@ Also check out `skore.train_test_split()` that enhances scikit-learn. Learn more
 
 ## Contributing
 
-Thank you for considering contributing to skore! Join our mission to promote open-source and help making data science more fun! Please check the [contributing guidelines here](https://github.com/probabl-ai/skore/blob/main/CONTRIBUTING.rst). 
+Thank you for considering contributing to skore! Join our mission to promote open-source and help making data science more fun! Please check the contributing guidelines [here](https://github.com/probabl-ai/skore/blob/main/CONTRIBUTING.rst).
 
 
 ## Feedback & Community
