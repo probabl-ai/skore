@@ -23,8 +23,7 @@ from skore.view.view_repository import ViewRepository
 logger = logging.getLogger(__name__)
 
 
-class ProjectPutError(Exception):
-    """One more key-value pairs could not be saved in the Project."""
+MISSING = object()
 
 
 class Project:
@@ -79,7 +78,7 @@ class Project:
         self.item_repository = item_repository
         self.view_repository = view_repository
 
-    def put(self, key: Union[str, dict[str, Any]], value: Optional[Any] = None):
+    def put(self, key: Union[str, dict[str, Any]], value: Optional[Any] = MISSING):
         """Add one or more key-value pairs to the Project.
 
         If an item with the same key already exists, its value is replaced by the new
@@ -120,44 +119,32 @@ class Project:
 
         Raises
         ------
-        ProjectPutError
-            If the key-value pair(s) cannot be saved properly.
+        TypeError
+            If the combination of parameters are not valid.
+
+        NotImplementedError
+            If the value type is not supported.
         """
-        if isinstance(key, dict):
-            for key_, value in key.items():
-                self.__put_one(key_, value)
+        if value is not MISSING:
+            key_to_item = {key: value}
+        elif isinstance(key, dict):
+            key_to_item = key
         else:
-            self.__put_one(key, value)
+            raise TypeError(
+                f"Bad parameters. "
+                f"When value is not specified, key must be a dict (found '{type(key)}')"
+            )
 
-    def __put_one(self, key: str, value: Any):
-        """Add a key-value pair to the Project.
+        for key, value in key_to_item.items():
+            if not isinstance(key, str):
+                raise TypeError(f"Key must be a string (found '{type(key)}')")
 
-        Parameters
-        ----------
-        key : str
-            The key to associate with ``value`` in the Project. Must be a string.
-        value : Any
-            The value to associate with ``key`` in the Project.
-
-        Raises
-        ------
-        ProjectPutError
-            If the key-value pair cannot be saved properly.
-        """
-        try:
-            item = object_to_item(value)
-            self.put_item(key, item)
-        except (NotImplementedError, TypeError) as e:
-            raise ProjectPutError(
-                "Key-value pair could not be inserted in the Project"
-            ) from e
+            self.item_repository.put_item(key, object_to_item(value))
 
     def put_item(self, key: str, item: Item):
         """Add an Item to the Project."""
         if not isinstance(key, str):
-            raise TypeError(
-                f"Key must be a string; key '{key}' is of type '{type(key)}'"
-            )
+            raise TypeError(f"Key must be a string (found '{type(key)}')")
 
         self.item_repository.put_item(key, item)
 
