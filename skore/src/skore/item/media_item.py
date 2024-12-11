@@ -193,7 +193,7 @@ class MediaItem(Item):
             A new MediaItem instance.
         """
         with BytesIO() as stream:
-            media.savefig(stream, format="svg")
+            media.savefig(stream, format="svg", bbox_inches="tight")
             media_bytes = stream.getvalue()
 
             return cls(
