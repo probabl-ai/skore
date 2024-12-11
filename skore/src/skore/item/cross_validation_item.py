@@ -114,7 +114,7 @@ class CrossValidationItem(Item):
         if not isinstance(reporter, CrossValidationReporter):
             raise ItemTypeError(
                 f"Type '{reporter.__class__}' is not supported, "
-                "only 'CrossValidationReporter' is."
+                f"only '{CrossValidationReporter.__name__}' is."
             )
 
         cv_results = reporter._cv_results
