@@ -18,7 +18,7 @@ function itemAsHtml(v: string) {
         <div class="item" v-for="item in section.items" :key="item.name">
           <div class="name-and-description">
             <div class="name">{{ item.name }}</div>
-            <dvi class="description">{{ item.description }}</dvi>
+            <div class="description">{{ item.description }}</div>
           </div>
           <div class="value" v-html="itemAsHtml(item.value)" />
         </div>
