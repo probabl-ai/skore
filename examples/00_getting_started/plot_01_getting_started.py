@@ -180,7 +180,7 @@ my_project.put("my_fig", fig)
 # their history so that, from the skore UI, we could visualize their different
 # histories:
 #
-# .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_11_21_tracking_comp.gif
+# .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_10_tracking_comp.gif
 #   :alt: Tracking the history of an item from the skore UI
 #
 # |
