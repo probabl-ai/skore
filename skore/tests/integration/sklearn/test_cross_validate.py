@@ -8,7 +8,10 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.multiclass import OneVsOneClassifier
 from sklearn.svm import SVC
 from skore import CrossValidationReporter
-from skore.item.cross_validation_aggregation_item import CrossValidationAggregationItem
+from skore.item.cross_validation_aggregation_item import (
+    CrossValidationAggregationItem,
+    plot_cross_validation_aggregation,
+)
 from skore.item.cross_validation_item import CrossValidationItem
 
 
@@ -165,6 +168,21 @@ def test_aggregated_cross_validation(rf, in_memory_project):
     project.put("cv", reporter)
 
     CrossValidationAggregationItem.factory(project.get_item_versions("cv"))
+
+
+def test_plot_aggregated_cross_validation(rf, in_memory_project):
+    """Cross-validation runs with different metrics can be aggregated."""
+    project = in_memory_project
+    args = rf
+    reporter1 = CrossValidationReporter(*args)
+    reporter2 = CrossValidationReporter(
+        *args, scoring=["neg_mean_absolute_error", "r2", "explained_variance"]
+    )
+
+    project.put("cv", reporter1)
+    project.put("cv", reporter2)
+
+    plot_cross_validation_aggregation(project.get_item_versions("cv"))
 
 
 def prepare_cv():

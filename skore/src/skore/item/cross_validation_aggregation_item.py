@@ -5,6 +5,7 @@ This class represents the aggregation of several cross-validation runs.
 
 from __future__ import annotations
 
+import contextlib
 from functools import cached_property
 
 import plotly.graph_objects
@@ -36,10 +37,19 @@ def plot_cross_validation_aggregation(
 
     _cv_results = cv_results_items_versions.copy()
 
-    df = pandas.DataFrame([v.cv_results_serialized for v in _cv_results])
-    df = df.drop(columns=["indices", "estimator"], errors="ignore")
-    df = df.apply(pandas.Series.explode)
-    df = df.reset_index(names="run_number")
+    cv_list = [v.cv_results_serialized for v in _cv_results]
+    df_list = []
+    for run, cv in enumerate(cv_list):
+        for key in ["indices","estimator"]:
+            with contextlib.suppress(KeyError):
+                del cv[key]
+
+        df_run = pandas.DataFrame(cv_list[run])
+        df_run = df_run.reset_index(names="fold_number")
+        df_run["run_number"] = run
+        df_list.append(df_run)
+
+    df = pandas.concat(df_list)
 
     # Move time columns to last and "test_score" to first
     if "fit_time" in df.columns:
