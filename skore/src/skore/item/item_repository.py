@@ -12,6 +12,8 @@ if TYPE_CHECKING:
     from skore.item.item import Item
     from skore.persistence.abstract_storage import AbstractStorage
 
+
+from skore.item.cross_validation_aggregation_item import CrossValidationAggregationItem
 from skore.item.cross_validation_item import CrossValidationItem
 from skore.item.media_item import MediaItem
 from skore.item.numpy_array_item import NumpyArrayItem
@@ -42,6 +44,7 @@ class ItemRepository:
         "PolarsSeriesItem": PolarsSeriesItem,
         "PrimitiveItem": PrimitiveItem,
         "CrossValidationItem": CrossValidationItem,
+        "CrossValidationAggregationItem": CrossValidationAggregationItem,
         "SklearnBaseEstimatorItem": SklearnBaseEstimatorItem,
     }
 
