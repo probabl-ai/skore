@@ -157,9 +157,11 @@ class CrossValidationItem(Item):
         cv_info: dict[str, str] = {}
         if isinstance(cv, int):
             cv_info["n_splits"] = repr(cv)
-        elif cv is None:
+        elif cv is None or hasattr(cv, "__iter__"):
+            # cv is None or an iterable of splits
             cv_info["n_splits"] = "unknown"
         else:
+            # cv is a sklearn CV splitter object
             for attr_name in ["n_splits", "shuffle", "random_state"]:
                 with contextlib.suppress(AttributeError):
                     attr = getattr(cv, attr_name)
