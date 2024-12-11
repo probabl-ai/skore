@@ -105,12 +105,16 @@ def __cross_validation_item_as_serializable(item: CrossValidationItem) -> dict:
     params_as_str = "\n".join(f"- {k}: {v}" for k, v in estimator_params.items())
     name = item.estimator_info["name"]
     module = re.sub(r"\.\_.+", "", item.estimator_info["module"])
-    estimator_doc_target = (
-        f"https://scikit-learn.org/stable/modules/generated/{module}.{name}.html"
-    )
-    estimator_doc_link = (
-        f'<a href="{estimator_doc_target}" target="_blank"><code>{name}</code></a>'
-    )
+    if module.startswith("sklearn"):
+        estimator_doc_target = (
+            f"https://scikit-learn.org/stable/modules/generated/{module}.{name}.html"
+        )
+        estimator_doc_link = (
+            f'<a href="{estimator_doc_target}" target="_blank"><code>{name}</code></a>'
+        )
+    else:
+        estimator_doc_link = f"`{name}`"
+
     estimator_params_as_str = f"{estimator_doc_link}\n{params_as_str}"
 
     cv_params_as_str = ", ".join(f"{k}: *{v}*" for k, v in item.cv_info.items())
