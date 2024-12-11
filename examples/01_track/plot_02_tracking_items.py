@@ -207,6 +207,8 @@ fig_plotly
 
 # %%
 # .. note::
+#   This is an illustrative example of the usage of the
+#   ``CrossValidationAggregationItem``.
 #   The good practice, instead of running several cross-validations with different
 #   values of the hyperparameter, would have been to use a
 #   :class:`sklearn.model_selection.GridSearchCV`.

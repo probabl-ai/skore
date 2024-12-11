@@ -12,11 +12,11 @@ Getting started with skore
 # #.    Track and visualize your ML/DS results using skore's :class:`~skore.Project`
 #       (for storage) and UI (dashboard).
 #
-# #. Machine learning diagnostics: get assistance when developing your ML/DS projects.
+# #.    Machine learning diagnostics: get assistance when developing your ML/DS
+#       projects to avoid common pitfalls and follow recommended practices.
 #
-#    * Scikit-learn compatible :class:`skore.CrossValidationReporter` and
-#      :func:`skore.train_test_split` provide insights and checks on cross-validation
-#      and train-test-split to avoid common pitfalls and suggest some best practices.
+#       * Enhancing key scikit-learn features with :class:`skore.CrossValidationReporter`
+#         and :func:`skore.train_test_split`.
 
 # %%
 # Track and visualize: skore project and UI
