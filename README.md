@@ -21,9 +21,6 @@ __Elevate ML Development with Tracking and Built-in Recommended Practices__ \
 
 </div>
 
-<br />
-<br />
-
 
 ## Why skore?
 
