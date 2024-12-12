@@ -32,10 +32,17 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
           cache: "pip"
+      - uses: actions/cache@v4
+        with:
+          path: './skore/.venv'
+          key: python-venv-${{ matrix.os }}-${{ matrix.python }}-${{ matrix.scikit-learn }}-${{ hashFiles('./skore/pyproject.toml') }}
       - name:
         timeout-minutes: 10
         run: |
           set -u
+
+          # Initialize python-venv
+          python -m venv .venv && (source .venv/bin/activate || .venv/Scripts/activate)
 
           # Install dependencies
           python -m pip install --upgrade "pip"
@@ -50,7 +57,7 @@ jobs:
           python -m build
 
           # Install
-          wheel=(dist/*.whl); python -m pip install "${wheel}[test]"
+          wheel=(dist/*.whl); python -m pip install --upgrade "${wheel}[test]"
 
           # Test
           python -m pytest --no-cov src/ tests/
