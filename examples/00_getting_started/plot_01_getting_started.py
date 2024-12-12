@@ -163,11 +163,13 @@ my_project.put("my_fig", fig)
 #     For example, you can have a specific view for data preprocessing and another one
 #     for model interpretation.
 #
-# #.  From the *Items* section on the left, you can add stored items to this
+# #.  On the left, by default, you are in the *Activity feed*.
+#
+# #.  You also have an *Items* section on the left, you can add stored items to this
 #     view, either by clicking on ``+`` or by dragging an item to the right.
 #
-# #.  In the skore UI on the right, you can drag-and-drop items to re-order them,
-#     remove items, etc.
+# #.  Once in the *Items* section, in the skore UI on the right, you can drag-and-drop
+#     items to re-order them, remove items, etc.
 #
 # .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_12_skore_demo_comp.gif
 #   :alt: Getting started with ``skore`` demo
@@ -191,17 +193,16 @@ my_project.put("my_fig", fig)
 #     my_project.put("my_int", 16)
 #
 # Skore does not overwrite items with the same name (key value), instead it stores
-# their history so that, from the skore UI, we could visualize their different
-# histories:
-#
-# .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_12_tracking_comp.gif
-#   :alt: Tracking the history of an item from the skore UI
-#
-# |
-# There is also an activity feed functionality on the left side bar:
+# their history so that, from the skore UI, we have an activity feed functionality:
 #
 # .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_12_skore_activity_feed.png
 #   :alt: Activity feed on the skore UI
+#
+# |
+# Moreover, in the items tab, we can visualize the different histories of an item:
+#
+# .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_12_skore_tracking_comp.gif
+#   :alt: Tracking the history of an item from the skore UI
 #
 # |
 # These tracking functionalities are very useful to:
