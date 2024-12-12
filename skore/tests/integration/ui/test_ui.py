@@ -171,8 +171,16 @@ def fake_cross_validate(monkeypatch):
 
 
 def test_serialize_cross_validation_item(
-    client, in_memory_project, fake_cross_validate
+    client,
+    in_memory_project,
+    monkeypatch,
+    MockDatetime,
+    mock_nowstr,
+    fake_cross_validate,
 ):
+    monkeypatch.setattr("skore.item.item.datetime", MockDatetime)
+    monkeypatch.setattr("skore.ui.project_routes.CrossValidationItem.plot", {})
+
     def prepare_cv():
         from sklearn import datasets, linear_model
 
@@ -190,11 +198,69 @@ def test_serialize_cross_validation_item(
     assert response.status_code == 200
 
     project = response.json()
-    cv_ui = project["items"]["cv"][0]["value"]
-    assert len(cv_ui["scalar_results"]) == 3
-    assert len(cv_ui["tabular_results"]) == 1
-    assert "plots" in cv_ui
-    assert "sections" in cv_ui
+    expected = {
+        "name": "cv",
+        "media_type": "application/vnd.skore.cross_validation+json",
+        "value": {
+            "scalar_results": [
+                {"name": "Mean test score", "value": 1.0, "stddev": 0.0},
+                {"name": "Mean score time (seconds)", "value": 1.0, "stddev": 0.0},
+                {"name": "Mean fit time (seconds)", "value": 1.0, "stddev": 0.0},
+            ],
+            "tabular_results": [
+                {
+                    "name": "Cross validation results",
+                    "columns": ["test_score", "score_time", "fit_time"],
+                    "data": [
+                        [1.0, 1.0, 1.0],
+                        [1.0, 1.0, 1.0],
+                        [1.0, 1.0, 1.0],
+                        [1.0, 1.0, 1.0],
+                        [1.0, 1.0, 1.0],
+                    ],
+                }
+            ],
+            "plots": [{"name": "cross-validation results", "value": {}}],
+            "sections": [
+                {
+                    "title": "Model",
+                    "icon": "icon-square-cursor",
+                    "items": [
+                        {
+                            "name": "Estimator parameters",
+                            "description": "Core model configuration used for training",
+                            "value": (
+                                '<a href="https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html" target="_blank"><code>Lasso</code></a>\n'  # noqa: E501
+                                "- alpha: *2.5*\n"
+                                "- copy_X: True (default)\n"
+                                "- fit_intercept: True (default)\n"
+                                "- max_iter: 1000 (default)\n"
+                                "- positive: False (default)\n"
+                                "- precompute: False (default)\n"
+                                "- random_state: None (default)\n"
+                                "- selection: 'cyclic' (default)\n"
+                                "- tol: 0.0001 (default)\n"
+                                "- warm_start: False (default)"
+                            ),
+                        },
+                        {
+                            "name": "Cross-validation parameters",
+                            "description": "Controls how data is split and validated",
+                            "value": (
+                                "n_splits: *3*, "
+                                "shuffle: *False*, "
+                                "random_state: *None*"
+                            ),
+                        },
+                    ],
+                }
+            ],
+        },
+        "updated_at": mock_nowstr,
+        "created_at": mock_nowstr,
+    }
+    actual = project["items"]["cv"][0]
+    assert expected == actual
 
 
 def test_activity_feed(monkeypatch, client, in_memory_project):
