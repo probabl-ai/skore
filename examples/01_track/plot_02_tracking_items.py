@@ -146,55 +146,6 @@ fig
 # * Avoid overwriting a useful metric by mistake. No results are can be lost.
 #
 # * The last updated time can help us reproduce an iteration of a key metric.
-#
-# In the following, we explore skore's :class:`skore.CrossValidationReporter` that natively
-# includes tracking.
-
-# %%
-# .. _example_track_cv:
-# Tracking the results of several runs of :class:`skore.CrossValidationReporter`
-# ==============================================================================
-
-# %%
-# The :ref:`example_cross_validate` example explains why and how to use the
-# :class:`skore.CrossValidationReporter` class.
-# Here, let us see how we can use the tracking of items with this function.
-
-# %%
-# Let us load some data:
-
-# %%
-from sklearn import datasets
-
-X, y = datasets.load_diabetes(return_X_y=True)
-X, y = X[:150], y[:150]
-
-# %%
-# Suppose that some users are coding in their draft notebook and are iterating on some
-# cross-validations in separate cells and forgot to store the intermediate results:
-
-# %%
-import skore
-from sklearn.linear_model import Lasso
-
-reporter = skore.CrossValidationReporter(Lasso(alpha=0.5), X, y, cv=5)
-my_project.put("cross_validation", reporter)
-
-# %%
-reporter = skore.CrossValidationReporter(Lasso(alpha=1), X, y, cv=5)
-my_project.put("cross_validation", reporter)
-
-# %%
-reporter = skore.CrossValidationReporter(Lasso(alpha=2), X, y, cv=5)
-my_project.put("cross_validation", reporter)
-
-# %%
-# .. note::
-#   This is an illustrative example of the usage of the
-#   ``CrossValidationReporter``.
-#   The good practice, instead of running several cross-validations with different
-#   values of the hyperparameter, would have been to use a
-#   :class:`sklearn.model_selection.GridSearchCV`.
 
 # %%
 # Cleanup the project

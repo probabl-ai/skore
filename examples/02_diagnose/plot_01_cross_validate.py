@@ -161,11 +161,6 @@ cv_item = my_project.get_item("cross_validation_regression")
 cv_item.plot
 
 # %%
-# .. seealso::
-#   For tracking and comparing several runs of cross-validations on the same data, see
-#   :ref:`example_track_cv`.
-
-# %%
 # Cleanup the project
 # -------------------
 #
