@@ -90,7 +90,7 @@ Also check out `skore.train_test_split()` that enhances scikit-learn. Learn more
 
 ## Contributing
 
-Thank you for considering contributing to skore! Join our mission to promote open-source and help making data science more fun! Please check the contributing guidelines [here](https://github.com/probabl-ai/skore/blob/main/CONTRIBUTING.rst).
+Thank you for considering contributing to skore! Join our mission to promote open-source and make machine learning development more robust and effective. Please check the contributing guidelines [here](https://github.com/probabl-ai/skore/blob/main/CONTRIBUTING.rst).
 
 
 ## Feedback & Community
