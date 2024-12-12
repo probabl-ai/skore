@@ -57,7 +57,7 @@ onBeforeUnmount(() => {
             </div>
           </div>
           <div class="placeholder" v-else>
-            <div class="inner">No items detected yet, we will add items automatically.</div>
+            <div class="inner">No items detected yet. Items will be added automatically.</div>
           </div>
         </Transition>
       </div>
