@@ -12,18 +12,18 @@ export enum ROUTE_NAMES {
 const routes: RouteRecordRaw[] = [
   {
     path: "/",
-    name: ROUTE_NAMES.VIEW_BUILDER,
-    component: ProjectView,
-    meta: {
-      icon: "icon-pie-chart",
-    },
-  },
-  {
-    path: "/activity",
     name: ROUTE_NAMES.ACTIVITY_FEED,
     component: ActivityFeedView,
     meta: {
       icon: "icon-list-sparkle",
+    },
+  },
+  {
+    path: "/views",
+    name: ROUTE_NAMES.VIEW_BUILDER,
+    component: ProjectView,
+    meta: {
+      icon: "icon-pie-chart",
     },
   },
 ];
