@@ -37,8 +37,7 @@ Skore is just at the beginning of its journey, but we’re shipping fast! Freque
 - **Elevate Model Development**: Avoid common pitfalls and follow recommended practices with automatic guidance and insights.
     - Enhancing key scikit-learn features with `skore.CrossValidationReporter` and `skore.train_test_split()`.
 
-![GIF: short demo of skore](https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_05_skore_demo_comp.gif)
-
+![GIF: short demo of skore](https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_12_skore_demo_comp.gif)
 
 ## 🚀 Quick start
 
