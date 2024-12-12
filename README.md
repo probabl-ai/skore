@@ -95,7 +95,7 @@ You can find information on the latest version [here](https://anaconda.org/conda
     This will open skore-ui in a browser window.
 
 You will automatically be able to visualize some key metrics (although you might have forgotten to specify all of them):
-![GIF: short demo of skore](https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_11_21_cross_val_comp.gif)
+![Cross-validation screenshot](https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_12_skore_cross_val.png)
 
 Also check out `skore.train_test_split()` that enhances scikit-learn. Learn more in our [documentation](https://skore.probabl.ai).
 
