@@ -6,7 +6,11 @@ import inspect
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from functools import cached_property
+from pathlib import Path
 from typing import Any, Optional
+from uuid import uuid4
+
+from jinja2 import Environment, FileSystemLoader
 
 
 class ItemTypeError(Exception):
@@ -79,3 +83,34 @@ class Item(ABC):
     def __repr__(self) -> str:
         """Represent the item."""
         return f"{self.__class__.__name__}(...)"
+
+    @abstractmethod
+    def to_serializable(self):
+        """Va niquer ta mere."""
+
+    def _repr_html_(self):
+        """Represent the item in a notebook."""
+        item_folder = Path(__file__).resolve().parent
+        templates_env = Environment(loader=FileSystemLoader(item_folder))
+        template = templates_env.get_template("standalone_widget.html.jinja")
+
+        static_files_path = item_folder.parent / "ui" / "static" / "assets"
+
+        def read_asset_content(path):
+            with open(static_files_path / path) as f:
+                return f.read()
+
+        script_content = read_asset_content("index.js")
+        styles_content = read_asset_content("index.css")
+
+        context = {
+            "id": uuid4().hex,
+            "item": self.to_serializable(),
+            "script": script_content,
+            "styles": styles_content,
+        }
+
+        w = template.render(**context)
+        with open("/Users/rouk1/dev/skore/skore-ui/public/standalone.html", "w") as f:
+            f.write(w)
+        return w

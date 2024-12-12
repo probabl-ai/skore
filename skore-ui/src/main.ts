@@ -3,12 +3,23 @@ import { createApp } from "vue";
 
 import "@/assets/styles/main.css";
 
-import App from "@/App.vue";
 import router from "@/router";
+import SkoreUi from "@/SkoreUi.vue";
+import StandaloneWidget from "@/StandaloneWidget.vue";
 
-const app = createApp(App);
-
-app.use(createPinia());
-app.use(router);
-
-app.mount("#app");
+const pinia = createPinia();
+const appContainer = document.getElementById("skore-ui");
+if (appContainer !== null) {
+  const app = createApp(SkoreUi);
+  app.use(pinia);
+  app.use(router);
+  app.mount(appContainer);
+} else {
+  const containerId = `skore-widget-${window.skoreWidgetId}`;
+  const standaloneWidgetContainer = document.getElementById(containerId);
+  if (standaloneWidgetContainer) {
+    const app = createApp(StandaloneWidget);
+    app.use(pinia);
+    app.mount(standaloneWidgetContainer);
+  }
+}

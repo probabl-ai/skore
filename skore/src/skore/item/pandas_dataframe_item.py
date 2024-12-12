@@ -75,6 +75,15 @@ class PandasDataFrameItem(Item):
 
             return dataframe
 
+    def to_serializable(self):
+        """Item as a serializable dict."""
+        return {
+            "media_type": "application/vnd.dataframe",
+            "value": self.dataframe.fillna("NaN").to_dict(orient="tight"),
+            "updated_at": self.updated_at,
+            "created_at": self.created_at,
+        }
+
     @classmethod
     def factory(cls, dataframe: pandas.DataFrame) -> PandasDataFrameItem:
         """

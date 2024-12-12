@@ -67,6 +67,15 @@ class PrimitiveItem(Item):
 
         self.primitive = primitive
 
+    def to_serializable(self):
+        """Item as a serializable dict."""
+        return {
+            "media_type": "text/markdown",
+            "value": self.primitive,
+            "updated_at": self.updated_at,
+            "created_at": self.created_at,
+        }
+
     @classmethod
     def factory(cls, primitive: Primitive) -> PrimitiveItem:
         """

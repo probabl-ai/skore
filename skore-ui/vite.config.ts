@@ -22,4 +22,14 @@ export default defineConfig({
   test: {
     setupFiles: ["./vitest.setup.ts"],
   },
+  build: {
+    rollupOptions: {
+      output: {
+        inlineDynamicImports: true,
+        entryFileNames: `assets/[name].js`,
+        chunkFileNames: `assets/[name].js`,
+        assetFileNames: `assets/[name].[ext]`,
+      },
+    },
+  },
 });
