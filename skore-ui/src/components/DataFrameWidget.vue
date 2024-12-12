@@ -219,6 +219,16 @@ watch(
           &:first-child:not(.named-index) {
             position: sticky;
             left: 0;
+
+            &::after {
+              position: absolute;
+              top: 0;
+              right: -3px;
+              width: 3px;
+              height: 100%;
+              background: linear-gradient(to right, var(--color-background-secondary), transparent);
+              content: " ";
+            }
           }
         }
 
