@@ -7,6 +7,8 @@ import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
 from sklearn.linear_model import Lasso
+from sklearn.model_selection import KFold
+from skore import CrossValidationReporter
 from skore.item.media_item import MediaItem
 from skore.ui.app import create_app
 from skore.view.view import View
@@ -144,6 +146,55 @@ def test_serialize_media_item(client, in_memory_project):
     assert "image" in project["items"]["img"][0]["media_type"]
     assert project["items"]["html"][0]["value"] == html
     assert project["items"]["media html"][0]["value"] == html
+
+
+@pytest.fixture
+def fake_cross_validate(monkeypatch):
+    def _fake_cross_validate(*args, **kwargs):
+        result = {
+            "test_score": numpy.array([1.0] * 5),
+            "score_time": numpy.array([1.0] * 5),
+            "fit_time": numpy.array([1.0] * 5),
+        }
+        if kwargs.get("return_estimator"):
+            result["estimator"] = numpy.array([])
+        if kwargs.get("return_indices"):
+            result["indices"] = {
+                "train": numpy.array([[1.0] * 5] * 5),
+                "test": numpy.array([[1.0] * 5] * 5),
+            }
+        if kwargs.get("return_train_score"):
+            result["train_score"] = numpy.array([1.0] * 5)
+        return result
+
+    monkeypatch.setattr("sklearn.model_selection.cross_validate", _fake_cross_validate)
+
+
+def test_serialize_cross_validation_item(
+    client, in_memory_project, fake_cross_validate
+):
+    def prepare_cv():
+        from sklearn import datasets, linear_model
+
+        diabetes = datasets.load_diabetes()
+        X = diabetes.data[:100]
+        y = diabetes.target[:100]
+        lasso = linear_model.Lasso(alpha=2.5)
+        return lasso, X, y
+
+    model, X, y = prepare_cv()
+    reporter = CrossValidationReporter(model, X, y, cv=KFold(3))
+    in_memory_project.put("cv", reporter)
+
+    response = client.get("/api/project/items")
+    assert response.status_code == 200
+
+    project = response.json()
+    cv_ui = project["items"]["cv"][0]["value"]
+    assert len(cv_ui["scalar_results"]) == 3
+    assert len(cv_ui["tabular_results"]) == 1
+    assert "plots" in cv_ui
+    assert "sections" in cv_ui
 
 
 def test_activity_feed(monkeypatch, client, in_memory_project):
