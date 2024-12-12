@@ -43,12 +43,24 @@ Skore is just at the beginning of its journey, but we’re shipping fast! Freque
 
 ### Installation
 
-First of all, we recommend using a [virtual environment (venv)](https://docs.python.org/3/tutorial/venv.html). You need `python>=3.9`.
+#### With pip
+
+We recommend using a [virtual environment (venv)](https://docs.python.org/3/tutorial/venv.html). You need `python>=3.9`.
 
 Then, you can install skore by using `pip`:
 ```bash
 pip install -U skore
 ```
+
+#### With conda
+
+skore is available in `conda-forge`:
+
+```bash
+conda install conda-forge::skore
+```
+
+You can find information on the latest version [here](https://anaconda.org/conda-forge/skore).
 
 ### Get assistance when developing your ML/DS projects
 
