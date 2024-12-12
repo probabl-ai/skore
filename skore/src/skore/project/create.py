@@ -79,7 +79,7 @@ def create(
 
     Returns
     -------
-    The project directory path
+    The created project
     """
     project_path = Path(project_name)
 
