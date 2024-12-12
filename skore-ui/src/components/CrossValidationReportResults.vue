@@ -237,6 +237,7 @@ function isNameTooltipEnabled(index: number) {
       }
 
       & tbody tr {
+        position: relative;
         color: var(--color-text-primary);
         font-weight: var(--font-weight-regular);
 
@@ -254,6 +255,16 @@ function isNameTooltipEnabled(index: number) {
             background-color: var(--color-background-secondary);
             font-weight: var(--font-weight-medium);
             text-align: left;
+
+            &::after {
+              position: absolute;
+              top: 0;
+              right: -3px;
+              width: 3px;
+              height: 100%;
+              background: linear-gradient(to right, var(--color-background-secondary), transparent);
+              content: " ";
+            }
           }
 
           &:last-child {
