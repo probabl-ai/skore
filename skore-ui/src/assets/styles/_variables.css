@@ -5,10 +5,12 @@
   --root-font-size: 14px;
 
   /* typography */
+  --font-size-xxs: 0.65rem;
   --font-size-xs: 0.85rem;
   --font-size-sm: 1rem;
   --font-size-md: 1.14rem;
   --font-size-lg: 1.42rem;
+  --font-size-xlg: 1.57rem;
   --letter-spacing: -0.015em;
   --font-weight-regular: 400;
   --font-weight-medium: 500;
@@ -31,6 +33,7 @@
 
   /* strokes */
   --stroke-width-md: 1px;
+  --stroke-width-lg: 2px;
 
   /* animations */
   --animation-duration: 0.3s;
@@ -53,6 +56,7 @@
     --color-text-primary: #fff;
     --color-text-secondary: #a2a2a2;
     --color-text-tertiary: #f08b30;
+    --color-text-branding: #f08b30;
     --color-text-button-primary: #fff;
 
     /* icons */
@@ -64,6 +68,7 @@
 
     /* strokes */
     --color-stroke-background-primary: #292a2a;
+    --color-stroke-background-branding: #f08b30;
     --color-divider-background-secondary: #292a2a;
 
     /* shadow */
@@ -83,6 +88,7 @@
     --color-text-primary: #2f3037;
     --color-text-secondary: #616271;
     --color-text-tertiary: #f08b30;
+    --color-text-branding: #3043f0;
     --color-text-button-primary: #fff;
     --color-icon-navigation-selected: #e2e4fa;
 
@@ -94,6 +100,7 @@
 
     /* strokes */
     --color-stroke-background-primary: #eeeef0;
+    --color-stroke-background-branding: #3043f0;
     --color-divider-background-secondary: #eeeef0;
 
     /* shadow */

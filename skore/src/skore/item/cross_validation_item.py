@@ -5,9 +5,10 @@ This class represents the output of a cross-validation workflow.
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 from functools import cached_property
-from typing import Any
+from typing import TYPE_CHECKING, Any, Union
 
 import numpy
 import plotly.graph_objects
@@ -15,6 +16,9 @@ import plotly.io
 
 from skore.item.item import Item, ItemTypeError
 from skore.sklearn.cross_validation import CrossValidationReporter
+
+if TYPE_CHECKING:
+    CVSplitter = Any
 
 
 def _hash_numpy(arr: numpy.ndarray) -> str:
@@ -53,10 +57,11 @@ class CrossValidationItem(Item):
         cv_results_serialized: dict,
         estimator_info: dict,
         X_info: dict,
-        y_info: dict,
+        y_info: Union[dict, None],
         plot_bytes: bytes,
-        created_at: str | None = None,
-        updated_at: str | None = None,
+        cv_info: dict,
+        created_at: Union[str, None] = None,
+        updated_at: Union[str, None] = None,
     ):
         """
         Initialize a CrossValidationItem.
@@ -76,6 +81,8 @@ class CrossValidationItem(Item):
             :func:`sklearn.model_selection.cross_validate` function.
         plot_bytes : bytes
             A plot of the cross-validation results, in the form of bytes.
+        cv_info: dict
+            A dict containing cross validation splitting strategy params.
         created_at : str
             The creation timestamp in ISO format.
         updated_at : str
@@ -88,9 +95,10 @@ class CrossValidationItem(Item):
         self.X_info = X_info
         self.y_info = y_info
         self.plot_bytes = plot_bytes
+        self.cv_info = cv_info
 
     @classmethod
-    def factory(cls, reporter: CrossValidationReporter):
+    def factory(cls, reporter):
         """
         Create a new CrossValidationItem instance from a CrossValidationReporter.
 
@@ -106,7 +114,7 @@ class CrossValidationItem(Item):
         if not isinstance(reporter, CrossValidationReporter):
             raise ItemTypeError(
                 f"Type '{reporter.__class__}' is not supported, "
-                "only 'CrossValidationReporter' is."
+                f"only '{CrossValidationReporter.__name__}' is."
             )
 
         cv_results = reporter._cv_results
@@ -114,6 +122,7 @@ class CrossValidationItem(Item):
         X = reporter.X
         y = reporter.y
         plot = reporter.plot
+        cv = reporter.cv
 
         cv_results_serialized = {}
         for k, v in cv_results.items():
@@ -129,7 +138,8 @@ class CrossValidationItem(Item):
 
         estimator_info = {
             "name": estimator.__class__.__name__,
-            "params": repr(estimator.get_params()),
+            "module": estimator.__module__,
+            "params": {k: repr(v) for k, v in estimator.get_params().items()},
         }
 
         y_array = y if isinstance(y, numpy.ndarray) else numpy.array(y)
@@ -144,12 +154,26 @@ class CrossValidationItem(Item):
 
         plot_bytes = plotly.io.to_json(plot, engine="json").encode("utf-8")
 
+        cv_info: dict[str, str] = {}
+        if isinstance(cv, int):
+            cv_info["n_splits"] = repr(cv)
+        elif cv is None or hasattr(cv, "__iter__"):
+            # cv is None or an iterable of splits
+            cv_info["n_splits"] = "unknown"
+        else:
+            # cv is a sklearn CV splitter object
+            for attr_name in ["n_splits", "shuffle", "random_state"]:
+                with contextlib.suppress(AttributeError):
+                    attr = getattr(cv, attr_name)
+                    cv_info[attr_name] = repr(attr)
+
         return cls(
             cv_results_serialized=cv_results_serialized,
             estimator_info=estimator_info,
             X_info=X_info,
             y_info=y_info,
             plot_bytes=plot_bytes,
+            cv_info=cv_info,
         )
 
     @cached_property

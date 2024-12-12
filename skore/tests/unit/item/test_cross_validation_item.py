@@ -26,6 +26,7 @@ class FakeCrossValidationReporter:
     X = numpy.array([[1.0]])
     y = numpy.array([1])
     plot = plotly.graph_objects.Figure()
+    cv = 2
 
 
 class TestCrossValidationItem:
@@ -47,7 +48,11 @@ class TestCrossValidationItem:
         item = CrossValidationItem.factory(reporter)
 
         assert item.cv_results_serialized == {"test_score": [1, 2, 3]}
-        assert item.estimator_info == {"name": "FakeEstimator", "params": "{}"}
+        assert item.estimator_info == {
+            "name": "FakeEstimator",
+            "params": {},
+            "module": "tests.unit.item.test_cross_validation_item",
+        }
         assert item.X_info == {
             "nb_cols": 1,
             "nb_rows": 1,
