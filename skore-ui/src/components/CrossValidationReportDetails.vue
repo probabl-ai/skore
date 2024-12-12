@@ -85,6 +85,10 @@ function itemAsHtml(v: string) {
             background-color: rgb(from var(--color-text-branding) r g b / 20%);
           }
 
+          & a code {
+            text-decoration: underline;
+          }
+
           & ul {
             padding-left: 15px;
           }
