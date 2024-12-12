@@ -189,26 +189,9 @@ reporter = skore.CrossValidationReporter(Lasso(alpha=2), X, y, cv=5)
 my_project.put("cross_validation", reporter)
 
 # %%
-# Thanks to the storage in skore, we can compare the metrics of each
-# cross-validation run (on all splits):
-
-# %%
-from skore.item.cross_validation_aggregation_item import CrossValidationAggregationItem
-
-aggregated_cv_results = CrossValidationAggregationItem.factory(
-    my_project.get_item_versions("cross_validation")
-)
-
-fig_plotly = aggregated_cv_results.plot
-fig_plotly
-
-# %%
-# Hence, we can observe that the first run, with ``alpha=0.5``, works better.
-
-# %%
 # .. note::
 #   This is an illustrative example of the usage of the
-#   ``CrossValidationAggregationItem``.
+#   ``CrossValidationReporter``.
 #   The good practice, instead of running several cross-validations with different
 #   values of the hyperparameter, would have been to use a
 #   :class:`sklearn.model_selection.GridSearchCV`.
