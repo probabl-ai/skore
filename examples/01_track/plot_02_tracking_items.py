@@ -61,12 +61,12 @@ my_project.put("my_int", 16)
 #   and, from the skore UI, we could visualize the different histories of the ``my_int``
 #   item:
 #
-#   .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_10_tracking_comp.gif
+#   .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_12_skore_tracking_comp.gif
 #       :alt: Tracking the history of an item from the skore UI
 #
 #   There is also an activity feed functionality:
 #
-#   .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_09_skore_activity_feed.png
+#   .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_12_skore_activity_feed.png
 #       :alt: Activity feed on the skore UI
 
 # %%
