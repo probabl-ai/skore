@@ -169,12 +169,26 @@ my_project.put("my_fig", fig)
 # #.  In the skore UI on the right, you can drag-and-drop items to re-order them,
 #     remove items, etc.
 #
-# .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_05_skore_demo_comp.gif
+# .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_12_skore_demo_comp.gif
 #   :alt: Getting started with ``skore`` demo
 
 # %%
 # Tracking the history of items
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+# %%
+# Suppose we store several integer values for a same item called ``my_int``, each storage
+# being separated by 0.1 second:
+#
+# .. code-block:: python
+#
+#     import time
+#
+#     my_project.put("my_int", 4)
+#     time.sleep(0.1)
+#     my_project.put("my_int", 9)
+#     time.sleep(0.1)
+#     my_project.put("my_int", 16)
 #
 # Skore does not overwrite items with the same name (key value), instead it stores
 # their history so that, from the skore UI, we could visualize their different
@@ -222,8 +236,9 @@ my_project.put("my_fig", fig)
 # %%
 from skore import CrossValidationReporter
 
-reporter = CrossValidationReporter(Ridge(), X, y, cv=5)
-reporter.plot
+cv_reporter = CrossValidationReporter(Ridge(), X, y, cv=5)
+my_project.put("cv_reporter", cv_reporter)
+cv_reporter.plot
 
 # %%
 # Hence:
