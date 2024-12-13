@@ -33,7 +33,7 @@ Skore is just at the beginning of its journey, but we’re shipping fast! Freque
 
 ## Key features
 
-- **Track and Visualize Results**: Gain a deeper understanding of your machine learning prototyping with intuitive visualizations for your experiments. Keep track of your intermediary ML/DS results, reducing cognitive load.
+- **Track and Visualize Results**: Capture your intermediate ML/DS results without the overhead, while gaining deeper insights through intuitive visualizations of your experiments.
 - **Elevate Model Development**: Avoid common pitfalls and follow recommended practices with automatic guidance and insights.
     - Enhancing key scikit-learn features with `skore.CrossValidationReporter` and `skore.train_test_split()`.
 
