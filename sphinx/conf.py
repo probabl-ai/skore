@@ -59,6 +59,7 @@ sphinx_gallery_conf = {
     },
     "backreferences_dir": "generated",
     "doc_module": "skore",
+    "default_thumb_file": "./_static/images/Logo_Skore_Light@2x.svg",
 }
 
 # intersphinx configuration
