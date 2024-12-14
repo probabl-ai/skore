@@ -23,8 +23,7 @@ class CrossValidationReporter:
     As such, the arguments are the same as the
     :func:`sklearn.model_selection.cross_validate` function.
 
-    For a user guide and in-depth example, see :ref:`example_cross_validate` and
-    :ref:`example_track_cv`.
+    For a user guide and in-depth example, see :ref:`example_cross_validate`.
 
     More precisely, upon initialization, this class does the following:
 
