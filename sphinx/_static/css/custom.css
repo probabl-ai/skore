@@ -52,3 +52,12 @@ div.docutils.container.index-box {
 .sphx-glr-download-zip {
   display: none;
 }
+
+/* sphinx-gallery */
+
+/* add padding to images */
+.bd-article img {
+    height: unset !important;
+    margin-top: 2%;
+    margin-bottom: 2%;
+}

@@ -135,7 +135,7 @@ plt.title("Ridge regression")
 plt.show()
 
 # %%
-# |
+#
 # Finally, we store these relevant items in our skore project, so that we
 # can visualize them later, in the skore UI for example:
 
@@ -198,13 +198,11 @@ my_project.put("my_fig", fig)
 # .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_12_skore_activity_feed.png
 #   :alt: Activity feed on the skore UI
 #
-# |
 # Moreover, in the items tab, we can visualize the different histories of an item:
 #
 # .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_12_skore_tracking_comp.gif
 #   :alt: Tracking the history of an item from the skore UI
 #
-# |
 # These tracking functionalities are very useful to:
 #
 # * never lose some key machine learning metrics,
@@ -248,8 +246,7 @@ cv_reporter.plot
 #   cross-validation,
 # * and some well-chosen metrics are automatically computed for us, without the need to
 #   manually set them.
-
-# %%
+#
 # .. seealso::
 #
 #   More features exist for cross-validation.
