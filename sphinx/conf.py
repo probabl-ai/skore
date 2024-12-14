@@ -57,6 +57,8 @@ sphinx_gallery_conf = {
         # The module you locally document uses None
         "skore": None,
     },
+    "backreferences_dir": "generated",
+    "doc_module": "skore",
 }
 
 # intersphinx configuration
