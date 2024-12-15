@@ -7,14 +7,17 @@ from skore.cli import logger
 from skore.cli.launch_dashboard import __launch
 from skore.exceptions import ProjectAlreadyExistsError
 from skore.project import create
+from skore.utils._logger import with_logging
 
 
+@with_logging(logger)
 def __quickstart(
     project_name: Union[str, Path],
     working_dir: Optional[Path],
     overwrite: bool,
     port: int,
     open_browser: bool,
+    verbose: bool = False,
 ):
     """Quickstart a Skore project.
 
