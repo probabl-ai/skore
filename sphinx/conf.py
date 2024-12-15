@@ -137,8 +137,6 @@ html_theme_options["analytics"] = {
 # Sphinx remove the sidebar from some pages
 html_sidebars = {
     "install": [],
-    "getting_started": [],
-    "user_guide": [],
     "contributor_guide": [],
 }
 
