@@ -24,7 +24,7 @@ logger.setLevel(logging.INFO)
 
 skore_console_theme = Theme(
     {
-        "repr.str": "bold cyan",
+        "repr.str": "cyan",
         "rule.line": "orange1",
         "repr.url": "orange1",
     }
