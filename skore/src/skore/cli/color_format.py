@@ -5,6 +5,15 @@ import shutil
 from argparse import ArgumentParser, HelpFormatter
 
 from rich.console import Console
+from rich.theme import Theme
+
+skore_console_theme = Theme(
+    {
+        "repr.str": "cyan",
+        "rule.line": "orange1",
+        "repr.url": "orange1",
+    }
+)
 
 
 class RichColorHelpFormatter(HelpFormatter):
@@ -13,7 +22,7 @@ class RichColorHelpFormatter(HelpFormatter):
     def __init__(self, prog, indent_increment=2, max_help_position=24, width=None):
         width = shutil.get_terminal_size()[0] if width is None else width
         super().__init__(prog, indent_increment, max_help_position, width)
-        self.console = Console()
+        self.console = Console(theme=skore_console_theme)
 
     def _format_action_invocation(self, action):
         """Format the action invocation (flags and arguments)."""
@@ -25,18 +34,13 @@ class RichColorHelpFormatter(HelpFormatter):
             # Format short options
             if action.option_strings:
                 parts.extend(
-                    (
-                        f"[green]{opt}[/green]"
-                        if len(opt) == 2
-                        else f"[cyan bold]{opt}[/cyan bold]"
-                    )
-                    for opt in action.option_strings
+                    f"[cyan bold]{opt}[/cyan bold]" for opt in action.option_strings
                 )
             # Format argument
             if action.nargs != 0:
                 default = self._get_default_metavar_for_optional(action)
                 args_string = self._format_args(action, default)
-                parts.append(f"[yellow bold]{args_string}[/yellow bold]")
+                parts.append(f"[orange1 bold]{args_string}[/orange1 bold]")
 
             return " ".join(parts)
 
@@ -49,7 +53,7 @@ class RichColorHelpFormatter(HelpFormatter):
         formatted = super()._format_usage(usage, actions, groups, prefix)
 
         # Apply rich formatting
-        formatted = re.sub(r"usage:", "[yellow bold]usage:[/yellow bold]", formatted)
+        formatted = re.sub(r"usage:", "[orange1 bold]usage:[/orange1 bold]", formatted)
         formatted = re.sub(
             r"(?<=\[)[A-Z_]+(?=\])", lambda m: f"[cyan]{m.group()}[/cyan]", formatted
         )
