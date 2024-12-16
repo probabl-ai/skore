@@ -8,7 +8,7 @@ from __future__ import annotations
 import contextlib
 import hashlib
 from functools import cached_property
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any, TypedDict, Union
 
 import numpy
 import plotly.graph_objects
@@ -18,7 +18,16 @@ from skore.item.item import Item, ItemTypeError
 from skore.sklearn.cross_validation import CrossValidationReporter
 
 if TYPE_CHECKING:
+    import sklearn.base
+
     CVSplitter = Any
+
+    class EstimatorInfo(TypedDict):
+        """Information about an estimator."""
+
+        name: str
+        module: str
+        params: dict[str, str]
 
 
 def _hash_numpy(arr: numpy.ndarray) -> str:
@@ -98,7 +107,7 @@ class CrossValidationItem(Item):
         self.cv_info = cv_info
 
     @staticmethod
-    def _estimator_info(estimator):
+    def _estimator_info(estimator: sklearn.base.BaseEstimator) -> EstimatorInfo:
         estimator_params = (
             estimator.get_params() if hasattr(estimator, "get_params") else {}
         )
