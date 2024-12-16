@@ -136,10 +136,14 @@ class CrossValidationItem(Item):
             if isinstance(v, numpy.ndarray):
                 cv_results_serialized[k] = v.tolist()
 
+        estimator_params = (
+            estimator.get_params() if hasattr(estimator, "get_params") else {}
+        )
+
         estimator_info = {
             "name": estimator.__class__.__name__,
             "module": estimator.__module__,
-            "params": {k: repr(v) for k, v in estimator.get_params().items()},
+            "params": {k: repr(v) for k, v in estimator_params.items()},
         }
 
         y_array = y if isinstance(y, numpy.ndarray) else numpy.array(y)
