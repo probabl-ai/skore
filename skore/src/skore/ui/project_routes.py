@@ -55,6 +55,14 @@ class SerializableProject:
     views: dict[str, Layout]
 
 
+def _metric_title(metric: str) -> str:
+    m = metric.replace("_", " ")
+    title = f"Mean {m}"
+    if title.endswith(" time"):
+        title = title + " (seconds)"
+    return title
+
+
 def __cross_validation_item_as_serializable(item: CrossValidationItem) -> dict:
     # Get tabular results (the cv results in a dataframe-like structure)
     cv_results = copy.deepcopy(item.cv_results_serialized)
@@ -67,16 +75,9 @@ def __cross_validation_item_as_serializable(item: CrossValidationItem) -> dict:
     }
 
     # Get scalar results (summary statistics of the cv results)
-    def metric_title(metric):
-        m = metric.replace("_", " ")
-        title = f"Mean {m}"
-        if title.endswith(" time"):
-            title = title + " (seconds)"
-        return title
-
     mean_cv_results = [
         {
-            "name": metric_title(k),
+            "name": _metric_title(k),
             "value": statistics.mean(v),
             "stddev": statistics.stdev(v),
         }
