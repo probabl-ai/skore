@@ -99,17 +99,12 @@ class CrossValidationReporter:
 
     Examples
     --------
-    >>> def prepare_cv():
-    ...     from sklearn import datasets, linear_model
-    ...     diabetes = datasets.load_diabetes()
-    ...     X = diabetes.data[:150]
-    ...     y = diabetes.target[:150]
-    ...     lasso = linear_model.Lasso()
-    ...     return lasso, X, y
-
-    >>> lasso, X, y = prepare_cv()  # doctest: +SKIP
-
-    >>> reporter = CrossValidationReporter(lasso, X, y, cv=3)  # doctest: +SKIP
+    >>> from sklearn import datasets, linear_model
+    >>> from skore import CrossValidationReporter
+    >>> X, y = datasets.load_diabetes(return_X_y=True)
+    >>> lasso = linear_model.Lasso()
+    >>> reporter = CrossValidationReporter(lasso, X, y, cv=3)
+    >>> reporter
     CrossValidationReporter(...)
     """
 
