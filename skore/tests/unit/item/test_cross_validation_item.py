@@ -9,6 +9,7 @@ from skore.item.cross_validation_item import (
     ItemTypeError,
     _hash_numpy,
 )
+from skore.sklearn.cross_validation import CrossValidationReporter
 
 
 class FakeEstimator:
@@ -17,7 +18,7 @@ class FakeEstimator:
 
 
 @dataclass
-class FakeCrossValidationReporter:
+class FakeCrossValidationReporter(CrossValidationReporter):
     _cv_results = {
         "test_score": numpy.array([1, 2, 3]),
         "estimator": [FakeEstimator(), FakeEstimator(), FakeEstimator()],
@@ -39,12 +40,7 @@ class TestCrossValidationItem:
         with pytest.raises(ItemTypeError):
             CrossValidationItem.factory(None)
 
-    def test_factory(self, monkeypatch, mock_nowstr):
-        monkeypatch.setattr(
-            "skore.item.cross_validation_item.CrossValidationReporter",
-            FakeCrossValidationReporter,
-        )
-
+    def test_factory(self, mock_nowstr):
         reporter = FakeCrossValidationReporter()
         item = CrossValidationItem.factory(reporter)
 
