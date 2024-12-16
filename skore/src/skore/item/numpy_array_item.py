@@ -57,6 +57,17 @@ class NumpyArrayItem(Item):
 
         return numpy.asarray(loads(self.array_json))
 
+    def get_serializable_dict(self):
+        """NumpyArrayItem as a serializable dict."""
+        d = super().get_serializable_dict()
+        d.update(
+            {
+                "media_type": "text/markdown",
+                "value": self.array.tolist(),
+            }
+        )
+        return d
+
     @classmethod
     def factory(cls, array: numpy.ndarray) -> NumpyArrayItem:
         """

@@ -1,7 +1,7 @@
 /*
  Those variables come from the design system in figma.
 */
-:root {
+.skore-ui {
   --root-font-size: 14px;
 
   /* typography */
@@ -45,7 +45,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  .skore-ui {
     /* backgrounds */
     --color-background-primary: #1a1a1a;
     --color-background-secondary: #222;
@@ -77,7 +77,7 @@
 }
 
 @media (prefers-color-scheme: light) {
-  :root {
+  .skore-ui {
     /* backgrounds */
     --color-background-primary: #fff;
     --color-background-secondary: #fafafb;

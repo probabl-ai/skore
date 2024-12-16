@@ -55,7 +55,7 @@ class Item(ABC):
 
     @classmethod
     @abstractmethod
-    def factory(cls) -> Item:
+    def factory(cls, *args, **kwargs) -> Item:
         """
         Create and return a new instance of the Item.
 
@@ -84,11 +84,22 @@ class Item(ABC):
         """Represent the item."""
         return f"{self.__class__.__name__}(...)"
 
-    @abstractmethod
-    def to_serializable(self):
-        """Va niquer ta mere."""
+    def _repr_mimebundle_(self, include=None, exclude=None):
+        del include, exclude
+        return {"text/html": self.as_html()}
 
-    def _repr_html_(self):
+    def get_serializable_dict(self):
+        """Get a serializable dict from the item.
+
+        Derived class must call their super implementation
+        and merge the result with their output.
+        """
+        return {
+            "updated_at": self.updated_at,
+            "created_at": self.created_at,
+        }
+
+    def as_html(self):
         """Represent the item in a notebook."""
         item_folder = Path(__file__).resolve().parent
         templates_env = Environment(loader=FileSystemLoader(item_folder))
@@ -105,12 +116,9 @@ class Item(ABC):
 
         context = {
             "id": uuid4().hex,
-            "item": self.to_serializable(),
+            "item": self.get_serializable_dict(),
             "script": script_content,
             "styles": styles_content,
         }
 
-        w = template.render(**context)
-        with open("/Users/rouk1/dev/skore/skore-ui/public/standalone.html", "w") as f:
-            f.write(w)
-        return w
+        return template.render(**context)

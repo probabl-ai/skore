@@ -80,6 +80,17 @@ class PandasSeriesItem(Item):
 
             return series
 
+    def get_serializable_dict(self):
+        """PandasSeriesItem as a serializable dict."""
+        d = super().get_serializable_dict()
+        d.update(
+            {
+                "value": self.series.to_list(),
+                "media_type": "text/markdown",
+            }
+        )
+        return d
+
     @classmethod
     def factory(cls, series: pandas.Series) -> PandasSeriesItem:
         """

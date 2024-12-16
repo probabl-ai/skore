@@ -66,6 +66,19 @@ class PolarsDataFrameItem(Item):
             dataframe = polars.read_json(df_stream)
             return dataframe
 
+    def get_serializable_dict(self):
+        """PolarsDataFrameItem as a serializable dict."""
+        d = super().get_serializable_dict()
+        d.update(
+            {
+                "value": self.dataframe.to_pandas()
+                .fillna("NaN")
+                .to_dict(orient="tight"),
+                "media_type": "application/vnd.dataframe",
+            }
+        )
+        return d
+
     @classmethod
     def factory(cls, dataframe: polars.DataFrame) -> PolarsDataFrameItem:
         """

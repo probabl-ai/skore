@@ -17,5 +17,6 @@ console.info(itemData);
 <style scoped>
 .widget {
   width: 100%;
+  background-color: var(--color-background-primary);
 }
 </style>

@@ -69,6 +69,17 @@ class SklearnBaseEstimatorItem(Item):
             self.estimator_skops, trusted=self.estimator_skops_untrusted_types
         )
 
+    def get_serializable_dict(self):
+        """SklearnBaseEstimatorItem as a serializable dict."""
+        d = super().get_serializable_dict()
+        d.update(
+            {
+                "value": self.estimator_html_repr,
+                "media_type": "application/vnd.sklearn.estimator+html",
+            }
+        )
+        return d
+
     @classmethod
     def factory(cls, estimator: sklearn.base.BaseEstimator) -> SklearnBaseEstimatorItem:
         """

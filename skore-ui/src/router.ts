@@ -1,4 +1,4 @@
-import { createRouter, createWebHashHistory, type RouteRecordRaw } from "vue-router";
+import { createRouter as cr, createWebHashHistory, type RouteRecordRaw } from "vue-router";
 
 import ActivityFeedView from "@/views/activity/ActivityFeedView.vue";
 import ProjectView from "@/views/project/ProjectView.vue";
@@ -39,9 +39,9 @@ if (import.meta.env.DEV) {
   });
 }
 
-const router = createRouter({
-  history: createWebHashHistory(import.meta.env.BASE_URL),
-  routes,
-});
-
-export default router;
+export function createRouter() {
+  return cr({
+    history: createWebHashHistory(import.meta.env.BASE_URL),
+    routes,
+  });
+}

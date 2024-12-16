@@ -47,6 +47,7 @@ const router = useRouter();
 .skore {
   display: flex;
   flex-direction: row;
+  background-color: var(--color-background-primary);
 
   main {
     width: calc(100dvw - var(--width-toolbar));
