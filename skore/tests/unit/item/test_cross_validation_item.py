@@ -14,7 +14,7 @@ from skore.sklearn.cross_validation import CrossValidationReporter
 
 class FakeEstimator:
     def get_params(self):
-        return {}
+        return {"alpha": 3}
 
 
 class FakeEstimatorNoGetParams:
@@ -77,7 +77,9 @@ class TestCrossValidationItem:
         assert item.cv_results_serialized == {"test_score": [1, 2, 3]}
         assert item.estimator_info == {
             "name": reporter.estimator.__class__.__name__,
-            "params": {},
+            "params": {}
+            if isinstance(reporter.estimator, FakeEstimatorNoGetParams)
+            else {"alpha": "3"},
             "module": "tests.unit.item.test_cross_validation_item",
         }
         assert item.X_info == {
