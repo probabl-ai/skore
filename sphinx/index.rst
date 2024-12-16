@@ -57,9 +57,9 @@ learning lifecycle.
 Key features
 ------------
 
--  **Track and Visualize Results**: Gain a deeper understanding of your machine
-   learning prototyping with intuitive visualizations for your experiments.
-   Keep track of your intermediary ML/DS results, reducing cognitive load.
+-  **Track and Visualize Results**: Capture your intermediate ML/DS results without the
+   overhead, while gaining deeper insights through intuitive visualizations of your
+   experiments.
 
 -  **Elevate Model Development**: Avoid common pitfalls and follow recommended
    practices with automatic guidance and insights.
