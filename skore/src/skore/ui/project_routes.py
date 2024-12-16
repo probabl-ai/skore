@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import base64
 import copy
-import importlib
 import json
 import operator
 import re
@@ -63,6 +62,18 @@ def _metric_title(metric: str) -> str:
     return title
 
 
+def __params_to_str(estimator_info) -> str:
+    params_list = []
+    for k, v in estimator_info["params"].items():
+        value = v["value"]
+        if v["default"] is True:
+            params_list.append(f"- {k}: {value} (default)")
+        else:
+            params_list.append(f"- {k}: *{value}*")
+
+    return "\n".join(params_list)
+
+
 def __cross_validation_item_as_serializable(item: CrossValidationItem) -> dict:
     # Get tabular results (the cv results in a dataframe-like structure)
     cv_results = copy.deepcopy(item.cv_results_serialized)
@@ -86,31 +97,7 @@ def __cross_validation_item_as_serializable(item: CrossValidationItem) -> dict:
 
     scalar_results = mean_cv_results
 
-    # Get estimator details (class name, parameters)
-    _estimator_params = item.estimator_info["params"].items()
-
-    # Figure out the default parameters of the estimator,
-    # so that we can highlight the non-default ones in the UI
-
-    # This is done by instantiating the class with no arguments and
-    # computing the diff between the default and ours
-    try:
-        estimator_module = importlib.import_module(item.estimator_info["module"])
-        EstimatorClass = getattr(estimator_module, item.estimator_info["name"])
-        default_estimator_params = {
-            k: repr(v) for k, v in EstimatorClass().get_params().items()
-        }
-    except Exception:
-        default_estimator_params = {}
-
-    estimator_params = {}
-    for k, v in _estimator_params:
-        if k in default_estimator_params and default_estimator_params[k] == v:
-            estimator_params[k] = f"{v} (default)"
-        else:
-            estimator_params[k] = f"*{v}*"
-
-    params_as_str = "\n".join(f"- {k}: {v}" for k, v in estimator_params.items())
+    params_as_str = __params_to_str(item.estimator_info)
 
     # If the estimator is from sklearn, make the class name a hyperlink
     # to the relevant docs

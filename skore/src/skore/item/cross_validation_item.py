@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import contextlib
 import hashlib
+import importlib
 from functools import cached_property
 from typing import TYPE_CHECKING, Any, TypedDict, Union
 
@@ -22,12 +23,18 @@ if TYPE_CHECKING:
 
     CVSplitter = Any
 
+    class EstimatorParamInfo(TypedDict):
+        """Information about an estimator parameter."""
+
+        value: str
+        default: bool
+
     class EstimatorInfo(TypedDict):
         """Information about an estimator."""
 
         name: str
         module: str
-        params: dict[str, str]
+        params: dict[str, EstimatorParamInfo]
 
 
 def _hash_numpy(arr: numpy.ndarray) -> str:
@@ -117,6 +124,27 @@ class CrossValidationItem(Item):
             "module": estimator.__module__,
             "params": {k: repr(v) for k, v in estimator_params.items()},
         }
+
+        # Figure out the default parameters of the estimator,
+        # so that we can highlight the non-default ones in the UI
+
+        # This is done by instantiating the class with no arguments and
+        # computing the diff between the default and ours
+        try:
+            estimator_module = importlib.import_module(estimator_info["module"])
+            EstimatorClass = getattr(estimator_module, estimator_info["name"])
+            default_estimator_params = EstimatorClass().get_params()
+        except Exception:
+            default_estimator_params = {}
+
+        final_estimator_params = {}
+        for k, v in estimator_params.items():
+            param_is_default = (
+                k in default_estimator_params and default_estimator_params[k] == v
+            )
+            final_estimator_params[k] = {"value": repr(v), "default": param_is_default}
+
+        estimator_info["params"] = final_estimator_params
 
         return estimator_info
 

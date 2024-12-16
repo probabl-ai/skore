@@ -79,7 +79,7 @@ class TestCrossValidationItem:
             "name": reporter.estimator.__class__.__name__,
             "params": {}
             if isinstance(reporter.estimator, FakeEstimatorNoGetParams)
-            else {"alpha": "3"},
+            else {"alpha": {"value": "3", "default": True}},
             "module": "tests.unit.item.test_cross_validation_item",
         }
         assert item.X_info == {
