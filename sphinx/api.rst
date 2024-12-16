@@ -16,16 +16,14 @@ These functions and classes are meant for managing a Project.
 
 .. autosummary::
     :toctree: generated/
-    :template: class.rst
-    :nosignatures:
+    :template: base.rst
 
     Project
     item.primitive_item.PrimitiveItem
 
 .. autosummary::
     :toctree: generated/
-    :template: function.rst
-    :nosignatures:
+    :template: base.rst
 
     create
     load
@@ -37,15 +35,13 @@ These functions and classes enhance scikit-learn's ones.
 
 .. autosummary::
     :toctree: generated/
-    :template: function.rst
-    :nosignatures:
+    :template: base.rst
 
     train_test_split
 
 .. autosummary::
     :toctree: generated/
-    :template: class.rst
-    :nosignatures:
+    :template: base.rst
 
     CrossValidationReporter
     item.cross_validation_item.CrossValidationItem
