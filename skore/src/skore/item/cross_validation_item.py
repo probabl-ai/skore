@@ -97,6 +97,20 @@ class CrossValidationItem(Item):
         self.plot_bytes = plot_bytes
         self.cv_info = cv_info
 
+    @staticmethod
+    def _estimator_info(estimator):
+        estimator_params = (
+            estimator.get_params() if hasattr(estimator, "get_params") else {}
+        )
+
+        estimator_info = {
+            "name": estimator.__class__.__name__,
+            "module": estimator.__module__,
+            "params": {k: repr(v) for k, v in estimator_params.items()},
+        }
+
+        return estimator_info
+
     @classmethod
     def factory(cls, reporter):
         """
@@ -136,15 +150,7 @@ class CrossValidationItem(Item):
             if isinstance(v, numpy.ndarray):
                 cv_results_serialized[k] = v.tolist()
 
-        estimator_params = (
-            estimator.get_params() if hasattr(estimator, "get_params") else {}
-        )
-
-        estimator_info = {
-            "name": estimator.__class__.__name__,
-            "module": estimator.__module__,
-            "params": {k: repr(v) for k, v in estimator_params.items()},
-        }
+        estimator_info = CrossValidationItem._estimator_info(estimator)
 
         y_array = y if isinstance(y, numpy.ndarray) else numpy.array(y)
         y_info = None if y is None else {"hash": _hash_numpy(y_array)}
