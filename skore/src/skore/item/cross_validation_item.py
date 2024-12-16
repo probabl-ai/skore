@@ -42,6 +42,14 @@ def _hash_numpy(arr: numpy.ndarray) -> str:
     return hashlib.sha256(bytes(memoryview(arr))).hexdigest()
 
 
+def _metric_title(metric):
+    m = metric.replace("_", " ")
+    title = f"Mean {m}"
+    if title.endswith(" time"):
+        title = title + " (seconds)"
+    return title
+
+
 # Data used for training, passed as input to scikit-learn
 Data = Any
 # Target used for training, passed as input to scikit-learn
@@ -115,16 +123,9 @@ class CrossValidationItem(Item):
         }
 
         # Get scalar results (summary statistics of the cv results)
-        def metric_title(metric):
-            m = metric.replace("_", " ")
-            title = f"Mean {m}"
-            if title.endswith(" time"):
-                title = title + " (seconds)"
-            return title
-
         mean_cv_results = [
             {
-                "name": metric_title(k),
+                "name": _metric_title(k),
                 "value": statistics.mean(v),
                 "stddev": statistics.stdev(v),
             }
