@@ -90,3 +90,15 @@ class TestSklearnBaseEstimatorItem:
 
         assert isinstance(item1.estimator, Estimator)
         assert isinstance(item2.estimator, Estimator)
+
+    def test_get_serializable_dict(self, mock_nowstr):
+        estimator = Estimator()
+        item = SklearnBaseEstimatorItem.factory(estimator)
+        serializable = item.get_serializable_dict()
+
+        assert serializable == {
+            "updated_at": mock_nowstr,
+            "created_at": mock_nowstr,
+            "media_type": "application/vnd.sklearn.estimator+html",
+            "value": item.estimator_html_repr,
+        }

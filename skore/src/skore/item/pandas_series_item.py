@@ -85,7 +85,7 @@ class PandasSeriesItem(Item):
         d = super().get_serializable_dict()
         d.update(
             {
-                "value": self.series.to_list(),
+                "value": self.series.fillna("NaN").to_list(),
                 "media_type": "text/markdown",
             }
         )

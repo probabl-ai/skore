@@ -46,3 +46,15 @@ class TestNumpyArrayItem:
 
         with pytest.raises(TypeError, match="type is not JSON serializable"):
             NumpyArrayItem.factory(array)
+
+    def test_get_serializable_dict(self, mock_nowstr):
+        array = numpy.array([1, 2, 3])
+
+        item = NumpyArrayItem.factory(array)
+        serializable = item.get_serializable_dict()
+        assert serializable == {
+            "updated_at": mock_nowstr,
+            "created_at": mock_nowstr,
+            "media_type": "text/markdown",
+            "value": array.tolist(),
+        }

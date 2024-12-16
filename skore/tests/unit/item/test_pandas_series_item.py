@@ -80,3 +80,14 @@ class TestPandasSeriesItem:
 
         assert_series_equal(item1.series, series)
         assert_series_equal(item2.series, series)
+
+    def test_get_serializable_dict(self, mock_nowstr):
+        series = Series([np.array([1])], Index([0], name="myIndex"))
+        item = PandasSeriesItem.factory(series)
+        serializable = item.get_serializable_dict()
+        assert serializable == {
+            "updated_at": mock_nowstr,
+            "created_at": mock_nowstr,
+            "media_type": "text/markdown",
+            "value": series.to_list(),
+        }

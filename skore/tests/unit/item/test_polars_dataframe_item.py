@@ -46,3 +46,14 @@ class TestPolarsDataFrameItem:
 
         with pytest.raises(PolarsToJSONError):
             PolarsDataFrameItem.factory(dataframe)
+
+    def test_get_serializable_dict(self, mock_nowstr):
+        dataframe = DataFrame([{"key": "value"}])
+        item = PolarsDataFrameItem.factory(dataframe)
+        serializable = item.get_serializable_dict()
+        assert serializable == {
+            "updated_at": mock_nowstr,
+            "created_at": mock_nowstr,
+            "media_type": "application/vnd.dataframe",
+            "value": dataframe.to_pandas().fillna("NaN").to_dict(orient="tight"),
+        }

@@ -62,3 +62,20 @@ class TestCrossValidationItem:
         assert isinstance(item.plot_bytes, bytes)
         assert item.created_at == mock_nowstr
         assert item.updated_at == mock_nowstr
+
+    def test_get_serializable_dict(self, monkeypatch, mock_nowstr):
+        monkeypatch.setattr(
+            "skore.item.cross_validation_item.CrossValidationReporter",
+            FakeCrossValidationReporter,
+        )
+
+        reporter = FakeCrossValidationReporter()
+        item = CrossValidationItem.factory(reporter)
+        serializable = item.get_serializable_dict()
+
+        assert serializable["updated_at"] == mock_nowstr
+        assert serializable["created_at"] == mock_nowstr
+        assert (
+            serializable["media_type"] == "application/vnd.skore.cross_validation+json"
+        )
+        assert serializable["value"] is not None

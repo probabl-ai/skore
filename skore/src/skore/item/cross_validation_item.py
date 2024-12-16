@@ -103,7 +103,7 @@ class CrossValidationItem(Item):
         self.cv_info = cv_info
 
     def get_serializable_dict(self):
-        """MediaItem as a serializable dict."""
+        """CrossValidationItem as a serializable dict."""
         # Get tabular results (the cv results in a dataframe-like structure)
         cv_results = copy.deepcopy(self.cv_results_serialized)
         cv_results.pop("indices", None)
