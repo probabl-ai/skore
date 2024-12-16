@@ -142,7 +142,7 @@ html_sidebars = {
     "install": [],
     "getting_started": [],
     "user_guide": [],
-    "contributor_guide": [],
+    "contributing_link": [],
 }
 
 # Sphinx-Copybutton configuration
