@@ -163,31 +163,46 @@ my_project.put("my_fig", fig)
 #     For example, you can have a specific view for data preprocessing and another one
 #     for model interpretation.
 #
-# #.  From the *Items* section on the left, you can add stored items to this
+# #.  On the left, by default, you are in the *Activity feed*.
+#
+# #.  You also have an *Items* section on the left, you can add stored items to this
 #     view, either by clicking on ``+`` or by dragging an item to the right.
 #
-# #.  In the skore UI on the right, you can drag-and-drop items to re-order them,
-#     remove items, etc.
+# #.  Once in the *Items* section, in the skore UI on the right, you can drag-and-drop
+#     items to re-order them, remove items, etc.
 #
-# .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_05_skore_demo_comp.gif
+# .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_12_skore_demo_comp.gif
 #   :alt: Getting started with ``skore`` demo
 
 # %%
 # Tracking the history of items
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+# %%
+# Suppose we store several integer values for a same item called ``my_int``, each storage
+# being separated by 0.1 second:
+#
+# .. code-block:: python
+#
+#     import time
+#
+#     my_project.put("my_int", 4)
+#     time.sleep(0.1)
+#     my_project.put("my_int", 9)
+#     time.sleep(0.1)
+#     my_project.put("my_int", 16)
 #
 # Skore does not overwrite items with the same name (key value), instead it stores
-# their history so that, from the skore UI, we could visualize their different
-# histories:
+# their history so that, from the skore UI, we have an activity feed functionality:
 #
-# .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_10_tracking_comp.gif
-#   :alt: Tracking the history of an item from the skore UI
+# .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_12_skore_activity_feed.png
+#   :alt: Activity feed on the skore UI
 #
 # |
-# There is also an activity feed functionality on the left side bar:
+# Moreover, in the items tab, we can visualize the different histories of an item:
 #
-# .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_09_skore_activity_feed.png
-#   :alt: Activity feed on the skore UI
+# .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_12_skore_tracking_comp.gif
+#   :alt: Tracking the history of an item from the skore UI
 #
 # |
 # These tracking functionalities are very useful to:
@@ -222,8 +237,9 @@ my_project.put("my_fig", fig)
 # %%
 from skore import CrossValidationReporter
 
-reporter = CrossValidationReporter(Ridge(), X, y, cv=5)
-reporter.plot
+cv_reporter = CrossValidationReporter(Ridge(), X, y, cv=5)
+my_project.put("cv_reporter", cv_reporter)
+cv_reporter.plot
 
 # %%
 # Hence:

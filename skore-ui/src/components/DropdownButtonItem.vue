@@ -29,8 +29,7 @@ const props = withDefaults(defineProps<DropdownItemProps>(), { iconPosition: "le
 <style scoped>
 .dropdown-item {
   display: inline-block;
-  width: 100%;
-  box-sizing: border-box;
+  min-width: 100%;
   padding: var(--spacing-6);
   border: 0;
   border-bottom: 1px solid var(--color-stroke-background-primary);

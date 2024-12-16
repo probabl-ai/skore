@@ -26,7 +26,7 @@ class CrossValidationReporter:
     For a user guide and in-depth example, see :ref:`example_cross_validate` and
     :ref:`example_track_cv`.
 
-    More precisely, this class does the following:
+    More precisely, upon initialization, this class does the following:
 
     *   Detect the ML task being performed, based on the estimator and data
 
@@ -35,12 +35,8 @@ class CrossValidationReporter:
 
     *   Perform the cross-validation itself
 
-    *   Save the result to ``project``, if available
-
     *   Clean the cross-validation results so that the output of the function is as
         close as possible to scikit-learn's
-
-    *   Return the clean cross-validation results.
 
     Parameters
     ----------
@@ -124,6 +120,7 @@ class CrossValidationReporter:
         self.estimator = args[0] if len(args) >= 1 else kwargs.get("estimator")
         self.X = args[1] if len(args) >= 2 else kwargs.get("X")
         self.y = args[2] if len(args) == 3 else kwargs.get("y")
+        self.cv = kwargs.get("cv")
 
         self.scorers = kwargs.pop("scoring", None)
         return_estimator = kwargs.pop("return_estimator", None)

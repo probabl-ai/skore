@@ -7,3 +7,8 @@ declare module "markdown-it-highlightjs/core";
 interface Window {
   skoreWidgetId?: string;
 }
+
+declare module "*?base64" {
+  const value: string;
+  export = value;
+}

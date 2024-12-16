@@ -33,23 +33,34 @@ Skore is just at the beginning of its journey, but we’re shipping fast! Freque
 
 ## Key features
 
-- **Track and Visualize Results**: Gain a deeper understanding of your machine learning prototyping with intuitive visualizations for your experiments. Keep track of your intermediary ML/DS results, reducing cognitive load.
+- **Track and Visualize Results**: Capture your intermediate ML/DS results without the overhead, while gaining deeper insights through intuitive visualizations of your experiments.
 - **Elevate Model Development**: Avoid common pitfalls and follow recommended practices with automatic guidance and insights.
     - Enhancing key scikit-learn features with `skore.CrossValidationReporter` and `skore.train_test_split()`.
 
-![GIF: short demo of skore](https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_05_skore_demo_comp.gif)
-
+![GIF: short demo of skore](https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_12_skore_demo_comp.gif)
 
 ## 🚀 Quick start
 
 ### Installation
 
-First of all, we recommend using a [virtual environment (venv)](https://docs.python.org/3/tutorial/venv.html). You need `python>=3.9`.
+#### With pip
+
+We recommend using a [virtual environment (venv)](https://docs.python.org/3/tutorial/venv.html). You need `python>=3.9`.
 
 Then, you can install skore by using `pip`:
 ```bash
 pip install -U skore
 ```
+
+#### With conda
+
+skore is available in `conda-forge`:
+
+```bash
+conda install conda-forge::skore
+```
+
+You can find information on the latest version [here](https://anaconda.org/conda-forge/skore).
 
 ### Get assistance when developing your ML/DS projects
 
@@ -84,14 +95,14 @@ pip install -U skore
     This will open skore-ui in a browser window.
 
 You will automatically be able to visualize some key metrics (although you might have forgotten to specify all of them):
-![GIF: short demo of skore](https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_11_21_cross_val_comp.gif)
+![Cross-validation screenshot](https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_12_skore_cross_val_clf.png)
 
 Also check out `skore.train_test_split()` that enhances scikit-learn. Learn more in our [documentation](https://skore.probabl.ai).
 
 
 ## Contributing
 
-Thank you for considering contributing to skore! Join our mission to promote open-source and help making data science more fun! Please check the contributing guidelines [here](https://github.com/probabl-ai/skore/blob/main/CONTRIBUTING.rst).
+Thank you for considering contributing to skore! Join our mission to promote open-source and make machine learning development more robust and effective. Please check the contributing guidelines [here](https://github.com/probabl-ai/skore/blob/main/CONTRIBUTING.rst).
 
 
 ## Feedback & Community

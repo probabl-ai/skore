@@ -30,3 +30,39 @@ export interface ProjectDto {
  * Sorted from newest to oldest.
  */
 export type ActivityFeedDto = ProjectItemDto[];
+
+export interface ScalarResultDto {
+  name: string;
+  value: number;
+  stddev?: number;
+  label?: string;
+  description?: string;
+}
+
+export interface TabularResultDto {
+  name: string;
+  columns: any[];
+  data: any[][];
+}
+
+export interface PrimaryResultsDto {
+  scalarResults: ScalarResultDto[];
+  tabularResults: TabularResultDto[];
+}
+
+export interface PlotDto {
+  name: string;
+  value: any;
+}
+
+export interface DetailSectionItemDto {
+  name: string;
+  description: string;
+  value: string;
+}
+
+export interface DetailSectionDto {
+  title: string;
+  icon: string;
+  items: DetailSectionItemDto[];
+}

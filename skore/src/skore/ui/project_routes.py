@@ -3,7 +3,12 @@
 from __future__ import annotations
 
 import base64
+import copy
+import importlib
+import json
 import operator
+import re
+import statistics
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
@@ -11,7 +16,6 @@ from typing import TYPE_CHECKING, Any
 from fastapi import APIRouter, HTTPException, Request, status
 
 from skore.item import (
-    CrossValidationAggregationItem,
     CrossValidationItem,
     Item,
     MediaItem,
@@ -51,6 +55,111 @@ class SerializableProject:
     views: dict[str, Layout]
 
 
+def __cross_validation_item_as_serializable(item: CrossValidationItem) -> dict:
+    # Get tabular results (the cv results in a dataframe-like structure)
+    cv_results = copy.deepcopy(item.cv_results_serialized)
+    cv_results.pop("indices", None)
+
+    tabular_results = {
+        "name": "Cross validation results",
+        "columns": list(cv_results.keys()),
+        "data": list(zip(*cv_results.values())),
+    }
+
+    # Get scalar results (summary statistics of the cv results)
+    def metric_title(metric):
+        m = metric.replace("_", " ")
+        title = f"Mean {m}"
+        if title.endswith(" time"):
+            title = title + " (seconds)"
+        return title
+
+    mean_cv_results = [
+        {
+            "name": metric_title(k),
+            "value": statistics.mean(v),
+            "stddev": statistics.stdev(v),
+        }
+        for k, v in cv_results.items()
+    ]
+
+    scalar_results = mean_cv_results
+
+    # Get estimator details (class name, parameters)
+    _estimator_params = item.estimator_info["params"].items()
+
+    # Figure out the default parameters of the estimator,
+    # so that we can highlight the non-default ones in the UI
+
+    # This is done by instantiating the class with no arguments and
+    # computing the diff between the default and ours
+    try:
+        estimator_module = importlib.import_module(item.estimator_info["module"])
+        EstimatorClass = getattr(estimator_module, item.estimator_info["name"])
+        default_estimator_params = {
+            k: repr(v) for k, v in EstimatorClass().get_params().items()
+        }
+    except Exception:
+        default_estimator_params = {}
+
+    estimator_params = {}
+    for k, v in _estimator_params:
+        if k in default_estimator_params and default_estimator_params[k] == v:
+            estimator_params[k] = f"{v} (default)"
+        else:
+            estimator_params[k] = f"*{v}*"
+
+    params_as_str = "\n".join(f"- {k}: {v}" for k, v in estimator_params.items())
+
+    # If the estimator is from sklearn, make the class name a hyperlink
+    # to the relevant docs
+    name = item.estimator_info["name"]
+    module = re.sub(r"\.\_.+", "", item.estimator_info["module"])
+    if module.startswith("sklearn"):
+        estimator_doc_target = (
+            f"https://scikit-learn.org/stable/modules/generated/{module}.{name}.html"
+        )
+        estimator_doc_link = (
+            f'<a href="{estimator_doc_target}" target="_blank"><code>{name}</code></a>'
+        )
+    else:
+        estimator_doc_link = f"`{name}`"
+
+    estimator_params_as_str = f"{estimator_doc_link}\n{params_as_str}"
+
+    # Get cross-validation details
+    cv_params_as_str = ", ".join(f"{k}: *{v}*" for k, v in item.cv_info.items())
+
+    return {
+        "scalar_results": scalar_results,
+        "tabular_results": [tabular_results],
+        "plots": [
+            {
+                "name": "cross-validation results",
+                "value": json.loads(item.plot_bytes.decode("utf-8")),
+            }
+        ],
+        "sections": [
+            {
+                "title": "Model",
+                "icon": "icon-square-cursor",
+                "items": [
+                    {
+                        "name": "Estimator parameters",
+                        "description": "Core model configuration used for training",
+                        "value": estimator_params_as_str,
+                    },
+                    {
+                        "name": "Cross-validation parameters",
+                        "description": "Controls how data is split and validated",
+                        "value": cv_params_as_str,
+                    },
+                ],
+            }
+        ],
+    }
+
+
 def __pandas_dataframe_as_serializable(df: pandas.DataFrame):
     return df.fillna("NaN").to_dict(orient="tight")
 
@@ -84,9 +193,9 @@ def __item_as_serializable(name: str, item: Item) -> SerializableItem:
         else:
             value = base64.b64encode(item.media_bytes).decode()
             media_type = f"{item.media_type};base64"
-    elif isinstance(item, (CrossValidationItem, CrossValidationAggregationItem)):
-        value = base64.b64encode(item.plot_bytes).decode()
-        media_type = "application/vnd.plotly.v1+json;base64"
+    elif isinstance(item, CrossValidationItem):
+        value = __cross_validation_item_as_serializable(item)
+        media_type = "application/vnd.skore.cross_validation+json"
     else:
         raise ValueError(f"Item {item} is not a known item type.")
 

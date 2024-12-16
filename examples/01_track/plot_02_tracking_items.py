@@ -58,16 +58,16 @@ my_project.put("my_int", 16)
 #
 #       skore launch "my_project"
 #
-#   and, from the skore UI, we could visualize the different histories of the ``my_int``
-#   item:
+#   and, from the skore UI, we could see an activity feed:
 #
-#   .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_10_tracking_comp.gif
-#       :alt: Tracking the history of an item from the skore UI
-#
-#   There is also an activity feed functionality:
-#
-#   .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_09_skore_activity_feed.png
+#   .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_12_skore_activity_feed.png
 #       :alt: Activity feed on the skore UI
+#
+#   Moreover, in the items tab, we could also visualize the different histories of the
+#   ``my_int`` item:
+#
+#   .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_12_skore_tracking_comp.gif
+#       :alt: Tracking the history of an item from the skore UI
 
 # %%
 # We retrieve the history of the ``my_int`` item:
@@ -146,72 +146,6 @@ fig
 # * Avoid overwriting a useful metric by mistake. No results are can be lost.
 #
 # * The last updated time can help us reproduce an iteration of a key metric.
-#
-# In the following, we explore skore's :class:`skore.CrossValidationReporter` that natively
-# includes tracking.
-
-# %%
-# .. _example_track_cv:
-# Tracking the results of several runs of :class:`skore.CrossValidationReporter`
-# ==============================================================================
-
-# %%
-# The :ref:`example_cross_validate` example explains why and how to use the
-# :class:`skore.CrossValidationReporter` class.
-# Here, let us see how we can use the tracking of items with this function.
-
-# %%
-# Let us load some data:
-
-# %%
-from sklearn import datasets
-
-X, y = datasets.load_diabetes(return_X_y=True)
-X, y = X[:150], y[:150]
-
-# %%
-# Suppose that some users are coding in their draft notebook and are iterating on some
-# cross-validations in separate cells and forgot to store the intermediate results:
-
-# %%
-import skore
-from sklearn.linear_model import Lasso
-
-reporter = skore.CrossValidationReporter(Lasso(alpha=0.5), X, y, cv=5)
-my_project.put("cross_validation", reporter)
-
-# %%
-reporter = skore.CrossValidationReporter(Lasso(alpha=1), X, y, cv=5)
-my_project.put("cross_validation", reporter)
-
-# %%
-reporter = skore.CrossValidationReporter(Lasso(alpha=2), X, y, cv=5)
-my_project.put("cross_validation", reporter)
-
-# %%
-# Thanks to the storage in skore, we can compare the metrics of each
-# cross-validation run (on all splits):
-
-# %%
-from skore.item.cross_validation_aggregation_item import CrossValidationAggregationItem
-
-aggregated_cv_results = CrossValidationAggregationItem.factory(
-    my_project.get_item_versions("cross_validation")
-)
-
-fig_plotly = aggregated_cv_results.plot
-fig_plotly
-
-# %%
-# Hence, we can observe that the first run, with ``alpha=0.5``, works better.
-
-# %%
-# .. note::
-#   This is an illustrative example of the usage of the
-#   ``CrossValidationAggregationItem``.
-#   The good practice, instead of running several cross-validations with different
-#   values of the hyperparameter, would have been to use a
-#   :class:`sklearn.model_selection.GridSearchCV`.
 
 # %%
 # Cleanup the project

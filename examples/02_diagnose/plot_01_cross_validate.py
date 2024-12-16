@@ -161,9 +161,13 @@ cv_item = my_project.get_item("cross_validation_regression")
 cv_item.plot
 
 # %%
-# .. seealso::
-#   For tracking and comparing several runs of cross-validations on the same data, see
-#   :ref:`example_track_cv`.
+# .. note::
+#
+#   If we put a cross-validation item in a skore project, we get some nice
+#   information in the UI:
+#
+#   .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_12_skore_demo_comp.gif
+#       :alt: Getting started with ``skore`` demo
 
 # %%
 # Cleanup the project

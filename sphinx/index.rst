@@ -63,7 +63,7 @@ Key features
    -  Enhancing key scikit-learn features with :class:`skore.CrossValidationReporter`
       and :func:`skore.train_test_split`.
 
-.. image:: /_static/images/2024_12_05_skore_demo_comp.gif
+.. image:: /_static/images/2024_12_12_skore_demo_comp.gif
    :alt: Getting started with skore demo
 
 .. currentmodule:: skore

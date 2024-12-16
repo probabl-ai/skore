@@ -92,6 +92,7 @@ sphinx = [
   "sphinx-design",
   "sphinx-gallery",
   "sphinx-copybutton",
+  "sphinx-tabs",
   "skrub",
 ]
 

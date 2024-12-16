@@ -2,6 +2,7 @@
 export interface ButtonProps {
   label?: string;
   icon?: string;
+  iconPosition?: "left" | "right";
   isPrimary?: boolean;
   isInline?: boolean;
 }
@@ -11,7 +12,7 @@ export interface ButtonProps {
 import { generateRandomMultiple } from "@/services/utils";
 import { onBeforeMount, ref } from "vue";
 
-const props = withDefaults(defineProps<ButtonProps>(), { isPrimary: false });
+const props = withDefaults(defineProps<ButtonProps>(), { isPrimary: false, iconPosition: "left" });
 const randomBackgroundOffsetX = ref(0);
 const randomBackgroundOffsetY = ref(0);
 
@@ -35,7 +36,7 @@ onBeforeMount(() => {
       --background-offset-y: ${randomBackgroundOffsetY}px;
     `"
   >
-    <span v-if="props.icon" :class="props.icon" class="icon"></span>
+    <span v-if="props.icon" :class="[props.iconPosition, props.icon]" class="icon"></span>
     <span v-if="props.label" class="label">
       {{ props.label }}
     </span>
@@ -44,8 +45,7 @@ onBeforeMount(() => {
 
 <style scoped>
 .button {
-  display: inline-block;
-  flex: none;
+  display: inline-flex;
   flex-direction: row;
   align-items: center;
   justify-content: center;
@@ -74,7 +74,7 @@ onBeforeMount(() => {
     border: var(--stroke-width-md) solid var(--color-stroke-background-primary);
     border-radius: var(--radius-xs);
     margin: 0 auto;
-    background: var(--color-background-primary);
+    background: var(--color-background-secondary);
   }
 
   &.inline {
@@ -84,8 +84,16 @@ onBeforeMount(() => {
     box-shadow: none;
   }
 
-  .icon:has(+ .label) {
+  &:has(.icon.right) {
+    flex-direction: row-reverse;
+  }
+
+  .icon.left:has(+ .label) {
     padding-right: var(--spacing-8);
+  }
+
+  .icon.right:has(+ .label) {
+    padding-left: var(--spacing-8);
   }
 }
 </style>
