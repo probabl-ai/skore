@@ -40,13 +40,18 @@ class TestCrossValidationItem:
         with pytest.raises(ItemTypeError):
             CrossValidationItem.factory(None)
 
-    def test_factory(self, mock_nowstr):
-        reporter = FakeCrossValidationReporter()
+    @pytest.mark.parametrize(
+        "reporter",
+        [
+            pytest.param(FakeCrossValidationReporter(), id="cv_reporter"),
+        ],
+    )
+    def test_factory(self, mock_nowstr, reporter):
         item = CrossValidationItem.factory(reporter)
 
         assert item.cv_results_serialized == {"test_score": [1, 2, 3]}
         assert item.estimator_info == {
-            "name": "FakeEstimator",
+            "name": reporter.estimator.__class__.__name__,
             "params": {},
             "module": "tests.unit.item.test_cross_validation_item",
         }
