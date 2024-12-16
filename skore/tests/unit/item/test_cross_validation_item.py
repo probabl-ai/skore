@@ -17,6 +17,10 @@ class FakeEstimator:
         return {}
 
 
+class FakeEstimatorNoGetParams:
+    pass
+
+
 @dataclass
 class FakeCrossValidationReporter(CrossValidationReporter):
     _cv_results = {
@@ -25,6 +29,24 @@ class FakeCrossValidationReporter(CrossValidationReporter):
         "fit_time": [1, 2, 3],
     }
     estimator = FakeEstimator()
+    X = numpy.array([[1.0]])
+    y = numpy.array([1])
+    plot = plotly.graph_objects.Figure()
+    cv = StratifiedKFold(n_splits=5)
+
+
+@dataclass
+class FakeCrossValidationReporterNoGetParams(CrossValidationReporter):
+    _cv_results = {
+        "test_score": numpy.array([1, 2, 3]),
+        "estimator": [
+            FakeEstimatorNoGetParams(),
+            FakeEstimatorNoGetParams(),
+            FakeEstimatorNoGetParams(),
+        ],
+        "fit_time": [1, 2, 3],
+    }
+    estimator = FakeEstimatorNoGetParams()
     X = numpy.array([[1.0]])
     y = numpy.array([1])
     plot = plotly.graph_objects.Figure()
@@ -44,6 +66,9 @@ class TestCrossValidationItem:
         "reporter",
         [
             pytest.param(FakeCrossValidationReporter(), id="cv_reporter"),
+            pytest.param(
+                FakeCrossValidationReporterNoGetParams(), id="cv_reporter_no_get_params"
+            ),
         ],
     )
     def test_factory(self, mock_nowstr, reporter):
