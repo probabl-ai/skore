@@ -57,6 +57,9 @@ sphinx_gallery_conf = {
         # The module you locally document uses None
         "skore": None,
     },
+    "backreferences_dir": "generated",
+    "doc_module": "skore",
+    "default_thumb_file": "./_static/images/Logo_Skore_Light@2x.svg",
 }
 
 # intersphinx configuration
@@ -139,7 +142,7 @@ html_sidebars = {
     "install": [],
     "getting_started": [],
     "user_guide": [],
-    "contributor_guide": [],
+    "contributing_link": [],
 }
 
 # Sphinx-Copybutton configuration
