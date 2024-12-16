@@ -244,7 +244,7 @@ plt.show()
 my_project.put("my_figure", fig)
 
 # %%
-# |
+#
 # Altair chart:
 
 # %%
