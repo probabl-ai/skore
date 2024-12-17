@@ -7,10 +7,11 @@ import LoadingBars from "@/components/LoadingBars.vue";
 import ModalDialog from "@/components/ModalDialog.vue";
 import NavigationButton from "@/components/NavigationButton.vue";
 import ToastNotificationArea from "@/components/ToastNotificationArea.vue";
+import { isUserInDarkMode } from "./services/utils";
 
 const route = useRoute();
 const router = useRouter();
-const theme = ref("light");
+const theme = ref(isUserInDarkMode() ? "skore-dark" : "skore-light");
 
 function switchTheme(m: MediaQueryListEvent) {
   theme.value = m.matches ? "skore-dark" : "skore-light";
