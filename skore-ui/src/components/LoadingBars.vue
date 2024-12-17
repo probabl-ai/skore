@@ -93,7 +93,7 @@
   </svg>
 </template>
 
-<style>
+<style scoped>
 svg {
   fill: var(--color-background-branding);
 }

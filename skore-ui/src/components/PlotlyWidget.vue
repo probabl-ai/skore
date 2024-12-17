@@ -74,7 +74,7 @@ watch(
 plotly "dark mode" fix
 https://github.com/plotly/plotly.js/issues/2006
 */
-:is(body[data-jp-theme-light="false"], .dark) {
+:is(body[data-jp-theme-light="false"], .skore-dark) {
   .plotly-widget {
     filter: invert(75%) hue-rotate(180deg);
   }

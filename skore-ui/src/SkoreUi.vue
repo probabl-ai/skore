@@ -13,7 +13,7 @@ const router = useRouter();
 const theme = ref("light");
 
 function switchTheme(m: MediaQueryListEvent) {
-  theme.value = m.matches ? "dark" : "light";
+  theme.value = m.matches ? "skore-dark" : "skore-light";
 }
 
 const preferredColorScheme = window.matchMedia("(prefers-color-scheme: dark)");

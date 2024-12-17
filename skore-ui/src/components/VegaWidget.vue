@@ -29,12 +29,16 @@ async function makePlot(spec: VisualizationSpec) {
   vegaView = r.view;
 }
 
+function replot() {
+  makePlot(props.spec);
+}
+
 const preferredColorScheme = window.matchMedia("(prefers-color-scheme: dark)");
-preferredColorScheme.addEventListener("change", () => makePlot(props.spec));
 
 onMounted(async () => {
   if (container.value) {
     makePlot(props.spec);
+    preferredColorScheme.addEventListener("change", replot);
   }
 });
 
@@ -42,6 +46,7 @@ onBeforeUnmount(() => {
   if (vegaView) {
     vegaView.finalize();
   }
+  preferredColorScheme.removeEventListener("change", replot);
 });
 
 watch(
