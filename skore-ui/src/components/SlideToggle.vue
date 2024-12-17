@@ -16,7 +16,7 @@ const isToggled = defineModel<boolean>("isToggled");
   width: calc(var(--slide-toggle-height) * 2);
   height: var(--slide-toggle-height);
   border-radius: var(--slide-toggle-height);
-  background-color: var(--color-icon-tertiary);
+  background-color: hsl(from var(--color-background-branding) h s calc(l + 15));
   transition: background-color var(--animation-duration) var(--animation-easing);
 
   & .thumb {
@@ -24,7 +24,7 @@ const isToggled = defineModel<boolean>("isToggled");
 
     position: absolute;
     top: 1px;
-    left: calc((var(--slide-toggle-height) * 2) - 1px - var(--thumb-size));
+    left: 1px;
     width: var(--thumb-size);
     height: var(--thumb-size);
     border-radius: var(--thumb-size);
@@ -33,10 +33,10 @@ const isToggled = defineModel<boolean>("isToggled");
   }
 
   &.toggled {
-    background-color: var(--color-icon-quartenary);
+    background-color: var(--color-background-branding);
 
     & .thumb {
-      left: 1px;
+      left: calc((var(--slide-toggle-height) * 2) - 1px - var(--thumb-size));
     }
   }
 }

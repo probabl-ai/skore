@@ -7,3 +7,12 @@
 .fade-leave-to {
   opacity: 0;
 }
+
+.skore-ui {
+  & * {
+    transition:
+      background-color var(--animation-duration) var(--animation-easing),
+      border-color var(--animation-duration) var(--animation-easing),
+      color var(--animation-duration) var(--animation-easing);
+  }
+}
