@@ -3,6 +3,7 @@ from dataclasses import dataclass
 import numpy
 import plotly.graph_objects
 import pytest
+from sklearn.model_selection import StratifiedKFold
 from skore.item.cross_validation_item import (
     CrossValidationItem,
     ItemTypeError,
@@ -26,7 +27,7 @@ class FakeCrossValidationReporter:
     X = numpy.array([[1.0]])
     y = numpy.array([1])
     plot = plotly.graph_objects.Figure()
-    cv = 2
+    cv = StratifiedKFold(n_splits=5)
 
 
 class TestCrossValidationItem:
@@ -59,6 +60,11 @@ class TestCrossValidationItem:
             "hash": _hash_numpy(FakeCrossValidationReporter.X),
         }
         assert item.y_info == {"hash": _hash_numpy(FakeCrossValidationReporter.y)}
+        assert item.cv_info == {
+            "n_splits": "5",
+            "random_state": "None",
+            "shuffle": "False",
+        }
         assert isinstance(item.plot_bytes, bytes)
         assert item.created_at == mock_nowstr
         assert item.updated_at == mock_nowstr
