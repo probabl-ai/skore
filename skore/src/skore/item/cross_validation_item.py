@@ -9,7 +9,6 @@ import contextlib
 import copy
 import hashlib
 import importlib
-import json
 import re
 import statistics
 from functools import cached_property
@@ -185,7 +184,7 @@ class CrossValidationItem(Item):
             "plots": [
                 {
                     "name": "cross-validation results",
-                    "value": json.loads(self.plot_bytes.decode("utf-8")),
+                    "value": self.plot,
                 }
             ],
             "sections": [
