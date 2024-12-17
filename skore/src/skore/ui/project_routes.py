@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import copy
 import importlib
+import json
 import operator
 import re
 import statistics
@@ -136,7 +137,7 @@ def __cross_validation_item_as_serializable(item: CrossValidationItem) -> dict:
         "plots": [
             {
                 "name": "cross-validation results",
-                "value": item.plot,
+                "value": json.loads(item.plot_bytes.decode("utf-8")),
             }
         ],
         "sections": [
