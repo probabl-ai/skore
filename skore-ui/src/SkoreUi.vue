@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from "vue";
 import { RouterView, useRoute, useRouter } from "vue-router";
 
 import AppToolbar from "@/components/AppToolbar.vue";
@@ -9,10 +10,16 @@ import ToastNotificationArea from "@/components/ToastNotificationArea.vue";
 
 const route = useRoute();
 const router = useRouter();
+const theme = ref("light");
+
+const preferredColorScheme = window.matchMedia("(prefers-color-scheme: dark)");
+preferredColorScheme.addEventListener("change", (m) => {
+  theme.value = m.matches ? "dark" : "light";
+});
 </script>
 
 <template>
-  <div class="skore">
+  <div class="skore" :class="[theme]">
     <AppToolbar>
       <NavigationButton
         v-for="(r, i) in router.getRoutes()"
