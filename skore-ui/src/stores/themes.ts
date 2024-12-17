@@ -14,7 +14,6 @@ export const useThemesStore = defineStore("themes", () => {
    * @param t the theme to set
    */
   function setTheme(t: Theme) {
-    console.log("set theme", t);
     currentTheme.value = t;
   }
 
