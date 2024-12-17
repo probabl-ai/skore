@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { addFrames, react, purge, relayout, type Layout } from "plotly.js-dist-min";
+import { addFrames, purge, react, relayout, type Layout } from "plotly.js-dist-min";
 import { onBeforeUnmount, onMounted, ref, watch } from "vue";
+
 import { isDeepEqual } from "@/services/utils";
 
 const props = defineProps<{
@@ -12,6 +13,7 @@ const container = ref<HTMLDivElement>();
 function makeLayout(): Partial<Layout> {
   return {
     ...props.spec.layout,
+    paper_bgcolor: "transparent",
     width: container.value?.clientWidth,
     height: container.value?.clientHeight,
     font: {
@@ -72,7 +74,7 @@ watch(
 plotly "dark mode" fix
 https://github.com/plotly/plotly.js/issues/2006
 */
-@media (prefers-color-scheme: dark) {
+:is(body[data-jp-theme-light="false"], .dark) {
   .plotly-widget {
     filter: invert(75%) hue-rotate(180deg);
   }

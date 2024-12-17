@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { onBeforeUnmount, onMounted, ref } from "vue";
 import { RouterView, useRoute, useRouter } from "vue-router";
 
 import AppToolbar from "@/components/AppToolbar.vue";
@@ -12,9 +12,18 @@ const route = useRoute();
 const router = useRouter();
 const theme = ref("light");
 
-const preferredColorScheme = window.matchMedia("(prefers-color-scheme: dark)");
-preferredColorScheme.addEventListener("change", (m) => {
+function switchTheme(m: MediaQueryListEvent) {
   theme.value = m.matches ? "dark" : "light";
+}
+
+const preferredColorScheme = window.matchMedia("(prefers-color-scheme: dark)");
+
+onMounted(() => {
+  preferredColorScheme.addEventListener("change", switchTheme);
+});
+
+onBeforeUnmount(() => {
+  preferredColorScheme.removeEventListener("change", switchTheme);
 });
 </script>
 
