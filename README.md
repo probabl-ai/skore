@@ -5,7 +5,7 @@
     <img width="200" src="https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/Logo_Skore_Light@2x.svg" alt="skore logo">
   </picture>
 
-  <h2>Your scikit-learn Modeling Companion</h2>
+  <h2>The scikit-learn Modeling Companion</h2>
 
 __Elevate ML Development with Tracking and Built-in Recommended Practices__ \
 [Documentation](https://skore.probabl.ai) — [Community](https://discord.probabl.ai)
