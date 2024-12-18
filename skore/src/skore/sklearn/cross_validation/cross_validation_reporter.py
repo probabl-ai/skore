@@ -16,6 +16,7 @@ from .cross_validation_helpers import (
     _strip_cv_results_scores,
 )
 from .plot import plot_cross_validation
+from .timing_plot import plot_cross_validation_timing
 
 
 @dataclass
@@ -23,6 +24,7 @@ class CrossValidationPlots:
     """Plots of the cross-validation results."""
 
     compare_scores: plotly.graph_objects.Figure
+    timing: plotly.graph_objects.Figure
 
 
 class CrossValidationReporter:
@@ -183,5 +185,6 @@ class CrossValidationReporter:
     def plots(self) -> CrossValidationPlots:
         """Plots of the cross-validation results."""
         return CrossValidationPlots(
-            compare_scores=plot_cross_validation(self._cv_results)
+            compare_scores=plot_cross_validation(self._cv_results),
+            timing=plot_cross_validation_timing(self._cv_results),
         )
