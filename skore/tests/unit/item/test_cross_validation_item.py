@@ -66,5 +66,6 @@ class TestCrossValidationItem:
             "shuffle": "False",
         }
         assert isinstance(item.plot_bytes, bytes)
+        assert isinstance(item.plot, plotly.graph_objects.Figure)
         assert item.created_at == mock_nowstr
         assert item.updated_at == mock_nowstr
