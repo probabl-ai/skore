@@ -5,12 +5,18 @@ import SlideToggle from "@/components/SlideToggle.vue";
 import SkoreLogo from "@/components/icons/SkoreLogo.vue";
 import { useThemesStore } from "@/stores/themes";
 
-const { setTheme, currentTheme } = useThemesStore();
-const isDarkModeForced = ref(currentTheme === "dark");
+const themesStore = useThemesStore();
+const isDarkModeForced = ref(themesStore.currentTheme === "dark");
 
 watch(isDarkModeForced, (forceDarkMode) => {
-  setTheme(forceDarkMode ? "dark" : "light");
+  themesStore.setTheme(forceDarkMode ? "dark" : "light");
 });
+watch(
+  () => themesStore.currentTheme,
+  () => {
+    isDarkModeForced.value = themesStore.currentTheme === "dark";
+  }
+);
 </script>
 
 <template>
