@@ -194,12 +194,17 @@ def test_serialize_cross_validation_item(
     reporter = CrossValidationReporter(model, X, y, cv=KFold(3))
     in_memory_project.put("cv", reporter)
 
+    # Mock the item to make the plot empty
+    item = in_memory_project.get_item("cv")
+    item.plot_bytes = b"{}"
+    in_memory_project.put_item("cv_mocked", item)
+
     response = client.get("/api/project/items")
     assert response.status_code == 200
 
     project = response.json()
     expected = {
-        "name": "cv",
+        "name": "cv_mocked",
         "media_type": "application/vnd.skore.cross_validation+json",
         "value": {
             "scalar_results": [
@@ -259,7 +264,7 @@ def test_serialize_cross_validation_item(
         "updated_at": mock_nowstr,
         "created_at": mock_nowstr,
     }
-    actual = project["items"]["cv"][0]
+    actual = project["items"]["cv_mocked"][0]
     assert expected == actual
 
 
