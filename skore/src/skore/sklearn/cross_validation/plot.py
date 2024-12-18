@@ -19,35 +19,27 @@ def plot_cross_validation(cv_results: dict) -> plotly.graph_objects.Figure:
     Returns
     -------
     plotly.graph_objects.Figure
-        A plot of the cross-validation results
+        A plot of the cross-validation results, without the time-related results.
     """
-    from datetime import timedelta
-
     import pandas
     import plotly
     import plotly.graph_objects as go
 
     _cv_results = cv_results.copy()
 
-    _cv_results.pop("indices", None)
-    _cv_results.pop("estimator", None)
+    # Remove irrelevant keys
+    to_remove = ["indices", "estimator"] + [
+        key
+        for key in _cv_results
+        if key.startswith("fit_time") or key.startswith("score_time")
+    ]
+    for key in to_remove:
+        _cv_results.pop(key, None)
 
     df = pandas.DataFrame(_cv_results)
 
-    # Move time columns to last and "test_score" to first
-    if "fit_time" in df.columns:
-        df.insert(len(df.columns) - 1, "fit_time", df.pop("fit_time"))
-    if "score_time" in df.columns:
-        df.insert(len(df.columns) - 1, "score_time", df.pop("score_time"))
     if "test_score" in df.columns:
         df.insert(0, "test_score", df.pop("test_score"))
-
-    dict_labels = {
-        "fit_time": "fit_time (seconds)",
-        "score_time": "score_time (seconds)",
-        "fit_time_per_data_point": "fit_time_per_data_point (seconds)",
-        "score_time_per_data_point": "score_time_per_data_point (seconds)",
-    }
 
     def linspace(lo, hi, num):
         interval = (hi - lo) / (num - 1)
@@ -56,7 +48,7 @@ def plot_cross_validation(cv_results: dict) -> plotly.graph_objects.Figure:
     fig = go.Figure()
 
     for col_i, col_name in enumerate(df.columns):
-        metric_name = dict_labels.get(col_name, col_name)
+        metric_name = col_name
         bar_color = plotly.colors.qualitative.Plotly[
             col_i % len(plotly.colors.qualitative.Plotly)
         ]
@@ -65,18 +57,7 @@ def plot_cross_validation(cv_results: dict) -> plotly.graph_objects.Figure:
         common_kwargs = dict(
             visible=True if col_i == 0 else "legendonly",
             legendgroup=f"group{col_i}",
-            # If the metric is a duration (e.g. "fit_time"),
-            # we show a different hover text
-            hovertemplate=(
-                "%{customdata}" f"<extra>{col_name} (timedelta)</extra>"
-                if ("fit_time" in col_name or "score_time" in col_name)
-                else "%{y}"
-            ),
-            customdata=(
-                [str(timedelta(seconds=x)) for x in df[col_name].values]
-                if ("fit_time" in col_name or "score_time" in col_name)
-                else None
-            ),
+            hovertemplate="%{y}",
         )
 
         # Calculate statistics
