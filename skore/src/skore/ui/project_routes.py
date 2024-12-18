@@ -131,15 +131,15 @@ def __cross_validation_item_as_serializable(item: CrossValidationItem) -> dict:
     # Get cross-validation details
     cv_params_as_str = ", ".join(f"{k}: *{v}*" for k, v in item.cv_info.items())
 
+    plots = [
+        {"name": name, "value": json.loads(plot_bytes.decode("utf-8"))}
+        for name, plot_bytes in item.plots_bytes.items()
+    ]
+
     return {
         "scalar_results": scalar_results,
         "tabular_results": [tabular_results],
-        "plots": [
-            {
-                "name": "cross-validation results",
-                "value": json.loads(item.plot_bytes.decode("utf-8")),
-            }
-        ],
+        "plots": plots,
         "sections": [
             {
                 "title": "Model",

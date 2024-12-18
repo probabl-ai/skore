@@ -195,7 +195,7 @@ def test_serialize_cross_validation_item(
 
     # Mock the item to make the plot empty
     item = in_memory_project.get_item("cv")
-    item.plot_bytes = b"{}"
+    item.plots_bytes = {"compare_scores": b"{}"}
     in_memory_project.put_item("cv_mocked", item)
 
     response = client.get("/api/project/items")
@@ -224,7 +224,7 @@ def test_serialize_cross_validation_item(
                     ],
                 }
             ],
-            "plots": [{"name": "cross-validation results", "value": {}}],
+            "plots": [{"name": "compare_scores", "value": {}}],
             "sections": [
                 {
                     "title": "Model",
