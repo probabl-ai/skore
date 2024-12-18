@@ -23,12 +23,17 @@ export const useThemesStore = defineStore("themes", () => {
   }
 
   // listen to browser preferences changes
-  const preferredColorScheme = window.matchMedia("(prefers-color-scheme: dark)");
-  preferredColorScheme.addEventListener("change", (m) => {
+  function onColorSchemeChange(m: MediaQueryListEvent) {
     setTheme(m.matches ? "dark" : "light");
-  });
+  }
+  const preferredColorScheme = window.matchMedia("(prefers-color-scheme: dark)");
+  preferredColorScheme.addEventListener("change", onColorSchemeChange);
 
-  return { currentTheme, currentThemeClass, setTheme };
+  function dispose() {
+    preferredColorScheme.removeEventListener("change", onColorSchemeChange);
+  }
+
+  return { currentTheme, currentThemeClass, setTheme, dispose };
 });
 
 if (import.meta.hot) {
