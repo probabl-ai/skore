@@ -10,14 +10,14 @@ from functools import cached_property
 
 import plotly.graph_objects
 
-from .compare_scores_plot import plot_cross_validation_compare_scores
 from .cross_validation_helpers import (
     _add_scorers,
     _get_scorers_to_add,
     _strip_cv_results_scores,
 )
-from .timing_normalized_plot import plot_cross_validation_timing_normalized
-from .timing_plot import plot_cross_validation_timing
+from .plots.compare_scores_plot import plot_cross_validation_compare_scores
+from .plots.timing_normalized_plot import plot_cross_validation_timing_normalized
+from .plots.timing_plot import plot_cross_validation_timing
 
 
 @dataclass
