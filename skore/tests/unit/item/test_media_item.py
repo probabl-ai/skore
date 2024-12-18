@@ -92,7 +92,7 @@ class TestMediaItem:
     def test_get_serializable_dict(self, mock_nowstr):
         item = MediaItem.factory("<content>")
 
-        serializable = item.get_serializable_dict()
+        serializable = item.as_serializable_dict()
         assert serializable == {
             "updated_at": mock_nowstr,
             "created_at": mock_nowstr,

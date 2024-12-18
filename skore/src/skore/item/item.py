@@ -86,20 +86,9 @@ class Item(ABC):
 
     def _repr_mimebundle_(self, include=None, exclude=None):
         del include, exclude
-        return {"text/html": self.as_html()}
+        return {"text/html": self._repr_html_()}
 
-    def get_serializable_dict(self):
-        """Get a serializable dict from the item.
-
-        Derived class must call their super implementation
-        and merge the result with their output.
-        """
-        return {
-            "updated_at": self.updated_at,
-            "created_at": self.created_at,
-        }
-
-    def as_html(self):
+    def _repr_html_(self):
         """Represent the item in a notebook."""
         item_folder = Path(__file__).resolve().parent
         templates_env = Environment(loader=FileSystemLoader(item_folder))
@@ -116,9 +105,20 @@ class Item(ABC):
 
         context = {
             "id": uuid4().hex,
-            "item": self.get_serializable_dict(),
+            "item": self.as_serializable_dict(),
             "script": script_content,
             "styles": styles_content,
         }
 
         return template.render(**context)
+
+    def as_serializable_dict(self):
+        """Get a serializable dict from the item.
+
+        Derived class must call their super implementation
+        and merge the result with their output.
+        """
+        return {
+            "updated_at": self.updated_at,
+            "created_at": self.created_at,
+        }

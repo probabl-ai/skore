@@ -137,8 +137,12 @@ class CrossValidationItem(Item):
         self.plot_bytes = plot_bytes
         self.cv_info = cv_info
 
-    def get_serializable_dict(self):
-        """CrossValidationItem as a serializable dict."""
+    def as_serializable_dict(self):
+        """Get a serializable dict from the item.
+
+        Derived class must call their super implementation
+        and merge the result with their output.
+        """
         # Get tabular results (the cv results in a dataframe-like structure)
         cv_results = copy.deepcopy(self.cv_results_serialized)
         cv_results.pop("indices", None)
@@ -178,7 +182,7 @@ class CrossValidationItem(Item):
         # Get cross-validation details
         cv_params_as_str = ", ".join(f"{k}: *{v}*" for k, v in self.cv_info.items())
 
-        r = super().get_serializable_dict()
+        r = super().as_serializable_dict()
         sections = [
             {
                 "title": "Model",

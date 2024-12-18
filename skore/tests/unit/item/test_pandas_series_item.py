@@ -84,7 +84,7 @@ class TestPandasSeriesItem:
     def test_get_serializable_dict(self, mock_nowstr):
         series = Series([np.array([1])], Index([0], name="myIndex"))
         item = PandasSeriesItem.factory(series)
-        serializable = item.get_serializable_dict()
+        serializable = item.as_serializable_dict()
         assert serializable == {
             "updated_at": mock_nowstr,
             "created_at": mock_nowstr,

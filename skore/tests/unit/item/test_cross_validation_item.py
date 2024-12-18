@@ -105,7 +105,7 @@ class TestCrossValidationItem:
 
         reporter = FakeCrossValidationReporter()
         item = CrossValidationItem.factory(reporter)
-        serializable = item.get_serializable_dict()
+        serializable = item.as_serializable_dict()
 
         assert serializable["updated_at"] == mock_nowstr
         assert serializable["created_at"] == mock_nowstr

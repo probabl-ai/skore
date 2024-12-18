@@ -52,7 +52,7 @@ class TestPolarsSeriesItem:
     def test_get_serializable_dict(self, mock_nowstr):
         series = Series([np.array([1, 2])])
         item = PolarsSeriesItem.factory(series)
-        serializable = item.get_serializable_dict()
+        serializable = item.as_serializable_dict()
         assert serializable == {
             "updated_at": mock_nowstr,
             "created_at": mock_nowstr,

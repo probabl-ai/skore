@@ -62,9 +62,13 @@ class MediaItem(Item):
         self.media_encoding = media_encoding
         self.media_type = media_type
 
-    def get_serializable_dict(self):
-        """MediaItem as a serializable dict."""
-        d = super().get_serializable_dict()
+    def as_serializable_dict(self):
+        """Get a serializable dict from the item.
+
+        Derived class must call their super implementation
+        and merge the result with their output.
+        """
+        d = super().as_serializable_dict()
         if "text" in self.media_type:
             value = self.media_bytes.decode(encoding=self.media_encoding)
             media_type = f"{self.media_type}"

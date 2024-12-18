@@ -94,7 +94,7 @@ class TestSklearnBaseEstimatorItem:
     def test_get_serializable_dict(self, mock_nowstr):
         estimator = Estimator()
         item = SklearnBaseEstimatorItem.factory(estimator)
-        serializable = item.get_serializable_dict()
+        serializable = item.as_serializable_dict()
 
         assert serializable == {
             "updated_at": mock_nowstr,

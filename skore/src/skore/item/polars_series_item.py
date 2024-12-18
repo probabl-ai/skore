@@ -63,9 +63,13 @@ class PolarsSeriesItem(Item):
 
             return series
 
-    def get_serializable_dict(self):
-        """PolarsSeriesItem as a serializable dict."""
-        d = super().get_serializable_dict()
+    def as_serializable_dict(self):
+        """Get a serializable dict from the item.
+
+        Derived class must call their super implementation
+        and merge the result with their output.
+        """
+        d = super().as_serializable_dict()
         d.update(
             {
                 "value": self.series.to_list(),
