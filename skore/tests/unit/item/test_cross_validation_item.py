@@ -10,6 +10,9 @@ from skore.item.cross_validation_item import (
     _hash_numpy,
 )
 from skore.sklearn.cross_validation import CrossValidationReporter
+from skore.sklearn.cross_validation.cross_validation_reporter import (
+    CrossValidationPlots,
+)
 
 
 class FakeEstimator:
@@ -31,7 +34,7 @@ class FakeCrossValidationReporter(CrossValidationReporter):
     estimator = FakeEstimator()
     X = numpy.array([[1.0]])
     y = numpy.array([1])
-    plot = plotly.graph_objects.Figure()
+    plots = CrossValidationPlots(compare_scores=plotly.graph_objects.Figure())
     cv = StratifiedKFold(n_splits=5)
 
 
@@ -49,7 +52,7 @@ class FakeCrossValidationReporterNoGetParams(CrossValidationReporter):
     estimator = FakeEstimatorNoGetParams()
     X = numpy.array([[1.0]])
     y = numpy.array([1])
-    plot = plotly.graph_objects.Figure()
+    plots = CrossValidationPlots(compare_scores=plotly.graph_objects.Figure())
     cv = StratifiedKFold(n_splits=5)
 
 
@@ -93,8 +96,8 @@ class TestCrossValidationItem:
             "random_state": "None",
             "shuffle": "False",
         }
-        assert isinstance(item.plot_bytes, bytes)
-        assert isinstance(item.plot, plotly.graph_objects.Figure)
+        assert isinstance(item.plots_bytes, dict)
+        assert isinstance(item.plots, dict)
         assert item.created_at == mock_nowstr
         assert item.updated_at == mock_nowstr
 
