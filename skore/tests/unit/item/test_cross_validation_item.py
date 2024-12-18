@@ -9,21 +9,44 @@ from skore.item.cross_validation_item import (
     ItemTypeError,
     _hash_numpy,
 )
+from skore.sklearn.cross_validation import CrossValidationReporter
 
 
 class FakeEstimator:
     def get_params(self):
-        return {}
+        return {"alpha": 3}
+
+
+class FakeEstimatorNoGetParams:
+    pass
 
 
 @dataclass
-class FakeCrossValidationReporter:
+class FakeCrossValidationReporter(CrossValidationReporter):
     _cv_results = {
         "test_score": numpy.array([1, 2, 3]),
         "estimator": [FakeEstimator(), FakeEstimator(), FakeEstimator()],
         "fit_time": [1, 2, 3],
     }
     estimator = FakeEstimator()
+    X = numpy.array([[1.0]])
+    y = numpy.array([1])
+    plot = plotly.graph_objects.Figure()
+    cv = StratifiedKFold(n_splits=5)
+
+
+@dataclass
+class FakeCrossValidationReporterNoGetParams(CrossValidationReporter):
+    _cv_results = {
+        "test_score": numpy.array([1, 2, 3]),
+        "estimator": [
+            FakeEstimatorNoGetParams(),
+            FakeEstimatorNoGetParams(),
+            FakeEstimatorNoGetParams(),
+        ],
+        "fit_time": [1, 2, 3],
+    }
+    estimator = FakeEstimatorNoGetParams()
     X = numpy.array([[1.0]])
     y = numpy.array([1])
     plot = plotly.graph_objects.Figure()
@@ -39,19 +62,24 @@ class TestCrossValidationItem:
         with pytest.raises(ItemTypeError):
             CrossValidationItem.factory(None)
 
-    def test_factory(self, monkeypatch, mock_nowstr):
-        monkeypatch.setattr(
-            "skore.item.cross_validation_item.CrossValidationReporter",
-            FakeCrossValidationReporter,
-        )
-
-        reporter = FakeCrossValidationReporter()
+    @pytest.mark.parametrize(
+        "reporter",
+        [
+            pytest.param(FakeCrossValidationReporter(), id="cv_reporter"),
+            pytest.param(
+                FakeCrossValidationReporterNoGetParams(), id="cv_reporter_no_get_params"
+            ),
+        ],
+    )
+    def test_factory(self, mock_nowstr, reporter):
         item = CrossValidationItem.factory(reporter)
 
         assert item.cv_results_serialized == {"test_score": [1, 2, 3]}
         assert item.estimator_info == {
-            "name": "FakeEstimator",
-            "params": {},
+            "name": reporter.estimator.__class__.__name__,
+            "params": {}
+            if isinstance(reporter.estimator, FakeEstimatorNoGetParams)
+            else {"alpha": {"value": "3", "default": True}},
             "module": "tests.unit.item.test_cross_validation_item",
         }
         assert item.X_info == {

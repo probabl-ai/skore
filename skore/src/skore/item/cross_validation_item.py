@@ -7,8 +7,9 @@ from __future__ import annotations
 
 import contextlib
 import hashlib
+import importlib
 from functools import cached_property
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any, TypedDict, Union
 
 import numpy
 import plotly.graph_objects
@@ -18,7 +19,22 @@ from skore.item.item import Item, ItemTypeError
 from skore.sklearn.cross_validation import CrossValidationReporter
 
 if TYPE_CHECKING:
+    import sklearn.base
+
     CVSplitter = Any
+
+    class EstimatorParamInfo(TypedDict):
+        """Information about an estimator parameter."""
+
+        value: str
+        default: bool
+
+    class EstimatorInfo(TypedDict):
+        """Information about an estimator."""
+
+        name: str
+        module: str
+        params: dict[str, EstimatorParamInfo]
 
 
 def _hash_numpy(arr: numpy.ndarray) -> str:
@@ -97,6 +113,41 @@ class CrossValidationItem(Item):
         self.plot_bytes = plot_bytes
         self.cv_info = cv_info
 
+    @staticmethod
+    def _estimator_info(estimator: sklearn.base.BaseEstimator) -> EstimatorInfo:
+        estimator_params = (
+            estimator.get_params() if hasattr(estimator, "get_params") else {}
+        )
+
+        estimator_info = {
+            "name": estimator.__class__.__name__,
+            "module": estimator.__module__,
+            "params": {k: repr(v) for k, v in estimator_params.items()},
+        }
+
+        # Figure out the default parameters of the estimator,
+        # so that we can highlight the non-default ones in the UI
+
+        # This is done by instantiating the class with no arguments and
+        # computing the diff between the default and ours
+        try:
+            estimator_module = importlib.import_module(estimator_info["module"])
+            EstimatorClass = getattr(estimator_module, estimator_info["name"])
+            default_estimator_params = EstimatorClass().get_params()
+        except Exception:
+            default_estimator_params = {}
+
+        final_estimator_params = {}
+        for k, v in estimator_params.items():
+            param_is_default = (
+                k in default_estimator_params and default_estimator_params[k] == v
+            )
+            final_estimator_params[k] = {"value": repr(v), "default": param_is_default}
+
+        estimator_info["params"] = final_estimator_params
+
+        return estimator_info
+
     @classmethod
     def factory(cls, reporter):
         """
@@ -136,11 +187,7 @@ class CrossValidationItem(Item):
             if isinstance(v, numpy.ndarray):
                 cv_results_serialized[k] = v.tolist()
 
-        estimator_info = {
-            "name": estimator.__class__.__name__,
-            "module": estimator.__module__,
-            "params": {k: repr(v) for k, v in estimator.get_params().items()},
-        }
+        estimator_info = CrossValidationItem._estimator_info(estimator)
 
         y_array = y if isinstance(y, numpy.ndarray) else numpy.array(y)
         y_info = None if y is None else {"hash": _hash_numpy(y_array)}
