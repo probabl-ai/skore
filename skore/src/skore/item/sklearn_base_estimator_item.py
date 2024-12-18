@@ -69,9 +69,13 @@ class SklearnBaseEstimatorItem(Item):
             self.estimator_skops, trusted=self.estimator_skops_untrusted_types
         )
 
-    def get_serializable_dict(self):
-        """SklearnBaseEstimatorItem as a serializable dict."""
-        d = super().get_serializable_dict()
+    def as_serializable_dict(self):
+        """Get a serializable dict from the item.
+
+        Derived class must call their super implementation
+        and merge the result with their output.
+        """
+        d = super().as_serializable_dict()
         d.update(
             {
                 "value": self.estimator_html_repr,

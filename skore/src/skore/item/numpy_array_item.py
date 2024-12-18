@@ -57,9 +57,13 @@ class NumpyArrayItem(Item):
 
         return numpy.asarray(loads(self.array_json))
 
-    def get_serializable_dict(self):
-        """NumpyArrayItem as a serializable dict."""
-        d = super().get_serializable_dict()
+    def as_serializable_dict(self):
+        """Get a serializable dict from the item.
+
+        Derived class must call their super implementation
+        and merge the result with their output.
+        """
+        d = super().as_serializable_dict()
         d.update(
             {
                 "media_type": "text/markdown",

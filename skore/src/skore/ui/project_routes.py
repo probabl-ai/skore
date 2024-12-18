@@ -5,16 +5,13 @@ from __future__ import annotations
 import operator
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request, status
 
 from skore.item import Item
 from skore.project import Project
 from skore.view.view import Layout, View
-
-if TYPE_CHECKING:
-    pass  # type: ignore
 
 router = APIRouter(prefix="/project")
 
@@ -40,16 +37,16 @@ class SerializableProject:
 
 def __item_as_serializable(name: str, item: Item) -> SerializableItem:
     try:
-        d = item.get_serializable_dict()
-        return SerializableItem(
-            name=name,
-            media_type=d["media_type"],
-            value=d["value"],
-            updated_at=d["updated_at"],
-            created_at=d["created_at"],
-        )
+        d = item.as_serializable_dict()
     except Exception as e:
         raise ValueError(f"Item {item} is not a known item type.") from e
+    return SerializableItem(
+        name=name,
+        media_type=d["media_type"],
+        value=d["value"],
+        updated_at=d["updated_at"],
+        created_at=d["created_at"],
+    )
 
 
 def __project_as_serializable(project: Project) -> SerializableProject:

@@ -46,7 +46,7 @@ class TestPrimitiveItem:
         monkeypatch.setattr("skore.item.item.datetime", MockDatetime)
 
         item = PrimitiveItem.factory(primitive)
-        serializable = item.get_serializable_dict()
+        serializable = item.as_serializable_dict()
         assert serializable == {
             "updated_at": mock_nowstr,
             "created_at": mock_nowstr,
