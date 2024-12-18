@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import contextlib
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -30,9 +29,8 @@ def plot_cross_validation(cv_results: dict) -> plotly.graph_objects.Figure:
 
     _cv_results = cv_results.copy()
 
-    with contextlib.suppress(KeyError):
-        del _cv_results["indices"]
-        del _cv_results["estimator"]
+    _cv_results.pop("indices", None)
+    _cv_results.pop("estimator", None)
 
     df = pandas.DataFrame(_cv_results)
 
