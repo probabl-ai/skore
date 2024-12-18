@@ -1,68 +1,83 @@
-name: Reusable skore workflow
+# THIS
+# IS
+# DOCUMENTATION
+# REUSABLE WORKFLOW
+
+name: backend
 
 on: [workflow_call]
 
 defaults:
   run:
     shell: "bash"
-    working-directory: "./skore"
 
 jobs:
-  test-skore:
+  lint-backend:
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip pre-commit
+
+      - name: Lint
+        working-directory: skore/
+        run: pre-commit run --all-files ruff
+
+  test-backend:
     strategy:
       fail-fast: true
       matrix:
         os: ["ubuntu-latest", "windows-latest"]
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        python: ["3.9", "3.10", "3.11", "3.12"]
+        coverage: [false]
+        include:
+          - os: "ubuntu-latest"
+            python: "3.12"
+            coverage: true
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
-          cache: "pip"
-      - name:
+          python-version: ${{ matrix.python }}
+          cache: pip
+
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip build
+
+      - name: Build
+        working-directory: skore/
+        run: python -m build
+
+      - name: Install
+        working-directory: skore/
+        run: wheel=(dist/*.whl); python -m pip install "${wheel}[test]"
+
+      - name: Test with/without coverage
         timeout-minutes: 10
+        working-directory: skore/
         run: |
-          # Install dependencies
-          python -m pip install --upgrade pip
-          python -m pip install --upgrade pre-commit
-          python -m pip install --upgrade build
+          if [ ${{ matrix.coverage }} = false ] ; then
+              python -m pytest -n auto --no-cov src/ tests/
+          else
+              mkdir coverage
+              python -m pytest -n auto --junitxml=coverage/coverage.xml --cov=skore src/ tests/ | tee coverage/coverage.txt
+          fi
 
-          # Lint
-          pre-commit run --all-files ruff
-
-          # Build
-          python -m build
-
-          # Install
-          wheel=(dist/*.whl); python -m pip install "${wheel}[test]"
-
-          # Test
-          python -m pytest --no-cov src/ tests/ -n auto
-
-  coverage-skore:
-    runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'pull_request' }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Upload coverage reports
+        if: matrix.coverage == 'true'
+        uses: actions/upload-artifact@v4
         with:
-          python-version: 3.12
-          cache: "pip"
-      - name: pytest coverage
-        run: |
-          # Install dependencies
-          python -m pip install --upgrade pip
-          python -m pip install --upgrade pre-commit
-          python -m pip install --upgrade build
-          python -m pip install -e .[test]
-
-          # run coverage
-          python -m pytest -n auto --junitxml=coverage.xml --cov=skore src/ tests/ | tee pytest-coverage.txt
-      - name: Pytest coverage comment
-        uses: MishaKav/pytest-coverage-comment@main
-        with:
-          pytest-coverage-path: ./skore/pytest-coverage.txt
-          junitxml-path: ./skore/coverage.xml
-          title: pytest coverage report
+          name: backend-coverage
+          path: skore/coverage/
