@@ -34,7 +34,10 @@ class FakeCrossValidationReporter(CrossValidationReporter):
     estimator = FakeEstimator()
     X = numpy.array([[1.0]])
     y = numpy.array([1])
-    plots = CrossValidationPlots(compare_scores=plotly.graph_objects.Figure())
+    plots = CrossValidationPlots(
+        compare_scores=plotly.graph_objects.Figure(),
+        timing=plotly.graph_objects.Figure(),
+    )
     cv = StratifiedKFold(n_splits=5)
 
 
@@ -52,7 +55,10 @@ class FakeCrossValidationReporterNoGetParams(CrossValidationReporter):
     estimator = FakeEstimatorNoGetParams()
     X = numpy.array([[1.0]])
     y = numpy.array([1])
-    plots = CrossValidationPlots(compare_scores=plotly.graph_objects.Figure())
+    plots = CrossValidationPlots(
+        compare_scores=plotly.graph_objects.Figure(),
+        timing=plotly.graph_objects.Figure(),
+    )
     cv = StratifiedKFold(n_splits=5)
 
 
