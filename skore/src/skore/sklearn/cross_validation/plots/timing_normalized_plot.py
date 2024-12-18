@@ -1,16 +1,19 @@
-"""Plot cross-validation results."""
+"""Plot cross-validation normalized timing results."""
 
 from __future__ import annotations
 
-import contextlib
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     import plotly.graph_objects
 
 
-def plot_cross_validation(cv_results: dict) -> plotly.graph_objects.Figure:
-    """Plot the result of a cross-validation run.
+def plot_cross_validation_timing_normalized(
+    cv_results: dict,
+) -> plotly.graph_objects.Figure:
+    """Plot the normalized timing results of a cross-validation run.
+
+    Each timing result is normalized by the number of data points.
 
     Parameters
     ----------
@@ -20,7 +23,7 @@ def plot_cross_validation(cv_results: dict) -> plotly.graph_objects.Figure:
     Returns
     -------
     plotly.graph_objects.Figure
-        A plot of the cross-validation results
+        A plot of the normalized time-related cross-validation results.
     """
     from datetime import timedelta
 
@@ -30,23 +33,18 @@ def plot_cross_validation(cv_results: dict) -> plotly.graph_objects.Figure:
 
     _cv_results = cv_results.copy()
 
-    with contextlib.suppress(KeyError):
-        del _cv_results["indices"]
-        del _cv_results["estimator"]
+    # Remove irrelevant keys
+    to_remove = [
+        key
+        for key in _cv_results
+        if key not in ["fit_time_per_data_point", "score_time_per_data_point"]
+    ]
+    for key in to_remove:
+        _cv_results.pop(key, None)
 
     df = pandas.DataFrame(_cv_results)
 
-    # Move time columns to last and "test_score" to first
-    if "fit_time" in df.columns:
-        df.insert(len(df.columns) - 1, "fit_time", df.pop("fit_time"))
-    if "score_time" in df.columns:
-        df.insert(len(df.columns) - 1, "score_time", df.pop("score_time"))
-    if "test_score" in df.columns:
-        df.insert(0, "test_score", df.pop("test_score"))
-
     dict_labels = {
-        "fit_time": "fit_time (seconds)",
-        "score_time": "score_time (seconds)",
         "fit_time_per_data_point": "fit_time_per_data_point (seconds)",
         "score_time_per_data_point": "score_time_per_data_point (seconds)",
     }
@@ -67,18 +65,6 @@ def plot_cross_validation(cv_results: dict) -> plotly.graph_objects.Figure:
         common_kwargs = dict(
             visible=True if col_i == 0 else "legendonly",
             legendgroup=f"group{col_i}",
-            # If the metric is a duration (e.g. "fit_time"),
-            # we show a different hover text
-            hovertemplate=(
-                "%{customdata}" f"<extra>{col_name} (timedelta)</extra>"
-                if ("fit_time" in col_name or "score_time" in col_name)
-                else "%{y}"
-            ),
-            customdata=(
-                [str(timedelta(seconds=x)) for x in df[col_name].values]
-                if ("fit_time" in col_name or "score_time" in col_name)
-                else None
-            ),
         )
 
         # Calculate statistics
@@ -95,6 +81,10 @@ def plot_cross_validation(cv_results: dict) -> plotly.graph_objects.Figure:
                     name=metric_name,
                     marker_color=bar_color,
                     showlegend=True,
+                    hovertemplate=(
+                        "%{customdata}" f"<extra>{col_name} (timedelta)</extra>"
+                    ),
+                    customdata=[str(timedelta(seconds=x)) for x in df[col_name].values],
                     **common_kwargs,
                 ),
                 # Mean line
@@ -105,6 +95,8 @@ def plot_cross_validation(cv_results: dict) -> plotly.graph_objects.Figure:
                     line=dict(dash="dash", color=bar_color),
                     showlegend=False,
                     mode="lines",
+                    hovertemplate="%{customdata}",
+                    customdata=[str(timedelta(seconds=avg_value))] * 10,
                     **common_kwargs,
                 ),
                 # +1 std line
@@ -115,6 +107,8 @@ def plot_cross_validation(cv_results: dict) -> plotly.graph_objects.Figure:
                     line=dict(dash="dot", color=bar_color),
                     showlegend=False,
                     mode="lines",
+                    hovertemplate="%{customdata}",
+                    customdata=[str(timedelta(seconds=avg_value + std_value))] * 10,
                     **common_kwargs,
                 ),
                 # -1 std line
@@ -125,6 +119,8 @@ def plot_cross_validation(cv_results: dict) -> plotly.graph_objects.Figure:
                     line=dict(dash="dot", color=bar_color),
                     showlegend=False,
                     mode="lines",
+                    hovertemplate="%{customdata}",
+                    customdata=[str(timedelta(seconds=avg_value + std_value))] * 10,
                     **common_kwargs,
                 ),
             ]
@@ -132,6 +128,8 @@ def plot_cross_validation(cv_results: dict) -> plotly.graph_objects.Figure:
 
     fig.update_xaxes(tickmode="linear", dtick=1, title_text="Split number")
     fig.update_yaxes(title_text="Value")
-    fig.update_layout(title_text="Cross-validation results for each split")
+    fig.update_layout(
+        title_text="Normalized time-related cross-validation results for each split"
+    )
 
     return fig
