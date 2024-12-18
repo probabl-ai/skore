@@ -237,7 +237,7 @@ from skore import CrossValidationReporter
 
 cv_reporter = CrossValidationReporter(Ridge(), X, y, cv=5)
 my_project.put("cv_reporter", cv_reporter)
-cv_reporter.plot
+cv_reporter.plots.compare_scores
 
 # %%
 # Hence:
