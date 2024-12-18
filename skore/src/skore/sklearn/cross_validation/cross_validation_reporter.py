@@ -10,12 +10,12 @@ from functools import cached_property
 
 import plotly.graph_objects
 
+from .compare_scores_plot import plot_cross_validation_compare_scores
 from .cross_validation_helpers import (
     _add_scorers,
     _get_scorers_to_add,
     _strip_cv_results_scores,
 )
-from .plot import plot_cross_validation
 from .timing_normalized_plot import plot_cross_validation_timing_normalized
 from .timing_plot import plot_cross_validation_timing
 
@@ -187,7 +187,7 @@ class CrossValidationReporter:
     def plots(self) -> CrossValidationPlots:
         """Plots of the cross-validation results."""
         return CrossValidationPlots(
-            compare_scores=plot_cross_validation(self._cv_results),
+            compare_scores=plot_cross_validation_compare_scores(self._cv_results),
             timing=plot_cross_validation_timing(self._cv_results),
             timing_normalized=plot_cross_validation_timing_normalized(self._cv_results),
         )
