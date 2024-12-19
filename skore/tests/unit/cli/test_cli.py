@@ -8,15 +8,18 @@ def test_cli_launch(monkeypatch):
     launch_project_name = None
     launch_port = None
     launch_open_browser = None
+    launch_verbose = None
 
-    def fake_launch(project_name, port, open_browser):
+    def fake_launch(project_name, port, open_browser, verbose):
         nonlocal launch_project_name
         nonlocal launch_port
         nonlocal launch_open_browser
+        nonlocal launch_verbose
 
         launch_project_name = project_name
         launch_port = port
         launch_open_browser = open_browser
+        launch_verbose = verbose
 
     monkeypatch.setattr("skore.cli.cli.__launch", fake_launch)
     cli(["launch", "project.skore", "--port", "0", "--no-open-browser"])
