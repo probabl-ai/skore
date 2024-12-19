@@ -44,7 +44,9 @@
   --width-toolbar: 60px;
 }
 
-:is(body[data-jp-theme-light="false"], body[data-vscode-theme-kind="vscode-dark"] .skore-dark) {
+body[data-jp-theme-light="false"],
+body[data-vscode-theme-kind="vscode-dark"],
+.skore-dark {
   /* backgrounds */
   --color-background-primary: #1a1a1a;
   --color-background-secondary: #222;
@@ -75,7 +77,9 @@
   --color-shadow: rgb(0 0 0/58%);
 }
 
-:is(body[data-jp-theme-light="true"], body[data-vscode-theme-kind="vscode-light"], .skore-light) {
+body[data-jp-theme-light="true"],
+body[data-vscode-theme-kind="vscode-light"],
+.skore-light {
   /* backgrounds */
   --color-background-primary: #fff;
   --color-background-secondary: #fafafb;
