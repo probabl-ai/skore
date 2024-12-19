@@ -13,6 +13,7 @@ from skore.exceptions import (
 )
 from skore.project.load import load
 from skore.project.project import Project, logger
+from skore.utils._logger import with_logging
 from skore.view.view import View
 
 
@@ -57,10 +58,12 @@ def _validate_project_name(project_name: str) -> tuple[bool, Optional[Exception]
     return True, None
 
 
+@with_logging(logger)
 def create(
     project_name: Union[str, Path],
     working_dir: Optional[Path] = None,
     overwrite: bool = False,
+    verbose: bool = False,
 ) -> Project:
     """Create a project file named according to ``project_name``.
 
@@ -76,11 +79,15 @@ def create(
     overwrite : bool
         If ``True``, overwrite an existing project with the same name.
         If ``False``, raise an error if a project with the same name already exists.
+    verbose : bool
+        Whether or not to display info logs to the user.
 
     Returns
     -------
     The created project
     """
+    from skore import console  # avoid circular import
+
     project_path = Path(project_name)
 
     # Remove trailing ".skore" if it exists to check the name is valid
@@ -145,5 +152,6 @@ def create(
     p = load(project_directory)
     p.put_view("default", View(layout=[]))
 
-    logger.info(f"Project file '{project_directory}' was successfully created.")
+    console.rule("[bold cyan]skore[/bold cyan]")
+    console.print(f"Project file '{project_directory}' was successfully created.")
     return p
