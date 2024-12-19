@@ -42,6 +42,11 @@ def cli(args: list[str]):
         ),
         default=True,
     )
+    parser_launch.add_argument(
+        "--verbose",
+        action="store_true",
+        help="increase logging verbosity",
+    )
 
     parser_create = subparsers.add_parser("create", help="Create a project")
     parser_create.add_argument(
@@ -63,6 +68,11 @@ def cli(args: list[str]):
         "--overwrite",
         action="store_true",
         help="overwrite an existing project with the same name",
+    )
+    parser_create.add_argument(
+        "--verbose",
+        action="store_true",
+        help="increase logging verbosity",
     )
 
     parser_quickstart = subparsers.add_parser(
@@ -102,6 +112,11 @@ def cli(args: list[str]):
             "(default: %(default)s)"
         ),
         default=True,
+    )
+    parser_quickstart.add_argument(
+        "--verbose",
+        action="store_true",
+        help="increase logging verbosity",
     )
 
     parsed_args: argparse.Namespace = parser.parse_args(args)
