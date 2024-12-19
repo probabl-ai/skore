@@ -31,7 +31,7 @@ def load(project_name: Union[str, Path]) -> Project:
         raise FileNotFoundError(f"Project '{path}' does not exist: did you create it?")
 
     try:
-        # FIXME should those hardcoded string be factorized somewhere ?
+        # FIXME: Should those hardcoded strings be factorized somewhere ?
         item_storage = DiskCacheStorage(directory=Path(path) / "items")
         item_repository = ItemRepository(storage=item_storage)
         view_storage = DiskCacheStorage(directory=Path(path) / "views")
