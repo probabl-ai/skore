@@ -32,7 +32,7 @@ def __quickstart(
         to the current working directory.
     overwrite : bool
         If ``True``, overwrite an existing project with the same name.
-        If ``False``, raise an error if a project with the same name already exists.
+        If ``False``, simply warn that a project already exists.
     port : int
         Port at which to bind the UI server.
     open_browser : bool
