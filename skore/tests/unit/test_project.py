@@ -14,7 +14,6 @@ from PIL import Image
 from sklearn.ensemble import RandomForestClassifier
 from skore.exceptions import (
     InvalidProjectNameError,
-    ProjectAlreadyExistsError,
     ProjectCreationError,
 )
 from skore.project import (
@@ -337,7 +336,7 @@ def test_create_project_absolute_path(tmp_path):
 def test_create_project_fails_if_file_exists(tmp_path):
     create(tmp_path / "hello")
     assert (tmp_path / "hello.skore").exists()
-    with pytest.raises(ProjectAlreadyExistsError):
+    with pytest.raises(FileExistsError):
         create(tmp_path / "hello")
 
 
