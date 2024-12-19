@@ -19,10 +19,10 @@ of items that we can store in a skore :class:`~skore.Project`.
 
 # %%
 import tempfile
-from pathlib import Path
+import os
 
 temp_dir = tempfile.TemporaryDirectory(prefix="skore_example_")
-temp_dir_path = Path(temp_dir.name)
+os.chdir(temp_dir.name)
 
 # %%
 # We create and load the skore project from this temporary directory:
@@ -30,7 +30,7 @@ temp_dir_path = Path(temp_dir.name)
 # %%
 import skore
 
-my_project = skore.create("my_project", working_dir=temp_dir_path)
+my_project = skore.create("my_project")
 
 # %%
 # Storing integers
