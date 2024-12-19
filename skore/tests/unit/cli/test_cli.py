@@ -22,13 +22,14 @@ def test_cli_launch(monkeypatch):
         launch_verbose = verbose
 
     monkeypatch.setattr("skore.cli.cli.__launch", fake_launch)
-    cli(["launch", "project.skore", "--port", "0", "--no-open-browser"])
+    cli(["launch", "project.skore", "--port", "0", "--no-open-browser", "--verbose"])
 
     assert launch_project_name == "project.skore"
     assert launch_port == 0
     assert not launch_open_browser
+    assert launch_verbose
 
 
 def test_cli_launch_no_project_name():
     with pytest.raises(SystemExit):
-        cli(["launch", "--port", 0, "--no-open-browser"])
+        cli(["launch", "--port", 0, "--no-open-browser", "--verbose"])

@@ -39,9 +39,16 @@ def __quickstart(
         Port at which to bind the UI server.
     open_browser : bool
         Whether to automatically open a browser tab showing the UI.
+    verbose : bool
+        Whether to increase logging verbosity.
     """
     try:
-        create(project_name=project_name, working_dir=working_dir, overwrite=overwrite)
+        create(
+            project_name=project_name,
+            working_dir=working_dir,
+            overwrite=overwrite,
+            verbose=verbose,
+        )
     except ProjectAlreadyExistsError:
         logger.info(
             f"Project file '{project_name}' already exists. Skipping creation step."
@@ -51,4 +58,5 @@ def __quickstart(
         project_name=project_name,
         port=port,
         open_browser=open_browser,
+        verbose=verbose,
     )
