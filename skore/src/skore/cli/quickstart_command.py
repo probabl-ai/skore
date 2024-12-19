@@ -7,14 +7,17 @@ from skore.cli import logger
 from skore.cli.launch_dashboard import __launch
 from skore.exceptions import ProjectAlreadyExistsError
 from skore.project import create
+from skore.utils._logger import with_logging
 
 
+@with_logging(logger)
 def __quickstart(
     project_name: Union[str, Path],
     working_dir: Optional[Path],
     overwrite: bool,
     port: int,
     open_browser: bool,
+    verbose: bool = False,
 ):
     """Quickstart a Skore project.
 
@@ -36,9 +39,16 @@ def __quickstart(
         Port at which to bind the UI server.
     open_browser : bool
         Whether to automatically open a browser tab showing the UI.
+    verbose : bool
+        Whether to increase logging verbosity.
     """
     try:
-        create(project_name=project_name, working_dir=working_dir, overwrite=overwrite)
+        create(
+            project_name=project_name,
+            working_dir=working_dir,
+            overwrite=overwrite,
+            verbose=verbose,
+        )
     except ProjectAlreadyExistsError:
         logger.info(
             f"Project file '{project_name}' already exists. Skipping creation step."
@@ -48,4 +58,5 @@ def __quickstart(
         project_name=project_name,
         port=port,
         open_browser=open_browser,
+        verbose=verbose,
     )
