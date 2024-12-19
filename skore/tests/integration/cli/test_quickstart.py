@@ -2,7 +2,7 @@ from skore.cli.cli import cli
 
 
 def test_quickstart(tmp_path, monkeypatch):
-    def fake_launch(project_name, port, open_browser):
+    def fake_launch(project_name, port, open_browser, verbose):
         pass
 
     monkeypatch.setattr("skore.cli.quickstart_command.__launch", fake_launch)

@@ -1,15 +1,10 @@
 """
-.. _example_skore_product_tour:
+.. _example_getting_started:
 
-==================
-Skore product tour
-==================
+==========================
+Getting started with skore
+==========================
 """
-
-# %%
-# .. admonition:: Where to start?
-#
-#    See our :ref:`example_quick_start` page!
 
 # %%
 # This getting started guide illustrates how to use skore and why:
@@ -154,7 +149,7 @@ my_project.put("my_fig", fig)
 #
 #   For more information about the functionalities and the different types
 #   of items that we can store in a skore :class:`~skore.Project`,
-#   see :ref:`example_working_with_projects`.
+#   see :ref:`example_overview_skore_project`.
 
 # %%
 # Skore UI: visualizing items
@@ -216,7 +211,7 @@ my_project.put("my_fig", fig)
 # .. seealso::
 #
 #   For more information about the tracking of items using their history,
-#   see :ref:`example_tracking_items`.
+#   see :ref:`example_historization_items`.
 
 # %%
 # Machine learning diagnostics: enhancing scikit-learn functions

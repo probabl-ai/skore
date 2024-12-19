@@ -11,7 +11,6 @@ from skore.utils._logger import logger_context
 
 def __quickstart(
     project_name: Union[str, Path],
-    working_dir: Union[Path, None],
     overwrite: bool,
     port: int,
     open_browser: bool,
@@ -25,11 +24,6 @@ def __quickstart(
     ----------
     project_name : Path-like
         Name of the project to be created, or a relative or absolute path.
-    working_dir : Path or None
-        If ``project_name`` is not an absolute path, it will be considered relative to
-        ``working_dir``. If `project_name` is an absolute path, ``working_dir`` will
-        have no effect. If set to ``None`` (the default), ``working_dir`` will be re-set
-        to the current working directory.
     overwrite : bool
         If ``True``, overwrite an existing project with the same name.
         If ``False``, simply warn that a project already exists.
@@ -44,7 +38,6 @@ def __quickstart(
         try:
             create(
                 project_name=project_name,
-                working_dir=working_dir,
                 overwrite=overwrite,
                 verbose=verbose,
             )
@@ -53,11 +46,7 @@ def __quickstart(
                 f"Project file '{project_name}' already exists. Skipping creation step."
             )
 
-        path = (
-            Path(project_name)
-            if working_dir is None
-            else Path(working_dir, project_name)
-        )
+        path = Path(project_name)
 
         __launch(
             project_name=path,

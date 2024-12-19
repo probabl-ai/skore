@@ -126,16 +126,26 @@ def cli(args: list[str]):
             verbose=parsed_args.verbose,
         )
     elif parsed_args.subcommand == "create":
+        if parsed_args.working_dir is not None:
+            project_name = (
+                pathlib.Path(parsed_args.working_dir) / parsed_args.project_name
+            )
+        else:
+            project_name = parsed_args.project_name
         create(
-            project_name=parsed_args.project_name,
-            working_dir=parsed_args.working_dir,
+            project_name=project_name,
             overwrite=parsed_args.overwrite,
             verbose=parsed_args.verbose,
         )
     elif parsed_args.subcommand == "quickstart":
+        if parsed_args.working_dir is not None:
+            project_name = (
+                pathlib.Path(parsed_args.working_dir) / parsed_args.project_name
+            )
+        else:
+            project_name = parsed_args.project_name
         __quickstart(
-            project_name=parsed_args.project_name,
-            working_dir=parsed_args.working_dir,
+            project_name=project_name,
             overwrite=parsed_args.overwrite,
             port=parsed_args.port,
             open_browser=parsed_args.open_browser,

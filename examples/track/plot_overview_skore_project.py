@@ -1,9 +1,9 @@
 """
-.. _example_working_with_projects:
+.. _example_overview_skore_project:
 
-=====================
-Working with projects
-=====================
+=============================
+Overview of the skore project
+=============================
 
 This example provides an overview of the functionalities and the different types
 of items that we can store in a skore :class:`~skore.Project`.
@@ -68,7 +68,7 @@ my_project.get("my_int")
 #
 #   Skore does not exactly *overwrite*, but stores the history of items.
 #   For more information about the tracking of items using their history,
-#   see :ref:`example_tracking_items`.
+#   see :ref:`example_historization_items`.
 
 # %%
 # By using the :func:`~skore.Project.delete_item` method, we can also delete an object
@@ -207,8 +207,8 @@ my_df_polars.head()
 # Skrub :class:`~skrub.TableReport`:
 
 # %%
-from skrub.datasets import fetch_employee_salaries
 from skrub import TableReport
+from skrub.datasets import fetch_employee_salaries
 
 dataset = fetch_employee_salaries()
 employees_df, salaries = dataset.X, dataset.y

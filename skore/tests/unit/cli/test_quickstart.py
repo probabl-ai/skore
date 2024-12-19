@@ -7,18 +7,15 @@ def test_quickstart(monkeypatch):
     """`quickstart` passes its arguments down to `create` and `launch`."""
 
     create_project_name = None
-    create_working_dir = None
     create_overwrite = None
     create_verbose = None
 
-    def fake_create(project_name, working_dir, overwrite, verbose):
+    def fake_create(project_name, overwrite, verbose):
         nonlocal create_project_name
-        nonlocal create_working_dir
         nonlocal create_overwrite
         nonlocal create_verbose
 
         create_project_name = project_name
-        create_working_dir = working_dir
         create_overwrite = overwrite
         create_verbose = verbose
 
@@ -56,8 +53,7 @@ def test_quickstart(monkeypatch):
         ]
     )
 
-    assert create_project_name == "my_project.skore"
-    assert create_working_dir == Path("/tmp")
+    assert create_project_name == Path("/tmp/my_project.skore")
     assert create_overwrite is True
     assert create_verbose is True
 
