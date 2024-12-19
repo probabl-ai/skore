@@ -321,7 +321,7 @@ def test_validate_project_name(project_name, expected):
 
 @pytest.mark.parametrize("project_name", ["hello", "hello.skore"])
 def test_create_project(project_name, tmp_path):
-    create(project_name, working_dir=tmp_path)
+    create(tmp_path / project_name)
     assert (tmp_path / "hello.skore").exists()
 
 
@@ -347,4 +347,4 @@ def test_create_project_fails_if_permission_denied(tmp_path):
 @pytest.mark.parametrize("project_name", ["hello.txt", "%%%", "COM1"])
 def test_create_project_fails_if_invalid_name(project_name, tmp_path):
     with pytest.raises(ProjectCreationError):
-        create(project_name, working_dir=tmp_path)
+        create(tmp_path / project_name)
