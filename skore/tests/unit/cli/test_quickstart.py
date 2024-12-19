@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from skore.cli.cli import cli
 
 

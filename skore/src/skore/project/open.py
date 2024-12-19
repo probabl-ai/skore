@@ -45,8 +45,6 @@ def open(
         if create:
             return create_project(project_path, overwrite=overwrite)
 
-
-    
     # if not create:
     #     return load(project_path)
     # return create_project(project_path, overwrite=overwrite)
