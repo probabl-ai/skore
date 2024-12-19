@@ -6,7 +6,11 @@ import inspect
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from functools import cached_property
+from pathlib import Path
 from typing import Any, Optional
+from uuid import uuid4
+
+from jinja2 import Environment, FileSystemLoader
 
 
 class ItemTypeError(Exception):
@@ -51,7 +55,7 @@ class Item(ABC):
 
     @classmethod
     @abstractmethod
-    def factory(cls) -> Item:
+    def factory(cls, *args, **kwargs) -> Item:
         """
         Create and return a new instance of the Item.
 
@@ -79,3 +83,41 @@ class Item(ABC):
     def __repr__(self) -> str:
         """Represent the item."""
         return f"{self.__class__.__name__}(...)"
+
+    def _repr_mimebundle_(self, include=None, exclude=None):
+        return {"text/html": self._repr_html_()}
+
+    def _repr_html_(self):
+        """Represent the item in a notebook."""
+        item_folder = Path(__file__).resolve().parent
+        templates_env = Environment(loader=FileSystemLoader(item_folder))
+        template = templates_env.get_template("standalone_widget.html.jinja")
+
+        static_files_path = item_folder.parent / "ui" / "static" / "assets"
+
+        def read_asset_content(path):
+            with open(static_files_path / path) as f:
+                return f.read()
+
+        script_content = read_asset_content("index.js")
+        styles_content = read_asset_content("index.css")
+
+        context = {
+            "id": uuid4().hex,
+            "item": self.as_serializable_dict(),
+            "script": script_content,
+            "styles": styles_content,
+        }
+
+        return template.render(**context)
+
+    def as_serializable_dict(self):
+        """Get a serializable dict from the item.
+
+        Derived class must call their super implementation
+        and merge the result with their output.
+        """
+        return {
+            "updated_at": self.updated_at,
+            "created_at": self.created_at,
+        }

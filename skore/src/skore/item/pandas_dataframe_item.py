@@ -75,6 +75,21 @@ class PandasDataFrameItem(Item):
 
             return dataframe
 
+    def as_serializable_dict(self):
+        """Get a serializable dict from the item.
+
+        Derived class must call their super implementation
+        and merge the result with their output.
+        """
+        d = super().as_serializable_dict()
+        d.update(
+            {
+                "media_type": "application/vnd.dataframe",
+                "value": self.dataframe.fillna("NaN").to_dict(orient="tight"),
+            }
+        )
+        return d
+
     @classmethod
     def factory(cls, dataframe: pandas.DataFrame) -> PandasDataFrameItem:
         """

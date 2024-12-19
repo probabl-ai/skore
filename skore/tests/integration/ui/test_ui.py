@@ -179,6 +179,7 @@ def test_serialize_cross_validation_item(
     fake_cross_validate,
 ):
     monkeypatch.setattr("skore.item.item.datetime", MockDatetime)
+    monkeypatch.setattr("skore.item.cross_validation_item.CrossValidationItem.plot", {})
 
     def prepare_cv():
         from sklearn import datasets, linear_model
