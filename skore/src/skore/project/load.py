@@ -27,7 +27,7 @@ def load(project_name: Union[str, Path]) -> Project:
         path = path.parent / (path.name + ".skore")
 
     if not Path(path).exists():
-        raise ProjectLoadError(f"Project '{path}' does not exist: did you create it?")
+        raise FileNotFoundError(f"Project '{path}' does not exist: did you create it?")
 
     try:
         # FIXME should those hardcoded string be factorized somewhere ?
