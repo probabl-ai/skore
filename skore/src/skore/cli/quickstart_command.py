@@ -1,7 +1,7 @@
 """Implement the "quickstart" command."""
 
 from pathlib import Path
-from typing import Optional, Union
+from typing import Union
 
 from skore.cli import logger
 from skore.cli.launch_dashboard import __launch
@@ -10,7 +10,6 @@ from skore.project import create
 
 def __quickstart(
     project_name: Union[str, Path],
-    working_dir: Optional[Path],
     overwrite: bool,
     port: int,
     open_browser: bool,
@@ -23,11 +22,6 @@ def __quickstart(
     ----------
     project_name : Path-like
         Name of the project to be created, or a relative or absolute path.
-    working_dir : Path or None
-        If ``project_name`` is not an absolute path, it will be considered relative to
-        ``working_dir``. If `project_name` is an absolute path, ``working_dir`` will
-        have no effect. If set to ``None`` (the default), ``working_dir`` will be re-set
-        to the current working directory.
     overwrite : bool
         If ``True``, overwrite an existing project with the same name.
         If ``False``, simply warn that a project already exists.
@@ -37,7 +31,7 @@ def __quickstart(
         Whether to automatically open a browser tab showing the UI.
     """
     try:
-        create(project_name=project_name, working_dir=working_dir, overwrite=overwrite)
+        create(project_name=project_name, overwrite=overwrite)
     except FileExistsError:
         logger.info(
             f"Project file '{project_name}' already exists. Skipping creation step."
