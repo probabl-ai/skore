@@ -38,17 +38,15 @@ def test_quickstart(monkeypatch):
             "quickstart",
             "my_project.skore",
             "--overwrite",
-            "--working-dir",
-            "hello",
             "--port",
             "888",
             "--no-open-browser",
         ]
     )
 
-    assert create_project_name == Path("hello/my_project.skore")
+    assert create_project_name == "my_project.skore"
     assert create_overwrite is True
 
-    assert launch_project_name == Path("hello/my_project.skore")
+    assert launch_project_name == "my_project.skore"
     assert launch_port == 888
     assert launch_open_browser is False
