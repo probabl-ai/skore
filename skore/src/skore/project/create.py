@@ -7,7 +7,6 @@ from typing import Optional, Union
 
 from skore.exceptions import (
     InvalidProjectNameError,
-    ProjectAlreadyExistsError,
     ProjectCreationError,
     ProjectPermissionError,
 )
@@ -114,7 +113,7 @@ def create(
 
         if project_directory.exists():
             if not overwrite:
-                raise ProjectAlreadyExistsError(
+                raise FileExistsError(
                     f"Unable to create project file '{project_directory}' because a "
                     "file with that name already exists. Please choose a different "
                     "name or use the --overwrite flag with the CLI or overwrite=True "

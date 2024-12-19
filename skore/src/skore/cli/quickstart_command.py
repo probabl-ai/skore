@@ -5,7 +5,6 @@ from typing import Union
 
 from skore.cli import logger
 from skore.cli.launch_dashboard import __launch
-from skore.exceptions import ProjectAlreadyExistsError
 from skore.project import create
 from skore.utils._logger import logger_context
 
@@ -49,7 +48,7 @@ def __quickstart(
                 overwrite=overwrite,
                 verbose=verbose,
             )
-        except ProjectAlreadyExistsError:
+        except FileExistsError:
             logger.info(
                 f"Project file '{project_name}' already exists. Skipping creation step."
             )

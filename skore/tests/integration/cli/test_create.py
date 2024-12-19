@@ -46,7 +46,7 @@ def test_create_project_cli_overwrite(tmp_path):
     )
     with pytest.raises(subprocess.CalledProcessError):
         completed_process.check_returncode()
-    assert b"ProjectAlreadyExistsError" in completed_process.stderr
+    assert b"FileExistsError" in completed_process.stderr
 
     # calling the same command with overwriting should succeed
     completed_process = subprocess.run(
