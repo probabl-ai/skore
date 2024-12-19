@@ -4,7 +4,7 @@ import logging
 
 import rich.logging
 
-from skore.project import Project, create, load
+from skore.project import Project, create, load, open
 from skore.sklearn import CrossValidationReporter, train_test_split
 from skore.utils._show_versions import show_versions
 
@@ -12,6 +12,7 @@ __all__ = [
     "create",
     "CrossValidationReporter",
     "load",
+    "open",
     "Project",
     "show_versions",
     "train_test_split",
