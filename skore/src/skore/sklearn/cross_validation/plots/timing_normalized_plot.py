@@ -126,7 +126,7 @@ def plot_cross_validation_timing_normalized(
             ]
         )
 
-    fig.update_xaxes(tickmode="linear", dtick=1, title_text="Split number")
+    fig.update_xaxes(tickmode="linear", dtick=1, title_text="Split index")
     fig.update_yaxes(title_text="Value")
     fig.update_layout(
         title_text="Normalized time-related cross-validation results for each split"
