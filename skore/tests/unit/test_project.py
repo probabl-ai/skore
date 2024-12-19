@@ -145,22 +145,30 @@ def test_put_rf_model(in_memory_project, monkeypatch):
     assert isinstance(in_memory_project.get("rf_model"), RandomForestClassifier)
 
 
-def test_load(tmp_path):
+def test_load_no_project():
     with pytest.raises(FileNotFoundError):
         load("/empty")
 
+
+@pytest.fixture
+def fake_project_path(tmp_path):
+    """Create a project at `tmp_path` and return its absolute path."""
     # Project path must end with ".skore"
     project_path = tmp_path.parent / (tmp_path.name + ".skore")
     os.mkdir(project_path)
     os.mkdir(project_path / "items")
     os.mkdir(project_path / "views")
+    return project_path
 
-    p = load(project_path)
+
+def test_load_absolute_path(fake_project_path):
+    p = load(fake_project_path)
     assert isinstance(p, Project)
 
-    # Test without `.skore`
-    os.chdir(tmp_path.parent)
-    p = load(tmp_path.name)
+
+def test_load_relative_path(fake_project_path):
+    os.chdir(fake_project_path.parent)
+    p = load(fake_project_path.name)
     assert isinstance(p, Project)
 
 
