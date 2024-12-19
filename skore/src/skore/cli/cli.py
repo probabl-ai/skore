@@ -1,7 +1,6 @@
 """CLI for Skore."""
 
 import argparse
-import pathlib
 from importlib.metadata import version
 
 from skore.cli.launch_dashboard import __launch
@@ -53,15 +52,6 @@ def cli(args: list[str]):
         default="project",
     )
     parser_create.add_argument(
-        "--working-dir",
-        type=pathlib.Path,
-        help=(
-            "the directory relative to which the project name will be interpreted; "
-            "default is the current working directory (mostly used for testing)"
-        ),
-        default=None,
-    )
-    parser_create.add_argument(
         "--overwrite",
         action="store_true",
         help="overwrite an existing project with the same name",
@@ -80,15 +70,6 @@ def cli(args: list[str]):
         nargs="?",
         help="the name or path of the project to create (default: %(default)s)",
         default="project",
-    )
-    parser_quickstart.add_argument(
-        "--working-dir",
-        type=pathlib.Path,
-        help=(
-            "the directory relative to which the project name will be interpreted; "
-            "default is the current working directory (mostly used for testing)"
-        ),
-        default=None,
     )
     parser_quickstart.add_argument(
         "--overwrite",
@@ -126,26 +107,14 @@ def cli(args: list[str]):
             verbose=parsed_args.verbose,
         )
     elif parsed_args.subcommand == "create":
-        if parsed_args.working_dir is not None:
-            project_name = (
-                pathlib.Path(parsed_args.working_dir) / parsed_args.project_name
-            )
-        else:
-            project_name = parsed_args.project_name
         create(
-            project_name=project_name,
+            project_name=parsed_args.project_name,
             overwrite=parsed_args.overwrite,
             verbose=parsed_args.verbose,
         )
     elif parsed_args.subcommand == "quickstart":
-        if parsed_args.working_dir is not None:
-            project_name = (
-                pathlib.Path(parsed_args.working_dir) / parsed_args.project_name
-            )
-        else:
-            project_name = parsed_args.project_name
         __quickstart(
-            project_name=project_name,
+            project_name=parsed_args.project_name,
             overwrite=parsed_args.overwrite,
             port=parsed_args.port,
             open_browser=parsed_args.open_browser,

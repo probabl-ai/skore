@@ -42,18 +42,16 @@ def test_quickstart(monkeypatch):
     cli(
         [
             "quickstart",
-            "my_project.skore",
+            "/tmp/my_project.skore",
             "--verbose",
             "--overwrite",
-            "--working-dir",
-            "/tmp",
             "--port",
             "888",
             "--no-open-browser",
         ]
     )
 
-    assert create_project_name == Path("/tmp/my_project.skore")
+    assert create_project_name == "/tmp/my_project.skore"
     assert create_overwrite is True
     assert create_verbose is True
 
