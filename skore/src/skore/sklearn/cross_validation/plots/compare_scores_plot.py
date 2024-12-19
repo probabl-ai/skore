@@ -111,7 +111,7 @@ def plot_cross_validation_compare_scores(
             ]
         )
 
-    fig.update_xaxes(tickmode="linear", dtick=1, title_text="Split number")
+    fig.update_xaxes(tickmode="linear", dtick=1, title_text="Split index")
     fig.update_yaxes(title_text="Value")
     fig.update_layout(title_text="Cross-validation results for each split")
 

@@ -118,7 +118,7 @@ def plot_cross_validation_timing(cv_results: dict) -> plotly.graph_objects.Figur
             ]
         )
 
-    fig.update_xaxes(tickmode="linear", dtick=1, title_text="Split number")
+    fig.update_xaxes(tickmode="linear", dtick=1, title_text="Split index")
     fig.update_yaxes(title_text="Value")
     fig.update_layout(title_text="Time-related cross-validation results for each split")
 
