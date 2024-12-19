@@ -22,7 +22,6 @@ from skore.project import (
     load,
 )
 from skore.project.create import _validate_project_name
-from skore.project.load import ProjectLoadError
 from skore.view.view import View
 
 
@@ -147,7 +146,7 @@ def test_put_rf_model(in_memory_project, monkeypatch):
 
 
 def test_load(tmp_path):
-    with pytest.raises(ProjectLoadError):
+    with pytest.raises(FileNotFoundError):
         load("/empty")
 
     # Project path must end with ".skore"
