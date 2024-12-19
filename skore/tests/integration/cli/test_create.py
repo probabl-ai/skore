@@ -17,6 +17,11 @@ def test_create_project_cli_default_argument(fake_working_dir):
     assert (fake_working_dir / "project.skore").exists()
 
 
+def test_create_project_cli_absolute_path(fake_working_dir):
+    cli(f"create {fake_working_dir / 'hello.skore'}".split())
+    assert (fake_working_dir / "hello.skore").exists()
+
+
 def test_create_project_cli_ends_in_skore(fake_working_dir):
     cli("create hello.skore".split())
     assert (fake_working_dir / "hello.skore").exists()
