@@ -260,7 +260,7 @@ class CrossValidationItem(Item):
         }
 
     @classmethod
-    def factory(cls, reporter) -> CrossValidationItem:
+    def factory(cls, reporter: CrossValidationReporter) -> CrossValidationItem:
         """
         Create a new CrossValidationItem instance from a CrossValidationReporter.
 
@@ -310,7 +310,6 @@ class CrossValidationItem(Item):
             "hash": _hash_numpy(X_array),
         }
 
-        # FIXME: Maybe this logic belongs in CrossValidationPlots
         plots_bytes = {
             plot_name: plotly.io.to_json(plot, engine="json").encode("utf-8")
             for plot_name, plot in dataclasses.asdict(plots).items()
