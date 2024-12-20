@@ -1,4 +1,4 @@
-import { defineStore } from "pinia";
+import { acceptHMRUpdate, defineStore } from "pinia";
 import { ref } from "vue";
 
 export type ModalType = "alert" | "confirm" | "prompt";
@@ -148,3 +148,7 @@ export const useModalsStore = defineStore("modals", () => {
 
   return { alert, confirm, prompt, getCurrentModal };
 });
+
+if (import.meta.hot) {
+  import.meta.hot.accept(acceptHMRUpdate(useModalsStore, import.meta.hot));
+}
