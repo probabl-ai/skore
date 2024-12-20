@@ -59,7 +59,7 @@ jobs:
           python -m pip install -e .[test]
 
           # run coverage
-          python -m pytest --junitxml=coverage.xml --cov=skore src/ tests/ | tee pytest-coverage.txt -n auto
+          python -m pytest -n auto --junitxml=coverage.xml --cov=skore src/ tests/ | tee pytest-coverage.txt
       - name: Pytest coverage comment
         uses: MishaKav/pytest-coverage-comment@main
         with:
