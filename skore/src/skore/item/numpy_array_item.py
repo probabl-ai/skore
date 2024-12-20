@@ -57,6 +57,21 @@ class NumpyArrayItem(Item):
 
         return numpy.asarray(loads(self.array_json))
 
+    def as_serializable_dict(self):
+        """Get a serializable dict from the item.
+
+        Derived class must call their super implementation
+        and merge the result with their output.
+        """
+        d = super().as_serializable_dict()
+        d.update(
+            {
+                "media_type": "text/markdown",
+                "value": self.array.tolist(),
+            }
+        )
+        return d
+
     @classmethod
     def factory(cls, array: numpy.ndarray) -> NumpyArrayItem:
         """

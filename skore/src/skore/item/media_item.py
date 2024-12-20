@@ -5,6 +5,7 @@ This module defines the MediaItem class, which represents media items.
 
 from __future__ import annotations
 
+import base64
 from io import BytesIO
 from typing import TYPE_CHECKING, Any
 
@@ -60,6 +61,28 @@ class MediaItem(Item):
         self.media_bytes = media_bytes
         self.media_encoding = media_encoding
         self.media_type = media_type
+
+    def as_serializable_dict(self):
+        """Get a serializable dict from the item.
+
+        Derived class must call their super implementation
+        and merge the result with their output.
+        """
+        d = super().as_serializable_dict()
+        if "text" in self.media_type:
+            value = self.media_bytes.decode(encoding=self.media_encoding)
+            media_type = f"{self.media_type}"
+        else:
+            value = base64.b64encode(self.media_bytes).decode()
+            media_type = f"{self.media_type};base64"
+
+        d.update(
+            {
+                "media_type": media_type,
+                "value": value,
+            }
+        )
+        return d
 
     @classmethod
     def factory(cls, media, *args, **kwargs):

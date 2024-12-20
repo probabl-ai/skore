@@ -244,7 +244,7 @@ plt.show()
 my_project.put("my_figure", fig)
 
 # %%
-# |
+#
 # Altair chart:
 
 # %%
@@ -335,9 +335,6 @@ my_project.put("my_pil_image", my_pil_image)
 # %%
 # Storing scikit-learn models and pipelines
 # =========================================
-#
-# As skore is developed by `Probabl <https://probabl.ai>`_, the spin-off of
-# scikit-learn, skore treats scikit-learn models and pipelines as first-class citizens.
 #
 # First of all, we can store a scikit-learn model:
 

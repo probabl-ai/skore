@@ -63,6 +63,21 @@ class PolarsSeriesItem(Item):
 
             return series
 
+    def as_serializable_dict(self):
+        """Get a serializable dict from the item.
+
+        Derived class must call their super implementation
+        and merge the result with their output.
+        """
+        d = super().as_serializable_dict()
+        d.update(
+            {
+                "value": self.series.to_list(),
+                "media_type": "text/markdown",
+            }
+        )
+        return d
+
     @classmethod
     def factory(cls, series: polars.Series) -> PolarsSeriesItem:
         """

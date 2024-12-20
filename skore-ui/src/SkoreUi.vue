@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { onBeforeUnmount, onMounted, ref } from "vue";
 import { RouterView, useRoute, useRouter } from "vue-router";
 
 import AppToolbar from "@/components/AppToolbar.vue";
@@ -6,13 +7,29 @@ import LoadingBars from "@/components/LoadingBars.vue";
 import ModalDialog from "@/components/ModalDialog.vue";
 import NavigationButton from "@/components/NavigationButton.vue";
 import ToastNotificationArea from "@/components/ToastNotificationArea.vue";
+import { isUserInDarkMode } from "./services/utils";
 
 const route = useRoute();
 const router = useRouter();
+const theme = ref(isUserInDarkMode() ? "skore-dark" : "skore-light");
+
+function switchTheme(m: MediaQueryListEvent) {
+  theme.value = m.matches ? "skore-dark" : "skore-light";
+}
+
+const preferredColorScheme = window.matchMedia("(prefers-color-scheme: dark)");
+
+onMounted(() => {
+  preferredColorScheme.addEventListener("change", switchTheme);
+});
+
+onBeforeUnmount(() => {
+  preferredColorScheme.removeEventListener("change", switchTheme);
+});
 </script>
 
 <template>
-  <div class="skore">
+  <div class="skore" :class="[theme]">
     <AppToolbar>
       <NavigationButton
         v-for="(r, i) in router.getRoutes()"
@@ -47,6 +64,7 @@ const router = useRouter();
 .skore {
   display: flex;
   flex-direction: row;
+  background-color: var(--color-background-primary);
 
   main {
     width: calc(100dvw - var(--width-toolbar));

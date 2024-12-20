@@ -7,6 +7,7 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 import os
+from sphinx_gallery.sorting import ExplicitOrder
 
 project = "skore"
 copyright = "2024, Probabl"
@@ -50,6 +51,14 @@ html_js_files = [
 sphinx_gallery_conf = {
     "examples_dirs": "../examples",  # path to example scripts
     "gallery_dirs": "auto_examples",  # path to gallery generated output
+    "subsection_order": ExplicitOrder(["../examples/getting_started",
+                                       "../examples/getting_started/plot_getting_started",
+                                       "../examples/track",
+                                       "../examples/track/plot_overview_skore_project",
+                                       "../examples/track/plot_tracking_items",
+                                       "../examples/diagnose",
+                                       "../examples/diagnose/plot_cross_validate",
+                                       "../examples/diagnose/plot_train_test_split"]),
     "within_subsection_order": "FileNameSortKey",  # See https://sphinx-gallery.github.io/stable/configuration.html#sorting-gallery-examples for alternatives
     "show_memory": False,
     "write_computation_times": False,
@@ -57,6 +66,9 @@ sphinx_gallery_conf = {
         # The module you locally document uses None
         "skore": None,
     },
+    "backreferences_dir": "generated",
+    "doc_module": "skore",
+    "default_thumb_file": "./_static/images/Logo_Skore_Light@2x.svg",
 }
 
 # intersphinx configuration
@@ -137,9 +149,7 @@ html_theme_options["analytics"] = {
 # Sphinx remove the sidebar from some pages
 html_sidebars = {
     "install": [],
-    "getting_started": [],
-    "user_guide": [],
-    "contributor_guide": [],
+    "contributing_link": [],
 }
 
 # Sphinx-Copybutton configuration

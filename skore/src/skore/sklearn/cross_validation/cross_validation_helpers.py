@@ -1,5 +1,7 @@
 """Helpers for enhancing the cross-validation manipulation."""
 
+from sklearn import metrics
+
 from skore.sklearn.find_ml_task import _find_ml_task
 
 
@@ -15,26 +17,39 @@ def _get_scorers_to_add(estimator, y) -> list[str]:
 
     Returns
     -------
-    scorers_to_add : list[str]
+    scorers_to_add : dict[str, str]
         A list of scorers
     """
     ml_task = _find_ml_task(y, estimator)
 
     # Add scorers based on the ML task
     if ml_task == "regression":
-        return ["r2", "neg_root_mean_squared_error"]
+        return {
+            "r2": "r2",
+            "neg_root_mean_squared_error": metrics.make_scorer(
+                metrics.root_mean_squared_error
+            ),
+        }
     if ml_task == "binary-classification":
-        return ["roc_auc", "neg_brier_score", "recall", "precision"]
+        return {
+            "roc_auc": "roc_auc",
+            "brier_score_loss": metrics.make_scorer(metrics.brier_score_loss),
+            "recall": "recall",
+            "precision": "precision",
+        }
     if ml_task == "multiclass-classification":
         if hasattr(estimator, "predict_proba"):
-            return [
-                "recall_weighted",
-                "precision_weighted",
-                "roc_auc_ovr_weighted",
-                "neg_log_loss",
-            ]
-        return ["recall_weighted", "precision_weighted"]
-    return []
+            return {
+                "recall_weighted": "recall_weighted",
+                "precision_weighted": "precision_weighted",
+                "roc_auc_ovr_weighted": "roc_auc_ovr_weighted",
+                "log_loss": metrics.make_scorer(metrics.log_loss),
+            }
+        return {
+            "recall_weighted": "recall_weighted",
+            "precision_weighted": "precision_weighted",
+        }
+    return {}
 
 
 def _add_scorers(scorers, scorers_to_add):
@@ -56,7 +71,7 @@ def _add_scorers(scorers, scorers_to_add):
     ----------
     scorers : any type that is accepted by scikit-learn's cross_validate
         The scorer(s) to expand.
-    scorers_to_add : list[str]
+    scorers_to_add : dict[str, str]
         The scorers to be added.
 
     Returns
@@ -74,7 +89,8 @@ def _add_scorers(scorers, scorers_to_add):
             {s: s for s in scorers}, scorers_to_add
         )
     elif isinstance(scorers, dict):
-        new_scorers = {s: s for s in scorers_to_add} | scorers
+        # User-defined metrics have priority
+        new_scorers = scorers_to_add | scorers
         added_scorers = set(scorers_to_add) - set(scorers)
     elif callable(scorers):
         from sklearn.metrics import check_scoring
@@ -82,7 +98,10 @@ def _add_scorers(scorers, scorers_to_add):
 
         internal_scorer = _MultimetricScorer(
             scorers={
-                s: check_scoring(estimator=None, scoring=s) for s in scorers_to_add
+                name: check_scoring(estimator=None, scoring=scoring)
+                if isinstance(scoring, str)
+                else scoring
+                for name, scoring in scorers_to_add.items()
             }
         )
 
