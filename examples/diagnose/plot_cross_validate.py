@@ -120,7 +120,7 @@ test_scores
 
 # %%
 reporter = skore.CrossValidationReporter(clf, X, y, cv=5)
-reporter.plots.compare_scores
+reporter.plots.scores
 
 # %%
 # Skore's :class:`~skore.CrossValidationReporter` advantages are the following:
@@ -152,7 +152,7 @@ X, y = load_diabetes(return_X_y=True)
 lasso = Lasso()
 
 reporter = skore.CrossValidationReporter(lasso, X, y, cv=5)
-reporter.plots.compare_scores
+reporter.plots.scores
 
 # %%
 # We can also access the plot after we have stored the ``CrossValidationReporter``:

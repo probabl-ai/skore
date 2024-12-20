@@ -24,7 +24,7 @@ from .plots.timing_plot import plot_cross_validation_timing
 class CrossValidationPlots:
     """Plots of the cross-validation results."""
 
-    compare_scores: plotly.graph_objects.Figure
+    scores: plotly.graph_objects.Figure
     timing: plotly.graph_objects.Figure
     timing_normalized: plotly.graph_objects.Figure
 
@@ -187,7 +187,7 @@ class CrossValidationReporter:
     def plots(self) -> CrossValidationPlots:
         """Plots of the cross-validation results."""
         return CrossValidationPlots(
-            compare_scores=plot_cross_validation_compare_scores(self._cv_results),
+            scores=plot_cross_validation_compare_scores(self._cv_results),
             timing=plot_cross_validation_timing(self._cv_results),
             timing_normalized=plot_cross_validation_timing_normalized(self._cv_results),
         )

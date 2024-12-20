@@ -35,7 +35,7 @@ class FakeCrossValidationReporter(CrossValidationReporter):
     X = numpy.array([[1.0]])
     y = numpy.array([1])
     plots = CrossValidationPlots(
-        compare_scores=plotly.graph_objects.Figure(),
+        scores=plotly.graph_objects.Figure(),
         timing=plotly.graph_objects.Figure(),
         timing_normalized=plotly.graph_objects.Figure(),
     )
@@ -57,7 +57,7 @@ class FakeCrossValidationReporterNoGetParams(CrossValidationReporter):
     X = numpy.array([[1.0]])
     y = numpy.array([1])
     plots = CrossValidationPlots(
-        compare_scores=plotly.graph_objects.Figure(),
+        scores=plotly.graph_objects.Figure(),
         timing=plotly.graph_objects.Figure(),
         timing_normalized=plotly.graph_objects.Figure(),
     )

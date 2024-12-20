@@ -311,7 +311,7 @@ class CrossValidationItem(Item):
         }
 
         humanized_plot_names = {
-            "compare_scores": "Scores",
+            "scores": "Scores",
             "timing": "Timings",
             "timing_normalized": "Normalized timings",
         }
