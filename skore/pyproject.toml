@@ -76,6 +76,7 @@ test = [
   "pytest-cov",
   "pytest-order",
   "pytest-randomly",
+  "pytest-xdist",
   "ruff",
   "skrub",
 ]

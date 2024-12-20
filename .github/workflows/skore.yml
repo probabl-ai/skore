@@ -39,7 +39,7 @@ jobs:
           wheel=(dist/*.whl); python -m pip install "${wheel}[test]"
 
           # Test
-          python -m pytest --no-cov src/ tests/
+          python -m pytest --no-cov src/ tests/ -n auto
 
   coverage-skore:
     runs-on: ubuntu-latest
@@ -59,7 +59,7 @@ jobs:
           python -m pip install -e .[test]
 
           # run coverage
-          python -m pytest --junitxml=coverage.xml --cov=skore src/ tests/ | tee pytest-coverage.txt
+          python -m pytest --junitxml=coverage.xml --cov=skore src/ tests/ | tee pytest-coverage.txt -n auto
       - name: Pytest coverage comment
         uses: MishaKav/pytest-coverage-comment@main
         with:
