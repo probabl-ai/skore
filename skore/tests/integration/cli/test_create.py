@@ -1,57 +1,46 @@
-import subprocess
+import os
 
 import pytest
+from skore.cli.cli import cli
+from skore.exceptions import ProjectCreationError
 
 
-def test_create_project_cli_default_argument(tmp_path):
-    completed_process = subprocess.run(
-        f"skore create --working-dir {tmp_path}".split(), capture_output=True
-    )
-    completed_process.check_returncode()
-    assert (tmp_path / "project.skore").exists()
+@pytest.fixture
+def fake_working_dir(tmp_path):
+    """Change directory to a temporary one, and return its path."""
+    os.chdir(tmp_path)
+    return tmp_path
 
 
-def test_create_project_cli_ends_in_skore(tmp_path):
-    completed_process = subprocess.run(
-        f"skore create hello.skore --working-dir {tmp_path}".split(),
-        capture_output=True,
-    )
-    completed_process.check_returncode()
-    assert (tmp_path / "hello.skore").exists()
+def test_create_project_cli_default_argument(fake_working_dir):
+    cli("create".split())
+    assert (fake_working_dir / "project.skore").exists()
 
 
-def test_create_project_cli_invalid_name(tmp_path):
-    completed_process = subprocess.run(
-        f"skore create hello.txt --working-dir {tmp_path}".split(),
-        capture_output=True,
-    )
-    with pytest.raises(subprocess.CalledProcessError):
-        completed_process.check_returncode()
-    assert b"InvalidProjectNameError" in completed_process.stderr
+def test_create_project_cli_absolute_path(fake_working_dir):
+    cli(f"create {fake_working_dir / "hello.skore"}".split())
+    assert (fake_working_dir / "hello.skore").exists()
 
 
-def test_create_project_cli_overwrite(tmp_path):
+def test_create_project_cli_ends_in_skore(fake_working_dir):
+    cli("create hello.skore".split())
+    assert (fake_working_dir / "hello.skore").exists()
+
+
+def test_create_project_cli_invalid_name():
+    with pytest.raises(ProjectCreationError):
+        cli("create hello.txt".split())
+
+
+def test_create_project_cli_overwrite(fake_working_dir):
     """Check the behaviour of the `overwrite` flag/parameter."""
-    completed_process = subprocess.run(
-        f"skore create --working-dir {tmp_path}".split(),
-        capture_output=True,
-    )
-    completed_process.check_returncode()
-    assert (tmp_path / "project.skore").exists()
+    cli("create".split())
+    assert (fake_working_dir / "project.skore").exists()
 
     # calling the same command without overwriting should fail
-    completed_process = subprocess.run(
-        f"skore create --working-dir {tmp_path}".split(),
-        capture_output=True,
-    )
-    with pytest.raises(subprocess.CalledProcessError):
-        completed_process.check_returncode()
-    assert b"ProjectAlreadyExistsError" in completed_process.stderr
+    with pytest.raises(FileExistsError):
+        cli("create".split())
 
     # calling the same command with overwriting should succeed
-    completed_process = subprocess.run(
-        f"skore create --working-dir {tmp_path} --overwrite".split(),
-        capture_output=True,
-    )
-    completed_process.check_returncode()
-    assert (tmp_path / "project.skore").exists()
+    cli("create --overwrite".split())
+    assert (fake_working_dir / "project.skore").exists()

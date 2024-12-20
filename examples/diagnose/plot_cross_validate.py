@@ -18,11 +18,11 @@ This example illustrates the motivation and the use of skore's
 # easily clean it after executing this example:
 
 # %%
+import os
 import tempfile
-from pathlib import Path
 
 temp_dir = tempfile.TemporaryDirectory(prefix="skore_example_")
-temp_dir_path = Path(temp_dir.name)
+os.chdir(temp_dir.name)
 
 # %%
 # We create and load the skore project from this temporary directory:
@@ -30,7 +30,7 @@ temp_dir_path = Path(temp_dir.name)
 # %%
 import skore
 
-my_project = skore.create("my_project", working_dir=temp_dir_path)
+my_project = skore.create("my_project")
 
 # %%
 # Cross-validation in scikit-learn
