@@ -1,10 +1,13 @@
-name:
+name: send backend coverage
 
 on:
   workflow_run:
     workflows: [Reusable skore workflow]
-    types:
-      - completed
+    types: [completed]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   pull-requests: write
@@ -19,7 +22,7 @@ jobs:
       - name: Download coverage reports
         uses: actions/download-artifact@v4
         with:
-          name: python-coverage
+          name: backend-coverage
           path: coverage/
       - name: Send
         uses: MishaKav/pytest-coverage-comment@main

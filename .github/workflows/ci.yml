@@ -45,7 +45,6 @@ jobs:
     uses: ./.github/workflows/skore-test.yml
     permissions:
       contents: read
-      pull-requests: write
 
   lint-and-test-skore-ui:
     needs: [lint-all-files, changes]
@@ -53,7 +52,6 @@ jobs:
     uses: ./.github/workflows/skore-ui.yml
     permissions:
       contents: read
-      pull-requests: write
 
   ci-all-green:
     needs:

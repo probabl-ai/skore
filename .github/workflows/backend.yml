@@ -1,4 +1,9 @@
-name: Reusable skore workflow
+# THIS
+# IS
+# DOCUMENTATION
+# REUSABLE WORKFLOW
+
+name: Backend
 
 on: [workflow_call]
 
@@ -40,15 +45,15 @@ jobs:
         working-directory: skore/
         run: python -m pytest --no-cov src/ tests/
       - name: Test with coverage
-        if: matrix.os == 'ubuntu-latest' &&  matrix.python == '3.12'
+        if: matrix.os == 'ubuntu-latest' && matrix.python == '3.12'
         timeout-minutes: 10
         working-directory: skore/
         run: |
           mkdir coverage
           python -m pytest --junitxml=coverage/coverage.xml --cov=skore src/ tests/ | tee coverage/coverage.txt
       - name: Upload coverage reports
-        if: matrix.os == 'ubuntu-latest' &&  matrix.python == '3.12'
+        if: matrix.os == 'ubuntu-latest' && matrix.python == '3.12'
         uses: actions/upload-artifact@v4
         with:
-          name: python-coverage
+          name: backend-coverage
           path: skore/coverage/

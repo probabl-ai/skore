@@ -1,0 +1,5 @@
+      # - name: Report coverage
+      #   uses: davelosert/vitest-coverage-report-action@v2
+      #   with:
+      #     working-directory: ./skore-ui
+      #     pr-number: ${{ github.event.number }}
