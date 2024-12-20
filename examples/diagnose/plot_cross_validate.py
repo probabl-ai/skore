@@ -158,7 +158,7 @@ reporter.plots.compare_scores
 # We can also access the plot after we have stored the ``CrossValidationReporter``:
 my_project.put("cross_validation_regression", reporter)
 cv_item = my_project.get_item("cross_validation_regression")
-cv_item.plots["compare_scores"]
+cv_item.plots["Scores"]
 
 # %%
 # .. note::

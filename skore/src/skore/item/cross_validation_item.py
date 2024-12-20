@@ -310,8 +310,15 @@ class CrossValidationItem(Item):
             "hash": _hash_numpy(X_array),
         }
 
+        humanized_plot_names = {
+            "compare_scores": "Scores",
+            "timing": "Timings",
+            "timing_normalized": "Normalized timings",
+        }
         plots_bytes = {
-            plot_name: plotly.io.to_json(plot, engine="json").encode("utf-8")
+            humanized_plot_names[plot_name]: (
+                plotly.io.to_json(plot, engine="json").encode("utf-8")
+            )
             for plot_name, plot in dataclasses.asdict(plots).items()
         }
 
