@@ -36,16 +36,13 @@ class SerializableProject:
 
 
 def __item_as_serializable(name: str, item: Item) -> SerializableItem:
-    try:
-        d = item.as_serializable_dict()
-    except Exception as e:
-        raise ValueError(f"Item {item} is not a known item type.") from e
+    d = item.as_serializable_dict()
     return SerializableItem(
         name=name,
-        media_type=d["media_type"],
-        value=d["value"],
-        updated_at=d["updated_at"],
-        created_at=d["created_at"],
+        media_type=d.get("media_type"),
+        value=d.get("value"),
+        updated_at=d.get("updated_at"),
+        created_at=d.get("created_at"),
     )
 
 

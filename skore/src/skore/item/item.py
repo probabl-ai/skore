@@ -85,7 +85,6 @@ class Item(ABC):
         return f"{self.__class__.__name__}(...)"
 
     def _repr_mimebundle_(self, include=None, exclude=None):
-        del include, exclude
         return {"text/html": self._repr_html_()}
 
     def _repr_html_(self):
