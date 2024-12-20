@@ -21,6 +21,8 @@ from skore.view.view import View
 from skore.view.view_repository import ViewRepository
 
 logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())  # Default to no output
+logger.setLevel(logging.INFO)
 
 
 MISSING = object()
