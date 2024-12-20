@@ -23,6 +23,9 @@ serve-skore-ui:
 		--port 22140 \
 		--timeout-graceful-shutdown 0
 
+lint:
+	pre-commit run --all-files
+
 test-frontend:
 	cd skore-ui && npm install
 	cd skore-ui && npm run test:unit
@@ -30,4 +33,4 @@ test-frontend:
 test-backend:
 	cd skore && pytest tests
 
-test: test-frontend test-backend
+test: lint test-frontend test-backend
