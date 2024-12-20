@@ -1,4 +1,4 @@
-import { defineStore } from "pinia";
+import { acceptHMRUpdate, defineStore } from "pinia";
 import { ref, shallowRef, watch } from "vue";
 
 import { type LayoutDto, type ProjectDto, type ProjectItemDto } from "@/dto";
@@ -417,3 +417,7 @@ export const useProjectStore = defineStore("project", () => {
     stopBackendPolling,
   };
 });
+
+if (import.meta.hot) {
+  import.meta.hot.accept(acceptHMRUpdate(useProjectStore, import.meta.hot));
+}

@@ -25,6 +25,7 @@ import ImageWidget from "@/components/ImageWidget.vue";
 import MarkdownWidget from "@/components/MarkdownWidget.vue";
 import SectionHeader from "@/components/SectionHeader.vue";
 import SimpleButton from "@/components/SimpleButton.vue";
+import SlideToggle from "@/components/SlideToggle.vue";
 import TabPanel from "@/components/TabPanel.vue";
 import TabPanelContent from "@/components/TabPanelContent.vue";
 import TextInput from "@/components/TextInput.vue";
@@ -34,10 +35,12 @@ import VegaWidget from "@/components/VegaWidget.vue";
 import type { DetailSectionDto, PlotDto, PrimaryResultsDto } from "@/dto";
 import { generateRandomId } from "@/services/utils";
 import { useModalsStore } from "@/stores/modals";
+import { useThemesStore } from "@/stores/themes";
 import { useToastsStore } from "@/stores/toasts";
 
 const toastsStore = useToastsStore();
 const modalsStore = useModalsStore();
+const themesStore = useThemesStore();
 
 function showToast() {
   toastsStore.addToast(generateRandomId(), "info");
@@ -993,6 +996,8 @@ const sections: DetailSectionDto[] = [
     ],
   },
 ];
+
+const toggleModel = ref(true);
 </script>
 
 <template>
@@ -1000,10 +1005,12 @@ const sections: DetailSectionDto[] = [
     <h1>Components library</h1>
     <TabPanel>
       <TabPanelContent name="markdown">
-        <MarkdownWidget :source="markdownString" />
+        <Simplebar class="markdown-list-container">
+          <MarkdownWidget :source="markdownString" />
+        </Simplebar>
       </TabPanelContent>
       <TabPanelContent name="vega">
-        <VegaWidget :spec="spec as VisualizationSpec" />
+        <VegaWidget :spec="spec as VisualizationSpec" :theme="themesStore.currentTheme" />
       </TabPanelContent>
       <TabPanelContent name="dataframe" class="dataframe">
         <div>Simple index</div>
@@ -1258,6 +1265,8 @@ const sections: DetailSectionDto[] = [
           <div>icon-warning-circle <i class="icon icon-warning-circle"></i></div>
           <div>icon-warning <i class="icon icon-warning"></i></div>
           <div>icon-square-cursor <i class="icon icon-square-cursor"></i></div>
+          <div>icon-moon <i class="icon icon-moon"></i></div>
+          <div>icon-sun <i class="icon icon-sun"></i></div>
         </div>
       </TabPanelContent>
       <TabPanelContent name="draggable">
@@ -1347,6 +1356,15 @@ const sections: DetailSectionDto[] = [
           :sections="sections"
         />
       </TabPanelContent>
+      <TabPanelContent name="toggle" class="toggles">
+        <div>
+          <SlideToggle v-model:is-toggled="toggleModel" />
+        </div>
+        <div>
+          <SlideToggle v-model:is-toggled="toggleModel" />
+        </div>
+        <div>toggles are {{ toggleModel }}</div>
+      </TabPanelContent>
     </TabPanel>
   </main>
 </template>
@@ -1354,10 +1372,15 @@ const sections: DetailSectionDto[] = [
 <style scoped>
 main {
   padding: 0 5vw;
+  color: var(--color-text-primary);
 
   & h1 {
     margin: var(--spacing-8) 0;
   }
+}
+
+.markdown-list-container {
+  max-height: 70dvh;
 }
 
 .dataframe {
@@ -1448,5 +1471,12 @@ main {
 
 .cross-val {
   padding: var(--spacing-8);
+}
+
+.toggles {
+  display: flex;
+  flex-direction: column;
+  padding: var(--spacing-8);
+  gap: var(--spacing-8);
 }
 </style>

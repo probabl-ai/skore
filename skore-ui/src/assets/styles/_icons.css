@@ -27,6 +27,14 @@
   text-transform: none;
 }
 
+.icon-sun::before {
+  content: "\e927";
+}
+
+.icon-moon::before {
+  content: "\e928";
+}
+
 .icon-square-cursor::before {
   content: "\e926";
 }
