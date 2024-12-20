@@ -16,9 +16,6 @@ def cli(args: list[str]):
     parser.add_argument(
         "--version", action="version", version=f"%(prog)s {version('skore')}"
     )
-    parser.add_argument(
-        "-v", "--verbose", action="store_true", help="Increase logging verbosity"
-    )
 
     subparsers = parser.add_subparsers(dest="subcommand")
 

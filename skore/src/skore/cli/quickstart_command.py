@@ -7,10 +7,9 @@ from skore.cli import logger
 from skore.cli.launch_dashboard import __launch
 from skore.exceptions import ProjectAlreadyExistsError
 from skore.project import create
-from skore.utils._logger import with_logging
+from skore.utils._logger import logger_context
 
 
-@with_logging(logger)
 def __quickstart(
     project_name: Union[str, Path],
     working_dir: Optional[Path],
@@ -42,21 +41,22 @@ def __quickstart(
     verbose : bool
         Whether to increase logging verbosity.
     """
-    try:
-        create(
+    with logger_context(logger, verbose):
+        try:
+            create(
+                project_name=project_name,
+                working_dir=working_dir,
+                overwrite=overwrite,
+                verbose=verbose,
+            )
+        except ProjectAlreadyExistsError:
+            logger.info(
+                f"Project file '{project_name}' already exists. Skipping creation step."
+            )
+
+        __launch(
             project_name=project_name,
-            working_dir=working_dir,
-            overwrite=overwrite,
+            port=port,
+            open_browser=open_browser,
             verbose=verbose,
         )
-    except ProjectAlreadyExistsError:
-        logger.info(
-            f"Project file '{project_name}' already exists. Skipping creation step."
-        )
-
-    __launch(
-        project_name=project_name,
-        port=port,
-        open_browser=open_browser,
-        verbose=verbose,
-    )

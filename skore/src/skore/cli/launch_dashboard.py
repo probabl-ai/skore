@@ -11,10 +11,9 @@ from fastapi import FastAPI
 from skore.cli import logger
 from skore.project import load
 from skore.ui.app import create_app
-from skore.utils._logger import with_logging
+from skore.utils._logger import logger_context
 
 
-@with_logging(logger)
 def __launch(
     project_name: Union[str, Path], port: int, open_browser: bool, verbose: bool = False
 ):
@@ -33,22 +32,23 @@ def __launch(
     """
     from skore import console  # avoid circular import
 
-    project = load(project_name)
+    with logger_context(logger, verbose):
+        project = load(project_name)
 
-    @asynccontextmanager
-    async def lifespan(app: FastAPI):
-        if open_browser:
-            webbrowser.open(f"http://localhost:{port}")
-        yield
+        @asynccontextmanager
+        async def lifespan(app: FastAPI):
+            if open_browser:
+                webbrowser.open(f"http://localhost:{port}")
+            yield
 
-    app = create_app(project=project, lifespan=lifespan)
+        app = create_app(project=project, lifespan=lifespan)
 
-    try:
-        # TODO: check port is free
-        console.rule("[bold cyan]skore-UI[/bold cyan]")
-        console.print(
-            f"Running skore UI from '{project_name}' at URL http://localhost:{port}"
-        )
-        uvicorn.run(app, port=port, log_level="error")
-    except KeyboardInterrupt:
-        console.print("Closing skore UI")
+        try:
+            # TODO: check port is free
+            console.rule("[bold cyan]skore-UI[/bold cyan]")
+            console.print(
+                f"Running skore UI from '{project_name}' at URL http://localhost:{port}"
+            )
+            uvicorn.run(app, port=port, log_level="error")
+        except KeyboardInterrupt:
+            console.print("Closing skore UI")

@@ -1,7 +1,7 @@
 """Module to handle the verbosity of a given logger."""
 
 import logging
-from functools import wraps
+from contextlib import contextmanager
 
 from rich.logging import LogRecord, RichHandler, Text
 
@@ -21,23 +21,17 @@ class Handler(RichHandler):
         )
 
 
-def with_logging(logger):
-    def decorator(func):
-        @wraps(func)
-        def wrapper(*args, verbose=False, **kwargs):
-            if verbose:
-                formatter = logging.Formatter("%(message)s")
-                console_handler = Handler(markup=True)
-                console_handler.setFormatter(formatter)
-                logger.addHandler(console_handler)
-
-            try:
-                result = func(*args, **kwargs)
-                return result
-            finally:
-                if verbose:
-                    logger.handlers.pop()
-
-        return wrapper
-
-    return decorator
+@contextmanager
+def logger_context(logger, verbose=False):
+    """Context manager for temporarily adding a Rich handler to a logger."""
+    handler = None
+    try:
+        if verbose:
+            formatter = logging.Formatter("%(message)s")
+            handler = Handler(markup=True)
+            handler.setFormatter(formatter)
+            logger.addHandler(handler)
+        yield
+    finally:
+        if verbose and handler:
+            logger.removeHandler(handler)
