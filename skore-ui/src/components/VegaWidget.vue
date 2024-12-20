@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { isDeepEqual, isUserInDarkMode } from "@/services/utils";
 import { View as VegaView } from "vega";
 import embed, { type Config, type VisualizationSpec } from "vega-embed";
 import { onBeforeUnmount, onMounted, ref, watch } from "vue";
+
+import { isDeepEqual, isUserInDarkMode } from "@/services/utils";
 
 const props = defineProps<{ spec: VisualizationSpec }>();
 
@@ -27,9 +28,17 @@ async function makePlot(spec: VisualizationSpec) {
   });
   vegaView = r.view;
 }
+
+function replot() {
+  makePlot(props.spec);
+}
+
+const preferredColorScheme = window.matchMedia("(prefers-color-scheme: dark)");
+
 onMounted(async () => {
   if (container.value) {
     makePlot(props.spec);
+    preferredColorScheme.addEventListener("change", replot);
   }
 });
 
@@ -37,6 +46,7 @@ onBeforeUnmount(() => {
   if (vegaView) {
     vegaView.finalize();
   }
+  preferredColorScheme.removeEventListener("change", replot);
 });
 
 watch(

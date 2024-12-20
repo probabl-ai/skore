@@ -1,7 +1,7 @@
 /*
  Those variables come from the design system in figma.
 */
-:root {
+.skore-ui {
   --root-font-size: 14px;
 
   /* typography */
@@ -44,66 +44,66 @@
   --width-toolbar: 60px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* backgrounds */
-    --color-background-primary: #1a1a1a;
-    --color-background-secondary: #222;
-    --color-background-plots: #121212;
-    --color-background-branding: #f08b30;
+body[data-jp-theme-light="false"],
+body[data-vscode-theme-kind="vscode-dark"],
+.skore-dark {
+  /* backgrounds */
+  --color-background-primary: #1a1a1a;
+  --color-background-secondary: #222;
+  --color-background-plots: #121212;
+  --color-background-branding: #f08b30;
 
-    /* text */
-    --color-text-primary: #fff;
-    --color-text-secondary: #a2a2a2;
-    --color-text-tertiary: #f08b30;
-    --color-text-branding: #f08b30;
-    --color-text-button-primary: #fff;
+  /* text */
+  --color-text-primary: #fff;
+  --color-text-secondary: #a2a2a2;
+  --color-text-tertiary: #f08b30;
+  --color-text-branding: #f08b30;
+  --color-text-button-primary: #fff;
 
-    /* icons */
-    --color-icon-primary: #f08b30;
-    --color-icon-secondary: #a2a2a2;
-    --color-icon-tertiary: #3043f0;
-    --color-icon-quartenary: #7481f5;
-    --color-icon-navigation-selected: #2e2e2e;
+  /* icons */
+  --color-icon-primary: #f08b30;
+  --color-icon-secondary: #a2a2a2;
+  --color-icon-tertiary: #3043f0;
+  --color-icon-quartenary: #7481f5;
+  --color-icon-navigation-selected: #2e2e2e;
 
-    /* strokes */
-    --color-stroke-background-primary: #292a2a;
-    --color-stroke-background-branding: #f08b30;
-    --color-divider-background-secondary: #292a2a;
+  /* strokes */
+  --color-stroke-background-primary: #292a2a;
+  --color-stroke-background-branding: #f08b30;
+  --color-divider-background-secondary: #292a2a;
 
-    /* shadow */
-    --color-shadow: rgb(0 0 0/58%);
-  }
+  /* shadow */
+  --color-shadow: rgb(0 0 0/58%);
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    /* backgrounds */
-    --color-background-primary: #fff;
-    --color-background-secondary: #fafafb;
-    --color-background-plots: #fdfdfd;
-    --color-background-branding: #3043f0;
+body[data-jp-theme-light="true"],
+body[data-vscode-theme-kind="vscode-light"],
+.skore-light {
+  /* backgrounds */
+  --color-background-primary: #fff;
+  --color-background-secondary: #fafafb;
+  --color-background-plots: #fdfdfd;
+  --color-background-branding: #3043f0;
 
-    /* text */
-    --color-text-primary: #2f3037;
-    --color-text-secondary: #616271;
-    --color-text-tertiary: #f08b30;
-    --color-text-branding: #3043f0;
-    --color-text-button-primary: #fff;
-    --color-icon-navigation-selected: #e2e4fa;
+  /* text */
+  --color-text-primary: #2f3037;
+  --color-text-secondary: #616271;
+  --color-text-tertiary: #f08b30;
+  --color-text-branding: #3043f0;
+  --color-text-button-primary: #fff;
+  --color-icon-navigation-selected: #e2e4fa;
 
-    /* icons */
-    --color-icon-primary: #f08b30;
-    --color-icon-secondary: #a2a2a2;
-    --color-icon-tertiary: #3043f0;
-    --color-icon-quartenary: #acb4f9;
+  /* icons */
+  --color-icon-primary: #f08b30;
+  --color-icon-secondary: #a2a2a2;
+  --color-icon-tertiary: #3043f0;
+  --color-icon-quartenary: #acb4f9;
 
-    /* strokes */
-    --color-stroke-background-primary: #eeeef0;
-    --color-stroke-background-branding: #3043f0;
-    --color-divider-background-secondary: #eeeef0;
+  /* strokes */
+  --color-stroke-background-primary: #eeeef0;
+  --color-stroke-background-branding: #3043f0;
+  --color-divider-background-secondary: #eeeef0;
 
-    /* shadow */
-    --color-shadow: rgb(0 0 0/19%);
-  }
+  /* shadow */
+  --color-shadow: rgb(0 0 0/19%);
 }

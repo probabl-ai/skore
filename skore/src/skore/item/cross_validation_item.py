@@ -6,8 +6,12 @@ This class represents the output of a cross-validation workflow.
 from __future__ import annotations
 
 import contextlib
+import copy
 import hashlib
 import importlib
+import json
+import re
+import statistics
 from functools import cached_property
 from typing import TYPE_CHECKING, Any, TypedDict, Union
 
@@ -53,6 +57,26 @@ def _hash_numpy(arr: numpy.ndarray) -> str:
     return hashlib.sha256(bytes(memoryview(arr))).hexdigest()
 
 
+def _metric_title(metric):
+    m = metric.replace("_", " ")
+    title = f"Mean {m}"
+    if title.endswith(" time"):
+        title = title + " (seconds)"
+    return title
+
+
+def _params_to_str(estimator_info) -> str:
+    params_list = []
+    for k, v in estimator_info["params"].items():
+        value = v["value"]
+        if v["default"] is True:
+            params_list.append(f"- {k}: {value} (default)")
+        else:
+            params_list.append(f"- {k}: *{value}*")
+
+    return "\n".join(params_list)
+
+
 # Data used for training, passed as input to scikit-learn
 Data = Any
 # Target used for training, passed as input to scikit-learn
@@ -71,7 +95,7 @@ class CrossValidationItem(Item):
     def __init__(
         self,
         cv_results_serialized: dict,
-        estimator_info: dict,
+        estimator_info: EstimatorInfo,
         X_info: dict,
         y_info: Union[dict, None],
         plot_bytes: bytes,
@@ -113,17 +137,97 @@ class CrossValidationItem(Item):
         self.plot_bytes = plot_bytes
         self.cv_info = cv_info
 
+    def as_serializable_dict(self):
+        """Get a serializable dict from the item.
+
+        Derived class must call their super implementation
+        and merge the result with their output.
+        """
+        # Get tabular results (the cv results in a dataframe-like structure)
+        cv_results = copy.deepcopy(self.cv_results_serialized)
+        cv_results.pop("indices", None)
+
+        tabular_results = {
+            "name": "Cross validation results",
+            "columns": list(cv_results.keys()),
+            "data": list(zip(*cv_results.values())),
+        }
+
+        # Get scalar results (summary statistics of the cv results)
+        mean_cv_results = [
+            {
+                "name": _metric_title(k),
+                "value": statistics.mean(v),
+                "stddev": statistics.stdev(v),
+            }
+            for k, v in cv_results.items()
+        ]
+
+        scalar_results = mean_cv_results
+
+        params_as_str = _params_to_str(self.estimator_info)
+
+        # If the estimator is from sklearn, make the class name a hyperlink
+        # to the relevant docs
+        name = self.estimator_info["name"]
+        module = re.sub(r"\.\_.+", "", self.estimator_info["module"])
+        if module.startswith("sklearn"):
+            doc_url = f"https://scikit-learn.org/stable/modules/generated/{module}.{name}.html"
+            doc_link = f'<a href="{doc_url}" target="_blank"><code>{name}</code></a>'
+        else:
+            doc_link = f"`{name}`"
+
+        estimator_params_as_str = f"{doc_link}\n{params_as_str}"
+
+        # Get cross-validation details
+        cv_params_as_str = ", ".join(f"{k}: *{v}*" for k, v in self.cv_info.items())
+
+        r = super().as_serializable_dict()
+        sections = [
+            {
+                "title": "Model",
+                "icon": "icon-square-cursor",
+                "items": [
+                    {
+                        "name": "Estimator parameters",
+                        "description": "Core model configuration used for training",
+                        "value": estimator_params_as_str,
+                    },
+                    {
+                        "name": "Cross-validation parameters",
+                        "description": "Controls how data is split and validated",
+                        "value": cv_params_as_str,
+                    },
+                ],
+            }
+        ]
+        value = {
+            "scalar_results": scalar_results,
+            "tabular_results": [tabular_results],
+            "plots": [
+                {
+                    "name": "cross-validation results",
+                    "value": json.loads(self.plot_bytes.decode("utf-8")),
+                }
+            ],
+            "sections": sections,
+        }
+        r.update(
+            {
+                "media_type": "application/vnd.skore.cross_validation+json",
+                "value": value,
+            }
+        )
+        return r
+
     @staticmethod
     def _estimator_info(estimator: sklearn.base.BaseEstimator) -> EstimatorInfo:
         estimator_params = (
             estimator.get_params() if hasattr(estimator, "get_params") else {}
         )
 
-        estimator_info = {
-            "name": estimator.__class__.__name__,
-            "module": estimator.__module__,
-            "params": {k: repr(v) for k, v in estimator_params.items()},
-        }
+        name = estimator.__class__.__name__
+        module = estimator.__module__
 
         # Figure out the default parameters of the estimator,
         # so that we can highlight the non-default ones in the UI
@@ -131,25 +235,30 @@ class CrossValidationItem(Item):
         # This is done by instantiating the class with no arguments and
         # computing the diff between the default and ours
         try:
-            estimator_module = importlib.import_module(estimator_info["module"])
-            EstimatorClass = getattr(estimator_module, estimator_info["name"])
+            estimator_module = importlib.import_module(module)
+            EstimatorClass = getattr(estimator_module, name)
             default_estimator_params = EstimatorClass().get_params()
         except Exception:
             default_estimator_params = {}
 
-        final_estimator_params = {}
+        final_estimator_params: dict[str, EstimatorParamInfo] = {}
         for k, v in estimator_params.items():
-            param_is_default = (
+            param_is_default: bool = (
                 k in default_estimator_params and default_estimator_params[k] == v
             )
-            final_estimator_params[k] = {"value": repr(v), "default": param_is_default}
+            final_estimator_params[str(k)] = {
+                "value": repr(v),
+                "default": param_is_default,
+            }
 
-        estimator_info["params"] = final_estimator_params
-
-        return estimator_info
+        return {
+            "name": name,
+            "module": module,
+            "params": final_estimator_params,
+        }
 
     @classmethod
-    def factory(cls, reporter):
+    def factory(cls, reporter) -> CrossValidationItem:
         """
         Create a new CrossValidationItem instance from a CrossValidationReporter.
 

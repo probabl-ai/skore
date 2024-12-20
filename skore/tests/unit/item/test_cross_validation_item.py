@@ -96,3 +96,26 @@ class TestCrossValidationItem:
         assert isinstance(item.plot_bytes, bytes)
         assert item.created_at == mock_nowstr
         assert item.updated_at == mock_nowstr
+
+    def test_get_serializable_dict(self, monkeypatch, mock_nowstr):
+        monkeypatch.setattr(
+            "skore.item.cross_validation_item.CrossValidationReporter",
+            FakeCrossValidationReporter,
+        )
+
+        reporter = FakeCrossValidationReporter()
+        item = CrossValidationItem.factory(reporter)
+        serializable = item.as_serializable_dict()
+
+        assert serializable["updated_at"] == mock_nowstr
+        assert serializable["created_at"] == mock_nowstr
+        assert serializable["value"]["scalar_results"] == [
+            {"name": "Mean test score", "value": 2, "stddev": 1.0}
+        ]
+        assert serializable["value"]["tabular_results"] == [
+            {
+                "name": "Cross validation results",
+                "columns": ["test_score"],
+                "data": [(1,), (2,), (3,)],
+            }
+        ]
