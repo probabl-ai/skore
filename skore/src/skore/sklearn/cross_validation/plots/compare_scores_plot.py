@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from numpy import linspace
+
 if TYPE_CHECKING:
     import plotly.graph_objects
 
@@ -42,10 +44,6 @@ def plot_cross_validation_compare_scores(
 
     if "test_score" in df.columns:
         df.insert(0, "test_score", df.pop("test_score"))
-
-    def linspace(lo, hi, num):
-        interval = (hi - lo) / (num - 1)
-        return [lo + k * interval for k in range(0, num)]
 
     fig = go.Figure()
 

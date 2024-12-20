@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from numpy import linspace
+
 if TYPE_CHECKING:
     import plotly.graph_objects
 
@@ -48,10 +50,6 @@ def plot_cross_validation_timing_normalized(
         "fit_time_per_data_point": "fit_time_per_data_point (seconds)",
         "score_time_per_data_point": "score_time_per_data_point (seconds)",
     }
-
-    def linspace(lo, hi, num):
-        interval = (hi - lo) / (num - 1)
-        return [lo + k * interval for k in range(0, num)]
 
     fig = go.Figure()
 
