@@ -122,11 +122,7 @@ omit = [
 
 [tool.ruff]
 src = ["skore"]
-exclude = [
-  "doc",
-  # This file is vendored and we should not change it
-  "skore/src/skore/sklearn/_sklearn_compat.py",
-]
+exclude = ["doc"]
 
 [tool.ruff.lint]
 select = [
@@ -154,7 +150,6 @@ convention = "numpy"
 [tool.ruff.lint.per-file-ignores]
 "src/*" = ["UP007"]
 "tests/*" = ["D"]
-"skore/src/skore/sklearn/_sklearn_compat.py" = ["ALL"]
 
 [tool.typos.default]
 extend-ignore-re = [
