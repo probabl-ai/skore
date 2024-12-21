@@ -4,9 +4,29 @@ from rich.tree import Tree
 from sklearn.base import clone
 from sklearn.pipeline import Pipeline
 from sklearn.utils._response import _check_response_method, _get_response_values
+from sklearn.utils.metaestimators import available_if
 from sklearn.utils.validation import check_is_fitted
 
-from skore.utils._accessor import register_accessor
+from skore.sklearn.find_ml_task import _find_ml_task
+from skore.utils._accessor import _check_supported_ml_task, register_accessor
+
+
+def _check_supported_estimator(supported_estimators):
+    def check(accessor):
+        estimator = accessor._parent.estimator
+        if isinstance(estimator, Pipeline):
+            estimator = estimator.steps[-1][1]
+        supported_estimator = isinstance(estimator, supported_estimators)
+
+        if not supported_estimator:
+            raise AttributeError(
+                f"The {estimator.__class__.__name__} estimator is not supported "
+                "by the function called."
+            )
+
+        return True
+
+    return check
 
 
 class EstimatorReport:
@@ -26,6 +46,7 @@ class EstimatorReport:
         self.y_val = y_val
 
         self._cache = {}  # in-memory cache for the report
+        self._ml_task = _find_ml_task(self.y_val, estimator=self.estimator)
 
     @classmethod
     def from_fitted_estimator(cls, estimator, *, X, y=None):
@@ -106,5 +127,8 @@ class _PlotAccessor:
     def __init__(self, parent):
         self._parent = parent
 
+    @available_if(
+        _check_supported_ml_task(supported_ml_tasks=["binary-classification"])
+    )
     def roc(self):
         pass

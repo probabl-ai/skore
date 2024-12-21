@@ -1,10 +1,41 @@
 import pytest
 from sklearn.datasets import make_regression
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.exceptions import NotFittedError
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
 from sklearn.utils.validation import check_is_fitted
 from skore import EstimatorReport
+from skore.sklearn._estimator import _check_supported_estimator
+
+
+def test_check_supported_estimator():
+    class MockParent:
+        def __init__(self, estimator):
+            self.estimator = estimator
+
+    class MockAccessor:
+        def __init__(self, parent):
+            self._parent = parent
+
+    parent = MockParent(LogisticRegression())
+    accessor = MockAccessor(parent)
+    check = _check_supported_estimator((LogisticRegression,))
+    assert check(accessor)
+
+    pipeline = Pipeline([("clf", LogisticRegression())])
+    parent = MockParent(pipeline)
+    accessor = MockAccessor(parent)
+    assert check(accessor)
+
+    parent = MockParent(RandomForestClassifier())
+    accessor = MockAccessor(parent)
+    err_msg = (
+        "The RandomForestClassifier estimator is not supported by the function called."
+    )
+    with pytest.raises(AttributeError, match=err_msg):
+        check(accessor)
 
 
 def test_estimator_not_fitted():
