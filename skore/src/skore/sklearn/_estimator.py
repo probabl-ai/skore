@@ -3,8 +3,10 @@ import time
 from io import StringIO
 
 import numpy as np
+import pandas as pd
 from rich.console import Console
 from rich.tree import Tree
+from sklearn import metrics
 from sklearn.base import clone
 from sklearn.pipeline import Pipeline
 from sklearn.utils._response import _check_response_method, _get_response_values
@@ -273,17 +275,25 @@ class EstimatorReport:
         def _add_accessor_methods_to_tree(tree, accessor, icon, accessor_name):
             branch = tree.add(f"{icon} {accessor_name}")
             methods = inspect.getmembers(accessor, predicate=inspect.ismethod)
+            # sort the methods by the name of the method, except for the report_stats
+            # method which should be at the start (special case for the metrics)
+            if accessor_name == "metrics":
+                # force to have the `report_stats` method at the start
+                methods = sorted(methods, key=lambda x: x[0] != "report_stats")
+            else:
+                methods = sorted(methods)
             for name, method in methods:
                 if not name.startswith("_") and not name.startswith("__"):
-                    doc = (
-                        method.__doc__.split("\n")[0]
-                        if method.__doc__
-                        else "No description available"
-                    )
-                    branch.add(f"{name} - {doc}")
+                    if accessor_name == "metrics":
+                        # add the icon at the front of the metrics or loss
+                        displayed_name = f"{IS_SCORE_OR_LOSS[name]} {name}"
+                    else:
+                        displayed_name = name
+                    doc = method.__doc__.split("\n")[0]
+                    branch.add(f"{displayed_name} - {doc}")
 
         _add_accessor_methods_to_tree(tree, self.plot, "🎨", "plot")
-        # _add_accessor_methods_to_tree(tree, self.metrics, "📏", "metrics")
+        _add_accessor_methods_to_tree(tree, self.metrics, "📏", "metrics")
         # _add_accessor_methods_to_tree(tree, self.inspection, "🔍", "inspection")
         # _add_accessor_methods_to_tree(tree, self.linting, "✔️", "linting")
 
@@ -301,6 +311,11 @@ class EstimatorReport:
         console = Console(file=StringIO(), force_terminal=False)
         console.print("📓 Estimator Reporter", self._create_help_tree())
         return console.file.getvalue()
+
+
+###############################################################################
+# Plotting accessor
+###############################################################################
 
 
 @register_accessor("plot", EstimatorReport)
@@ -362,3 +377,363 @@ class _PlotAccessor:
             self._parent._cache[cache_key] = display
 
         return display
+
+
+###############################################################################
+# Metrics accessor
+###############################################################################
+
+IS_SCORE_OR_LOSS = {
+    "accuracy": "📈",
+    "precision": "📈",
+    "recall": "📈",
+    "brier_score": "📉",
+    "roc_auc": "📈",
+    "log_loss": "📉",
+    "r2": "📈",
+    "rmse": "📉",
+    "report_stats": "📈/📉",
+}
+
+
+@register_accessor("metrics", EstimatorReport)
+class _MetricsAccessor:
+    def __init__(self, parent):
+        self._parent = parent
+
+    # TODO: should build on the `add_scorers` function
+    def report_stats(self, scoring=None, positive_class=1):
+        """Report a set of statistics for the metrics.
+
+        Parameters
+        ----------
+        scoring : list of str, default=None
+            The metrics to report.
+        positive_class : int, default=1
+            The positive class.
+
+        Returns
+        -------
+        pd.DataFrame
+            The statistics for the metrics.
+        """
+        if scoring is None:
+            # Equivalent to _get_scorers_to_add
+            if self._parent._ml_task == "binary-classification":
+                scoring = ["precision", "recall", "roc_auc", "brier_score"]
+            elif self._parent._ml_task == "multiclass-classification":
+                scoring = ["precision", "recall", "roc_auc"]
+                if hasattr(self._parent.cv_results["estimator"][0], "predict_proba"):
+                    scoring.append("log_loss")
+            else:
+                scoring = ["r2", "rmse"]
+
+        scores = []
+
+        for metric in scoring:
+            metric_fn = getattr(self, metric)
+
+            if "positive_class" in inspect.signature(metric_fn).parameters:
+                scores.append(metric_fn(positive_class=positive_class))
+            else:
+                scores.append(metric_fn())
+
+        has_multilevel = any(
+            isinstance(score, pd.DataFrame) and isinstance(score.columns, pd.MultiIndex)
+            for score in scores
+        )
+
+        if has_multilevel:
+            # Convert single-level dataframes to multi-level
+            for i, score in enumerate(scores):
+                if hasattr(score, "columns") and not isinstance(
+                    score.columns, pd.MultiIndex
+                ):
+                    scores[i].columns = pd.MultiIndex.from_tuples(
+                        [(col, "") for col in score.columns]
+                    )
+
+        return pd.concat(scores, axis=1)
+
+    def _compute_metric_scores(
+        self,
+        metric_fn,
+        X,
+        y_true,
+        *,
+        response_method,
+        pos_label=None,
+        metric_name=None,
+        **metric_kwargs,
+    ):
+        y_pred = self._parent._get_cached_response_values(
+            estimator_hash=self._parent._hash,
+            estimator=self._parent.estimator,
+            X=X,
+            response_method=response_method,
+            pos_label=pos_label,
+        )
+
+        cache_key = (self._parent._hash, metric_name)
+        metric_params = inspect.signature(metric_fn).parameters
+        if "pos_label" in metric_params:
+            cache_key += (pos_label,)
+        if "average" in metric_params:
+            cache_key += (metric_kwargs["average"],)
+
+        if cache_key in self._parent._cache:
+            score = self._parent._cache[cache_key]
+        else:
+            metric_params = inspect.signature(metric_fn).parameters
+            kwargs = {**metric_kwargs}
+            if "pos_label" in metric_params:
+                kwargs.update(pos_label=pos_label)
+
+            score = metric_fn(y_true, y_pred, **kwargs)
+            self._parent._cache[cache_key] = score
+
+        score = np.array([score]) if not isinstance(score, np.ndarray) else score
+        metric_name = metric_name or metric_fn.__name__
+
+        if self._parent._ml_task in [
+            "binary-classification",
+            "multiclass-classification",
+        ]:
+            if len(score) == 1:
+                columns = [metric_name]
+            else:
+                classes = self._parent._estimator.classes_
+                columns = [[metric_name] * len(classes), classes]
+        elif self._parent._ml_task == "regression":
+            if len(score) == 1:
+                columns = [metric_name]
+            else:
+                columns = [
+                    [metric_name] * len(score),
+                    [f"Output #{i}" for i in range(len(score))],
+                ]
+        else:
+            columns = None
+        return pd.DataFrame(score, columns=columns, index=[self._parent.estimator_name])
+
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["binary-classification", "multiclass-classification"]
+        )
+    )
+    def accuracy(self):
+        """Compute the accuracy score.
+
+        Returns
+        -------
+        pd.DataFrame
+            The accuracy score.
+        """
+        return self._compute_metric_scores(
+            metrics.accuracy_score,
+            X=self._parent._X_val,
+            y_true=self._parent._y_val,
+            response_method="predict",
+            metric_name=f"Accuracy {IS_SCORE_OR_LOSS['accuracy']}",
+        )
+
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["binary-classification", "multiclass-classification"]
+        )
+    )
+    def precision(self, average="default", positive_class=1):
+        """Compute the precision score.
+
+        Parameters
+        ----------
+        average : {"default", "macro", "micro", "weighted", "samples"} or None, \
+                default="default"
+            The average to compute the precision score. By default, the average is
+            "binary" for binary classification and "weighted" for multiclass
+            classification.
+
+        positive_class : int, default=1
+            The positive class.
+
+        Returns
+        -------
+        pd.DataFrame
+            The precision score.
+        """
+        if average == "default":
+            if self._parent._ml_task == "binary-classification":
+                average = "binary"
+            else:
+                average = "weighted"
+
+        return self._compute_metric_scores(
+            metrics.precision_score,
+            X=self._parent._X_val,
+            y_true=self._parent._y_val,
+            response_method="predict",
+            pos_label=positive_class,
+            metric_name=f"Precision {IS_SCORE_OR_LOSS['precision']}",
+            average=average,
+        )
+
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["binary-classification", "multiclass-classification"]
+        )
+    )
+    def recall(self, average="default", positive_class=1):
+        """Compute the recall score.
+
+        Parameters
+        ----------
+        average : {"default", "macro", "micro", "weighted", "samples"} or None, \
+                default="default"
+            The average to compute the recall score. By default, the average is
+            "binary" for binary classification and "weighted" for multiclass
+            classification.
+        positive_class : int, default=1
+            The positive class.
+
+        Returns
+        -------
+        pd.DataFrame
+            The recall score.
+        """
+        if average == "default":
+            if self._parent._ml_task == "binary-classification":
+                average = "binary"
+            else:
+                average = "weighted"
+
+        return self._compute_metric_scores(
+            metrics.recall_score,
+            X=self._parent._X_val,
+            y_true=self._parent._y_val,
+            response_method="predict",
+            pos_label=positive_class,
+            metric_name=f"Recall {IS_SCORE_OR_LOSS['recall']}",
+            average=average,
+        )
+
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["binary-classification", "multiclass-classification"]
+        )
+    )
+    def brier_score(self, positive_class=1):
+        """Compute the Brier score.
+
+        Parameters
+        ----------
+        positive_class : int, default=1
+            The positive class.
+
+        Returns
+        -------
+        pd.DataFrame
+            The Brier score.
+        """
+        return self._compute_metric_scores(
+            metrics.brier_score_loss,
+            X=self._parent._X_val,
+            y_true=self._parent._y_val,
+            response_method="predict_proba",
+            metric_name=f"Brier score {IS_SCORE_OR_LOSS['brier_score']}",
+            pos_label=positive_class,
+        )
+
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["binary-classification", "multiclass-classification"]
+        )
+    )
+    def roc_auc(self, average="default"):
+        """Compute the ROC AUC score.
+
+        Parameters
+        ----------
+        average : {"default", "macro", "micro", "weighted", "samples"}, \
+                default="default"
+            The average to compute the ROC AUC score. By default, the average is
+            "macro" for binary classification and multiclass classification with
+            probability predictions and "weighted" for multiclass classification
+            with 1-vs-rest predictions.
+
+        Returns
+        -------
+        pd.DataFrame
+            The ROC AUC score.
+        """
+        if average == "default":
+            if self._parent._ml_task == "binary-classification":
+                average = "macro"
+                multi_class = "raise"
+            else:
+                average = "weighted"
+                multi_class = "ovr"  # FIXME: do we expose it or not?
+
+        return self._compute_metric_scores(
+            metrics.roc_auc_score,
+            X=self._parent._X_val,
+            y_true=self._parent._y_val,
+            response_method=["predict_proba", "decision_function"],
+            metric_name=f"ROC AUC {IS_SCORE_OR_LOSS['roc_auc']}",
+            average=average,
+            multi_class=multi_class,
+        )
+
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["binary-classification", "multiclass-classification"]
+        )
+    )
+    def log_loss(self):
+        """Compute the log loss.
+
+        Returns
+        -------
+        pd.DataFrame
+            The log-loss.
+        """
+        return self._compute_metric_scores(
+            metrics.log_loss,
+            X=self._parent._X_val,
+            y_true=self._parent._y_val,
+            response_method="predict_proba",
+            metric_name=f"Log loss {IS_SCORE_OR_LOSS['log_loss']}",
+        )
+
+    @available_if(_check_supported_ml_task(supported_ml_tasks=["regression"]))
+    def r2(self):
+        """Compute the R² score.
+
+        Returns
+        -------
+        pd.DataFrame
+            The R² score.
+        """
+        return self._compute_metric_scores(
+            metrics.r2_score,
+            X=self._parent._X_val,
+            y_true=self._parent._y_val,
+            response_method="predict",
+            metric_name=f"R² {IS_SCORE_OR_LOSS['r2']}",
+        )
+
+    @available_if(_check_supported_ml_task(supported_ml_tasks=["regression"]))
+    def rmse(self):
+        """Compute the root mean squared error.
+
+        Returns
+        -------
+        pd.DataFrame
+            The root mean squared error.
+        """
+        return self._compute_metric_scores(
+            metrics.root_mean_squared_error,
+            X=self._parent._X_val,
+            y_true=self._parent._y_val,
+            response_method="predict",
+            metric_name=f"RMSE {IS_SCORE_OR_LOSS['rmse']}",
+        )
