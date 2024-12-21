@@ -6,6 +6,9 @@ from skore.utils._accessor import (
 
 
 def test_register_accessor():
+    """Test that an accessor is properly registered and accessible on a class
+    instance."""
+
     class ParentClass:
         pass
 
@@ -24,6 +27,10 @@ def test_register_accessor():
 
 
 def test_check_supported_ml_task():
+    """Test that ML task validation accepts supported tasks and rejects unsupported
+    ones.
+    """
+
     class MockParent:
         def __init__(self, ml_task):
             self._ml_task = ml_task

@@ -1,5 +1,5 @@
 import pytest
-from sklearn.datasets import make_regression
+from sklearn.datasets import make_classification, make_regression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.exceptions import NotFittedError
 from sklearn.linear_model import LinearRegression, LogisticRegression
@@ -11,6 +11,8 @@ from skore.sklearn._estimator import _check_supported_estimator
 
 
 def test_check_supported_estimator():
+    """Test the behaviour of `_check_supported_estimator`."""
+
     class MockParent:
         def __init__(self, estimator):
             self.estimator = estimator
@@ -39,12 +41,16 @@ def test_check_supported_estimator():
 
 
 def test_estimator_not_fitted():
+    """Test that an error is raised when trying to create a report from an unfitted
+    estimator.
+    """
     estimator = LinearRegression()
     with pytest.raises(NotFittedError):
         EstimatorReport.from_fitted_estimator(estimator, X=None, y=None)
 
 
 def test_estimator_report_from_unfitted_estimator():
+    """Check the general behaviour of `from_unfitted_estimator`."""
     X, y = make_regression(random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
     estimator = LinearRegression()
@@ -62,6 +68,7 @@ def test_estimator_report_from_unfitted_estimator():
 
 
 def test_estimator_report_from_fitted_estimator():
+    """Check the general behaviour of `from_fitted_estimator`."""
     X, y = make_regression(random_state=42)
     estimator = LinearRegression().fit(X, y)
     report = EstimatorReport.from_fitted_estimator(estimator, X=X, y=y)
@@ -71,3 +78,28 @@ def test_estimator_report_from_fitted_estimator():
     assert report.y_train is None
     assert report.X_val is X
     assert report.y_val is y
+
+
+@pytest.mark.parametrize(
+    "X, y, supported_plot_methods, not_supported_plot_methods",
+    [
+        (*make_classification(random_state=42), ["roc"], []),
+        (
+            *make_classification(n_classes=3, n_clusters_per_class=1, random_state=42),
+            [],
+            ["roc"],
+        ),
+    ],
+)
+def test_estimator_report_check_support_plot(
+    X, y, supported_plot_methods, not_supported_plot_methods
+):
+    """Check that the available plot methods are correctly registered."""
+    classifier = RandomForestClassifier().fit(X, y)
+    report = EstimatorReport.from_fitted_estimator(classifier, X=X, y=y)
+
+    for supported_plot_method in supported_plot_methods:
+        assert hasattr(report.plot, supported_plot_method)
+
+    for not_supported_plot_method in not_supported_plot_methods:
+        assert not hasattr(report.plot, not_supported_plot_method)
