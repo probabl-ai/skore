@@ -7,7 +7,8 @@ from skore.utils._accessor import (
 
 def test_register_accessor():
     """Test that an accessor is properly registered and accessible on a class
-    instance."""
+    instance.
+    """
 
     class ParentClass:
         pass
