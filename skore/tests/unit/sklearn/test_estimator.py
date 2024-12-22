@@ -1,3 +1,4 @@
+import pandas as pd
 import pytest
 from sklearn.datasets import make_classification, make_regression
 from sklearn.ensemble import RandomForestClassifier
@@ -19,6 +20,16 @@ def binary_classification_data():
         X, y, test_size=0.2, random_state=42
     )
     return RandomForestClassifier().fit(X_train, y_train), X_test, y_test
+
+
+@pytest.fixture
+def regression_data():
+    """Create a regression dataset and return fitted estimator and data."""
+    X, y = make_regression(random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+    return LinearRegression().fit(X_train, y_train), X_test, y_test
 
 
 def test_check_supported_estimator():
@@ -51,9 +62,9 @@ def test_check_supported_estimator():
         check(accessor)
 
 
-###############################################################################
+########################################################################################
 # Check the general behaviour of the report
-###############################################################################
+########################################################################################
 
 
 def test_estimator_not_fitted():
@@ -171,9 +182,9 @@ def test_estimator_report_repr(binary_classification_data):
     assert repr_str.startswith("📓 Estimator Reporter")
 
 
-###############################################################################
+########################################################################################
 # Check the plot methods
-###############################################################################
+########################################################################################
 
 
 def test_estimator_report_plot_roc(binary_classification_data):
@@ -181,3 +192,56 @@ def test_estimator_report_plot_roc(binary_classification_data):
     estimator, X, y = binary_classification_data
     report = EstimatorReport.from_fitted_estimator(estimator, X=X, y=y)
     assert isinstance(report.plot.roc(), RocCurveDisplay)
+
+
+########################################################################################
+# Check the metrics methods
+########################################################################################
+
+
+@pytest.mark.parametrize(
+    "metric", ["accuracy", "precision", "recall", "brier_score", "roc_auc", "log_loss"]
+)
+def test_estimator_report_metrics_binary_classification(
+    binary_classification_data, metric
+):
+    """Check the behaviour of the metrics methods available for binary
+    classification.
+    """
+    estimator, X, y = binary_classification_data
+    report = EstimatorReport.from_fitted_estimator(estimator, X=X, y=y)
+    assert hasattr(report.metrics, metric)
+    result = getattr(report.metrics, metric)()
+    assert isinstance(result, pd.DataFrame)
+
+    # check that something was written to the cache
+    assert report._cache != {}
+    report.clean_cache()
+
+    # check that passing using data outside from the report works and that we they
+    # don't come from the cache
+    result_external_data = getattr(report.metrics, metric)(X=X, y=y)
+    assert isinstance(result_external_data, pd.DataFrame)
+    pd.testing.assert_frame_equal(result, result_external_data)
+    assert report._cache == {}
+
+
+@pytest.mark.parametrize("metric", ["r2", "rmse"])
+def test_estimator_report_metrics_regression(regression_data, metric):
+    """Check the behaviour of the metrics methods available for regression."""
+    estimator, X, y = regression_data
+    report = EstimatorReport.from_fitted_estimator(estimator, X=X, y=y)
+    assert hasattr(report.metrics, metric)
+    result = getattr(report.metrics, metric)()
+    assert isinstance(result, pd.DataFrame)
+
+    # check that something was written to the cache
+    assert report._cache != {}
+    report.clean_cache()
+
+    # check that passing using data outside from the report works and that we they
+    # don't come from the cache
+    result_external_data = getattr(report.metrics, metric)(X=X, y=y)
+    assert isinstance(result_external_data, pd.DataFrame)
+    pd.testing.assert_frame_equal(result, result_external_data)
+    assert report._cache == {}
