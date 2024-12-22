@@ -374,3 +374,36 @@ def test_estimator_report_report_metrics_scoring_kwargs(
     assert result.shape == (1, 10)
     assert isinstance(result.columns, pd.MultiIndex)
     assert result.columns.names == ["Metric", "Class label"]
+
+
+def test_estimator_report_interaction_cache_metrics(regression_multioutput_data):
+    """Check that the cache take into account the 'kwargs' of a metric."""
+    estimator, X, y = regression_multioutput_data
+    report = EstimatorReport.from_fitted_estimator(estimator, X=X, y=y)
+
+    # The underlying metrics will call `_compute_metric_scores` that take some arbitrary
+    # kwargs apart from `pos_label`. Let's pass an arbitrary kwarg and make sure it is
+    # part of the cache.
+    multioutput = "raw_values"
+    result_r2_raw_values = report.metrics.r2(multioutput=multioutput)
+    should_raise = True
+    for cached_key in report._cache:
+        if any(item == multioutput for item in cached_key):
+            should_raise = False
+            break
+    assert (
+        not should_raise
+    ), f"The value {multioutput} should be stored in one of the cache keys"
+    assert result_r2_raw_values.shape == (1, 2)
+
+    multioutput = "uniform_average"
+    result_r2_uniform_average = report.metrics.r2(multioutput=multioutput)
+    should_raise = True
+    for cached_key in report._cache:
+        if any(item == multioutput for item in cached_key):
+            should_raise = False
+            break
+    assert (
+        not should_raise
+    ), f"The value {multioutput} should be stored in one of the cache keys"
+    assert result_r2_uniform_average.shape == (1, 1)
