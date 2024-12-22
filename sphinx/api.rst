@@ -45,3 +45,4 @@ These functions and classes enhance scikit-learn's ones.
 
     CrossValidationReporter
     item.cross_validation_item.CrossValidationItem
+    EstimatorReport
