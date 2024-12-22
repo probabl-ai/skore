@@ -60,13 +60,17 @@ class EstimatorReport:
     ----------
     estimator : estimator object
         Fitted estimator to make report from.
+
     X_train : {array-like, sparse matrix} of shape (n_samples, n_features) or \
             None
         Training data.
+
     y_train : array-like of shape (n_samples,) or (n_samples, n_outputs) or None
         Training target.
+
     X_val : {array-like, sparse matrix} of shape (n_samples, n_features) or None
         Validation data. It should have the same structure as the training data.
+
     y_val : array-like of shape (n_samples,) or (n_samples, n_outputs) or None
         Validation target.
     """
@@ -165,8 +169,10 @@ class EstimatorReport:
         ----------
         estimator : estimator object
             Fitted estimator to make report from.
+
         X : {array-like, sparse matrix} of shape (n_samples, n_features)
             Validation data. It should have the same structure as the training data.
+
         y : array-like of shape (n_samples,) or (n_samples, n_outputs), default=None
             Validation target.
 
@@ -188,14 +194,18 @@ class EstimatorReport:
         estimator : estimator object
             The estimator that will be fitted on the training data. The estimator
             is cloned before being fitted.
+
         X_train : {array-like, sparse matrix} of shape (n_samples, n_features)
             Training data.
+
         y_train : array-like of shape (n_samples,) or (n_samples, n_outputs), \
                 default=None
             Training target.
+
         X_test : {array-like, sparse matrix} of shape (n_samples, n_features), \
                 default=None
             Validation data. It should have the same structure as the training data.
+
         y_test : array-like of shape (n_samples,) or (n_samples, n_outputs), \
                 default=None
             Validation target.
@@ -230,12 +240,16 @@ class EstimatorReport:
         estimator_hash : int
             A hash associated with the estimator such that we can retrieve the data from
             the cache.
+
         estimator : estimator object
             The estimator.
+
         X : {array-like, sparse matrix} of shape (n_samples, n_features)
             The data.
+
         response_method : str
             The response method.
+
         pos_label : str, default=None
             The positive label.
 
@@ -333,8 +347,10 @@ class _PlotAccessor:
         ----------
         positive_class : str, default=None
             The positive class.
+
         ax : matplotlib.axes.Axes, default=None
             The axes to plot on.
+
         name : str, default=None
             The name of the plot.
 
@@ -401,14 +417,30 @@ class _MetricsAccessor:
     def __init__(self, parent):
         self._parent = parent
 
+    def _get_X_y_and_use_cache(self, X=None, y=None):
+        if X is None and y is None:
+            return self._parent._X_val, self._parent._y_val, True
+        elif not (X is not None and y is not None):
+            raise ValueError("X and y must be provided together.")
+        return X, y, False
+
     # TODO: should build on the `add_scorers` function
-    def report_stats(self, scoring=None, positive_class=1):
+    def report_stats(self, *, X=None, y=None, scoring=None, positive_class=1):
         """Report a set of statistics for the metrics.
 
         Parameters
         ----------
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the reporter.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the reporter.
+
         scoring : list of str, default=None
             The metrics to report.
+
         positive_class : int, default=1
             The positive class.
 
@@ -434,9 +466,9 @@ class _MetricsAccessor:
             metric_fn = getattr(self, metric)
 
             if "positive_class" in inspect.signature(metric_fn).parameters:
-                scores.append(metric_fn(positive_class=positive_class))
+                scores.append(metric_fn(X=X, y=y, positive_class=positive_class))
             else:
-                scores.append(metric_fn())
+                scores.append(metric_fn(X=X, y=y))
 
         has_multilevel = any(
             isinstance(score, pd.DataFrame) and isinstance(score.columns, pd.MultiIndex)
@@ -464,33 +496,50 @@ class _MetricsAccessor:
         response_method,
         pos_label=None,
         metric_name=None,
+        use_cache=False,
         **metric_kwargs,
     ):
-        y_pred = self._parent._get_cached_response_values(
-            estimator_hash=self._parent._hash,
-            estimator=self._parent.estimator,
-            X=X,
-            response_method=response_method,
-            pos_label=pos_label,
-        )
+        if use_cache:
+            y_pred = self._parent._get_cached_response_values(
+                estimator_hash=self._parent._hash,
+                estimator=self._parent.estimator,
+                X=X,
+                response_method=response_method,
+                pos_label=pos_label,
+            )
+            cache_key = (self._parent._hash, metric_name)
+            metric_params = inspect.signature(metric_fn).parameters
+            if "pos_label" in metric_params:
+                cache_key += (pos_label,)
+            if "average" in metric_params:
+                cache_key += (metric_kwargs["average"],)
 
-        cache_key = (self._parent._hash, metric_name)
-        metric_params = inspect.signature(metric_fn).parameters
-        if "pos_label" in metric_params:
-            cache_key += (pos_label,)
-        if "average" in metric_params:
-            cache_key += (metric_kwargs["average"],)
+            if cache_key in self._parent._cache:
+                score = self._parent._cache[cache_key]
+            else:
+                metric_params = inspect.signature(metric_fn).parameters
+                kwargs = {**metric_kwargs}
+                if "pos_label" in metric_params:
+                    kwargs.update(pos_label=pos_label)
 
-        if cache_key in self._parent._cache:
-            score = self._parent._cache[cache_key]
+                score = metric_fn(y_true, y_pred, **kwargs)
+                self._parent._cache[cache_key] = score
         else:
+            # FIXME: we should probably be able to compute a hash here and track the
+            # provenance of the data
+            y_pred, _ = _get_response_values(
+                estimator=self._parent._estimator,
+                X=X,
+                response_method=response_method,
+                pos_label=pos_label,
+                return_response_method_used=False,
+            )
             metric_params = inspect.signature(metric_fn).parameters
             kwargs = {**metric_kwargs}
             if "pos_label" in metric_params:
                 kwargs.update(pos_label=pos_label)
 
             score = metric_fn(y_true, y_pred, **kwargs)
-            self._parent._cache[cache_key] = score
 
         score = np.array([score]) if not isinstance(score, np.ndarray) else score
         metric_name = metric_name or metric_fn.__name__
@@ -521,20 +570,33 @@ class _MetricsAccessor:
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def accuracy(self):
+    def accuracy(self, *, X=None, y=None):
         """Compute the accuracy score.
+
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the reporter.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the reporter.
 
         Returns
         -------
         pd.DataFrame
             The accuracy score.
         """
+        X, y, use_cache = self._get_X_y_and_use_cache(X=X, y=y)
+
         return self._compute_metric_scores(
             metrics.accuracy_score,
-            X=self._parent._X_val,
-            y_true=self._parent._y_val,
+            X=X,
+            y_true=y,
             response_method="predict",
             metric_name=f"Accuracy {IS_SCORE_OR_LOSS['accuracy']}",
+            use_cache=use_cache,
         )
 
     @available_if(
@@ -542,11 +604,19 @@ class _MetricsAccessor:
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def precision(self, average="default", positive_class=1):
+    def precision(self, *, X=None, y=None, average="default", positive_class=1):
         """Compute the precision score.
 
         Parameters
         ----------
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the reporter.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the reporter.
+
         average : {"default", "macro", "micro", "weighted", "samples"} or None, \
                 default="default"
             The average to compute the precision score. By default, the average is
@@ -561,6 +631,8 @@ class _MetricsAccessor:
         pd.DataFrame
             The precision score.
         """
+        X, y, use_cache = self._get_X_y_and_use_cache(X=X, y=y)
+
         if average == "default":
             if self._parent._ml_task == "binary-classification":
                 average = "binary"
@@ -569,12 +641,13 @@ class _MetricsAccessor:
 
         return self._compute_metric_scores(
             metrics.precision_score,
-            X=self._parent._X_val,
-            y_true=self._parent._y_val,
+            X=X,
+            y_true=y,
             response_method="predict",
             pos_label=positive_class,
             metric_name=f"Precision {IS_SCORE_OR_LOSS['precision']}",
             average=average,
+            use_cache=use_cache,
         )
 
     @available_if(
@@ -582,16 +655,25 @@ class _MetricsAccessor:
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def recall(self, average="default", positive_class=1):
+    def recall(self, *, X=None, y=None, average="default", positive_class=1):
         """Compute the recall score.
 
         Parameters
         ----------
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the reporter.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the reporter.
+
         average : {"default", "macro", "micro", "weighted", "samples"} or None, \
                 default="default"
             The average to compute the recall score. By default, the average is
             "binary" for binary classification and "weighted" for multiclass
             classification.
+
         positive_class : int, default=1
             The positive class.
 
@@ -600,6 +682,8 @@ class _MetricsAccessor:
         pd.DataFrame
             The recall score.
         """
+        X, y, use_cache = self._get_X_y_and_use_cache(X=X, y=y)
+
         if average == "default":
             if self._parent._ml_task == "binary-classification":
                 average = "binary"
@@ -614,6 +698,7 @@ class _MetricsAccessor:
             pos_label=positive_class,
             metric_name=f"Recall {IS_SCORE_OR_LOSS['recall']}",
             average=average,
+            use_cache=use_cache,
         )
 
     @available_if(
@@ -621,11 +706,19 @@ class _MetricsAccessor:
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def brier_score(self, positive_class=1):
+    def brier_score(self, *, X=None, y=None, positive_class=1):
         """Compute the Brier score.
 
         Parameters
         ----------
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the reporter.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the reporter.
+
         positive_class : int, default=1
             The positive class.
 
@@ -634,13 +727,16 @@ class _MetricsAccessor:
         pd.DataFrame
             The Brier score.
         """
+        X, y, use_cache = self._get_X_y_and_use_cache(X=X, y=y)
+
         return self._compute_metric_scores(
             metrics.brier_score_loss,
-            X=self._parent._X_val,
-            y_true=self._parent._y_val,
+            X=X,
+            y_true=y,
             response_method="predict_proba",
             metric_name=f"Brier score {IS_SCORE_OR_LOSS['brier_score']}",
             pos_label=positive_class,
+            use_cache=use_cache,
         )
 
     @available_if(
@@ -648,11 +744,19 @@ class _MetricsAccessor:
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def roc_auc(self, average="default"):
+    def roc_auc(self, *, X=None, y=None, average="default"):
         """Compute the ROC AUC score.
 
         Parameters
         ----------
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the reporter.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the reporter.
+
         average : {"default", "macro", "micro", "weighted", "samples"}, \
                 default="default"
             The average to compute the ROC AUC score. By default, the average is
@@ -665,6 +769,8 @@ class _MetricsAccessor:
         pd.DataFrame
             The ROC AUC score.
         """
+        X, y, use_cache = self._get_X_y_and_use_cache(X=X, y=y)
+
         if average == "default":
             if self._parent._ml_task == "binary-classification":
                 average = "macro"
@@ -675,12 +781,13 @@ class _MetricsAccessor:
 
         return self._compute_metric_scores(
             metrics.roc_auc_score,
-            X=self._parent._X_val,
-            y_true=self._parent._y_val,
+            X=X,
+            y_true=y,
             response_method=["predict_proba", "decision_function"],
             metric_name=f"ROC AUC {IS_SCORE_OR_LOSS['roc_auc']}",
             average=average,
             multi_class=multi_class,
+            use_cache=use_cache,
         )
 
     @available_if(
@@ -688,52 +795,91 @@ class _MetricsAccessor:
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def log_loss(self):
+    def log_loss(self, *, X=None, y=None):
         """Compute the log loss.
+
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the reporter.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the reporter.
 
         Returns
         -------
         pd.DataFrame
             The log-loss.
         """
+        X, y, use_cache = self._get_X_y_and_use_cache(X=X, y=y)
+
         return self._compute_metric_scores(
             metrics.log_loss,
-            X=self._parent._X_val,
-            y_true=self._parent._y_val,
+            X=X,
+            y_true=y,
             response_method="predict_proba",
             metric_name=f"Log loss {IS_SCORE_OR_LOSS['log_loss']}",
+            use_cache=use_cache,
         )
 
     @available_if(_check_supported_ml_task(supported_ml_tasks=["regression"]))
-    def r2(self):
+    def r2(self, *, X=None, y=None):
         """Compute the R² score.
+
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the reporter.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the reporter.
 
         Returns
         -------
         pd.DataFrame
             The R² score.
         """
+        X, y, use_cache = self._get_X_y_and_use_cache(X=X, y=y)
+
         return self._compute_metric_scores(
             metrics.r2_score,
-            X=self._parent._X_val,
-            y_true=self._parent._y_val,
+            X=X,
+            y_true=y,
             response_method="predict",
             metric_name=f"R² {IS_SCORE_OR_LOSS['r2']}",
+            use_cache=use_cache,
         )
 
     @available_if(_check_supported_ml_task(supported_ml_tasks=["regression"]))
-    def rmse(self):
+    def rmse(self, *, X=None, y=None):
         """Compute the root mean squared error.
+
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the reporter.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the reporter.
 
         Returns
         -------
         pd.DataFrame
             The root mean squared error.
         """
+        X, y, use_cache = self._get_X_y_and_use_cache(X=X, y=y)
+
         return self._compute_metric_scores(
             metrics.root_mean_squared_error,
-            X=self._parent._X_val,
-            y_true=self._parent._y_val,
+            X=X,
+            y_true=y,
             response_method="predict",
             metric_name=f"RMSE {IS_SCORE_OR_LOSS['rmse']}",
+            use_cache=use_cache,
         )
