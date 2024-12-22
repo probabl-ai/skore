@@ -107,7 +107,7 @@ class EstimatorReport(_HelpMixin):
     >>> from skore import EstimatorReport
     >>> report = EstimatorReport.from_fitted_estimator(estimator, X=X_val, y=y_val)
     >>> report.help()
-    🔧 Available tools for LogisticRegression estimator
+    📓 Estimator Reporter
     ...
 
     Parameters
