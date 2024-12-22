@@ -1,3 +1,5 @@
+import re
+
 import pandas as pd
 import pytest
 from sklearn.datasets import make_classification, make_regression
@@ -16,6 +18,19 @@ from skore.sklearn._plot import RocCurveDisplay
 def binary_classification_data():
     """Create a binary classification dataset and return fitted estimator and data."""
     X, y = make_classification(random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+    return RandomForestClassifier().fit(X_train, y_train), X_test, y_test
+
+
+@pytest.fixture
+def multiclass_classification_data():
+    """Create a multiclass classification dataset and return fitted estimator and
+    data."""
+    X, y = make_classification(
+        n_classes=3, n_clusters_per_class=1, random_state=42, n_informative=10
+    )
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42
     )
@@ -245,3 +260,86 @@ def test_estimator_report_metrics_regression(regression_data, metric):
     assert isinstance(result_external_data, pd.DataFrame)
     pd.testing.assert_frame_equal(result, result_external_data)
     assert report._cache == {}
+
+
+def test_estimator_report_report_metrics_binary(binary_classification_data):
+    """Check the behaviour of the `report_metrics` method with binary classification."""
+    estimator, X, y = binary_classification_data
+    report = EstimatorReport.from_fitted_estimator(estimator, X=X, y=y)
+    assert hasattr(report.metrics, "report_metrics")
+    result = report.metrics.report_metrics()
+    assert isinstance(result, pd.DataFrame)
+    expected_metrics = ("precision", "recall", "roc_auc", "brier_score")
+    assert len(result.columns) == len(expected_metrics)
+
+    def normalize_string(s):
+        # Remove spaces, underscores and any non-alphanumeric characters
+        return re.sub(r"[^a-zA-Z0-9]", "", s.lower())
+
+    normalized_expected = {normalize_string(metric) for metric in expected_metrics}
+
+    for column in result.columns:
+        normalized_column = normalize_string(column)
+        matches = [
+            metric for metric in normalized_expected if metric == normalized_column
+        ]
+        assert len(matches) == 1, (
+            f"No match found for column '{column}' in expected metrics: "
+            f" {expected_metrics}"
+        )
+
+
+def test_estimator_report_report_metrics_multiclass(multiclass_classification_data):
+    """Check the behaviour of the `report_metrics` method with multiclass
+    classification.
+    """
+    estimator, X, y = multiclass_classification_data
+    report = EstimatorReport.from_fitted_estimator(estimator, X=X, y=y)
+    assert hasattr(report.metrics, "report_metrics")
+    result = report.metrics.report_metrics()
+    assert isinstance(result, pd.DataFrame)
+    expected_metrics = ("precision", "recall", "roc_auc", "log_loss")
+    assert len(result.columns) == len(expected_metrics)
+
+    def normalize_string(s):
+        # Remove spaces, underscores and any non-alphanumeric characters
+        return re.sub(r"[^a-zA-Z0-9]", "", s.lower())
+
+    normalized_expected = {normalize_string(metric) for metric in expected_metrics}
+
+    for column in result.columns:
+        normalized_column = normalize_string(column)
+        matches = [
+            metric for metric in normalized_expected if metric == normalized_column
+        ]
+        assert len(matches) == 1, (
+            f"No match found for column '{column}' in expected metrics: "
+            f" {expected_metrics}"
+        )
+
+
+def test_estimator_report_report_metrics_regression(regression_data):
+    """Check the behaviour of the `report_metrics` method with regression."""
+    estimator, X, y = regression_data
+    report = EstimatorReport.from_fitted_estimator(estimator, X=X, y=y)
+    assert hasattr(report.metrics, "report_metrics")
+    result = report.metrics.report_metrics()
+    assert isinstance(result, pd.DataFrame)
+    expected_metrics = ("r2", "rmse")
+    assert len(result.columns) == len(expected_metrics)
+
+    def normalize_string(s):
+        # Remove spaces, underscores, numbers and any non-numeric characters
+        return re.sub(r"[^a-zA-Z]", "", s.lower())
+
+    normalized_expected = {normalize_string(metric) for metric in expected_metrics}
+
+    for column in result.columns:
+        normalized_column = normalize_string(column)
+        matches = [
+            metric for metric in normalized_expected if metric == normalized_column
+        ]
+        assert len(matches) == 1, (
+            f"No match found for column '{column}' in expected metrics: "
+            f" {expected_metrics}"
+        )
