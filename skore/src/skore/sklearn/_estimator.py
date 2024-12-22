@@ -302,11 +302,13 @@ class EstimatorReport:
                 methods = sorted(
                     methods,
                     key=lambda x: (
-                        0
-                        if x[0] == "report_metrics"
-                        else 1
-                        if x[0] == "custom_metric"
-                        else 2,
+                        (
+                            0
+                            if x[0] == "report_metrics"
+                            else 1
+                            if x[0] == "custom_metric"
+                            else 2
+                        ),
                         x[0],
                     ),
                 )
@@ -557,9 +559,11 @@ class _MetricsAccessor:
                 # to make sure that we hit the cache in a consistent way
                 ordered_metric_kwargs = sorted(metric_kwargs.keys())
                 cache_key += tuple(
-                    joblib.hash(metric_kwargs[key])
-                    if isinstance(metric_kwargs[key], np.ndarray)
-                    else metric_kwargs[key]
+                    (
+                        joblib.hash(metric_kwargs[key])
+                        if isinstance(metric_kwargs[key], np.ndarray)
+                        else metric_kwargs[key]
+                    )
                     for key in ordered_metric_kwargs
                 )
 
@@ -984,7 +988,14 @@ class _MetricsAccessor:
         )
 
     def custom_metric(
-        self, metric_function, response_method, *, X=None, y=None, **kwargs
+        self,
+        metric_function,
+        response_method,
+        *,
+        metric_name=None,
+        X=None,
+        y=None,
+        **kwargs,
     ):
         """Compute a custom metric provided by the user.
 
@@ -1007,6 +1018,10 @@ class _MetricsAccessor:
             The estimator's method to be invoked to get the predictions. The possible
             values are: `predict`, `predict_proba`, `predict_log_proba`, and
             `decision_function`.
+
+        metric_name : str, default=None
+            The name of the metric. If not provided, it will be inferred from the
+            metric function.
 
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
@@ -1031,6 +1046,7 @@ class _MetricsAccessor:
             X=X,
             y_true=y,
             response_method=response_method,
+            metric_name=metric_name,
             use_cache=use_cache,
             **kwargs,
         )

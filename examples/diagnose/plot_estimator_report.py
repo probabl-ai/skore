@@ -199,6 +199,7 @@ reporter.metrics.accuracy()
 start = time.time()
 cost = reporter.metrics.custom_metric(
     metric_function=operational_decision_cost,
+    metric_name="Operational Decision Cost",
     response_method="predict",
     amount=amount,
 )
@@ -217,6 +218,7 @@ reporter.clean_cache()
 start = time.time()
 cost = reporter.metrics.custom_metric(
     metric_function=operational_decision_cost,
+    metric_name="Operational Decision Cost",
     response_method="predict",
     amount=amount,
 )

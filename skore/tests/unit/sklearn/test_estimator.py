@@ -1,5 +1,6 @@
 import re
 
+import joblib
 import numpy as np
 import pandas as pd
 import pytest
@@ -422,6 +423,7 @@ def test_estimator_report_custom_metric(regression_data):
     threshold = 1
     result = report.metrics.custom_metric(
         metric_function=custom_metric,
+        metric_name="Custom Metric",
         response_method="predict",
         threshold=threshold,
     )
@@ -434,6 +436,7 @@ def test_estimator_report_custom_metric(regression_data):
         not should_raise
     ), f"The value {threshold} should be stored in one of the cache keys"
 
+    assert result.columns.tolist() == ["Custom Metric"]
     assert result.to_numpy()[0, 0] == pytest.approx(
         custom_metric(y, estimator.predict(X), threshold)
     )
@@ -453,6 +456,40 @@ def test_estimator_report_custom_metric(regression_data):
         not should_raise
     ), f"The value {threshold} should be stored in one of the cache keys"
 
+    assert result.columns.tolist() == ["Custom Metric"]
     assert result.to_numpy()[0, 0] == pytest.approx(
         custom_metric(y, estimator.predict(X), threshold)
+    )
+
+
+def test_estimator_report_custom_function_kwargs_numpy_array(regression_data):
+    """Check that we are able to store a hash of a numpy array in the cache when they
+    are passed as kwargs.
+    """
+    estimator, X, y = regression_data
+    report = EstimatorReport.from_fitted_estimator(estimator, X=X, y=y)
+    weights = np.ones_like(y) * 2
+    hash_weights = joblib.hash(weights)
+
+    def custom_metric(y_true, y_pred, some_weights):
+        return np.mean((y_true - y_pred) * some_weights)
+
+    result = report.metrics.custom_metric(
+        metric_function=custom_metric,
+        metric_name="Custom Metric",
+        response_method="predict",
+        some_weights=weights,
+    )
+    should_raise = True
+    for cached_key in report._cache:
+        if any(item == hash_weights for item in cached_key):
+            should_raise = False
+            break
+    assert (
+        not should_raise
+    ), "The hash of the weights should be stored in one of the cache keys"
+
+    assert result.columns.tolist() == ["Custom Metric"]
+    assert result.to_numpy()[0, 0] == pytest.approx(
+        custom_metric(y, estimator.predict(X), weights)
     )
