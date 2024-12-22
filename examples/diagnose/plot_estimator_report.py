@@ -252,3 +252,23 @@ reporter.metrics.report_metrics(
 )
 
 # %%
+#
+# It could happen that you are interested in providing several custom metrics which
+# does not necessarily share the same parameters. In this more complex case, we will
+# require you to provide a scorer using the :func:`sklearn.metrics.make_scorer`
+# function.
+from sklearn.metrics import make_scorer, f1_score
+
+f1_scorer = make_scorer(
+    f1_score,
+    response_method="predict",
+    metric_name="F1 Score",
+    pos_label=positive_class,
+)
+operational_decision_cost_scorer = make_scorer(
+    operational_decision_cost,
+    response_method="predict",
+    metric_name="Operational Decision Cost",
+    amount=amount,
+)
+reporter.metrics.report_metrics(scoring=[f1_scorer, operational_decision_cost_scorer])

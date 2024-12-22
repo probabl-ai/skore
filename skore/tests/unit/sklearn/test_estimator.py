@@ -8,7 +8,7 @@ from sklearn.datasets import make_classification, make_regression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.exceptions import NotFittedError
 from sklearn.linear_model import LinearRegression, LogisticRegression
-from sklearn.metrics import r2_score
+from sklearn.metrics import make_scorer, median_absolute_error, r2_score
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.utils.validation import check_is_fitted
@@ -517,6 +517,39 @@ def test_estimator_report_report_metrics_with_custom_metric(regression_data):
         [
             [
                 r2_score(y, estimator.predict(X)),
+                custom_metric(y, estimator.predict(X), weights),
+            ]
+        ],
+    )
+
+
+def test_estimator_report_report_metrics_with_scorer(regression_data):
+    """Check that we can pass scikit-learn scorer with different parameters to
+    the `report_metrics` method."""
+    estimator, X, y = regression_data
+    report = EstimatorReport.from_fitted_estimator(estimator, X=X, y=y)
+    weights = np.ones_like(y) * 2
+
+    def custom_metric(y_true, y_pred, some_weights):
+        return np.mean((y_true - y_pred) * some_weights)
+
+    median_absolute_error_scorer = make_scorer(
+        median_absolute_error, response_method="predict"
+    )
+    custom_metric_scorer = make_scorer(
+        custom_metric, response_method="predict", some_weights=weights
+    )
+    result = report.metrics.report_metrics(
+        scoring=[r2_score, median_absolute_error_scorer, custom_metric_scorer],
+        scoring_kwargs={"response_method": "predict"},  # only dispatched to r2_score
+    )
+    assert result.shape == (1, 3)
+    np.testing.assert_allclose(
+        result.to_numpy(),
+        [
+            [
+                r2_score(y, estimator.predict(X)),
+                median_absolute_error(y, estimator.predict(X)),
                 custom_metric(y, estimator.predict(X), weights),
             ]
         ],

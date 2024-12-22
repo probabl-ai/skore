@@ -10,6 +10,7 @@ from rich.console import Console
 from rich.tree import Tree
 from sklearn import metrics
 from sklearn.base import clone
+from sklearn.metrics._scorer import _BaseScorer
 from sklearn.pipeline import Pipeline
 from sklearn.utils._response import _check_response_method, _get_response_values
 from sklearn.utils.metaestimators import available_if
@@ -539,12 +540,14 @@ class _MetricsAccessor(_BaseAccessor):
             New target on which to compute the metric. By default, we use the target
             provided when creating the reporter.
 
-        scoring : list of str or callable, default=None
+        scoring : list of str, callable, or scorer, default=None
             The metrics to report. You can get the possible list of string by calling
             `reporter.metrics.help()`. When passing a callable, it should take as
             arguments `y_true`, `y_pred` as the two first arguments. Additional
             arguments can be passed as keyword arguments and will be forwarded with
-            `scoring_kwargs`.
+            `scoring_kwargs`. If the callable API is too restrictive (e.g. need to pass
+            same parameter name with different values), you can use scikit-learn scorers
+            as provided by :func:`sklearn.metrics.make_scorer`.
 
         positive_class : int, default=1
             The positive class.
@@ -571,30 +574,45 @@ class _MetricsAccessor(_BaseAccessor):
         scores = []
 
         for metric in scoring:
-            if isinstance(metric, str):
-                metric_fn = getattr(self, metric)
-            elif callable(metric):
-                metric_fn = partial(self.custom_metric, metric_function=metric)
+            # NOTE: we have to check specifically fort `_BaseScorer` first because this
+            # is also a callable but it has a special private API that we can leverage
+            if isinstance(metric, _BaseScorer):
+                # scorers have the advantage to have scoped defined kwargs
+                metric_fn = partial(
+                    self.custom_metric,
+                    metric_function=metric._score_func,
+                    response_method=metric._response_method,
+                )
+                # forward the additional parameters specific to the scorer
+                metrics_kwargs = {**metric._kwargs}
+            elif isinstance(metric, str) or callable(metric):
+                if isinstance(metric, str):
+                    metric_fn = getattr(self, metric)
+                    metrics_kwargs = {}
+                else:
+                    metric_fn = partial(self.custom_metric, metric_function=metric)
+                    if scoring_kwargs is None:
+                        metrics_kwargs = {}
+                    else:
+                        # check if we should pass any parameters specific to the metric
+                        # callable
+                        metric_callable_params = inspect.signature(metric).parameters
+                        metrics_kwargs = {
+                            param: scoring_kwargs[param]
+                            for param in metric_callable_params
+                            if param in scoring_kwargs
+                        }
+                if scoring_kwargs is not None:
+                    metrics_params = inspect.signature(metric_fn).parameters
+                    for param in metrics_params:
+                        if param in scoring_kwargs:
+                            metrics_kwargs[param] = scoring_kwargs[param]
+                    if "positive_class" in metrics_params:
+                        metrics_kwargs["positive_class"] = positive_class
             else:
                 raise ValueError(
                     f"Invalid type of metric: {type(metric)} for metric: {metric}"
                 )
-
-            # pass additional parameters to the metric function
-            metrics_kwargs = {}
-            metrics_params = inspect.signature(metric_fn).parameters
-            if scoring_kwargs is not None:
-                for param in metrics_params:
-                    if param in scoring_kwargs:
-                        metrics_kwargs[param] = scoring_kwargs[param]
-            if "positive_class" in metrics_params:
-                metrics_kwargs["positive_class"] = positive_class
-            if callable(metric):
-                # we need to forward original expected arguments if metric is callable
-                metric_callable_params = inspect.signature(metric).parameters
-                for param in metric_callable_params:
-                    if param in scoring_kwargs:
-                        metrics_kwargs[param] = scoring_kwargs[param]
 
             scores.append(metric_fn(X=X, y=y, **metrics_kwargs))
 
