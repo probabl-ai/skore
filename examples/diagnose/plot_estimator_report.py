@@ -233,3 +233,14 @@ print(f"Time taken to compute the cost: {end - start:.2f} seconds")
 # We observe that caching is working as expected. It is really handy because it means
 # that you can compute some additional metrics without having to recompute the
 # the predictions.
+reporter.metrics.report_metrics(
+    scoring=["precision", "recall", operational_decision_cost],
+    positive_class=positive_class,
+    scoring_kwargs={
+        "amount": amount,
+        "response_method": "predict",
+        "metric_name": "Operational Decision Cost",
+    },
+)
+
+# %%

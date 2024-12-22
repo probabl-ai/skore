@@ -1,5 +1,6 @@
 import inspect
 import time
+from functools import partial
 from io import StringIO
 
 import joblib
@@ -433,6 +434,7 @@ IS_SCORE_OR_LOSS = {
 
 @register_accessor("metrics", EstimatorReport)
 class _MetricsAccessor:
+    # FIXME: add a __repr__ and help method
     def __init__(self, parent):
         self._parent = parent
 
@@ -465,8 +467,12 @@ class _MetricsAccessor:
             New target on which to compute the metric. By default, we use the target
             provided when creating the reporter.
 
-        scoring : list of str, default=None
-            The metrics to report.
+        scoring : list of str or callable, default=None
+            The metrics to report. You can get the possible list of string by calling
+            `reporter.metrics.help()`. When passing a callable, it should take as
+            arguments `y_true`, `y_pred` as the two first arguments. Additional
+            arguments can be passed as keyword arguments and will be forwarded with
+            `scoring_kwargs`.
 
         positive_class : int, default=1
             The positive class.
@@ -493,7 +499,14 @@ class _MetricsAccessor:
         scores = []
 
         for metric in scoring:
-            metric_fn = getattr(self, metric)
+            if isinstance(metric, str):
+                metric_fn = getattr(self, metric)
+            elif callable(metric):
+                metric_fn = partial(self.custom_metric, metric_function=metric)
+            else:
+                raise ValueError(
+                    f"Invalid type of metric: {type(metric)} for metric: {metric}"
+                )
 
             # pass additional parameters to the metric function
             metrics_kwargs = {}
@@ -504,6 +517,12 @@ class _MetricsAccessor:
                         metrics_kwargs[param] = scoring_kwargs[param]
             if "positive_class" in metrics_params:
                 metrics_kwargs["positive_class"] = positive_class
+            if callable(metric):
+                # we need to forward original expected arguments if metric is callable
+                metric_callable_params = inspect.signature(metric).parameters
+                for param in metric_callable_params:
+                    if param in scoring_kwargs:
+                        metrics_kwargs[param] = scoring_kwargs[param]
 
             scores.append(metric_fn(X=X, y=y, **metrics_kwargs))
 

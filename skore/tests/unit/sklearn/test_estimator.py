@@ -8,6 +8,7 @@ from sklearn.datasets import make_classification, make_regression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.exceptions import NotFittedError
 from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.metrics import r2_score
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.utils.validation import check_is_fitted
@@ -492,4 +493,30 @@ def test_estimator_report_custom_function_kwargs_numpy_array(regression_data):
     assert result.columns.tolist() == ["Custom Metric"]
     assert result.to_numpy()[0, 0] == pytest.approx(
         custom_metric(y, estimator.predict(X), weights)
+    )
+
+
+def test_estimator_report_report_metrics_with_custom_metric(regression_data):
+    """Check that we can pass a custom metric with specific kwargs into
+    `report_metrics`."""
+    estimator, X, y = regression_data
+    report = EstimatorReport.from_fitted_estimator(estimator, X=X, y=y)
+    weights = np.ones_like(y) * 2
+
+    def custom_metric(y_true, y_pred, some_weights):
+        return np.mean((y_true - y_pred) * some_weights)
+
+    result = report.metrics.report_metrics(
+        scoring=["r2", custom_metric],
+        scoring_kwargs={"some_weights": weights, "response_method": "predict"},
+    )
+    assert result.shape == (1, 2)
+    np.testing.assert_allclose(
+        result.to_numpy(),
+        [
+            [
+                r2_score(y, estimator.predict(X)),
+                custom_metric(y, estimator.predict(X), weights),
+            ]
+        ],
     )
