@@ -445,6 +445,7 @@ def test_estimator_report_custom_metric(regression_data):
     threshold = 100
     result = report.metrics.custom_metric(
         metric_function=custom_metric,
+        metric_name="Custom Metric",
         response_method="predict",
         threshold=threshold,
     )

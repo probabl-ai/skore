@@ -78,6 +78,14 @@ reporter.help()
 
 # %%
 #
+# Be aware that you can access the help for each individual sub-accessor. For instance:
+reporter.metrics.help()
+
+# %%
+reporter.plot.help()
+
+# %%
+#
 # At this point, we might be interested to have a first look at the statistical
 # performance of our model on the validation set that we provided. We can access it
 # by calling any of the metrics displayed above. Since we are greedy, we want to get

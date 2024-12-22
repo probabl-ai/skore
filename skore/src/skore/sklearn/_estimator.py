@@ -38,7 +38,58 @@ def _check_supported_estimator(supported_estimators):
     return check
 
 
-class EstimatorReport:
+class _HelpMixin:
+    """Mixin class providing help for the `help` method and the `__repr__` method."""
+
+    def _get_methods_for_help(self):
+        """Get the methods to display in help."""
+        methods = inspect.getmembers(self, predicate=inspect.ismethod)
+        filtered_methods = []
+        for name, method in methods:
+            is_private_method = name.startswith("_")
+            # we cannot use `isinstance(method, classmethod)` because it is already
+            # already transformed by the decorator `@classmethod`.
+            is_class_method = inspect.ismethod(method) and method.__self__ is type(self)
+            is_help_method = name == "help"
+            if not (is_private_method or is_class_method or is_help_method):
+                filtered_methods.append((name, method))
+        return filtered_methods
+
+    def _sort_methods_for_help(self, methods):
+        """Sort methods for help display."""
+        return sorted(methods)
+
+    def _format_method_name(self, name):
+        """Format method name for display."""
+        return name
+
+    def _get_method_description(self, method):
+        """Get the description for a method."""
+        return (
+            method.__doc__.split("\n")[0]
+            if method.__doc__
+            else "No description available"
+        )
+
+    def help(self):
+        """Display available methods using rich."""
+        from skore import console  # avoid circular import
+
+        console.print(self._create_help_tree())
+
+    def __repr__(self):
+        """Return a string representation using rich."""
+        console = Console(file=StringIO(), force_terminal=False)
+        console.print(self._create_help_tree())
+        return console.file.getvalue()
+
+
+########################################################################################
+# EstimatorReport
+########################################################################################
+
+
+class EstimatorReport(_HelpMixin):
     """Report for a fitted estimator.
 
     This class provides a set of tools to quickly validate and inspect a fitted
@@ -76,6 +127,14 @@ class EstimatorReport:
     y_val : array-like of shape (n_samples,) or (n_samples, n_outputs) or None
         Validation target.
     """
+
+    _ACCESSOR_CONFIG = {
+        "plot": {"icon": "🎨", "name": "plot"},
+        "metrics": {"icon": "📏", "name": "metrics"},
+        # Add other accessors as they're implemented
+        # "inspection": {"icon": "🔍", "name": "inspection"},
+        # "linting": {"icon": "✔️", "name": "linting"},
+    }
 
     def __init__(self, estimator, *, X_train, y_train, X_val, y_val):
         check_is_fitted(estimator)
@@ -286,75 +345,89 @@ class EstimatorReport:
 
         return predictions
 
+    ####################################################################################
+    # Methods related to the help tree
+    ####################################################################################
+
+    def _get_help_title(self):
+        return f"🔧 Available tools for diagnosing {self.estimator_name} estimator"
+
     def _create_help_tree(self):
-        """Create a rich Tree with the available tools."""
+        """Create a rich Tree with the available tools and accessor methods."""
         tree = Tree(
+            "📓 Estimator Reporter\n"
             f"🔧 Available tools for diagnosing {self.estimator_name} estimator"
         )
 
-        def _add_accessor_methods_to_tree(tree, accessor, icon, accessor_name):
-            branch = tree.add(f"{icon} {accessor_name}")
-            methods = inspect.getmembers(accessor, predicate=inspect.ismethod)
-            # sort the methods by the name of the method, except for the report_metrics
-            # method which should be at the start (special case for the metrics)
-            if accessor_name == "metrics":
-                # force to have report_metrics first, custom_metric second, and rest
-                # alphabetically
-                methods = sorted(
-                    methods,
-                    key=lambda x: (
-                        (
-                            0
-                            if x[0] == "report_metrics"
-                            else 1
-                            if x[0] == "custom_metric"
-                            else 2
-                        ),
-                        x[0],
-                    ),
-                )
-            else:
-                methods = sorted(methods)
-            for name, method in methods:
-                if not name.startswith("_") and not name.startswith("__"):
-                    if accessor_name == "metrics":
-                        # add the icon at the front of the metrics or loss
-                        displayed_name = f"{IS_SCORE_OR_LOSS[name]} {name}"
-                    else:
-                        displayed_name = name
-                    doc = method.__doc__.split("\n")[0]
-                    branch.add(f"{displayed_name} - {doc}")
+        # Add accessor methods first
+        for accessor_attr, config in self._ACCESSOR_CONFIG.items():
+            if hasattr(self, accessor_attr):
+                accessor = getattr(self, accessor_attr)
+                branch = tree.add(f"{config['icon']} {config['name']}")
 
-        _add_accessor_methods_to_tree(tree, self.plot, "🎨", "plot")
-        _add_accessor_methods_to_tree(tree, self.metrics, "📏", "metrics")
-        # _add_accessor_methods_to_tree(tree, self.inspection, "🔍", "inspection")
-        # _add_accessor_methods_to_tree(tree, self.linting, "✔️", "linting")
+                # Use accessor's _get_methods_for_help instead of inspect.getmembers
+                methods = accessor._get_methods_for_help()
+                methods = accessor._sort_methods_for_help(methods)
+
+                # Add methods to branch
+                for name, method in methods:
+                    displayed_name = accessor._format_method_name(name)
+                    description = accessor._get_method_description(method)
+                    branch.add(f"{displayed_name} - {description}")
+
+        # Add base methods last
+        base_methods = self._get_methods_for_help()
+        base_methods = self._sort_methods_for_help(base_methods)
+
+        for name, method in base_methods:
+            if not hasattr(getattr(self, name), "_icon"):  # Skip accessors
+                description = self._get_method_description(method)
+                tree.add(f"{name} - {description}")
 
         return tree
 
-    def help(self):
-        """Display available plotting and metrics functions using rich."""
-        from skore import console  # avoid circular import
 
-        console.print(self._create_help_tree())
-
-    def __repr__(self):
-        """Return a string representation of the EstimatorReport using rich."""
-        # Create a string buffer to capture the tree output
-        console = Console(file=StringIO(), force_terminal=False)
-        console.print("📓 Estimator Reporter", self._create_help_tree())
-        return console.file.getvalue()
+########################################################################################
+# Base class for the accessors
+########################################################################################
 
 
-###############################################################################
+class _BaseAccessor(_HelpMixin):
+    """Base class for all accessors."""
+
+    def __init__(self, parent, icon):
+        self._parent = parent
+        self._icon = icon
+
+    def _get_help_title(self):
+        name = self.__class__.__name__.replace("_", "").replace("Accessor", "").lower()
+        return f"{self._icon} Available {name} methods"
+
+    def _create_help_tree(self):
+        """Create a rich Tree with the available methods."""
+        tree = Tree(self._get_help_title())
+
+        methods = self._get_methods_for_help()
+        methods = self._sort_methods_for_help(methods)
+
+        for name, method in methods:
+            if not name.startswith("_"):
+                displayed_name = self._format_method_name(name)
+                description = self._get_method_description(method)
+                tree.add(f"{displayed_name} - {description}")
+
+        return tree
+
+
+########################################################################################
 # Plotting accessor
-###############################################################################
+########################################################################################
 
 
 @register_accessor("plot", EstimatorReport)
-class _PlotAccessor:
+class _PlotAccessor(_BaseAccessor):
     def __init__(self, parent):
-        self._parent = parent
+        super().__init__(parent, icon="🎨")
 
     @available_if(
         _check_supported_ml_task(supported_ml_tasks=["binary-classification"])
@@ -418,25 +491,24 @@ class _PlotAccessor:
 # Metrics accessor
 ###############################################################################
 
-IS_SCORE_OR_LOSS = {
-    "accuracy": "📈",
-    "precision": "📈",
-    "recall": "📈",
-    "brier_score": "📉",
-    "roc_auc": "📈",
-    "log_loss": "📉",
-    "r2": "📈",
-    "rmse": "📉",
-    "report_metrics": "📈/📉",
-    "custom_metric": "📈/📉",
-}
-
 
 @register_accessor("metrics", EstimatorReport)
-class _MetricsAccessor:
-    # FIXME: add a __repr__ and help method
+class _MetricsAccessor(_BaseAccessor):
+    _SCORE_OR_LOSS_ICONS = {
+        "accuracy": "📈",
+        "precision": "📈",
+        "recall": "📈",
+        "brier_score": "📉",
+        "roc_auc": "📈",
+        "log_loss": "📉",
+        "r2": "📈",
+        "rmse": "📉",
+        "report_metrics": "📈/📉",
+        "custom_metric": "📈/📉",
+    }
+
     def __init__(self, parent):
-        self._parent = parent
+        super().__init__(parent, icon="📏")
 
     def _get_X_y_and_use_cache(self, X=None, y=None):
         if X is None and y is None:
@@ -675,7 +747,7 @@ class _MetricsAccessor:
             X=X,
             y_true=y,
             response_method="predict",
-            metric_name=f"Accuracy {IS_SCORE_OR_LOSS['accuracy']}",
+            metric_name=f"Accuracy {self._SCORE_OR_LOSS_ICONS['accuracy']}",
             use_cache=use_cache,
         )
 
@@ -729,7 +801,7 @@ class _MetricsAccessor:
             y_true=y,
             response_method="predict",
             pos_label=positive_class,
-            metric_name=f"Precision {IS_SCORE_OR_LOSS['precision']}",
+            metric_name=f"Precision {self._SCORE_OR_LOSS_ICONS['precision']}",
             average=average,
             use_cache=use_cache,
         )
@@ -784,7 +856,7 @@ class _MetricsAccessor:
             y_true=self._parent._y_val,
             response_method="predict",
             pos_label=positive_class,
-            metric_name=f"Recall {IS_SCORE_OR_LOSS['recall']}",
+            metric_name=f"Recall {self._SCORE_OR_LOSS_ICONS['recall']}",
             average=average,
             use_cache=use_cache,
         )
@@ -822,7 +894,7 @@ class _MetricsAccessor:
             X=X,
             y_true=y,
             response_method="predict_proba",
-            metric_name=f"Brier score {IS_SCORE_OR_LOSS['brier_score']}",
+            metric_name=f"Brier score {self._SCORE_OR_LOSS_ICONS['brier_score']}",
             pos_label=positive_class,
             use_cache=use_cache,
         )
@@ -882,7 +954,7 @@ class _MetricsAccessor:
             X=X,
             y_true=y,
             response_method=["predict_proba", "decision_function"],
-            metric_name=f"ROC AUC {IS_SCORE_OR_LOSS['roc_auc']}",
+            metric_name=f"ROC AUC {self._SCORE_OR_LOSS_ICONS['roc_auc']}",
             average=average,
             multi_class=multi_class,
             use_cache=use_cache,
@@ -918,7 +990,7 @@ class _MetricsAccessor:
             X=X,
             y_true=y,
             response_method="predict_proba",
-            metric_name=f"Log loss {IS_SCORE_OR_LOSS['log_loss']}",
+            metric_name=f"Log loss {self._SCORE_OR_LOSS_ICONS['log_loss']}",
             use_cache=use_cache,
         )
 
@@ -959,7 +1031,7 @@ class _MetricsAccessor:
             X=X,
             y_true=y,
             response_method="predict",
-            metric_name=f"R² {IS_SCORE_OR_LOSS['r2']}",
+            metric_name=f"R² {self._SCORE_OR_LOSS_ICONS['r2']}",
             use_cache=use_cache,
             multioutput=multioutput,
         )
@@ -1001,7 +1073,7 @@ class _MetricsAccessor:
             X=X,
             y_true=y,
             response_method="predict",
-            metric_name=f"RMSE {IS_SCORE_OR_LOSS['rmse']}",
+            metric_name=f"RMSE {self._SCORE_OR_LOSS_ICONS['rmse']}",
             use_cache=use_cache,
             multioutput=multioutput,
         )
@@ -1069,3 +1141,31 @@ class _MetricsAccessor:
             use_cache=use_cache,
             **kwargs,
         )
+
+    ####################################################################################
+    # Methods related to the help tree
+    ####################################################################################
+
+    def _sort_methods_for_help(self, methods):
+        """Override sort method for metrics-specific ordering.
+
+        In short, we display the `report_metrics` first and then the `custom_metric`.
+        """
+
+        def _sort_key(method):
+            name = method[0]
+            if name == "report_metrics":
+                priority = 0
+            elif name == "custom_metric":
+                priority = 1
+            else:
+                priority = 2
+            return priority, name
+
+        return sorted(methods, key=_sort_key)
+
+    def _format_method_name(self, name):
+        """Override format method for metrics-specific naming."""
+        if name in self._SCORE_OR_LOSS_ICONS:
+            return f"{self._SCORE_OR_LOSS_ICONS[name]} {name}"
+        return name
