@@ -1,5 +1,6 @@
 import re
 
+import numpy as np
 import pandas as pd
 import pytest
 from sklearn.datasets import make_classification, make_regression
@@ -407,3 +408,51 @@ def test_estimator_report_interaction_cache_metrics(regression_multioutput_data)
         not should_raise
     ), f"The value {multioutput} should be stored in one of the cache keys"
     assert result_r2_uniform_average.shape == (1, 1)
+
+
+def test_estimator_report_custom_metric(regression_data):
+    """Check the behaviour of the `custom_metric` computation in the report."""
+    estimator, X, y = regression_data
+    report = EstimatorReport.from_fitted_estimator(estimator, X=X, y=y)
+
+    def custom_metric(y_true, y_pred, threshold=0.5):
+        residuals = y_true - y_pred
+        return np.mean(np.where(residuals < threshold, residuals, 1))
+
+    threshold = 1
+    result = report.metrics.custom_metric(
+        metric_function=custom_metric,
+        response_method="predict",
+        threshold=threshold,
+    )
+    should_raise = True
+    for cached_key in report._cache:
+        if any(item == threshold for item in cached_key):
+            should_raise = False
+            break
+    assert (
+        not should_raise
+    ), f"The value {threshold} should be stored in one of the cache keys"
+
+    assert result.to_numpy()[0, 0] == pytest.approx(
+        custom_metric(y, estimator.predict(X), threshold)
+    )
+
+    threshold = 100
+    result = report.metrics.custom_metric(
+        metric_function=custom_metric,
+        response_method="predict",
+        threshold=threshold,
+    )
+    should_raise = True
+    for cached_key in report._cache:
+        if any(item == threshold for item in cached_key):
+            should_raise = False
+            break
+    assert (
+        not should_raise
+    ), f"The value {threshold} should be stored in one of the cache keys"
+
+    assert result.to_numpy()[0, 0] == pytest.approx(
+        custom_metric(y, estimator.predict(X), threshold)
+    )

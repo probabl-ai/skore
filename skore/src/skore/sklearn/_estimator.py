@@ -964,3 +964,55 @@ class _MetricsAccessor:
             use_cache=use_cache,
             multioutput=multioutput,
         )
+
+    def custom_metric(
+        self, metric_function, response_method, *, X=None, y=None, **kwargs
+    ):
+        """Compute a custom metric provided by the user.
+
+        It brings some flexibility to compute any desired metric. However, we need to
+        follow some rules:
+
+        - `metric_function` should take `y_true` and `y_pred` as the first two
+          positional arguments.
+        - `response_method` corresponds to the estimator's method to be invoked to get
+          the predictions. It can be a string or a list of strings to defined in which
+          order the methods should be invoked.
+
+        Parameters
+        ----------
+        metric_function : callable
+            The metric function to be computed. The expected signature is
+            `metric_function(y_true, y_pred, **kwargs)`.
+
+        response_method : str or list of str
+            The estimator's method to be invoked to get the predictions. The possible
+            values are: `predict`, `predict_proba`, `predict_log_proba`, and
+            `decision_function`.
+
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the reporter.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the reporter.
+
+        **kwargs : dict
+            Any additional keyword arguments to be passed to the metric function.
+
+        Returns
+        -------
+        pd.DataFrame
+            The custom metric.
+        """
+        X, y, use_cache = self._get_X_y_and_use_cache(X=X, y=y)
+
+        return self._compute_metric_scores(
+            metric_function,
+            X=X,
+            y_true=y,
+            response_method=response_method,
+            use_cache=use_cache,
+            **kwargs,
+        )
