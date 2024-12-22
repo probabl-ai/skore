@@ -157,5 +157,77 @@ print(f"Time taken to compute the metrics: {end - start:.2f} seconds")
 
 # %%
 #
-# Be aware that :meth:`~skore.EstimatorReport.report_metrics` takes a `scoring`
-# parameter in which you can pass a list of scoring functions from scikit-learn.
+# Be aware that you can also benefit from the caching mechanism with your own custom
+# metrics. We only expect that you define your own metric function to take `y_true`
+# and `y_pred` as the first two positional arguments. It can take any other arguments.
+# Let's see an example.
+
+
+def operational_decision_cost(y_true, y_pred, amount):
+    mask_true_positive = (y_true == "allowed") & (y_pred == "allowed")
+    mask_true_negative = (y_true == "disallowed") & (y_pred == "disallowed")
+    mask_false_positive = (y_true == "disallowed") & (y_pred == "allowed")
+    mask_false_negative = (y_true == "allowed") & (y_pred == "disallowed")
+    # FIXME: we need to make sense of the cost sensitive part with the right naming
+    fraudulent_refuse = mask_true_positive.sum() * 50
+    fraudulent_accept = -amount[mask_false_negative].sum()
+    legitimate_refuse = mask_false_positive.sum() * -5
+    legitimate_accept = (amount[mask_true_negative] * 0.02).sum()
+    return fraudulent_refuse + fraudulent_accept + legitimate_refuse + legitimate_accept
+
+
+# %%
+#
+# In our use case, we have a operational decision to make that translate the
+# classification outcome into a cost. It translate the confusion matrix into a cost
+# matrix based on some amount linked to each sample in the dataset that are provided to
+# us. Here, we randomly generate some amount as an illustration.
+import numpy as np
+
+rng = np.random.default_rng(42)
+amount = rng.integers(low=100, high=1000, size=len(y_val))
+
+# %%
+#
+# Let's make sure that a function called the `predict` method and cached the result.
+# We compute the accuracy metric to make sure that the `predict` method is called.
+reporter.metrics.accuracy()
+
+# %%
+#
+# We can now compute the cost of our operational decision.
+start = time.time()
+cost = reporter.metrics.custom_metric(
+    metric_function=operational_decision_cost,
+    response_method="predict",
+    amount=amount,
+)
+end = time.time()
+cost
+
+# %%
+print(f"Time taken to compute the cost: {end - start:.2f} seconds")
+
+# %%
+#
+# Let's now clean the cache and see if it is faster.
+reporter.clean_cache()
+
+# %%
+start = time.time()
+cost = reporter.metrics.custom_metric(
+    metric_function=operational_decision_cost,
+    response_method="predict",
+    amount=amount,
+)
+end = time.time()
+cost
+
+# %%
+print(f"Time taken to compute the cost: {end - start:.2f} seconds")
+
+# %%
+#
+# We observe that caching is working as expected. It is really handy because it means
+# that you can compute some additional metrics without having to recompute the
+# the predictions.

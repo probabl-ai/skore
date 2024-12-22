@@ -2,6 +2,7 @@ import inspect
 import time
 from io import StringIO
 
+import joblib
 import numpy as np
 import pandas as pd
 from rich.console import Console
@@ -296,8 +297,19 @@ class EstimatorReport:
             # sort the methods by the name of the method, except for the report_metrics
             # method which should be at the start (special case for the metrics)
             if accessor_name == "metrics":
-                # force to have the `report_metrics` method at the start
-                methods = sorted(methods, key=lambda x: x[0] != "report_metrics")
+                # force to have report_metrics first, custom_metric second, and rest
+                # alphabetically
+                methods = sorted(
+                    methods,
+                    key=lambda x: (
+                        0
+                        if x[0] == "report_metrics"
+                        else 1
+                        if x[0] == "custom_metric"
+                        else 2,
+                        x[0],
+                    ),
+                )
             else:
                 methods = sorted(methods)
             for name, method in methods:
@@ -413,6 +425,7 @@ IS_SCORE_OR_LOSS = {
     "r2": "📈",
     "rmse": "📉",
     "report_metrics": "📈/📉",
+    "custom_metric": "📈/📉",
 }
 
 
@@ -543,7 +556,12 @@ class _MetricsAccessor:
                 # we need to enforce the order of the parameter for a specific metric
                 # to make sure that we hit the cache in a consistent way
                 ordered_metric_kwargs = sorted(metric_kwargs.keys())
-                cache_key += tuple(metric_kwargs[key] for key in ordered_metric_kwargs)
+                cache_key += tuple(
+                    joblib.hash(metric_kwargs[key])
+                    if isinstance(metric_kwargs[key], np.ndarray)
+                    else metric_kwargs[key]
+                    for key in ordered_metric_kwargs
+                )
 
             if cache_key in self._parent._cache:
                 score = self._parent._cache[cache_key]
