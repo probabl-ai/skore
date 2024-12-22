@@ -47,6 +47,16 @@ def regression_data():
     return LinearRegression().fit(X_train, y_train), X_test, y_test
 
 
+@pytest.fixture
+def regression_multioutput_data():
+    """Create a regression dataset and return fitted estimator and data."""
+    X, y = make_regression(n_targets=2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+    return LinearRegression().fit(X_train, y_train), X_test, y_test
+
+
 def test_check_supported_estimator():
     """Test the behaviour of `_check_supported_estimator`."""
 
@@ -343,3 +353,24 @@ def test_estimator_report_report_metrics_regression(regression_data):
             f"No match found for column '{column}' in expected metrics: "
             f" {expected_metrics}"
         )
+
+
+def test_estimator_report_report_metrics_scoring_kwargs(
+    regression_multioutput_data, multiclass_classification_data
+):
+    """Check the behaviour of the `report_metrics` method with scoring kwargs."""
+    estimator, X, y = regression_multioutput_data
+    report = EstimatorReport.from_fitted_estimator(estimator, X=X, y=y)
+    assert hasattr(report.metrics, "report_metrics")
+    result = report.metrics.report_metrics(scoring_kwargs={"multioutput": "raw_values"})
+    assert result.shape == (1, 4)
+    assert isinstance(result.columns, pd.MultiIndex)
+    assert result.columns.names == ["Metric", "Output"]
+
+    estimator, X, y = multiclass_classification_data
+    report = EstimatorReport.from_fitted_estimator(estimator, X=X, y=y)
+    assert hasattr(report.metrics, "report_metrics")
+    result = report.metrics.report_metrics(scoring_kwargs={"average": None})
+    assert result.shape == (1, 10)
+    assert isinstance(result.columns, pd.MultiIndex)
+    assert result.columns.names == ["Metric", "Class label"]

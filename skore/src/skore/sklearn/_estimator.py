@@ -503,8 +503,14 @@ class _MetricsAccessor:
                 if hasattr(score, "columns") and not isinstance(
                     score.columns, pd.MultiIndex
                 ):
+                    name_index = (
+                        ["Metric", "Output"]
+                        if self._parent._ml_task == "regression"
+                        else ["Metric", "Class label"]
+                    )
                     scores[i].columns = pd.MultiIndex.from_tuples(
-                        [(col, "") for col in score.columns]
+                        [(col, "") for col in score.columns],
+                        names=name_index,
                     )
 
         return pd.concat(scores, axis=1)
@@ -529,12 +535,15 @@ class _MetricsAccessor:
                 response_method=response_method,
                 pos_label=pos_label,
             )
-            cache_key = (self._parent._hash, metric_name)
+            cache_key = (self._parent._hash, metric_fn.__name__)
             metric_params = inspect.signature(metric_fn).parameters
             if "pos_label" in metric_params:
                 cache_key += (pos_label,)
-            if "average" in metric_params:
-                cache_key += (metric_kwargs["average"],)
+            if metric_kwargs != {}:
+                # we need to enforce the order of the parameter for a specific metric
+                # to make sure that we hit the cache in a consistent way
+                ordered_metric_kwargs = sorted(metric_kwargs.keys())
+                cache_key += tuple(metric_kwargs[key] for key in ordered_metric_kwargs)
 
             if cache_key in self._parent._cache:
                 score = self._parent._cache[cache_key]
@@ -571,18 +580,26 @@ class _MetricsAccessor:
             "multiclass-classification",
         ]:
             if len(score) == 1:
-                columns = [metric_name]
+                columns = pd.Index([metric_name], name="Metric")
             else:
                 classes = self._parent._estimator.classes_
-                columns = [[metric_name] * len(classes), classes]
+                columns = pd.MultiIndex.from_arrays(
+                    [[metric_name] * len(classes), classes],
+                    names=["Metric", "Class label"],
+                )
+                score = score.reshape(1, -1)
         elif self._parent._ml_task == "regression":
             if len(score) == 1:
-                columns = [metric_name]
+                columns = pd.Index([metric_name], name="Metric")
             else:
-                columns = [
-                    [metric_name] * len(score),
-                    [f"Output #{i}" for i in range(len(score))],
-                ]
+                columns = pd.MultiIndex.from_arrays(
+                    [
+                        [metric_name] * len(score),
+                        [f"#{i}" for i in range(len(score))],
+                    ],
+                    names=["Metric", "Output"],
+                )
+                score = score.reshape(1, -1)
         else:
             columns = None
         return pd.DataFrame(score, columns=columns, index=[self._parent.estimator_name])
@@ -626,7 +643,7 @@ class _MetricsAccessor:
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def precision(self, *, X=None, y=None, average="default", positive_class=1):
+    def precision(self, *, X=None, y=None, average="auto", positive_class=1):
         """Compute the precision score.
 
         Parameters
@@ -639,8 +656,8 @@ class _MetricsAccessor:
             New target on which to compute the metric. By default, we use the target
             provided when creating the reporter.
 
-        average : {"default", "macro", "micro", "weighted", "samples"} or None, \
-                default="default"
+        average : {"auto", "macro", "micro", "weighted", "samples"} or None, \
+                default="auto"
             The average to compute the precision score. By default, the average is
             "binary" for binary classification and "weighted" for multiclass
             classification.
@@ -655,11 +672,15 @@ class _MetricsAccessor:
         """
         X, y, use_cache = self._get_X_y_and_use_cache(X=X, y=y)
 
-        if average == "default":
+        if average == "auto":
             if self._parent._ml_task == "binary-classification":
                 average = "binary"
             else:
                 average = "weighted"
+
+        if average != "binary":
+            # overwrite `positive_class` because it will be ignored
+            positive_class = None
 
         return self._compute_metric_scores(
             metrics.precision_score,
@@ -677,7 +698,7 @@ class _MetricsAccessor:
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def recall(self, *, X=None, y=None, average="default", positive_class=1):
+    def recall(self, *, X=None, y=None, average="auto", positive_class=1):
         """Compute the recall score.
 
         Parameters
@@ -690,8 +711,8 @@ class _MetricsAccessor:
             New target on which to compute the metric. By default, we use the target
             provided when creating the reporter.
 
-        average : {"default", "macro", "micro", "weighted", "samples"} or None, \
-                default="default"
+        average : {"auto", "macro", "micro", "weighted", "samples"} or None, \
+                default="auto"
             The average to compute the recall score. By default, the average is
             "binary" for binary classification and "weighted" for multiclass
             classification.
@@ -706,11 +727,15 @@ class _MetricsAccessor:
         """
         X, y, use_cache = self._get_X_y_and_use_cache(X=X, y=y)
 
-        if average == "default":
+        if average == "auto":
             if self._parent._ml_task == "binary-classification":
                 average = "binary"
             else:
                 average = "weighted"
+
+        if average != "binary":
+            # overwrite `positive_class` because it will be ignored
+            positive_class = None
 
         return self._compute_metric_scores(
             metrics.recall_score,
@@ -766,7 +791,7 @@ class _MetricsAccessor:
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def roc_auc(self, *, X=None, y=None, average="default"):
+    def roc_auc(self, *, X=None, y=None, average="auto", multi_class="ovr"):
         """Compute the ROC AUC score.
 
         Parameters
@@ -779,12 +804,24 @@ class _MetricsAccessor:
             New target on which to compute the metric. By default, we use the target
             provided when creating the reporter.
 
-        average : {"default", "macro", "micro", "weighted", "samples"}, \
-                default="default"
-            The average to compute the ROC AUC score. By default, the average is
-            "macro" for binary classification and multiclass classification with
-            probability predictions and "weighted" for multiclass classification
-            with 1-vs-rest predictions.
+        average : {"auto", "macro", "micro", "weighted", "samples"}, \
+                default="auto"
+            The average to compute the ROC AUC score. By default, the average is "macro"
+            for binary classification with probability predictions and "weighted" for
+            multiclass classification with 1-vs-rest predictions.
+
+        multi_class : {"raise", "ovr", "ovo", "auto"}, default="ovr"
+            The multi-class strategy to use.
+
+            - "raise" : Raise an error if the data is multiclass.
+            - "ovr": Stands for One-vs-rest. Computes the AUC of each class against the
+              rest. This treats the multiclass case in the same way as the multilabel
+              case. Sensitive to class imbalance even when ``average == 'macro'``,
+              because class imbalance affects the composition of each of the 'rest'
+              groupings.
+            - "ovo": Stands for One-vs-one. Computes the average AUC of all possible
+              pairwise combinations of classes. Insensitive to class imbalance when
+              ``average == 'macro'``.
 
         Returns
         -------
@@ -793,13 +830,11 @@ class _MetricsAccessor:
         """
         X, y, use_cache = self._get_X_y_and_use_cache(X=X, y=y)
 
-        if average == "default":
+        if average == "auto":
             if self._parent._ml_task == "binary-classification":
                 average = "macro"
-                multi_class = "raise"
             else:
                 average = "weighted"
-                multi_class = "ovr"  # FIXME: do we expose it or not?
 
         return self._compute_metric_scores(
             metrics.roc_auc_score,
@@ -847,7 +882,7 @@ class _MetricsAccessor:
         )
 
     @available_if(_check_supported_ml_task(supported_ml_tasks=["regression"]))
-    def r2(self, *, X=None, y=None):
+    def r2(self, *, X=None, y=None, multioutput="uniform_average"):
         """Compute the R² score.
 
         Parameters
@@ -859,6 +894,17 @@ class _MetricsAccessor:
         y : array-like of shape (n_samples,), default=None
             New target on which to compute the metric. By default, we use the target
             provided when creating the reporter.
+
+        multioutput : {'raw_values', 'uniform_average'} or array-like of shape \
+                (n_outputs,), default='uniform_average'
+            Defines aggregating of multiple output values.
+            Array-like value defines weights used to average errors.
+
+            'raw_values' :
+                Returns a full set of errors in case of multioutput input.
+
+            'uniform_average' :
+                Errors of all outputs are averaged with uniform weight.
 
         Returns
         -------
@@ -874,10 +920,11 @@ class _MetricsAccessor:
             response_method="predict",
             metric_name=f"R² {IS_SCORE_OR_LOSS['r2']}",
             use_cache=use_cache,
+            multioutput=multioutput,
         )
 
     @available_if(_check_supported_ml_task(supported_ml_tasks=["regression"]))
-    def rmse(self, *, X=None, y=None):
+    def rmse(self, *, X=None, y=None, multioutput="uniform_average"):
         """Compute the root mean squared error.
 
         Parameters
@@ -889,6 +936,17 @@ class _MetricsAccessor:
         y : array-like of shape (n_samples,), default=None
             New target on which to compute the metric. By default, we use the target
             provided when creating the reporter.
+
+        multioutput : {'raw_values', 'uniform_average'} or array-like of shape \
+                (n_outputs,), default='uniform_average'
+            Defines aggregating of multiple output values.
+            Array-like value defines weights used to average errors.
+
+            'raw_values' :
+                Returns a full set of errors in case of multioutput input.
+
+            'uniform_average' :
+                Errors of all outputs are averaged with uniform weight.
 
         Returns
         -------
@@ -904,4 +962,5 @@ class _MetricsAccessor:
             response_method="predict",
             metric_name=f"RMSE {IS_SCORE_OR_LOSS['rmse']}",
             use_cache=use_cache,
+            multioutput=multioutput,
         )
