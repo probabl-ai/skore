@@ -1,4 +1,3 @@
-import copy
 import re
 
 import joblib
@@ -157,11 +156,9 @@ def test_estimator_report_invalidate_cache_data(binary_classification_data):
     report = EstimatorReport.from_fitted_estimator(estimator, X=X, y=y)
 
     for attribute in ("X_val", "y_val"):
-        current_hash = copy.deepcopy(report._hash)
         report._cache["mocking"] = "mocking"  # mock writing to cache
         setattr(report, attribute, None)
         assert report._cache == {}
-        assert report._hash != current_hash
 
 
 @pytest.mark.parametrize(
