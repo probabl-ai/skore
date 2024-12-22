@@ -31,6 +31,10 @@ extensions = [
 templates_path = ["_templates"]
 exclude_patterns = ["build", "Thumbs.db", ".DS_Store"]
 
+# The reST default role (used for this markup: `text`) to use for all
+# documents.
+default_role = "literal"
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
 

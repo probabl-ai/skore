@@ -94,21 +94,9 @@ class EstimatorReport(_HelpMixin):
     """Report for a fitted estimator.
 
     This class provides a set of tools to quickly validate and inspect a fitted
-    estimator.
-
-    To quickly check the available tools, use the `help` method::
-
-    >>> from sklearn.datasets import make_classification
-    >>> from sklearn.model_selection import train_test_split
-    >>> from sklearn.linear_model import LogisticRegression
-    >>> X, y = make_classification(random_state=42)
-    >>> X_train, X_val, y_train, y_val = train_test_split(X, y, random_state=42)
-    >>> estimator = LogisticRegression().fit(X_train, y_train)
-    >>> from skore import EstimatorReport
-    >>> report = EstimatorReport.from_fitted_estimator(estimator, X=X_val, y=y_val)
-    >>> report.help()
-    📓 Estimator Reporter
-    ...
+    estimator. You should create an instance with the methods
+    :meth:`~skore.EstimatorReport.from_fitted_estimator` or
+    :meth:`~skore.EstimatorReport.from_unfitted_estimator`.
 
     Parameters
     ----------
@@ -127,6 +115,20 @@ class EstimatorReport(_HelpMixin):
 
     y_val : array-like of shape (n_samples,) or (n_samples, n_outputs) or None
         Validation target.
+
+    Examples
+    --------
+    >>> from sklearn.datasets import make_classification
+    >>> from sklearn.model_selection import train_test_split
+    >>> from sklearn.linear_model import LogisticRegression
+    >>> X, y = make_classification(random_state=42)
+    >>> X_train, X_val, y_train, y_val = train_test_split(X, y, random_state=42)
+    >>> estimator = LogisticRegression().fit(X_train, y_train)
+    >>> from skore import EstimatorReport
+    >>> report = EstimatorReport.from_fitted_estimator(estimator, X=X_val, y=y_val)
+    >>> report
+    📓 Estimator Reporter
+    ...
     """
 
     _ACCESSOR_CONFIG = {
