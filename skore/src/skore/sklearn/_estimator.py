@@ -101,6 +101,10 @@ class EstimatorReport:
     # For the moment, we do not allow to alter the estimator and the training data.
     # For the validation set, we allow it and we invalidate the cache.
 
+    def clean_cache(self):
+        """Clean the cache."""
+        self._cache = {}
+
     @property
     def estimator(self):
         return self._estimator
@@ -289,11 +293,11 @@ class EstimatorReport:
         def _add_accessor_methods_to_tree(tree, accessor, icon, accessor_name):
             branch = tree.add(f"{icon} {accessor_name}")
             methods = inspect.getmembers(accessor, predicate=inspect.ismethod)
-            # sort the methods by the name of the method, except for the report_stats
+            # sort the methods by the name of the method, except for the report_metrics
             # method which should be at the start (special case for the metrics)
             if accessor_name == "metrics":
-                # force to have the `report_stats` method at the start
-                methods = sorted(methods, key=lambda x: x[0] != "report_stats")
+                # force to have the `report_metrics` method at the start
+                methods = sorted(methods, key=lambda x: x[0] != "report_metrics")
             else:
                 methods = sorted(methods)
             for name, method in methods:
@@ -408,7 +412,7 @@ IS_SCORE_OR_LOSS = {
     "log_loss": "📉",
     "r2": "📈",
     "rmse": "📉",
-    "report_stats": "📈/📉",
+    "report_metrics": "📈/📉",
 }
 
 
@@ -425,8 +429,16 @@ class _MetricsAccessor:
         return X, y, False
 
     # TODO: should build on the `add_scorers` function
-    def report_stats(self, *, X=None, y=None, scoring=None, positive_class=1):
-        """Report a set of statistics for the metrics.
+    def report_metrics(
+        self,
+        *,
+        X=None,
+        y=None,
+        scoring=None,
+        positive_class=1,
+        scoring_kwargs=None,
+    ):
+        """Report a set of metrics for our estimator.
 
         Parameters
         ----------
@@ -444,6 +456,9 @@ class _MetricsAccessor:
         positive_class : int, default=1
             The positive class.
 
+        scoring_kwargs : dict, default=None
+            The keyword arguments to pass to the scoring functions.
+
         Returns
         -------
         pd.DataFrame
@@ -455,7 +470,7 @@ class _MetricsAccessor:
                 scoring = ["precision", "recall", "roc_auc", "brier_score"]
             elif self._parent._ml_task == "multiclass-classification":
                 scoring = ["precision", "recall", "roc_auc"]
-                if hasattr(self._parent.cv_results["estimator"][0], "predict_proba"):
+                if hasattr(self._parent._estimator, "predict_proba"):
                     scoring.append("log_loss")
             else:
                 scoring = ["r2", "rmse"]
@@ -465,10 +480,17 @@ class _MetricsAccessor:
         for metric in scoring:
             metric_fn = getattr(self, metric)
 
-            if "positive_class" in inspect.signature(metric_fn).parameters:
-                scores.append(metric_fn(X=X, y=y, positive_class=positive_class))
-            else:
-                scores.append(metric_fn(X=X, y=y))
+            # pass additional parameters to the metric function
+            metrics_kwargs = {}
+            metrics_params = inspect.signature(metric_fn).parameters
+            if scoring_kwargs is not None:
+                for param in metrics_params:
+                    if param in scoring_kwargs:
+                        metrics_kwargs[param] = scoring_kwargs[param]
+            if "positive_class" in metrics_params:
+                metrics_kwargs["positive_class"] = positive_class
+
+            scores.append(metric_fn(X=X, y=y, **metrics_kwargs))
 
         has_multilevel = any(
             isinstance(score, pd.DataFrame) and isinstance(score.columns, pd.MultiIndex)
