@@ -602,13 +602,13 @@ class _MetricsAccessor(_BaseAccessor):
                             for param in metric_callable_params
                             if param in scoring_kwargs
                         }
+                metrics_params = inspect.signature(metric_fn).parameters
                 if scoring_kwargs is not None:
-                    metrics_params = inspect.signature(metric_fn).parameters
                     for param in metrics_params:
                         if param in scoring_kwargs:
                             metrics_kwargs[param] = scoring_kwargs[param]
-                    if "positive_class" in metrics_params:
-                        metrics_kwargs["positive_class"] = positive_class
+                if "positive_class" in metrics_params:
+                    metrics_kwargs["positive_class"] = positive_class
             else:
                 raise ValueError(
                     f"Invalid type of metric: {type(metric)} for metric: {metric}"
