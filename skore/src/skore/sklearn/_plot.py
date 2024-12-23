@@ -41,14 +41,14 @@ class HelpDisplayMixin:
         attributes = self._get_attributes_for_help()
         if attributes:
             attr_branch = tree.add("📝 Attributes to tweak your plot")
-            # Ensure fig_ and ax_ are first
+            # Ensure figure_ and ax_ are first
             sorted_attrs = sorted(attributes)
             if "ax_" in sorted_attrs:
                 sorted_attrs.remove("ax_")
-            if "fig_" in sorted_attrs:
-                sorted_attrs.remove("fig_")
-            sorted_attrs = ["fig_", "ax_"] + [
-                attr for attr in sorted_attrs if attr not in ["fig_", "ax_"]
+            if "figure_" in sorted_attrs:
+                sorted_attrs.remove("figure_")
+            sorted_attrs = ["figure_", "ax_"] + [
+                attr for attr in sorted_attrs if attr not in ["figure_", "ax_"]
             ]
             for attr in sorted_attrs:
                 attr_branch.add(attr)

@@ -58,6 +58,9 @@ estimator
 
 # %%
 #
+# Introducing the :class:`skore.EstimatorReport` class
+# ----------------------------------------------------
+#
 # Now, we would be interested in getting some insights from our predictive model.
 # One way is to use the :class:`skore.EstimatorReport` class. Since our model is already
 # trainer, we can call the :meth:`~skore.EstimatorReport.from_fitted_estimator` and pass
@@ -85,6 +88,9 @@ reporter.metrics.help()
 reporter.plot.help()
 
 # %%
+#
+# Metrics computation with aggressive caching
+# -------------------------------------------
 #
 # At this point, we might be interested to have a first look at the statistical
 # performance of our model on the validation set that we provided. We can access it
@@ -272,9 +278,26 @@ operational_decision_cost_scorer = make_scorer(
 reporter.metrics.report_metrics(scoring=[f1_scorer, operational_decision_cost_scorer])
 
 # %%
+#
+# Effortless one-liner plotting
+# -----------------------------
+#
+# The :class:`skore.EstimatorReport` class also provides a plotting interface that
+# allows to plot *defacto* the most common plots. As for the the metrics, we only
+# provide the meaningful set of plots for the provided estimator.
+reporter.plot.help()
+
+# %%
+#
+# Let's start by plotting the ROC curve for our binary classification task.
 display = reporter.plot.roc(pos_label="allowed")
 
 # %%
+#
+# The plot functionality is built upon the scikit-learn display objects. We return
+# those display (slightly modified to improve the UI) in case you want to tweak some
+# of the plot properties. You can have quick look at the available attributes and
+# methods by calling the `help` method or simply by printing the display.
 display
 
 # %%
