@@ -10,6 +10,7 @@ from rich.console import Console
 from rich.tree import Tree
 from sklearn import metrics
 from sklearn.base import clone
+from sklearn.exceptions import NotFittedError
 from sklearn.metrics._scorer import _BaseScorer
 from sklearn.pipeline import Pipeline
 from sklearn.utils._response import _check_response_method, _get_response_values
@@ -105,7 +106,11 @@ class EstimatorReport(_HelpMixin):
     Parameters
     ----------
     estimator : estimator object
-        Fitted estimator to make report from.
+        Estimator to make report from.
+
+    fit : {"auto", True, False}, default="auto"
+        Whether to fit the estimator on the training data. If "auto", the estimator
+        is fitted only if the training data is provided.
 
     X_train : {array-like, sparse matrix} of shape (n_samples, n_features) or \
             None
@@ -115,10 +120,10 @@ class EstimatorReport(_HelpMixin):
         Training target.
 
     X_test : {array-like, sparse matrix} of shape (n_samples, n_features) or None
-        Validation data. It should have the same structure as the training data.
+        Testing data. It should have the same structure as the training data.
 
     y_test : array-like of shape (n_samples,) or (n_samples, n_outputs) or None
-        Validation target.
+        Testing target.
 
     Examples
     --------
@@ -129,7 +134,7 @@ class EstimatorReport(_HelpMixin):
     >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
     >>> estimator = LogisticRegression().fit(X_train, y_train)
     >>> from skore import EstimatorReport
-    >>> report = EstimatorReport.from_fitted_estimator(estimator, X=X_test, y=y_test)
+    >>> report = EstimatorReport(estimator, X=X_test, y=y_test)
     >>> report
     📓 Estimator Reporter
     ...
@@ -143,12 +148,28 @@ class EstimatorReport(_HelpMixin):
         # "linting": {"icon": "✔️", "name": "linting"},
     }
 
-    def __init__(self, estimator, *, X_train, y_train, X_test, y_test):
-        check_is_fitted(estimator)
+    def __init__(
+        self,
+        estimator,
+        *,
+        fit="auto",
+        X_train=None,
+        y_train=None,
+        X_test=None,
+        y_test=None,
+    ):
+        if fit == "auto":
+            try:
+                check_is_fitted(estimator)
+            except NotFittedError:
+                self._estimator = clone(estimator).fit(X_train, y_train)
+        elif fit is True:
+            self._estimator = clone(estimator).fit(X_train, y_train)
+        else:  # fit is False
+            self._estimator = estimator
 
         # private storage to be able to invalidate the cache when the user alters
         # those attributes
-        self._estimator = estimator
         self._X_train = X_train
         self._y_train = y_train
         self._X_test = X_test
@@ -232,69 +253,6 @@ class EstimatorReport(_HelpMixin):
         else:
             name = self._estimator.__class__.__name__
         return name
-
-    @classmethod
-    def from_fitted_estimator(cls, estimator, *, X, y=None):
-        """Create an estimator report from a fitted estimator.
-
-        Parameters
-        ----------
-        estimator : estimator object
-            Fitted estimator to make report from.
-
-        X : {array-like, sparse matrix} of shape (n_samples, n_features)
-            Validation data. It should have the same structure as the training data.
-
-        y : array-like of shape (n_samples,) or (n_samples, n_outputs), default=None
-            Validation target.
-
-        Returns
-        -------
-        EstimatorReport
-            The estimator report.
-        """
-        return cls(estimator=estimator, X_train=None, y_train=None, X_test=X, y_test=y)
-
-    @classmethod
-    def from_unfitted_estimator(
-        cls, estimator, *, X_train, y_train=None, X_test=None, y_test=None
-    ):
-        """Create an estimator report from a fitted estimator.
-
-        Parameters
-        ----------
-        estimator : estimator object
-            The estimator that will be fitted on the training data. The estimator
-            is cloned before being fitted.
-
-        X_train : {array-like, sparse matrix} of shape (n_samples, n_features)
-            Training data.
-
-        y_train : array-like of shape (n_samples,) or (n_samples, n_outputs), \
-                default=None
-            Training target.
-
-        X_test : {array-like, sparse matrix} of shape (n_samples, n_features), \
-                default=None
-            Validation data. It should have the same structure as the training data.
-
-        y_test : array-like of shape (n_samples,) or (n_samples, n_outputs), \
-                default=None
-            Validation target.
-
-        Returns
-        -------
-        EstimatorReport
-            The estimator report.
-        """
-        estimator = clone(estimator).fit(X_train, y_train)
-        return cls(
-            estimator=estimator,
-            X_train=X_train,
-            y_train=y_train,
-            X_test=X_test,
-            y_test=y_test,
-        )
 
     def _get_cached_response_values(
         self,

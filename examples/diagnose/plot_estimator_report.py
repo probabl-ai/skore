@@ -62,12 +62,13 @@ estimator
 # ----------------------------------------------------
 #
 # Now, we would be interested in getting some insights from our predictive model.
-# One way is to use the :class:`skore.EstimatorReport` class. Since our model is already
-# trainer, we can call the :meth:`~skore.EstimatorReport.from_fitted_estimator` and pass
-# the dataset to validate our model.
+# One way is to use the :class:`skore.EstimatorReport` class. This constructor will
+# detect that our estimator is already fitted and will not fit it again.
 from skore import EstimatorReport
 
-reporter = EstimatorReport.from_fitted_estimator(estimator, X=X_test, y=y_test)
+reporter = EstimatorReport(
+    estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+)
 reporter
 
 # %%
