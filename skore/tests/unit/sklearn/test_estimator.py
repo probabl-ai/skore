@@ -213,6 +213,25 @@ def test_estimator_report_repr(binary_classification_data):
 ########################################################################################
 
 
+def test_estimator_report_plot_help(capsys, binary_classification_data):
+    """Check that the help method writes to the console."""
+    estimator, X, y = binary_classification_data
+    report = EstimatorReport.from_fitted_estimator(estimator, X=X, y=y)
+
+    report.plot.help()
+    captured = capsys.readouterr()
+    assert "🎨 Available plot methods" in captured.out
+
+
+def test_estimator_report_plot_repr(binary_classification_data):
+    """Check that __repr__ returns a string starting with the expected prefix."""
+    estimator, X, y = binary_classification_data
+    report = EstimatorReport.from_fitted_estimator(estimator, X=X, y=y)
+
+    repr_str = repr(report.plot)
+    assert repr_str.startswith("🎨 Available plot methods")
+
+
 def test_estimator_report_plot_roc(binary_classification_data):
     """Check that the ROC plot method works."""
     estimator, X, y = binary_classification_data
@@ -223,6 +242,25 @@ def test_estimator_report_plot_roc(binary_classification_data):
 ########################################################################################
 # Check the metrics methods
 ########################################################################################
+
+
+def test_estimator_report_metrics_help(capsys, binary_classification_data):
+    """Check that the help method writes to the console."""
+    estimator, X, y = binary_classification_data
+    report = EstimatorReport.from_fitted_estimator(estimator, X=X, y=y)
+
+    report.metrics.help()
+    captured = capsys.readouterr()
+    assert "📏 Available metrics methods" in captured.out
+
+
+def test_estimator_report_metrics_repr(binary_classification_data):
+    """Check that __repr__ returns a string starting with the expected prefix."""
+    estimator, X, y = binary_classification_data
+    report = EstimatorReport.from_fitted_estimator(estimator, X=X, y=y)
+
+    repr_str = repr(report.metrics)
+    assert repr_str.startswith("📏 Available metrics methods")
 
 
 @pytest.mark.parametrize(
