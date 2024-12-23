@@ -51,12 +51,12 @@ html_js_files = [
 examples_ordered = [
     "../examples/getting_started",
     "../examples/getting_started/plot_getting_started",
-    "../examples/track",
-    "../examples/track/plot_overview_skore_project",
-    "../examples/track/plot_tracking_items",
-    "../examples/diagnose",
-    "../examples/diagnose/plot_cross_validate",
-    "../examples/diagnose/plot_train_test_split"
+    "../examples/getting_started/plot_skore_product_tour",
+    "../examples/getting_started/plot_working_with_projects",
+    "../examples/getting_started/plot_tracking_items",
+    "../examples/model_evaluation",
+    "../examples/model_evaluation/plot_cross_validate",
+    "../examples/model_evaluation/plot_train_test_split"
 ]
 
 # sphinx_gallery options
@@ -106,7 +106,9 @@ html_theme_options = {
     # In particular, "**" specifies the default for all pages
     # Use :html_theme.sidebar_secondary.remove: for file-wide removal
     "secondary_sidebar_items": {
-        "**": ["page-toc", "sourcelink", "sg_download_links", "sg_launcher_links"]
+        "**": ["page-toc", "sourcelink", "sg_download_links", "sg_launcher_links"],
+        "index": [], # hide secondary sidebar items for the landing page
+        "install": [],
     },
     "external_links": [
         {
@@ -163,6 +165,7 @@ html_theme_options["analytics"] = {
 
 # Sphinx remove the sidebar from some pages
 html_sidebars = {
+    "index": [],
     "install": [],
     "contributing_link": [],
 }

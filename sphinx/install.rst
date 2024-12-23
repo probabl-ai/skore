@@ -39,7 +39,7 @@ You can check skore's latest version on `PyPI <https://pypi.org/project/skore/>`
     <div class="tab-pane fade" id="conda-tab-pane" role="tabpanel" aria-labelledby="conda-tab" tabindex="0">
         <hr />
 
-skore is available in ``conda-forge``:
+Skore is available in ``conda-forge``:
 
 .. code-block:: bash
 
@@ -52,7 +52,3 @@ You can find information on the latest version `here <https://anaconda.org/conda
         </div>
     </div>
     </div>
-
-.. admonition:: What's next?
-
-   See our :ref:`example_getting_started` example!

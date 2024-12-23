@@ -1,9 +1,9 @@
 """
-.. _example_historization_items:
+.. _example_tracking_items:
 
-==================================
-Tracking items using their history
-==================================
+==============
+Tracking items
+==============
 
 This example illustrates how skore can be used to track some items using their history,
 for example tracking some ML metrics over time.
@@ -79,11 +79,11 @@ item_histories = my_project.get_item_versions("my_int")
 # We can print the first history (first iteration) of this item:
 
 # %%
-item_history = item_histories[0]
-print(item_history)
-print(item_history.primitive)
-print(item_history.created_at)
-print(item_history.updated_at)
+passed_item = item_histories[0]
+print(passed_item)
+print(passed_item.primitive)
+print(passed_item.created_at)
+print(passed_item.updated_at)
 
 # %%
 # Let us construct a dataframe with the values and last updated times:
