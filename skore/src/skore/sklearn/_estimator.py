@@ -99,10 +99,8 @@ class _HelpMixin:
 class EstimatorReport(_HelpMixin):
     """Report for a fitted estimator.
 
-    This class provides a set of tools to quickly validate and inspect a fitted
-    estimator. You should create an instance with the methods
-    :meth:`~skore.EstimatorReport.from_fitted_estimator` or
-    :meth:`~skore.EstimatorReport.from_unfitted_estimator`.
+    This class provides a set of tools to quickly validate and inspect a scikit-learn
+    compatible estimator.
 
     Parameters
     ----------
