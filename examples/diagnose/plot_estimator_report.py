@@ -304,3 +304,5 @@ display
 display.help()
 
 # %%
+display.ax_.set_title("Example of a ROC curve")
+display.figure_
