@@ -129,6 +129,11 @@ html_theme_options = {
             "icon": "fa-brands fa-discord",
         },
         {
+            "name": "YouTube",
+            "url": "https://www.youtube.com/@probabl_ai",
+            "icon": "fa-brands fa-youtube",
+        },
+        {
             "name": "LinkedIn",
             "url": "https://www.linkedin.com/company/probabl/",
             "icon": "fa-brands fa-linkedin-in",
