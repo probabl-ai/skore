@@ -143,7 +143,7 @@ def create(
         ) from e
 
     p = load(project_directory)
-    p.put_view("default", View(layout=[]))
+    p._put_view("default", View(layout=[]))
 
     logger.info(f"Project file '{project_directory}' was successfully created.")
     return p

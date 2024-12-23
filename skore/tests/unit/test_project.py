@@ -234,15 +234,15 @@ def test_view(in_memory_project):
 
     view = View(layout=layout)
 
-    in_memory_project.put_view("view", view)
-    assert in_memory_project.get_view("view") == view
+    in_memory_project._put_view("view", view)
+    assert in_memory_project._get_view("view") == view
 
 
 def test_list_view_keys(in_memory_project):
     view = View(layout=[])
 
-    in_memory_project.put_view("view", view)
-    assert in_memory_project.list_view_keys() == ["view"]
+    in_memory_project._put_view("view", view)
+    assert in_memory_project._list_view_keys() == ["view"]
 
 
 def test_put_several_happy_path(in_memory_project):
