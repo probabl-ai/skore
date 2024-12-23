@@ -135,7 +135,7 @@ class EstimatorReport(_HelpMixin):
     >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
     >>> estimator = LogisticRegression().fit(X_train, y_train)
     >>> from skore import EstimatorReport
-    >>> report = EstimatorReport(estimator, X=X_test, y=y_test)
+    >>> report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     >>> report
     📓 Estimator Reporter
     ...
