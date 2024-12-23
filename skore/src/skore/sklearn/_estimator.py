@@ -16,7 +16,7 @@ from sklearn.utils._response import _check_response_method, _get_response_values
 from sklearn.utils.metaestimators import available_if
 from sklearn.utils.validation import check_is_fitted
 
-from skore.sklearn._plot import RocCurveDisplay
+from skore.sklearn._plot import PrecisionRecallDisplay, RocCurveDisplay
 from skore.sklearn.find_ml_task import _find_ml_task
 from skore.utils._accessor import _check_supported_ml_task, register_accessor
 
@@ -477,6 +477,63 @@ class _PlotAccessor(_BaseAccessor):
             )
         else:
             display = RocCurveDisplay.from_predictions(
+                self._parent.y_val,
+                y_pred,
+                pos_label=pos_label,
+                ax=ax,
+                name=name_,
+                plot_chance_level=True,
+                despine=True,
+            )
+            self._parent._cache[cache_key] = display
+
+        return display
+
+    @available_if(
+        _check_supported_ml_task(supported_ml_tasks=["binary-classification"])
+    )
+    def precision_recall(self, *, pos_label=None, ax=None, name=None):
+        """Plot the precision-recall curve.
+
+        Parameters
+        ----------
+        pos_label : str, default=None
+            The positive class.
+
+        ax : matplotlib.axes.Axes, default=None
+            The axes to plot on.
+
+        name : str, default=None
+            The name of the plot.
+
+        Returns
+        -------
+        PrecisionRecallDisplay
+            The precision-recall curve display.
+        """
+        prediction_method = ["predict_proba", "decision_function"]
+
+        # FIXME: only computing on the validation set for now
+        y_pred = self._parent._get_cached_response_values(
+            estimator_hash=self._parent._hash,
+            estimator=self._parent.estimator,
+            X=self._parent.X_val,
+            response_method=prediction_method,
+            pos_label=pos_label,
+        )
+
+        cache_key = (self._parent._hash, PrecisionRecallDisplay.__name__, pos_label)
+        name_ = self._parent.estimator_name if name is None else name
+
+        if cache_key in self._parent._cache:
+            display = self._parent._cache[cache_key].plot(
+                ax=ax,
+                name=name_,
+                plot_chance_level=True,
+                despine=True,
+            )
+        else:
+            display = PrecisionRecallDisplay.from_predictions(
                 self._parent.y_val,
                 y_pred,
                 pos_label=pos_label,

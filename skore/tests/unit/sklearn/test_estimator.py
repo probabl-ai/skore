@@ -239,6 +239,16 @@ def test_estimator_report_plot_roc(binary_classification_data):
     assert isinstance(report.plot.roc(), RocCurveDisplay)
 
 
+@pytest.mark.parametrize("display", ["roc", "precision_recall"])
+def test_estimator_report_display_binary_classification(
+    pyplot, binary_classification_data, display
+):
+    estimator, X, y = binary_classification_data
+    report = EstimatorReport.from_fitted_estimator(estimator, X=X, y=y)
+    assert hasattr(report.plot, display)
+    getattr(report.plot, display)()  # check that we can call the method
+
+
 ########################################################################################
 # Check the metrics methods
 ########################################################################################
