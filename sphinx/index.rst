@@ -48,6 +48,7 @@ Key features
 .. currentmodule:: skore
 
 |
+
 .. toctree::
    :maxdepth: 1
    :caption: Contents:
