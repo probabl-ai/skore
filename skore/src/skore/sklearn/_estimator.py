@@ -16,7 +16,11 @@ from sklearn.utils._response import _check_response_method, _get_response_values
 from sklearn.utils.metaestimators import available_if
 from sklearn.utils.validation import check_is_fitted
 
-from skore.sklearn._plot import PrecisionRecallDisplay, RocCurveDisplay
+from skore.sklearn._plot import (
+    PrecisionRecallDisplay,
+    PredictionErrorDisplay,
+    RocCurveDisplay,
+)
 from skore.sklearn.find_ml_task import _find_ml_task
 from skore.utils._accessor import _check_supported_ml_task, register_accessor
 
@@ -465,8 +469,8 @@ class _PlotAccessor(_BaseAccessor):
             pos_label=pos_label,
         )
 
-        cache_key = (self._parent._hash, RocCurveDisplay.__name__, pos_label)
         name_ = self._parent.estimator_name if name is None else name
+        cache_key = (self._parent._hash, RocCurveDisplay.__name__, pos_label, name_)
 
         if cache_key in self._parent._cache:
             display = self._parent._cache[cache_key].plot(
@@ -522,8 +526,13 @@ class _PlotAccessor(_BaseAccessor):
             pos_label=pos_label,
         )
 
-        cache_key = (self._parent._hash, PrecisionRecallDisplay.__name__, pos_label)
         name_ = self._parent.estimator_name if name is None else name
+        cache_key = (
+            self._parent._hash,
+            PrecisionRecallDisplay.__name__,
+            pos_label,
+            name_,
+        )
 
         if cache_key in self._parent._cache:
             display = self._parent._cache[cache_key].plot(
@@ -541,6 +550,78 @@ class _PlotAccessor(_BaseAccessor):
                 name=name_,
                 plot_chance_level=True,
                 despine=True,
+            )
+            self._parent._cache[cache_key] = display
+
+        return display
+
+    @available_if(_check_supported_ml_task(supported_ml_tasks=["regression"]))
+    def prediction_error(
+        self,
+        *,
+        ax=None,
+        kind="residual_vs_predicted",
+        subsample=1_000,
+    ):
+        """Plot the prediction error of a regression model.
+
+        Extra keyword arguments will be passed to matplotlib's ``plot``.
+
+        Parameters
+        ----------
+        ax : matplotlib axes, default=None
+            Axes object to plot on. If `None`, a new figure and axes is
+            created.
+
+        kind : {"actual_vs_predicted", "residual_vs_predicted"}, \
+                default="residual_vs_predicted"
+            The type of plot to draw:
+
+            - "actual_vs_predicted" draws the observed values (y-axis) vs.
+              the predicted values (x-axis).
+            - "residual_vs_predicted" draws the residuals, i.e. difference
+              between observed and predicted values, (y-axis) vs. the predicted
+              values (x-axis).
+
+        subsample : float, int or None, default=1_000
+            Sampling the samples to be shown on the scatter plot. If `float`,
+            it should be between 0 and 1 and represents the proportion of the
+            original dataset. If `int`, it represents the number of samples
+            display on the scatter plot. If `None`, no subsampling will be
+            applied. by default, 1,000 samples or less will be displayed.
+
+        Returns
+        -------
+        PredictionErrorDisplay
+            The prediction error display.
+        """
+        # FIXME: only computing on the validation set for now
+        y_pred = self._parent._get_cached_response_values(
+            estimator_hash=self._parent._hash,
+            estimator=self._parent.estimator,
+            X=self._parent.X_val,
+            response_method="predict",
+        )
+
+        cache_key = (
+            self._parent._hash,
+            PredictionErrorDisplay.__name__,
+            kind,
+            subsample,
+        )
+
+        if cache_key in self._parent._cache:
+            display = self._parent._cache[cache_key].plot(
+                ax=ax,
+                kind=kind,
+            )
+        else:
+            display = PredictionErrorDisplay.from_predictions(
+                self._parent.y_val,
+                y_pred,
+                ax=ax,
+                kind=kind,
+                subsample=subsample,
             )
             self._parent._cache[cache_key] = display
 

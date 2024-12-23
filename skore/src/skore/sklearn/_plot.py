@@ -3,7 +3,11 @@ from io import StringIO
 
 from rich.console import Console
 from rich.tree import Tree
-from sklearn.metrics import PrecisionRecallDisplay, RocCurveDisplay
+from sklearn.metrics import (
+    PrecisionRecallDisplay,
+    PredictionErrorDisplay,
+    RocCurveDisplay,
+)
 
 
 def _despine_matplotlib_axis(ax):
@@ -198,3 +202,7 @@ class PrecisionRecallDisplay(HelpDisplayMixin, PrecisionRecallDisplay):
             _despine_matplotlib_axis(self.ax_)
 
         return self
+
+
+class PredictionErrorDisplay(HelpDisplayMixin, PredictionErrorDisplay):
+    pass

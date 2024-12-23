@@ -306,3 +306,33 @@ display.help()
 # %%
 display.ax_.set_title("Example of a ROC curve")
 display.figure_
+
+# %%
+#
+# Similarly to the metrics, we aggressively use the caching to avoid recomputing the
+# predictions of the model. We also cache the plot display object by detection if the
+# input parameters are the same as the previous call. Let's demonstrate the kind of
+# performance gain we can get.
+start = time.time()
+# we already trigger the computation of the predictions in a previous call
+reporter.plot.roc(pos_label="allowed")
+end = time.time()
+
+# %%
+print(f"Time taken to compute the ROC curve: {end - start:.2f} seconds")
+
+# %%
+#
+# Now, let's clean the cache and check if we get a slowdown.
+reporter.clean_cache()
+
+# %%
+start = time.time()
+reporter.plot.roc(pos_label="allowed")
+end = time.time()
+
+# %%
+print(f"Time taken to compute the ROC curve: {end - start:.2f} seconds")
+
+# %%
+# As expected, since we need to recompute the predictions, it takes more time.

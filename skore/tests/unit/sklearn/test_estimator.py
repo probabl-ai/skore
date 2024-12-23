@@ -249,6 +249,14 @@ def test_estimator_report_display_binary_classification(
     getattr(report.plot, display)()  # check that we can call the method
 
 
+@pytest.mark.parametrize("display", ["prediction_error"])
+def test_estimator_report_display_regression(pyplot, regression_data, display):
+    estimator, X, y = regression_data
+    report = EstimatorReport.from_fitted_estimator(estimator, X=X, y=y)
+    assert hasattr(report.plot, display)
+    getattr(report.plot, display)()  # check that we can call the method
+
+
 ########################################################################################
 # Check the metrics methods
 ########################################################################################
