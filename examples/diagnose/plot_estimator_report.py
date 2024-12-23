@@ -272,6 +272,12 @@ operational_decision_cost_scorer = make_scorer(
 reporter.metrics.report_metrics(scoring=[f1_scorer, operational_decision_cost_scorer])
 
 # %%
-reporter.plot.roc(pos_label="allowed")
+display = reporter.plot.roc(pos_label="allowed")
+
+# %%
+display
+
+# %%
+display.help()
 
 # %%
