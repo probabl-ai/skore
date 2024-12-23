@@ -337,3 +337,18 @@ print(f"Time taken to compute the ROC curve: {end - start:.2f} seconds")
 
 # %%
 # As expected, since we need to recompute the predictions, it takes more time.
+
+# %%
+from skore.sklearn.cross_validation._report import CrossValidationReport
+
+reporter = CrossValidationReport(estimator, df, y, cv=10, n_jobs=5)
+
+# %%
+reporter.cv_results[0]
+
+# %%
+reporter.cv_results[0].metrics.report_metrics(pos_label="allowed")
+
+# %%
+reporter.cv_results[0].plot.roc(pos_label="allowed")
+# %%
