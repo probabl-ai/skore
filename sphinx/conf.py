@@ -47,18 +47,23 @@ html_js_files = [
     "js/sg_plotly_resize.js",
 ]
 
+# list of examples in explicit order
+examples_ordered = [
+    "../examples/getting_started",
+    "../examples/getting_started/plot_getting_started",
+    "../examples/track",
+    "../examples/track/plot_overview_skore_project",
+    "../examples/track/plot_tracking_items",
+    "../examples/diagnose",
+    "../examples/diagnose/plot_cross_validate",
+    "../examples/diagnose/plot_train_test_split"
+]
+
 # sphinx_gallery options
 sphinx_gallery_conf = {
     "examples_dirs": "../examples",  # path to example scripts
     "gallery_dirs": "auto_examples",  # path to gallery generated output
-    "subsection_order": ExplicitOrder(["../examples/getting_started",
-                                       "../examples/getting_started/plot_getting_started",
-                                       "../examples/track",
-                                       "../examples/track/plot_overview_skore_project",
-                                       "../examples/track/plot_tracking_items",
-                                       "../examples/diagnose",
-                                       "../examples/diagnose/plot_cross_validate",
-                                       "../examples/diagnose/plot_train_test_split"]),
+    "subsection_order": ExplicitOrder(examples_ordered),
     "within_subsection_order": "FileNameSortKey",  # See https://sphinx-gallery.github.io/stable/configuration.html#sorting-gallery-examples for alternatives
     "show_memory": False,
     "write_computation_times": False,
@@ -106,16 +111,11 @@ html_theme_options = {
     "external_links": [
         {
             "url": "https://probabl.ai",
-            "name": "Probabl website",
+            "name": "Probabl",
         },
     ],
     "header_links_before_dropdown": 4,
     "icon_links": [
-        {
-            "name": "Twitter",
-            "url": "https://x.com/probabl_ai",
-            "icon": "fa-brands fa-twitter",
-        },
         {
             "name": "GitHub",
             "url": "https://github.com/probabl-ai/skore/",
@@ -125,6 +125,21 @@ html_theme_options = {
             "name": "Discord",
             "url": "https://discord.gg/scBZerAGwW",
             "icon": "fa-brands fa-discord",
+        },
+        {
+            "name": "LinkedIn",
+            "url": "https://www.linkedin.com/company/probabl/",
+            "icon": "fa-brands fa-linkedin-in",
+        },
+        {
+            "name": "Bluesky",
+            "url": "https://bsky.app/profile/probabl.ai",
+            "icon": "fa-brands fa-bluesky",
+        },
+        {
+            "name": "X (ex-Twitter)",
+            "url": "https://x.com/probabl_ai",
+            "icon": "fa-brands fa-x-twitter",
         },
     ],
     "switcher": {
