@@ -15,14 +15,14 @@ class _PlotAccessor(_BaseAccessor):
     def roc(
         self,
         *,
-        positive_class: Optional[Union[str, int]] = None,
+        pos_label: Optional[Union[str, int]] = None,
         ax: Optional[matplotlib.axes.Axes] = None,
         name: Optional[str] = None,
     ) -> RocCurveDisplay: ...
     def precision_recall(
         self,
         *,
-        positive_class: Optional[Union[str, int]] = None,
+        pos_label: Optional[Union[str, int]] = None,
         ax: Optional[matplotlib.axes.Axes] = None,
         name: Optional[str] = None,
     ) -> PrecisionRecallDisplay: ...
@@ -54,7 +54,7 @@ class _MetricsAccessor(_BaseAccessor):
         average: Literal[
             "auto", "macro", "micro", "weighted", "samples", None
         ] = "auto",
-        positive_class: Optional[Union[str, int]] = None,
+        pos_label: Optional[Union[str, int]] = None,
     ) -> pd.DataFrame: ...
     def recall(
         self,
@@ -64,7 +64,7 @@ class _MetricsAccessor(_BaseAccessor):
         average: Literal[
             "auto", "macro", "micro", "weighted", "samples", None
         ] = "auto",
-        positive_class: Optional[Union[str, int]] = None,
+        pos_label: Optional[Union[str, int]] = None,
     ) -> pd.DataFrame: ...
     def f1(
         self,
@@ -74,7 +74,7 @@ class _MetricsAccessor(_BaseAccessor):
         average: Literal[
             "auto", "macro", "micro", "weighted", "samples", None
         ] = "auto",
-        positive_class: Optional[Union[str, int]] = None,
+        pos_label: Optional[Union[str, int]] = None,
     ) -> pd.DataFrame: ...
     def confusion_matrix(
         self,

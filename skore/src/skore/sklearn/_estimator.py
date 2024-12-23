@@ -435,12 +435,12 @@ class _PlotAccessor(_BaseAccessor):
     @available_if(
         _check_supported_ml_task(supported_ml_tasks=["binary-classification"])
     )
-    def roc(self, *, positive_class=None, ax=None, name=None):
+    def roc(self, *, pos_label=None, ax=None, name=None):
         """Plot the ROC curve.
 
         Parameters
         ----------
-        positive_class : str, default=None
+        pos_label : str, default=None
             The positive class.
 
         ax : matplotlib.axes.Axes, default=None
@@ -462,10 +462,10 @@ class _PlotAccessor(_BaseAccessor):
             estimator=self._parent.estimator,
             X=self._parent.X_val,
             response_method=prediction_method,
-            pos_label=positive_class,
+            pos_label=pos_label,
         )
 
-        cache_key = (self._parent._hash, RocCurveDisplay.__name__, positive_class)
+        cache_key = (self._parent._hash, RocCurveDisplay.__name__, pos_label)
         name_ = self._parent.estimator_name if name is None else name
 
         if cache_key in self._parent._cache:
@@ -479,7 +479,7 @@ class _PlotAccessor(_BaseAccessor):
             display = RocCurveDisplay.from_predictions(
                 self._parent.y_val,
                 y_pred,
-                pos_label=positive_class,
+                pos_label=pos_label,
                 ax=ax,
                 name=name_,
                 plot_chance_level=True,
@@ -527,7 +527,7 @@ class _MetricsAccessor(_BaseAccessor):
         X=None,
         y=None,
         scoring=None,
-        positive_class=1,
+        pos_label=1,
         scoring_kwargs=None,
     ):
         """Report a set of metrics for our estimator.
@@ -551,7 +551,7 @@ class _MetricsAccessor(_BaseAccessor):
             same parameter name with different values), you can use scikit-learn scorers
             as provided by :func:`sklearn.metrics.make_scorer`.
 
-        positive_class : int, default=1
+        pos_label : int, default=1
             The positive class.
 
         scoring_kwargs : dict, default=None
@@ -609,8 +609,8 @@ class _MetricsAccessor(_BaseAccessor):
                     for param in metrics_params:
                         if param in scoring_kwargs:
                             metrics_kwargs[param] = scoring_kwargs[param]
-                if "positive_class" in metrics_params:
-                    metrics_kwargs["positive_class"] = positive_class
+                if "pos_label" in metrics_params:
+                    metrics_kwargs["pos_label"] = pos_label
             else:
                 raise ValueError(
                     f"Invalid type of metric: {type(metric)} for metric: {metric}"
@@ -776,7 +776,7 @@ class _MetricsAccessor(_BaseAccessor):
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def precision(self, *, X=None, y=None, average="auto", positive_class=1):
+    def precision(self, *, X=None, y=None, average="auto", pos_label=1):
         """Compute the precision score.
 
         Parameters
@@ -795,7 +795,7 @@ class _MetricsAccessor(_BaseAccessor):
             "binary" for binary classification and "weighted" for multiclass
             classification.
 
-        positive_class : int, default=1
+        pos_label : int, default=1
             The positive class.
 
         Returns
@@ -812,15 +812,15 @@ class _MetricsAccessor(_BaseAccessor):
                 average = "weighted"
 
         if average != "binary":
-            # overwrite `positive_class` because it will be ignored
-            positive_class = None
+            # overwrite `pos_label` because it will be ignored
+            pos_label = None
 
         return self._compute_metric_scores(
             metrics.precision_score,
             X=X,
             y_true=y,
             response_method="predict",
-            pos_label=positive_class,
+            pos_label=pos_label,
             metric_name=f"Precision {self._SCORE_OR_LOSS_ICONS['precision']}",
             average=average,
             use_cache=use_cache,
@@ -831,7 +831,7 @@ class _MetricsAccessor(_BaseAccessor):
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def recall(self, *, X=None, y=None, average="auto", positive_class=1):
+    def recall(self, *, X=None, y=None, average="auto", pos_label=1):
         """Compute the recall score.
 
         Parameters
@@ -850,7 +850,7 @@ class _MetricsAccessor(_BaseAccessor):
             "binary" for binary classification and "weighted" for multiclass
             classification.
 
-        positive_class : int, default=1
+        pos_label : int, default=1
             The positive class.
 
         Returns
@@ -867,15 +867,15 @@ class _MetricsAccessor(_BaseAccessor):
                 average = "weighted"
 
         if average != "binary":
-            # overwrite `positive_class` because it will be ignored
-            positive_class = None
+            # overwrite `pos_label` because it will be ignored
+            pos_label = None
 
         return self._compute_metric_scores(
             metrics.recall_score,
             X=self._parent._X_val,
             y_true=self._parent._y_val,
             response_method="predict",
-            pos_label=positive_class,
+            pos_label=pos_label,
             metric_name=f"Recall {self._SCORE_OR_LOSS_ICONS['recall']}",
             average=average,
             use_cache=use_cache,
@@ -886,7 +886,7 @@ class _MetricsAccessor(_BaseAccessor):
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def brier_score(self, *, X=None, y=None, positive_class=1):
+    def brier_score(self, *, X=None, y=None, pos_label=1):
         """Compute the Brier score.
 
         Parameters
@@ -899,7 +899,7 @@ class _MetricsAccessor(_BaseAccessor):
             New target on which to compute the metric. By default, we use the target
             provided when creating the reporter.
 
-        positive_class : int, default=1
+        pos_label : int, default=1
             The positive class.
 
         Returns
@@ -915,7 +915,7 @@ class _MetricsAccessor(_BaseAccessor):
             y_true=y,
             response_method="predict_proba",
             metric_name=f"Brier score {self._SCORE_OR_LOSS_ICONS['brier_score']}",
-            pos_label=positive_class,
+            pos_label=pos_label,
             use_cache=use_cache,
         )
 

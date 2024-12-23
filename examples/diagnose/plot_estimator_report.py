@@ -32,7 +32,7 @@ TableReport(y.to_frame())
 # 0 or 1 but instead by a string "allowed" or "disallowed".
 #
 # For our application, the label of interest is "allowed".
-positive_class, negative_class = "allowed", "disallowed"
+pos_label, negative_class = "allowed", "disallowed"
 
 # %%
 # Before to train a predictive model, we need to split our dataset into a training
@@ -94,7 +94,7 @@ reporter.plot.help()
 import time
 
 start = time.time()
-metric_report = reporter.metrics.report_metrics(positive_class="allowed")
+metric_report = reporter.metrics.report_metrics(pos_label="allowed")
 end = time.time()
 metric_report
 
@@ -112,7 +112,7 @@ print(f"Time taken to compute the metrics: {end - start:.2f} seconds")
 # requesting the same metrics report again.
 
 start = time.time()
-metric_report = reporter.metrics.report_metrics(positive_class="allowed")
+metric_report = reporter.metrics.report_metrics(pos_label="allowed")
 end = time.time()
 metric_report
 
@@ -154,9 +154,7 @@ print(f"Time taken to compute the log loss: {end - start:.2f} seconds")
 # thus not use the cache.
 
 start = time.time()
-metric_report = reporter.metrics.report_metrics(
-    X=X_val, y=y_val, positive_class="allowed"
-)
+metric_report = reporter.metrics.report_metrics(X=X_val, y=y_val, pos_label="allowed")
 end = time.time()
 metric_report
 
@@ -243,7 +241,7 @@ print(f"Time taken to compute the cost: {end - start:.2f} seconds")
 # the predictions.
 reporter.metrics.report_metrics(
     scoring=["precision", "recall", operational_decision_cost],
-    positive_class=positive_class,
+    pos_label=pos_label,
     scoring_kwargs={
         "amount": amount,
         "response_method": "predict",
@@ -263,7 +261,7 @@ f1_scorer = make_scorer(
     f1_score,
     response_method="predict",
     metric_name="F1 Score",
-    pos_label=positive_class,
+    pos_label=pos_label,
 )
 operational_decision_cost_scorer = make_scorer(
     operational_decision_cost,
@@ -272,5 +270,8 @@ operational_decision_cost_scorer = make_scorer(
     amount=amount,
 )
 reporter.metrics.report_metrics(scoring=[f1_scorer, operational_decision_cost_scorer])
+
+# %%
+reporter.plot.roc(pos_label="allowed")
 
 # %%
