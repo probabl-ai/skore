@@ -114,10 +114,10 @@ class EstimatorReport(_HelpMixin):
     y_train : array-like of shape (n_samples,) or (n_samples, n_outputs) or None
         Training target.
 
-    X_val : {array-like, sparse matrix} of shape (n_samples, n_features) or None
+    X_test : {array-like, sparse matrix} of shape (n_samples, n_features) or None
         Validation data. It should have the same structure as the training data.
 
-    y_val : array-like of shape (n_samples,) or (n_samples, n_outputs) or None
+    y_test : array-like of shape (n_samples,) or (n_samples, n_outputs) or None
         Validation target.
 
     Examples
@@ -126,10 +126,10 @@ class EstimatorReport(_HelpMixin):
     >>> from sklearn.model_selection import train_test_split
     >>> from sklearn.linear_model import LogisticRegression
     >>> X, y = make_classification(random_state=42)
-    >>> X_train, X_val, y_train, y_val = train_test_split(X, y, random_state=42)
+    >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
     >>> estimator = LogisticRegression().fit(X_train, y_train)
     >>> from skore import EstimatorReport
-    >>> report = EstimatorReport.from_fitted_estimator(estimator, X=X_val, y=y_val)
+    >>> report = EstimatorReport.from_fitted_estimator(estimator, X=X_test, y=y_test)
     >>> report
     📓 Estimator Reporter
     ...
@@ -143,7 +143,7 @@ class EstimatorReport(_HelpMixin):
         # "linting": {"icon": "✔️", "name": "linting"},
     }
 
-    def __init__(self, estimator, *, X_train, y_train, X_val, y_val):
+    def __init__(self, estimator, *, X_train, y_train, X_test, y_test):
         check_is_fitted(estimator)
 
         # private storage to be able to invalidate the cache when the user alters
@@ -151,8 +151,8 @@ class EstimatorReport(_HelpMixin):
         self._estimator = estimator
         self._X_train = X_train
         self._y_train = y_train
-        self._X_val = X_val
-        self._y_val = y_val
+        self._X_test = X_test
+        self._y_test = y_test
 
         self._initialize_state()
 
@@ -163,7 +163,7 @@ class EstimatorReport(_HelpMixin):
             low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
         )
         self._cache = {}
-        self._ml_task = _find_ml_task(self._y_val, estimator=self._estimator)
+        self._ml_task = _find_ml_task(self._y_test, estimator=self._estimator)
 
     # NOTE:
     # For the moment, we do not allow to alter the estimator and the training data.
@@ -208,21 +208,21 @@ class EstimatorReport(_HelpMixin):
         )
 
     @property
-    def X_val(self):
-        return self._X_val
+    def X_test(self):
+        return self._X_test
 
-    @X_val.setter
-    def X_val(self, value):
-        self._X_val = value
+    @X_test.setter
+    def X_test(self, value):
+        self._X_test = value
         self._initialize_state()
 
     @property
-    def y_val(self):
-        return self._y_val
+    def y_test(self):
+        return self._y_test
 
-    @y_val.setter
-    def y_val(self, value):
-        self._y_val = value
+    @y_test.setter
+    def y_test(self, value):
+        self._y_test = value
         self._initialize_state()
 
     @property
@@ -253,7 +253,7 @@ class EstimatorReport(_HelpMixin):
         EstimatorReport
             The estimator report.
         """
-        return cls(estimator=estimator, X_train=None, y_train=None, X_val=X, y_val=y)
+        return cls(estimator=estimator, X_train=None, y_train=None, X_test=X, y_test=y)
 
     @classmethod
     def from_unfitted_estimator(
@@ -292,8 +292,8 @@ class EstimatorReport(_HelpMixin):
             estimator=estimator,
             X_train=X_train,
             y_train=y_train,
-            X_val=X_test,
-            y_val=y_test,
+            X_test=X_test,
+            y_test=y_test,
         )
 
     def _get_cached_response_values(
@@ -464,7 +464,7 @@ class _PlotAccessor(_BaseAccessor):
         y_pred = self._parent._get_cached_response_values(
             estimator_hash=self._parent._hash,
             estimator=self._parent.estimator,
-            X=self._parent.X_val,
+            X=self._parent.X_test,
             response_method=prediction_method,
             pos_label=pos_label,
         )
@@ -481,7 +481,7 @@ class _PlotAccessor(_BaseAccessor):
             )
         else:
             display = RocCurveDisplay.from_predictions(
-                self._parent.y_val,
+                self._parent.y_test,
                 y_pred,
                 pos_label=pos_label,
                 ax=ax,
@@ -521,7 +521,7 @@ class _PlotAccessor(_BaseAccessor):
         y_pred = self._parent._get_cached_response_values(
             estimator_hash=self._parent._hash,
             estimator=self._parent.estimator,
-            X=self._parent.X_val,
+            X=self._parent.X_test,
             response_method=prediction_method,
             pos_label=pos_label,
         )
@@ -543,7 +543,7 @@ class _PlotAccessor(_BaseAccessor):
             )
         else:
             display = PrecisionRecallDisplay.from_predictions(
-                self._parent.y_val,
+                self._parent.y_test,
                 y_pred,
                 pos_label=pos_label,
                 ax=ax,
@@ -599,7 +599,7 @@ class _PlotAccessor(_BaseAccessor):
         y_pred = self._parent._get_cached_response_values(
             estimator_hash=self._parent._hash,
             estimator=self._parent.estimator,
-            X=self._parent.X_val,
+            X=self._parent.X_test,
             response_method="predict",
         )
 
@@ -617,7 +617,7 @@ class _PlotAccessor(_BaseAccessor):
             )
         else:
             display = PredictionErrorDisplay.from_predictions(
-                self._parent.y_val,
+                self._parent.y_test,
                 y_pred,
                 ax=ax,
                 kind=kind,
@@ -653,7 +653,7 @@ class _MetricsAccessor(_BaseAccessor):
 
     def _get_X_y_and_use_cache(self, X=None, y=None):
         if X is None and y is None:
-            return self._parent._X_val, self._parent._y_val, True
+            return self._parent._X_test, self._parent._y_test, True
         elif not (X is not None and y is not None):
             raise ValueError("X and y must be provided together.")
         return X, y, False
@@ -1010,8 +1010,8 @@ class _MetricsAccessor(_BaseAccessor):
 
         return self._compute_metric_scores(
             metrics.recall_score,
-            X=self._parent._X_val,
-            y_true=self._parent._y_val,
+            X=self._parent._X_test,
+            y_true=self._parent._y_test,
             response_method="predict",
             pos_label=pos_label,
             metric_name=f"Recall {self._SCORE_OR_LOSS_ICONS['recall']}",

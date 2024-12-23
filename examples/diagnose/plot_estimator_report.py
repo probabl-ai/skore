@@ -39,7 +39,7 @@ pos_label, negative_class = "allowed", "disallowed"
 # and a validation set.
 from skore import train_test_split
 
-X_train, X_val, y_train, y_val = train_test_split(df, y, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(df, y, random_state=42)
 
 # %%
 # TODO: we have a perfect case to show useful feature of the `train_test_split`
@@ -67,7 +67,7 @@ estimator
 # the dataset to validate our model.
 from skore import EstimatorReport
 
-reporter = EstimatorReport.from_fitted_estimator(estimator, X=X_val, y=y_val)
+reporter = EstimatorReport.from_fitted_estimator(estimator, X=X_test, y=y_test)
 reporter
 
 # %%
@@ -160,7 +160,7 @@ print(f"Time taken to compute the log loss: {end - start:.2f} seconds")
 # thus not use the cache.
 
 start = time.time()
-metric_report = reporter.metrics.report_metrics(X=X_val, y=y_val, pos_label="allowed")
+metric_report = reporter.metrics.report_metrics(X=X_test, y=y_test, pos_label="allowed")
 end = time.time()
 metric_report
 
@@ -197,7 +197,7 @@ def operational_decision_cost(y_true, y_pred, amount):
 import numpy as np
 
 rng = np.random.default_rng(42)
-amount = rng.integers(low=100, high=1000, size=len(y_val))
+amount = rng.integers(low=100, high=1000, size=len(y_test))
 
 # %%
 #

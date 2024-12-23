@@ -118,8 +118,8 @@ def test_estimator_report_from_unfitted_estimator():
 
     assert report.X_train is X_train
     assert report.y_train is y_train
-    assert report.X_val is X_test
-    assert report.y_val is y_test
+    assert report.X_test is X_test
+    assert report.y_test is y_test
 
     err_msg = "attribute is immutable"
     with pytest.raises(AttributeError, match=err_msg):
@@ -138,8 +138,8 @@ def test_estimator_report_from_fitted_estimator(binary_classification_data):
     assert report.estimator is estimator  # we should not clone the estimator
     assert report.X_train is None
     assert report.y_train is None
-    assert report.X_val is X
-    assert report.y_val is y
+    assert report.X_test is X
+    assert report.y_test is y
 
     err_msg = "attribute is immutable"
     with pytest.raises(AttributeError, match=err_msg):
@@ -155,7 +155,7 @@ def test_estimator_report_invalidate_cache_data(binary_classification_data):
     estimator, X, y = binary_classification_data
     report = EstimatorReport.from_fitted_estimator(estimator, X=X, y=y)
 
-    for attribute in ("X_val", "y_val"):
+    for attribute in ("X_test", "y_test"):
         report._cache["mocking"] = "mocking"  # mock writing to cache
         setattr(report, attribute, None)
         assert report._cache == {}
