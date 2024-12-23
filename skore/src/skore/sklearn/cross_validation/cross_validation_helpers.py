@@ -26,14 +26,16 @@ def _get_scorers_to_add(estimator, y) -> list[str]:
     if ml_task == "regression":
         return {
             "r2": "r2",
-            "neg_root_mean_squared_error": metrics.make_scorer(
-                metrics.root_mean_squared_error
+            "root_mean_squared_error": metrics.make_scorer(
+                metrics.root_mean_squared_error, response_method="predict"
             ),
         }
     if ml_task == "binary-classification":
         return {
             "roc_auc": "roc_auc",
-            "brier_score_loss": metrics.make_scorer(metrics.brier_score_loss),
+            "brier_score_loss": metrics.make_scorer(
+                metrics.brier_score_loss, response_method="predict_proba"
+            ),
             "recall": "recall",
             "precision": "precision",
         }
@@ -43,7 +45,9 @@ def _get_scorers_to_add(estimator, y) -> list[str]:
                 "recall_weighted": "recall_weighted",
                 "precision_weighted": "precision_weighted",
                 "roc_auc_ovr_weighted": "roc_auc_ovr_weighted",
-                "log_loss": metrics.make_scorer(metrics.log_loss),
+                "log_loss": metrics.make_scorer(
+                    metrics.log_loss, response_method="predict_proba"
+                ),
             }
         return {
             "recall_weighted": "recall_weighted",
