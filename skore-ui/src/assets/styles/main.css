@@ -3,9 +3,8 @@
 @import url("./_typography.css");
 @import url("./_animations.css");
 @import url("./_icons.css");
+@import url("./_highlight.css");
 @import url("simplebar-vue/dist/simplebar.min.css");
-@import url("highlight.js/styles/atom-one-dark.css") screen and (prefers-color-scheme: dark);
-@import url("highlight.js/styles/atom-one-light.css") screen and (prefers-color-scheme: light);
 
 .simplebar-scrollbar {
   &.simplebar-visible::before {

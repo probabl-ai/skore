@@ -5,14 +5,28 @@ This class implements a wrapper over scikit-learn's
 function in order to enrich it with more information and enable more analysis.
 """
 
+from dataclasses import dataclass
 from functools import cached_property
+
+import plotly.graph_objects
 
 from .cross_validation_helpers import (
     _add_scorers,
     _get_scorers_to_add,
     _strip_cv_results_scores,
 )
-from .plot import plot_cross_validation
+from .plots.compare_scores_plot import plot_cross_validation_compare_scores
+from .plots.timing_normalized_plot import plot_cross_validation_timing_normalized
+from .plots.timing_plot import plot_cross_validation_timing
+
+
+@dataclass
+class CrossValidationPlots:
+    """Plots of the cross-validation results."""
+
+    scores: plotly.graph_objects.Figure
+    timing: plotly.graph_objects.Figure
+    timing_normalized: plotly.graph_objects.Figure
 
 
 class CrossValidationReporter:
@@ -93,8 +107,8 @@ class CrossValidationReporter:
     y : array-like or None
         The target variable, or None if not provided.
 
-    plot : plotly.graph_objects.Figure
-        A plot of the cross-validation results.
+    plots : CrossValidationPlots
+        Various plots of the cross-validation results.
 
     Examples
     --------
@@ -170,6 +184,10 @@ class CrossValidationReporter:
         return f"{self.__class__.__name__}(...)"
 
     @cached_property
-    def plot(self):
-        """Plot of the cross-validation results."""
-        return plot_cross_validation(self._cv_results)
+    def plots(self) -> CrossValidationPlots:
+        """Plots of the cross-validation results."""
+        return CrossValidationPlots(
+            scores=plot_cross_validation_compare_scores(self._cv_results),
+            timing=plot_cross_validation_timing(self._cv_results),
+            timing_normalized=plot_cross_validation_timing_normalized(self._cv_results),
+        )

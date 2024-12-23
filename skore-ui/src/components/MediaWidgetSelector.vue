@@ -7,8 +7,10 @@ import MarkdownWidget from "@/components/MarkdownWidget.vue";
 import PlotlyWidget from "@/components/PlotlyWidget.vue";
 import VegaWidget from "@/components/VegaWidget.vue";
 import type { PresentableItem } from "@/models";
+import { useThemesStore } from "@/stores/themes";
 
 const props = defineProps<{ item: PresentableItem }>();
+const themesStore = useThemesStore();
 
 function matchMediaType(mediaType: string) {
   return props.item.mediaType.startsWith(mediaType);
@@ -33,7 +35,11 @@ function matchMediaType(mediaType: string) {
     v-if="matchMediaType('text/markdown') || matchMediaType('application/json')"
     :source="props.item.data"
   />
-  <VegaWidget v-if="matchMediaType('application/vnd.vega.v5+json')" :spec="props.item.data" />
+  <VegaWidget
+    v-if="matchMediaType('application/vnd.vega.v5+json')"
+    :spec="props.item.data"
+    :theme="themesStore.currentTheme"
+  />
   <PlotlyWidget v-if="matchMediaType('application/vnd.plotly.v1+json')" :spec="props.item.data" />
   <HtmlSnippetWidget
     v-if="matchMediaType('application/vnd.sklearn.estimator+html')"

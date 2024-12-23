@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import contextlib
 import copy
+import dataclasses
 import hashlib
 import importlib
 import json
@@ -98,7 +99,7 @@ class CrossValidationItem(Item):
         estimator_info: EstimatorInfo,
         X_info: dict,
         y_info: Union[dict, None],
-        plot_bytes: bytes,
+        plots_bytes: dict[str, bytes],
         cv_info: dict,
         created_at: Union[str, None] = None,
         updated_at: Union[str, None] = None,
@@ -119,8 +120,8 @@ class CrossValidationItem(Item):
         y_info : dict
             A summary of the target, input of the
             :func:`sklearn.model_selection.cross_validate` function.
-        plot_bytes : bytes
-            A plot of the cross-validation results, in the form of bytes.
+        plots_bytes : dict[str, bytes]
+            A collection of plots of the cross-validation results, in the form of bytes.
         cv_info: dict
             A dict containing cross validation splitting strategy params.
         created_at : str
@@ -134,7 +135,7 @@ class CrossValidationItem(Item):
         self.estimator_info = estimator_info
         self.X_info = X_info
         self.y_info = y_info
-        self.plot_bytes = plot_bytes
+        self.plots_bytes = plots_bytes
         self.cv_info = cv_info
 
     def as_serializable_dict(self):
@@ -206,9 +207,10 @@ class CrossValidationItem(Item):
             "tabular_results": [tabular_results],
             "plots": [
                 {
-                    "name": "cross-validation results",
-                    "value": json.loads(self.plot_bytes.decode("utf-8")),
+                    "name": plot_name,
+                    "value": json.loads(plot_bytes.decode("utf-8")),
                 }
+                for plot_name, plot_bytes in self.plots_bytes.items()
             ],
             "sections": sections,
         }
@@ -258,7 +260,7 @@ class CrossValidationItem(Item):
         }
 
     @classmethod
-    def factory(cls, reporter) -> CrossValidationItem:
+    def factory(cls, reporter: CrossValidationReporter) -> CrossValidationItem:
         """
         Create a new CrossValidationItem instance from a CrossValidationReporter.
 
@@ -281,7 +283,7 @@ class CrossValidationItem(Item):
         estimator = reporter.estimator
         X = reporter.X
         y = reporter.y
-        plot = reporter.plot
+        plots = reporter.plots
         cv = reporter.cv
 
         cv_results_serialized = {}
@@ -308,7 +310,17 @@ class CrossValidationItem(Item):
             "hash": _hash_numpy(X_array),
         }
 
-        plot_bytes = plotly.io.to_json(plot, engine="json").encode("utf-8")
+        humanized_plot_names = {
+            "scores": "Scores",
+            "timing": "Timings",
+            "timing_normalized": "Normalized timings",
+        }
+        plots_bytes = {
+            humanized_plot_names[plot_name]: (
+                plotly.io.to_json(plot, engine="json").encode("utf-8")
+            )
+            for plot_name, plot in dataclasses.asdict(plots).items()
+        }
 
         cv_info: dict[str, str] = {}
         if isinstance(cv, int):
@@ -328,11 +340,14 @@ class CrossValidationItem(Item):
             estimator_info=estimator_info,
             X_info=X_info,
             y_info=y_info,
-            plot_bytes=plot_bytes,
+            plots_bytes=plots_bytes,
             cv_info=cv_info,
         )
 
     @cached_property
-    def plot(self):
-        """A plot of the cross-validation results."""
-        return plotly.io.from_json(self.plot_bytes.decode("utf-8"))
+    def plots(self) -> dict:
+        """Various plots of the cross-validation results."""
+        return {
+            name: plotly.io.from_json(plot_bytes.decode("utf-8"))
+            for name, plot_bytes in self.plots_bytes.items()
+        }
