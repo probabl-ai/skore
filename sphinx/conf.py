@@ -50,7 +50,7 @@ html_js_files = [
 # list of examples in explicit order
 examples_ordered = [
     "../examples/getting_started",
-    "../examples/getting_started/plot_getting_started",
+    "../examples/getting_started/plot_quick_start",
     "../examples/getting_started/plot_skore_product_tour",
     "../examples/getting_started/plot_working_with_projects",
     "../examples/getting_started/plot_tracking_items",

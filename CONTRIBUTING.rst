@@ -4,8 +4,8 @@
 Contributing
 ============
 
-First off, thanks for taking the time to contribute, everyone is welcome to
-contribute.
+Thank you for your interest in contributing to Skore! We welcome contributions from
+everyone and appreciate you taking the time to get involved.
 
 This project is hosted on https://github.com/probabl-ai/skore.
 
