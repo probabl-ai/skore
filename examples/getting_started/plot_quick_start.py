@@ -53,8 +53,10 @@ reporter.plots.timing_normalized
 #   $ skore launch "quick_start"
 #
 # This will open skore-ui in a browser window.
-
-# %%
+#
+# .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_12_skore_demo_comp.gif
+#   :alt: Getting started with ``skore`` demo
+#
 # .. admonition:: What's next?
 #
 #    For a more in-depth guide, see our :ref:`example_skore_product_tour` page!
