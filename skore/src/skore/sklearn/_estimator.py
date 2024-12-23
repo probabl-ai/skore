@@ -22,6 +22,7 @@ from skore.sklearn._plot import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
+from skore.sklearn._sklearn_compat import is_clusterer
 from skore.sklearn.find_ml_task import _find_ml_task
 from skore.utils._accessor import _check_supported_ml_task, register_accessor
 
@@ -148,6 +149,15 @@ class EstimatorReport(_HelpMixin):
         # "linting": {"icon": "✔️", "name": "linting"},
     }
 
+    @staticmethod
+    def _fit_estimator(estimator, X_train, y_train):
+        if X_train is None or (y_train is None and not is_clusterer(estimator)):
+            raise ValueError(
+                "The training data is required to fit the estimator. "
+                "Please provide both X_train and y_train."
+            )
+        return clone(estimator).fit(X_train, y_train)
+
     def __init__(
         self,
         estimator,
@@ -161,10 +171,11 @@ class EstimatorReport(_HelpMixin):
         if fit == "auto":
             try:
                 check_is_fitted(estimator)
+                self._estimator = estimator
             except NotFittedError:
-                self._estimator = clone(estimator).fit(X_train, y_train)
+                self._estimator = self._fit_estimator(estimator, X_train, y_train)
         elif fit is True:
-            self._estimator = clone(estimator).fit(X_train, y_train)
+            self._estimator = self._fit_estimator(estimator, X_train, y_train)
         else:  # fit is False
             self._estimator = estimator
 
@@ -383,6 +394,13 @@ class _BaseAccessor(_HelpMixin):
 
         return tree
 
+    def _get_X_y_and_use_cache(self, X=None, y=None):
+        if X is None and y is None:
+            return self._parent._X_test, self._parent._y_test, True
+        elif not (X is not None and y is not None):
+            raise ValueError("X and y must be provided together.")
+        return X, y, False
+
 
 ########################################################################################
 # Plotting accessor
@@ -397,11 +415,19 @@ class _PlotAccessor(_BaseAccessor):
     @available_if(
         _check_supported_ml_task(supported_ml_tasks=["binary-classification"])
     )
-    def roc(self, *, pos_label=None, ax=None, name=None):
+    def roc(self, *, X=None, y=None, pos_label=None, ax=None, name=None):
         """Plot the ROC curve.
 
         Parameters
         ----------
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the reporter.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the reporter.
+
         pos_label : str, default=None
             The positive class.
 
@@ -417,48 +443,66 @@ class _PlotAccessor(_BaseAccessor):
             The ROC curve display.
         """
         prediction_method = ["predict_proba", "decision_function"]
-
-        # FIXME: only computing on the validation set for now
-        y_pred = self._parent._get_cached_response_values(
-            estimator_hash=self._parent._hash,
-            estimator=self._parent.estimator,
-            X=self._parent.X_test,
-            response_method=prediction_method,
-            pos_label=pos_label,
-        )
-
+        X, y, use_cache = self._get_X_y_and_use_cache(X, y)
         name_ = self._parent.estimator_name if name is None else name
-        cache_key = (self._parent._hash, RocCurveDisplay.__name__, pos_label, name_)
 
-        if cache_key in self._parent._cache:
-            display = self._parent._cache[cache_key].plot(
-                ax=ax,
-                name=name_,
-                plot_chance_level=True,
-                despine=True,
+        if use_cache:
+            y_pred = self._parent._get_cached_response_values(
+                estimator_hash=self._parent._hash,
+                estimator=self._parent.estimator,
+                X=X,
+                response_method=prediction_method,
+                pos_label=pos_label,
             )
+
+            cache_key = (self._parent._hash, RocCurveDisplay.__name__, pos_label, name_)
+
+            if cache_key in self._parent._cache:
+                display = self._parent._cache[cache_key].plot(
+                    ax=ax,
+                    name=name_,
+                    plot_chance_level=True,
+                    despine=True,
+                )
+            else:
+                display = RocCurveDisplay.from_predictions(
+                    self._parent.y_test,
+                    y_pred,
+                    pos_label=pos_label,
+                    ax=ax,
+                    name=name_,
+                    plot_chance_level=True,
+                    despine=True,
+                )
+                self._parent._cache[cache_key] = display
         else:
-            display = RocCurveDisplay.from_predictions(
-                self._parent.y_test,
-                y_pred,
+            display = RocCurveDisplay.from_estimator(
+                self._parent.estimator,
+                X,
+                y,
                 pos_label=pos_label,
                 ax=ax,
                 name=name_,
-                plot_chance_level=True,
-                despine=True,
             )
-            self._parent._cache[cache_key] = display
 
         return display
 
     @available_if(
         _check_supported_ml_task(supported_ml_tasks=["binary-classification"])
     )
-    def precision_recall(self, *, pos_label=None, ax=None, name=None):
+    def precision_recall(self, *, X=None, y=None, pos_label=None, ax=None, name=None):
         """Plot the precision-recall curve.
 
         Parameters
         ----------
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the reporter.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the reporter.
+
         pos_label : str, default=None
             The positive class.
 
@@ -474,42 +518,52 @@ class _PlotAccessor(_BaseAccessor):
             The precision-recall curve display.
         """
         prediction_method = ["predict_proba", "decision_function"]
-
-        # FIXME: only computing on the validation set for now
-        y_pred = self._parent._get_cached_response_values(
-            estimator_hash=self._parent._hash,
-            estimator=self._parent.estimator,
-            X=self._parent.X_test,
-            response_method=prediction_method,
-            pos_label=pos_label,
-        )
-
+        X, y, use_cache = self._get_X_y_and_use_cache(X, y)
         name_ = self._parent.estimator_name if name is None else name
-        cache_key = (
-            self._parent._hash,
-            PrecisionRecallDisplay.__name__,
-            pos_label,
-            name_,
-        )
 
-        if cache_key in self._parent._cache:
-            display = self._parent._cache[cache_key].plot(
-                ax=ax,
-                name=name_,
-                plot_chance_level=True,
-                despine=True,
+        if use_cache:
+            y_pred = self._parent._get_cached_response_values(
+                estimator_hash=self._parent._hash,
+                estimator=self._parent.estimator,
+                X=X,
+                response_method=prediction_method,
+                pos_label=pos_label,
             )
+
+            cache_key = (
+                self._parent._hash,
+                PrecisionRecallDisplay.__name__,
+                pos_label,
+                name_,
+            )
+
+            if cache_key in self._parent._cache:
+                display = self._parent._cache[cache_key].plot(
+                    ax=ax,
+                    name=name_,
+                    plot_chance_level=True,
+                    despine=True,
+                )
+            else:
+                display = PrecisionRecallDisplay.from_predictions(
+                    y,
+                    y_pred,
+                    pos_label=pos_label,
+                    ax=ax,
+                    name=name_,
+                    plot_chance_level=True,
+                    despine=True,
+                )
+                self._parent._cache[cache_key] = display
         else:
-            display = PrecisionRecallDisplay.from_predictions(
-                self._parent.y_test,
-                y_pred,
+            display = PrecisionRecallDisplay.from_estimator(
+                self._parent.estimator,
+                X,
+                y,
                 pos_label=pos_label,
                 ax=ax,
                 name=name_,
-                plot_chance_level=True,
-                despine=True,
             )
-            self._parent._cache[cache_key] = display
 
         return display
 
@@ -517,6 +571,8 @@ class _PlotAccessor(_BaseAccessor):
     def prediction_error(
         self,
         *,
+        X=None,
+        y=None,
         ax=None,
         kind="residual_vs_predicted",
         subsample=1_000,
@@ -527,6 +583,14 @@ class _PlotAccessor(_BaseAccessor):
 
         Parameters
         ----------
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the reporter.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the reporter.
+
         ax : matplotlib axes, default=None
             Axes object to plot on. If `None`, a new figure and axes is
             created.
@@ -553,35 +617,46 @@ class _PlotAccessor(_BaseAccessor):
         PredictionErrorDisplay
             The prediction error display.
         """
-        # FIXME: only computing on the validation set for now
-        y_pred = self._parent._get_cached_response_values(
-            estimator_hash=self._parent._hash,
-            estimator=self._parent.estimator,
-            X=self._parent.X_test,
-            response_method="predict",
-        )
+        X, y, use_cache = self._get_X_y_and_use_cache(X, y)
 
-        cache_key = (
-            self._parent._hash,
-            PredictionErrorDisplay.__name__,
-            kind,
-            subsample,
-        )
-
-        if cache_key in self._parent._cache:
-            display = self._parent._cache[cache_key].plot(
-                ax=ax,
-                kind=kind,
+        if use_cache:
+            y_pred = self._parent._get_cached_response_values(
+                estimator_hash=self._parent._hash,
+                estimator=self._parent.estimator,
+                X=X,
+                response_method="predict",
             )
+
+            cache_key = (
+                self._parent._hash,
+                PredictionErrorDisplay.__name__,
+                kind,
+                subsample,
+            )
+
+            if cache_key in self._parent._cache:
+                display = self._parent._cache[cache_key].plot(
+                    ax=ax,
+                    kind=kind,
+                )
+            else:
+                display = PredictionErrorDisplay.from_predictions(
+                    y,
+                    y_pred,
+                    ax=ax,
+                    kind=kind,
+                    subsample=subsample,
+                )
+                self._parent._cache[cache_key] = display
         else:
-            display = PredictionErrorDisplay.from_predictions(
-                self._parent.y_test,
-                y_pred,
+            display = PredictionErrorDisplay.from_estimator(
+                self._parent.estimator,
+                X,
+                y,
                 ax=ax,
                 kind=kind,
                 subsample=subsample,
             )
-            self._parent._cache[cache_key] = display
 
         return display
 
@@ -608,13 +683,6 @@ class _MetricsAccessor(_BaseAccessor):
 
     def __init__(self, parent):
         super().__init__(parent, icon="📏")
-
-    def _get_X_y_and_use_cache(self, X=None, y=None):
-        if X is None and y is None:
-            return self._parent._X_test, self._parent._y_test, True
-        elif not (X is not None and y is not None):
-            raise ValueError("X and y must be provided together.")
-        return X, y, False
 
     # TODO: should build on the `add_scorers` function
     def report_metrics(
