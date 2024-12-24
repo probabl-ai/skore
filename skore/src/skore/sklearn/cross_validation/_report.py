@@ -14,14 +14,14 @@ from skore.sklearn.find_ml_task import _find_ml_task
 from skore.utils._accessor import _check_supported_ml_task, register_accessor
 
 
-def _generate_estimator_report(estimator, X_train, y_train, X_test, y_test):
+def _generate_estimator_report(estimator, X, y, train_indices, test_indices):
     return EstimatorReport(
         estimator,
         fit=True,
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
+        X_train=_safe_indexing(X, train_indices),
+        y_train=_safe_indexing(y, train_indices),
+        X_test=_safe_indexing(X, test_indices),
+        y_test=_safe_indexing(y, test_indices),
     )
 
 
@@ -73,13 +73,14 @@ class CrossValidationReport(_HelpReportMixin):
     ):
         cv = check_cv(cv, y, classifier=is_classifier(estimator))
         parallel = Parallel(n_jobs=n_jobs, return_as="generator_unordered")
+        # do not split the data to take advantage of the memory mapping
         generator = parallel(
             delayed(_generate_estimator_report)(
                 estimator,
-                _safe_indexing(X, train_indices),
-                _safe_indexing(y, train_indices),
-                _safe_indexing(X, test_indices),
-                _safe_indexing(y, test_indices),
+                X,
+                y,
+                train_indices,
+                test_indices,
             )
             for train_indices, test_indices in cv.split(X, y)
         )
