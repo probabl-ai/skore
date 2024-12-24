@@ -116,7 +116,7 @@ html_theme_options = {
             "name": "Probabl",
         },
     ],
-    "header_links_before_dropdown": 4,
+    "header_links_before_dropdown": 5,
     "icon_links": [
         {
             "name": "GitHub",
