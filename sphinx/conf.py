@@ -109,7 +109,7 @@ html_theme_options = {
             "name": "Probabl website",
         },
     ],
-    "header_links_before_dropdown": 4,
+    "header_links_before_dropdown": 5,
     "icon_links": [
         {
             "name": "Twitter",
