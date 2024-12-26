@@ -1,0 +1,57 @@
+name: display backend coverage in PR
+
+on:
+  workflow_run:
+    workflows: [backend]
+    types: [completed]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  acquire-pr-number:
+    if: ${{ github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    outputs:
+      PR_NUMBER: ${{ steps.acquire-pr-number.outputs.number }}
+    permissions:
+      contents: read
+    steps:
+      - id: acquire-pr-number
+        run: gh pr view --repo "${REPOSITORY}" "${BRANCH}" --json 'number' --jq '"number=\(.number)"' >> "${GITHUB_OUTPUT}"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          BRANCH: |-
+            ${{
+              (github.event.workflow_run.head_repository.fork == true)
+              && format('{0}:{1}', github.event.workflow_run.head_repository.owner.login, github.event.workflow_run.head_branch)
+              || github.event.workflow_run.head_branch
+            }}
+
+  display-backend-coverage:
+    if: ${{ github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    needs: [acquire-pr-number]
+    permissions:
+      actions: read
+      pull-requests: write
+    steps:
+      - name: Download coverage reports
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-coverage
+          path: coverage/
+          github-token: ${{ github.token }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Display coverage reports
+        uses: MishaKav/pytest-coverage-comment@main
+        with:
+          issue-number: ${{ needs.acquire-pr-number.outputs.PR_NUMBER }}
+          pytest-coverage-path: coverage/coverage.txt
+          junitxml-path: coverage/coverage.xml
+          title: Coverage Report for backend
