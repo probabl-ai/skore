@@ -1,0 +1,56 @@
+# THIS
+# IS
+# DOCUMENTATION
+# TRIGGERED WORKFLOW
+
+name: display frontend coverage in PR
+
+on:
+  workflow_run:
+    workflows: [frontend]
+    types: [completed]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  acquire-pr-number:
+    if: github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    outputs:
+      PR_NUMBER: ${{ steps.acquire-pr-number.outputs.number }}
+    permissions:
+      contents: read
+    steps:
+      - id: acquire-pr-number
+        run: gh pr view --repo "${REPOSITORY}" "${BRANCH}" --json 'number' --jq '"number=\(.number)"' >> "${GITHUB_OUTPUT}"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          BRANCH: |-
+            ${{
+              (github.event.workflow_run.head_repository.fork == true)
+              && format('{0}:{1}', github.event.workflow_run.head_repository.owner.login, github.event.workflow_run.head_branch)
+              || github.event.workflow_run.head_branch
+            }}
+
+  display-frontend-coverage:
+    if: github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    needs: [acquire-pr-number]
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Download coverage reports
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-coverage
+          path: coverage/
+      - name: Display coverage reports
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          pr-number: ${{ needs.acquire-pr-number.outputs.PR_NUMBER }}
+          name: frontend coverage report
