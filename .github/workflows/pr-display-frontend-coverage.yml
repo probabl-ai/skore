@@ -52,4 +52,4 @@ jobs:
         uses: davelosert/vitest-coverage-report-action@v2
         with:
           pr-number: ${{ needs.acquire-pr-number.outputs.PR_NUMBER }}
-          name: frontend coverage report
+          name: frontend
