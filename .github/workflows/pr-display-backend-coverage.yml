@@ -13,7 +13,7 @@ permissions: {}
 
 jobs:
   acquire-pr-number:
-    if: github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success'
+    if: ${{ github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     outputs:
       PR_NUMBER: ${{ steps.acquire-pr-number.outputs.number }}
@@ -33,7 +33,7 @@ jobs:
             }}
 
   display-backend-coverage:
-    if: github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success'
+    if: ${{ github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     needs: [acquire-pr-number]
     permissions:
