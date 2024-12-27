@@ -1,13 +1,8 @@
-# THIS
-# IS
-# DOCUMENTATION
-# TRIGGERED WORKFLOW
-
 name: display backend coverage in PR
 
 on:
   workflow_run:
-    workflows: [Lint PR title]
+    workflows: [backend]
     types: [completed]
 
 concurrency:

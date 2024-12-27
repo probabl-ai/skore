@@ -1,18 +1,30 @@
-# THIS
-# IS
-# DOCUMENTATION
-# REUSABLE WORKFLOW
-
 name: backend
 
-on: [workflow_call]
+on:
+  pull_request:
+    paths:
+      - 'skore/src/**'
+      - 'skore/tests/**'
+      - 'skore/pyproject.toml'
+      - 'skore/requirements*.txt'
+      - '.github/workflows/backend.yml'
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 defaults:
   run:
     shell: "bash"
 
 jobs:
-  lint-backend:
+  backend-lint:
     runs-on: "ubuntu-latest"
     steps:
       - name: Checkout code
@@ -31,7 +43,7 @@ jobs:
         working-directory: skore/
         run: pre-commit run --all-files ruff
 
-  test-backend:
+  backend-test:
     strategy:
       fail-fast: true
       matrix:

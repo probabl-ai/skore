@@ -1,18 +1,27 @@
-# THIS
-# IS
-# DOCUMENTATION
-# REUSABLE WORKFLOW
-
 name: frontend
 
-on: [workflow_call]
+on:
+  pull_request:
+    paths:
+      - 'skore-ui/**'
+      - '.github/workflows/frontend.yml'
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 defaults:
   run:
-    shell: 'bash'
+    shell: "bash"
 
 jobs:
-  lint-frontend:
+  frontend-lint:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -34,7 +43,7 @@ jobs:
           npm run format
           npm run style-lint
 
-  test-frontend:
+  frontend-test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -59,7 +68,7 @@ jobs:
           name: frontend-coverage
           path: skore-ui/coverage/
 
-  build-frontend:
+  frontend-build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code

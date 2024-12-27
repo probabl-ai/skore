@@ -1,4 +1,4 @@
-name: Add PR assignee
+name: add assignee in PR
 
 on:
   pull_request_target:
@@ -7,7 +7,7 @@ on:
 permissions: {}
 
 jobs:
-  add-pr-assignee:
+  add-assignee:
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
