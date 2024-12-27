@@ -188,9 +188,9 @@ jobs:
           SOURCE: artifacts/
           DESTINATION:
 
-  sphinx-clean:
+  sphinx-clean-artifacts:
     runs-on: ubuntu-latest
-    if: always()
+    if: ${{ always() && (github.event_name != 'pull_request') }}
     needs: [sphinx-version, sphinx-build, sphinx-deploy-html, sphinx-deploy-root-files]
     steps:
       - uses: geekyeggo/delete-artifact@v5
