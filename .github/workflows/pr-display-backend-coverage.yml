@@ -37,6 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [acquire-pr-number]
     permissions:
+      actions: read
       pull-requests: write
     steps:
       - name: Download coverage reports
@@ -44,6 +45,9 @@ jobs:
         with:
           name: backend-coverage
           path: coverage/
+          github-token: ${{ github.token }}
+          run-id: ${{ github.event.workflow_run.id }}
+
       - name: Display coverage reports
         uses: MishaKav/pytest-coverage-comment@main
         with:
