@@ -37,7 +37,6 @@ jobs:
       matrix:
         os: ["ubuntu-latest", "windows-latest"]
         python: ["3.9", "3.10", "3.11", "3.12"]
-        coverage: [false]
         include:
           - os: "ubuntu-latest"
             python: "3.12"
@@ -64,19 +63,22 @@ jobs:
         working-directory: skore/
         run: wheel=(dist/*.whl); python -m pip install "${wheel}[test]"
 
-      - name: Test with/without coverage
+      - name: Test without coverage
+        if: ${{ ! matrix.coverage }}
+        timeout-minutes: 10
+        working-directory: skore/
+        run: python -m pytest -n auto --no-cov src/ tests/
+
+      - name: Test with coverage
+        if: ${{ matrix.coverage }}
         timeout-minutes: 10
         working-directory: skore/
         run: |
-          if [ ${{ matrix.coverage }} = false ] ; then
-              python -m pytest -n auto --no-cov src/ tests/
-          else
-              mkdir coverage
-              python -m pytest -n auto --junitxml=coverage/coverage.xml --cov=skore src/ tests/ | tee coverage/coverage.txt
-          fi
+          mkdir coverage
+          python -m pytest -n auto --junitxml=coverage/coverage.xml --cov=skore src/ tests/ | tee coverage/coverage.txt
 
       - name: Upload coverage reports
-        if: matrix.coverage == 'true'
+        if: ${{ matrix.coverage }}
         uses: actions/upload-artifact@v4
         with:
           name: backend-coverage

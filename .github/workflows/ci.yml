@@ -2,7 +2,7 @@
 # IS
 # DOCUMENTATION
 
-name: CI
+name: ci
 
 on:
   pull_request:

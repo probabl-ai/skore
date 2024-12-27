@@ -7,7 +7,7 @@ name: display backend coverage in PR
 
 on:
   workflow_run:
-    workflows: [backend]
+    workflows: [Lint PR title]
     types: [completed]
 
 concurrency:
