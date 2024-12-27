@@ -115,37 +115,6 @@ jobs:
           name: sphinx-html-artifact
           path: sphinx/build/html/
 
-  sphinx-preview:
-    if: ${{ github.event_name == 'pull_request' }}
-    runs-on: ubuntu-latest
-    needs: sphinx-build
-    permissions:
-      actions: read
-      contents: read
-      pull-requests: write
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: sphinx-html-artifact
-          path: html/
-
-      - uses: ./.github/actions/sphinx/deploy
-        with:
-          CONFIGURATION: ${{ secrets.RCLONE_CONFIG_DOC_PREVIEW }}
-          BUCKET: ${{ vars.DOCUMENTATION_PREVIEW_BUCKET }}
-          SOURCE: html/
-          DESTINATION: ${{ github.event.number }}/
-
-      - uses: marocchino/sticky-pull-request-comment@v2
-        with:
-          number: ${{ github.event.number }}
-          header: documentation-preview
-          message: >-
-            [Documentation preview](${{ vars.DOCUMENTATION_PREVIEW_URL }}/${{ github.event.number }})
-            @ ${{ github.event.pull_request.head.sha }}
-
   sphinx-deploy-html:
     if: ${{ (github.event_name == 'release') || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
     runs-on: ubuntu-latest
@@ -222,7 +191,7 @@ jobs:
   sphinx-clean:
     runs-on: ubuntu-latest
     if: always()
-    needs: [sphinx-version, sphinx-build, sphinx-preview, sphinx-deploy-html, sphinx-deploy-root-files]
+    needs: [sphinx-version, sphinx-build, sphinx-deploy-html, sphinx-deploy-root-files]
     steps:
       - uses: geekyeggo/delete-artifact@v5
         with:
