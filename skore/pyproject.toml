@@ -1,6 +1,6 @@
 [project]
 name = "skore"
-description = "The scikit-learn Modeling Companion"
+description = "The scikit-learn Modeling Companion!"
 dynamic = ["license", "readme", "version"]
 requires-python = ">=3.9, <3.13"
 maintainers = [{ name = "skore developers", email = "skore@signal.probabl.ai" }]
