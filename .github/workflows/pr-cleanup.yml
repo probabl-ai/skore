@@ -15,6 +15,7 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     continue-on-error: true
+    permissions: write-all
     steps:
       - name: Clean artifacts
         run: |
@@ -41,12 +42,12 @@ jobs:
                  --silent \
                  -H "Accept: application/vnd.github+json" \
                  -H "X-GitHub-Api-Version: 2022-11-28" \
-                 /repos/${OWNER}/${REPOSITORY}/actions/artifacts/${ID}
+                 /repos/${REPOSITORY_OWNER}/${REPOSITORY_NAME}/actions/artifacts/${ID}
           done
         env:
           GH_TOKEN: ${{ github.token }}
-          OWNER: ${{ github.repository_owner }}
-          REPOSITORY: ${{ github.repository.name }}
+          REPOSITORY_OWNER: ${{ github.repository_owner }}
+          REPOSITORY_NAME: ${{ github.event.repository.name }}
           BRANCH: ${{ github.head_ref }}
 
   clean-documentation-preview:
@@ -59,8 +60,8 @@ jobs:
           set -eu
           sudo apt-get update
           sudo apt-get install -y rclone
-          echo "${{ inputs.CONFIGURATION }}" > rclone.configuration
-          rclone --config rclone.configuration prune ${PROVIDER}:${BUCKET}/${PULL_REQUEST_NUMBER}/
+          echo "${CONFIGURATION}" > rclone.configuration
+          rclone --config rclone.configuration purge ${PROVIDER}:${BUCKET}/${PULL_REQUEST_NUMBER}/
         env:
           CONFIGURATION: ${{ secrets.RCLONE_CONFIG_DOC_PREVIEW }}
           PROVIDER: scaleway
