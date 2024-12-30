@@ -21,21 +21,25 @@ jobs:
         run: |
           set -u
 
-          ARTIFACTS=$(
+          ARTIFACTS=$( \
               gh api \
                  --paginate \
                  -H "Accept: application/vnd.github+json" \
                  -H "X-GitHub-Api-Version: 2022-11-28" \
                  /repos/probabl-ai/skore/actions/artifacts \
-              |
-              jq -c ".artifacts[] | select(.workflow_run.head_branch == \"${BRANCH}\") | {id: .id, name: .name}"
+              | \
+              jq -c " \
+                 .artifacts[] \
+                 | select((.workflow_run.head_branch == \"${HEAD_BRANCH}\") and (.workflow_run.head_repository_id == ${HEAD_REPOSITORY_ID})) \
+                 | {id: .id, name: .name} \
+              " \
           )
 
           for ARTIFACT in $ARTIFACTS; do
               ID=$(echo "${ARTIFACT}" | jq -r '.id')
               NAME=$(echo "${ARTIFACT}" | jq -r '.name')
 
-              echo "Deleting artifact (BRANCH: \"${BRANCH}\", NAME: \"${NAME}\", ID: \"${ID}\")"
+              echo "Deleting artifact (NAME: \"${NAME}\", ID: \"${ID}\")"
 
               gh api \
                  --method DELETE \
@@ -48,7 +52,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPOSITORY_OWNER: ${{ github.repository_owner }}
           REPOSITORY_NAME: ${{ github.event.repository.name }}
-          BRANCH: ${{ github.head_ref }}
+          HEAD_REPOSITORY_ID: ${{ github.event.pull_request.head.repo.id }}
+          HEAD_BRANCH: ${{ github.head_ref }}
 
   clean-documentation-preview:
     if: always()
@@ -67,7 +72,7 @@ jobs:
           CONFIGURATION: ${{ secrets.RCLONE_CONFIG_DOC_PREVIEW }}
 
       - name: Clean documentation preview
-        run: rclone --config rclone.configuration purge "${PROVIDER}:${BUCKET}/${PULL_REQUEST_NUMBER}" -vvvv
+        run: rclone --config rclone.configuration purge "${PROVIDER}:${BUCKET}/${PULL_REQUEST_NUMBER}"
         env:
           PROVIDER: scaleway
           BUCKET: ${{ vars.DOCUMENTATION_PREVIEW_BUCKET }}
