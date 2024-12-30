@@ -14,11 +14,12 @@ jobs:
   clean-artifacts:
     if: always()
     runs-on: ubuntu-latest
-    continue-on-error: true
+    permissions:
+      actions: write
     steps:
       - name: Clean artifacts
         run: |
-          set -eu
+          set -u
 
           ARTIFACTS=$(
               gh api \
@@ -41,28 +42,33 @@ jobs:
                  --silent \
                  -H "Accept: application/vnd.github+json" \
                  -H "X-GitHub-Api-Version: 2022-11-28" \
-                 /repos/${OWNER}/${REPOSITORY}/actions/artifacts/${ID}
+                 /repos/${REPOSITORY_OWNER}/${REPOSITORY_NAME}/actions/artifacts/${ID}
           done
         env:
           GH_TOKEN: ${{ github.token }}
-          OWNER: ${{ github.repository_owner }}
-          REPOSITORY: ${{ github.repository.name }}
+          REPOSITORY_OWNER: ${{ github.repository_owner }}
+          REPOSITORY_NAME: ${{ github.event.repository.name }}
           BRANCH: ${{ github.head_ref }}
 
   clean-documentation-preview:
     if: always()
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
-      - name: Clean documentation preview
+      - name: Install `rclone`
+        shell: bash
         run: |
-          set -eu
           sudo apt-get update
           sudo apt-get install -y rclone
-          echo "${{ inputs.CONFIGURATION }}" > rclone.configuration
-          rclone --config rclone.configuration prune ${PROVIDER}:${BUCKET}/${PULL_REQUEST_NUMBER}/
+
+      - name: Copy configuration
+        shell: bash
+        run: echo "${CONFIGURATION}" > rclone.configuration
         env:
           CONFIGURATION: ${{ secrets.RCLONE_CONFIG_DOC_PREVIEW }}
+
+      - name: Clean documentation preview
+        run: rclone --config rclone.configuration purge "${PROVIDER}:${BUCKET}/${PULL_REQUEST_NUMBER}" -vvvv
+        env:
           PROVIDER: scaleway
           BUCKET: ${{ vars.DOCUMENTATION_PREVIEW_BUCKET }}
           PULL_REQUEST_NUMBER: ${{ github.event.number }}
