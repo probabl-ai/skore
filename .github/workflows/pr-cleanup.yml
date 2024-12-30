@@ -1,0 +1,68 @@
+name: cleanup PR
+
+on:
+  pull_request_target:
+    types: [closed]
+
+permissions: {}
+
+defaults:
+  run:
+    shell: "bash"
+
+jobs:
+  clean-artifacts:
+    if: always()
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Clean artifacts
+        run: |
+          set -eu
+
+          ARTIFACTS=$(
+              gh api \
+                 --paginate \
+                 -H "Accept: application/vnd.github+json" \
+                 -H "X-GitHub-Api-Version: 2022-11-28" \
+                 /repos/probabl-ai/skore/actions/artifacts \
+              |
+              jq -c ".artifacts[] | select(.workflow_run.head_branch == \"${BRANCH}\") | {id: .id, name: .name}"
+          )
+
+          for ARTIFACT in $ARTIFACTS; do
+              ID=$(echo "${ARTIFACT}" | jq -r '.id')
+              NAME=$(echo "${ARTIFACT}" | jq -r '.name')
+
+              echo "Deleting artifact (BRANCH: \"${BRANCH}\", NAME: \"${NAME}\", ID: \"${ID}\")"
+
+              gh api \
+                 --method DELETE \
+                 --silent \
+                 -H "Accept: application/vnd.github+json" \
+                 -H "X-GitHub-Api-Version: 2022-11-28" \
+                 /repos/${OWNER}/${REPOSITORY}/actions/artifacts/${ID}
+          done
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OWNER: ${{ github.repository_owner }}
+          REPOSITORY: ${{ github.repository.name }}
+          BRANCH: ${{ github.head_ref }}
+
+  clean-documentation-preview:
+    if: always()
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Clean documentation preview
+        run: |
+          set -eu
+          sudo apt-get update
+          sudo apt-get install -y rclone
+          echo "${{ inputs.CONFIGURATION }}" > rclone.configuration
+          rclone --config rclone.configuration prune ${PROVIDER}:${BUCKET}/${PULL_REQUEST_NUMBER}/
+        env:
+          CONFIGURATION: ${{ secrets.RCLONE_CONFIG_DOC_PREVIEW }}
+          PROVIDER: scaleway
+          BUCKET: ${{ vars.DOCUMENTATION_PREVIEW_BUCKET }}
+          PULL_REQUEST_NUMBER: ${{ github.event.number }}
