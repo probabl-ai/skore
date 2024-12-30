@@ -90,7 +90,7 @@ jobs:
           python -m pytest -n auto --junitxml=coverage/coverage.xml --cov=skore src/ tests/ | tee coverage/coverage.txt
 
       - name: Upload coverage reports
-        if: ${{ matrix.coverage }}
+        if: ${{ matrix.coverage && (github.event_name == 'pull_request') }}
         uses: actions/upload-artifact@v4
         with:
           name: backend-coverage
