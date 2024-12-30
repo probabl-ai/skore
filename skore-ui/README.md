@@ -1,6 +1,6 @@
 # Skore UI
 
-This sub directory aims at creating a single page application supporting Skore.
+This sub directory aims at creating a single page application supporting Skore!
 
 It should build as a SPA and as a library of web components.
 
