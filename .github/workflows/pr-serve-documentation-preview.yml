@@ -12,31 +12,9 @@ concurrency:
 permissions: {}
 
 jobs:
-  acquire-pr-context:
-    if: ${{ github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success' }}
-    runs-on: ubuntu-latest
-    outputs:
-      PR_NUMBER: ${{ steps.acquire-pr-context.outputs.number }}
-      PR_HEADSHA: ${{ steps.acquire-pr-context.outputs.headsha }}
-    permissions:
-      contents: read
-    steps:
-      - id: acquire-pr-context
-        run: gh pr view --repo "${REPOSITORY}" "${BRANCH}" --json 'number,headRefOid' --jq '"number=\(.number)\nheadsha=\(.headRefOid)"' >> "${GITHUB_OUTPUT}"
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPOSITORY: ${{ github.repository }}
-          BRANCH: |-
-            ${{
-              (github.event.workflow_run.head_repository.fork == true)
-              && format('{0}:{1}', github.event.workflow_run.head_repository.owner.login, github.event.workflow_run.head_branch)
-              || github.event.workflow_run.head_branch
-            }}
-
   serve-documentation-preview:
     if: ${{ github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
-    needs: [acquire-pr-context]
     permissions:
       actions: read
       contents: read
@@ -53,19 +31,23 @@ jobs:
           github-token: ${{ github.token }}
           run-id: ${{ github.event.workflow_run.id }}
 
+      - name: Acquire PR context
+        id: acquire-pr-context
+        use: ./.github/actions/pr/context
+
       - name: Serve documentation preview
         uses: ./.github/actions/sphinx/deploy
         with:
           CONFIGURATION: ${{ secrets.RCLONE_CONFIG_DOC_PREVIEW }}
           BUCKET: ${{ vars.DOCUMENTATION_PREVIEW_BUCKET }}
           SOURCE: html/
-          DESTINATION: ${{ needs.acquire-pr-context.outputs.PR_NUMBER }}/
+          DESTINATION: ${{ steps.acquire-pr-context.outputs.PR_NUMBER }}/
 
       - name: Comment with documentation preview link
         uses: marocchino/sticky-pull-request-comment@v2
         with:
-          number: ${{ needs.acquire-pr-context.outputs.PR_NUMBER }}
+          number: ${{ steps.acquire-pr-context.outputs.PR_NUMBER }}
           header: documentation-preview
           message: >-
-            [Documentation preview](${{ vars.DOCUMENTATION_PREVIEW_URL }}/${{ needs.acquire-pr-context.outputs.PR_NUMBER }})
-            @ ${{ needs.acquire-pr-context.outputs.PR_HEADSHA }}
+            [Documentation preview](${{ vars.DOCUMENTATION_PREVIEW_URL }}/${{ steps.acquire-pr-context.outputs.PR_NUMBER }})
+            @ ${{ steps.acquire-pr-context.outputs.PR_HEADSHA }}

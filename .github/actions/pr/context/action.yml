@@ -1,0 +1,26 @@
+name: acquire PR context
+
+outputs:
+  PR_NUMBER: ${{ steps.acquire-pr-context.outputs.number }}
+  PR_HEADSHA: ${{ steps.acquire-pr-context.outputs.headsha }}
+
+runs:
+  using: composite
+  steps:
+    - id: acquire-pr-context
+      run: >-
+        gh pr view
+           --repo "${REPOSITORY}" "${BRANCH}"
+           --json 'number,headRefOid'
+           --jq '"number=\(.number)\nheadsha=\(.headRefOid)"'
+
+        >> "${GITHUB_OUTPUT}"
+      env:
+        GH_TOKEN: ${{ github.token }}
+        REPOSITORY: ${{ github.repository }}
+        BRANCH: |-
+          ${{
+            (github.event.workflow_run.head_repository.fork == true)
+            && format('{0}:{1}', github.event.workflow_run.head_repository.owner.login, github.event.workflow_run.head_branch)
+            || github.event.workflow_run.head_branch
+          }}
