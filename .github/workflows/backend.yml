@@ -1,0 +1,97 @@
+name: backend
+
+on:
+  pull_request:
+    paths:
+      - 'skore/src/**'
+      - 'skore/tests/**'
+      - 'skore/pyproject.toml'
+      - 'skore/requirements*.txt'
+      - '.github/workflows/backend.yml'
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: "bash"
+
+jobs:
+  backend-lint:
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip pre-commit
+
+      - name: Lint
+        working-directory: skore/
+        run: pre-commit run --all-files ruff
+
+  backend-test:
+    strategy:
+      fail-fast: true
+      matrix:
+        os: ["ubuntu-latest", "windows-latest"]
+        python: ["3.9", "3.10", "3.11", "3.12"]
+        include:
+          - os: "ubuntu-latest"
+            python: "3.12"
+            coverage: true
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip build
+
+      - name: Build
+        working-directory: skore/
+        run: python -m build
+
+      - name: Install
+        working-directory: skore/
+        run: wheel=(dist/*.whl); python -m pip install "${wheel}[test]"
+
+      - name: Test without coverage
+        if: ${{ ! matrix.coverage }}
+        timeout-minutes: 10
+        working-directory: skore/
+        run: python -m pytest -n auto --no-cov src/ tests/
+
+      - name: Test with coverage
+        if: ${{ matrix.coverage }}
+        timeout-minutes: 10
+        working-directory: skore/
+        run: |
+          mkdir coverage
+          python -m pytest -n auto --junitxml=coverage/coverage.xml --cov=skore src/ tests/ | tee coverage/coverage.txt
+
+      - name: Upload coverage reports
+        if: ${{ matrix.coverage && (github.event_name == 'pull_request') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: skore/coverage/
