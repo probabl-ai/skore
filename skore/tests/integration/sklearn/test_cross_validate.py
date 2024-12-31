@@ -5,10 +5,13 @@ import sklearn.model_selection
 from sklearn import datasets, linear_model
 from sklearn.cluster import KMeans
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.model_selection import cross_validate
 from sklearn.multiclass import OneVsOneClassifier
 from sklearn.svm import SVC
 from skore import CrossValidationReporter
 from skore.item.cross_validation_item import CrossValidationItem
+from skore.sklearn.cross_validation.cross_validation_helpers import _get_scorers_to_add
 
 
 @pytest.fixture
@@ -155,23 +158,103 @@ class TestMLTask:
         assert all(len(v) == 5 for v in cv_results.values())
 
 
-def prepare_cv():
-    from sklearn import datasets, linear_model
-
-    diabetes = datasets.load_diabetes()
-    X = diabetes.data[:150]
-    y = diabetes.target[:150]
-    lasso = linear_model.Lasso()
-
-    return lasso, X, y
+@pytest.fixture
+def binary_classifier():
+    X, y = datasets.make_classification(n_classes=2, random_state=42)
+    return LogisticRegression(), X, y
 
 
-def test_put_cross_validation_reporter(in_memory_project):
-    project = in_memory_project
+@pytest.fixture
+def multiclass_classifier():
+    X, y = datasets.make_classification(
+        n_classes=3, n_clusters_per_class=1, random_state=42
+    )
+    return LogisticRegression(), X, y
 
-    lasso, X, y = prepare_cv()
-    reporter = CrossValidationReporter(lasso, X, y, cv=3)
 
-    project.put("cross-validation", reporter)
+@pytest.fixture
+def single_output_regression():
+    X, y = datasets.make_regression(n_targets=1, random_state=42)
+    return LinearRegression(), X, y
 
-    assert isinstance(project.get_item("cross-validation"), CrossValidationItem)
+
+@pytest.fixture
+def multi_output_regression():
+    X, y = datasets.make_regression(n_targets=2, random_state=42)
+    return LinearRegression(), X, y
+
+
+@pytest.mark.parametrize(
+    "fixture_name",
+    [
+        "binary_classifier",
+        "multiclass_classifier",
+        "single_output_regression",
+        "multi_output_regression",
+    ],
+)
+def test_cross_validation_reporter(in_memory_project, fixture_name, request):
+    """Check that we can serialize the `CrossValidationReporter` and retrieve it."""
+    model, X, y = request.getfixturevalue(fixture_name)
+    reporter = CrossValidationReporter(model, X, y, cv=3)
+
+    in_memory_project.put("cross-validation", reporter)
+
+    retrieved_item = in_memory_project.get_item("cross-validation")
+    assert isinstance(retrieved_item, CrossValidationItem)
+
+
+@pytest.mark.parametrize(
+    "fixture_name",
+    [
+        "binary_classifier",
+        "multiclass_classifier",
+        "single_output_regression",
+        "multi_output_regression",
+    ],
+)
+def test_cross_validation_reporter_equivalence_cross_validate(
+    in_memory_project, fixture_name, request
+):
+    """Check that we have an equivalent result to `cross_validate`."""
+    # mapping between the scorers names in skore and in sklearn
+    map_skore_to_sklearn = {
+        "r2": "r2",
+        "root_mean_squared_error": "neg_root_mean_squared_error",
+        "roc_auc": "roc_auc",
+        "brier_score_loss": "neg_brier_score",
+        "recall": "recall",
+        "precision": "precision",
+        "recall_weighted": "recall_weighted",
+        "precision_weighted": "precision_weighted",
+        "roc_auc_ovr_weighted": "roc_auc_ovr_weighted",
+        "log_loss": "neg_log_loss",
+    }
+    model, X, y = request.getfixturevalue(fixture_name)
+    reporter = CrossValidationReporter(
+        model, X, y, cv=3, return_estimator=True, return_train_score=True
+    )
+
+    scorers_used_skore = _get_scorers_to_add(model, y)
+    scorers_sklearn = [map_skore_to_sklearn[k] for k in scorers_used_skore]
+    cv_results_sklearn = cross_validate(
+        model,
+        X,
+        y,
+        cv=3,
+        scoring=scorers_sklearn,
+        return_estimator=True,
+        return_train_score=True,
+    )
+
+    # check the equivalence between the scores
+    for scorer_skore_name in scorers_used_skore:
+        for type_set in ["test", "train"]:
+            score_skore = reporter._cv_results[f"{type_set}_{scorer_skore_name}"]
+            score_sklearn = cv_results_sklearn[
+                f"{type_set}_{map_skore_to_sklearn[scorer_skore_name]}"
+            ]
+            if map_skore_to_sklearn[scorer_skore_name].startswith("neg_"):
+                numpy.testing.assert_allclose(score_skore, -score_sklearn)
+            else:
+                numpy.testing.assert_allclose(score_skore, score_sklearn)
