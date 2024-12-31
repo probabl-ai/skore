@@ -54,7 +54,7 @@ def __project_as_serializable(project: Project) -> SerializableProject:
         for key in project.list_item_keys()
     }
 
-    views = {key: project.get_view(key).layout for key in project.list_view_keys()}
+    views = {key: project._get_view(key).layout for key in project._list_view_keys()}
 
     return SerializableProject(
         items=items,
@@ -78,7 +78,7 @@ async def put_view(request: Request, key: str, layout: Layout):
     project: Project = request.app.state.project
 
     view = View(layout=layout)
-    project.put_view(key, view)
+    project._put_view(key, view)
 
     return __project_as_serializable(project)
 
@@ -89,7 +89,7 @@ async def delete_view(request: Request, key: str):
     project: Project = request.app.state.project
 
     try:
-        project.delete_view(key)
+        project._delete_view(key)
     except KeyError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="View not found"

@@ -252,11 +252,11 @@ class Project:
         """
         self.item_repository.delete_item(key)
 
-    def put_view(self, key: str, view: View):
+    def _put_view(self, key: str, view: View):
         """Add a view to the Project."""
         self.view_repository.put_view(key, view)
 
-    def get_view(self, key: str) -> View:
+    def _get_view(self, key: str) -> View:
         """Get the view corresponding to ``key`` from the Project.
 
         Parameters
@@ -276,7 +276,7 @@ class Project:
         """
         return self.view_repository.get_view(key)
 
-    def delete_view(self, key: str):
+    def _delete_view(self, key: str):
         """Delete the view corresponding to ``key`` from the Project.
 
         Parameters
@@ -291,7 +291,7 @@ class Project:
         """
         return self.view_repository.delete_view(key)
 
-    def list_view_keys(self) -> list[str]:
+    def _list_view_keys(self) -> list[str]:
         """List all view keys in the Project.
 
         Returns
