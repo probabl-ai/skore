@@ -79,7 +79,7 @@ jobs:
         if: ${{ ! matrix.coverage }}
         timeout-minutes: 10
         working-directory: skore/
-        run: python -m pytest -n auto --no-cov src/ tests/
+        run: python -m pytest -n auto src/ tests/ --no-cov
 
       - name: Test with coverage
         if: ${{ matrix.coverage }}
@@ -87,7 +87,7 @@ jobs:
         working-directory: skore/
         run: |
           mkdir coverage
-          python -m pytest -n auto --junitxml=coverage/coverage.xml --cov=skore src/ tests/ | tee coverage/coverage.txt
+          python -m pytest -n auto src/ tests/ --junitxml=coverage/coverage.xml --cov | tee coverage/coverage.txt
 
       - name: Upload coverage reports
         if: ${{ matrix.coverage && (github.event_name == 'pull_request') }}
