@@ -1,4 +1,11 @@
-name: acquire PR context
+name: acquire-pr-context
+description: |
+  Acquire the PR number and the PR commit HEAD sha, after a "workflow_run" event.
+
+  The "workflow_run" context differs from the "pull_request" context and doesn't contain
+  PR basic information. This action intends to provide some missing information in the
+  "workflow_run" context, without having to explicitly record them in the workflow that
+  triggered the "workflow_run" event.
 
 outputs:
   PR_NUMBER: ${{ steps.acquire-pr-context.outputs.number }}

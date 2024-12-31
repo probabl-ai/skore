@@ -33,7 +33,7 @@ jobs:
 
       - name: Acquire PR context
         id: acquire-pr-context
-        use: ./.github/actions/pr/context
+        uses: ./.github/actions/workflow_run/context
 
       - name: Serve documentation preview
         uses: ./.github/actions/sphinx/deploy
