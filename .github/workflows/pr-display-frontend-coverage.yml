@@ -25,7 +25,7 @@ jobs:
 
       - name: Acquire PR context
         id: acquire-pr-context
-        uses: ./.github/actions/workflow_run/context
+        uses: ./.github/actions/workflow-run/context
 
       - name: Download coverage reports
         uses: actions/download-artifact@v4
@@ -38,5 +38,5 @@ jobs:
       - name: Display coverage reports
         uses: davelosert/vitest-coverage-report-action@v2
         with:
-          pr-number: ${{ steps.acquire-pr-number.outputs.PR_NUMBER }}
+          pr-number: ${{ steps.acquire-pr-number.outputs.pr-number }}
           name: frontend

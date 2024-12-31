@@ -33,7 +33,7 @@ jobs:
 
       - name: Acquire PR context
         id: acquire-pr-context
-        uses: ./.github/actions/workflow_run/context
+        uses: ./.github/actions/workflow-run/context
 
       - name: Serve documentation preview
         uses: ./.github/actions/sphinx/deploy
@@ -46,8 +46,8 @@ jobs:
       - name: Comment with documentation preview link
         uses: marocchino/sticky-pull-request-comment@v2
         with:
-          number: ${{ steps.acquire-pr-context.outputs.PR_NUMBER }}
+          number: ${{ steps.acquire-pr-context.outputs.pr-number }}
           header: documentation-preview
           message: >-
-            [Documentation preview](${{ vars.DOCUMENTATION_PREVIEW_URL }}/${{ steps.acquire-pr-context.outputs.PR_NUMBER }})
-            @ ${{ steps.acquire-pr-context.outputs.PR_HEADSHA }}
+            [Documentation preview](${{ vars.DOCUMENTATION_PREVIEW_URL }}/${{ steps.acquire-pr-context.outputs.pr-number }})
+            @ ${{ steps.acquire-pr-context.outputs.pr-head-sha }}

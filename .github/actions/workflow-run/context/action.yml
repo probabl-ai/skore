@@ -8,18 +8,23 @@ description: |
   triggered the "workflow_run" event.
 
 outputs:
-  PR_NUMBER: ${{ steps.acquire-pr-context.outputs.number }}
-  PR_HEADSHA: ${{ steps.acquire-pr-context.outputs.headsha }}
+  pr-number:
+    description: "The PR number"
+    value: ${{ steps.acquire-pr-context.outputs.number }}
+  pr-head-sha:
+    description: "The PR commit HEAD sha"
+    value: ${{ steps.acquire-pr-context.outputs.head-sha }}
 
 runs:
   using: composite
   steps:
     - id: acquire-pr-context
+      shell: bash
       run: >-
         gh pr view
            --repo "${REPOSITORY}" "${BRANCH}"
            --json 'number,headRefOid'
-           --jq '"number=\(.number)\nheadsha=\(.headRefOid)"'
+           --jq '"number=\(.number)\nhead-sha=\(.headRefOid)"'
 
         >> "${GITHUB_OUTPUT}"
       env:
