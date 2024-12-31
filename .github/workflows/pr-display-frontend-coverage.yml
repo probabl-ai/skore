@@ -38,5 +38,5 @@ jobs:
       - name: Display coverage reports
         uses: davelosert/vitest-coverage-report-action@v2
         with:
-          pr-number: ${{ steps.acquire-pr-number.outputs.pr-number }}
+          pr-number: ${{ steps.acquire-pr-context.outputs.pr-number }}
           name: frontend

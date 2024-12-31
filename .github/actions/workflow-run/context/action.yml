@@ -20,12 +20,12 @@ runs:
   steps:
     - id: acquire-pr-context
       shell: bash
-      run: >-
-        gh pr view
-           --repo "${REPOSITORY}" "${BRANCH}"
-           --json 'number,headRefOid'
-           --jq '"number=\(.number)\nhead-sha=\(.headRefOid)"'
-
+      run: |-
+        gh pr view \
+           --repo "${REPOSITORY}" "${BRANCH}" \
+           --json 'number,headRefOid' \
+           --jq '"number=\(.number)\nhead-sha=\(.headRefOid)"' \
+        \
         >> "${GITHUB_OUTPUT}"
       env:
         GH_TOKEN: ${{ github.token }}
