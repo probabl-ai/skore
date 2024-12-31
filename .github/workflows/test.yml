@@ -1,0 +1,27 @@
+name: test
+
+on: [pull_request]
+
+permissions: {}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Acquire PR context
+        id: acquire-pr-context
+        uses: ./.github/actions/workflow_run/context
+
+      - name: Test
+        run: |
+          echo "${PR_NUMBER}"
+          echo "${PR_HEADSHA}"
+        env:
+          PR_NUMBER: ${{ steps.acquire-pr-number.outputs.PR_NUMBER }}
+          PR_HEADSHA: ${{ steps.acquire-pr-number.outputs.PR_HEADSHA }}
