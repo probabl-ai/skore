@@ -477,11 +477,11 @@ class _BaseAccessor(_HelpMixin):
 
 
 ########################################################################################
-# Plotting accessor
+# Plotting accessor for metrics
 ########################################################################################
 
 
-class _PlotAccessor(_BaseAccessor):
+class _PlotMetricsAccessor(_BaseAccessor):
     def __init__(self, parent):
         # Note: parent here will be the MetricsAccessor instance
         super().__init__(parent._parent, icon="🎨")
@@ -756,6 +756,9 @@ class _PlotAccessor(_BaseAccessor):
 
         return display
 
+    def _get_help_title(self):
+        return f"{self._icon} Available plot methods"
+
 
 ###############################################################################
 # Metrics accessor
@@ -780,7 +783,7 @@ class _MetricsAccessor(_BaseAccessor):
     def __init__(self, parent):
         super().__init__(parent, icon="📏")
         # Create plot sub-accessor
-        self.plot = _PlotAccessor(self)
+        self.plot = _PlotMetricsAccessor(self)
 
     # TODO: should build on the `add_scorers` function
     def report_metrics(
