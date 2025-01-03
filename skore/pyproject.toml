@@ -55,7 +55,7 @@ readme-file = "../README.md"
 version-default = "0.0.0+unknown"
 
 [tool.hatch.build.targets.sdist]
-only-include = ["src/", "hatch/"]
+only-include = ["src/", "hatch/", "**/*.pyi"]
 artifacts = ["src/skore/ui/static/"]
 
 [tool.hatch.build.targets.wheel]
