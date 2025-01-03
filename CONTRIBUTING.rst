@@ -4,8 +4,8 @@
 Contributing
 ============
 
-First off, thanks for taking the time to contribute, everyone is welcome to
-contribute.
+Thank you for your interest in contributing to Skore! We welcome contributions from
+everyone and appreciate you taking the time to get involved.
 
 This project is hosted on https://github.com/probabl-ai/skore.
 
@@ -92,7 +92,7 @@ In particular, commits are "sentence case", meaning "fix: Fix issue" passes, whi
 
 Generally the description of a commit should start with a verb in the imperative voice, so that it would properly complete the sentence: "When applied, this commit will [...]".
 
-Example of correct commit: ``fix(docs): Add a contributor guide``.
+Examples of correct PR titles: ``docs: Update the docstrings`` or ``feat: Remove CrossValidationAggregationItem.``
 
 Documentation
 =============

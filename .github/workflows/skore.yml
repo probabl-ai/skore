@@ -74,4 +74,4 @@ jobs:
           wheel=(dist/*.whl); python -m pip install --force-reinstall --no-deps "${wheel}"
 
           # Test
-          python -m pytest --no-cov src/ tests/
+          python -m pytest --no-cov src/ tests/ -n auto

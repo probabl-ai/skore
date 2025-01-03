@@ -45,3 +45,9 @@ const html = computed(() => {
 <template>
   <div class="markdown" v-html="html"></div>
 </template>
+
+<style>
+.markdown {
+  color: var(--color-text-primary);
+}
+</style>

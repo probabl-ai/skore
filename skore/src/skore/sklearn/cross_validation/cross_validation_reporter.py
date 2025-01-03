@@ -5,14 +5,28 @@ This class implements a wrapper over scikit-learn's
 function in order to enrich it with more information and enable more analysis.
 """
 
+from dataclasses import dataclass
 from functools import cached_property
+
+import plotly.graph_objects
 
 from .cross_validation_helpers import (
     _add_scorers,
     _get_scorers_to_add,
     _strip_cv_results_scores,
 )
-from .plot import plot_cross_validation
+from .plots.compare_scores_plot import plot_cross_validation_compare_scores
+from .plots.timing_normalized_plot import plot_cross_validation_timing_normalized
+from .plots.timing_plot import plot_cross_validation_timing
+
+
+@dataclass
+class CrossValidationPlots:
+    """Plots of the cross-validation results."""
+
+    scores: plotly.graph_objects.Figure
+    timing: plotly.graph_objects.Figure
+    timing_normalized: plotly.graph_objects.Figure
 
 
 class CrossValidationReporter:
@@ -23,8 +37,7 @@ class CrossValidationReporter:
     As such, the arguments are the same as the
     :func:`sklearn.model_selection.cross_validate` function.
 
-    For a user guide and in-depth example, see :ref:`example_cross_validate` and
-    :ref:`example_track_cv`.
+    For a user guide and in-depth example, see :ref:`example_cross_validate`.
 
     More precisely, upon initialization, this class does the following:
 
@@ -94,22 +107,17 @@ class CrossValidationReporter:
     y : array-like or None
         The target variable, or None if not provided.
 
-    plot : plotly.graph_objects.Figure
-        A plot of the cross-validation results.
+    plots : CrossValidationPlots
+        Various plots of the cross-validation results.
 
     Examples
     --------
-    >>> def prepare_cv():
-    ...     from sklearn import datasets, linear_model
-    ...     diabetes = datasets.load_diabetes()
-    ...     X = diabetes.data[:150]
-    ...     y = diabetes.target[:150]
-    ...     lasso = linear_model.Lasso()
-    ...     return lasso, X, y
-
-    >>> lasso, X, y = prepare_cv()  # doctest: +SKIP
-
-    >>> reporter = CrossValidationReporter(lasso, X, y, cv=3)  # doctest: +SKIP
+    >>> from sklearn import datasets, linear_model
+    >>> from skore import CrossValidationReporter
+    >>> X, y = datasets.load_diabetes(return_X_y=True)
+    >>> lasso = linear_model.Lasso()
+    >>> reporter = CrossValidationReporter(lasso, X, y, cv=3)
+    >>> reporter
     CrossValidationReporter(...)
     """
 
@@ -176,6 +184,10 @@ class CrossValidationReporter:
         return f"{self.__class__.__name__}(...)"
 
     @cached_property
-    def plot(self):
-        """Plot of the cross-validation results."""
-        return plot_cross_validation(self._cv_results)
+    def plots(self) -> CrossValidationPlots:
+        """Plots of the cross-validation results."""
+        return CrossValidationPlots(
+            scores=plot_cross_validation_compare_scores(self._cv_results),
+            timing=plot_cross_validation_timing(self._cv_results),
+            timing_normalized=plot_cross_validation_timing_normalized(self._cv_results),
+        )

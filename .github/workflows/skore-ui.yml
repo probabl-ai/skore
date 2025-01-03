@@ -40,7 +40,7 @@ jobs:
           npm install
           npm run test:unit:coverage
       - name: Report coverage
-        if: always()
+        if: ${{ always() && ! github.event.pull_request.head.repo.fork }}
         uses: davelosert/vitest-coverage-report-action@v2
         with:
           working-directory: ./skore-ui

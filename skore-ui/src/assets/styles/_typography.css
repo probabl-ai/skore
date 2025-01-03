@@ -8,14 +8,14 @@
   src: url("../fonts/GeistMonoVF.woff2") format("woff2");
 }
 
-body {
+.skore-ui {
   color: var(--color-text-primary);
   font-family: Geist, sans-serif;
   font-size: var(--root-font-size);
   font-weight: var(--font-weight-regular);
   letter-spacing: var(--letter-spacing);
-}
 
-code {
-  font-family: GeistMono, monospace;
+  & code {
+    font-family: GeistMono, monospace;
+  }
 }

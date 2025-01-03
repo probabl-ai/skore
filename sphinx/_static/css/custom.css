@@ -52,3 +52,53 @@ div.docutils.container.index-box {
 .sphx-glr-download-zip {
   display: none;
 }
+
+/* sphinx-gallery */
+
+/* add padding to images */
+.bd-article img {
+    height: unset !important;
+    margin-top: 2%;
+    margin-bottom: 2%;
+}
+
+/** Landing page features *************************************************************/
+
+.logo-container {
+    width: 100%;
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+/* logo at the top left (not just the landing page) */
+.logo {
+    max-width: 100px;
+    height: auto;
+}
+
+/* logo for the landing page */
+.logo-landing {
+    max-width: 200px;
+    height: auto;
+}
+
+.hero-title {
+    color: #F68D2E;
+    font-family: var(--pst-font-family-heading);
+    font-size: 2.5rem;
+    margin-bottom: 2rem;
+    margin-top: 0px;
+    text-align: center;
+}
+
+.hero-description {
+    font-family: var(--pst-font-family-base);
+    text-align: center;
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+}
+
+.row-padding-main-container {
+    padding-top: 1.5rem !important;
+    padding-bottom: 2.5rem !important;
+}
