@@ -4,7 +4,7 @@ import numpy as np
 from sklearn.base import is_classifier, is_regressor
 from sklearn.utils.multiclass import type_of_target
 
-from skore.sklearn._sklearn_compat import is_clusterer
+from skore.externals._sklearn_compat import is_clusterer
 from skore.sklearn.types import MLTask
 
 
@@ -16,7 +16,7 @@ def _find_ml_task(y, estimator=None) -> MLTask:
     y : numpy.ndarray
         A target vector.
     estimator : sklearn.base.BaseEstimator, optional
-        An estimator. If fitted, we use mainly the estimator
+        An estimator, used mainly if fitted.
 
     Returns
     -------
