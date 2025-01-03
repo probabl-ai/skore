@@ -84,8 +84,8 @@ You can find information on the latest version [here](https://anaconda.org/conda
     # Store the results in the project
     my_project.put("cv_reporter", reporter)
 
-    # Display the result in your notebook
-    reporter.plot
+    # Display a plot result in your notebook
+    reporter.plots.scores
     ```
 
 3. Finally, from your shell (in the same directory), start the UI:
