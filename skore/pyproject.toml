@@ -101,9 +101,6 @@ sphinx = [
 [tool.pytest.ini_options]
 addopts = [
   "--doctest-modules",
-  "--cov=src/",
-  "--cov=tests/",
-  "--cov-branch",
   "--import-mode=importlib",
   "--no-header",
   "--verbosity=2",
@@ -116,9 +113,13 @@ addopts = [
 ]
 
 [tool.coverage.run]
-omit = [
-  "tests/*",
-]
+branch = true
+parallel = true
+source = ["skore"]
+
+[tool.coverage.report]
+omit = ["src/*", "tests/*"]
+show_missing = true
 
 [tool.ruff]
 src = ["skore"]
