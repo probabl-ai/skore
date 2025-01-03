@@ -1,0 +1,38 @@
+name: acquire-pr-context
+description: |
+  Acquire the PR number and the PR commit HEAD sha, after a "workflow_run" event.
+
+  The "workflow_run" context differs from the "pull_request" context and doesn't contain
+  PR basic information. This action intends to provide some missing information in the
+  "workflow_run" context, without having to explicitly record them in the workflow that
+  triggered the "workflow_run" event.
+
+outputs:
+  pr-number:
+    description: "The PR number"
+    value: ${{ steps.acquire-pr-context.outputs.number }}
+  pr-head-sha:
+    description: "The PR commit HEAD sha"
+    value: ${{ steps.acquire-pr-context.outputs.head-sha }}
+
+runs:
+  using: composite
+  steps:
+    - id: acquire-pr-context
+      shell: bash
+      run: |-
+        gh pr view \
+           --repo "${REPOSITORY}" "${BRANCH}" \
+           --json 'number,headRefOid' \
+           --jq '"number=\(.number)\nhead-sha=\(.headRefOid)"' \
+        \
+        >> "${GITHUB_OUTPUT}"
+      env:
+        GH_TOKEN: ${{ github.token }}
+        REPOSITORY: ${{ github.repository }}
+        BRANCH: |-
+          ${{
+            (github.event.workflow_run.head_repository.fork == true)
+            && format('{0}:{1}', github.event.workflow_run.head_repository.owner.login, github.event.workflow_run.head_branch)
+            || github.event.workflow_run.head_branch
+          }}

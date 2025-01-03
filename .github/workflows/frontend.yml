@@ -1,0 +1,89 @@
+name: frontend
+
+on:
+  pull_request:
+    paths:
+      - 'skore-ui/**'
+      - '.github/workflows/frontend.yml'
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: "bash"
+
+jobs:
+  frontend-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: skore-ui/package-lock.json
+
+      - name: Lint
+        working-directory: skore-ui/
+        run: |
+          npm install
+          npm run type-check
+          npm run lint
+          npm run format
+          npm run style-lint
+
+  frontend-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: skore-ui/package-lock.json
+
+      - name: Test with coverage
+        working-directory: skore-ui/
+        run: |
+          npm install
+          npm run test:unit:coverage
+
+      - name: Upload coverage reports
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: skore-ui/coverage/
+
+  frontend-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: skore-ui/package-lock.json
+
+      - name: Build
+        working-directory: skore-ui/
+        run: |
+          npm install
+          npm run build

@@ -14,8 +14,7 @@ inputs:
     required: false
     default: scaleway
   BUCKET:
-    required: false
-    default: prod-probabl-skore
+    required: true
   SOURCE:
     required: true
   DESTINATION:

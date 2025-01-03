@@ -1,0 +1,42 @@
+name: display frontend coverage in PR
+
+on:
+  workflow_run:
+    workflows: [frontend]
+    types: [completed]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  display-frontend-coverage:
+    if: ${{ github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Acquire PR context
+        id: acquire-pr-context
+        uses: ./.github/actions/workflow-run/context
+
+      - name: Download coverage reports
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-coverage
+          path: coverage/
+          github-token: ${{ github.token }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Display coverage reports
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          pr-number: ${{ steps.acquire-pr-context.outputs.pr-number }}
+          name: frontend
