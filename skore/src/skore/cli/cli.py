@@ -39,6 +39,11 @@ def cli(args: list[str]):
         ),
         default=True,
     )
+    parser_launch.add_argument(
+        "--verbose",
+        action="store_true",
+        help="increase logging verbosity",
+    )
 
     parser_create = subparsers.add_parser("create", help="Create a project")
     parser_create.add_argument(
@@ -60,6 +65,11 @@ def cli(args: list[str]):
         "--overwrite",
         action="store_true",
         help="overwrite an existing project with the same name",
+    )
+    parser_create.add_argument(
+        "--verbose",
+        action="store_true",
+        help="increase logging verbosity",
     )
 
     parser_quickstart = subparsers.add_parser(
@@ -100,6 +110,11 @@ def cli(args: list[str]):
         ),
         default=True,
     )
+    parser_quickstart.add_argument(
+        "--verbose",
+        action="store_true",
+        help="increase logging verbosity",
+    )
 
     parsed_args: argparse.Namespace = parser.parse_args(args)
 
@@ -108,12 +123,14 @@ def cli(args: list[str]):
             project_name=parsed_args.project_name,
             port=parsed_args.port,
             open_browser=parsed_args.open_browser,
+            verbose=parsed_args.verbose,
         )
     elif parsed_args.subcommand == "create":
         create(
             project_name=parsed_args.project_name,
             working_dir=parsed_args.working_dir,
             overwrite=parsed_args.overwrite,
+            verbose=parsed_args.verbose,
         )
     elif parsed_args.subcommand == "quickstart":
         __quickstart(
@@ -122,6 +139,7 @@ def cli(args: list[str]):
             overwrite=parsed_args.overwrite,
             port=parsed_args.port,
             open_browser=parsed_args.open_browser,
+            verbose=parsed_args.verbose,
         )
     else:
         parser.print_help()

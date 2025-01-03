@@ -2,12 +2,7 @@
 
 import logging
 
-formatter = logging.Formatter("%(message)s")
-
-console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.INFO)
-console_handler.setFormatter(formatter)
-
 logger = logging.getLogger(__name__)
-logger.addHandler(console_handler)
+logger.addHandler(logging.NullHandler())  # Default to no output
+logger.setLevel(logging.INFO)
 logger.propagate = False

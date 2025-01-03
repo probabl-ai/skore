@@ -37,3 +37,4 @@ These functions and classes enhance scikit-learn's ones.
     train_test_split
     CrossValidationReporter
     item.cross_validation_item.CrossValidationItem
+    EstimatorReport
