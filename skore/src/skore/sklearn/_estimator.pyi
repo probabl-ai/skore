@@ -1,4 +1,4 @@
-from typing import Literal, Optional, Union
+from typing import Any, Literal, Optional, Union
 
 import matplotlib.axes
 import pandas as pd
@@ -6,15 +6,20 @@ from numpy import ndarray
 from sklearn.base import BaseEstimator
 from sklearn.metrics import PrecisionRecallDisplay, RocCurveDisplay
 
+from skore.sklearn._plot import PredictionErrorDisplay
+
 class _BaseAccessor:
-    _report: EstimatorReport
-    def __init__(self, report: EstimatorReport) -> None: ...
+    _parent: EstimatorReport
+    def __init__(self, parent: EstimatorReport, icon: str) -> None: ...
     def help(self) -> None: ...
 
-class _PlotAccessor(_BaseAccessor):
+class _PlotMetricsAccessor(_BaseAccessor):
     def roc(
         self,
         *,
+        data_source: Literal["test", "train", "X_y"] = "test",
+        X: Optional[ndarray] = None,
+        y: Optional[ndarray] = None,
         pos_label: Optional[Union[str, int]] = None,
         ax: Optional[matplotlib.axes.Axes] = None,
         name: Optional[str] = None,
@@ -22,33 +27,61 @@ class _PlotAccessor(_BaseAccessor):
     def precision_recall(
         self,
         *,
+        data_source: Literal["test", "train", "X_y"] = "test",
+        X: Optional[ndarray] = None,
+        y: Optional[ndarray] = None,
         pos_label: Optional[Union[str, int]] = None,
         ax: Optional[matplotlib.axes.Axes] = None,
         name: Optional[str] = None,
     ) -> PrecisionRecallDisplay: ...
-    def confusion_matrix(
+    def prediction_error(
         self,
         *,
+        data_source: Literal["test", "train", "X_y"] = "test",
         X: Optional[ndarray] = None,
         y: Optional[ndarray] = None,
-        normalize: Optional[Literal["true", "pred", "all"]] = None,
-        display_labels: Optional[list[str]] = None,
-        include_values: bool = True,
-        values_format: Optional[str] = None,
         ax: Optional[matplotlib.axes.Axes] = None,
-        colorbar: bool = True,
-    ) -> matplotlib.axes.Axes: ...
-    def feature_importance(
-        self, *, top_k: Optional[int] = None, ax: Optional[matplotlib.axes.Axes] = None
-    ) -> matplotlib.axes.Axes: ...
+        kind: Literal[
+            "actual_vs_predicted", "residual_vs_predicted"
+        ] = "residual_vs_predicted",
+        subsample: Optional[Union[int, float]] = 1_000,
+    ) -> PredictionErrorDisplay: ...
 
 class _MetricsAccessor(_BaseAccessor):
+    plot: _PlotMetricsAccessor
+
+    def report_metrics(
+        self,
+        *,
+        data_source: Literal["test", "train", "X_y"] = "test",
+        X: Optional[ndarray] = None,
+        y: Optional[ndarray] = None,
+        scoring: Optional[Union[list[str], callable]] = None,
+        pos_label: int = 1,
+        scoring_kwargs: Optional[dict] = None,
+    ) -> pd.DataFrame: ...
+    def custom_metric(
+        self,
+        metric_function: callable,
+        response_method: Union[str, list[str]],
+        *,
+        metric_name: Optional[str] = None,
+        data_source: Literal["test", "train", "X_y"] = "test",
+        X: Optional[ndarray] = None,
+        y: Optional[ndarray] = None,
+        **kwargs: Any,
+    ) -> pd.DataFrame: ...
     def accuracy(
-        self, *, X: Optional[ndarray] = None, y: Optional[ndarray] = None
+        self,
+        *,
+        data_source: Literal["test", "train", "X_y"] = "test",
+        X: Optional[ndarray] = None,
+        y: Optional[ndarray] = None,
     ) -> pd.DataFrame: ...
     def precision(
         self,
         *,
+        data_source: Literal["test", "train", "X_y"] = "test",
         X: Optional[ndarray] = None,
         y: Optional[ndarray] = None,
         average: Literal[
@@ -59,6 +92,7 @@ class _MetricsAccessor(_BaseAccessor):
     def recall(
         self,
         *,
+        data_source: Literal["test", "train", "X_y"] = "test",
         X: Optional[ndarray] = None,
         y: Optional[ndarray] = None,
         average: Literal[
@@ -69,6 +103,7 @@ class _MetricsAccessor(_BaseAccessor):
     def f1(
         self,
         *,
+        data_source: Literal["test", "train", "X_y"] = "test",
         X: Optional[ndarray] = None,
         y: Optional[ndarray] = None,
         average: Literal[
@@ -79,6 +114,7 @@ class _MetricsAccessor(_BaseAccessor):
     def confusion_matrix(
         self,
         *,
+        data_source: Literal["test", "train", "X_y"] = "test",
         X: Optional[ndarray] = None,
         y: Optional[ndarray] = None,
         normalize: Optional[Literal["true", "pred", "all"]] = None,
@@ -86,6 +122,7 @@ class _MetricsAccessor(_BaseAccessor):
     def classification_report(
         self,
         *,
+        data_source: Literal["test", "train", "X_y"] = "test",
         X: Optional[ndarray] = None,
         y: Optional[ndarray] = None,
         digits: int = 2,
@@ -94,16 +131,16 @@ class _MetricsAccessor(_BaseAccessor):
 
 class EstimatorReport:
     metrics: _MetricsAccessor
-    plot: _PlotAccessor
 
     def __init__(
         self,
         estimator: BaseEstimator,
         *,
+        fit: Literal["auto", True, False] = "auto",
         X_train: Optional[ndarray] = None,
         y_train: Optional[ndarray] = None,
-        X_val: Optional[ndarray] = None,
-        y_val: Optional[ndarray] = None,
+        X_test: Optional[ndarray] = None,
+        y_test: Optional[ndarray] = None,
     ) -> None: ...
     @classmethod
     def from_fitted_estimator(
@@ -118,7 +155,7 @@ class EstimatorReport:
     @property
     def y_train(self) -> Optional[ndarray]: ...
     @property
-    def X_val(self) -> Optional[ndarray]: ...
+    def X_test(self) -> Optional[ndarray]: ...
     @property
-    def y_val(self) -> Optional[ndarray]: ...
+    def y_test(self) -> Optional[ndarray]: ...
     def help(self) -> None: ...

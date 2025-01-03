@@ -127,8 +127,16 @@ metric_report
 print(f"Time taken to compute the metrics: {end - start:.2f} seconds")
 
 # %%
-# We observe a similar behavior even with metrics that we did not compute before but
-# that share the same predictions. So for instance, let's compute the log loss.
+#
+# Since we obtain a pandas dataframe, we can also use the plotting interface of
+# pandas.
+ax = metric_report.T.plot.barh()
+_ = ax.set_title("Metrics report")
+
+# %%
+#
+# Whenever computing a metric, we check if the predictions are available in the cache
+# and reload them if available. So for instance, let's compute the log loss.
 
 start = time.time()
 log_loss = reporter.metrics.log_loss()
