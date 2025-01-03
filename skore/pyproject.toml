@@ -118,6 +118,7 @@ addopts = [
 [tool.coverage.run]
 omit = [
   "tests/*",
+  "skore/externals/*",
 ]
 
 [tool.ruff]

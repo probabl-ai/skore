@@ -4,7 +4,7 @@ import numpy as np
 from sklearn.base import is_classifier, is_regressor
 from sklearn.utils.multiclass import type_of_target
 
-from skore.sklearn._sklearn_compat import is_clusterer
+from skore.externals._sklearn_compat import is_clusterer
 from skore.sklearn.types import MLTask
 
 
