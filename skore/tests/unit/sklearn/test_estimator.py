@@ -191,10 +191,10 @@ def test_estimator_report_check_support_plot(
     report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
 
     for supported_plot_method in supported_plot_methods:
-        assert hasattr(report.plot, supported_plot_method)
+        assert hasattr(report.metrics.plot, supported_plot_method)
 
     for not_supported_plot_method in not_supported_plot_methods:
-        assert not hasattr(report.plot, not_supported_plot_method)
+        assert not hasattr(report.metrics.plot, not_supported_plot_method)
 
 
 def test_estimator_report_help(capsys, binary_classification_data):
@@ -229,7 +229,7 @@ def test_estimator_report_plot_help(capsys, binary_classification_data):
     estimator, X_test, y_test = binary_classification_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
-    report.plot.help()
+    report.metrics.plot.help()
     captured = capsys.readouterr()
     assert "🎨 Available plot methods" in captured.out
 
@@ -239,7 +239,7 @@ def test_estimator_report_plot_repr(binary_classification_data):
     estimator, X_test, y_test = binary_classification_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
-    repr_str = repr(report.plot)
+    repr_str = repr(report.metrics.plot)
     assert repr_str.startswith("🎨 Available plot methods")
 
 
@@ -247,7 +247,7 @@ def test_estimator_report_plot_roc(binary_classification_data):
     """Check that the ROC plot method works."""
     estimator, X_test, y_test = binary_classification_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    assert isinstance(report.plot.roc(), RocCurveDisplay)
+    assert isinstance(report.metrics.plot.roc(), RocCurveDisplay)
 
 
 @pytest.mark.parametrize("display", ["roc", "precision_recall"])
@@ -256,8 +256,8 @@ def test_estimator_report_display_binary_classification(
 ):
     estimator, X_test, y_test = binary_classification_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    assert hasattr(report.plot, display)
-    getattr(report.plot, display)()  # check that we can call the method
+    assert hasattr(report.metrics.plot, display)
+    getattr(report.metrics.plot, display)()  # check that we can call the method
     assert report._cache != {}
 
 
@@ -265,8 +265,8 @@ def test_estimator_report_display_binary_classification(
 def test_estimator_report_display_regression(pyplot, regression_data, display):
     estimator, X_test, y_test = regression_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    assert hasattr(report.plot, display)
-    getattr(report.plot, display)()  # check that we can call the method
+    assert hasattr(report.metrics.plot, display)
+    getattr(report.metrics.plot, display)()  # check that we can call the method
     assert report._cache != {}
 
 
@@ -276,8 +276,8 @@ def test_estimator_report_display_binary_classification_external_data(
 ):
     estimator, X_test, y_test = binary_classification_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    assert hasattr(report.plot, display)
-    getattr(report.plot, display)(
+    assert hasattr(report.metrics.plot, display)
+    getattr(report.metrics.plot, display)(
         data_source="X_y", X=X_test, y=y_test
     )  # check that we can call the method
     assert report._cache != {}
@@ -289,8 +289,8 @@ def test_estimator_report_display_regression_external_data(
 ):
     estimator, X_test, y_test = regression_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    assert hasattr(report.plot, display)
-    getattr(report.plot, display)(
+    assert hasattr(report.metrics.plot, display)
+    getattr(report.metrics.plot, display)(
         data_source="X_y", X=X_test, y=y_test
     )  # check that we can call the method
     assert report._cache != {}

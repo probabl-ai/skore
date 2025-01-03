@@ -140,7 +140,6 @@ class EstimatorReport(_HelpMixin):
     """
 
     _ACCESSOR_CONFIG = {
-        "plot": {"icon": "🎨", "name": "plot"},
         "metrics": {"icon": "📏", "name": "metrics"},
         # Add other accessors as they're implemented
         # "inspection": {"icon": "🔍", "name": "inspection"},
@@ -355,15 +354,30 @@ class EstimatorReport(_HelpMixin):
                 accessor = getattr(self, accessor_attr)
                 branch = tree.add(f"{config['icon']} {config['name']}")
 
-                # Use accessor's _get_methods_for_help instead of inspect.getmembers
+                # Add main accessor methods first
                 methods = accessor._get_methods_for_help()
                 methods = accessor._sort_methods_for_help(methods)
 
-                # Add methods to branch
                 for name, method in methods:
                     displayed_name = accessor._format_method_name(name)
                     description = accessor._get_method_description(method)
                     branch.add(f"{displayed_name} - {description}")
+
+                # Add sub-accessors after main methods
+                for sub_attr, sub_obj in inspect.getmembers(accessor):
+                    if isinstance(sub_obj, _BaseAccessor) and not sub_attr.startswith(
+                        "_"
+                    ):
+                        sub_branch = branch.add(f"{sub_obj._icon} {sub_attr}")
+
+                        # Add sub-accessor methods
+                        sub_methods = sub_obj._get_methods_for_help()
+                        sub_methods = sub_obj._sort_methods_for_help(sub_methods)
+
+                        for name, method in sub_methods:
+                            displayed_name = sub_obj._format_method_name(name)
+                            description = sub_obj._get_method_description(method)
+                            sub_branch.add(f"{displayed_name} - {description}")
 
         # Add base methods last
         base_methods = self._get_methods_for_help()
@@ -467,10 +481,11 @@ class _BaseAccessor(_HelpMixin):
 ########################################################################################
 
 
-@register_accessor("plot", EstimatorReport)
 class _PlotAccessor(_BaseAccessor):
     def __init__(self, parent):
-        super().__init__(parent, icon="🎨")
+        # Note: parent here will be the MetricsAccessor instance
+        super().__init__(parent._parent, icon="🎨")
+        self._metrics_parent = parent
 
     @available_if(
         _check_supported_ml_task(supported_ml_tasks=["binary-classification"])
@@ -764,6 +779,8 @@ class _MetricsAccessor(_BaseAccessor):
 
     def __init__(self, parent):
         super().__init__(parent, icon="📏")
+        # Create plot sub-accessor
+        self.plot = _PlotAccessor(self)
 
     # TODO: should build on the `add_scorers` function
     def report_metrics(
@@ -1504,3 +1521,24 @@ class _MetricsAccessor(_BaseAccessor):
         if name in self._SCORE_OR_LOSS_ICONS:
             return f"{self._SCORE_OR_LOSS_ICONS[name]} {name}"
         return name
+
+    def _get_methods_for_help(self):
+        """Override to exclude the plot accessor from methods list."""
+        methods = super()._get_methods_for_help()
+        return [(name, method) for name, method in methods if name != "plot"]
+
+    def _create_help_tree(self):
+        """Override to include plot methods in a separate branch."""
+        tree = super()._create_help_tree()
+
+        # Add plot methods in a separate branch
+        plot_branch = tree.add("🎨 plot")
+        plot_methods = self.plot._get_methods_for_help()
+        plot_methods = self.plot._sort_methods_for_help(plot_methods)
+
+        for name, method in plot_methods:
+            displayed_name = self.plot._format_method_name(name)
+            description = self.plot._get_method_description(method)
+            plot_branch.add(f"{displayed_name} - {description}")
+
+        return tree

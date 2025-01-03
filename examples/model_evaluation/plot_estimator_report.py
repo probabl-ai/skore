@@ -86,7 +86,7 @@ reporter.help()
 reporter.metrics.help()
 
 # %%
-reporter.plot.help()
+reporter.metrics.plot.help()
 
 # %%
 #
@@ -315,12 +315,12 @@ reporter.metrics.report_metrics(scoring=[f1_scorer, operational_decision_cost_sc
 # The :class:`skore.EstimatorReport` class also provides a plotting interface that
 # allows to plot *defacto* the most common plots. As for the the metrics, we only
 # provide the meaningful set of plots for the provided estimator.
-reporter.plot.help()
+reporter.metrics.plot.help()
 
 # %%
 #
 # Let's start by plotting the ROC curve for our binary classification task.
-display = reporter.plot.roc(pos_label="allowed")
+display = reporter.metrics.plot.roc(pos_label="allowed")
 
 # %%
 #
@@ -345,7 +345,7 @@ display.figure_
 # performance gain we can get.
 start = time.time()
 # we already trigger the computation of the predictions in a previous call
-reporter.plot.roc(pos_label="allowed")
+reporter.metrics.plot.roc(pos_label="allowed")
 end = time.time()
 
 # %%
@@ -358,7 +358,7 @@ reporter.clean_cache()
 
 # %%
 start = time.time()
-reporter.plot.roc(pos_label="allowed")
+reporter.metrics.plot.roc(pos_label="allowed")
 end = time.time()
 
 # %%
