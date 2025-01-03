@@ -271,6 +271,7 @@ class EstimatorReport(_HelpMixin):
         X,
         response_method,
         pos_label=None,
+        data_source="test",
     ):
         """Compute or load from local cache the response values.
 
@@ -292,6 +293,13 @@ class EstimatorReport(_HelpMixin):
         pos_label : str, default=None
             The positive label.
 
+        data_source : {"test", "train", "X_y"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the reporter.
+            - "train" : use the train set provided when creating the reporter.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
         Returns
         -------
         array-like of shape (n_samples,) or (n_samples, n_outputs)
@@ -301,9 +309,9 @@ class EstimatorReport(_HelpMixin):
         if prediction_method in ("predict_proba", "decision_function"):
             # pos_label is only important in classification and with probabilities
             # and decision functions
-            cache_key = (estimator_hash, pos_label, prediction_method)
+            cache_key = (estimator_hash, pos_label, prediction_method, data_source)
         else:
-            cache_key = (estimator_hash, prediction_method)
+            cache_key = (estimator_hash, prediction_method, data_source)
 
         if cache_key in self._cache:
             return self._cache[cache_key]
@@ -392,12 +400,35 @@ class _BaseAccessor(_HelpMixin):
 
         return tree
 
-    def _get_X_y_and_use_cache(self, X=None, y=None):
-        if X is None and y is None:
+    def _get_X_y_and_use_cache(self, *, data_source, X=None, y=None):
+        if data_source == "test":
+            if not (X is None or y is None):
+                raise ValueError("X and y must be None when data_source is test.")
             return self._parent._X_test, self._parent._y_test, True
-        elif not (X is not None and y is not None):
-            raise ValueError("X and y must be provided together.")
-        return X, y, False
+        elif data_source == "train":
+            if not (X is None or y is None):
+                raise ValueError("X and y must be None when data_source is train.")
+            is_cluster = is_clusterer(self._parent.estimator)
+            if self._parent._X_train is None or (
+                not is_cluster and self._parent._y_train is None
+            ):
+                missing_data = "X_train" if is_cluster else "X_train and y_train"
+                raise ValueError(
+                    f"No training data (i.e. {missing_data}) were provided "
+                    "when creating the reporter. Please provide the training data."
+                )
+            return self._parent._X_train, self._parent._y_train, True
+        elif data_source == "X_y":
+            is_cluster = is_clusterer(self._parent.estimator)
+            if X is None or (not is_cluster and y is None):
+                missing_data = "X" if is_cluster else "X and y"
+                raise ValueError(f"{missing_data} must be provided.")
+            return X, y, False
+        else:
+            raise ValueError(
+                f"Invalid data source: {data_source}. Possible values are: "
+                "test, train, X_y."
+            )
 
 
 ########################################################################################
@@ -413,11 +444,20 @@ class _PlotAccessor(_BaseAccessor):
     @available_if(
         _check_supported_ml_task(supported_ml_tasks=["binary-classification"])
     )
-    def roc(self, *, X=None, y=None, pos_label=None, ax=None, name=None):
+    def roc(
+        self, *, data_source="test", X=None, y=None, pos_label=None, ax=None, name=None
+    ):
         """Plot the ROC curve.
 
         Parameters
         ----------
+        data_source : {"test", "train", "X_y"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the reporter.
+            - "train" : use the train set provided when creating the reporter.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
             set provided when creating the reporter.
@@ -441,7 +481,7 @@ class _PlotAccessor(_BaseAccessor):
             The ROC curve display.
         """
         prediction_method = ["predict_proba", "decision_function"]
-        X, y, use_cache = self._get_X_y_and_use_cache(X, y)
+        X, y, use_cache = self._get_X_y_and_use_cache(data_source=data_source, X=X, y=y)
         name_ = self._parent.estimator_name if name is None else name
 
         if use_cache:
@@ -451,6 +491,7 @@ class _PlotAccessor(_BaseAccessor):
                 X=X,
                 response_method=prediction_method,
                 pos_label=pos_label,
+                data_source=data_source,
             )
 
             cache_key = (self._parent._hash, RocCurveDisplay.__name__, pos_label, name_)
@@ -488,11 +529,27 @@ class _PlotAccessor(_BaseAccessor):
     @available_if(
         _check_supported_ml_task(supported_ml_tasks=["binary-classification"])
     )
-    def precision_recall(self, *, X=None, y=None, pos_label=None, ax=None, name=None):
+    def precision_recall(
+        self,
+        *,
+        data_source="test",
+        X=None,
+        y=None,
+        pos_label=None,
+        ax=None,
+        name=None,
+    ):
         """Plot the precision-recall curve.
 
         Parameters
         ----------
+        data_source : {"test", "train", "X_y"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the reporter.
+            - "train" : use the train set provided when creating the reporter.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
             set provided when creating the reporter.
@@ -516,7 +573,7 @@ class _PlotAccessor(_BaseAccessor):
             The precision-recall curve display.
         """
         prediction_method = ["predict_proba", "decision_function"]
-        X, y, use_cache = self._get_X_y_and_use_cache(X, y)
+        X, y, use_cache = self._get_X_y_and_use_cache(data_source=data_source, X=X, y=y)
         name_ = self._parent.estimator_name if name is None else name
 
         if use_cache:
@@ -526,6 +583,7 @@ class _PlotAccessor(_BaseAccessor):
                 X=X,
                 response_method=prediction_method,
                 pos_label=pos_label,
+                data_source=data_source,
             )
 
             cache_key = (
@@ -569,6 +627,7 @@ class _PlotAccessor(_BaseAccessor):
     def prediction_error(
         self,
         *,
+        data_source="test",
         X=None,
         y=None,
         ax=None,
@@ -581,6 +640,13 @@ class _PlotAccessor(_BaseAccessor):
 
         Parameters
         ----------
+        data_source : {"test", "train", "X_y"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the reporter.
+            - "train" : use the train set provided when creating the reporter.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
             set provided when creating the reporter.
@@ -615,7 +681,7 @@ class _PlotAccessor(_BaseAccessor):
         PredictionErrorDisplay
             The prediction error display.
         """
-        X, y, use_cache = self._get_X_y_and_use_cache(X, y)
+        X, y, use_cache = self._get_X_y_and_use_cache(data_source=data_source, X=X, y=y)
 
         if use_cache:
             y_pred = self._parent._get_cached_response_values(
@@ -623,6 +689,7 @@ class _PlotAccessor(_BaseAccessor):
                 estimator=self._parent.estimator,
                 X=X,
                 response_method="predict",
+                data_source=data_source,
             )
 
             cache_key = (
@@ -686,6 +753,7 @@ class _MetricsAccessor(_BaseAccessor):
     def report_metrics(
         self,
         *,
+        data_source="test",
         X=None,
         y=None,
         scoring=None,
@@ -696,6 +764,13 @@ class _MetricsAccessor(_BaseAccessor):
 
         Parameters
         ----------
+        data_source : {"test", "train", "X_y"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the reporter.
+            - "train" : use the train set provided when creating the reporter.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
             set provided when creating the reporter.
@@ -778,7 +853,9 @@ class _MetricsAccessor(_BaseAccessor):
                     f"Invalid type of metric: {type(metric)} for metric: {metric}"
                 )
 
-            scores.append(metric_fn(X=X, y=y, **metrics_kwargs))
+            scores.append(
+                metric_fn(data_source=data_source, X=X, y=y, **metrics_kwargs)
+            )
 
         has_multilevel = any(
             isinstance(score, pd.DataFrame) and isinstance(score.columns, pd.MultiIndex)
@@ -813,6 +890,7 @@ class _MetricsAccessor(_BaseAccessor):
         pos_label=None,
         metric_name=None,
         use_cache=False,
+        data_source="test",
         **metric_kwargs,
     ):
         if use_cache:
@@ -822,8 +900,9 @@ class _MetricsAccessor(_BaseAccessor):
                 X=X,
                 response_method=response_method,
                 pos_label=pos_label,
+                data_source=data_source,
             )
-            cache_key = (self._parent._hash, metric_fn.__name__)
+            cache_key = (self._parent._hash, metric_fn.__name__, data_source)
             metric_params = inspect.signature(metric_fn).parameters
             if "pos_label" in metric_params:
                 cache_key += (pos_label,)
@@ -904,11 +983,18 @@ class _MetricsAccessor(_BaseAccessor):
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def accuracy(self, *, X=None, y=None):
+    def accuracy(self, *, data_source="test", X=None, y=None):
         """Compute the accuracy score.
 
         Parameters
         ----------
+        data_source : {"test", "train", "X_y"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the reporter.
+            - "train" : use the train set provided when creating the reporter.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
             set provided when creating the reporter.
@@ -922,7 +1008,7 @@ class _MetricsAccessor(_BaseAccessor):
         pd.DataFrame
             The accuracy score.
         """
-        X, y, use_cache = self._get_X_y_and_use_cache(X=X, y=y)
+        X, y, use_cache = self._get_X_y_and_use_cache(data_source=data_source, X=X, y=y)
 
         return self._compute_metric_scores(
             metrics.accuracy_score,
@@ -931,6 +1017,7 @@ class _MetricsAccessor(_BaseAccessor):
             response_method="predict",
             metric_name=f"Accuracy {self._SCORE_OR_LOSS_ICONS['accuracy']}",
             use_cache=use_cache,
+            data_source=data_source,
         )
 
     @available_if(
@@ -938,11 +1025,20 @@ class _MetricsAccessor(_BaseAccessor):
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def precision(self, *, X=None, y=None, average="auto", pos_label=1):
+    def precision(
+        self, *, data_source="test", X=None, y=None, average="auto", pos_label=1
+    ):
         """Compute the precision score.
 
         Parameters
         ----------
+        data_source : {"test", "train", "X_y"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the reporter.
+            - "train" : use the train set provided when creating the reporter.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
             set provided when creating the reporter.
@@ -965,7 +1061,7 @@ class _MetricsAccessor(_BaseAccessor):
         pd.DataFrame
             The precision score.
         """
-        X, y, use_cache = self._get_X_y_and_use_cache(X=X, y=y)
+        X, y, use_cache = self._get_X_y_and_use_cache(data_source=data_source, X=X, y=y)
 
         if average == "auto":
             if self._parent._ml_task == "binary-classification":
@@ -986,6 +1082,7 @@ class _MetricsAccessor(_BaseAccessor):
             metric_name=f"Precision {self._SCORE_OR_LOSS_ICONS['precision']}",
             average=average,
             use_cache=use_cache,
+            data_source=data_source,
         )
 
     @available_if(
@@ -993,11 +1090,20 @@ class _MetricsAccessor(_BaseAccessor):
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def recall(self, *, X=None, y=None, average="auto", pos_label=1):
+    def recall(
+        self, *, data_source="test", X=None, y=None, average="auto", pos_label=1
+    ):
         """Compute the recall score.
 
         Parameters
         ----------
+        data_source : {"test", "train", "X_y"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the reporter.
+            - "train" : use the train set provided when creating the reporter.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
             set provided when creating the reporter.
@@ -1020,7 +1126,7 @@ class _MetricsAccessor(_BaseAccessor):
         pd.DataFrame
             The recall score.
         """
-        X, y, use_cache = self._get_X_y_and_use_cache(X=X, y=y)
+        X, y, use_cache = self._get_X_y_and_use_cache(data_source=data_source, X=X, y=y)
 
         if average == "auto":
             if self._parent._ml_task == "binary-classification":
@@ -1041,6 +1147,7 @@ class _MetricsAccessor(_BaseAccessor):
             metric_name=f"Recall {self._SCORE_OR_LOSS_ICONS['recall']}",
             average=average,
             use_cache=use_cache,
+            data_source=data_source,
         )
 
     @available_if(
@@ -1048,11 +1155,18 @@ class _MetricsAccessor(_BaseAccessor):
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def brier_score(self, *, X=None, y=None, pos_label=1):
+    def brier_score(self, *, data_source="test", X=None, y=None, pos_label=1):
         """Compute the Brier score.
 
         Parameters
         ----------
+        data_source : {"test", "train", "X_y"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the reporter.
+            - "train" : use the train set provided when creating the reporter.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
             set provided when creating the reporter.
@@ -1069,7 +1183,7 @@ class _MetricsAccessor(_BaseAccessor):
         pd.DataFrame
             The Brier score.
         """
-        X, y, use_cache = self._get_X_y_and_use_cache(X=X, y=y)
+        X, y, use_cache = self._get_X_y_and_use_cache(data_source=data_source, X=X, y=y)
 
         return self._compute_metric_scores(
             metrics.brier_score_loss,
@@ -1079,6 +1193,7 @@ class _MetricsAccessor(_BaseAccessor):
             metric_name=f"Brier score {self._SCORE_OR_LOSS_ICONS['brier_score']}",
             pos_label=pos_label,
             use_cache=use_cache,
+            data_source=data_source,
         )
 
     @available_if(
@@ -1086,11 +1201,20 @@ class _MetricsAccessor(_BaseAccessor):
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def roc_auc(self, *, X=None, y=None, average="auto", multi_class="ovr"):
+    def roc_auc(
+        self, *, data_source="test", X=None, y=None, average="auto", multi_class="ovr"
+    ):
         """Compute the ROC AUC score.
 
         Parameters
         ----------
+        data_source : {"test", "train", "X_y"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the reporter.
+            - "train" : use the train set provided when creating the reporter.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
             set provided when creating the reporter.
@@ -1123,7 +1247,7 @@ class _MetricsAccessor(_BaseAccessor):
         pd.DataFrame
             The ROC AUC score.
         """
-        X, y, use_cache = self._get_X_y_and_use_cache(X=X, y=y)
+        X, y, use_cache = self._get_X_y_and_use_cache(data_source=data_source, X=X, y=y)
 
         if average == "auto":
             if self._parent._ml_task == "binary-classification":
@@ -1140,6 +1264,7 @@ class _MetricsAccessor(_BaseAccessor):
             average=average,
             multi_class=multi_class,
             use_cache=use_cache,
+            data_source=data_source,
         )
 
     @available_if(
@@ -1147,7 +1272,7 @@ class _MetricsAccessor(_BaseAccessor):
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def log_loss(self, *, X=None, y=None):
+    def log_loss(self, *, data_source="test", X=None, y=None):
         """Compute the log loss.
 
         Parameters
@@ -1165,7 +1290,7 @@ class _MetricsAccessor(_BaseAccessor):
         pd.DataFrame
             The log-loss.
         """
-        X, y, use_cache = self._get_X_y_and_use_cache(X=X, y=y)
+        X, y, use_cache = self._get_X_y_and_use_cache(data_source=data_source, X=X, y=y)
 
         return self._compute_metric_scores(
             metrics.log_loss,
@@ -1174,10 +1299,11 @@ class _MetricsAccessor(_BaseAccessor):
             response_method="predict_proba",
             metric_name=f"Log loss {self._SCORE_OR_LOSS_ICONS['log_loss']}",
             use_cache=use_cache,
+            data_source=data_source,
         )
 
     @available_if(_check_supported_ml_task(supported_ml_tasks=["regression"]))
-    def r2(self, *, X=None, y=None, multioutput="uniform_average"):
+    def r2(self, *, data_source="test", X=None, y=None, multioutput="uniform_average"):
         """Compute the R² score.
 
         Parameters
@@ -1206,7 +1332,7 @@ class _MetricsAccessor(_BaseAccessor):
         pd.DataFrame
             The R² score.
         """
-        X, y, use_cache = self._get_X_y_and_use_cache(X=X, y=y)
+        X, y, use_cache = self._get_X_y_and_use_cache(data_source=data_source, X=X, y=y)
 
         return self._compute_metric_scores(
             metrics.r2_score,
@@ -1216,10 +1342,13 @@ class _MetricsAccessor(_BaseAccessor):
             metric_name=f"R² {self._SCORE_OR_LOSS_ICONS['r2']}",
             use_cache=use_cache,
             multioutput=multioutput,
+            data_source=data_source,
         )
 
     @available_if(_check_supported_ml_task(supported_ml_tasks=["regression"]))
-    def rmse(self, *, X=None, y=None, multioutput="uniform_average"):
+    def rmse(
+        self, *, data_source="test", X=None, y=None, multioutput="uniform_average"
+    ):
         """Compute the root mean squared error.
 
         Parameters
@@ -1248,7 +1377,7 @@ class _MetricsAccessor(_BaseAccessor):
         pd.DataFrame
             The root mean squared error.
         """
-        X, y, use_cache = self._get_X_y_and_use_cache(X=X, y=y)
+        X, y, use_cache = self._get_X_y_and_use_cache(data_source=data_source, X=X, y=y)
 
         return self._compute_metric_scores(
             metrics.root_mean_squared_error,
@@ -1258,6 +1387,7 @@ class _MetricsAccessor(_BaseAccessor):
             metric_name=f"RMSE {self._SCORE_OR_LOSS_ICONS['rmse']}",
             use_cache=use_cache,
             multioutput=multioutput,
+            data_source=data_source,
         )
 
     def custom_metric(
@@ -1266,6 +1396,7 @@ class _MetricsAccessor(_BaseAccessor):
         response_method,
         *,
         metric_name=None,
+        data_source="test",
         X=None,
         y=None,
         **kwargs,
@@ -1312,7 +1443,7 @@ class _MetricsAccessor(_BaseAccessor):
         pd.DataFrame
             The custom metric.
         """
-        X, y, use_cache = self._get_X_y_and_use_cache(X=X, y=y)
+        X, y, use_cache = self._get_X_y_and_use_cache(data_source=data_source, X=X, y=y)
 
         return self._compute_metric_scores(
             metric_function,
@@ -1321,6 +1452,7 @@ class _MetricsAccessor(_BaseAccessor):
             response_method=response_method,
             metric_name=metric_name,
             use_cache=use_cache,
+            data_source=data_source,
             **kwargs,
         )
 

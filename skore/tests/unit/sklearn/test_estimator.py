@@ -4,10 +4,11 @@ import joblib
 import numpy as np
 import pandas as pd
 import pytest
+from sklearn.cluster import KMeans
 from sklearn.datasets import make_classification, make_regression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
-from sklearn.metrics import make_scorer, median_absolute_error, r2_score
+from sklearn.metrics import make_scorer, median_absolute_error, r2_score, rand_score
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.utils.validation import check_is_fitted
@@ -277,7 +278,7 @@ def test_estimator_report_display_binary_classification_external_data(
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     assert hasattr(report.plot, display)
     getattr(report.plot, display)(
-        X=X_test, y=y_test
+        data_source="X_y", X=X_test, y=y_test
     )  # check that we can call the method
     assert report._cache == {}  # we don't use the cache when passing external data
 
@@ -290,7 +291,7 @@ def test_estimator_report_display_regression_external_data(
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     assert hasattr(report.plot, display)
     getattr(report.plot, display)(
-        X=X_test, y=y_test
+        data_source="X_y", X=X_test, y=y_test
     )  # check that we can call the method
     assert report._cache == {}
 
@@ -340,7 +341,9 @@ def test_estimator_report_metrics_binary_classification(
 
     # check that passing using data outside from the report works and that we they
     # don't come from the cache
-    result_external_data = getattr(report.metrics, metric)(X=X_test, y=y_test)
+    result_external_data = getattr(report.metrics, metric)(
+        data_source="X_y", X=X_test, y=y_test
+    )
     assert isinstance(result_external_data, pd.DataFrame)
     pd.testing.assert_frame_equal(result, result_external_data)
     assert report._cache == {}
@@ -361,7 +364,9 @@ def test_estimator_report_metrics_regression(regression_data, metric):
 
     # check that passing using data outside from the report works and that we they
     # don't come from the cache
-    result_external_data = getattr(report.metrics, metric)(X=X_test, y=y_test)
+    result_external_data = getattr(report.metrics, metric)(
+        data_source="X_y", X=X_test, y=y_test
+    )
     assert isinstance(result_external_data, pd.DataFrame)
     pd.testing.assert_frame_equal(result, result_external_data)
     assert report._cache == {}
@@ -646,3 +651,87 @@ def test_estimator_report_report_metrics_with_scorer(regression_data):
             ]
         ],
     )
+
+
+def test_estimator_report_get_X_y_and_use_cache_error():
+    """Check that we raise the proper error in `get_X_y_and_use_cache`."""
+    X, y = make_classification(n_classes=2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+
+    estimator = LogisticRegression().fit(X_train, y_train)
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    err_msg = re.escape(
+        "Invalid data source: unknown. Possible values are: " "test, train, X_y."
+    )
+    with pytest.raises(ValueError, match=err_msg):
+        report.metrics.log_loss(data_source="unknown")
+
+    err_msg = re.escape(
+        "No training data (i.e. X_train and y_train) were provided "
+        "when creating the reporter. Please provide the training data."
+    )
+    with pytest.raises(ValueError, match=err_msg):
+        report.metrics.log_loss(data_source="train")
+
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+
+    for data_source in ("train", "test"):
+        err_msg = f"X and y must be None when data_source is {data_source}."
+        with pytest.raises(ValueError, match=err_msg):
+            report.metrics.log_loss(data_source=data_source, X=X_test, y=y_test)
+
+    err_msg = "X and y must be provided."
+    with pytest.raises(ValueError, match=err_msg):
+        report.metrics.log_loss(data_source="X_y")
+
+    # FIXME: once we choose some basic metrics for clustering, then we don't need to
+    # use `custom_metric` for them.
+    estimator = KMeans().fit(X_train)
+    report = EstimatorReport(estimator, X_test=X_test)
+    err_msg = "X must be provided."
+    with pytest.raises(ValueError, match=err_msg):
+        report.metrics.custom_metric(
+            rand_score, response_method="predict", data_source="X_y"
+        )
+
+    err_msg = re.escape(
+        "No training data (i.e. X_train) were provided when creating the reporter. "
+        "Please provide the training data."
+    )
+    with pytest.raises(ValueError, match=err_msg):
+        report.metrics.custom_metric(
+            rand_score, response_method="predict", data_source="train"
+        )
+
+
+@pytest.mark.parametrize("data_source", ("train", "test", "X_y"))
+def test_estimator_report_get_X_y_and_use_cache(data_source):
+    """Check the general behaviour of `get_X_y_and_use_cache`."""
+    X, y = make_classification(n_classes=2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+
+    estimator = LogisticRegression()
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+
+    kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
+    X, y, use_cache = report.metrics._get_X_y_and_use_cache(
+        data_source=data_source, **kwargs
+    )
+
+    if data_source == "train":
+        assert X is X_train
+        assert y is y_train
+        assert use_cache is True
+    elif data_source == "test":
+        assert X is X_test
+        assert y is y_test
+        assert use_cache is True
+    elif data_source == "X_y":
+        assert X is X_test
+        assert y is y_test
+        assert use_cache is False

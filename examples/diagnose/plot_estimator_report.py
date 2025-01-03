@@ -154,14 +154,22 @@ print(f"Time taken to compute the log loss: {end - start:.2f} seconds")
 
 # %%
 #
-# Another feature that is handy is to be able to compute the same statistics on a
-# completely new set of data. The metrics above accept a `X` and `y` parameters that
-# allow to pass a new set of data to compute the metrics on. However, in this case,
-# we cannot safely (FIXME: we might be able to do so) track the data provenance and
-# thus not use the cache.
+# By default, the metrics are computed on the test set. However, if a training set
+# is provided, we can also compute the metrics by specifying the `data_source`
+# parameter.
+reporter.metrics.log_loss(data_source="train")
+
+# %%
+#
+# In the case where we are interested in computing the metrics on a completely new set
+# of data, we can use the `data_source="X_y"` parameter. In addition, we need to provide
+# a `X` and `y` parameters. However, in this case, we cannot safely (FIXME: we might be
+# able to do so) track the data provenance and thus not use the cache.
 
 start = time.time()
-metric_report = reporter.metrics.report_metrics(X=X_test, y=y_test, pos_label="allowed")
+metric_report = reporter.metrics.report_metrics(
+    data_source="X_y", X=X_test, y=y_test, pos_label="allowed"
+)
 end = time.time()
 metric_report
 
