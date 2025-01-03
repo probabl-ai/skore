@@ -51,18 +51,23 @@ html_js_files = [
     "js/sg_plotly_resize.js",
 ]
 
+# list of examples in explicit order
+examples_ordered = [
+    "../examples/getting_started",
+    "../examples/getting_started/plot_quick_start",
+    "../examples/getting_started/plot_skore_product_tour",
+    "../examples/getting_started/plot_working_with_projects",
+    "../examples/getting_started/plot_tracking_items",
+    "../examples/model_evaluation",
+    "../examples/model_evaluation/plot_train_test_split"
+    "../examples/model_evaluation/plot_cross_validate",
+]
+
 # sphinx_gallery options
 sphinx_gallery_conf = {
     "examples_dirs": "../examples",  # path to example scripts
     "gallery_dirs": "auto_examples",  # path to gallery generated output
-    "subsection_order": ExplicitOrder(["../examples/getting_started",
-                                       "../examples/getting_started/plot_getting_started",
-                                       "../examples/track",
-                                       "../examples/track/plot_overview_skore_project",
-                                       "../examples/track/plot_tracking_items",
-                                       "../examples/diagnose",
-                                       "../examples/diagnose/plot_cross_validate",
-                                       "../examples/diagnose/plot_train_test_split"]),
+    "subsection_order": ExplicitOrder(examples_ordered),
     "within_subsection_order": "FileNameSortKey",  # See https://sphinx-gallery.github.io/stable/configuration.html#sorting-gallery-examples for alternatives
     "show_memory": False,
     "write_computation_times": False,
@@ -105,21 +110,18 @@ html_theme_options = {
     # In particular, "**" specifies the default for all pages
     # Use :html_theme.sidebar_secondary.remove: for file-wide removal
     "secondary_sidebar_items": {
-        "**": ["page-toc", "sourcelink", "sg_download_links", "sg_launcher_links"]
+        "**": ["page-toc", "sourcelink", "sg_download_links", "sg_launcher_links"],
+        "index": [], # hide secondary sidebar items for the landing page
+        "install": [],
     },
     "external_links": [
         {
             "url": "https://probabl.ai",
-            "name": "Probabl website",
+            "name": "Probabl",
         },
     ],
-    "header_links_before_dropdown": 4,
+    "header_links_before_dropdown": 5,
     "icon_links": [
-        {
-            "name": "Twitter",
-            "url": "https://x.com/probabl_ai",
-            "icon": "fa-brands fa-twitter",
-        },
         {
             "name": "GitHub",
             "url": "https://github.com/probabl-ai/skore/",
@@ -129,6 +131,26 @@ html_theme_options = {
             "name": "Discord",
             "url": "https://discord.gg/scBZerAGwW",
             "icon": "fa-brands fa-discord",
+        },
+        {
+            "name": "YouTube",
+            "url": "https://www.youtube.com/@probabl_ai",
+            "icon": "fa-brands fa-youtube",
+        },
+        {
+            "name": "LinkedIn",
+            "url": "https://www.linkedin.com/company/probabl/",
+            "icon": "fa-brands fa-linkedin-in",
+        },
+        {
+            "name": "Bluesky",
+            "url": "https://bsky.app/profile/probabl.ai",
+            "icon": "fa-brands fa-bluesky",
+        },
+        {
+            "name": "X (ex-Twitter)",
+            "url": "https://x.com/probabl_ai",
+            "icon": "fa-brands fa-x-twitter",
         },
     ],
     "switcher": {
@@ -152,6 +174,7 @@ html_theme_options["analytics"] = {
 
 # Sphinx remove the sidebar from some pages
 html_sidebars = {
+    "index": [],
     "install": [],
     "contributing_link": [],
 }
