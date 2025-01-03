@@ -61,6 +61,7 @@ jobs:
           # run coverage
           python -m pytest -n auto --junitxml=coverage.xml --cov=skore src/ tests/ | tee pytest-coverage.txt
       - name: Pytest coverage comment
+        if: ${{ ! github.event.pull_request.head.repo.fork }}
         uses: MishaKav/pytest-coverage-comment@main
         with:
           pytest-coverage-path: ./skore/pytest-coverage.txt
