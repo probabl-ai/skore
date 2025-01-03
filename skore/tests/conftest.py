@@ -7,6 +7,16 @@ from skore.project import Project
 from skore.view.view_repository import ViewRepository
 
 
+def pytest_configure(config):
+    # Use matplotlib agg backend during the tests including doctests
+    try:
+        import matplotlib
+
+        matplotlib.use("agg")
+    except ImportError:
+        pass
+
+
 @pytest.fixture
 def mock_now():
     return datetime.now(tz=timezone.utc)
