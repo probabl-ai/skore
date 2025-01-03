@@ -163,8 +163,7 @@ reporter.metrics.log_loss(data_source="train")
 #
 # In the case where we are interested in computing the metrics on a completely new set
 # of data, we can use the `data_source="X_y"` parameter. In addition, we need to provide
-# a `X` and `y` parameters. However, in this case, we cannot safely (FIXME: we might be
-# able to do so) track the data provenance and thus not use the cache.
+# a `X` and `y` parameters.
 
 start = time.time()
 metric_report = reporter.metrics.report_metrics(
@@ -177,6 +176,28 @@ metric_report
 print(f"Time taken to compute the metrics: {end - start:.2f} seconds")
 
 # %%
+#
+# As in the other case, we rely on the cache to avoid recomputing the predictions.
+# Internally, we compute a hash of the input data to be sure that we can hit the cache
+# in a consistent way.
+
+# %%
+start = time.time()
+metric_report = reporter.metrics.report_metrics(
+    data_source="X_y", X=X_test, y=y_test, pos_label="allowed"
+)
+end = time.time()
+metric_report
+
+# %%
+print(f"Time taken to compute the metrics: {end - start:.2f} seconds")
+
+# %%
+#
+# .. warning::
+#     In this last example, we rely on computing the hash of the input data. Therefore,
+#     there is a trade-off: the computation of the hash is not free and it might be
+#     faster to compute the predictions instead.
 #
 # Be aware that you can also benefit from the caching mechanism with your own custom
 # metrics. We only expect that you define your own metric function to take `y_true`

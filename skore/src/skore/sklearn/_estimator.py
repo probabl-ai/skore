@@ -272,6 +272,7 @@ class EstimatorReport(_HelpMixin):
         response_method,
         pos_label=None,
         data_source="test",
+        data_source_hash=None,
     ):
         """Compute or load from local cache the response values.
 
@@ -312,6 +313,13 @@ class EstimatorReport(_HelpMixin):
             cache_key = (estimator_hash, pos_label, prediction_method, data_source)
         else:
             cache_key = (estimator_hash, prediction_method, data_source)
+
+        if data_source_hash is not None:
+            cache_key += (data_source_hash,)
+
+        if data_source == "X_y":
+            data_source_hash = joblib.hash(X)
+            cache_key += (data_source_hash,)
 
         if cache_key in self._cache:
             return self._cache[cache_key]
@@ -400,11 +408,34 @@ class _BaseAccessor(_HelpMixin):
 
         return tree
 
-    def _get_X_y_and_use_cache(self, *, data_source, X=None, y=None):
+    def _get_X_y_and_data_source_hash(self, *, data_source, X=None, y=None):
+        """Get the requested dataset and mention if we should hash before caching.
+
+        Parameters
+        ----------
+        data_source : {"test", "train", "X_y"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the reporter.
+            - "train" : use the train set provided when creating the reporter.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
+        Returns
+        -------
+        X : array-like of shape (n_samples, n_features)
+            The requested dataset.
+
+        y : array-like of shape (n_samples,)
+            The requested dataset.
+
+        data_source_hash : int or None
+            The hash of the data source. None when we are able to track the data, and
+            thus relying on X_train, y_train, X_test, y_test.
+        """
         if data_source == "test":
             if not (X is None or y is None):
                 raise ValueError("X and y must be None when data_source is test.")
-            return self._parent._X_test, self._parent._y_test, True
+            return self._parent._X_test, self._parent._y_test, None
         elif data_source == "train":
             if not (X is None or y is None):
                 raise ValueError("X and y must be None when data_source is train.")
@@ -417,13 +448,13 @@ class _BaseAccessor(_HelpMixin):
                     f"No training data (i.e. {missing_data}) were provided "
                     "when creating the reporter. Please provide the training data."
                 )
-            return self._parent._X_train, self._parent._y_train, True
+            return self._parent._X_train, self._parent._y_train, None
         elif data_source == "X_y":
             is_cluster = is_clusterer(self._parent.estimator)
             if X is None or (not is_cluster and y is None):
                 missing_data = "X" if is_cluster else "X and y"
                 raise ValueError(f"{missing_data} must be provided.")
-            return X, y, False
+            return X, y, joblib.hash((X, y))
         else:
             raise ValueError(
                 f"Invalid data source: {data_source}. Possible values are: "
@@ -481,48 +512,43 @@ class _PlotAccessor(_BaseAccessor):
             The ROC curve display.
         """
         prediction_method = ["predict_proba", "decision_function"]
-        X, y, use_cache = self._get_X_y_and_use_cache(data_source=data_source, X=X, y=y)
+        X, y, data_source_hash = self._get_X_y_and_data_source_hash(
+            data_source=data_source, X=X, y=y
+        )
         name_ = self._parent.estimator_name if name is None else name
 
-        if use_cache:
-            y_pred = self._parent._get_cached_response_values(
-                estimator_hash=self._parent._hash,
-                estimator=self._parent.estimator,
-                X=X,
-                response_method=prediction_method,
-                pos_label=pos_label,
-                data_source=data_source,
+        cache_key = (self._parent._hash, RocCurveDisplay.__name__, pos_label, name_)
+        if data_source_hash:
+            cache_key += (data_source_hash,)
+
+        y_pred = self._parent._get_cached_response_values(
+            estimator_hash=self._parent._hash,
+            estimator=self._parent.estimator,
+            X=X,
+            response_method=prediction_method,
+            pos_label=pos_label,
+            data_source=data_source,
+            data_source_hash=data_source_hash,
+        )
+
+        if cache_key in self._parent._cache:
+            display = self._parent._cache[cache_key].plot(
+                ax=ax,
+                name=name_,
+                plot_chance_level=True,
+                despine=True,
             )
-
-            cache_key = (self._parent._hash, RocCurveDisplay.__name__, pos_label, name_)
-
-            if cache_key in self._parent._cache:
-                display = self._parent._cache[cache_key].plot(
-                    ax=ax,
-                    name=name_,
-                    plot_chance_level=True,
-                    despine=True,
-                )
-            else:
-                display = RocCurveDisplay.from_predictions(
-                    self._parent.y_test,
-                    y_pred,
-                    pos_label=pos_label,
-                    ax=ax,
-                    name=name_,
-                    plot_chance_level=True,
-                    despine=True,
-                )
-                self._parent._cache[cache_key] = display
         else:
-            display = RocCurveDisplay.from_estimator(
-                self._parent.estimator,
-                X,
-                y,
+            display = RocCurveDisplay.from_predictions(
+                self._parent.y_test,
+                y_pred,
                 pos_label=pos_label,
                 ax=ax,
                 name=name_,
+                plot_chance_level=True,
+                despine=True,
             )
+            self._parent._cache[cache_key] = display
 
         return display
 
@@ -573,53 +599,48 @@ class _PlotAccessor(_BaseAccessor):
             The precision-recall curve display.
         """
         prediction_method = ["predict_proba", "decision_function"]
-        X, y, use_cache = self._get_X_y_and_use_cache(data_source=data_source, X=X, y=y)
+        X, y, data_source_hash = self._get_X_y_and_data_source_hash(
+            data_source=data_source, X=X, y=y
+        )
         name_ = self._parent.estimator_name if name is None else name
 
-        if use_cache:
-            y_pred = self._parent._get_cached_response_values(
-                estimator_hash=self._parent._hash,
-                estimator=self._parent.estimator,
-                X=X,
-                response_method=prediction_method,
-                pos_label=pos_label,
-                data_source=data_source,
-            )
+        cache_key = (
+            self._parent._hash,
+            PrecisionRecallDisplay.__name__,
+            pos_label,
+            name_,
+        )
+        if data_source_hash:
+            cache_key += (data_source_hash,)
 
-            cache_key = (
-                self._parent._hash,
-                PrecisionRecallDisplay.__name__,
-                pos_label,
-                name_,
-            )
+        y_pred = self._parent._get_cached_response_values(
+            estimator_hash=self._parent._hash,
+            estimator=self._parent.estimator,
+            X=X,
+            response_method=prediction_method,
+            pos_label=pos_label,
+            data_source=data_source,
+            data_source_hash=data_source_hash,
+        )
 
-            if cache_key in self._parent._cache:
-                display = self._parent._cache[cache_key].plot(
-                    ax=ax,
-                    name=name_,
-                    plot_chance_level=True,
-                    despine=True,
-                )
-            else:
-                display = PrecisionRecallDisplay.from_predictions(
-                    y,
-                    y_pred,
-                    pos_label=pos_label,
-                    ax=ax,
-                    name=name_,
-                    plot_chance_level=True,
-                    despine=True,
-                )
-                self._parent._cache[cache_key] = display
+        if cache_key in self._parent._cache:
+            display = self._parent._cache[cache_key].plot(
+                ax=ax,
+                name=name_,
+                plot_chance_level=True,
+                despine=True,
+            )
         else:
-            display = PrecisionRecallDisplay.from_estimator(
-                self._parent.estimator,
-                X,
+            display = PrecisionRecallDisplay.from_predictions(
                 y,
+                y_pred,
                 pos_label=pos_label,
                 ax=ax,
                 name=name_,
+                plot_chance_level=True,
+                despine=True,
             )
+            self._parent._cache[cache_key] = display
 
         return display
 
@@ -681,47 +702,42 @@ class _PlotAccessor(_BaseAccessor):
         PredictionErrorDisplay
             The prediction error display.
         """
-        X, y, use_cache = self._get_X_y_and_use_cache(data_source=data_source, X=X, y=y)
+        X, y, data_source_hash = self._get_X_y_and_data_source_hash(
+            data_source=data_source, X=X, y=y
+        )
 
-        if use_cache:
-            y_pred = self._parent._get_cached_response_values(
-                estimator_hash=self._parent._hash,
-                estimator=self._parent.estimator,
-                X=X,
-                response_method="predict",
-                data_source=data_source,
+        cache_key = (
+            self._parent._hash,
+            PredictionErrorDisplay.__name__,
+            kind,
+            subsample,
+        )
+        if data_source_hash:
+            cache_key += (data_source_hash,)
+
+        y_pred = self._parent._get_cached_response_values(
+            estimator_hash=self._parent._hash,
+            estimator=self._parent.estimator,
+            X=X,
+            response_method="predict",
+            data_source=data_source,
+            data_source_hash=data_source_hash,
+        )
+
+        if cache_key in self._parent._cache:
+            display = self._parent._cache[cache_key].plot(
+                ax=ax,
+                kind=kind,
             )
-
-            cache_key = (
-                self._parent._hash,
-                PredictionErrorDisplay.__name__,
-                kind,
-                subsample,
-            )
-
-            if cache_key in self._parent._cache:
-                display = self._parent._cache[cache_key].plot(
-                    ax=ax,
-                    kind=kind,
-                )
-            else:
-                display = PredictionErrorDisplay.from_predictions(
-                    y,
-                    y_pred,
-                    ax=ax,
-                    kind=kind,
-                    subsample=subsample,
-                )
-                self._parent._cache[cache_key] = display
         else:
-            display = PredictionErrorDisplay.from_estimator(
-                self._parent.estimator,
-                X,
+            display = PredictionErrorDisplay.from_predictions(
                 y,
+                y_pred,
                 ax=ax,
                 kind=kind,
                 subsample=subsample,
             )
+            self._parent._cache[cache_key] = display
 
         return display
 
@@ -889,62 +905,49 @@ class _MetricsAccessor(_BaseAccessor):
         response_method,
         pos_label=None,
         metric_name=None,
-        use_cache=False,
         data_source="test",
+        data_source_hash=None,
         **metric_kwargs,
     ):
-        if use_cache:
-            y_pred = self._parent._get_cached_response_values(
-                estimator_hash=self._parent._hash,
-                estimator=self._parent.estimator,
-                X=X,
-                response_method=response_method,
-                pos_label=pos_label,
-                data_source=data_source,
-            )
-            cache_key = (self._parent._hash, metric_fn.__name__, data_source)
-            metric_params = inspect.signature(metric_fn).parameters
-            if "pos_label" in metric_params:
-                cache_key += (pos_label,)
-            if metric_kwargs != {}:
-                # we need to enforce the order of the parameter for a specific metric
-                # to make sure that we hit the cache in a consistent way
-                ordered_metric_kwargs = sorted(metric_kwargs.keys())
-                cache_key += tuple(
-                    (
-                        joblib.hash(metric_kwargs[key])
-                        if isinstance(metric_kwargs[key], np.ndarray)
-                        else metric_kwargs[key]
-                    )
-                    for key in ordered_metric_kwargs
+        y_pred = self._parent._get_cached_response_values(
+            estimator_hash=self._parent._hash,
+            estimator=self._parent.estimator,
+            X=X,
+            response_method=response_method,
+            pos_label=pos_label,
+            data_source=data_source,
+            data_source_hash=data_source_hash,
+        )
+        cache_key = (self._parent._hash, metric_fn.__name__, data_source)
+        if data_source_hash:
+            cache_key += (data_source_hash,)
+
+        metric_params = inspect.signature(metric_fn).parameters
+        if "pos_label" in metric_params:
+            cache_key += (pos_label,)
+        if metric_kwargs != {}:
+            # we need to enforce the order of the parameter for a specific metric
+            # to make sure that we hit the cache in a consistent way
+            ordered_metric_kwargs = sorted(metric_kwargs.keys())
+            cache_key += tuple(
+                (
+                    joblib.hash(metric_kwargs[key])
+                    if isinstance(metric_kwargs[key], np.ndarray)
+                    else metric_kwargs[key]
                 )
-
-            if cache_key in self._parent._cache:
-                score = self._parent._cache[cache_key]
-            else:
-                metric_params = inspect.signature(metric_fn).parameters
-                kwargs = {**metric_kwargs}
-                if "pos_label" in metric_params:
-                    kwargs.update(pos_label=pos_label)
-
-                score = metric_fn(y_true, y_pred, **kwargs)
-                self._parent._cache[cache_key] = score
-        else:
-            # FIXME: we should probably be able to compute a hash here and track the
-            # provenance of the data
-            y_pred, _ = _get_response_values(
-                estimator=self._parent._estimator,
-                X=X,
-                response_method=response_method,
-                pos_label=pos_label,
-                return_response_method_used=False,
+                for key in ordered_metric_kwargs
             )
+
+        if cache_key in self._parent._cache:
+            score = self._parent._cache[cache_key]
+        else:
             metric_params = inspect.signature(metric_fn).parameters
             kwargs = {**metric_kwargs}
             if "pos_label" in metric_params:
                 kwargs.update(pos_label=pos_label)
 
             score = metric_fn(y_true, y_pred, **kwargs)
+            self._parent._cache[cache_key] = score
 
         score = np.array([score]) if not isinstance(score, np.ndarray) else score
         metric_name = metric_name or metric_fn.__name__
@@ -1008,7 +1011,9 @@ class _MetricsAccessor(_BaseAccessor):
         pd.DataFrame
             The accuracy score.
         """
-        X, y, use_cache = self._get_X_y_and_use_cache(data_source=data_source, X=X, y=y)
+        X, y, data_source_hash = self._get_X_y_and_data_source_hash(
+            data_source=data_source, X=X, y=y
+        )
 
         return self._compute_metric_scores(
             metrics.accuracy_score,
@@ -1016,7 +1021,7 @@ class _MetricsAccessor(_BaseAccessor):
             y_true=y,
             response_method="predict",
             metric_name=f"Accuracy {self._SCORE_OR_LOSS_ICONS['accuracy']}",
-            use_cache=use_cache,
+            data_source_hash=data_source_hash,
             data_source=data_source,
         )
 
@@ -1061,7 +1066,9 @@ class _MetricsAccessor(_BaseAccessor):
         pd.DataFrame
             The precision score.
         """
-        X, y, use_cache = self._get_X_y_and_use_cache(data_source=data_source, X=X, y=y)
+        X, y, data_source_hash = self._get_X_y_and_data_source_hash(
+            data_source=data_source, X=X, y=y
+        )
 
         if average == "auto":
             if self._parent._ml_task == "binary-classification":
@@ -1081,7 +1088,7 @@ class _MetricsAccessor(_BaseAccessor):
             pos_label=pos_label,
             metric_name=f"Precision {self._SCORE_OR_LOSS_ICONS['precision']}",
             average=average,
-            use_cache=use_cache,
+            data_source_hash=data_source_hash,
             data_source=data_source,
         )
 
@@ -1126,7 +1133,9 @@ class _MetricsAccessor(_BaseAccessor):
         pd.DataFrame
             The recall score.
         """
-        X, y, use_cache = self._get_X_y_and_use_cache(data_source=data_source, X=X, y=y)
+        X, y, data_source_hash = self._get_X_y_and_data_source_hash(
+            data_source=data_source, X=X, y=y
+        )
 
         if average == "auto":
             if self._parent._ml_task == "binary-classification":
@@ -1146,7 +1155,7 @@ class _MetricsAccessor(_BaseAccessor):
             pos_label=pos_label,
             metric_name=f"Recall {self._SCORE_OR_LOSS_ICONS['recall']}",
             average=average,
-            use_cache=use_cache,
+            data_source_hash=data_source_hash,
             data_source=data_source,
         )
 
@@ -1183,7 +1192,9 @@ class _MetricsAccessor(_BaseAccessor):
         pd.DataFrame
             The Brier score.
         """
-        X, y, use_cache = self._get_X_y_and_use_cache(data_source=data_source, X=X, y=y)
+        X, y, data_source_hash = self._get_X_y_and_data_source_hash(
+            data_source=data_source, X=X, y=y
+        )
 
         return self._compute_metric_scores(
             metrics.brier_score_loss,
@@ -1192,7 +1203,7 @@ class _MetricsAccessor(_BaseAccessor):
             response_method="predict_proba",
             metric_name=f"Brier score {self._SCORE_OR_LOSS_ICONS['brier_score']}",
             pos_label=pos_label,
-            use_cache=use_cache,
+            data_source_hash=data_source_hash,
             data_source=data_source,
         )
 
@@ -1247,7 +1258,9 @@ class _MetricsAccessor(_BaseAccessor):
         pd.DataFrame
             The ROC AUC score.
         """
-        X, y, use_cache = self._get_X_y_and_use_cache(data_source=data_source, X=X, y=y)
+        X, y, data_source_hash = self._get_X_y_and_data_source_hash(
+            data_source=data_source, X=X, y=y
+        )
 
         if average == "auto":
             if self._parent._ml_task == "binary-classification":
@@ -1263,7 +1276,7 @@ class _MetricsAccessor(_BaseAccessor):
             metric_name=f"ROC AUC {self._SCORE_OR_LOSS_ICONS['roc_auc']}",
             average=average,
             multi_class=multi_class,
-            use_cache=use_cache,
+            data_source_hash=data_source_hash,
             data_source=data_source,
         )
 
@@ -1290,7 +1303,9 @@ class _MetricsAccessor(_BaseAccessor):
         pd.DataFrame
             The log-loss.
         """
-        X, y, use_cache = self._get_X_y_and_use_cache(data_source=data_source, X=X, y=y)
+        X, y, data_source_hash = self._get_X_y_and_data_source_hash(
+            data_source=data_source, X=X, y=y
+        )
 
         return self._compute_metric_scores(
             metrics.log_loss,
@@ -1298,7 +1313,7 @@ class _MetricsAccessor(_BaseAccessor):
             y_true=y,
             response_method="predict_proba",
             metric_name=f"Log loss {self._SCORE_OR_LOSS_ICONS['log_loss']}",
-            use_cache=use_cache,
+            data_source_hash=data_source_hash,
             data_source=data_source,
         )
 
@@ -1332,7 +1347,9 @@ class _MetricsAccessor(_BaseAccessor):
         pd.DataFrame
             The R² score.
         """
-        X, y, use_cache = self._get_X_y_and_use_cache(data_source=data_source, X=X, y=y)
+        X, y, data_source_hash = self._get_X_y_and_data_source_hash(
+            data_source=data_source, X=X, y=y
+        )
 
         return self._compute_metric_scores(
             metrics.r2_score,
@@ -1340,8 +1357,8 @@ class _MetricsAccessor(_BaseAccessor):
             y_true=y,
             response_method="predict",
             metric_name=f"R² {self._SCORE_OR_LOSS_ICONS['r2']}",
-            use_cache=use_cache,
             multioutput=multioutput,
+            data_source_hash=data_source_hash,
             data_source=data_source,
         )
 
@@ -1377,7 +1394,9 @@ class _MetricsAccessor(_BaseAccessor):
         pd.DataFrame
             The root mean squared error.
         """
-        X, y, use_cache = self._get_X_y_and_use_cache(data_source=data_source, X=X, y=y)
+        X, y, data_source_hash = self._get_X_y_and_data_source_hash(
+            data_source=data_source, X=X, y=y
+        )
 
         return self._compute_metric_scores(
             metrics.root_mean_squared_error,
@@ -1385,8 +1404,8 @@ class _MetricsAccessor(_BaseAccessor):
             y_true=y,
             response_method="predict",
             metric_name=f"RMSE {self._SCORE_OR_LOSS_ICONS['rmse']}",
-            use_cache=use_cache,
             multioutput=multioutput,
+            data_source_hash=data_source_hash,
             data_source=data_source,
         )
 
@@ -1443,7 +1462,9 @@ class _MetricsAccessor(_BaseAccessor):
         pd.DataFrame
             The custom metric.
         """
-        X, y, use_cache = self._get_X_y_and_use_cache(data_source=data_source, X=X, y=y)
+        X, y, data_source_hash = self._get_X_y_and_data_source_hash(
+            data_source=data_source, X=X, y=y
+        )
 
         return self._compute_metric_scores(
             metric_function,
@@ -1451,7 +1472,7 @@ class _MetricsAccessor(_BaseAccessor):
             y_true=y,
             response_method=response_method,
             metric_name=metric_name,
-            use_cache=use_cache,
+            data_source_hash=data_source_hash,
             data_source=data_source,
             **kwargs,
         )
