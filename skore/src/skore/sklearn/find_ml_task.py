@@ -16,7 +16,7 @@ def _find_ml_task(y, estimator=None) -> MLTask:
     y : numpy.ndarray
         A target vector.
     estimator : sklearn.base.BaseEstimator, optional
-        An estimator. If fitted, we use mainly the estimator
+        An estimator, used mainly if fitted.
 
     Returns
     -------
