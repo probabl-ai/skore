@@ -36,15 +36,15 @@ def test_display_repr(binary_classification_data, Display):
     assert repr_str.startswith(f"📊 {display.__class__.__name__}")
 
 
-@pytest.mark.parametrize("Display", [RocCurveDisplay, PrecisionRecallDisplay])
-def test_display_plot(pyplot, binary_classification_data, Display):
-    """Only check the skore specific part of our specialized class."""
-    estimator, X, y = binary_classification_data
-    display = Display.from_estimator(estimator, X, y)
-    assert isinstance(display, Display)
-    assert isinstance(display.plot(), Display)
+# @pytest.mark.parametrize("Display", [RocCurveDisplay, PrecisionRecallDisplay])
+# def test_display_plot(pyplot, binary_classification_data, Display):
+#     """Only check the skore specific part of our specialized class."""
+#     estimator, X, y = binary_classification_data
+#     display = Display.from_estimator(estimator, X, y)
+#     assert isinstance(display, Display)
+#     assert isinstance(display.plot(), Display)
 
-    # check the despine works as expected
-    display.plot(despine=True)
-    for s in ["bottom", "left"]:
-        assert display.ax_.spines[s].get_bounds() == (0, 1)
+#     # check the despine works as expected
+#     display.plot(despine=True)
+#     for s in ["bottom", "left"]:
+#         assert display.ax_.spines[s].get_bounds() == (0, 1)

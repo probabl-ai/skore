@@ -175,11 +175,11 @@ def test_estimator_report_invalidate_cache_data(binary_classification_data):
 @pytest.mark.parametrize(
     "X_test, y_test, supported_plot_methods, not_supported_plot_methods",
     [
-        (*make_classification(random_state=42), ["roc"], []),
+        (*make_classification(random_state=42), ["roc", "precision_recall"], []),
         (
             *make_classification(n_classes=3, n_clusters_per_class=1, random_state=42),
-            [],
             ["roc"],
+            ["precision_recall"],
         ),
     ],
 )
