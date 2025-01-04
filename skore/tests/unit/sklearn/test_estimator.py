@@ -173,22 +173,34 @@ def test_estimator_report_invalidate_cache_data(binary_classification_data):
 
 
 @pytest.mark.parametrize(
-    "X_test, y_test, supported_plot_methods, not_supported_plot_methods",
+    "Estimator, X_test, y_test, supported_plot_methods, not_supported_plot_methods",
     [
-        (*make_classification(random_state=42), ["roc", "precision_recall"], []),
         (
+            RandomForestClassifier(),
+            *make_classification(random_state=42),
+            ["roc", "precision_recall"],
+            ["prediction_error"],
+        ),
+        (
+            RandomForestClassifier(),
             *make_classification(n_classes=3, n_clusters_per_class=1, random_state=42),
             ["roc"],
-            ["precision_recall"],
+            ["precision_recall", "prediction_error"],
+        ),
+        (
+            LinearRegression(),
+            *make_regression(random_state=42),
+            ["prediction_error"],
+            ["roc", "precision_recall"],
         ),
     ],
 )
 def test_estimator_report_check_support_plot(
-    X_test, y_test, supported_plot_methods, not_supported_plot_methods
+    Estimator, X_test, y_test, supported_plot_methods, not_supported_plot_methods
 ):
     """Check that the available plot methods are correctly registered."""
-    classifier = RandomForestClassifier().fit(X_test, y_test)
-    report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
+    estimator = Estimator.fit(X_test, y_test)
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
     for supported_plot_method in supported_plot_methods:
         assert hasattr(report.metrics.plot, supported_plot_method)
