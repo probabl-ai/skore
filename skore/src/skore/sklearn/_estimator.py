@@ -488,7 +488,9 @@ class _PlotMetricsAccessor(_BaseAccessor):
         self._metrics_parent = parent
 
     @available_if(
-        _check_supported_ml_task(supported_ml_tasks=["binary-classification"])
+        _check_supported_ml_task(
+            supported_ml_tasks=["binary-classification", "multiclass-classification"]
+        )
     )
     def roc(
         self, *, data_source="test", X=None, y=None, pos_label=None, ax=None, name=None
@@ -554,9 +556,12 @@ class _PlotMetricsAccessor(_BaseAccessor):
                 despine=True,
             )
         else:
-            display = RocCurveDisplay.from_predictions(
-                self._parent.y_test,
+            display = RocCurveDisplay._from_predictions(
+                y,
                 y_pred,
+                estimator=self._parent.estimator,
+                ml_task=self._parent._ml_task,
+                data_source=data_source,
                 pos_label=pos_label,
                 ax=ax,
                 name=name_,

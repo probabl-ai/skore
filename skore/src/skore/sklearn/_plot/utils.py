@@ -3,6 +3,9 @@ from io import StringIO
 
 from rich.console import Console
 from rich.tree import Tree
+from sklearn.utils._plotting import check_consistent_length, check_matplotlib_support
+from sklearn.utils.multiclass import type_of_target
+from sklearn.utils.validation import _check_pos_label_consistency
 
 
 class HelpDisplayMixin:
@@ -73,9 +76,110 @@ class HelpDisplayMixin:
         return console.file.getvalue()
 
 
+class _ClassifierCurveDisplayMixin:
+    """Mixin class to be used in Displays requiring a binary classifier.
+
+    The aim of this class is to centralize some validations regarding the estimator and
+    the target and gather the response of the estimator.
+    """
+
+    def _validate_plot_params(self, *, ax=None, name=None):
+        check_matplotlib_support(f"{self.__class__.__name__}.plot")
+        import matplotlib.pyplot as plt
+
+        if ax is None:
+            _, ax = plt.subplots()
+
+        name = self.estimator_name if name is None else name
+        return ax, ax.figure, name
+
+    @classmethod
+    def _validate_from_predictions_params(
+        cls, y_true, y_pred, *, sample_weight=None, pos_label=None, name=None
+    ):
+        check_matplotlib_support(f"{cls.__name__}.from_predictions")
+
+        target_type = type_of_target(y_true)
+        if target_type not in ("binary", "multiclass"):
+            raise ValueError(
+                f"The target y is not binary. Got {target_type} type of target."
+            )
+
+        check_consistent_length(y_true, y_pred, sample_weight)
+
+        if target_type == "binary":
+            pos_label = _check_pos_label_consistency(pos_label, y_true)
+
+        name = name if name is not None else "Classifier"
+
+        return pos_label, name
+
+
 def _despine_matplotlib_axis(ax):
     """Despine the matplotlib axis."""
     for s in ["top", "right"]:
         ax.spines[s].set_visible(False)
     for s in ["bottom", "left"]:
         ax.spines[s].set_bounds(0, 1)
+
+
+def _validate_style_kwargs(default_style_kwargs, user_style_kwargs):
+    """Create valid style kwargs by avoiding Matplotlib alias errors.
+
+    Matplotlib raises an error when, for example, 'color' and 'c', or 'linestyle' and
+    'ls', are specified together. To avoid this, we automatically keep only the one
+    specified by the user and raise an error if the user specifies both.
+
+    Parameters
+    ----------
+    default_style_kwargs : dict
+        The Matplotlib style kwargs used by default in the scikit-learn display.
+    user_style_kwargs : dict
+        The user-defined Matplotlib style kwargs.
+
+    Returns
+    -------
+    valid_style_kwargs : dict
+        The validated style kwargs taking into account both default and user-defined
+        Matplotlib style kwargs.
+    """
+    invalid_to_valid_kw = {
+        "ls": "linestyle",
+        "c": "color",
+        "ec": "edgecolor",
+        "fc": "facecolor",
+        "lw": "linewidth",
+        "mec": "markeredgecolor",
+        "mfcalt": "markerfacecoloralt",
+        "ms": "markersize",
+        "mew": "markeredgewidth",
+        "mfc": "markerfacecolor",
+        "aa": "antialiased",
+        "ds": "drawstyle",
+        "font": "fontproperties",
+        "family": "fontfamily",
+        "name": "fontname",
+        "size": "fontsize",
+        "stretch": "fontstretch",
+        "style": "fontstyle",
+        "variant": "fontvariant",
+        "weight": "fontweight",
+        "ha": "horizontalalignment",
+        "va": "verticalalignment",
+        "ma": "multialignment",
+    }
+    for invalid_key, valid_key in invalid_to_valid_kw.items():
+        if invalid_key in user_style_kwargs and valid_key in user_style_kwargs:
+            raise TypeError(
+                f"Got both {invalid_key} and {valid_key}, which are aliases of one "
+                "another"
+            )
+    valid_style_kwargs = default_style_kwargs.copy()
+
+    for key in user_style_kwargs:
+        if key in invalid_to_valid_kw:
+            valid_style_kwargs[invalid_to_valid_kw[key]] = user_style_kwargs[key]
+        else:
+            valid_style_kwargs[key] = user_style_kwargs[key]
+
+    return valid_style_kwargs
