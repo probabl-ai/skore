@@ -83,7 +83,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         *,
         name=None,
         roc_curve_kwargs=None,
-        plot_chance_level=False,
+        plot_chance_level=True,
         chance_level_kw=None,
         despine=False,
     ):
@@ -262,7 +262,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         name=None,
         ax=None,
         roc_curve_kwargs=None,
-        plot_chance_level=False,
+        plot_chance_level=True,
         chance_level_kw=None,
         despine=False,
     ):

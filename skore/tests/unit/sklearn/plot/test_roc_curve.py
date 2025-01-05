@@ -159,9 +159,10 @@ def test_roc_curve_display_roc_curve_kwargs(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
     display = report.metrics.plot.roc()
-    display.plot(roc_curve_kwargs={"color": "red"})
+    display.plot(roc_curve_kwargs={"color": "red"}, chance_level_kw={"color": "blue"})
 
     assert display.lines_[0].get_color() == "red"
+    assert display.chance_level_.get_color() == "blue"
 
     estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
     report = EstimatorReport(
@@ -169,8 +170,10 @@ def test_roc_curve_display_roc_curve_kwargs(
     )
     display = report.metrics.plot.roc()
     display.plot(
-        roc_curve_kwargs=[dict(color="red"), dict(color="blue"), dict(color="green")]
+        roc_curve_kwargs=[dict(color="red"), dict(color="blue"), dict(color="green")],
+        chance_level_kw={"color": "blue"},
     )
     assert display.lines_[0].get_color() == "red"
     assert display.lines_[1].get_color() == "blue"
     assert display.lines_[2].get_color() == "green"
+    assert display.chance_level_.get_color() == "blue"
