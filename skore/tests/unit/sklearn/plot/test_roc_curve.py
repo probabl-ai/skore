@@ -148,3 +148,29 @@ def test_roc_curve_display_plot_error_wrong_roc_curve_kwargs(
 
     with pytest.raises(ValueError, match=err_msg):
         display.plot(roc_curve_kwargs={})
+
+
+def test_roc_curve_display_roc_curve_kwargs(
+    pyplot, binary_classification_data, multiclass_classification_data
+):
+    """Check that we can pass keyword arguments to the ROC curve plot."""
+    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.plot.roc()
+    display.plot(roc_curve_kwargs={"color": "red"})
+
+    assert display.lines_[0].get_color() == "red"
+
+    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.plot.roc()
+    display.plot(
+        roc_curve_kwargs=[dict(color="red"), dict(color="blue"), dict(color="green")]
+    )
+    assert display.lines_[0].get_color() == "red"
+    assert display.lines_[1].get_color() == "blue"
+    assert display.lines_[2].get_color() == "green"
