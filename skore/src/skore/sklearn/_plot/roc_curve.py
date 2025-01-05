@@ -12,6 +12,9 @@ from skore.sklearn._plot.utils import (
 class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
     """ROC Curve visualization.
 
+    An instance of this class is should created by `EstimatorReport.metrics.plot.roc()`.
+    You should not create an instance of this class directly.
+
     Parameters
     ----------
     fpr : dict of list of ndarray
@@ -58,6 +61,20 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
 
     data_source : {"train", "test", "X_y"}, default=None
         The data source used to compute the ROC curve.
+
+    Attributes
+    ----------
+    ax_ : matplotlib axes
+        The axes on which the ROC curve is plotted.
+
+    figure_ : matplotlib figure
+        The figure on which the ROC curve is plotted.
+
+    lines_ : list of matplotlib lines
+        The lines of the ROC curve.
+
+    chance_level_ : matplotlib line
+        The chance level line.
     """
 
     def __init__(
@@ -85,7 +102,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         roc_curve_kwargs=None,
         plot_chance_level=True,
         chance_level_kw=None,
-        despine=False,
+        despine=True,
     ):
         """Plot visualization.
 
@@ -105,14 +122,14 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
             Keyword arguments to be passed to matplotlib's `plot` for rendering
             the ROC curve(s).
 
-        plot_chance_level : bool, default=False
+        plot_chance_level : bool, default=True
             Whether to plot the chance level.
 
         chance_level_kw : dict, default=None
             Keyword arguments to be passed to matplotlib's `plot` for rendering
             the chance level line.
 
-        despine : bool, default=False
+        despine : bool, default=True
             Whether to remove the top and right spines from the plot.
 
         Returns
@@ -256,7 +273,6 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         estimator,
         ml_task,
         data_source=None,
-        sample_weight=None,
         drop_intermediate=True,
         pos_label=None,
         name=None,
@@ -264,10 +280,61 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         roc_curve_kwargs=None,
         plot_chance_level=True,
         chance_level_kw=None,
-        despine=False,
+        despine=True,
     ):
+        """Private method to create a RocCurveDisplay from predictions.
+
+        Parameters
+        ----------
+        y_true : array-like of shape (n_samples,)
+            True binary labels in binary classification.
+
+        y_pred : array-like of shape (n_samples,)
+            Target scores, can either be probability estimates of the positive class,
+            confidence values, or non-thresholded measure of decisions (as returned by
+            “decision_function” on some classifiers).
+
+        estimator : estimator instance
+            The estimator from which `y_pred` is obtained.
+
+        ml_task : {"binary-classification", "multiclass-classification"}
+            The machine learning task.
+
+        data_source : {"train", "test", "X_y"}, default=None
+            The data source used to compute the ROC curve.
+
+        drop_intermediate : bool, default=True
+            Whether to drop intermediate points with identical value.
+
+        ax : matplotlib axes, default=None
+            Axes object to plot on. If `None`, a new figure and axes is
+            created.
+
+        name : str, default=None
+            Name of ROC Curve for labeling. If `None`, use `estimator_name` if
+            not `None`, otherwise no labeling is shown.
+
+        roc_curve_kwargs : dict or list of dict, default=None
+            Keyword arguments to be passed to matplotlib's `plot` for rendering
+            the ROC curve(s).
+
+        plot_chance_level : bool, default=True
+            Whether to plot the chance level.
+
+        chance_level_kw : dict, default=None
+            Keyword arguments to be passed to matplotlib's `plot` for rendering
+            the chance level line.
+
+        despine : bool, default=True
+            Whether to remove the top and right spines from the plot.
+
+        Returns
+        -------
+        display : :class:`~sklearn.metrics.RocCurveDisplay`
+            Object that stores computed values.
+        """
         pos_label_validated, name = cls._validate_from_predictions_params(
-            y_true, y_pred, sample_weight=sample_weight, pos_label=pos_label, name=name
+            y_true, y_pred, pos_label=pos_label, name=name
         )
 
         if ml_task == "binary-classification":
@@ -275,7 +342,6 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
                 y_true,
                 y_pred,
                 pos_label=pos_label,
-                sample_weight=sample_weight,
                 drop_intermediate=drop_intermediate,
             )
             roc_auc = auc(fpr, tpr)
@@ -292,7 +358,6 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
                     y_true_onehot[:, class_idx],
                     y_pred[:, class_idx],
                     pos_label=None,
-                    sample_weight=sample_weight,
                     drop_intermediate=drop_intermediate,
                 )
                 roc_auc_class = auc(fpr_class, tpr_class)
