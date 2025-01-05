@@ -82,10 +82,10 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         ax=None,
         *,
         name=None,
+        roc_curve_kwargs=None,
         plot_chance_level=False,
         chance_level_kw=None,
         despine=False,
-        **kwargs,
     ):
         """Plot visualization.
 
@@ -101,6 +101,10 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
             Name of ROC Curve for labeling. If `None`, use `estimator_name` if
             not `None`, otherwise no labeling is shown.
 
+        roc_curve_kwargs : dict or list of dict, default=None
+            Keyword arguments to be passed to matplotlib's `plot` for rendering
+            the ROC curve(s).
+
         plot_chance_level : bool, default=False
             Whether to plot the chance level.
 
@@ -110,9 +114,6 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
 
         despine : bool, default=False
             Whether to remove the top and right spines from the plot.
-
-        **kwargs : dict
-            Keyword arguments to be passed to matplotlib's `plot`.
 
         Returns
         -------
@@ -124,6 +125,17 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         self.lines_ = []
         if len(self.fpr) == 1:  # binary-classification
             if len(self.fpr[self.pos_label]) == 1:  # single-split
+                if roc_curve_kwargs is None:
+                    roc_curve_kwargs = {}
+                elif isinstance(roc_curve_kwargs, list):
+                    if len(roc_curve_kwargs) > 1:
+                        raise ValueError(
+                            "You intend to plot a single ROC curve and provide "
+                            "multiple ROC curve keyword arguments. Provide a single "
+                            "dictionary or a list with a single dictionary."
+                        )
+                    roc_curve_kwargs = roc_curve_kwargs[0]
+
                 fpr = self.fpr[self.pos_label][0]
                 tpr = self.tpr[self.pos_label][0]
                 roc_auc = self.roc_auc[self.pos_label][0]
@@ -136,7 +148,9 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
                 elif roc_auc is not None:  # data_source in (None, "X_y")
                     default_line_kwargs["label"] = f"AUC = {roc_auc:0.2f}"
 
-                line_kwargs = _validate_style_kwargs(default_line_kwargs, kwargs)
+                line_kwargs = _validate_style_kwargs(
+                    default_line_kwargs, roc_curve_kwargs
+                )
 
                 (line_,) = self.ax_.plot(fpr, tpr, **line_kwargs)
                 self.lines_.append(line_)
@@ -148,11 +162,29 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
             )
         else:  # multiclass-classification
             info_pos_label = None  # irrelevant for multiclass
+            if roc_curve_kwargs is None:
+                roc_curve_kwargs = [{}] * len(self.fpr)
+            elif isinstance(roc_curve_kwargs, list):
+                if len(roc_curve_kwargs) != len(self.fpr):
+                    raise ValueError(
+                        "You intend to plot multiple ROC curves. We expect "
+                        "`roc_curve_kwargs` to be a list of dictionaries with the "
+                        "same length as the number of ROC curves. Got "
+                        f"{len(roc_curve_kwargs)} instead of "
+                        f"{len(self.fpr)}."
+                    )
+            else:
+                raise ValueError(
+                    "You intend to plot a single ROC curve. We expect "
+                    "`roc_curve_kwargs` to be a list of dictionaries of "
+                    f"{len(self.fpr)} elements. Got {roc_curve_kwargs!r} instead."
+                )
 
-            for class_ in self.fpr:
+            for class_idx, class_ in enumerate(self.fpr):
                 fpr_class = self.fpr[class_]
                 tpr_class = self.tpr[class_]
                 roc_auc_class = self.roc_auc[class_]
+                roc_curve_kwargs_class = roc_curve_kwargs[class_idx]
 
                 if len(fpr_class) == 1:  # single-split
                     fpr = fpr_class[0]
@@ -170,7 +202,9 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
                             f"{str(class_).title()} AUC = {roc_auc:0.2f}"
                         )
 
-                    line_kwargs = _validate_style_kwargs(default_line_kwargs, kwargs)
+                    line_kwargs = _validate_style_kwargs(
+                        default_line_kwargs, roc_curve_kwargs_class
+                    )
 
                     (line_,) = self.ax_.plot(fpr, tpr, **line_kwargs)
                     self.lines_.append(line_)
@@ -213,8 +247,6 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         if "label" in line_kwargs or "label" in chance_level_kw:
             self.ax_.legend(loc="lower right", title=name)
 
-        return self
-
     @classmethod
     def _from_predictions(
         cls,
@@ -229,10 +261,10 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         pos_label=None,
         name=None,
         ax=None,
+        roc_curve_kwargs=None,
         plot_chance_level=False,
         chance_level_kw=None,
         despine=False,
-        **kwargs,
     ):
         pos_label_validated, name = cls._validate_from_predictions_params(
             y_true, y_pred, sample_weight=sample_weight, pos_label=pos_label, name=name
@@ -278,11 +310,13 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
             data_source=data_source,
         )
 
-        return viz.plot(
+        viz.plot(
             ax=ax,
             name=name,
+            roc_curve_kwargs=roc_curve_kwargs,
             plot_chance_level=plot_chance_level,
             chance_level_kw=chance_level_kw,
             despine=despine,
-            **kwargs,
         )
+
+        return viz

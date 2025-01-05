@@ -549,7 +549,8 @@ class _PlotMetricsAccessor(_BaseAccessor):
         )
 
         if cache_key in self._parent._cache:
-            display = self._parent._cache[cache_key].plot(
+            display = self._parent._cache[cache_key]
+            display.plot(
                 ax=ax,
                 name=name_,
                 plot_chance_level=True,

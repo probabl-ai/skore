@@ -17,7 +17,7 @@ from skore import EstimatorReport
         ("prediction_error", LinearRegression(), make_regression(random_state=42)),
     ],
 )
-def test_display_help(capsys, plot_func, estimator, dataset):
+def test_display_help(pyplot, capsys, plot_func, estimator, dataset):
     """Check that the help method writes to the console."""
 
     X_train, X_test, y_train, y_test = train_test_split(*dataset, random_state=42)
@@ -43,7 +43,7 @@ def test_display_help(capsys, plot_func, estimator, dataset):
         ("prediction_error", LinearRegression(), make_regression(random_state=42)),
     ],
 )
-def test_display_repr(plot_func, estimator, dataset):
+def test_display_repr(pyplot, plot_func, estimator, dataset):
     """Check that __repr__ returns a string starting with the expected prefix."""
     X_train, X_test, y_train, y_test = train_test_split(*dataset, random_state=42)
     report = EstimatorReport(
