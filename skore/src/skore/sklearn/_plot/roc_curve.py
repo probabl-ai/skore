@@ -10,7 +10,55 @@ from skore.sklearn._plot.utils import (
 
 
 class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
-    """ROC Curve visualization."""
+    """ROC Curve visualization.
+
+    Parameters
+    ----------
+    fpr : dict of list of ndarray
+        False positive rate. The structure is:
+
+        - for binary classification:
+            - the key is the positive label.
+            - the value is a list of `ndarray`, each `ndarray` being the false
+              positive rate.
+        - for multiclass classification:
+            - the key is the class of interest in an OvR fashion.
+            - the value is a list of `ndarray`, each `ndarray` being the false
+              positive rate.
+
+    tpr : dict of list of ndarray
+        True positive rate. The structure is:
+
+        - for binary classification:
+            - the key is the positive label
+            - the value is a list of `ndarray`, each `ndarray` being the true
+              positive rate.
+        - for multiclass classification:
+            - the key is the class of interest in an OvR fashion.
+            - the value is a list of `ndarray`, each `ndarray` being the true
+              positive rate.
+
+    roc_auc : dict of list of float
+        Area under the ROC curve. The structure is:
+
+        - for binary classification:
+            - the key is the positive label
+            - the value is a list of `float`, each `float` being the area under
+              the ROC curve.
+        - for multiclass classification:
+            - the key is the class of interest in an OvR fashion.
+            - the value is a list of `float`, each `float` being the area under
+              the ROC curve.
+
+    estimator_name : str, default=None
+        Name of the estimator.
+
+    pos_label : str, default=None
+        The class considered as positive. Only meaningful for binary classification.
+
+    data_source : {"train", "test", "X_y"}, default=None
+        The data source used to compute the ROC curve.
+    """
 
     def __init__(
         self,
@@ -56,18 +104,12 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         plot_chance_level : bool, default=False
             Whether to plot the chance level.
 
-            .. versionadded:: 1.3
-
         chance_level_kw : dict, default=None
             Keyword arguments to be passed to matplotlib's `plot` for rendering
             the chance level line.
 
-            .. versionadded:: 1.3
-
         despine : bool, default=False
             Whether to remove the top and right spines from the plot.
-
-            .. versionadded:: 1.6
 
         **kwargs : dict
             Keyword arguments to be passed to matplotlib's `plot`.
