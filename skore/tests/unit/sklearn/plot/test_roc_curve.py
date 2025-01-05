@@ -98,7 +98,7 @@ def test_roc_curve_display_multiclass_classification(
         roc_curve_mpl = display.lines_[class_label]
         assert isinstance(roc_curve_mpl, mpl.lines.Line2D)
         assert roc_curve_mpl.get_label() == (
-            f"{str(class_label).title()} test set "
+            f"{str(class_label).title()} - test set "
             f"(AUC = {display.roc_auc[class_label][0]:0.2f})"
         )
         assert roc_curve_mpl.get_color() == expected_color
@@ -159,7 +159,9 @@ def test_roc_curve_display_roc_curve_kwargs(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
     display = report.metrics.plot.roc()
-    display.plot(roc_curve_kwargs={"color": "red"}, chance_level_kw={"color": "blue"})
+    display.plot(
+        roc_curve_kwargs={"color": "red"}, chance_level_kwargs={"color": "blue"}
+    )
 
     assert display.lines_[0].get_color() == "red"
     assert display.chance_level_.get_color() == "blue"
@@ -171,7 +173,7 @@ def test_roc_curve_display_roc_curve_kwargs(
     display = report.metrics.plot.roc()
     display.plot(
         roc_curve_kwargs=[dict(color="red"), dict(color="blue"), dict(color="green")],
-        chance_level_kw={"color": "blue"},
+        chance_level_kwargs={"color": "blue"},
     )
     assert display.lines_[0].get_color() == "red"
     assert display.lines_[1].get_color() == "blue"

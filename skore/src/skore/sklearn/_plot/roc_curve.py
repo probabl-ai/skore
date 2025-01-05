@@ -101,7 +101,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         name=None,
         roc_curve_kwargs=None,
         plot_chance_level=True,
-        chance_level_kw=None,
+        chance_level_kwargs=None,
         despine=True,
     ):
         """Plot visualization.
@@ -125,7 +125,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         plot_chance_level : bool, default=True
             Whether to plot the chance level.
 
-        chance_level_kw : dict, default=None
+        chance_level_kwargs : dict, default=None
             Keyword arguments to be passed to matplotlib's `plot` for rendering
             the chance level line.
 
@@ -211,7 +211,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
                     default_line_kwargs = {}
                     if roc_auc is not None and self.data_source in ("train", "test"):
                         default_line_kwargs["label"] = (
-                            f"{str(class_).title()} {self.data_source} "
+                            f"{str(class_).title()} - {self.data_source} "
                             f"set (AUC = {roc_auc:0.2f})"
                         )
                     elif roc_auc is not None:  # data_source in (None, "X_y")
@@ -232,11 +232,11 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
             "linestyle": "--",
         }
 
-        if chance_level_kw is None:
-            chance_level_kw = {}
+        if chance_level_kwargs is None:
+            chance_level_kwargs = {}
 
-        chance_level_kw = _validate_style_kwargs(
-            default_chance_level_line_kw, chance_level_kw
+        chance_level_kwargs = _validate_style_kwargs(
+            default_chance_level_line_kw, chance_level_kwargs
         )
 
         xlabel = "False Positive Rate"
@@ -254,14 +254,14 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         )
 
         if plot_chance_level:
-            (self.chance_level_,) = self.ax_.plot((0, 1), (0, 1), **chance_level_kw)
+            (self.chance_level_,) = self.ax_.plot((0, 1), (0, 1), **chance_level_kwargs)
         else:
             self.chance_level_ = None
 
         if despine:
             _despine_matplotlib_axis(self.ax_)
 
-        if "label" in line_kwargs or "label" in chance_level_kw:
+        if "label" in line_kwargs or "label" in chance_level_kwargs:
             self.ax_.legend(loc="lower right", title=name)
 
     @classmethod
@@ -273,13 +273,13 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         estimator,
         ml_task,
         data_source=None,
-        drop_intermediate=True,
         pos_label=None,
+        drop_intermediate=True,
         name=None,
         ax=None,
         roc_curve_kwargs=None,
         plot_chance_level=True,
-        chance_level_kw=None,
+        chance_level_kwargs=None,
         despine=True,
     ):
         """Private method to create a RocCurveDisplay from predictions.
@@ -303,6 +303,10 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         data_source : {"train", "test", "X_y"}, default=None
             The data source used to compute the ROC curve.
 
+        pos_label : int, float, bool or str, default=None
+            The class considered as the positive class when computing the
+            precision and recall metrics.
+
         drop_intermediate : bool, default=True
             Whether to drop intermediate points with identical value.
 
@@ -321,7 +325,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         plot_chance_level : bool, default=True
             Whether to plot the chance level.
 
-        chance_level_kw : dict, default=None
+        chance_level_kwargs : dict, default=None
             Keyword arguments to be passed to matplotlib's `plot` for rendering
             the chance level line.
 
@@ -380,7 +384,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
             name=name,
             roc_curve_kwargs=roc_curve_kwargs,
             plot_chance_level=plot_chance_level,
-            chance_level_kw=chance_level_kw,
+            chance_level_kwargs=chance_level_kwargs,
             despine=despine,
         )
 

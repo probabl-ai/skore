@@ -574,7 +574,9 @@ class _PlotMetricsAccessor(_BaseAccessor):
         return display
 
     @available_if(
-        _check_supported_ml_task(supported_ml_tasks=["binary-classification"])
+        _check_supported_ml_task(
+            supported_ml_tasks=["binary-classification", "multiclass-classification"]
+        )
     )
     def precision_recall(
         self,
@@ -648,17 +650,20 @@ class _PlotMetricsAccessor(_BaseAccessor):
             display = self._parent._cache[cache_key].plot(
                 ax=ax,
                 name=name_,
-                plot_chance_level=True,
+                plot_chance_level=False,
                 despine=True,
             )
         else:
-            display = PrecisionRecallDisplay.from_predictions(
+            display = PrecisionRecallDisplay._from_predictions(
                 y,
                 y_pred,
+                estimator=self._parent.estimator,
+                ml_task=self._parent._ml_task,
+                data_source=data_source,
                 pos_label=pos_label,
                 ax=ax,
                 name=name_,
-                plot_chance_level=True,
+                plot_chance_level=False,
                 despine=True,
             )
             self._parent._cache[cache_key] = display
