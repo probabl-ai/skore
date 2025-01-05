@@ -175,7 +175,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
                     )
             else:
                 raise ValueError(
-                    "You intend to plot a single ROC curve. We expect "
+                    "You intend to plot multiple ROC curves. We expect "
                     "`roc_curve_kwargs` to be a list of dictionaries of "
                     f"{len(self.fpr)} elements. Got {roc_curve_kwargs!r} instead."
                 )
