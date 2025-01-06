@@ -21,6 +21,9 @@ def multiclass_classification_data():
 
 
 def test_roc_curve_display_binary_classification(pyplot, binary_classification_data):
+    """Check the attributes and default plotting behaviour of the ROC curve plot with
+    binary data.
+    """
     estimator, X_train, X_test, y_train, y_test = binary_classification_data
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
@@ -71,6 +74,9 @@ def test_roc_curve_display_binary_classification(pyplot, binary_classification_d
 def test_roc_curve_display_multiclass_classification(
     pyplot, multiclass_classification_data
 ):
+    """Check the attributes and default plotting behaviour of the ROC curve plot with
+    multiclass data.
+    """
     estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
