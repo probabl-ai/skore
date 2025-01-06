@@ -19,7 +19,7 @@ def load(project_name: Union[str, Path]) -> Project:
     Transforms a project name to a directory path as follows:
     - Resolves relative path to current working directory,
     - Checks that the file ends with the ".skore" extension,
-       - If not provided, it will be automatically appended,
+    - If not provided, it will be automatically appended,
     - If project name is an absolute path, keeps that path.
     """
     path = Path(project_name).resolve()
