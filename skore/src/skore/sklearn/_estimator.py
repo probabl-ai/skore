@@ -68,7 +68,7 @@ class _HelpMixin:
 
     def _format_method_name(self, name):
         """Format method name for display."""
-        return name
+        return f"{name}(...)"
 
     def _get_method_description(self, method):
         """Get the description for a method."""
@@ -340,14 +340,14 @@ class EstimatorReport(_HelpMixin):
     def _create_help_tree(self):
         """Create a rich Tree with the available tools and accessor methods."""
         tree = Tree(
-            "📓 Estimator Reporter\n"
-            f"🔧 Available tools for diagnosing {self.estimator_name} estimator"
+            f"📓 Available tools for diagnosing {self.estimator_name} estimator\n\n"
+            "reporter"
         )
 
         # Add accessor methods first
         for accessor_attr, config in self._ACCESSOR_CONFIG.items():
             accessor = getattr(self, accessor_attr)
-            branch = tree.add(f"{config['icon']} {config['name']}")
+            branch = tree.add(f".{config['name']} {config['icon']}")
 
             # Add main accessor methods first
             methods = accessor._get_methods_for_help()
@@ -356,12 +356,12 @@ class EstimatorReport(_HelpMixin):
             for name, method in methods:
                 displayed_name = accessor._format_method_name(name)
                 description = accessor._get_method_description(method)
-                branch.add(f"{displayed_name} - {description}")
+                branch.add(f".{displayed_name} - {description}")
 
             # Add sub-accessors after main methods
             for sub_attr, sub_obj in inspect.getmembers(accessor):
                 if isinstance(sub_obj, _BaseAccessor) and not sub_attr.startswith("_"):
-                    sub_branch = branch.add(f"{sub_obj._icon} {sub_attr}")
+                    sub_branch = branch.add(f".{sub_attr} {sub_obj._icon}")
 
                     # Add sub-accessor methods
                     sub_methods = sub_obj._get_methods_for_help()
@@ -370,7 +370,7 @@ class EstimatorReport(_HelpMixin):
                     for name, method in sub_methods:
                         displayed_name = sub_obj._format_method_name(name)
                         description = sub_obj._get_method_description(method)
-                        sub_branch.add(f"{displayed_name} - {description}")
+                        sub_branch.add(f".{displayed_name} - {description}")
 
         # Add base methods last
         base_methods = self._get_methods_for_help()
@@ -378,7 +378,7 @@ class EstimatorReport(_HelpMixin):
 
         for name, method in base_methods:
             description = self._get_method_description(method)
-            tree.add(f"{name} - {description}")
+            tree.add(f".{name}(...) - {description}")
 
         return tree
 
@@ -397,7 +397,7 @@ class _BaseAccessor(_HelpMixin):
 
     def _get_help_title(self):
         name = self.__class__.__name__.replace("_", "").replace("Accessor", "").lower()
-        return f"{self._icon} Available {name} methods"
+        return f"{self._icon} Available {name} methods\n\n" "reporter.metrics"
 
     def _create_help_tree(self):
         """Create a rich Tree with the available methods."""
@@ -760,7 +760,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
         return display
 
     def _get_help_title(self):
-        return f"{self._icon} Available plot methods"
+        return f"{self._icon} Available plot methods\n\n" "reporter.metrics.plot"
 
 
 ###############################################################################
@@ -1446,7 +1446,7 @@ class _MetricsAccessor(_BaseAccessor):
         y=None,
         **kwargs,
     ):
-        """Compute a custom metric provided by the user.
+        """Compute a custom metric.
 
         It brings some flexibility to compute any desired metric. However, we need to
         follow some rules:
@@ -1527,7 +1527,7 @@ class _MetricsAccessor(_BaseAccessor):
 
     def _format_method_name(self, name):
         """Override format method for metrics-specific naming."""
-        return f"{self._SCORE_OR_LOSS_ICONS[name]} {name}"
+        return f"{name}(...) {self._SCORE_OR_LOSS_ICONS[name]}"
 
     def _get_methods_for_help(self):
         """Override to exclude the plot accessor from methods list."""
@@ -1539,7 +1539,7 @@ class _MetricsAccessor(_BaseAccessor):
         tree = super()._create_help_tree()
 
         # Add plot methods in a separate branch
-        plot_branch = tree.add("🎨 plot")
+        plot_branch = tree.add("plot 🎨")
         plot_methods = self.plot._get_methods_for_help()
         plot_methods = self.plot._sort_methods_for_help(plot_methods)
 

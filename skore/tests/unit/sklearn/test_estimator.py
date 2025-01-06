@@ -271,7 +271,7 @@ def test_estimator_report_help(capsys, binary_classification_data):
     report.help()
     captured = capsys.readouterr()
     assert (
-        f"🔧 Available tools for diagnosing {estimator.__class__.__name__} estimator"
+        f"📓 Available tools for diagnosing {estimator.__class__.__name__} estimator"
         in captured.out
     )
 
@@ -282,7 +282,9 @@ def test_estimator_report_repr(binary_classification_data):
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
     repr_str = repr(report)
-    assert repr_str.startswith("📓 Estimator Reporter")
+    assert repr_str.startswith(
+        "📓 Available tools for diagnosing RandomForestClassifier estimator"
+    )
 
 
 ########################################################################################
