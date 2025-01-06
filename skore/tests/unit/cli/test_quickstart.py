@@ -49,7 +49,7 @@ def test_quickstart(monkeypatch):
             "--verbose",
             "--overwrite",
             "--working-dir",
-            "hello",
+            "/tmp",
             "--port",
             "888",
             "--no-open-browser",
@@ -57,11 +57,11 @@ def test_quickstart(monkeypatch):
     )
 
     assert create_project_name == "my_project.skore"
-    assert create_working_dir == Path("hello")
+    assert create_working_dir == Path("/tmp")
     assert create_overwrite is True
     assert create_verbose is True
 
-    assert launch_project_name == "my_project.skore"
+    assert launch_project_name == Path("/tmp/my_project.skore")
     assert launch_port == 888
     assert launch_open_browser is False
     assert launch_verbose is True
