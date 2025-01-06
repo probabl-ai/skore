@@ -842,11 +842,13 @@ class _MetricsAccessor(_BaseAccessor):
         if scoring is None:
             # Equivalent to _get_scorers_to_add
             if self._parent._ml_task == "binary-classification":
-                scoring = ["precision", "recall", "roc_auc", "brier_score"]
-            elif self._parent._ml_task == "multiclass-classification":
                 scoring = ["precision", "recall", "roc_auc"]
                 if hasattr(self._parent._estimator, "predict_proba"):
-                    scoring.append("log_loss")
+                    scoring.append("brier_score")
+            elif self._parent._ml_task == "multiclass-classification":
+                scoring = ["precision", "recall"]
+                if hasattr(self._parent._estimator, "predict_proba"):
+                    scoring += ["roc_auc", "log_loss"]
             else:
                 scoring = ["r2", "rmse"]
 

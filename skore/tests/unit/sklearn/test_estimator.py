@@ -12,6 +12,7 @@ from sklearn.metrics import make_scorer, median_absolute_error, r2_score, rand_s
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
 from sklearn.utils.validation import check_is_fitted
 from skore import EstimatorReport
 from skore.sklearn._estimator import _check_supported_estimator
@@ -29,6 +30,18 @@ def binary_classification_data():
 
 
 @pytest.fixture
+def binary_classification_data_svc():
+    """Create a binary classification dataset and return fitted estimator and data.
+    The estimator is a SVC that does not support `predict_proba`.
+    """
+    X, y = make_classification(random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+    return SVC().fit(X_train, y_train), X_test, y_test
+
+
+@pytest.fixture
 def multiclass_classification_data():
     """Create a multiclass classification dataset and return fitted estimator and
     data."""
@@ -39,6 +52,20 @@ def multiclass_classification_data():
         X, y, test_size=0.2, random_state=42
     )
     return RandomForestClassifier().fit(X_train, y_train), X_test, y_test
+
+
+@pytest.fixture
+def multiclass_classification_data_svc():
+    """Create a multiclass classification dataset and return fitted estimator and
+    data. The estimator is a SVC that does not support `predict_proba`.
+    """
+    X, y = make_classification(
+        n_classes=3, n_clusters_per_class=1, random_state=42, n_informative=10
+    )
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+    return SVC().fit(X_train, y_train), X_test, y_test
 
 
 @pytest.fixture
@@ -423,8 +450,13 @@ def test_estimator_report_metrics_regression(regression_data, metric):
     assert report._cache != {}
 
 
-def test_estimator_report_report_metrics_binary(binary_classification_data):
-    """Check the behaviour of the `report_metrics` method with binary classification."""
+def test_estimator_report_report_metrics_binary(
+    binary_classification_data, binary_classification_data_svc
+):
+    """Check the behaviour of the `report_metrics` method with binary
+    classification. We test both with an SVC that does not support `predict_proba` and a
+    RandomForestClassifier that does.
+    """
     estimator, X_test, y_test = binary_classification_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     assert hasattr(report.metrics, "report_metrics")
@@ -449,8 +481,30 @@ def test_estimator_report_report_metrics_binary(binary_classification_data):
             f" {expected_metrics}"
         )
 
+    estimator, X_test, y_test = binary_classification_data_svc
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    assert hasattr(report.metrics, "report_metrics")
+    result = report.metrics.report_metrics()
+    assert isinstance(result, pd.DataFrame)
+    expected_metrics = ("precision", "recall", "roc_auc")
+    assert len(result.columns) == len(expected_metrics)
 
-def test_estimator_report_report_metrics_multiclass(multiclass_classification_data):
+    normalized_expected = {normalize_string(metric) for metric in expected_metrics}
+
+    for column in result.columns:
+        normalized_column = normalize_string(column)
+        matches = [
+            metric for metric in normalized_expected if metric == normalized_column
+        ]
+        assert len(matches) == 1, (
+            f"No match found for column '{column}' in expected metrics: "
+            f" {expected_metrics}"
+        )
+
+
+def test_estimator_report_report_metrics_multiclass(
+    multiclass_classification_data, multiclass_classification_data_svc
+):
     """Check the behaviour of the `report_metrics` method with multiclass
     classification.
     """
@@ -465,6 +519,26 @@ def test_estimator_report_report_metrics_multiclass(multiclass_classification_da
     def normalize_string(s):
         # Remove spaces, underscores and any non-alphanumeric characters
         return re.sub(r"[^a-zA-Z0-9]", "", s.lower())
+
+    normalized_expected = {normalize_string(metric) for metric in expected_metrics}
+
+    for column in result.columns:
+        normalized_column = normalize_string(column)
+        matches = [
+            metric for metric in normalized_expected if metric == normalized_column
+        ]
+        assert len(matches) == 1, (
+            f"No match found for column '{column}' in expected metrics: "
+            f" {expected_metrics}"
+        )
+
+    estimator, X_test, y_test = multiclass_classification_data_svc
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    assert hasattr(report.metrics, "report_metrics")
+    result = report.metrics.report_metrics()
+    assert isinstance(result, pd.DataFrame)
+    expected_metrics = ("precision", "recall")
+    assert len(result.columns) == len(expected_metrics)
 
     normalized_expected = {normalize_string(metric) for metric in expected_metrics}
 
