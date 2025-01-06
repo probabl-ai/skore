@@ -125,6 +125,19 @@ def test_roc_curve_display_multiclass_classification(
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
 
 
+def test_roc_curve_display_data_source(pyplot, binary_classification_data):
+    """Check that we can pass the `data_source` argument to the ROC curve plot."""
+    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.plot.roc(data_source="train")
+    assert display.lines_[0].get_label() == "Train set (AUC = 1.00)"
+
+    display = report.metrics.plot.roc(data_source="X_y", X=X_train, y=y_train)
+    assert display.lines_[0].get_label() == "AUC = 1.00"
+
+
 def test_roc_curve_display_plot_error_wrong_roc_curve_kwargs(
     pyplot, binary_classification_data, multiclass_classification_data
 ):

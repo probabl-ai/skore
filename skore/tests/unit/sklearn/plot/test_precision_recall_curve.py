@@ -71,6 +71,23 @@ def test_precision_recall_curve_display_binary_classification(
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
 
 
+def test_precision_recall_curve_display_data_source(pyplot, binary_classification_data):
+    """Check that we can pass the `data_source` argument to the precision-recall
+    curve plot.
+    """
+    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.plot.precision_recall(data_source="train")
+    assert display.lines_[0].get_label() == "Train set (AP = 1.00)"
+
+    display = report.metrics.plot.precision_recall(
+        data_source="X_y", X=X_train, y=y_train
+    )
+    assert display.lines_[0].get_label() == "AP = 1.00"
+
+
 def test_precision_recall_curve_display_multiclass_classification(
     pyplot, multiclass_classification_data
 ):
