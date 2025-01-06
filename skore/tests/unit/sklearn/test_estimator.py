@@ -11,6 +11,7 @@ from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.metrics import make_scorer, median_absolute_error, r2_score, rand_score
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 from sklearn.utils.validation import check_is_fitted
 from skore import EstimatorReport
 from skore.sklearn._estimator import _check_supported_estimator
@@ -38,6 +39,17 @@ def multiclass_classification_data():
         X, y, test_size=0.2, random_state=42
     )
     return RandomForestClassifier().fit(X_train, y_train), X_test, y_test
+
+
+@pytest.fixture
+def binary_classification_data_pipeline():
+    """Create a binary classification dataset and return fitted pipeline and data."""
+    X, y = make_classification(random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+    estimator = Pipeline([("scaler", StandardScaler()), ("clf", LogisticRegression())])
+    return estimator.fit(X_train, y_train), X_test, y_test
 
 
 @pytest.fixture
@@ -161,6 +173,21 @@ def test_estimator_report_from_fitted_estimator(binary_classification_data, fit)
         report.y_train = y
 
 
+def test_estimator_report_from_fitted_pipeline(binary_classification_data_pipeline):
+    """Check the general behaviour of passing an already fitted pipeline without
+    refitting it.
+    """
+    estimator, X, y = binary_classification_data_pipeline
+    report = EstimatorReport(estimator, X_test=X, y_test=y)
+
+    assert report.estimator is estimator  # we should not clone the estimator
+    assert report.estimator_name == estimator[-1].__class__.__name__
+    assert report.X_train is None
+    assert report.y_train is None
+    assert report.X_test is X
+    assert report.y_test is y
+
+
 def test_estimator_report_invalidate_cache_data(binary_classification_data):
     """Check that we invalidate the cache when the data is changed."""
     estimator, X_test, y_test = binary_classification_data
@@ -269,8 +296,10 @@ def test_estimator_report_display_binary_classification(
     estimator, X_test, y_test = binary_classification_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     assert hasattr(report.metrics.plot, display)
-    getattr(report.metrics.plot, display)()  # check that we can call the method
+    display_first_call = getattr(report.metrics.plot, display)()
     assert report._cache != {}
+    display_second_call = getattr(report.metrics.plot, display)()
+    assert display_first_call is display_second_call
 
 
 @pytest.mark.parametrize("display", ["prediction_error"])
@@ -278,8 +307,10 @@ def test_estimator_report_display_regression(pyplot, regression_data, display):
     estimator, X_test, y_test = regression_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     assert hasattr(report.metrics.plot, display)
-    getattr(report.metrics.plot, display)()  # check that we can call the method
+    display_first_call = getattr(report.metrics.plot, display)()
     assert report._cache != {}
+    display_second_call = getattr(report.metrics.plot, display)()
+    assert display_first_call is display_second_call
 
 
 @pytest.mark.parametrize("display", ["roc", "precision_recall"])
@@ -289,10 +320,14 @@ def test_estimator_report_display_binary_classification_external_data(
     estimator, X_test, y_test = binary_classification_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     assert hasattr(report.metrics.plot, display)
-    getattr(report.metrics.plot, display)(
+    display_first_call = getattr(report.metrics.plot, display)(
         data_source="X_y", X=X_test, y=y_test
-    )  # check that we can call the method
+    )
     assert report._cache != {}
+    display_second_call = getattr(report.metrics.plot, display)(
+        data_source="X_y", X=X_test, y=y_test
+    )
+    assert display_first_call is display_second_call
 
 
 @pytest.mark.parametrize("display", ["prediction_error"])
@@ -302,10 +337,14 @@ def test_estimator_report_display_regression_external_data(
     estimator, X_test, y_test = regression_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     assert hasattr(report.metrics.plot, display)
-    getattr(report.metrics.plot, display)(
+    display_first_call = getattr(report.metrics.plot, display)(
         data_source="X_y", X=X_test, y=y_test
-    )  # check that we can call the method
+    )
     assert report._cache != {}
+    display_second_call = getattr(report.metrics.plot, display)(
+        data_source="X_y", X=X_test, y=y_test
+    )
+    assert display_first_call is display_second_call
 
 
 ########################################################################################

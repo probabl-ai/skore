@@ -338,9 +338,6 @@ class EstimatorReport(_HelpMixin):
     # Methods related to the help tree
     ####################################################################################
 
-    def _get_help_title(self):
-        return f"🔧 Available tools for diagnosing {self.estimator_name} estimator"
-
     def _create_help_tree(self):
         """Create a rich Tree with the available tools and accessor methods."""
         tree = Tree(
@@ -350,43 +347,39 @@ class EstimatorReport(_HelpMixin):
 
         # Add accessor methods first
         for accessor_attr, config in self._ACCESSOR_CONFIG.items():
-            if hasattr(self, accessor_attr):
-                accessor = getattr(self, accessor_attr)
-                branch = tree.add(f"{config['icon']} {config['name']}")
+            accessor = getattr(self, accessor_attr)
+            branch = tree.add(f"{config['icon']} {config['name']}")
 
-                # Add main accessor methods first
-                methods = accessor._get_methods_for_help()
-                methods = accessor._sort_methods_for_help(methods)
+            # Add main accessor methods first
+            methods = accessor._get_methods_for_help()
+            methods = accessor._sort_methods_for_help(methods)
 
-                for name, method in methods:
-                    displayed_name = accessor._format_method_name(name)
-                    description = accessor._get_method_description(method)
-                    branch.add(f"{displayed_name} - {description}")
+            for name, method in methods:
+                displayed_name = accessor._format_method_name(name)
+                description = accessor._get_method_description(method)
+                branch.add(f"{displayed_name} - {description}")
 
-                # Add sub-accessors after main methods
-                for sub_attr, sub_obj in inspect.getmembers(accessor):
-                    if isinstance(sub_obj, _BaseAccessor) and not sub_attr.startswith(
-                        "_"
-                    ):
-                        sub_branch = branch.add(f"{sub_obj._icon} {sub_attr}")
+            # Add sub-accessors after main methods
+            for sub_attr, sub_obj in inspect.getmembers(accessor):
+                if isinstance(sub_obj, _BaseAccessor) and not sub_attr.startswith("_"):
+                    sub_branch = branch.add(f"{sub_obj._icon} {sub_attr}")
 
-                        # Add sub-accessor methods
-                        sub_methods = sub_obj._get_methods_for_help()
-                        sub_methods = sub_obj._sort_methods_for_help(sub_methods)
+                    # Add sub-accessor methods
+                    sub_methods = sub_obj._get_methods_for_help()
+                    sub_methods = sub_obj._sort_methods_for_help(sub_methods)
 
-                        for name, method in sub_methods:
-                            displayed_name = sub_obj._format_method_name(name)
-                            description = sub_obj._get_method_description(method)
-                            sub_branch.add(f"{displayed_name} - {description}")
+                    for name, method in sub_methods:
+                        displayed_name = sub_obj._format_method_name(name)
+                        description = sub_obj._get_method_description(method)
+                        sub_branch.add(f"{displayed_name} - {description}")
 
         # Add base methods last
         base_methods = self._get_methods_for_help()
         base_methods = self._sort_methods_for_help(base_methods)
 
         for name, method in base_methods:
-            if not hasattr(getattr(self, name), "_icon"):  # Skip accessors
-                description = self._get_method_description(method)
-                tree.add(f"{name} - {description}")
+            description = self._get_method_description(method)
+            tree.add(f"{name} - {description}")
 
         return tree
 
@@ -415,10 +408,9 @@ class _BaseAccessor(_HelpMixin):
         methods = self._sort_methods_for_help(methods)
 
         for name, method in methods:
-            if not name.startswith("_"):
-                displayed_name = self._format_method_name(name)
-                description = self._get_method_description(method)
-                tree.add(f"{displayed_name} - {description}")
+            displayed_name = self._format_method_name(name)
+            description = self._get_method_description(method)
+            tree.add(f"{displayed_name} - {description}")
 
         return tree
 
@@ -647,7 +639,8 @@ class _PlotMetricsAccessor(_BaseAccessor):
         )
 
         if cache_key in self._parent._cache:
-            display = self._parent._cache[cache_key].plot(
+            display = self._parent._cache[cache_key]
+            display.plot(
                 ax=ax,
                 name=name_,
                 plot_chance_level=False,
