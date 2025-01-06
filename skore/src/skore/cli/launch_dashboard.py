@@ -15,7 +15,10 @@ from skore.utils._logger import logger_context
 
 
 def __launch(
-    project_name: Union[str, Path], port: int, open_browser: bool, verbose: bool = False
+    project_name: Union[str, Path],
+    port: int,
+    open_browser: bool,
+    verbose: bool = False,
 ):
     """Launch the UI to visualize a project.
 

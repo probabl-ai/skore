@@ -1,7 +1,7 @@
 """Implement the "quickstart" command."""
 
 from pathlib import Path
-from typing import Optional, Union
+from typing import Union
 
 from skore.cli import logger
 from skore.cli.launch_dashboard import __launch
@@ -12,7 +12,7 @@ from skore.utils._logger import logger_context
 
 def __quickstart(
     project_name: Union[str, Path],
-    working_dir: Optional[Path],
+    working_dir: Union[Path, None],
     overwrite: bool,
     port: int,
     open_browser: bool,
@@ -54,8 +54,14 @@ def __quickstart(
                 f"Project file '{project_name}' already exists. Skipping creation step."
             )
 
+        path = (
+            Path(project_name)
+            if working_dir is None
+            else Path(working_dir, project_name)
+        )
+
         __launch(
-            project_name=project_name,
+            project_name=path,
             port=port,
             open_browser=open_browser,
             verbose=verbose,
