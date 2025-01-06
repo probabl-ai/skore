@@ -36,30 +36,26 @@ class HelpDisplayMixin:
         tree = Tree(f"📊 {self.__class__.__name__}")
 
         attributes = self._get_attributes_for_help()
-        if attributes:
-            attr_branch = tree.add("📝 Attributes to tweak your plot")
-            # Ensure figure_ and ax_ are first
-            sorted_attrs = sorted(attributes)
-            if "ax_" in sorted_attrs:
-                sorted_attrs.remove("ax_")
-            if "figure_" in sorted_attrs:
-                sorted_attrs.remove("figure_")
-            sorted_attrs = ["figure_", "ax_"] + [
-                attr for attr in sorted_attrs if attr not in ["figure_", "ax_"]
-            ]
-            for attr in sorted_attrs:
-                attr_branch.add(attr)
+        attr_branch = tree.add("📝 Attributes to tweak your plot")
+        # Ensure figure_ and ax_ are first
+        sorted_attrs = sorted(attributes)
+        sorted_attrs.remove("ax_")
+        sorted_attrs.remove("figure_")
+        sorted_attrs = ["figure_", "ax_"] + [
+            attr for attr in sorted_attrs if attr not in ["figure_", "ax_"]
+        ]
+        for attr in sorted_attrs:
+            attr_branch.add(attr)
 
         methods = self._get_methods_for_help()
-        if methods:
-            method_branch = tree.add("🔧 Methods")
-            for name, method in methods:
-                description = (
-                    method.__doc__.split("\n")[0]
-                    if method.__doc__
-                    else "No description available"
-                )
-                method_branch.add(f"{name} - {description}")
+        method_branch = tree.add("🔧 Methods")
+        for name, method in methods:
+            description = (
+                method.__doc__.split("\n")[0]
+                if method.__doc__
+                else "No description available"
+            )
+            method_branch.add(f"{name} - {description}")
 
         return tree
 
