@@ -198,3 +198,10 @@ def test_roc_curve_display_roc_curve_kwargs(
     assert display.lines_[1].get_color() == "blue"
     assert display.lines_[2].get_color() == "green"
     assert display.chance_level_.get_color() == "blue"
+
+    display.plot(plot_chance_level=False)
+    assert display.chance_level_ is None
+
+    display.plot(despine=False)
+    assert display.ax_.spines["top"].get_visible()
+    assert display.ax_.spines["right"].get_visible()

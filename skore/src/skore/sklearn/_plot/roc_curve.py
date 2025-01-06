@@ -269,8 +269,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         if despine:
             _despine_matplotlib_axis(self.ax_)
 
-        if "label" in line_kwargs or "label" in chance_level_kwargs:
-            self.ax_.legend(loc="lower right", title=name)
+        self.ax_.legend(loc="lower right", title=name)
 
     @classmethod
     def _from_predictions(
