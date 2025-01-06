@@ -69,3 +69,55 @@ def test_precision_recall_curve_display_binary_classification(
     assert display.ax_.get_adjustable() == "box"
     assert display.ax_.get_aspect() in ("equal", 1.0)
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
+
+
+def test_precision_recall_curve_display_multiclass_classification(
+    pyplot, multiclass_classification_data
+):
+    """Check the attributes and default plotting behaviour of the precision-recall
+    curve plot with multiclass data.
+    """
+    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.plot.precision_recall()
+    assert isinstance(display, PrecisionRecallCurveDisplay)
+
+    # check the structure of the attributes
+    for attr_name in ("precision", "recall", "average_precision", "prevalence"):
+        assert isinstance(getattr(display, attr_name), dict)
+        assert len(getattr(display, attr_name)) == len(estimator.classes_)
+
+        attr = getattr(display, attr_name)
+        for class_label in estimator.classes_:
+            assert isinstance(attr[class_label], list)
+            assert len(attr[class_label]) == 1
+
+    # check the default plotting behaviour
+    import matplotlib as mpl
+
+    assert isinstance(display.lines_, list)
+    assert len(display.lines_) == len(estimator.classes_)
+    default_colors = ["#1f77b4", "#ff7f0e", "#2ca02c"]
+    for class_label, expected_color in zip(estimator.classes_, default_colors):
+        precision_recall_curve_mpl = display.lines_[class_label]
+        assert isinstance(precision_recall_curve_mpl, mpl.lines.Line2D)
+        assert precision_recall_curve_mpl.get_label() == (
+            f"{str(class_label).title()} - test set "
+            f"(AP = {display.average_precision[class_label][0]:0.2f})"
+        )
+        assert precision_recall_curve_mpl.get_color() == expected_color
+
+    assert display.chance_levels_ is None
+
+    assert isinstance(display.ax_, mpl.axes.Axes)
+    legend = display.ax_.get_legend()
+    assert legend.get_title().get_text() == estimator.__class__.__name__
+    assert len(legend.get_texts()) == 3
+
+    assert display.ax_.get_xlabel() == "Recall"
+    assert display.ax_.get_ylabel() == "Precision"
+    assert display.ax_.get_adjustable() == "box"
+    assert display.ax_.get_aspect() in ("equal", 1.0)
+    assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
