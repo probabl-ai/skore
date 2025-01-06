@@ -397,7 +397,7 @@ class _BaseAccessor(_HelpMixin):
 
     def _get_help_title(self):
         name = self.__class__.__name__.replace("_", "").replace("Accessor", "").lower()
-        return f"{self._icon} Available {name} methods\n\n" "reporter.metrics"
+        return f"{self._icon} Available {name} methods\n\nreporter.metrics"
 
     def _create_help_tree(self):
         """Create a rich Tree with the available methods."""
@@ -760,7 +760,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
         return display
 
     def _get_help_title(self):
-        return f"{self._icon} Available plot methods\n\n" "reporter.metrics.plot"
+        return f"{self._icon} Available plot methods\n\nreporter.metrics.plot"
 
 
 ###############################################################################
