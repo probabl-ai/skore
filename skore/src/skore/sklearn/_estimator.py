@@ -18,7 +18,7 @@ from sklearn.utils.metaestimators import available_if
 from sklearn.utils.validation import check_is_fitted
 
 from skore.sklearn._plot import (
-    PrecisionRecallDisplay,
+    PrecisionRecallCurveDisplay,
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
@@ -618,7 +618,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
 
         Returns
         -------
-        PrecisionRecallDisplay
+        PrecisionRecallCurveDisplay
             The precision-recall curve display.
         """
         prediction_method = ["predict_proba", "decision_function"]
@@ -629,7 +629,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
 
         cache_key = (
             self._parent._hash,
-            PrecisionRecallDisplay.__name__,
+            PrecisionRecallCurveDisplay.__name__,
             pos_label,
             name_,
         )
@@ -654,7 +654,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
                 despine=True,
             )
         else:
-            display = PrecisionRecallDisplay._from_predictions(
+            display = PrecisionRecallCurveDisplay._from_predictions(
                 y,
                 y_pred,
                 estimator=self._parent.estimator,

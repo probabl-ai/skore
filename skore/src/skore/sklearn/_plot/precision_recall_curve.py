@@ -11,7 +11,7 @@ from skore.sklearn._plot.utils import (
 )
 
 
-class PrecisionRecallDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
+class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
     """Precision Recall visualization.
 
     An instance of this class is should created by
