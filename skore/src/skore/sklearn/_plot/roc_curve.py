@@ -171,6 +171,10 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
 
                 (line_,) = self.ax_.plot(fpr, tpr, **line_kwargs)
                 self.lines_.append(line_)
+            else:  # cross-validation
+                raise NotImplementedError(
+                    "We don't support yet cross-validation"
+                )  # pragma: no cover
 
             info_pos_label = (
                 f"\n(Positive label: {self.pos_label})"
@@ -225,6 +229,10 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
 
                     (line_,) = self.ax_.plot(fpr, tpr, **line_kwargs)
                     self.lines_.append(line_)
+                else:  # cross-validation
+                    raise NotImplementedError(
+                        "We don't support yet cross-validation"
+                    )  # pragma: no cover
 
         default_chance_level_line_kw = {
             "label": "Chance level (AUC = 0.5)",

@@ -235,6 +235,10 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
                     self.chance_levels_.append(chance_level_)
                 else:
                     self.chance_levels_ = None
+            else:  # cross-validation
+                raise NotImplementedError(
+                    "We don't support yet cross-validation"
+                )  # pragma: no cover
 
             info_pos_label = (
                 f"\n(Positive label: {self.pos_label})"
@@ -339,6 +343,10 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
                         self.chance_levels_.append(chance_level_)
                     else:
                         self.chance_levels_ = None
+                else:  # cross-validation
+                    raise NotImplementedError(
+                        "We don't support yet cross-validation"
+                    )  # pragma: no cover
 
         xlabel = "Recall"
         ylabel = "Precision"
