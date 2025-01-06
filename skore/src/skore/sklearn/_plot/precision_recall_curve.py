@@ -446,11 +446,11 @@ class PrecisionRecallDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
             precision, recall, _ = precision_recall_curve(
                 y_true,
                 y_pred,
-                pos_label=pos_label,
+                pos_label=pos_label_validated,
                 drop_intermediate=drop_intermediate,
             )
             average_precision = average_precision_score(
-                y_true, y_pred, pos_label=pos_label
+                y_true, y_pred, pos_label=pos_label_validated
             )
 
             class_count = Counter(y_true)

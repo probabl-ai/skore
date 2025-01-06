@@ -184,8 +184,8 @@ def test_estimator_report_invalidate_cache_data(binary_classification_data):
         (
             RandomForestClassifier(),
             *make_classification(n_classes=3, n_clusters_per_class=1, random_state=42),
-            ["roc"],
-            ["precision_recall", "prediction_error"],
+            ["roc", "precision_recall"],
+            ["prediction_error"],
         ),
         (
             LinearRegression(),
