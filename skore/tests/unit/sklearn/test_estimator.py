@@ -412,6 +412,9 @@ def test_estimator_report_metrics_binary_classification(
     assert hasattr(report.metrics, metric)
     result = getattr(report.metrics, metric)()
     assert isinstance(result, pd.DataFrame)
+    # check that we hit the cache
+    result_with_cache = getattr(report.metrics, metric)()
+    pd.testing.assert_frame_equal(result, result_with_cache)
 
     # check that something was written to the cache
     assert report._cache != {}
@@ -435,6 +438,9 @@ def test_estimator_report_metrics_regression(regression_data, metric):
     assert hasattr(report.metrics, metric)
     result = getattr(report.metrics, metric)()
     assert isinstance(result, pd.DataFrame)
+    # check that we hit the cache
+    result_with_cache = getattr(report.metrics, metric)()
+    pd.testing.assert_frame_equal(result, result_with_cache)
 
     # check that something was written to the cache
     assert report._cache != {}

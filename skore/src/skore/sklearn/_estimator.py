@@ -1004,6 +1004,7 @@ class _MetricsAccessor(_BaseAccessor):
                 )
                 score = score.reshape(1, -1)
         else:
+            # FIXME: clusterer would fall here.
             columns = None
         return pd.DataFrame(score, columns=columns, index=[self._parent.estimator_name])
 
@@ -1527,9 +1528,7 @@ class _MetricsAccessor(_BaseAccessor):
 
     def _format_method_name(self, name):
         """Override format method for metrics-specific naming."""
-        if name in self._SCORE_OR_LOSS_ICONS:
-            return f"{self._SCORE_OR_LOSS_ICONS[name]} {name}"
-        return name
+        return f"{self._SCORE_OR_LOSS_ICONS[name]} {name}"
 
     def _get_methods_for_help(self):
         """Override to exclude the plot accessor from methods list."""
