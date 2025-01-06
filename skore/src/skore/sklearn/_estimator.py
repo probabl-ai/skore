@@ -892,7 +892,7 @@ class _MetricsAccessor(_BaseAccessor):
                     metrics_kwargs["pos_label"] = pos_label
             else:
                 raise ValueError(
-                    f"Invalid type of metric: {type(metric)} for metric: {metric}"
+                    f"Invalid type of metric: {type(metric)} for {metric!r}"
                 )
 
             scores.append(

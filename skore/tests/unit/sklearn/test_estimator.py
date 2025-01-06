@@ -778,6 +778,16 @@ def test_estimator_report_report_metrics_with_scorer(regression_data):
     )
 
 
+def test_estimator_report_report_metrics_invalid_metric_type(regression_data):
+    """Check that we raise the expected error message if an invalid metric is passed."""
+    estimator, X_test, y_test = regression_data
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    err_msg = re.escape("Invalid type of metric: <class 'int'> for 1")
+    with pytest.raises(ValueError, match=err_msg):
+        report.metrics.report_metrics(scoring=[1])
+
+
 def test_estimator_report_get_X_y_and_data_source_hash_error():
     """Check that we raise the proper error in `get_X_y_and_use_cache`."""
     X, y = make_classification(n_classes=2, random_state=42)
