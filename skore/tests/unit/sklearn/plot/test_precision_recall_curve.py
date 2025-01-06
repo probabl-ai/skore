@@ -121,3 +121,36 @@ def test_precision_recall_curve_display_multiclass_classification(
     assert display.ax_.get_adjustable() == "box"
     assert display.ax_.get_aspect() in ("equal", 1.0)
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
+
+
+def test_precision_recall_curve_display_precision_recall_kwargs(
+    pyplot, binary_classification_data, multiclass_classification_data
+):
+    """Check that we can pass keyword arguments to the precision-recall curve plot."""
+    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.plot.precision_recall()
+    display.plot(
+        pr_curve_kwargs={"color": "red"},
+        plot_chance_level=True,
+        chance_level_kwargs={"color": "blue"},
+    )
+
+    assert display.lines_[0].get_color() == "red"
+    assert display.chance_levels_[0].get_color() == "blue"
+
+    # estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    # report = EstimatorReport(
+    #     estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    # )
+    # display = report.metrics.plot.roc()
+    # display.plot(
+    #     roc_curve_kwargs=[dict(color="red"), dict(color="blue"), dict(color="green")],
+    #     chance_level_kwargs={"color": "blue"},
+    # )
+    # assert display.lines_[0].get_color() == "red"
+    # assert display.lines_[1].get_color() == "blue"
+    # assert display.lines_[2].get_color() == "green"
+    # assert display.chance_level_.get_color() == "blue"
