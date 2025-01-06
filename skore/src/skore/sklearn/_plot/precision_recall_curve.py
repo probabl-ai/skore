@@ -365,8 +365,7 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
         if despine:
             _despine_matplotlib_axis(self.ax_)
 
-        if "label" in line_kwargs or plot_chance_level:
-            self.ax_.legend(loc="lower left", title=name)
+        self.ax_.legend(loc="lower left", title=name)
 
     @classmethod
     def _from_predictions(

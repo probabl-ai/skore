@@ -140,7 +140,7 @@ def test_precision_recall_curve_display_multiclass_classification(
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
 
 
-def test_precision_recall_curve_display_precision_recall_kwargs(
+def test_precision_recall_curve_display_pr_curve_kwargs(
     pyplot, binary_classification_data, multiclass_classification_data
 ):
     """Check that we can pass keyword arguments to the precision-recall curve plot."""
@@ -149,14 +149,21 @@ def test_precision_recall_curve_display_precision_recall_kwargs(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
     display = report.metrics.plot.precision_recall()
-    display.plot(
-        pr_curve_kwargs={"color": "red"},
-        plot_chance_level=True,
-        chance_level_kwargs={"color": "blue"},
-    )
+    for pr_curve_kwargs in ({"color": "red"}, [{"color": "red"}]):
+        display.plot(
+            pr_curve_kwargs=pr_curve_kwargs,
+            plot_chance_level=True,
+            chance_level_kwargs={"color": "blue"},
+        )
 
-    assert display.lines_[0].get_color() == "red"
-    assert display.chance_levels_[0].get_color() == "blue"
+        assert display.lines_[0].get_color() == "red"
+        assert display.chance_levels_[0].get_color() == "blue"
+
+    display.plot(plot_chance_level=True)
+    assert display.chance_levels_[0].get_color() == "k"
+
+    display.plot(plot_chance_level=True, chance_level_kwargs=[{"color": "red"}])
+    assert display.chance_levels_[0].get_color() == "red"
 
     estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
     report = EstimatorReport(
@@ -178,3 +185,59 @@ def test_precision_recall_curve_display_precision_recall_kwargs(
     assert display.chance_levels_[0].get_color() == "red"
     assert display.chance_levels_[1].get_color() == "blue"
     assert display.chance_levels_[2].get_color() == "green"
+
+    display.plot(plot_chance_level=True)
+    for chance_level in display.chance_levels_:
+        assert chance_level.get_color() == "k"
+
+    display.plot(despine=False)
+    assert display.ax_.spines["top"].get_visible()
+    assert display.ax_.spines["right"].get_visible()
+
+
+def test_precision_recall_curve_display_plot_error_wrong_pr_curve_kwargs(
+    pyplot, binary_classification_data, multiclass_classification_data
+):
+    """Check that we raise a proper error message when passing an inappropriate
+    value for the `roc_curve_kwargs` argument.
+    """
+    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.plot.precision_recall()
+    err_msg = (
+        "You intend to plot a single precision-recall curve and provide multiple "
+        "precision-recall curve keyword arguments"
+    )
+    with pytest.raises(ValueError, match=err_msg):
+        display.plot(pr_curve_kwargs=[{}, {}])
+
+    err_msg = (
+        "You intend to plot a single chance level line and provide multiple chance "
+        "level line keyword arguments"
+    )
+    with pytest.raises(ValueError, match=err_msg):
+        display.plot(plot_chance_level=True, chance_level_kwargs=[{}, {}])
+
+    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.plot.precision_recall()
+    err_msg = "You intend to plot multiple precision-recall curves."
+    with pytest.raises(ValueError, match=err_msg):
+        display.plot(pr_curve_kwargs=[{}, {}])
+
+    with pytest.raises(ValueError, match=err_msg):
+        display.plot(pr_curve_kwargs={})
+
+    err_msg = (
+        "You intend to plot multiple precision-recall curves. We expect "
+        "`chance_level_kwargs` to be a list"
+    )
+    with pytest.raises(ValueError, match=err_msg):
+        display.plot(plot_chance_level=True, chance_level_kwargs=[{}, {}])
+
+    with pytest.raises(ValueError, match=err_msg):
+        display.plot(plot_chance_level=True, chance_level_kwargs={})
