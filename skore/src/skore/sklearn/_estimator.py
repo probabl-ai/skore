@@ -370,7 +370,7 @@ class EstimatorReport(_HelpMixin):
                     for name, method in sub_methods:
                         displayed_name = sub_obj._format_method_name(name)
                         description = sub_obj._get_method_description(method)
-                        sub_branch.add(f".{displayed_name} - {description}")
+                        sub_branch.add(f".{displayed_name.ljust(25)} - {description}")
 
         # Add base methods last
         base_methods = self._get_methods_for_help()
@@ -378,7 +378,7 @@ class EstimatorReport(_HelpMixin):
 
         for name, method in base_methods:
             description = self._get_method_description(method)
-            tree.add(f".{name}(...) - {description}")
+            tree.add(f".{name}(...)".ljust(34) + f" - {description}")
 
         return tree
 
@@ -409,7 +409,7 @@ class _BaseAccessor(_HelpMixin):
         for name, method in methods:
             displayed_name = self._format_method_name(name)
             description = self._get_method_description(method)
-            tree.add(f"{displayed_name} - {description}")
+            tree.add(f".{displayed_name}".ljust(26) + f" - {description}")
 
         return tree
 
@@ -779,8 +779,8 @@ class _MetricsAccessor(_BaseAccessor):
         "log_loss": "📉",
         "r2": "📈",
         "rmse": "📉",
-        "report_metrics": "📈/📉",
-        "custom_metric": "📈/📉",
+        "report_metrics": "📊",
+        "custom_metric": "📊",
     }
 
     def __init__(self, parent):
@@ -1527,7 +1527,9 @@ class _MetricsAccessor(_BaseAccessor):
 
     def _format_method_name(self, name):
         """Override format method for metrics-specific naming."""
-        return f"{name}(...) {self._SCORE_OR_LOSS_ICONS[name]}"
+        method_name = f"{name}(...)"
+        method_name = method_name.ljust(20) + f"{self._SCORE_OR_LOSS_ICONS[name]}"
+        return method_name.ljust(28)
 
     def _get_methods_for_help(self):
         """Override to exclude the plot accessor from methods list."""
@@ -1546,6 +1548,6 @@ class _MetricsAccessor(_BaseAccessor):
         for name, method in plot_methods:
             displayed_name = self.plot._format_method_name(name)
             description = self.plot._get_method_description(method)
-            plot_branch.add(f"{displayed_name} - {description}")
+            plot_branch.add(f".{displayed_name}".ljust(26) + f"- {description}")
 
         return tree
