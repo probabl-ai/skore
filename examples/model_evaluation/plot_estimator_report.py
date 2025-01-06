@@ -332,6 +332,7 @@ reporter.metrics.plot.help()
 #
 # Let's start by plotting the ROC curve for our binary classification task.
 display = reporter.metrics.plot.roc(pos_label="allowed")
+plt.tight_layout()
 
 # %%
 #
@@ -345,8 +346,10 @@ display
 display.help()
 
 # %%
+display.plot()
 display.ax_.set_title("Example of a ROC curve")
 display.figure_
+plt.tight_layout()
 
 # %%
 #
@@ -357,6 +360,7 @@ display.figure_
 start = time.time()
 # we already trigger the computation of the predictions in a previous call
 reporter.metrics.plot.roc(pos_label="allowed")
+plt.tight_layout()
 end = time.time()
 
 # %%
@@ -370,6 +374,7 @@ reporter.clean_cache()
 # %%
 start = time.time()
 reporter.metrics.plot.roc(pos_label="allowed")
+plt.tight_layout()
 end = time.time()
 
 # %%
