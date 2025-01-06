@@ -135,7 +135,7 @@ class EstimatorReport(_HelpMixin):
     >>> from skore import EstimatorReport
     >>> report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     >>> report
-    📓 Estimator Reporter
+    📓 Available tools for diagnosing LogisticRegression estimator
     ...
     """
 
