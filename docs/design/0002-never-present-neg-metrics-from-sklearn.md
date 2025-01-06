@@ -15,7 +15,7 @@ This is specific to sklearn, and there is no reason to port this design over to 
 
 ## Decision Drivers
 
-* Our data-science-literate collaborators (@ogrisel, @glemaitre, @sylvaincom) consider the `neg_` trick should remain a solution to a sklearn-specific problem.
+* Our data-science-literate collaborators (@ogrisel, @glemaitre, @sylvaincom) consider the `neg_` trick should remain a solution to a sklearn-specific problem, and not be displayed in plots for the skore user.
 
 ## Decision Outcome
 
