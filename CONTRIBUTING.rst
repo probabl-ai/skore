@@ -36,6 +36,7 @@ You'll need ``python >=3.9, <3.13`` to build the backend and ``Node>=20`` to bui
 .. code-block:: bash
 
     make install-skore
+    skore create
     make build-skore-ui
     make serve-skore-ui
 
