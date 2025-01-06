@@ -210,8 +210,7 @@ class EstimatorReport(_HelpMixin):
     def estimator(self, value):
         raise AttributeError(
             "The estimator attribute is immutable. "
-            "Please use the `from_fitted_estimator` or `from_unfitted_estimator` "
-            "methods to create a new report."
+            "Call the constructor of {self.__class__.__name__} to create a new report."
         )
 
     @property
