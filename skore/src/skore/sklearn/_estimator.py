@@ -17,12 +17,12 @@ from sklearn.utils._response import _check_response_method, _get_response_values
 from sklearn.utils.metaestimators import available_if
 from sklearn.utils.validation import check_is_fitted
 
+from skore.externals._sklearn_compat import is_clusterer
 from skore.sklearn._plot import (
     PrecisionRecallCurveDisplay,
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
-from skore.sklearn._sklearn_compat import is_clusterer
 from skore.sklearn.find_ml_task import _find_ml_task
 from skore.utils._accessor import _check_supported_ml_task, register_accessor
 

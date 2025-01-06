@@ -141,16 +141,23 @@ def test_precision_recall_curve_display_precision_recall_kwargs(
     assert display.lines_[0].get_color() == "red"
     assert display.chance_levels_[0].get_color() == "blue"
 
-    # estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
-    # report = EstimatorReport(
-    #     estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    # )
-    # display = report.metrics.plot.roc()
-    # display.plot(
-    #     roc_curve_kwargs=[dict(color="red"), dict(color="blue"), dict(color="green")],
-    #     chance_level_kwargs={"color": "blue"},
-    # )
-    # assert display.lines_[0].get_color() == "red"
-    # assert display.lines_[1].get_color() == "blue"
-    # assert display.lines_[2].get_color() == "green"
-    # assert display.chance_level_.get_color() == "blue"
+    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.plot.precision_recall()
+    display.plot(
+        pr_curve_kwargs=[dict(color="red"), dict(color="blue"), dict(color="green")],
+        plot_chance_level=True,
+        chance_level_kwargs=[
+            dict(color="red"),
+            dict(color="blue"),
+            dict(color="green"),
+        ],
+    )
+    assert display.lines_[0].get_color() == "red"
+    assert display.lines_[1].get_color() == "blue"
+    assert display.lines_[2].get_color() == "green"
+    assert display.chance_levels_[0].get_color() == "red"
+    assert display.chance_levels_[1].get_color() == "blue"
+    assert display.chance_levels_[2].get_color() == "green"
