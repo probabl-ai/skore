@@ -345,7 +345,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
             Object that stores computed values.
         """
         pos_label_validated, name = cls._validate_from_predictions_params(
-            y_true, y_pred, pos_label=pos_label, name=name
+            y_true, y_pred, ml_task=ml_task, pos_label=pos_label, name=name
         )
 
         if ml_task == "binary-classification":

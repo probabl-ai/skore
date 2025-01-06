@@ -4,7 +4,6 @@ from io import StringIO
 from rich.console import Console
 from rich.tree import Tree
 from sklearn.utils._plotting import check_consistent_length, check_matplotlib_support
-from sklearn.utils.multiclass import type_of_target
 from sklearn.utils.validation import _check_pos_label_consistency
 
 
@@ -91,19 +90,20 @@ class _ClassifierCurveDisplayMixin:
 
     @classmethod
     def _validate_from_predictions_params(
-        cls, y_true, y_pred, *, sample_weight=None, pos_label=None, name=None
+        cls,
+        y_true,
+        y_pred,
+        *,
+        ml_task,
+        sample_weight=None,
+        pos_label=None,
+        name=None,
     ):
-        check_matplotlib_support(f"{cls.__name__}.from_predictions")
-
-        target_type = type_of_target(y_true)
-        if target_type not in ("binary", "multiclass"):
-            raise ValueError(
-                f"The target y is not binary. Got {target_type} type of target."
-            )
+        check_matplotlib_support(f"{cls.__name__}._from_predictions")
 
         check_consistent_length(y_true, y_pred, sample_weight)
 
-        if target_type == "binary":
+        if ml_task == "binary-classification":
             pos_label = _check_pos_label_consistency(pos_label, y_true)
 
         name = name if name is not None else "Classifier"
