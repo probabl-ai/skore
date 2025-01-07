@@ -834,16 +834,16 @@ class _PlotMetricsAccessor(_BaseAccessor):
 @register_accessor("metrics", EstimatorReport)
 class _MetricsAccessor(_BaseAccessor):
     _SCORE_OR_LOSS_ICONS = {
-        "accuracy": "📈",
-        "precision": "📈",
-        "recall": "📈",
-        "brier_score": "📉",
-        "roc_auc": "📈",
-        "log_loss": "📉",
-        "r2": "📈",
-        "rmse": "📉",
-        "report_metrics": "📊",
-        "custom_metric": "📊",
+        "accuracy": "↗︎",
+        "precision": "↗︎",
+        "recall": "↗︎",
+        "brier_score": "↘︎",
+        "roc_auc": "↗︎",
+        "log_loss": "↘︎",
+        "r2": "↗︎",
+        "rmse": "↘︎",
+        "report_metrics": "",
+        "custom_metric": "",
     }
 
     def __init__(self, parent):
@@ -1576,12 +1576,12 @@ class _MetricsAccessor(_BaseAccessor):
 
         def _sort_key(method):
             name = method[0]
-            if name == "report_metrics":
-                priority = 0
-            elif name == "custom_metric":
+            if name == "custom_metric":
                 priority = 1
-            else:
+            elif name == "report_metrics":
                 priority = 2
+            else:
+                priority = 0
             return priority, name
 
         return sorted(methods, key=_sort_key)
@@ -1589,8 +1589,12 @@ class _MetricsAccessor(_BaseAccessor):
     def _format_method_name(self, name):
         """Override format method for metrics-specific naming."""
         method_name = f"{name}(...)"
-        method_name = method_name.ljust(20) + f"{self._SCORE_OR_LOSS_ICONS[name]}"
-        return method_name.ljust(28)
+        method_name = method_name.ljust(22) + f"{self._SCORE_OR_LOSS_ICONS[name]}"
+        if self._SCORE_OR_LOSS_ICONS[name] in ("↗︎", "↘︎"):
+            # take into account the length of the icon
+            return method_name.ljust(30)
+        else:
+            return method_name.ljust(29)
 
     def _get_methods_for_help(self):
         """Override to exclude the plot accessor from methods list."""
