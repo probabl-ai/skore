@@ -1,43 +1,45 @@
-/*
-  Josh's Custom CSS Reset
-  https://www.joshwcomeau.com/css/custom-css-reset/
-*/
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-
-* {
-  margin: 0;
-}
-
-body {
+/**
+ * Modified version of Josh's Custom CSS Reset.
+ * https://www.joshwcomeau.com/css/custom-css-reset/
+ *
+ * Scoped to one class name to avoid leak.
+ */
+.skore-ui {
   -webkit-font-smoothing: antialiased;
   line-height: 1.5;
-}
 
-img,
-picture,
-video,
-canvas {
-  display: block;
-  max-width: 100%;
-}
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
 
-input,
-button,
-textarea,
-select {
-  font: inherit;
-}
+  * {
+    margin: 0;
+  }
 
-p,
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  overflow-wrap: break-word;
+  img,
+  picture,
+  video,
+  canvas {
+    display: block;
+    max-width: 100%;
+  }
+
+  input,
+  button,
+  textarea,
+  select {
+    font: inherit;
+  }
+
+  p,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    overflow-wrap: break-word;
+  }
 }

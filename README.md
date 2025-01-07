@@ -5,7 +5,7 @@
     <img width="200" src="https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/Logo_Skore_Light@2x.svg" alt="skore logo">
   </picture>
 
-  <h2>Your scikit-learn Modeling Companion</h2>
+  <h2>The scikit-learn Modeling Companion</h2>
 
 __Elevate ML Development with Tracking and Built-in Recommended Practices__ \
 [Documentation](https://skore.probabl.ai) — [Community](https://discord.probabl.ai)
@@ -84,8 +84,8 @@ You can find information on the latest version [here](https://anaconda.org/conda
     # Store the results in the project
     my_project.put("cv_reporter", reporter)
 
-    # Display the result in your notebook
-    reporter.plot
+    # Display a plot result in your notebook
+    reporter.plots.scores
     ```
 
 3. Finally, from your shell (in the same directory), start the UI:

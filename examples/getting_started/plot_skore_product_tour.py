@@ -1,10 +1,15 @@
 """
-.. _example_getting_started:
+.. _example_skore_product_tour:
 
-==========================
-Getting started with skore
-==========================
+==================
+Skore product tour
+==================
 """
+
+# %%
+# .. admonition:: Where to start?
+#
+#    See our :ref:`example_quick_start` page!
 
 # %%
 # This getting started guide illustrates how to use skore and why:
@@ -39,7 +44,7 @@ Getting started with skore
 #
 #     import skore
 #
-#     my_project = skore.create("my_project")
+#     my_project = skore.open("my_project")
 #
 #   This would create a skore project directory named ``my_project.skore`` in our
 #   current directory.
@@ -61,7 +66,7 @@ temp_dir_path = Path(temp_dir.name)
 # %%
 import skore
 
-my_project = skore.create("my_project", working_dir=temp_dir_path)
+my_project = skore.open(temp_dir_path / "my_project")
 
 # %%
 # Then, *from our shell* (in the same directory), we can start the UI locally:
@@ -135,7 +140,7 @@ plt.title("Ridge regression")
 plt.show()
 
 # %%
-# |
+#
 # Finally, we store these relevant items in our skore project, so that we
 # can visualize them later, in the skore UI for example:
 
@@ -149,7 +154,7 @@ my_project.put("my_fig", fig)
 #
 #   For more information about the functionalities and the different types
 #   of items that we can store in a skore :class:`~skore.Project`,
-#   see :ref:`example_overview_skore_project`.
+#   see :ref:`example_working_with_projects`.
 
 # %%
 # Skore UI: visualizing items
@@ -198,13 +203,11 @@ my_project.put("my_fig", fig)
 # .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_12_skore_activity_feed.png
 #   :alt: Activity feed on the skore UI
 #
-# |
 # Moreover, in the items tab, we can visualize the different histories of an item:
 #
 # .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_12_skore_tracking_comp.gif
 #   :alt: Tracking the history of an item from the skore UI
 #
-# |
 # These tracking functionalities are very useful to:
 #
 # * never lose some key machine learning metrics,
@@ -213,7 +216,7 @@ my_project.put("my_fig", fig)
 # .. seealso::
 #
 #   For more information about the tracking of items using their history,
-#   see :ref:`example_historization_items`.
+#   see :ref:`example_tracking_items`.
 
 # %%
 # Machine learning diagnostics: enhancing scikit-learn functions
@@ -239,7 +242,7 @@ from skore import CrossValidationReporter
 
 cv_reporter = CrossValidationReporter(Ridge(), X, y, cv=5)
 my_project.put("cv_reporter", cv_reporter)
-cv_reporter.plot
+cv_reporter.plots.scores
 
 # %%
 # Hence:
@@ -248,8 +251,7 @@ cv_reporter.plot
 #   cross-validation,
 # * and some well-chosen metrics are automatically computed for us, without the need to
 #   manually set them.
-
-# %%
+#
 # .. seealso::
 #
 #   More features exist for cross-validation.

@@ -1,16 +1,17 @@
 [project]
 name = "skore"
-description = "Tooling and assistance for data scientists to \"Own Your Data Science\""
+description = "The scikit-learn Modeling Companion"
 dynamic = ["license", "readme", "version"]
 requires-python = ">=3.9, <3.13"
 maintainers = [{ name = "skore developers", email = "skore@signal.probabl.ai" }]
 dependencies = [
   "diskcache",
   "fastapi",
+  "numpy",
   "plotly>=5,<6",
   "pyarrow",
   "rich",
-  "scikit-learn<1.7",
+  "scikit-learn",
   "skops",
   "uvicorn",
 ]
@@ -75,7 +76,9 @@ test = [
   "pytest-cov",
   "pytest-order",
   "pytest-randomly",
+  "pytest-xdist",
   "ruff",
+  "scikit-learn<1.7",
   "skrub",
 ]
 
@@ -115,6 +118,7 @@ addopts = [
 
 [tool.coverage.run]
 omit = [
+  "src/skore/externals/*",
   "tests/*",
 ]
 

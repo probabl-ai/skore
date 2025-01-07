@@ -88,3 +88,14 @@ class TestMediaItem:
         assert item.media_type == "application/vnd.plotly.v1+json"
         assert item.created_at == mock_nowstr
         assert item.updated_at == mock_nowstr
+
+    def test_get_serializable_dict(self, mock_nowstr):
+        item = MediaItem.factory("<content>")
+
+        serializable = item.as_serializable_dict()
+        assert serializable == {
+            "updated_at": mock_nowstr,
+            "created_at": mock_nowstr,
+            "media_type": "text/markdown",
+            "value": "<content>",
+        }

@@ -67,6 +67,21 @@ class PrimitiveItem(Item):
 
         self.primitive = primitive
 
+    def as_serializable_dict(self):
+        """Get a serializable dict from the item.
+
+        Derived class must call their super implementation
+        and merge the result with their output.
+        """
+        d = super().as_serializable_dict()
+        d.update(
+            {
+                "media_type": "text/markdown",
+                "value": self.primitive,
+            }
+        )
+        return d
+
     @classmethod
     def factory(cls, primitive: Primitive) -> PrimitiveItem:
         """

@@ -36,4 +36,18 @@ export default defineConfig({
   test: {
     setupFiles: ["./vitest.setup.ts"],
   },
+  build: {
+    assetsInlineLimit(filePath) {
+      const fontExtensions = ["ttf", "woff", "woff2", "svg", "eot"];
+      return fontExtensions.some((ext) => filePath.includes(ext));
+    },
+    rollupOptions: {
+      output: {
+        inlineDynamicImports: true,
+        entryFileNames: `assets/[name].js`,
+        chunkFileNames: `assets/[name].js`,
+        assetFileNames: `assets/[name].[ext]`,
+      },
+    },
+  },
 });

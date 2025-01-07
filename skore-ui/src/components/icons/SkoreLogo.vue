@@ -32,16 +32,8 @@
 
 <style scoped>
 svg {
-  @media (prefers-color-scheme: dark) {
-    --color-text: white;
-  }
-
-  @media (prefers-color-scheme: light) {
-    --color-text: black;
-  }
-
-  .text {
-    fill: var(--color-text);
+  & .text {
+    fill: var(--color-text-logo);
   }
 }
 </style>

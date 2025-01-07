@@ -269,9 +269,15 @@ watch(
       & button {
         border: none;
         background-color: transparent;
+        color: var(--color-text-primary);
         cursor: pointer;
         font-size: var(--font-size-sm);
         font-weight: var(--font-weight-regular);
+
+        &:disabled,
+        &[disabled] {
+          color: var(--color-text-secondary);
+        }
       }
     }
 
@@ -282,6 +288,7 @@ watch(
       margin-left: var(--spacing-8);
       background-color: var(--color-background-secondary);
       box-shadow: 0 1px 2px var(--color-shadow);
+      color: var(--color-text-primary);
       cursor: pointer;
     }
   }

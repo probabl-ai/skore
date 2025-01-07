@@ -1,9 +1,9 @@
 """
 .. _example_train_test_split:
 
-==========================
-Enhancing train-test split
-==========================
+================
+Train-test split
+================
 
 This example illustrates the motivation and the use of skore's
 :func:`skore.train_test_split` to get assistance when developing ML/DS projects.
@@ -30,7 +30,7 @@ temp_dir_path = Path(temp_dir.name)
 # %%
 import skore
 
-my_project = skore.create("my_project", working_dir=temp_dir_path)
+my_project = skore.open(temp_dir_path / "my_project")
 
 # %%
 # Train-test split in scikit-learn

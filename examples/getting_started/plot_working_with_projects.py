@@ -1,9 +1,9 @@
 """
-.. _example_overview_skore_project:
+.. _example_working_with_projects:
 
-=============================
-Overview of the skore project
-=============================
+=====================
+Working with projects
+=====================
 
 This example provides an overview of the functionalities and the different types
 of items that we can store in a skore :class:`~skore.Project`.
@@ -30,7 +30,7 @@ temp_dir_path = Path(temp_dir.name)
 # %%
 import skore
 
-my_project = skore.create("my_project", working_dir=temp_dir_path)
+my_project = skore.open(temp_dir_path / "my_project")
 
 # %%
 # Storing integers
@@ -68,7 +68,7 @@ my_project.get("my_int")
 #
 #   Skore does not exactly *overwrite*, but stores the history of items.
 #   For more information about the tracking of items using their history,
-#   see :ref:`example_historization_items`.
+#   see :ref:`example_tracking_items`.
 
 # %%
 # By using the :func:`~skore.Project.delete_item` method, we can also delete an object
@@ -244,7 +244,7 @@ plt.show()
 my_project.put("my_figure", fig)
 
 # %%
-# |
+#
 # Altair chart:
 
 # %%
@@ -335,9 +335,6 @@ my_project.put("my_pil_image", my_pil_image)
 # %%
 # Storing scikit-learn models and pipelines
 # =========================================
-#
-# As skore is developed by `Probabl <https://probabl.ai>`_, the spin-off of
-# scikit-learn, skore treats scikit-learn models and pipelines as first-class citizens.
 #
 # First of all, we can store a scikit-learn model:
 

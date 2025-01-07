@@ -16,9 +16,5 @@ class ProjectCreationError(Exception):
     """Project creation failed."""
 
 
-class ProjectAlreadyExistsError(Exception):
-    """A project with this name already exists."""
-
-
 class ProjectPermissionError(Exception):
     """Permissions in the directory do not allow creating a file."""

@@ -1,0 +1,13 @@
+<div class="standalone-widget skore-ui">
+  <script id="skore-item-data-{{ id }}" type="application/json">
+    {{ item|tojson }}
+  </script>
+  <style>
+    {{ styles|safe }}
+  </style>
+  <div id="skore-widget-{{ id }}"></div>
+  <script>window.skoreWidgetId = "{{ id }}";</script>
+  <script type="module">
+    {{ script|safe }}
+  </script>
+</div>

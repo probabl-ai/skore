@@ -1,5 +1,5 @@
 import { generateRandomId } from "@/services/utils";
-import { defineStore } from "pinia";
+import { acceptHMRUpdate, defineStore } from "pinia";
 import { ref } from "vue";
 
 export type ToastType = "info" | "success" | "warning" | "error";
@@ -54,3 +54,7 @@ export const useToastsStore = defineStore("toasts", () => {
 
   return { toasts, addToast, dismissToast };
 });
+
+if (import.meta.hot) {
+  import.meta.hot.accept(acceptHMRUpdate(useToastsStore, import.meta.hot));
+}
