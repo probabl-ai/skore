@@ -1267,6 +1267,8 @@ const toggleModel = ref(true);
           <div>icon-square-cursor <i class="icon icon-square-cursor"></i></div>
           <div>icon-moon <i class="icon icon-moon"></i></div>
           <div>icon-sun <i class="icon icon-sun"></i></div>
+          <div>icon-ascending-arrow <i class="icon icon-ascending-arrow"></i></div>
+          <div>icon-descending-arrow <i class="icon icon-descending-arrow"></i></div>
         </div>
       </TabPanelContent>
       <TabPanelContent name="draggable">
