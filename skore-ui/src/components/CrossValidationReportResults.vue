@@ -186,6 +186,11 @@ function isNameTooltipEnabled(index: number) {
           font-size: var(--font-size-xs);
         }
       }
+
+      & .icon {
+        color: var(--color-icon-tertiary);
+        vertical-align: middle;
+      }
     }
   }
 

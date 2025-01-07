@@ -21,8 +21,7 @@ These functions and classes are meant for managing a Project.
 
     Project
     item.primitive_item.PrimitiveItem
-    create
-    load
+    open
 
 Get assistance when developing ML/DS projects
 ---------------------------------------------
