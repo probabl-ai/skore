@@ -146,9 +146,6 @@ class EstimatorReport(_HelpMixin):
     >>> estimator = LogisticRegression().fit(X_train, y_train)
     >>> from skore import EstimatorReport
     >>> report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    >>> report
-    📓 Available tools for diagnosing LogisticRegression estimator
-    ...
     """
 
     _ACCESSOR_CONFIG = {
