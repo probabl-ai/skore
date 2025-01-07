@@ -84,6 +84,13 @@ class RichColorHelpFormatter(HelpFormatter):
             help_text,
         )
 
+        # Color "options" in orange1
+        help_text = re.sub(
+            r"(?<=\s)(options)(?=:)",
+            r"[orange1]\1[/orange1]",
+            help_text,
+        )
+
         return help_text
 
 
