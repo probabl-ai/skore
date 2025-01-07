@@ -39,6 +39,9 @@ class PredictionErrorDisplay(HelpDisplayMixin):
     y_pred : ndarray of shape (n_samples,)
         Prediction values.
 
+    estimator_name : str, default=None
+        Name of the estimator.
+
     data_source : {"train", "test", "X_y"}, default=None
         The data source used to compute the ROC curve.
 
@@ -60,38 +63,19 @@ class PredictionErrorDisplay(HelpDisplayMixin):
 
     figure_ : matplotlib Figure
         Figure containing the scatter and lines.
-
-    See Also
-    --------
-    PredictionErrorDisplay.from_estimator : Prediction error visualization
-        given an estimator and some data.
-    PredictionErrorDisplay.from_predictions : Prediction error visualization
-        given the true and predicted targets.
-
-    Examples
-    --------
-    >>> import matplotlib.pyplot as plt
-    >>> from sklearn.datasets import load_diabetes
-    >>> from sklearn.linear_model import Ridge
-    >>> from sklearn.metrics import PredictionErrorDisplay
-    >>> X, y = load_diabetes(return_X_y=True)
-    >>> ridge = Ridge().fit(X, y)
-    >>> y_pred = ridge.predict(X)
-    >>> display = PredictionErrorDisplay(y_true=y, y_pred=y_pred)
-    >>> display.plot()
-    <...>
-    >>> plt.show()
     """
 
-    def __init__(self, *, y_true, y_pred, data_source=None):
+    def __init__(self, *, y_true, y_pred, estimator_name=None, data_source=None):
         self.y_true = y_true
         self.y_pred = y_pred
+        self.estimator_name = estimator_name
         self.data_source = data_source
 
     def plot(
         self,
         ax=None,
         *,
+        name=None,
         kind="residual_vs_predicted",
         scatter_kwargs=None,
         line_kwargs=None,
@@ -106,6 +90,9 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         ax : matplotlib axes, default=None
             Axes object to plot on. If `None`, a new figure and axes is
             created.
+
+        name : str, default=None
+            Name of the legend title.
 
         kind : {"actual_vs_predicted", "residual_vs_predicted"}, \
                 default="residual_vs_predicted"
@@ -130,8 +117,7 @@ class PredictionErrorDisplay(HelpDisplayMixin):
 
         Returns
         -------
-        display : :class:`~sklearn.metrics.PredictionErrorDisplay`
-
+        display : PredictionErrorDisplay
             Object that stores computed values.
         """
         check_matplotlib_support(f"{self.__class__.__name__}.plot")
@@ -159,6 +145,16 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         scatter_kwargs = {**default_scatter_kwargs, **scatter_kwargs}
         line_kwargs = {**default_line_kwargs, **line_kwargs}
 
+        if self.data_source in ("train", "test"):
+            scatter_label = f"{self.data_source.title()} set"
+        else:
+            scatter_label = "dataset"
+
+        if name is None and self.estimator_name is None:
+            name = "Regressor"
+        elif name is None:
+            name = self.estimator_name
+
         if ax is None:
             _, ax = plt.subplots()
 
@@ -170,13 +166,18 @@ class PredictionErrorDisplay(HelpDisplayMixin):
             y_range = (min_value, max_value)
 
             self.line_ = ax.plot(
-                [min_value, max_value], [min_value, max_value], **line_kwargs
+                [min_value, max_value],
+                [min_value, max_value],
+                label="Perfect predictions",
+                **line_kwargs,
             )[0]
 
             x_data, y_data = self.y_pred, self.y_true
             xlabel, ylabel = "Predicted values", "Actual values"
 
-            self.scatter_ = ax.scatter(x_data, y_data, **scatter_kwargs)
+            self.scatter_ = ax.scatter(
+                x_data, y_data, label=scatter_label, **scatter_kwargs
+            )
 
             # force to have a squared axis
             ax.set_aspect("equal", adjustable="datalim")
@@ -190,13 +191,17 @@ class PredictionErrorDisplay(HelpDisplayMixin):
             self.line_ = ax.plot(
                 [np.min(self.y_pred), np.max(self.y_pred)],
                 [0, 0],
+                label="Perfect predictions",
                 **line_kwargs,
             )[0]
 
-            self.scatter_ = ax.scatter(self.y_pred, residuals, **scatter_kwargs)
+            self.scatter_ = ax.scatter(
+                self.y_pred, residuals, label=scatter_label, **scatter_kwargs
+            )
             xlabel, ylabel = "Predicted values", "Residuals (actual - predicted)"
 
         ax.set(xlabel=xlabel, ylabel=ylabel)
+        ax.legend(title=name)
 
         self.ax_ = ax
         self.figure_ = ax.figure
@@ -215,6 +220,7 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         estimator,
         ml_task,
         data_source=None,
+        name=None,
         kind="residual_vs_predicted",
         subsample=1_000,
         random_state=None,
@@ -316,11 +322,13 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         viz = cls(
             y_true=y_true,
             y_pred=y_pred,
+            estimator_name=name,
             data_source=data_source,
         )
 
         viz.plot(
             ax=ax,
+            name=name,
             kind=kind,
             scatter_kwargs=scatter_kwargs,
             line_kwargs=line_kwargs,

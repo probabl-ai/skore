@@ -813,6 +813,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
                 estimator=self._parent.estimator,
                 ml_task=self._parent._ml_task,
                 data_source=data_source,
+                name=self._parent.estimator_name,
                 ax=ax,
                 kind=kind,
                 subsample=subsample,
