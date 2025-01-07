@@ -19,20 +19,13 @@ class PredictionErrorDisplay(HelpDisplayMixin):
     using scatter plots to qualitatively assess the behavior of a regressor,
     preferably on held-out data points.
 
-    See the details in the docstrings of
-    :func:`~sklearn.metrics.PredictionErrorDisplay.from_estimator` or
-    :func:`~sklearn.metrics.PredictionErrorDisplay.from_predictions` to
-    create a visualizer. All parameters are stored as attributes.
-
-    For general information regarding `scikit-learn` visualization tools, read
-    more in the :ref:`Visualization Guide <visualizations>`.
-    For details regarding interpreting these plots, refer to the
-    :ref:`Model Evaluation Guide <visualization_regression_evaluation>`.
-
-    .. versionadded:: 1.2
+    An instance of this class is should created by
+    `EstimatorReport.metrics.plot.prediction_error()`.
+    You should not create an instance of this class directly.
 
     Parameters
     ----------
+    ----------z
     y_true : ndarray of shape (n_samples,)
         True values.
 
