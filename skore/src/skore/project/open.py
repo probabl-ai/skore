@@ -16,13 +16,16 @@ def open(
 ) -> Project:
     """Open a project given a project name or path.
 
+    This function creates the project if it does not exist, and it overwrites
+    a pre-existing project if ``overwrite`` is set to ``True``.
+
     Parameters
     ----------
-    project_path: Path-like, default is "project.skore"
+    project_path: Path-like, default="project.skore"
         The relative or absolute path of the project.
-    create: bool, default is True
+    create: bool, default=True
         Create the project if it does not exist.
-    overwrite: bool, default is False
+    overwrite: bool, default=False
         Overwrite the project file if it already exists and ``create`` is ``True``.
         Has no effect otherwise.
 
