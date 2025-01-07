@@ -14,7 +14,7 @@ import json
 import re
 import statistics
 from functools import cached_property
-from typing import TYPE_CHECKING, Any, TypedDict, Union
+from typing import TYPE_CHECKING, Any, Literal, TypedDict, Union
 
 import numpy
 import plotly.graph_objects
@@ -64,6 +64,34 @@ def _metric_title(metric):
     if title.endswith(" time"):
         title = title + " (seconds)"
     return title
+
+
+def _metric_favorability(
+    metric: str,
+) -> Literal["greater_is_better", "lower_is_better", "unknown"]:
+    greater_is_better_metrics = (
+        "r2",
+        "test_r2",
+        "roc_auc",
+        "recall",
+        "recall_weighted",
+        "precision",
+        "precision_weighted",
+        "roc_auc_ovr_weighted",
+    )
+    lower_is_better_metrics = ("fit_time", "score_time")
+
+    if metric.endswith("_score") or metric in greater_is_better_metrics:
+        return "greater_is_better"
+    if (
+        metric.endswith("_error")
+        or metric.endswith("_loss")
+        or metric.endswith("_deviance")
+        or metric in lower_is_better_metrics
+    ):
+        return "lower_is_better"
+
+    return "unknown"
 
 
 def _params_to_str(estimator_info) -> str:
@@ -148,10 +176,12 @@ class CrossValidationItem(Item):
         cv_results = copy.deepcopy(self.cv_results_serialized)
         cv_results.pop("indices", None)
 
+        metrics_names = list(cv_results.keys())
         tabular_results = {
             "name": "Cross validation results",
-            "columns": list(cv_results.keys()),
+            "columns": metrics_names,
             "data": list(zip(*cv_results.values())),
+            "favorability": [_metric_favorability(m) for m in metrics_names],
         }
 
         # Get scalar results (summary statistics of the cv results)
@@ -160,6 +190,7 @@ class CrossValidationItem(Item):
                 "name": _metric_title(k),
                 "value": statistics.mean(v),
                 "stddev": statistics.stdev(v),
+                "favorability": _metric_favorability(k),
             }
             for k, v in cv_results.items()
         ]
