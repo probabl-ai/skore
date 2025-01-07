@@ -5,6 +5,8 @@ from __future__ import annotations
 from contextlib import suppress
 from typing import Any
 
+import skrub_table_report_item as SkrubTableReportItem
+
 from .cross_validation_item import CrossValidationItem
 from .item import Item, ItemTypeError
 from .item_repository import ItemRepository
@@ -17,7 +19,6 @@ from .polars_dataframe_item import PolarsDataFrameItem
 from .polars_series_item import PolarsSeriesItem
 from .primitive_item import PrimitiveItem
 from .sklearn_base_estimator_item import SklearnBaseEstimatorItem
-from .skrub_table_report_item import SkrubTableReportItem
 
 
 def object_to_item(object: Any) -> Item:
