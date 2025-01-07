@@ -31,18 +31,22 @@ export interface ProjectDto {
  */
 export type ActivityFeedDto = ProjectItemDto[];
 
+export type Favorability = "greater_is_better" | "lower_is_better" | "unknown";
+
 export interface ScalarResultDto {
   name: string;
   value: number;
   stddev?: number;
   label?: string;
   description?: string;
+  favorability: Favorability;
 }
 
 export interface TabularResultDto {
   name: string;
   columns: any[];
   data: any[][];
+  favorability: Favorability[];
 }
 
 export interface PrimaryResultsDto {

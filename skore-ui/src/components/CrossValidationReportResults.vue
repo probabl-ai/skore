@@ -2,10 +2,6 @@
 import Simplebar from "simplebar-vue";
 import { computed, ref, useTemplateRef } from "vue";
 
-import FloatingTooltip from "@/components//FloatingTooltip.vue";
-import DropdownButton from "@/components/DropdownButton.vue";
-import DropdownButtonItem from "@/components/DropdownButtonItem.vue";
-import StaticRange from "@/components/StaticRange.vue";
 import type { PrimaryResultsDto, TabularResultDto } from "@/dto";
 import { isElementOverflowing } from "@/services/utils";
 
@@ -21,7 +17,7 @@ function exponential(x: number) {
     return x;
   }
   const expoForm = x.toExponential(2);
-  const [_, expo] = expoForm.split("e");
+  const expo = expoForm.split("e")[1];
   if (Math.abs(parseInt(expo)) < 2) {
     return x.toFixed(2);
   } else {
@@ -50,7 +46,17 @@ function isNameTooltipEnabled(index: number) {
         ref="scalarResultsDivs"
       >
         <FloatingTooltip placement="bottom" :enabled="isNameTooltipEnabled(i)">
-          <div class="name">{{ result.name }}</div>
+          <div class="name">
+            {{ result.name }}
+            <i
+              v-if="result.favorability === 'greater_is_better'"
+              class="icon icon-ascending-arrow"
+            />
+            <i
+              v-if="result.favorability === 'lower_is_better'"
+              class="icon icon-descending-arrow"
+            />
+          </div>
           <template #tooltipContent>
             <span class="name-tooltip">{{ result.name }}</span>
           </template>
@@ -102,7 +108,17 @@ function isNameTooltipEnabled(index: number) {
             <thead>
               <tr>
                 <th>Fold</th>
-                <th v-for="(column, i) in currentTabularResult.columns" :key="i">{{ column }}</th>
+                <th v-for="(column, i) in currentTabularResult.columns" :key="i">
+                  {{ column }}
+                  <i
+                    v-if="currentTabularResult.favorability[i] === 'greater_is_better'"
+                    class="icon icon-ascending-arrow"
+                  />
+                  <i
+                    v-if="currentTabularResult.favorability[i] === 'lower_is_better'"
+                    class="icon icon-descending-arrow"
+                  />
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -140,7 +156,6 @@ function isNameTooltipEnabled(index: number) {
     }
 
     & .result {
-      overflow: hidden;
       padding: var(--spacing-8) var(--spacing-10);
       background-color: var(--color-background-primary);
 
@@ -181,10 +196,17 @@ function isNameTooltipEnabled(index: number) {
           font-size: var(--font-size-xs);
         }
       }
+
+      & .icon {
+        color: var(--color-icon-tertiary);
+        vertical-align: middle;
+      }
     }
   }
 
   & .tabular-results {
+    max-width: 100%;
+
     & .header {
       display: flex;
       align-items: center;
@@ -208,63 +230,37 @@ function isNameTooltipEnabled(index: number) {
       }
     }
 
-    & table {
-      --fold-column-width: 70px;
+    & .result {
+      overflow: hidden;
+      max-width: 100%;
 
-      width: 100%;
-      border-collapse: collapse;
-      text-align: right;
+      & table {
+        --fold-column-width: 70px;
 
-      & thead tr th {
-        padding: var(--spacing-6) var(--spacing-10);
-        border: solid var(--stroke-width-md) var(--color-stroke-background-primary);
-        border-bottom-color: var(--color-background-primary);
-        background-color: var(--color-background-secondary);
-        color: var(--color-text-primary);
-        font-weight: var(--font-weight-medium);
+        min-width: 100%;
+        border-collapse: collapse;
+        text-align: right;
 
-        &:first-child {
-          position: sticky;
-          left: 0;
-          width: var(--fold-column-width);
-          border-left: none;
-          text-align: center;
-        }
-
-        &:last-child {
-          border-right: none;
-        }
-      }
-
-      & tbody tr {
-        position: relative;
-        color: var(--color-text-primary);
-        font-weight: var(--font-weight-regular);
-
-        & td {
+        & thead tr th {
           padding: var(--spacing-6) var(--spacing-10);
           border: solid var(--stroke-width-md) var(--color-stroke-background-primary);
+          border-bottom-color: var(--color-background-primary);
+          background-color: var(--color-background-secondary);
+          color: var(--color-text-primary);
+          font-weight: var(--font-weight-medium);
+
+          /* stylelint-disable-next-line no-descending-specificity */
+          & .icon {
+            color: var(--color-icon-tertiary);
+            vertical-align: middle;
+          }
 
           &:first-child {
             position: sticky;
-            z-index: 2;
             left: 0;
             width: var(--fold-column-width);
-            border-bottom-color: var(--color-background-primary);
             border-left: none;
-            background-color: var(--color-background-secondary);
-            font-weight: var(--font-weight-medium);
-            text-align: left;
-
-            &::after {
-              position: absolute;
-              top: 0;
-              right: -3px;
-              width: 3px;
-              height: 100%;
-              background: linear-gradient(to right, var(--color-background-secondary), transparent);
-              content: " ";
-            }
+            text-align: center;
           }
 
           &:last-child {
@@ -272,10 +268,51 @@ function isNameTooltipEnabled(index: number) {
           }
         }
 
-        &:last-child {
+        & tbody tr {
+          position: relative;
+          color: var(--color-text-primary);
+          font-weight: var(--font-weight-regular);
+
           & td {
-            border-bottom: none;
-            border-bottom-left-radius: var(--radius-xs);
+            padding: var(--spacing-6) var(--spacing-10);
+            border: solid var(--stroke-width-md) var(--color-stroke-background-primary);
+
+            &:first-child {
+              position: sticky;
+              z-index: 2;
+              left: 0;
+              width: var(--fold-column-width);
+              border-bottom-color: var(--color-background-primary);
+              border-left: none;
+              background-color: var(--color-background-secondary);
+              font-weight: var(--font-weight-medium);
+              text-align: left;
+
+              &::after {
+                position: absolute;
+                top: 0;
+                right: -3px;
+                width: 3px;
+                height: 100%;
+                background: linear-gradient(
+                  to right,
+                  var(--color-background-secondary),
+                  transparent
+                );
+                content: " ";
+              }
+            }
+
+            &:last-child {
+              border-right: none;
+            }
+          }
+
+          &:last-child {
+            & td {
+              border-bottom: none;
+              border-bottom-left-radius: var(--radius-xs);
+            }
           }
         }
       }
