@@ -834,14 +834,14 @@ class _PlotMetricsAccessor(_BaseAccessor):
 @register_accessor("metrics", EstimatorReport)
 class _MetricsAccessor(_BaseAccessor):
     _SCORE_OR_LOSS_ICONS = {
-        "accuracy": "↗︎",
-        "precision": "↗︎",
-        "recall": "↗︎",
-        "brier_score": "↘︎",
-        "roc_auc": "↗︎",
-        "log_loss": "↘︎",
-        "r2": "↗︎",
-        "rmse": "↘︎",
+        "accuracy": "(↗︎)",
+        "precision": "(↗︎)",
+        "recall": "(↗︎)",
+        "brier_score": "(↘︎)",
+        "roc_auc": "(↗︎)",
+        "log_loss": "(↘︎)",
+        "r2": "(↗︎)",
+        "rmse": "(↘︎)",
         "report_metrics": "",
         "custom_metric": "",
     }
@@ -1590,7 +1590,7 @@ class _MetricsAccessor(_BaseAccessor):
         """Override format method for metrics-specific naming."""
         method_name = f"{name}(...)"
         method_name = method_name.ljust(22) + f"{self._SCORE_OR_LOSS_ICONS[name]}"
-        if self._SCORE_OR_LOSS_ICONS[name] in ("↗︎", "↘︎"):
+        if self._SCORE_OR_LOSS_ICONS[name] in ("(↗︎)", "(↘︎)"):
             # take into account the length of the icon
             return method_name.ljust(30)
         else:
