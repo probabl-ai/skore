@@ -35,7 +35,7 @@ TableReport(y.to_frame())
 pos_label, negative_class = "allowed", "disallowed"
 
 # %%
-# Before to train a predictive model, we need to split our dataset into a training
+# Before training a predictive model, we need to split our dataset into a training
 # and a validation set.
 from skore import train_test_split
 
@@ -46,9 +46,9 @@ X_train, X_test, y_train, y_test = train_test_split(df, y, random_state=42)
 # function from `skore`.
 #
 # Now, we need to define a predictive model. Hopefully, `skrub` provides a convenient
-# function (:func:`skore.tabular_learner`) when it comes to get strong baseline
-# predictive models with a single line of code. Of course, it does not handcraft some
-# specific feature engineering but it provides a good starting point.
+# function (:func:`skrub.tabular_learner`) when it comes to get strong baseline
+# predictive models with a single line of code. As its feature engineering is generic, it does not
+# provide some handcrafted and tailored feature engineering but still provides a good starting point.
 #
 # So let's create a classifier for our task and fit it on the training set.
 from skrub import tabular_learner
@@ -73,7 +73,7 @@ reporter
 
 # %%
 #
-# Once the reporter created, we get some information regarding the available tools
+# Once the reporter is created, we get some information regarding the available tools
 # allowing us to get some insights from our specific model on the specific task.
 #
 # You can get a similar information if you call the :meth:`~skore.EstimatorReport.help`
