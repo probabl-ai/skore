@@ -8,6 +8,7 @@ import joblib
 import numpy as np
 import pandas as pd
 from rich.console import Console
+from rich.panel import Panel
 from rich.progress import track
 from rich.tree import Tree
 from sklearn import metrics
@@ -80,16 +81,25 @@ class _HelpMixin:
             else "No description available"
         )
 
+    def _create_help_panel(self):
+        """Create the help panel."""
+        return Panel(
+            self._create_help_tree(),
+            title=self._get_help_panel_title(),
+            expand=False,
+            border_style="orange1",
+        )
+
     def help(self):
         """Display available methods using rich."""
         from skore import console  # avoid circular import
 
-        console.print(self._create_help_tree())
+        console.print(self._create_help_panel())
 
     def __repr__(self):
         """Return a string representation using rich."""
         console = Console(file=StringIO(), force_terminal=False)
-        console.print(self._create_help_tree())
+        console.print(self._create_help_panel())
         return console.file.getvalue()
 
 
@@ -396,17 +406,22 @@ class EstimatorReport(_HelpMixin):
     # Methods related to the help tree
     ####################################################################################
 
+    def _get_help_panel_title(self):
+        return (
+            f"[bold cyan]📓 Tools to diagnose {self.estimator_name} "
+            "estimator[/bold cyan]"
+        )
+
     def _create_help_tree(self):
         """Create a rich Tree with the available tools and accessor methods."""
-        tree = Tree(
-            f"📓 Available tools for diagnosing {self.estimator_name} estimator\n\n"
-            "reporter"
-        )
+        tree = Tree("reporter")
 
         # Add accessor methods first
         for accessor_attr, config in self._ACCESSOR_CONFIG.items():
             accessor = getattr(self, accessor_attr)
-            branch = tree.add(f".{config['name']} {config['icon']}")
+            branch = tree.add(
+                f"[bold cyan].{config['name']} {config['icon']}[/bold cyan]"
+            )
 
             # Add main accessor methods first
             methods = accessor._get_methods_for_help()
@@ -420,7 +435,9 @@ class EstimatorReport(_HelpMixin):
             # Add sub-accessors after main methods
             for sub_attr, sub_obj in inspect.getmembers(accessor):
                 if isinstance(sub_obj, _BaseAccessor) and not sub_attr.startswith("_"):
-                    sub_branch = branch.add(f".{sub_attr} {sub_obj._icon}")
+                    sub_branch = branch.add(
+                        f"[bold cyan].{sub_attr} {sub_obj._icon}[/bold cyan]"
+                    )
 
                     # Add sub-accessor methods
                     sub_methods = sub_obj._get_methods_for_help()
@@ -454,13 +471,13 @@ class _BaseAccessor(_HelpMixin):
         self._parent = parent
         self._icon = icon
 
-    def _get_help_title(self):
+    def _get_help_panel_title(self):
         name = self.__class__.__name__.replace("_", "").replace("Accessor", "").lower()
-        return f"{self._icon} Available {name} methods\n\nreporter.metrics"
+        return f"{self._icon} Available {name} methods"
 
     def _create_help_tree(self):
         """Create a rich Tree with the available methods."""
-        tree = Tree(self._get_help_title())
+        tree = Tree(self._get_help_tree_title())
 
         methods = self._get_methods_for_help()
         methods = self._sort_methods_for_help(methods)
@@ -818,8 +835,11 @@ class _PlotMetricsAccessor(_BaseAccessor):
 
         return display
 
-    def _get_help_title(self):
-        return f"{self._icon} Available plot methods\n\nreporter.metrics.plot"
+    def _get_help_panel_title(self):
+        return f"[bold cyan]{self._icon} Available plot methods[/bold cyan]"
+
+    def _get_help_tree_title(self):
+        return "[bold cyan]reporter.metrics.plot[/bold cyan]"
 
 
 ###############################################################################
@@ -1585,10 +1605,14 @@ class _MetricsAccessor(_BaseAccessor):
     def _format_method_name(self, name):
         """Override format method for metrics-specific naming."""
         method_name = f"{name}(...)"
-        method_name = method_name.ljust(22) + f"{self._SCORE_OR_LOSS_ICONS[name]}"
+        method_name = method_name.ljust(22)
         if self._SCORE_OR_LOSS_ICONS[name] in ("(↗︎)", "(↘︎)"):
-            # take into account the length of the icon
-            return method_name.ljust(30)
+            if self._SCORE_OR_LOSS_ICONS[name] == "(↗︎)":
+                method_name += f"[cyan]{self._SCORE_OR_LOSS_ICONS[name]}[/cyan]"
+                return method_name.ljust(43)
+            else:  # (↘︎)
+                method_name += f"[orange1]{self._SCORE_OR_LOSS_ICONS[name]}[/orange1]"
+                return method_name.ljust(49)
         else:
             return method_name.ljust(29)
 
@@ -1602,13 +1626,19 @@ class _MetricsAccessor(_BaseAccessor):
         tree = super()._create_help_tree()
 
         # Add plot methods in a separate branch
-        plot_branch = tree.add("plot 🎨")
+        plot_branch = tree.add("[bold cyan].plot 🎨[/bold cyan]")
         plot_methods = self.plot._get_methods_for_help()
         plot_methods = self.plot._sort_methods_for_help(plot_methods)
 
         for name, method in plot_methods:
             displayed_name = self.plot._format_method_name(name)
             description = self.plot._get_method_description(method)
-            plot_branch.add(f".{displayed_name}".ljust(26) + f"- {description}")
+            plot_branch.add(f".{displayed_name}".ljust(27) + f"- {description}")
 
         return tree
+
+    def _get_help_panel_title(self):
+        return f"[bold cyan]{self._icon} Available metrics methods[/bold cyan]"
+
+    def _get_help_tree_title(self):
+        return "[bold cyan]reporter.metrics[/bold cyan]"
