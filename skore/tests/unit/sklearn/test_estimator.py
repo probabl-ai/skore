@@ -1,4 +1,5 @@
 import re
+from copy import deepcopy
 
 import joblib
 import numpy as np
@@ -285,6 +286,25 @@ def test_estimator_report_repr(binary_classification_data):
     assert repr_str.startswith(
         "📓 Available tools for diagnosing RandomForestClassifier estimator"
     )
+
+
+@pytest.mark.parametrize(
+    "fixture_name", ["binary_classification_data", "regression_data"]
+)
+def test_estimator_report_cache_predictions(request, fixture_name):
+    """Check that calling cache_predictions fills the cache."""
+    estimator, X_test, y_test = request.getfixturevalue(fixture_name)
+    report = EstimatorReport(
+        estimator, X_train=X_test, y_train=y_test, X_test=X_test, y_test=y_test
+    )
+
+    assert report._cache == {}
+    report.cache_predictions()
+    assert report._cache != {}
+    stored_cache = deepcopy(report._cache)
+    report.cache_predictions()
+    # check that the keys are exactly the same
+    assert report._cache.keys() == stored_cache.keys()
 
 
 ########################################################################################

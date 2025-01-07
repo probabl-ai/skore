@@ -221,7 +221,11 @@ class EstimatorReport(_HelpMixin):
         """
         if self._ml_task in ("binary-classification", "multiclass-classification"):
             if response_methods == "auto":
-                response_methods = ("predict_proba", "decision_function", "predict")
+                response_methods = ("predict",)
+                if hasattr(self._estimator, "predict_proba"):
+                    response_methods = ("predict_proba",)
+                if hasattr(self._estimator, "decision_function"):
+                    response_methods = ("decision_function",)
             pos_labels = self._estimator.classes_
         else:
             if response_methods == "auto":
