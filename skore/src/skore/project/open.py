@@ -36,8 +36,7 @@ def open(
     FileNotFoundError
         If path is not found and ``create`` is set to ``False``
     ProjectCreationError
-        If project path is invalid, or if the project already exists and
-        ``overwrite`` is set to ``False``
+        If project creation fails for some reason (e.g. if the project path is invalid)
     """
     # The default
     if create and not overwrite:
