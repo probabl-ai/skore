@@ -1,9 +1,7 @@
-from pathlib import Path
-
 from skore.cli.cli import cli
 
 
-def test_quickstart(monkeypatch):
+def test_quickstart(monkeypatch, tmp_path):
     """`quickstart` passes its arguments down to `create` and `launch`."""
 
     create_project_name = None
@@ -42,7 +40,7 @@ def test_quickstart(monkeypatch):
     cli(
         [
             "quickstart",
-            "/tmp/my_project.skore",
+            str(tmp_path / "my_project.skore"),
             "--verbose",
             "--overwrite",
             "--port",
@@ -51,11 +49,11 @@ def test_quickstart(monkeypatch):
         ]
     )
 
-    assert create_project_name == "/tmp/my_project.skore"
+    assert create_project_name == str(tmp_path / "my_project.skore")
     assert create_overwrite is True
     assert create_verbose is True
 
-    assert launch_project_name == Path("/tmp/my_project.skore")
+    assert launch_project_name == tmp_path / "my_project.skore"
     assert launch_port == 888
     assert launch_open_browser is False
     assert launch_verbose is True
