@@ -1,11 +1,13 @@
 """Helpers for enhancing the cross-validation manipulation."""
 
+from typing import Any
+
 from sklearn import metrics
 
 from skore.sklearn.find_ml_task import _find_ml_task
 
 
-def _get_scorers_to_add(estimator, y) -> list[str]:
+def _get_scorers_to_add(estimator, y) -> dict[str, Any]:
     """Get a list of scorers based on ``estimator`` and ``y``.
 
     Parameters

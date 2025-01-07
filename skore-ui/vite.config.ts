@@ -37,7 +37,7 @@ export default defineConfig({
     setupFiles: ["./vitest.setup.ts"],
   },
   build: {
-    assetsInlineLimit(filePath, content) {
+    assetsInlineLimit(filePath) {
       const fontExtensions = ["ttf", "woff", "woff2", "svg", "eot"];
       return fontExtensions.some((ext) => filePath.includes(ext));
     },
