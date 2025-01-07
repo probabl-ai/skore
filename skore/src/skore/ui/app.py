@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from starlette.types import Lifespan
 
-from skore.project import Project, load
+from skore.project import Project, open
 from skore.ui.dependencies import get_static_path
 from skore.ui.project_routes import router as project_router
 
@@ -21,7 +21,7 @@ def create_app(
 
     # Give the app access to the project
     if not project:
-        project = load("project.skore")
+        project = open("project.skore")
 
     app.state.project = project
 

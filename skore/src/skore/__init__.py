@@ -5,15 +5,14 @@ import logging
 from rich.console import Console
 from rich.theme import Theme
 
-from skore.project import Project, create, load
+from skore.project import Project, open
 from skore.sklearn import CrossValidationReporter, EstimatorReport, train_test_split
 from skore.utils._show_versions import show_versions
 
 __all__ = [
-    "create",
     "CrossValidationReporter",
     "EstimatorReport",
-    "load",
+    "open",
     "Project",
     "show_versions",
     "train_test_split",
