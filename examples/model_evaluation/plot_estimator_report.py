@@ -382,19 +382,3 @@ print(f"Time taken to compute the ROC curve: {end - start:.2f} seconds")
 
 # %%
 # As expected, since we need to recompute the predictions, it takes more time.
-from sklearn.datasets import load_diabetes
-from sklearn.ensemble import HistGradientBoostingRegressor
-from skore import EstimatorReport
-
-X, y = load_diabetes(return_X_y=True)
-estimator = HistGradientBoostingRegressor()
-reporter = EstimatorReport(estimator, X_train=X, y_train=y, X_test=X, y_test=y)
-reporter
-
-# %%
-display_1 = reporter.metrics.plot.prediction_error(kind="actual_vs_predicted")
-
-# %%
-display_2 = reporter.metrics.plot.prediction_error(kind="actual_vs_predicted")
-
-# %%

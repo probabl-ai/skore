@@ -141,7 +141,7 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         if self.data_source in ("train", "test"):
             scatter_label = f"{self.data_source.title()} set"
         else:
-            scatter_label = "dataset"
+            scatter_label = "Data set"
 
         if name is None and self.estimator_name is None:
             name = "Regressor"
@@ -208,8 +208,8 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         y_true,
         y_pred,
         *,
-        estimator,
-        ml_task,
+        estimator,  # currently only for consistency with other plots
+        ml_task,  # FIXME: to be used when having single-output vs. multi-output
         data_source=None,
         name=None,
         kind="residual_vs_predicted",
@@ -221,13 +221,6 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         despine=True,
     ):
         """Plot the prediction error given the true and predicted targets.
-
-        For general information regarding `scikit-learn` visualization tools,
-        read more in the :ref:`Visualization Guide <visualizations>`.
-        For details regarding interpreting these plots, refer to the
-        :ref:`Model Evaluation Guide <visualization_regression_evaluation>`.
-
-        .. versionadded:: 1.2
 
         Parameters
         ----------
