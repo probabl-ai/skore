@@ -38,7 +38,6 @@ def open(
     ProjectCreationError
         If project creation fails for some reason (e.g. if the project path is invalid)
     """
-    # The default
     if create and not overwrite:
         try:
             return _load(project_path)
