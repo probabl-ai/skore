@@ -342,6 +342,7 @@ def test_estimator_report_plot_roc(binary_classification_data):
 def test_estimator_report_display_binary_classification(
     pyplot, binary_classification_data, display
 ):
+    """General behaviour of the function creating display on binary classification."""
     estimator, X_test, y_test = binary_classification_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     assert hasattr(report.metrics.plot, display)
@@ -353,6 +354,7 @@ def test_estimator_report_display_binary_classification(
 
 @pytest.mark.parametrize("display", ["prediction_error"])
 def test_estimator_report_display_regression(pyplot, regression_data, display):
+    """General behaviour of the function creating display on regression."""
     estimator, X_test, y_test = regression_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     assert hasattr(report.metrics.plot, display)
@@ -366,6 +368,9 @@ def test_estimator_report_display_regression(pyplot, regression_data, display):
 def test_estimator_report_display_binary_classification_external_data(
     pyplot, binary_classification_data, display
 ):
+    """General behaviour of the function creating display on binary classification
+    when passing external data.
+    """
     estimator, X_test, y_test = binary_classification_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     assert hasattr(report.metrics.plot, display)
@@ -383,6 +388,9 @@ def test_estimator_report_display_binary_classification_external_data(
 def test_estimator_report_display_regression_external_data(
     pyplot, regression_data, display
 ):
+    """General behaviour of the function creating display on regression when passing
+    external data.
+    """
     estimator, X_test, y_test = regression_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     assert hasattr(report.metrics.plot, display)
@@ -394,6 +402,48 @@ def test_estimator_report_display_regression_external_data(
         data_source="X_y", X=X_test, y=y_test
     )
     assert display_first_call is display_second_call
+
+
+@pytest.mark.parametrize("display", ["roc", "precision_recall"])
+def test_estimator_report_display_binary_classification_switching_data_source(
+    pyplot, binary_classification_data, display
+):
+    """Check that we don't hit the cache when switching the data source."""
+    estimator, X_test, y_test = binary_classification_data
+    report = EstimatorReport(
+        estimator, X_train=X_test, y_train=y_test, X_test=X_test, y_test=y_test
+    )
+    assert hasattr(report.metrics.plot, display)
+    display_first_call = getattr(report.metrics.plot, display)(data_source="test")
+    assert report._cache != {}
+    display_second_call = getattr(report.metrics.plot, display)(data_source="train")
+    assert display_first_call is not display_second_call
+    display_third_call = getattr(report.metrics.plot, display)(
+        data_source="X_y", X=X_test, y=y_test
+    )
+    assert display_first_call is not display_third_call
+    assert display_second_call is not display_third_call
+
+
+@pytest.mark.parametrize("display", ["prediction_error"])
+def test_estimator_report_display_regression_switching_data_source(
+    pyplot, regression_data, display
+):
+    """Check that we don't hit the cache when switching the data source."""
+    estimator, X_test, y_test = regression_data
+    report = EstimatorReport(
+        estimator, X_train=X_test, y_train=y_test, X_test=X_test, y_test=y_test
+    )
+    assert hasattr(report.metrics.plot, display)
+    display_first_call = getattr(report.metrics.plot, display)(data_source="test")
+    assert report._cache != {}
+    display_second_call = getattr(report.metrics.plot, display)(data_source="train")
+    assert display_first_call is not display_second_call
+    display_third_call = getattr(report.metrics.plot, display)(
+        data_source="X_y", X=X_test, y=y_test
+    )
+    assert display_first_call is not display_third_call
+    assert display_second_call is not display_third_call
 
 
 ########################################################################################

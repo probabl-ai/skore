@@ -202,8 +202,6 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         if despine:
             _despine_matplotlib_axis(self.ax_, x_range=x_range, y_range=y_range)
 
-        return self
-
     @classmethod
     def _from_predictions(
         cls,

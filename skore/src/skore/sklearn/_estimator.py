@@ -585,18 +585,11 @@ class _PlotMetricsAccessor(_BaseAccessor):
         name_ = self._parent.estimator_name if name is None else name
 
         cache_key = (self._parent._hash, RocCurveDisplay.__name__, pos_label, name_)
-        if data_source_hash:
-            cache_key += (data_source_hash,)
 
-        y_pred = self._parent._get_cached_response_values(
-            estimator_hash=self._parent._hash,
-            estimator=self._parent.estimator,
-            X=X,
-            response_method=prediction_method,
-            pos_label=pos_label,
-            data_source=data_source,
-            data_source_hash=data_source_hash,
-        )
+        if data_source_hash:  # data_source == "X_y"
+            cache_key += (data_source_hash,)
+        else:
+            cache_key += (data_source,)
 
         if cache_key in self._parent._cache:
             display = self._parent._cache[cache_key]
@@ -607,6 +600,16 @@ class _PlotMetricsAccessor(_BaseAccessor):
                 despine=True,
             )
         else:
+            y_pred = self._parent._get_cached_response_values(
+                estimator_hash=self._parent._hash,
+                estimator=self._parent.estimator,
+                X=X,
+                response_method=prediction_method,
+                pos_label=pos_label,
+                data_source=data_source,
+                data_source_hash=data_source_hash,
+            )
+
             display = RocCurveDisplay._from_predictions(
                 y,
                 y_pred,
@@ -683,18 +686,10 @@ class _PlotMetricsAccessor(_BaseAccessor):
             pos_label,
             name_,
         )
-        if data_source_hash:
+        if data_source_hash:  # data_source == "X_y"
             cache_key += (data_source_hash,)
-
-        y_pred = self._parent._get_cached_response_values(
-            estimator_hash=self._parent._hash,
-            estimator=self._parent.estimator,
-            X=X,
-            response_method=prediction_method,
-            pos_label=pos_label,
-            data_source=data_source,
-            data_source_hash=data_source_hash,
-        )
+        else:
+            cache_key += (data_source,)
 
         if cache_key in self._parent._cache:
             display = self._parent._cache[cache_key]
@@ -705,6 +700,16 @@ class _PlotMetricsAccessor(_BaseAccessor):
                 despine=True,
             )
         else:
+            y_pred = self._parent._get_cached_response_values(
+                estimator_hash=self._parent._hash,
+                estimator=self._parent.estimator,
+                X=X,
+                response_method=prediction_method,
+                pos_label=pos_label,
+                data_source=data_source,
+                data_source_hash=data_source_hash,
+            )
+
             display = PrecisionRecallCurveDisplay._from_predictions(
                 y,
                 y_pred,
@@ -789,24 +794,27 @@ class _PlotMetricsAccessor(_BaseAccessor):
             kind,
             subsample,
         )
-        if data_source_hash:
+        if data_source_hash:  # data_source == "X_y"
             cache_key += (data_source_hash,)
-
-        y_pred = self._parent._get_cached_response_values(
-            estimator_hash=self._parent._hash,
-            estimator=self._parent.estimator,
-            X=X,
-            response_method="predict",
-            data_source=data_source,
-            data_source_hash=data_source_hash,
-        )
+        else:
+            cache_key += (data_source,)
 
         if cache_key in self._parent._cache:
-            display = self._parent._cache[cache_key].plot(
+            display = self._parent._cache[cache_key]
+            display.plot(
                 ax=ax,
                 kind=kind,
             )
         else:
+            y_pred = self._parent._get_cached_response_values(
+                estimator_hash=self._parent._hash,
+                estimator=self._parent.estimator,
+                X=X,
+                response_method="predict",
+                data_source=data_source,
+                data_source_hash=data_source_hash,
+            )
+
             display = PredictionErrorDisplay._from_predictions(
                 y,
                 y_pred,
