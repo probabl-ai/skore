@@ -916,7 +916,7 @@ class _MetricsAccessor(_BaseAccessor):
         scores = []
 
         for metric in scoring:
-            # NOTE: we have to check specifically fort `_BaseScorer` first because this
+            # NOTE: we have to check specifically for `_BaseScorer` first because this
             # is also a callable but it has a special private API that we can leverage
             if isinstance(metric, _BaseScorer):
                 # scorers have the advantage to have scoped defined kwargs
