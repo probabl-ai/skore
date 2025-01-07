@@ -30,7 +30,7 @@ temp_dir_path = Path(temp_dir.name)
 # %%
 import skore
 
-my_project = skore.create(temp_dir_path / "my_project")
+my_project = skore.open(temp_dir_path / "my_project")
 
 # %%
 # Cross-validation in scikit-learn

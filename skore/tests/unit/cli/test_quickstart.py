@@ -17,7 +17,7 @@ def test_quickstart(monkeypatch, tmp_path):
         create_overwrite = overwrite
         create_verbose = verbose
 
-    monkeypatch.setattr("skore.cli.quickstart_command.create", fake_create)
+    monkeypatch.setattr("skore.cli.quickstart_command._create", fake_create)
 
     launch_project_name = None
     launch_port = None

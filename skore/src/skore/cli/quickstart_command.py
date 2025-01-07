@@ -5,7 +5,7 @@ from typing import Union
 
 from skore.cli import logger
 from skore.cli.launch_dashboard import __launch
-from skore.project import create
+from skore.project.create import _create
 from skore.utils._logger import logger_context
 
 
@@ -36,7 +36,7 @@ def __quickstart(
     """
     with logger_context(logger, verbose):
         try:
-            create(
+            _create(
                 project_name=project_name,
                 overwrite=overwrite,
                 verbose=verbose,

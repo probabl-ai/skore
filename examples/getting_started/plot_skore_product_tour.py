@@ -44,7 +44,7 @@ Skore product tour
 #
 #     import skore
 #
-#     my_project = skore.create("my_project")
+#     my_project = skore.open("my_project")
 #
 #   This would create a skore project directory named ``my_project.skore`` in our
 #   current directory.
@@ -66,7 +66,7 @@ temp_dir_path = Path(temp_dir.name)
 # %%
 import skore
 
-my_project = skore.create(temp_dir_path / "my_project")
+my_project = skore.open(temp_dir_path / "my_project")
 
 # %%
 # Then, *from our shell* (in the same directory), we can start the UI locally:

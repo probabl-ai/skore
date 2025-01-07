@@ -3,8 +3,8 @@
 from pathlib import Path
 from typing import Union
 
-from skore.project.create import create as create_project
-from skore.project.load import load
+from skore.project.create import _create
+from skore.project.load import _load
 from skore.project.project import Project
 
 
@@ -42,11 +42,11 @@ def open(
     # The default
     if create and not overwrite:
         try:
-            return load(project_path)
+            return _load(project_path)
         except FileNotFoundError:
-            return create_project(project_path, overwrite=overwrite)
+            return _create(project_path, overwrite=overwrite)
 
     if not create:
-        return load(project_path)
+        return _load(project_path)
 
-    return create_project(project_path, overwrite=overwrite)
+    return _create(project_path, overwrite=overwrite)

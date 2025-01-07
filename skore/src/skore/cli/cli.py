@@ -5,7 +5,7 @@ from importlib.metadata import version
 
 from skore.cli.launch_dashboard import __launch
 from skore.cli.quickstart_command import __quickstart
-from skore.project import create
+from skore.project.create import _create
 
 
 def cli(args: list[str]):
@@ -107,7 +107,7 @@ def cli(args: list[str]):
             verbose=parsed_args.verbose,
         )
     elif parsed_args.subcommand == "create":
-        create(
+        _create(
             project_name=parsed_args.project_name,
             overwrite=parsed_args.overwrite,
             verbose=parsed_args.verbose,

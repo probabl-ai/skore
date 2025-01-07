@@ -13,7 +13,7 @@ class ProjectLoadError(Exception):
     """Failed to load project."""
 
 
-def load(project_name: Union[str, Path]) -> Project:
+def _load(project_name: Union[str, Path]) -> Project:
     """Load an existing Project given a project name or path.
 
     Transforms a project name to a directory path as follows:

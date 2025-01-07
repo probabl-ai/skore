@@ -1,7 +1,8 @@
 import os
 
 import pytest
-from skore.project import Project, load
+from skore.project import Project
+from skore.project.load import _load
 
 
 @pytest.fixture
@@ -17,15 +18,15 @@ def fake_project_path(tmp_path):
 
 def test_load_no_project():
     with pytest.raises(FileNotFoundError):
-        load("/empty")
+        _load("/empty")
 
 
 def test_load_absolute_path(fake_project_path):
-    p = load(fake_project_path)
+    p = _load(fake_project_path)
     assert isinstance(p, Project)
 
 
 def test_load_relative_path(fake_project_path):
     os.chdir(fake_project_path.parent)
-    p = load(fake_project_path.name)
+    p = _load(fake_project_path.name)
     assert isinstance(p, Project)
