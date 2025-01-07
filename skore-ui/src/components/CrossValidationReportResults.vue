@@ -2,6 +2,10 @@
 import Simplebar from "simplebar-vue";
 import { computed, ref, useTemplateRef } from "vue";
 
+import DropdownButton from "@/components/DropdownButton.vue";
+import FloatingTooltip from "@/components/FloatingTooltip.vue";
+import MetricFavorability from "@/components/MetricFavorability.vue";
+import StaticRange from "@/components/StaticRange.vue";
 import type { PrimaryResultsDto, TabularResultDto } from "@/dto";
 import { isElementOverflowing } from "@/services/utils";
 
@@ -48,14 +52,7 @@ function isNameTooltipEnabled(index: number) {
         <FloatingTooltip placement="bottom" :enabled="isNameTooltipEnabled(i)">
           <div class="name">
             {{ result.name }}
-            <i
-              v-if="result.favorability === 'greater_is_better'"
-              class="icon icon-ascending-arrow"
-            />
-            <i
-              v-if="result.favorability === 'lower_is_better'"
-              class="icon icon-descending-arrow"
-            />
+            <MetricFavorability :favorability="result.favorability" />
           </div>
           <template #tooltipContent>
             <span class="name-tooltip">{{ result.name }}</span>
@@ -110,14 +107,7 @@ function isNameTooltipEnabled(index: number) {
                 <th>Fold</th>
                 <th v-for="(column, i) in currentTabularResult.columns" :key="i">
                   {{ column }}
-                  <i
-                    v-if="currentTabularResult.favorability[i] === 'greater_is_better'"
-                    class="icon icon-ascending-arrow"
-                  />
-                  <i
-                    v-if="currentTabularResult.favorability[i] === 'lower_is_better'"
-                    class="icon icon-descending-arrow"
-                  />
+                  <MetricFavorability :favorability="currentTabularResult.favorability[i]" />
                 </th>
               </tr>
             </thead>
@@ -196,11 +186,6 @@ function isNameTooltipEnabled(index: number) {
           font-size: var(--font-size-xs);
         }
       }
-
-      & .icon {
-        color: var(--color-icon-tertiary);
-        vertical-align: middle;
-      }
     }
   }
 
@@ -248,12 +233,6 @@ function isNameTooltipEnabled(index: number) {
           background-color: var(--color-background-secondary);
           color: var(--color-text-primary);
           font-weight: var(--font-weight-medium);
-
-          /* stylelint-disable-next-line no-descending-specificity */
-          & .icon {
-            color: var(--color-icon-tertiary);
-            vertical-align: middle;
-          }
 
           &:first-child {
             position: sticky;
