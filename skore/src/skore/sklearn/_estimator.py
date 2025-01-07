@@ -2,11 +2,13 @@ import inspect
 import time
 from functools import partial
 from io import StringIO
+from itertools import product
 
 import joblib
 import numpy as np
 import pandas as pd
 from rich.console import Console
+from rich.progress import track
 from rich.tree import Tree
 from sklearn import metrics
 from sklearn.base import clone
@@ -202,6 +204,59 @@ class EstimatorReport(_HelpMixin):
         """Clean the cache."""
         self._cache = {}
 
+    def cache_predictions(self, response_methods="auto", n_jobs=None):
+        """Force caching of estimator's predictions.
+
+        Parameters
+        ----------
+        response_methods : "auto" or list of str, default="auto"
+            The response methods to precompute. If "auto", the response methods are
+            inferred from the ml task: for classification we compute the response of
+            the `predict_proba`, `decision_function` and `predict` methods; for
+            regression we compute the response of the `predict` method.
+
+        n_jobs : int or None, default=None
+            The number of jobs to run in parallel. None means 1 unless in a
+            joblib.parallel_backend context. -1 means using all processors.
+        """
+        if self._ml_task in ("binary-classification", "multiclass-classification"):
+            if response_methods == "auto":
+                response_methods = ("predict_proba", "decision_function", "predict")
+            pos_labels = self._estimator.classes_
+        else:
+            if response_methods == "auto":
+                response_methods = ("predict",)
+            pos_labels = [None]
+
+        data_sources = ("test",)
+        Xs = (self._X_test,)
+        if self._X_train is not None:
+            data_sources = ("train",)
+            Xs = (self._X_train,)
+
+        parallel = joblib.Parallel(n_jobs=n_jobs, return_as="generator_unordered")
+        generator = parallel(
+            joblib.delayed(self._get_cached_response_values)(
+                estimator_hash=self._hash,
+                estimator=self._estimator,
+                X=X,
+                response_method=response_method,
+                pos_label=pos_label,
+                data_source=data_source,
+            )
+            for response_method, pos_label, data_source, X in product(
+                response_methods, pos_labels, data_sources, Xs
+            )
+        )
+        # trigger the computation
+        list(
+            track(
+                generator,
+                total=len(response_methods) * len(pos_labels) * len(data_sources),
+                description="Caching predictions",
+            )
+        )
+
     @property
     def estimator(self):
         return self._estimator
@@ -299,6 +354,9 @@ class EstimatorReport(_HelpMixin):
             - "train" : use the train set provided when creating the reporter.
             - "X_y" : use the provided `X` and `y` to compute the metric.
 
+        data_source_hash : int or None
+            The hash of the data source when `data_source` is "X_y".
+
         Returns
         -------
         array-like of shape (n_samples,) or (n_samples, n_outputs)
@@ -311,9 +369,6 @@ class EstimatorReport(_HelpMixin):
             cache_key = (estimator_hash, pos_label, prediction_method, data_source)
         else:
             cache_key = (estimator_hash, prediction_method, data_source)
-
-        if data_source_hash is not None:
-            cache_key += (data_source_hash,)
 
         if data_source == "X_y":
             data_source_hash = joblib.hash(X)

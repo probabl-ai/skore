@@ -100,34 +100,50 @@ class _MetricsAccessor(_BaseAccessor):
         ] = "auto",
         pos_label: Optional[Union[str, int]] = None,
     ) -> pd.DataFrame: ...
-    def f1(
+    def brier_score(
         self,
         *,
         data_source: Literal["test", "train", "X_y"] = "test",
         X: Optional[ndarray] = None,
         y: Optional[ndarray] = None,
-        average: Literal[
-            "auto", "macro", "micro", "weighted", "samples", None
-        ] = "auto",
-        pos_label: Optional[Union[str, int]] = None,
+        pos_label: int = 1,
     ) -> pd.DataFrame: ...
-    def confusion_matrix(
+    def roc_auc(
         self,
         *,
         data_source: Literal["test", "train", "X_y"] = "test",
         X: Optional[ndarray] = None,
         y: Optional[ndarray] = None,
-        normalize: Optional[Literal["true", "pred", "all"]] = None,
+        average: Literal["auto", "macro", "micro", "weighted", "samples"] = "auto",
+        multi_class: Literal["raise", "ovr", "ovo", "auto"] = "ovr",
     ) -> pd.DataFrame: ...
-    def classification_report(
+    def log_loss(
         self,
         *,
         data_source: Literal["test", "train", "X_y"] = "test",
         X: Optional[ndarray] = None,
         y: Optional[ndarray] = None,
-        digits: int = 2,
     ) -> pd.DataFrame: ...
-    def feature_importance(self, *, top_k: Optional[int] = None) -> pd.DataFrame: ...
+    def r2(
+        self,
+        *,
+        data_source: Literal["test", "train", "X_y"] = "test",
+        X: Optional[ndarray] = None,
+        y: Optional[ndarray] = None,
+        multioutput: Union[
+            Literal["raw_values", "uniform_average"], ndarray
+        ] = "uniform_average",
+    ) -> pd.DataFrame: ...
+    def rmse(
+        self,
+        *,
+        data_source: Literal["test", "train", "X_y"] = "test",
+        X: Optional[ndarray] = None,
+        y: Optional[ndarray] = None,
+        multioutput: Union[
+            Literal["raw_values", "uniform_average"], ndarray
+        ] = "uniform_average",
+    ) -> pd.DataFrame: ...
 
 class EstimatorReport:
     metrics: _MetricsAccessor
@@ -142,11 +158,8 @@ class EstimatorReport:
         X_test: Optional[ndarray] = None,
         y_test: Optional[ndarray] = None,
     ) -> None: ...
-    @classmethod
-    def from_fitted_estimator(
-        cls, estimator: BaseEstimator, *, X: ndarray, y: Optional[ndarray] = None
-    ) -> EstimatorReport: ...
-    def _repr_html_(self) -> str: ...
+    def clean_cache(self) -> None: ...
+    def cache_predictions(self, response_methods="auto", n_jobs=None) -> None: ...
     def __repr__(self) -> str: ...
     @property
     def estimator(self) -> BaseEstimator: ...
