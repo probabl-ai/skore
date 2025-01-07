@@ -1248,9 +1248,7 @@ class _MetricsAccessor(_BaseAccessor):
         )
 
     @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
-        )
+        _check_supported_ml_task(supported_ml_tasks=["binary-classification"])
     )
     def brier_score(self, *, data_source="test", X=None, y=None, pos_label=1):
         """Compute the Brier score.
