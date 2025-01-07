@@ -341,7 +341,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
 
         Returns
         -------
-        display : :class:`~sklearn.metrics.RocCurveDisplay`
+        display : RocCurveDisplay
             Object that stores computed values.
         """
         pos_label_validated, name = cls._validate_from_predictions_params(

@@ -807,9 +807,12 @@ class _PlotMetricsAccessor(_BaseAccessor):
                 kind=kind,
             )
         else:
-            display = PredictionErrorDisplay.from_predictions(
+            display = PredictionErrorDisplay._from_predictions(
                 y,
                 y_pred,
+                estimator=self._parent.estimator,
+                ml_task=self._parent._ml_task,
+                data_source=data_source,
                 ax=ax,
                 kind=kind,
                 subsample=subsample,

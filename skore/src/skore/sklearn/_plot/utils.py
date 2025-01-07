@@ -111,12 +111,22 @@ class _ClassifierCurveDisplayMixin:
         return pos_label, name
 
 
-def _despine_matplotlib_axis(ax):
-    """Despine the matplotlib axis."""
+def _despine_matplotlib_axis(ax, *, x_range=(0, 1), y_range=(0, 1)):
+    """Despine the matplotlib axis.
+
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        The matplotlib axis to despine.
+    x_range : tuple of float, default=(0, 1)
+        The range of the x-axis.
+    y_range : tuple of float, default=(0, 1)
+        The range of the y-axis.
+    """
     for s in ["top", "right"]:
         ax.spines[s].set_visible(False)
-    for s in ["bottom", "left"]:
-        ax.spines[s].set_bounds(0, 1)
+    ax.spines["bottom"].set_bounds(x_range[0], x_range[1])
+    ax.spines["left"].set_bounds(y_range[0], y_range[1])
 
 
 def _validate_style_kwargs(default_style_kwargs, user_style_kwargs):

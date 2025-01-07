@@ -86,7 +86,6 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
 
     chance_levels_ : matplotlib Artist or None
         The chance level line. It is `None` if the chance level is not plotted.
-
     """
 
     def __init__(
@@ -150,7 +149,7 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
 
         Returns
         -------
-        display : :class:`~sklearn.metrics.PrecisionRecallDisplay`
+        display : PrecisionRecallCurveDisplay
             Object that stores computed values.
 
         Notes
