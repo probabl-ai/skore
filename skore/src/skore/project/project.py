@@ -1,28 +1,18 @@
 """Define a Project."""
 
-import logging
-from typing import Any, Optional, Union
+from __future__ import annotations
 
-from skore.item import (
-    CrossValidationItem,
-    Item,
-    ItemRepository,
-    MediaItem,
-    NumpyArrayItem,
-    PandasDataFrameItem,
-    PandasSeriesItem,
-    PolarsDataFrameItem,
-    PolarsSeriesItem,
-    PrimitiveItem,
-    SklearnBaseEstimatorItem,
-    object_to_item,
-)
-from skore.view.view import View
-from skore.view.view_repository import ViewRepository
+from typing import TYPE_CHECKING, Any, Optional, Union
 
-logger = logging.getLogger(__name__)
-logger.addHandler(logging.NullHandler())  # Default to no output
-logger.setLevel(logging.INFO)
+from skore.persistence import item_to_object, object_to_item
+
+if TYPE_CHECKING:
+    from skore.persistence import (
+        Item,
+        ItemRepository,
+        View,
+        ViewRepository,
+    )
 
 
 MISSING = object()
@@ -128,27 +118,20 @@ class Project:
             If the value type is not supported.
         """
         if value is not MISSING:
-            key_to_item = {key: value}
+            key_to_value = {key: value}
         elif isinstance(key, dict):
-            key_to_item = key
+            key_to_value = key
         else:
             raise TypeError(
                 f"Bad parameters. "
                 f"When value is not specified, key must be a dict (found '{type(key)}')"
             )
 
-        for key, value in key_to_item.items():
+        for key, value in key_to_value.items():
             if not isinstance(key, str):
                 raise TypeError(f"Key must be a string (found '{type(key)}')")
 
             self.item_repository.put_item(key, object_to_item(value))
-
-    def put_item(self, key: str, item: Item):
-        """Add an Item to the Project."""
-        if not isinstance(key, str):
-            raise TypeError(f"Key must be a string (found '{type(key)}')")
-
-        self.item_repository.put_item(key, item)
 
     def get(self, key: str) -> Any:
         """Get the value corresponding to ``key`` from the Project.
@@ -163,48 +146,7 @@ class Project:
         KeyError
             If the key does not correspond to any item.
         """
-        item = self.get_item(key)
-
-        if isinstance(item, PrimitiveItem):
-            return item.primitive
-        elif isinstance(item, NumpyArrayItem):
-            return item.array
-        elif isinstance(item, PandasDataFrameItem):
-            return item.dataframe
-        elif isinstance(item, PandasSeriesItem):
-            return item.series
-        elif isinstance(item, PolarsDataFrameItem):
-            return item.dataframe
-        elif isinstance(item, PolarsSeriesItem):
-            return item.series
-        elif isinstance(item, SklearnBaseEstimatorItem):
-            return item.estimator
-        elif isinstance(item, CrossValidationItem):
-            return item.cv_results_serialized
-        elif isinstance(item, MediaItem):
-            return item.media_bytes
-        else:
-            raise ValueError(f"Item {item} is not a known item type.")
-
-    def get_item(self, key: str) -> Item:
-        """Get the item corresponding to ``key`` from the Project.
-
-        Parameters
-        ----------
-        key : str
-            The key corresponding to the item to get.
-
-        Returns
-        -------
-        item : Item
-            The Item corresponding to ``key``.
-
-        Raises
-        ------
-        KeyError
-            If the key does not correspond to any item.
-        """
-        return self.item_repository.get_item(key)
+        return item_to_object(self.item_repository.get_item(key))
 
     def get_item_versions(self, key: str) -> list[Item]:
         """

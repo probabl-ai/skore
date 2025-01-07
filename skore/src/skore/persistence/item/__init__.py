@@ -43,7 +43,32 @@ def object_to_item(object: Any) -> Item:
             #     correct type. If not, they throw a ItemTypeError exception.
             return cls.factory(object)
 
-    raise NotImplementedError(f"Type '{object.__class__}' is not supported.")
+    return PickleItem(object)
+
+
+def item_to_object(item: Item) -> Any:
+    if isinstance(item, PrimitiveItem):
+        return item.primitive
+    elif isinstance(item, NumpyArrayItem):
+        return item.array
+    elif isinstance(item, PandasDataFrameItem):
+        return item.dataframe
+    elif isinstance(item, PandasSeriesItem):
+        return item.series
+    elif isinstance(item, PolarsDataFrameItem):
+        return item.dataframe
+    elif isinstance(item, PolarsSeriesItem):
+        return item.series
+    elif isinstance(item, SklearnBaseEstimatorItem):
+        return item.estimator
+    elif isinstance(item, CrossValidationItem):
+        return item.cv_results_serialized
+    elif isinstance(item, MediaItem):
+        return item.media_bytes
+    elif isinstance(item, PickleItem):
+        return repr(item.pickle_bytes)
+    else:
+        raise ValueError(f"Item {item} is not a known item type.")
 
 
 __all__ = [
