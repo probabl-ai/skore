@@ -3,10 +3,9 @@
 from pathlib import Path
 from typing import Union
 
+from skore.project.create import create as create_project
+from skore.project.load import load
 from skore.project.project import Project
-
-from .create import create as create_project
-from .load import load
 
 
 def open(
