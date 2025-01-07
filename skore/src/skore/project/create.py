@@ -7,11 +7,10 @@ from typing import Optional, Union
 
 from skore.exceptions import (
     InvalidProjectNameError,
-    ProjectAlreadyExistsError,
     ProjectCreationError,
     ProjectPermissionError,
 )
-from skore.project.load import load
+from skore.project.load import _load
 from skore.project.project import Project, logger
 from skore.utils._logger import logger_context
 from skore.view.view import View
@@ -58,9 +57,8 @@ def _validate_project_name(project_name: str) -> tuple[bool, Optional[Exception]
     return True, None
 
 
-def create(
+def _create(
     project_name: Union[str, Path],
-    working_dir: Optional[Path] = None,
     overwrite: bool = False,
     verbose: bool = False,
 ) -> Project:
@@ -69,12 +67,8 @@ def create(
     Parameters
     ----------
     project_name : Path-like
-        Name of the project to be created, or a relative or absolute path.
-    working_dir : Path or None
-        If ``project_name`` is not an absolute path, it will be considered relative to
-        ``working_dir``. If ``project_name`` is an absolute path, ``working_dir`` will
-        have no effect. If set to ``None`` (the default), ``working_dir`` will be re-set
-        to the current working directory.
+        Name of the project to be created, or a relative or absolute path. If relative,
+        will be interpreted as relative to the current working directory.
     overwrite : bool
         If ``True``, overwrite an existing project with the same name.
         If ``False``, raise an error if a project with the same name already exists.
@@ -105,16 +99,11 @@ def create(
         # If not provided, it will be automatically appended.
         # If project name is an absolute path, we keep that path
 
-        # NOTE: `working_dir` has no effect if `checked_project_name` is absolute
-        if working_dir is None:
-            working_dir = Path.cwd()
-        project_directory = working_dir / (
-            project_path.with_name(checked_project_name + ".skore")
-        )
+        project_directory = project_path.with_name(checked_project_name + ".skore")
 
         if project_directory.exists():
             if not overwrite:
-                raise ProjectAlreadyExistsError(
+                raise FileExistsError(
                     f"Unable to create project file '{project_directory}' because a "
                     "file with that name already exists. Please choose a different "
                     "name or use the --overwrite flag with the CLI or overwrite=True "
@@ -153,7 +142,7 @@ def create(
                 f"Unable to create project file '{views_dir}'."
             ) from e
 
-        p = load(project_directory)
+        p = _load(project_directory)
         p.put_view("default", View(layout=[]))
 
         console.rule("[bold cyan]skore[/bold cyan]")

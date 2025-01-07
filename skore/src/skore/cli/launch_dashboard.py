@@ -9,7 +9,7 @@ import uvicorn
 from fastapi import FastAPI
 
 from skore.cli import logger
-from skore.project import load
+from skore.project import open
 from skore.ui.app import create_app
 from skore.utils._logger import logger_context
 
@@ -36,7 +36,7 @@ def __launch(
     from skore import console  # avoid circular import
 
     with logger_context(logger, verbose):
-        project = load(project_name)
+        project = open(project_name)
 
         @asynccontextmanager
         async def lifespan(app: FastAPI):
