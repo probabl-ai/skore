@@ -542,9 +542,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def roc(
-        self, *, data_source="test", X=None, y=None, pos_label=None, ax=None, name=None
-    ):
+    def roc(self, *, data_source="test", X=None, y=None, pos_label=None, ax=None):
         """Plot the ROC curve.
 
         Parameters
@@ -570,9 +568,6 @@ class _PlotMetricsAccessor(_BaseAccessor):
         ax : matplotlib.axes.Axes, default=None
             The axes to plot on.
 
-        name : str, default=None
-            The name of the plot.
-
         Returns
         -------
         RocCurveDisplay
@@ -582,9 +577,8 @@ class _PlotMetricsAccessor(_BaseAccessor):
         X, y, data_source_hash = self._get_X_y_and_data_source_hash(
             data_source=data_source, X=X, y=y
         )
-        name_ = self._parent.estimator_name if name is None else name
 
-        cache_key = (self._parent._hash, RocCurveDisplay.__name__, pos_label, name_)
+        cache_key = (self._parent._hash, RocCurveDisplay.__name__, pos_label)
 
         if data_source_hash:  # data_source == "X_y"
             cache_key += (data_source_hash,)
@@ -595,7 +589,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
             display = self._parent._cache[cache_key]
             display.plot(
                 ax=ax,
-                name=name_,
+                estimator_name=self._parent.estimator_name,
                 plot_chance_level=True,
                 despine=True,
             )
@@ -618,7 +612,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
                 data_source=data_source,
                 pos_label=pos_label,
                 ax=ax,
-                name=name_,
+                estimator_name=self._parent.estimator_name,
                 plot_chance_level=True,
                 despine=True,
             )
@@ -639,7 +633,6 @@ class _PlotMetricsAccessor(_BaseAccessor):
         y=None,
         pos_label=None,
         ax=None,
-        name=None,
     ):
         """Plot the precision-recall curve.
 
@@ -666,9 +659,6 @@ class _PlotMetricsAccessor(_BaseAccessor):
         ax : matplotlib.axes.Axes, default=None
             The axes to plot on.
 
-        name : str, default=None
-            The name of the plot.
-
         Returns
         -------
         PrecisionRecallCurveDisplay
@@ -678,13 +668,11 @@ class _PlotMetricsAccessor(_BaseAccessor):
         X, y, data_source_hash = self._get_X_y_and_data_source_hash(
             data_source=data_source, X=X, y=y
         )
-        name_ = self._parent.estimator_name if name is None else name
 
         cache_key = (
             self._parent._hash,
             PrecisionRecallCurveDisplay.__name__,
             pos_label,
-            name_,
         )
         if data_source_hash:  # data_source == "X_y"
             cache_key += (data_source_hash,)
@@ -695,7 +683,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
             display = self._parent._cache[cache_key]
             display.plot(
                 ax=ax,
-                name=name_,
+                estimator_name=self._parent.estimator_name,
                 plot_chance_level=False,
                 despine=True,
             )
@@ -714,11 +702,11 @@ class _PlotMetricsAccessor(_BaseAccessor):
                 y,
                 y_pred,
                 estimator=self._parent.estimator,
+                estimator_name=self._parent.estimator_name,
                 ml_task=self._parent._ml_task,
                 data_source=data_source,
                 pos_label=pos_label,
                 ax=ax,
-                name=name_,
                 plot_chance_level=False,
                 despine=True,
             )
@@ -819,9 +807,9 @@ class _PlotMetricsAccessor(_BaseAccessor):
                 y,
                 y_pred,
                 estimator=self._parent.estimator,
+                estimator_name=self._parent.estimator_name,
                 ml_task=self._parent._ml_task,
                 data_source=data_source,
-                name=self._parent.estimator_name,
                 ax=ax,
                 kind=kind,
                 subsample=subsample,

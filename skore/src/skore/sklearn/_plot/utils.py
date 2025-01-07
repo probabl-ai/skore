@@ -78,15 +78,17 @@ class _ClassifierCurveDisplayMixin:
     the target and gather the response of the estimator.
     """
 
-    def _validate_plot_params(self, *, ax=None, name=None):
+    def _validate_plot_params(self, *, ax, estimator_name):
         check_matplotlib_support(f"{self.__class__.__name__}.plot")
         import matplotlib.pyplot as plt
 
         if ax is None:
             _, ax = plt.subplots()
 
-        name = self.estimator_name if name is None else name
-        return ax, ax.figure, name
+        estimator_name = (
+            self.estimator_name if estimator_name is None else estimator_name
+        )
+        return ax, ax.figure, estimator_name
 
     @classmethod
     def _validate_from_predictions_params(
@@ -97,18 +99,14 @@ class _ClassifierCurveDisplayMixin:
         ml_task,
         sample_weight=None,
         pos_label=None,
-        name=None,
     ):
         check_matplotlib_support(f"{cls.__name__}._from_predictions")
-
         check_consistent_length(y_true, y_pred, sample_weight)
 
         if ml_task == "binary-classification":
             pos_label = _check_pos_label_consistency(pos_label, y_true)
 
-        name = name if name is not None else "Classifier"
-
-        return pos_label, name
+        return pos_label
 
 
 def _despine_matplotlib_axis(ax, *, x_range=(0, 1), y_range=(0, 1)):

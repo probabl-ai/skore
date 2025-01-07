@@ -63,8 +63,8 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
             - the key is the class of interest in an OvR fashion.
             - the value is a list of `float`, each `float` being the prevalence.
 
-    estimator_name : str, default=None
-        Name of estimator. If None, then the estimator name is not shown.
+    estimator_name : str
+        Name of the estimator.
 
     pos_label : int, float, bool or str, default=None
         The class considered as the positive class. If None, the class will not
@@ -93,9 +93,9 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
         precision,
         recall,
         *,
-        average_precision=None,
-        prevalence=None,
-        estimator_name=None,
+        average_precision,
+        prevalence,
+        estimator_name,
         pos_label=None,
         data_source=None,
     ):
@@ -111,7 +111,7 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
         self,
         ax=None,
         *,
-        name=None,
+        estimator_name=None,
         pr_curve_kwargs=None,
         plot_chance_level=False,
         chance_level_kwargs=None,
@@ -127,9 +127,9 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
             Axes object to plot on. If `None`, a new figure and axes is
             created.
 
-        name : str, default=None
-            Name of precision recall curve for labeling. If `None`, use
-            `estimator_name` if not `None`, otherwise no labeling is shown.
+        estimator_name : str, default=None
+            Name of the estimator used to plot the precision-recall curve. If
+            `None`, we use the inferred name from the estimator.
 
         plot_chance_level : bool, default=True
             Whether to plot the chance level. The chance level is the prevalence
@@ -163,7 +163,9 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
         `drawstyle="default"`. However, the curve will not be strictly
         consistent with the reported average precision.
         """
-        self.ax_, self.figure_, name = self._validate_plot_params(ax=ax, name=name)
+        self.ax_, self.figure_, estimator_name = self._validate_plot_params(
+            ax=ax, estimator_name=estimator_name
+        )
 
         self.lines_ = []
         self.chance_levels_ = []
@@ -364,7 +366,7 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
         if despine:
             _despine_matplotlib_axis(self.ax_)
 
-        self.ax_.legend(loc="lower left", title=name)
+        self.ax_.legend(loc="lower left", title=estimator_name)
 
     @classmethod
     def _from_predictions(
@@ -373,12 +375,12 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
         y_pred,
         *,
         estimator,
+        estimator_name,
         ml_task,
         data_source=None,
         pos_label=None,
         drop_intermediate=False,
         ax=None,
-        name=None,
         pr_curve_kwargs=None,
         plot_chance_level=False,
         chance_level_kwargs=None,
@@ -399,6 +401,9 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
         estimator : estimator instance
             The estimator from which `y_pred` is obtained.
 
+        estimator_name : str
+            Name of the estimator used to plot the precision-recall curve.
+
         ml_task : {"binary-classification", "multiclass-classification"}
             The machine learning task.
 
@@ -416,10 +421,6 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
 
         ax : matplotlib axes, default=None
             Axes object to plot on. If `None`, a new figure and axes is created.
-
-        name : str, default=None
-            Name for labeling curve. If `None`, name will be set to
-            `"Classifier"`.
 
         pr_curve_kwargs : dict or list of dict, default=None
             Keyword arguments to be passed to matplotlib's `plot` for rendering
@@ -444,8 +445,8 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
         -------
         display : :class:`~sklearn.metrics.PrecisionRecallDisplay`
         """
-        pos_label_validated, name = cls._validate_from_predictions_params(
-            y_true, y_pred, ml_task=ml_task, pos_label=pos_label, name=name
+        pos_label_validated = cls._validate_from_predictions_params(
+            y_true, y_pred, ml_task=ml_task, pos_label=pos_label
         )
 
         if ml_task == "binary-classification":
@@ -493,14 +494,14 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
             recall=recall,
             average_precision=average_precision,
             prevalence=prevalence,
-            estimator_name=name,
+            estimator_name=estimator_name,
             pos_label=pos_label_validated,
             data_source=data_source,
         )
 
         viz.plot(
             ax=ax,
-            name=name,
+            estimator_name=estimator_name,
             pr_curve_kwargs=pr_curve_kwargs,
             plot_chance_level=plot_chance_level,
             chance_level_kwargs=chance_level_kwargs,

@@ -32,7 +32,7 @@ class PredictionErrorDisplay(HelpDisplayMixin):
     y_pred : ndarray of shape (n_samples,)
         Prediction values.
 
-    estimator_name : str, default=None
+    estimator_name : str
         Name of the estimator.
 
     data_source : {"train", "test", "X_y"}, default=None
@@ -58,7 +58,7 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         Figure containing the scatter and lines.
     """
 
-    def __init__(self, *, y_true, y_pred, estimator_name=None, data_source=None):
+    def __init__(self, *, y_true, y_pred, estimator_name, data_source=None):
         self.y_true = y_true
         self.y_pred = y_pred
         self.estimator_name = estimator_name
@@ -68,7 +68,7 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         self,
         ax=None,
         *,
-        name=None,
+        estimator_name=None,
         kind="residual_vs_predicted",
         scatter_kwargs=None,
         line_kwargs=None,
@@ -84,8 +84,9 @@ class PredictionErrorDisplay(HelpDisplayMixin):
             Axes object to plot on. If `None`, a new figure and axes is
             created.
 
-        name : str, default=None
-            Name of the legend title.
+        estimator_name : str, default=None
+            Name of the estimator used to plot the prediction error. If `None`,
+            we used the inferred name from the estimator.
 
         kind : {"actual_vs_predicted", "residual_vs_predicted"}, \
                 default="residual_vs_predicted"
@@ -143,10 +144,8 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         else:
             scatter_label = "Data set"
 
-        if name is None and self.estimator_name is None:
-            name = "Regressor"
-        elif name is None:
-            name = self.estimator_name
+        if estimator_name is None:
+            estimator_name = self.estimator_name
 
         if ax is None:
             _, ax = plt.subplots()
@@ -194,7 +193,7 @@ class PredictionErrorDisplay(HelpDisplayMixin):
             xlabel, ylabel = "Predicted values", "Residuals (actual - predicted)"
 
         ax.set(xlabel=xlabel, ylabel=ylabel)
-        ax.legend(title=name)
+        ax.legend(title=estimator_name)
 
         self.ax_ = ax
         self.figure_ = ax.figure
@@ -209,9 +208,9 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         y_pred,
         *,
         estimator,  # currently only for consistency with other plots
+        estimator_name,
         ml_task,  # FIXME: to be used when having single-output vs. multi-output
         data_source=None,
-        name=None,
         kind="residual_vs_predicted",
         subsample=1_000,
         random_state=None,
@@ -232,6 +231,9 @@ class PredictionErrorDisplay(HelpDisplayMixin):
 
         estimator : estimator instance
             The estimator from which `y_pred` is obtained.
+
+        estimator_name : str,
+            The name of the estimator.
 
         ml_task : {"binary-classification", "multiclass-classification"}
             The machine learning task.
@@ -306,13 +308,13 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         viz = cls(
             y_true=y_true,
             y_pred=y_pred,
-            estimator_name=name,
+            estimator_name=estimator_name,
             data_source=data_source,
         )
 
         viz.plot(
             ax=ax,
-            name=name,
+            estimator_name=estimator_name,
             kind=kind,
             scatter_kwargs=scatter_kwargs,
             line_kwargs=line_kwargs,

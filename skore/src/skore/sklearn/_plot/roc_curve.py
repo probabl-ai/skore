@@ -53,7 +53,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
             - the value is a list of `float`, each `float` being the area under
               the ROC curve.
 
-    estimator_name : str, default=None
+    estimator_name : str
         Name of the estimator.
 
     pos_label : str, default=None
@@ -82,8 +82,8 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         *,
         fpr,
         tpr,
-        roc_auc=None,
-        estimator_name=None,
+        roc_auc,
+        estimator_name,
         pos_label=None,
         data_source=None,
     ):
@@ -98,7 +98,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         self,
         ax=None,
         *,
-        name=None,
+        estimator_name=None,
         roc_curve_kwargs=None,
         plot_chance_level=True,
         chance_level_kwargs=None,
@@ -114,9 +114,9 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
             Axes object to plot on. If `None`, a new figure and axes is
             created.
 
-        name : str, default=None
-            Name of ROC Curve for labeling. If `None`, use `estimator_name` if
-            not `None`, otherwise no labeling is shown.
+        estimator_name : str, default=None
+            Name of the estimator used to plot the ROC curve. If `None`, we use
+            the inferred name from the estimator.
 
         roc_curve_kwargs : dict or list of dict, default=None
             Keyword arguments to be passed to matplotlib's `plot` for rendering
@@ -137,7 +137,9 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         display : :class:`~sklearn.metrics.RocCurveDisplay`
             Object that stores computed values.
         """
-        self.ax_, self.figure_, name = self._validate_plot_params(ax=ax, name=name)
+        self.ax_, self.figure_, estimator_name = self._validate_plot_params(
+            ax=ax, estimator_name=estimator_name
+        )
 
         self.lines_ = []
         if len(self.fpr) == 1:  # binary-classification
@@ -269,7 +271,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         if despine:
             _despine_matplotlib_axis(self.ax_)
 
-        self.ax_.legend(loc="lower right", title=name)
+        self.ax_.legend(loc="lower right", title=estimator_name)
 
     @classmethod
     def _from_predictions(
@@ -278,11 +280,11 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         y_pred,
         *,
         estimator,
+        estimator_name,
         ml_task,
         data_source=None,
         pos_label=None,
         drop_intermediate=True,
-        name=None,
         ax=None,
         roc_curve_kwargs=None,
         plot_chance_level=True,
@@ -304,6 +306,9 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         estimator : estimator instance
             The estimator from which `y_pred` is obtained.
 
+        estimator_name : str
+            Name of the estimator used to plot the ROC curve.
+
         ml_task : {"binary-classification", "multiclass-classification"}
             The machine learning task.
 
@@ -320,10 +325,6 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         ax : matplotlib axes, default=None
             Axes object to plot on. If `None`, a new figure and axes is
             created.
-
-        name : str, default=None
-            Name of ROC Curve for labeling. If `None`, use `estimator_name` if
-            not `None`, otherwise no labeling is shown.
 
         roc_curve_kwargs : dict or list of dict, default=None
             Keyword arguments to be passed to matplotlib's `plot` for rendering
@@ -344,8 +345,8 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         display : RocCurveDisplay
             Object that stores computed values.
         """
-        pos_label_validated, name = cls._validate_from_predictions_params(
-            y_true, y_pred, ml_task=ml_task, pos_label=pos_label, name=name
+        pos_label_validated = cls._validate_from_predictions_params(
+            y_true, y_pred, ml_task=ml_task, pos_label=pos_label
         )
 
         if ml_task == "binary-classification":
@@ -381,14 +382,14 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
             fpr=fpr,
             tpr=tpr,
             roc_auc=roc_auc,
-            estimator_name=name,
+            estimator_name=estimator_name,
             pos_label=pos_label_validated,
             data_source=data_source,
         )
 
         viz.plot(
             ax=ax,
-            name=name,
+            estimator_name=estimator_name,
             roc_curve_kwargs=roc_curve_kwargs,
             plot_chance_level=plot_chance_level,
             chance_level_kwargs=chance_level_kwargs,
