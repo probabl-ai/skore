@@ -525,6 +525,15 @@ def test_estimator_report_metrics_regression(regression_data, metric):
     assert report._cache != {}
 
 
+def _normalize_metric_name(column):
+    """Helper to normalize the metric name present in a pandas column that could be
+    a multi-index or single-index."""
+    # if we have a multi-index, then the metric name is on level 0
+    s = column[0] if isinstance(column, tuple) else column
+    # Remove spaces and underscores
+    return re.sub(r"[^a-zA-Z]", "", s.lower())
+
+
 @pytest.mark.parametrize("pos_label, nb_stats", [(None, 2), (1, 1)])
 def test_estimator_report_report_metrics_binary(
     binary_classification_data, binary_classification_data_svc, pos_label, nb_stats
@@ -544,16 +553,11 @@ def test_estimator_report_report_metrics_binary(
     expected_nb_stats = 2 * nb_stats + 2
     assert len(result.columns) == expected_nb_stats
 
-    def normalize_metric_name(column):
-        # if we have a multi-index, then the metric name is on level 0
-        s = column[0] if isinstance(column, tuple) else column
-        # Remove spaces, underscores and any non-alphanumeric characters
-        return re.sub(r"[^a-zA-Z0-9]", "", s.lower())
-
-    normalized_expected = {normalize_metric_name(metric) for metric in expected_metrics}
-
+    normalized_expected = {
+        _normalize_metric_name(metric) for metric in expected_metrics
+    }
     for column in result.columns:
-        normalized_column = normalize_metric_name(column)
+        normalized_column = _normalize_metric_name(column)
         matches = [
             metric for metric in normalized_expected if metric == normalized_column
         ]
@@ -573,10 +577,11 @@ def test_estimator_report_report_metrics_binary(
     expected_nb_stats = 2 * nb_stats + 1
     assert len(result.columns) == expected_nb_stats
 
-    normalized_expected = {normalize_metric_name(metric) for metric in expected_metrics}
-
+    normalized_expected = {
+        _normalize_metric_name(metric) for metric in expected_metrics
+    }
     for column in result.columns:
-        normalized_column = normalize_metric_name(column)
+        normalized_column = _normalize_metric_name(column)
         matches = [
             metric for metric in normalized_expected if metric == normalized_column
         ]
@@ -602,16 +607,11 @@ def test_estimator_report_report_metrics_multiclass(
     # precision, recall and roc_auc
     assert len(result.columns) == 10
 
-    def normalize_metric_name(column):
-        # if we have a multi-index, then the metric name is on level 0
-        s = column[0] if isinstance(column, tuple) else column
-        # Remove spaces, underscores and any non-alphanumeric characters
-        return re.sub(r"[^a-zA-Z0-9]", "", s.lower())
-
-    normalized_expected = {normalize_metric_name(metric) for metric in expected_metrics}
-
+    normalized_expected = {
+        _normalize_metric_name(metric) for metric in expected_metrics
+    }
     for column in result.columns:
-        normalized_column = normalize_metric_name(column)
+        normalized_column = _normalize_metric_name(column)
         matches = [
             metric for metric in normalized_expected if metric == normalized_column
         ]
@@ -628,10 +628,11 @@ def test_estimator_report_report_metrics_multiclass(
     expected_metrics = ("precision", "recall")
     assert len(result.columns) == 6
 
-    normalized_expected = {normalize_metric_name(metric) for metric in expected_metrics}
-
+    normalized_expected = {
+        _normalize_metric_name(metric) for metric in expected_metrics
+    }
     for column in result.columns:
-        normalized_column = normalize_metric_name(column)
+        normalized_column = _normalize_metric_name(column)
         matches = [
             metric for metric in normalized_expected if metric == normalized_column
         ]
@@ -651,16 +652,11 @@ def test_estimator_report_report_metrics_regression(regression_data):
     expected_metrics = ("r2", "rmse")
     assert len(result.columns) == len(expected_metrics)
 
-    def normalize_metric_name(column):
-        # if we have a multi-index, then the metric name is on level 0
-        s = column[0] if isinstance(column, tuple) else column
-        # Remove spaces and underscores characters
-        return re.sub(r"[^a-zA-Z]", "", s.lower())
-
-    normalized_expected = {normalize_metric_name(metric) for metric in expected_metrics}
-
+    normalized_expected = {
+        _normalize_metric_name(metric) for metric in expected_metrics
+    }
     for column in result.columns:
-        normalized_column = normalize_metric_name(column)
+        normalized_column = _normalize_metric_name(column)
         matches = [
             metric for metric in normalized_expected if metric == normalized_column
         ]
