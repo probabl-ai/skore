@@ -18,11 +18,28 @@ def test_get_deps_info():
 
 
 def test_show_versions(capfd):
+    """Check that we have the expected packages in the output of `show_versions()`.
+
+    We use `:` in the assertion to be sure that we are robust to package
+    version specifiers.
+
+    Non-regression test for:
+    https://github.com/probabl-ai/skore/issues/987
+    """
     show_versions()
     captured = capfd.readouterr()
-    assert "python" in captured.out
-    assert "executable" in captured.out
-    assert "machine" in captured.out
-    assert "pip" in captured.out
-    assert "setuptools" in captured.out
-    assert "skore" in captured.out
+    assert "python:" in captured.out
+    assert "executable:" in captured.out
+    assert "machine:" in captured.out
+    assert "skore:" in captured.out
+    assert "pip:" in captured.out
+    assert "setuptools:" in captured.out
+    assert "diskcache:" in captured.out
+    assert "fastapi:" in captured.out
+    assert "numpy:" in captured.out
+    assert "plotly:" in captured.out
+    assert "pyarrow:" in captured.out
+    assert "rich:" in captured.out
+    assert "scikit-learn:" in captured.out
+    assert "skops:" in captured.out
+    assert "uvicorn:" in captured.out
