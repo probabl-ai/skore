@@ -87,6 +87,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
                 response_method=response_method,
                 data_source=data_source,
                 data_source_hash=data_source_hash,
+                pos_label=display_kwargs.get("pos_label", None),
             )
 
             display = display_class._from_predictions(

@@ -32,7 +32,7 @@ TableReport(y.to_frame())
 # 0 or 1 but instead by a string "allowed" or "disallowed".
 #
 # For our application, the label of interest is "allowed".
-pos_label, negative_class = "allowed", "disallowed"
+pos_label, neg_label = "allowed", "disallowed"
 
 # %%
 # Before training a predictive model, we need to split our dataset into a training
@@ -101,7 +101,7 @@ reporter.metrics.plot.help()
 import time
 
 start = time.time()
-metric_report = reporter.metrics.report_metrics(pos_label="allowed")
+metric_report = reporter.metrics.report_metrics(pos_label=pos_label)
 end = time.time()
 metric_report
 
@@ -119,7 +119,7 @@ print(f"Time taken to compute the metrics: {end - start:.2f} seconds")
 # requesting the same metrics report again.
 
 start = time.time()
-metric_report = reporter.metrics.report_metrics(pos_label="allowed")
+metric_report = reporter.metrics.report_metrics(pos_label=pos_label)
 end = time.time()
 metric_report
 
@@ -178,7 +178,7 @@ reporter.metrics.log_loss(data_source="train")
 
 start = time.time()
 metric_report = reporter.metrics.report_metrics(
-    data_source="X_y", X=X_test, y=y_test, pos_label="allowed"
+    data_source="X_y", X=X_test, y=y_test, pos_label=pos_label
 )
 end = time.time()
 metric_report
@@ -195,7 +195,7 @@ print(f"Time taken to compute the metrics: {end - start:.2f} seconds")
 # %%
 start = time.time()
 metric_report = reporter.metrics.report_metrics(
-    data_source="X_y", X=X_test, y=y_test, pos_label="allowed"
+    data_source="X_y", X=X_test, y=y_test, pos_label=pos_label
 )
 end = time.time()
 metric_report
@@ -217,10 +217,10 @@ print(f"Time taken to compute the metrics: {end - start:.2f} seconds")
 
 
 def operational_decision_cost(y_true, y_pred, amount):
-    mask_true_positive = (y_true == "allowed") & (y_pred == "allowed")
-    mask_true_negative = (y_true == "disallowed") & (y_pred == "disallowed")
-    mask_false_positive = (y_true == "disallowed") & (y_pred == "allowed")
-    mask_false_negative = (y_true == "allowed") & (y_pred == "disallowed")
+    mask_true_positive = (y_true == pos_label) & (y_pred == pos_label)
+    mask_true_negative = (y_true == neg_label) & (y_pred == neg_label)
+    mask_false_positive = (y_true == neg_label) & (y_pred == pos_label)
+    mask_false_negative = (y_true == pos_label) & (y_pred == neg_label)
     # FIXME: we need to make sense of the cost sensitive part with the right naming
     fraudulent_refuse = mask_true_positive.sum() * 50
     fraudulent_accept = -amount[mask_false_negative].sum()
@@ -331,7 +331,7 @@ reporter.metrics.plot.help()
 # %%
 #
 # Let's start by plotting the ROC curve for our binary classification task.
-display = reporter.metrics.plot.roc(pos_label="allowed")
+display = reporter.metrics.plot.roc(pos_label=pos_label)
 plt.tight_layout()
 
 # %%
@@ -359,7 +359,7 @@ plt.tight_layout()
 # performance gain we can get.
 start = time.time()
 # we already trigger the computation of the predictions in a previous call
-reporter.metrics.plot.roc(pos_label="allowed")
+reporter.metrics.plot.roc(pos_label=pos_label)
 plt.tight_layout()
 end = time.time()
 
@@ -373,7 +373,7 @@ reporter.clean_cache()
 
 # %%
 start = time.time()
-reporter.metrics.plot.roc(pos_label="allowed")
+reporter.metrics.plot.roc(pos_label=pos_label)
 plt.tight_layout()
 end = time.time()
 
