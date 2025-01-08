@@ -91,10 +91,12 @@ def _add_scorers(scorers, scorers_to_add, estimator):
         in `scorers`).
     """
     if scorers is None or isinstance(scorers, str):
-        new_scorers, added_scorers = _add_scorers({"score": scorers}, scorers_to_add)
+        new_scorers, added_scorers = _add_scorers(
+            {"score": scorers}, scorers_to_add, estimator
+        )
     elif isinstance(scorers, (list, tuple)):
         new_scorers, added_scorers = _add_scorers(
-            {s: s for s in scorers}, scorers_to_add
+            {s: s for s in scorers}, scorers_to_add, estimator
         )
     elif isinstance(scorers, dict):
         # User-defined metrics have priority
