@@ -554,59 +554,54 @@ class _PlotMetricsAccessor(_BaseAccessor):
     def _get_display(
         self,
         *,
-        cache_key,
         X,
         y,
         data_source,
-        data_source_hash,
         response_method,
         display_class,
         display_kwargs,
+        display_plot_kwargs,
     ):
         """Get the display from the cache or compute it.
 
         Parameters
         ----------
-        cache_key : tuple
-            The cache key.
-
         X : array-like of shape (n_samples, n_features)
-            The data. Used when we don't hit the cache.
+            The data.
 
         y : array-like of shape (n_samples,)
-            The target. Used when we don't hit the cache.
+            The target.
 
         data_source : {"test", "train", "X_y"}, default="test"
-            The data source to use. Used when we don't hit the cache.
-
-        data_source_hash : int or None
-            The hash of the data source. None when we are able to track the data, and
-            thus relying on X_train, y_train, X_test, y_test. Used when we don't hit
-            the cache.
+            The data source to use.
 
         response_method : str
-            The response method. Used when we don't hit the cache.
+            The response method.
 
         display_class : class
-            The display class. Used when we don't hit the cache.
+            The display class.
 
         display_kwargs : dict
             The display kwargs used by `display_class._from_predictions`.
+
+        display_plot_kwargs : dict
+            The display kwargs used by `display.plot`.
 
         Returns
         -------
         display : display_class
             The display.
         """
+        X, y, data_source_hash = self._get_X_y_and_data_source_hash(
+            data_source=data_source, X=X, y=y
+        )
+
+        cache_key = (self._parent._hash, display_class.__name__)
+        cache_key += tuple(display_kwargs.values())
+        cache_key += (data_source_hash,) if data_source_hash else (data_source,)
+
         if cache_key in self._parent._cache:
             display = self._parent._cache[cache_key]
-            # the display.plot method can require a subset of the display_kwargs
-            # we need to filter them
-            plot_signature = inspect.signature(display.plot)
-            plot_params = plot_signature.parameters.keys()
-            display_plot_kwargs = {
-                k: v for k, v in display_kwargs.items() if k in plot_params
-            }
             display.plot(**display_plot_kwargs)
         else:
             y_pred = self._parent._get_cached_response_values(
@@ -626,6 +621,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
                 ml_task=self._parent._ml_task,
                 data_source=data_source,
                 **display_kwargs,
+                **display_plot_kwargs,
             )
             self._parent._cache[cache_key] = display
 
@@ -668,27 +664,16 @@ class _PlotMetricsAccessor(_BaseAccessor):
             The ROC curve display.
         """
         response_method = ("predict_proba", "decision_function")
-        X, y, data_source_hash = self._get_X_y_and_data_source_hash(
-            data_source=data_source, X=X, y=y
-        )
-
-        cache_key = (self._parent._hash, RocCurveDisplay.__name__, pos_label)
-
-        if data_source_hash:  # data_source == "X_y"
-            cache_key += (data_source_hash,)
-        else:
-            cache_key += (data_source,)
-
-        display_kwargs = {"ax": ax, "plot_chance_level": True, "despine": True}
+        display_kwargs = {"pos_label": pos_label}
+        display_plot_kwargs = {"ax": ax, "plot_chance_level": True, "despine": True}
         return self._get_display(
-            cache_key=cache_key,
             X=X,
             y=y,
             data_source=data_source,
-            data_source_hash=data_source_hash,
             response_method=response_method,
             display_class=RocCurveDisplay,
             display_kwargs=display_kwargs,
+            display_plot_kwargs=display_plot_kwargs,
         )
 
     @available_if(
@@ -736,30 +721,16 @@ class _PlotMetricsAccessor(_BaseAccessor):
             The precision-recall curve display.
         """
         response_method = ("predict_proba", "decision_function")
-        X, y, data_source_hash = self._get_X_y_and_data_source_hash(
-            data_source=data_source, X=X, y=y
-        )
-
-        cache_key = (
-            self._parent._hash,
-            PrecisionRecallCurveDisplay.__name__,
-            pos_label,
-        )
-        if data_source_hash:  # data_source == "X_y"
-            cache_key += (data_source_hash,)
-        else:
-            cache_key += (data_source,)
-
-        display_kwargs = {"ax": ax, "plot_chance_level": False, "despine": True}
+        display_kwargs = {"pos_label": pos_label}
+        display_plot_kwargs = {"ax": ax, "plot_chance_level": False, "despine": True}
         return self._get_display(
-            cache_key=cache_key,
             X=X,
             y=y,
             data_source=data_source,
-            data_source_hash=data_source_hash,
             response_method=response_method,
             display_class=PrecisionRecallCurveDisplay,
             display_kwargs=display_kwargs,
+            display_plot_kwargs=display_plot_kwargs,
         )
 
     @available_if(_check_supported_ml_task(supported_ml_tasks=["regression"]))
@@ -820,31 +791,16 @@ class _PlotMetricsAccessor(_BaseAccessor):
         PredictionErrorDisplay
             The prediction error display.
         """
-        X, y, data_source_hash = self._get_X_y_and_data_source_hash(
-            data_source=data_source, X=X, y=y
-        )
-
-        cache_key = (
-            self._parent._hash,
-            PredictionErrorDisplay.__name__,
-            kind,
-            subsample,
-        )
-        if data_source_hash:  # data_source == "X_y"
-            cache_key += (data_source_hash,)
-        else:
-            cache_key += (data_source,)
-
-        display_kwargs = {"ax": ax, "kind": kind, "subsample": subsample}
+        display_kwargs = {"kind": kind, "subsample": subsample}
+        display_plot_kwargs = {"ax": ax}
         return self._get_display(
-            cache_key=cache_key,
             X=X,
             y=y,
             data_source=data_source,
-            data_source_hash=data_source_hash,
             response_method="predict",
             display_class=PredictionErrorDisplay,
             display_kwargs=display_kwargs,
+            display_plot_kwargs=display_plot_kwargs,
         )
 
     def _get_help_panel_title(self):
