@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import warnings
 from typing import TYPE_CHECKING, Any, Optional, Union
 
@@ -10,10 +11,27 @@ from numpy.random import RandomState
 
 from skore.sklearn.find_ml_task import _find_ml_task
 from skore.sklearn.train_test_split.warning import TRAIN_TEST_SPLIT_WARNINGS
+from skore.utils._environment import is_environment_html_capable
 
 if TYPE_CHECKING:
     ArrayLike = Any
     from skore.project import Project
+
+
+HTML_WARNING_TEMPLATE = """
+<div style="
+    border: solid 1px var(--vscode-editorWarning-border, #f08b30);
+    color: var(--vscode-editorWarning-foreground, white);
+    background-color: transparent;
+    font-family: inherit;
+    font-size: 1em;
+    padding: 0.2em;
+    text-wrap: balance;
+    margin-bottom: 1px;
+">
+    {warning}
+</div>
+"""
 
 
 def train_test_split(
@@ -158,10 +176,29 @@ def train_test_split(
         ml_task=ml_task,
     )
 
+    to_display = []
     for warning_class in TRAIN_TEST_SPLIT_WARNINGS:
         warning = warning_class.check(**kwargs)
 
         if warning is not None:
+            to_display.append((warning, warning_class))
+
+    if is_environment_html_capable():
+        with contextlib.suppress(ImportError):
+            from IPython.core.interactiveshell import InteractiveShell
+            from IPython.display import HTML, display
+            from markdown import markdown
+
+            if InteractiveShell.initialized():
+                markup = "".join(
+                    [
+                        HTML_WARNING_TEMPLATE.format(warning=markdown(w))
+                        for w, _ in to_display
+                    ]
+                )
+                display(HTML(markup))
+    else:
+        for warning, warning_class in to_display:
             warnings.warn(message=warning, category=warning_class, stacklevel=1)
 
     return output
