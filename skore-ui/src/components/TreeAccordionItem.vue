@@ -148,6 +148,7 @@ onMounted(() => {
     align-items: center;
     justify-content: space-between;
     background-color: var(--color-background-primary);
+    color: var(--color-text-primary);
 
     .label {
       display: flex;
@@ -191,12 +192,13 @@ onMounted(() => {
         border: none;
         margin: 0;
         background-color: transparent;
+        color: var(--color-text-secondary);
         cursor: pointer;
         font-size: var(--font-size-md);
         transition: color var(--animation-duration) var(--animation-easing);
 
         &:hover {
-          color: var(--color-primary);
+          color: var(--color-text-primary);
         }
       }
     }

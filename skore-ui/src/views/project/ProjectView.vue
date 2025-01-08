@@ -122,20 +122,6 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-@media (prefers-color-scheme: dark) {
-  main {
-    --not-found-image: url("../../assets/images/not-found-dark.png");
-    --editor-placeholder-image: url("../../assets/images/editor-placeholder-dark.svg");
-  }
-}
-
-@media (prefers-color-scheme: light) {
-  main {
-    --not-found-image: url("../../assets/images/not-found-light.png");
-    --editor-placeholder-image: url("../../assets/images/editor-placeholder-light.svg");
-  }
-}
-
 main {
   display: flex;
   overflow: hidden;
@@ -204,11 +190,12 @@ main {
         flex-direction: column;
         justify-content: center;
         background-color: var(--color-background-primary);
+        color: var(--color-text-secondary);
 
         & .wrapper {
           padding-top: 225px;
           margin: var(--spacing-24);
-          background-image: var(--editor-placeholder-image);
+          background-image: var(--image-editor-placeholder);
           background-position: 50% 0;
           background-repeat: no-repeat;
           background-size: 265px 192px;

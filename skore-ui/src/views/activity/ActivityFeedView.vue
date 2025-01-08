@@ -129,6 +129,7 @@ onBeforeUnmount(() => {
 
     & .inner {
       padding-top: 189px;
+      background-image: var(--image-activity-feed-placeholder);
       background-position: center;
       background-repeat: no-repeat;
       background-size: 189px 180px;
@@ -138,18 +139,6 @@ onBeforeUnmount(() => {
       letter-spacing: var(--letter-spacing);
       text-align: center;
     }
-  }
-}
-
-@media (prefers-color-scheme: light) {
-  .activity-feed .placeholder .inner {
-    background-image: url("../../assets/images/activity-feed-placeholder-light.svg");
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  .activity-feed .placeholder .inner {
-    background-image: url("../../assets/images/activity-feed-placeholder-dark.svg");
   }
 }
 </style>

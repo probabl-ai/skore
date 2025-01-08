@@ -75,6 +75,11 @@ body[data-vscode-theme-kind="vscode-dark"],
 
   /* shadow */
   --color-shadow: rgb(0 0 0/58%);
+
+  /* images */
+  --image-not-found: url("../images/not-found-dark.png");
+  --image-editor-placeholder: url("../images/editor-placeholder-dark.svg");
+  --image-activity-feed-placeholder: url("../images/activity-feed-placeholder-dark.svg");
 }
 
 body[data-jp-theme-light="true"],
@@ -108,4 +113,9 @@ body[data-vscode-theme-kind="vscode-light"],
 
   /* shadow */
   --color-shadow: rgb(0 0 0/19%);
+
+  /* images */
+  --image-not-found: url("../images/not-found-light.png");
+  --image-editor-placeholder: url("../images/editor-placeholder-light.svg");
+  --image-activity-feed-placeholder: url("../images/activity-feed-placeholder-light.svg");
 }
