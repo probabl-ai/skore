@@ -1127,11 +1127,30 @@ class _MetricsAccessor(_BaseAccessor):
             New target on which to compute the metric. By default, we use the target
             provided when creating the reporter.
 
-        average : {"auto", "macro", "micro", "weighted", "samples"} or None, \
+        average : {"binary","macro", "micro", "weighted", "samples"} or None, \
                 default=None
-            The average to compute the precision score. By default, the average is
-            "binary" for binary classification and "weighted" for multiclass
-            classification.
+            Used with multiclass problems.
+            If `None`, the metrics for each class are returned. Otherwise, this
+            determines the type of averaging performed on the data:
+
+            - "binary": Only report results for the class specified by `pos_label`.
+              This is applicable only if targets (`y_{true,pred}`) are binary.
+            - "micro": Calculate metrics globally by counting the total true positives,
+              false negatives and false positives.
+            - "macro": Calculate metrics for each label, and find their unweighted
+              mean.  This does not take label imbalance into account.
+            - "weighted": Calculate metrics for each label, and find their average
+              weighted by support (the number of true instances for each label). This
+              alters 'macro' to account for label imbalance; it can result in an F-score
+              that is not between precision and recall.
+            - "samples": Calculate metrics for each instance, and find their average
+              (only meaningful for multilabel classification where this differs from
+              :func:`accuracy_score`).
+
+            .. note::
+                If `pos_label` is specified and `average` is None, then we report
+                only the statistics of the positive class (i.e. equivalent to
+                `average="binary"`).
 
         pos_label : int, default=None
             The positive class.
@@ -1184,11 +1203,31 @@ class _MetricsAccessor(_BaseAccessor):
             New target on which to compute the metric. By default, we use the target
             provided when creating the reporter.
 
-        average : {"auto", "macro", "micro", "weighted", "samples"} or None, \
-                default="auto"
-            The average to compute the recall score. By default, the average is
-            "binary" for binary classification and "weighted" for multiclass
-            classification.
+        average : {"binary","macro", "micro", "weighted", "samples"} or None, \
+                default=None
+            Used with multiclass problems.
+            If `None`, the metrics for each class are returned. Otherwise, this
+            determines the type of averaging performed on the data:
+
+            - "binary": Only report results for the class specified by `pos_label`.
+              This is applicable only if targets (`y_{true,pred}`) are binary.
+            - "micro": Calculate metrics globally by counting the total true positives,
+              false negatives and false positives.
+            - "macro": Calculate metrics for each label, and find their unweighted
+              mean.  This does not take label imbalance into account.
+            - "weighted": Calculate metrics for each label, and find their average
+              weighted by support (the number of true instances for each label). This
+              alters 'macro' to account for label imbalance; it can result in an F-score
+              that is not between precision and recall. Weighted recall is equal to
+              accuracy.
+            - "samples": Calculate metrics for each instance, and find their average
+              (only meaningful for multilabel classification where this differs from
+              :func:`accuracy_score`).
+
+            .. note::
+                If `pos_label` is specified and `average` is None, then we report
+                only the statistics of the positive class (i.e. equivalent to
+                `average="binary"`).
 
         pos_label : int, default=None
             The positive class.
