@@ -3,6 +3,7 @@
 import argparse
 from importlib.metadata import version
 
+from skore.cli.color_format import ColorArgumentParser
 from skore.cli.launch_dashboard import __launch
 from skore.cli.quickstart_command import __quickstart
 from skore.project.create import _create
@@ -10,7 +11,7 @@ from skore.project.create import _create
 
 def cli(args: list[str]):
     """CLI for Skore."""
-    parser = argparse.ArgumentParser(prog="skore")
+    parser = ColorArgumentParser(prog="skore")
 
     parser.add_argument(
         "--version", action="version", version=f"%(prog)s {version('skore')}"
