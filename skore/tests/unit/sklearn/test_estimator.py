@@ -16,7 +16,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 from sklearn.utils.validation import check_is_fitted
 from skore import EstimatorReport
-from skore.sklearn._estimator import _check_supported_estimator
+from skore.sklearn._estimator.utils import _check_supported_estimator
 from skore.sklearn._plot import RocCurveDisplay
 
 
