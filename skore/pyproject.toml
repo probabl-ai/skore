@@ -92,6 +92,7 @@ sphinx = [
   "kaleido",
   "pydata-sphinx-theme",
   "sphinx",
+  "sphinx_autosummary_accessors",
   "sphinx-design",
   "sphinx-gallery",
   "sphinx-copybutton",
