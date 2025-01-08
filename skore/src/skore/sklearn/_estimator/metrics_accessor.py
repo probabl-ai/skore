@@ -293,6 +293,11 @@ class _PlotMetricsAccessor(_BaseAccessor):
 
 
 class _MetricsAccessor(_BaseAccessor):
+    """Accessor for metrics-related operations.
+
+    You can access this accessor using the `metrics` attribute.
+    """
+
     _SCORE_OR_LOSS_ICONS = {
         "accuracy": "(↗︎)",
         "precision": "(↗︎)",

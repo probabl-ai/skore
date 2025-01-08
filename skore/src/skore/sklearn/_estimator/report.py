@@ -15,9 +15,10 @@ from sklearn.utils.validation import check_is_fitted
 from skore.externals._sklearn_compat import is_clusterer
 from skore.sklearn._estimator.base import _BaseAccessor, _HelpMixin
 from skore.sklearn.find_ml_task import _find_ml_task
+from skore.utils._accessor import DirNamesMixin
 
 
-class EstimatorReport(_HelpMixin):
+class EstimatorReport(_HelpMixin, DirNamesMixin):
     """Report for a fitted estimator.
 
     This class provides a set of tools to quickly validate and inspect a scikit-learn
@@ -44,6 +45,11 @@ class EstimatorReport(_HelpMixin):
 
     y_test : array-like of shape (n_samples,) or (n_samples, n_outputs) or None
         Testing target.
+
+    Attributes
+    ----------
+    metrics : _MetricsAccessor
+        Accessor for metrics-related operations.
 
     Examples
     --------

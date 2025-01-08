@@ -1,7 +1,9 @@
 import pytest
 from skore.utils._accessor import (
+    DirNamesMixin,
     _check_supported_ml_task,
-    register_accessor,
+    _register_accessor,
+    doc,
 )
 
 
@@ -10,10 +12,14 @@ def test_register_accessor():
     instance.
     """
 
-    class ParentClass:
+    class ParentClass(DirNamesMixin):
         pass
 
-    @register_accessor("accessor", ParentClass)
+    @doc(_register_accessor, klass="ParentClass")
+    def register_parent_class_accessor(name: str):
+        return _register_accessor(name, ParentClass)
+
+    @register_parent_class_accessor("accessor")
     class _Accessor:
         def __init__(self, parent):
             self._parent = parent
