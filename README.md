@@ -21,15 +21,6 @@ Skore is just at the beginning of its journey, but we’re shipping fast! Freque
 
 ⭐ Support us with a star and spread the word - it means a lot! ⭐
 
-<br />
-
-  ![license](https://img.shields.io/pypi/l/skore)
-  ![python](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue?style=flat&logo=python)
-  [![downloads](https://static.pepy.tech/badge/skore/month)](https://pepy.tech/projects/skore)
-  [![pypi](https://img.shields.io/pypi/v/skore)](https://pypi.org/project/skore/)
-  ![ci](https://github.com/probabl-ai/skore/actions/workflows/ci.yml/badge.svg?event=push)
-  [![Discord](https://img.shields.io/badge/Discord-%235865F2.svg?logo=discord&logoColor=white)](https://discord.probabl.ai/)
-
 
 ## Key features
 
@@ -110,6 +101,14 @@ Thank you for considering contributing to skore! Join our mission to promote ope
 -   Join our [Discord](https://discord.probabl.ai/) to share ideas or get support.
 -   Request a feature or report a bug via [GitHub Issues](https://github.com/probabl-ai/skore/issues).
 
+<br />
+
+  ![license](https://img.shields.io/pypi/l/skore)
+  ![python](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue?style=flat&logo=python)
+  [![downloads](https://static.pepy.tech/badge/skore/month)](https://pepy.tech/projects/skore)
+  [![pypi](https://img.shields.io/pypi/v/skore)](https://pypi.org/project/skore/)
+  ![ci](https://github.com/probabl-ai/skore/actions/workflows/ci.yml/badge.svg?event=push)
+  [![Discord](https://img.shields.io/badge/Discord-%235865F2.svg?logo=discord&logoColor=white)](https://discord.probabl.ai/)
 
 ---
 
