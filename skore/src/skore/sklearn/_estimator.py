@@ -551,6 +551,86 @@ class _PlotMetricsAccessor(_BaseAccessor):
         super().__init__(parent._parent, icon="🎨")
         self._metrics_parent = parent
 
+    def _get_display(
+        self,
+        *,
+        cache_key,
+        X,
+        y,
+        data_source,
+        data_source_hash,
+        response_method,
+        display_class,
+        display_kwargs,
+    ):
+        """Get the display from the cache or compute it.
+
+        Parameters
+        ----------
+        cache_key : tuple
+            The cache key.
+
+        X : array-like of shape (n_samples, n_features)
+            The data. Used when we don't hit the cache.
+
+        y : array-like of shape (n_samples,)
+            The target. Used when we don't hit the cache.
+
+        data_source : {"test", "train", "X_y"}, default="test"
+            The data source to use. Used when we don't hit the cache.
+
+        data_source_hash : int or None
+            The hash of the data source. None when we are able to track the data, and
+            thus relying on X_train, y_train, X_test, y_test. Used when we don't hit
+            the cache.
+
+        response_method : str
+            The response method. Used when we don't hit the cache.
+
+        display_class : class
+            The display class. Used when we don't hit the cache.
+
+        display_kwargs : dict
+            The display kwargs used by `display_class._from_predictions`.
+
+        Returns
+        -------
+        display : display_class
+            The display.
+        """
+        if cache_key in self._parent._cache:
+            display = self._parent._cache[cache_key]
+            # the display.plot method can require a subset of the display_kwargs
+            # we need to filter them
+            plot_signature = inspect.signature(display.plot)
+            plot_params = plot_signature.parameters.keys()
+            display_plot_kwargs = {
+                k: v for k, v in display_kwargs.items() if k in plot_params
+            }
+            display.plot(**display_plot_kwargs)
+        else:
+            y_pred = self._parent._get_cached_response_values(
+                estimator_hash=self._parent._hash,
+                estimator=self._parent.estimator,
+                X=X,
+                response_method=response_method,
+                data_source=data_source,
+                data_source_hash=data_source_hash,
+            )
+
+            display = display_class._from_predictions(
+                y,
+                y_pred,
+                estimator=self._parent.estimator,
+                estimator_name=self._parent.estimator_name,
+                ml_task=self._parent._ml_task,
+                data_source=data_source,
+                **display_kwargs,
+            )
+            self._parent._cache[cache_key] = display
+
+        return display
+
     @available_if(
         _check_supported_ml_task(
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
@@ -587,7 +667,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
         RocCurveDisplay
             The ROC curve display.
         """
-        prediction_method = ["predict_proba", "decision_function"]
+        response_method = ("predict_proba", "decision_function")
         X, y, data_source_hash = self._get_X_y_and_data_source_hash(
             data_source=data_source, X=X, y=y
         )
@@ -599,40 +679,17 @@ class _PlotMetricsAccessor(_BaseAccessor):
         else:
             cache_key += (data_source,)
 
-        if cache_key in self._parent._cache:
-            display = self._parent._cache[cache_key]
-            display.plot(
-                ax=ax,
-                estimator_name=self._parent.estimator_name,
-                plot_chance_level=True,
-                despine=True,
-            )
-        else:
-            y_pred = self._parent._get_cached_response_values(
-                estimator_hash=self._parent._hash,
-                estimator=self._parent.estimator,
-                X=X,
-                response_method=prediction_method,
-                pos_label=pos_label,
-                data_source=data_source,
-                data_source_hash=data_source_hash,
-            )
-
-            display = RocCurveDisplay._from_predictions(
-                y,
-                y_pred,
-                estimator=self._parent.estimator,
-                ml_task=self._parent._ml_task,
-                data_source=data_source,
-                pos_label=pos_label,
-                ax=ax,
-                estimator_name=self._parent.estimator_name,
-                plot_chance_level=True,
-                despine=True,
-            )
-            self._parent._cache[cache_key] = display
-
-        return display
+        display_kwargs = {"ax": ax, "plot_chance_level": True, "despine": True}
+        return self._get_display(
+            cache_key=cache_key,
+            X=X,
+            y=y,
+            data_source=data_source,
+            data_source_hash=data_source_hash,
+            response_method=response_method,
+            display_class=RocCurveDisplay,
+            display_kwargs=display_kwargs,
+        )
 
     @available_if(
         _check_supported_ml_task(
@@ -678,7 +735,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
         PrecisionRecallCurveDisplay
             The precision-recall curve display.
         """
-        prediction_method = ["predict_proba", "decision_function"]
+        response_method = ("predict_proba", "decision_function")
         X, y, data_source_hash = self._get_X_y_and_data_source_hash(
             data_source=data_source, X=X, y=y
         )
@@ -693,40 +750,17 @@ class _PlotMetricsAccessor(_BaseAccessor):
         else:
             cache_key += (data_source,)
 
-        if cache_key in self._parent._cache:
-            display = self._parent._cache[cache_key]
-            display.plot(
-                ax=ax,
-                estimator_name=self._parent.estimator_name,
-                plot_chance_level=False,
-                despine=True,
-            )
-        else:
-            y_pred = self._parent._get_cached_response_values(
-                estimator_hash=self._parent._hash,
-                estimator=self._parent.estimator,
-                X=X,
-                response_method=prediction_method,
-                pos_label=pos_label,
-                data_source=data_source,
-                data_source_hash=data_source_hash,
-            )
-
-            display = PrecisionRecallCurveDisplay._from_predictions(
-                y,
-                y_pred,
-                estimator=self._parent.estimator,
-                estimator_name=self._parent.estimator_name,
-                ml_task=self._parent._ml_task,
-                data_source=data_source,
-                pos_label=pos_label,
-                ax=ax,
-                plot_chance_level=False,
-                despine=True,
-            )
-            self._parent._cache[cache_key] = display
-
-        return display
+        display_kwargs = {"ax": ax, "plot_chance_level": False, "despine": True}
+        return self._get_display(
+            cache_key=cache_key,
+            X=X,
+            y=y,
+            data_source=data_source,
+            data_source_hash=data_source_hash,
+            response_method=response_method,
+            display_class=PrecisionRecallCurveDisplay,
+            display_kwargs=display_kwargs,
+        )
 
     @available_if(_check_supported_ml_task(supported_ml_tasks=["regression"]))
     def prediction_error(
@@ -801,36 +835,17 @@ class _PlotMetricsAccessor(_BaseAccessor):
         else:
             cache_key += (data_source,)
 
-        if cache_key in self._parent._cache:
-            display = self._parent._cache[cache_key]
-            display.plot(
-                ax=ax,
-                kind=kind,
-            )
-        else:
-            y_pred = self._parent._get_cached_response_values(
-                estimator_hash=self._parent._hash,
-                estimator=self._parent.estimator,
-                X=X,
-                response_method="predict",
-                data_source=data_source,
-                data_source_hash=data_source_hash,
-            )
-
-            display = PredictionErrorDisplay._from_predictions(
-                y,
-                y_pred,
-                estimator=self._parent.estimator,
-                estimator_name=self._parent.estimator_name,
-                ml_task=self._parent._ml_task,
-                data_source=data_source,
-                ax=ax,
-                kind=kind,
-                subsample=subsample,
-            )
-            self._parent._cache[cache_key] = display
-
-        return display
+        display_kwargs = {"ax": ax, "kind": kind, "subsample": subsample}
+        return self._get_display(
+            cache_key=cache_key,
+            X=X,
+            y=y,
+            data_source=data_source,
+            data_source_hash=data_source_hash,
+            response_method="predict",
+            display_class=PredictionErrorDisplay,
+            display_kwargs=display_kwargs,
+        )
 
     def _get_help_panel_title(self):
         return f"[bold cyan]{self._icon} Available plot methods[/bold cyan]"
