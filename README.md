@@ -4,11 +4,22 @@
     <source srcset="https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/Logo_Skore_Dark@2x.svg" media="(prefers-color-scheme: dark)">
     <img width="200" src="https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/Logo_Skore_Light@2x.svg" alt="skore logo">
   </picture>
+  <h3>the scikit-learn sidekick</h3>
 
-  <h2>The scikit-learn Modeling Companion</h2>
-
-__Elevate ML Development with Tracking and Built-in Recommended Practices__ \
+Elevate ML Development with Tracking and Built-in Recommended Practices \
 [Documentation](https://skore.probabl.ai) — [Community](https://discord.probabl.ai)
+
+</div>
+
+<br />
+
+## Why skore?
+
+ML development is an art — blending business sense, stats knowledge, and coding skills. Brought to you by [Probabl](https://probabl.ai), a company co-founded by scikit-learn core developers, skore helps data scientists focus on what matters: building impactful models with hindsight and clarity.
+
+Skore is just at the beginning of its journey, but we’re shipping fast! Frequent updates and new features are on the way as we work toward our vision of becoming a comprehensive library for data scientists, supporting every phase of the machine learning lifecycle.
+
+⭐ Support us with a star and spread the word - it means a lot! ⭐
 
 <br />
 
@@ -18,17 +29,6 @@ __Elevate ML Development with Tracking and Built-in Recommended Practices__ \
   [![pypi](https://img.shields.io/pypi/v/skore)](https://pypi.org/project/skore/)
   ![ci](https://github.com/probabl-ai/skore/actions/workflows/ci.yml/badge.svg?event=push)
   [![Discord](https://img.shields.io/badge/Discord-%235865F2.svg?logo=discord&logoColor=white)](https://discord.probabl.ai/)
-
-</div>
-
-
-## Why skore?
-
-ML development is an art — blending business sense, stats knowledge, and coding skills. Brought to you by [Probabl](https://probabl.ai), a company co-founded by scikit-learn core developers, skore helps data scientists focus on what matters: building impactful models with hindsight and clarity.
-
-Skore is just at the beginning of its journey, but we’re shipping fast! Frequent updates and new features are on the way as we work toward our vision of becoming a comprehensive library for data scientists, supporting every phase of the machine learning lifecycle.
-
-⭐ Support us with a star and spread the word - it means a lot! ⭐
 
 
 ## Key features
@@ -107,8 +107,8 @@ Thank you for considering contributing to skore! Join our mission to promote ope
 
 ## Feedback & Community
 
--	Join our [Discord](https://discord.probabl.ai/) to share ideas or get support.
--	Request a feature or report a bug via [GitHub Issues](https://github.com/probabl-ai/skore/issues).
+-   Join our [Discord](https://discord.probabl.ai/) to share ideas or get support.
+-   Request a feature or report a bug via [GitHub Issues](https://github.com/probabl-ai/skore/issues).
 
 
 ---
