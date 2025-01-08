@@ -974,13 +974,16 @@ class _MetricsAccessor(_BaseAccessor):
         X,
         y_true,
         *,
+        data_source="test",
         response_method,
         pos_label=None,
         metric_name=None,
-        data_source="test",
-        data_source_hash=None,
         **metric_kwargs,
     ):
+        X, y_true, data_source_hash = self._get_X_y_and_data_source_hash(
+            data_source=data_source, X=X, y=y_true
+        )
+
         y_pred = self._parent._get_cached_response_values(
             estimator_hash=self._parent._hash,
             estimator=self._parent.estimator,
@@ -1084,18 +1087,13 @@ class _MetricsAccessor(_BaseAccessor):
         pd.DataFrame
             The accuracy score.
         """
-        X, y, data_source_hash = self._get_X_y_and_data_source_hash(
-            data_source=data_source, X=X, y=y
-        )
-
         return self._compute_metric_scores(
             metrics.accuracy_score,
             X=X,
             y_true=y,
+            data_source=data_source,
             response_method="predict",
             metric_name=f"Accuracy {self._SCORE_OR_LOSS_ICONS['accuracy']}",
-            data_source_hash=data_source_hash,
-            data_source=data_source,
         )
 
     @available_if(
@@ -1139,10 +1137,6 @@ class _MetricsAccessor(_BaseAccessor):
         pd.DataFrame
             The precision score.
         """
-        X, y, data_source_hash = self._get_X_y_and_data_source_hash(
-            data_source=data_source, X=X, y=y
-        )
-
         if average == "auto":
             if self._parent._ml_task == "binary-classification":
                 average = "binary"
@@ -1157,12 +1151,11 @@ class _MetricsAccessor(_BaseAccessor):
             metrics.precision_score,
             X=X,
             y_true=y,
+            data_source=data_source,
             response_method="predict",
             pos_label=pos_label,
             metric_name=f"Precision {self._SCORE_OR_LOSS_ICONS['precision']}",
             average=average,
-            data_source_hash=data_source_hash,
-            data_source=data_source,
         )
 
     @available_if(
@@ -1206,10 +1199,6 @@ class _MetricsAccessor(_BaseAccessor):
         pd.DataFrame
             The recall score.
         """
-        X, y, data_source_hash = self._get_X_y_and_data_source_hash(
-            data_source=data_source, X=X, y=y
-        )
-
         if average == "auto":
             if self._parent._ml_task == "binary-classification":
                 average = "binary"
@@ -1222,14 +1211,13 @@ class _MetricsAccessor(_BaseAccessor):
 
         return self._compute_metric_scores(
             metrics.recall_score,
-            X=self._parent._X_test,
-            y_true=self._parent._y_test,
+            X=X,
+            y_true=y,
+            data_source=data_source,
             response_method="predict",
             pos_label=pos_label,
             metric_name=f"Recall {self._SCORE_OR_LOSS_ICONS['recall']}",
             average=average,
-            data_source_hash=data_source_hash,
-            data_source=data_source,
         )
 
     @available_if(
@@ -1263,19 +1251,14 @@ class _MetricsAccessor(_BaseAccessor):
         pd.DataFrame
             The Brier score.
         """
-        X, y, data_source_hash = self._get_X_y_and_data_source_hash(
-            data_source=data_source, X=X, y=y
-        )
-
         return self._compute_metric_scores(
             metrics.brier_score_loss,
             X=X,
             y_true=y,
+            data_source=data_source,
             response_method="predict_proba",
             metric_name=f"Brier score {self._SCORE_OR_LOSS_ICONS['brier_score']}",
             pos_label=pos_label,
-            data_source_hash=data_source_hash,
-            data_source=data_source,
         )
 
     @available_if(
@@ -1329,10 +1312,6 @@ class _MetricsAccessor(_BaseAccessor):
         pd.DataFrame
             The ROC AUC score.
         """
-        X, y, data_source_hash = self._get_X_y_and_data_source_hash(
-            data_source=data_source, X=X, y=y
-        )
-
         if average == "auto":
             if self._parent._ml_task == "binary-classification":
                 average = "macro"
@@ -1343,12 +1322,11 @@ class _MetricsAccessor(_BaseAccessor):
             metrics.roc_auc_score,
             X=X,
             y_true=y,
+            data_source=data_source,
             response_method=["predict_proba", "decision_function"],
             metric_name=f"ROC AUC {self._SCORE_OR_LOSS_ICONS['roc_auc']}",
             average=average,
             multi_class=multi_class,
-            data_source_hash=data_source_hash,
-            data_source=data_source,
         )
 
     @available_if(
@@ -1374,18 +1352,13 @@ class _MetricsAccessor(_BaseAccessor):
         pd.DataFrame
             The log-loss.
         """
-        X, y, data_source_hash = self._get_X_y_and_data_source_hash(
-            data_source=data_source, X=X, y=y
-        )
-
         return self._compute_metric_scores(
             metrics.log_loss,
             X=X,
             y_true=y,
+            data_source=data_source,
             response_method="predict_proba",
             metric_name=f"Log loss {self._SCORE_OR_LOSS_ICONS['log_loss']}",
-            data_source_hash=data_source_hash,
-            data_source=data_source,
         )
 
     @available_if(_check_supported_ml_task(supported_ml_tasks=["regression"]))
@@ -1418,19 +1391,14 @@ class _MetricsAccessor(_BaseAccessor):
         pd.DataFrame
             The R² score.
         """
-        X, y, data_source_hash = self._get_X_y_and_data_source_hash(
-            data_source=data_source, X=X, y=y
-        )
-
         return self._compute_metric_scores(
             metrics.r2_score,
             X=X,
             y_true=y,
+            data_source=data_source,
             response_method="predict",
             metric_name=f"R² {self._SCORE_OR_LOSS_ICONS['r2']}",
             multioutput=multioutput,
-            data_source_hash=data_source_hash,
-            data_source=data_source,
         )
 
     @available_if(_check_supported_ml_task(supported_ml_tasks=["regression"]))
@@ -1465,19 +1433,14 @@ class _MetricsAccessor(_BaseAccessor):
         pd.DataFrame
             The root mean squared error.
         """
-        X, y, data_source_hash = self._get_X_y_and_data_source_hash(
-            data_source=data_source, X=X, y=y
-        )
-
         return self._compute_metric_scores(
             metrics.root_mean_squared_error,
             X=X,
             y_true=y,
+            data_source=data_source,
             response_method="predict",
             metric_name=f"RMSE {self._SCORE_OR_LOSS_ICONS['rmse']}",
             multioutput=multioutput,
-            data_source_hash=data_source_hash,
-            data_source=data_source,
         )
 
     def custom_metric(
@@ -1533,18 +1496,13 @@ class _MetricsAccessor(_BaseAccessor):
         pd.DataFrame
             The custom metric.
         """
-        X, y, data_source_hash = self._get_X_y_and_data_source_hash(
-            data_source=data_source, X=X, y=y
-        )
-
         return self._compute_metric_scores(
             metric_function,
             X=X,
             y_true=y,
+            data_source=data_source,
             response_method=response_method,
             metric_name=metric_name,
-            data_source_hash=data_source_hash,
-            data_source=data_source,
             **kwargs,
         )
 
