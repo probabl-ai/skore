@@ -344,7 +344,6 @@ class CrossValidationItem(Item):
         humanized_plot_names = {
             "scores": "Scores",
             "timing": "Timings",
-            "timing_normalized": "Normalized timings",
         }
         plots_bytes = {
             humanized_plot_names[plot_name]: (

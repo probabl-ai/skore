@@ -37,7 +37,6 @@ class FakeCrossValidationReporter(CrossValidationReporter):
     plots = CrossValidationPlots(
         scores=plotly.graph_objects.Figure(),
         timing=plotly.graph_objects.Figure(),
-        timing_normalized=plotly.graph_objects.Figure(),
     )
     cv = StratifiedKFold(n_splits=5)
 
@@ -59,7 +58,6 @@ class FakeCrossValidationReporterNoGetParams(CrossValidationReporter):
     plots = CrossValidationPlots(
         scores=plotly.graph_objects.Figure(),
         timing=plotly.graph_objects.Figure(),
-        timing_normalized=plotly.graph_objects.Figure(),
     )
     cv = StratifiedKFold(n_splits=5)
 
