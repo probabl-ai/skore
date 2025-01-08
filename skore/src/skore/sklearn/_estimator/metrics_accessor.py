@@ -828,6 +828,8 @@ def register_metrics_accessor(name: str):
 
 
 class _PlotMetricsAccessor(_BaseAccessor):
+    """Plotting methods for the metrics accessor."""
+
     def __init__(self, parent):
         super().__init__(parent._parent, icon="🎨")
         self._metrics_parent = parent
