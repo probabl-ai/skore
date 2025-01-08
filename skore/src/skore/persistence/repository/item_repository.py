@@ -8,20 +8,21 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from skore.persistence.item import (
+    CrossValidationItem,
+    MediaItem,
+    NumpyArrayItem,
+    PandasDataFrameItem,
+    PandasSeriesItem,
+    PolarsDataFrameItem,
+    PolarsSeriesItem,
+    PrimitiveItem,
+    SklearnBaseEstimatorItem,
+)
+
 if TYPE_CHECKING:
-    from skore.item.item import Item
-    from skore.persistence.abstract_storage import AbstractStorage
-
-
-from skore.item.cross_validation_item import CrossValidationItem
-from skore.item.media_item import MediaItem
-from skore.item.numpy_array_item import NumpyArrayItem
-from skore.item.pandas_dataframe_item import PandasDataFrameItem
-from skore.item.pandas_series_item import PandasSeriesItem
-from skore.item.polars_dataframe_item import PolarsDataFrameItem
-from skore.item.polars_series_item import PolarsSeriesItem
-from skore.item.primitive_item import PrimitiveItem
-from skore.item.sklearn_base_estimator_item import SklearnBaseEstimatorItem
+    from skore.persistence.item import Item
+    from skore.persistence.storage import AbstractStorage
 
 
 class ItemRepository:

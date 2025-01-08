@@ -9,7 +9,7 @@ from functools import cached_property
 from json import dumps, loads
 from typing import TYPE_CHECKING
 
-from skore.item.item import Item, ItemTypeError
+from .item import Item, ItemTypeError
 
 if TYPE_CHECKING:
     import numpy

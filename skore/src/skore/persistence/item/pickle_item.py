@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 from functools import cached_property
 from pickle import dumps, loads
 from typing import Any
 
-from skore.item.item import Item
+from .item import Item
 
 
 class PickleItem(Item):

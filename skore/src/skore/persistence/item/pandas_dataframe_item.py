@@ -9,7 +9,7 @@ from __future__ import annotations
 from functools import cached_property
 from typing import TYPE_CHECKING
 
-from skore.item.item import Item, ItemTypeError
+from .item import Item, ItemTypeError
 
 if TYPE_CHECKING:
     import pandas

@@ -1,10 +1,9 @@
 from datetime import datetime, timezone
 
 import pytest
-from skore.item.item_repository import ItemRepository
-from skore.persistence.in_memory_storage import InMemoryStorage
+from skore.persistence.repository import ItemRepository, ViewRepository
+from skore.persistence.storage import InMemoryStorage
 from skore.project import Project
-from skore.view.view_repository import ViewRepository
 
 
 @pytest.fixture

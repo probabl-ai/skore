@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING, Any, Optional, Union
 
-from skore.persistence import item_to_object, object_to_item
+from skore.persistence.item import item_to_object, object_to_item
 
 if TYPE_CHECKING:
     from skore.persistence import (
@@ -14,6 +15,10 @@ if TYPE_CHECKING:
         ViewRepository,
     )
 
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())  # Default to no output
+logger.setLevel(logging.INFO)
 
 MISSING = object()
 

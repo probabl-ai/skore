@@ -9,9 +9,9 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request, status
 
-from skore.item import Item
+from skore.persistence.item import Item
+from skore.persistence.view.view import Layout, View
 from skore.project import Project
-from skore.view.view import Layout, View
 
 router = APIRouter(prefix="/project")
 

@@ -20,8 +20,9 @@ import numpy
 import plotly.graph_objects
 import plotly.io
 
-from skore.item.item import Item, ItemTypeError
 from skore.sklearn.cross_validation import CrossValidationReporter
+
+from .item import Item, ItemTypeError
 
 if TYPE_CHECKING:
     import sklearn.base

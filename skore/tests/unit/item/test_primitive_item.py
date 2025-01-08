@@ -1,5 +1,5 @@
 import pytest
-from skore.item import ItemTypeError, PrimitiveItem
+from skore.persistence.item import ItemTypeError, PrimitiveItem
 
 
 class TestPrimitiveItem:
@@ -16,7 +16,7 @@ class TestPrimitiveItem:
         ],
     )
     def test_factory(self, monkeypatch, mock_nowstr, MockDatetime, primitive):
-        monkeypatch.setattr("skore.item.item.datetime", MockDatetime)
+        monkeypatch.setattr("skore.persistence.item.item.datetime", MockDatetime)
 
         item = PrimitiveItem.factory(primitive)
 
@@ -43,7 +43,7 @@ class TestPrimitiveItem:
     def test_get_serializable_dict(
         self, monkeypatch, mock_nowstr, MockDatetime, primitive
     ):
-        monkeypatch.setattr("skore.item.item.datetime", MockDatetime)
+        monkeypatch.setattr("skore.persistence.item.item.datetime", MockDatetime)
 
         item = PrimitiveItem.factory(primitive)
         serializable = item.as_serializable_dict()

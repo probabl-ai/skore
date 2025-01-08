@@ -4,9 +4,9 @@ import numpy
 import plotly.graph_objects
 import pytest
 from sklearn.model_selection import StratifiedKFold
-from skore.item.cross_validation_item import (
+from skore.persistence.item import ItemTypeError
+from skore.persistence.item.cross_validation_item import (
     CrossValidationItem,
-    ItemTypeError,
     _hash_numpy,
 )
 from skore.sklearn.cross_validation import CrossValidationReporter
@@ -67,7 +67,7 @@ class FakeCrossValidationReporterNoGetParams(CrossValidationReporter):
 class TestCrossValidationItem:
     @pytest.fixture(autouse=True)
     def monkeypatch_datetime(self, monkeypatch, MockDatetime):
-        monkeypatch.setattr("skore.item.item.datetime", MockDatetime)
+        monkeypatch.setattr("skore.persistence.item.item.datetime", MockDatetime)
 
     def test_factory_exception(self):
         with pytest.raises(ItemTypeError):
@@ -111,7 +111,7 @@ class TestCrossValidationItem:
 
     def test_get_serializable_dict(self, monkeypatch, mock_nowstr):
         monkeypatch.setattr(
-            "skore.item.cross_validation_item.CrossValidationReporter",
+            "skore.persistence.item.cross_validation_item.CrossValidationReporter",
             FakeCrossValidationReporter,
         )
 

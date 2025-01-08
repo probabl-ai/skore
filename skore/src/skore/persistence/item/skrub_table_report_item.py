@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from skore.item.item import ItemTypeError
-from skore.item.media_item import MediaItem
+from .item import ItemTypeError
+from .media_item import MediaItem
 
 if TYPE_CHECKING:
     from skrub import TableReport

@@ -9,7 +9,7 @@ from __future__ import annotations
 from functools import cached_property
 from typing import TYPE_CHECKING
 
-from skore.item.item import Item, ItemTypeError
+from .item import Item, ItemTypeError
 
 if TYPE_CHECKING:
     import sklearn.base
@@ -101,10 +101,13 @@ class SklearnBaseEstimatorItem(Item):
         """
         import sklearn.base
         import sklearn.utils
-        import skops.io
 
         if not isinstance(estimator, sklearn.base.BaseEstimator):
             raise ItemTypeError(f"Type '{estimator.__class__}' is not supported.")
+
+        # This line is only needed if we know `estimator` has the right type, so we do
+        # it after the type check
+        import skops.io
 
         estimator_html_repr = sklearn.utils.estimator_html_repr(estimator)
         estimator_skops = skops.io.dumps(estimator)

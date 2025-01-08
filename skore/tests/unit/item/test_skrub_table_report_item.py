@@ -1,12 +1,12 @@
 import pytest
 from pandas import DataFrame
-from skore.item import ItemTypeError, SkrubTableReportItem
+from skore.persistence.item import ItemTypeError, SkrubTableReportItem
 from skrub import TableReport
 
 
 class TestSkrubTableReportItem:
     def test_factory(self, monkeypatch, mock_nowstr, MockDatetime):
-        monkeypatch.setattr("skore.item.item.datetime", MockDatetime)
+        monkeypatch.setattr("skore.persistence.item.item.datetime", MockDatetime)
         monkeypatch.setattr("secrets.token_hex", lambda: "azertyuiop")
 
         df = DataFrame(dict(a=[1, 2], b=["one", "two"], c=[11.1, 11.1]))

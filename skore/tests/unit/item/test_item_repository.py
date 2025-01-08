@@ -1,7 +1,8 @@
 from datetime import datetime, timezone
 
 import pytest
-from skore.item import ItemRepository, MediaItem
+from skore.persistence.item import MediaItem
+from skore.persistence.repository import ItemRepository
 
 
 class TestItemRepository:

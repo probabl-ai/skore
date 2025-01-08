@@ -17,6 +17,7 @@ from skore.exceptions import (
     ProjectAlreadyExistsError,
     ProjectCreationError,
 )
+from skore.persistence.view.view import View
 from skore.project import (
     Project,
     create,
@@ -24,7 +25,6 @@ from skore.project import (
 )
 from skore.project.create import _validate_project_name
 from skore.project.load import ProjectLoadError
-from skore.view.view import View
 
 
 def test_put_string_item(in_memory_project):
@@ -262,17 +262,15 @@ def test_put_several_nested(in_memory_project):
     assert in_memory_project.get("a") == {"b": "baz"}
 
 
-def test_put_several_error(in_memory_project):
-    """If some key-value pairs are wrong, add all that are valid and print a warning."""
-    with pytest.raises(NotImplementedError):
-        in_memory_project.put(
-            {
-                "a": "foo",
-                "b": (lambda: "unsupported object"),
-            }
-        )
+def test_put_several_lambda(in_memory_project):
+    in_memory_project.put(
+        {
+            "a": "foo",
+            "b": (lambda: "unsupported object"),
+        }
+    )
 
-    assert in_memory_project.list_item_keys() == ["a"]
+    assert in_memory_project.list_item_keys() == ["a", "b"]
 
 
 def test_put_key_is_a_tuple(in_memory_project):

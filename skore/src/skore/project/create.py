@@ -11,10 +11,10 @@ from skore.exceptions import (
     ProjectCreationError,
     ProjectPermissionError,
 )
+from skore.persistence.view.view import View
 from skore.project.load import load
 from skore.project.project import Project, logger
 from skore.utils._logger import logger_context
-from skore.view.view import View
 
 
 def _validate_project_name(project_name: str) -> tuple[bool, Optional[Exception]]:

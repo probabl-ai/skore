@@ -9,7 +9,7 @@ import base64
 from io import BytesIO
 from typing import TYPE_CHECKING, Any
 
-from skore.item.item import Item, ItemTypeError
+from .item import Item, ItemTypeError
 
 if TYPE_CHECKING:
     from altair.vegalite.v5.schema.core import TopLevelSpec as Altair

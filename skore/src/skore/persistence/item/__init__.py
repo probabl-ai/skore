@@ -5,11 +5,9 @@ from __future__ import annotations
 from contextlib import suppress
 from typing import Any
 
-import skrub_table_report_item as SkrubTableReportItem
-
+from . import skrub_table_report_item as SkrubTableReportItem
 from .cross_validation_item import CrossValidationItem
 from .item import Item, ItemTypeError
-from .item_repository import ItemRepository
 from .media_item import MediaItem
 from .numpy_array_item import NumpyArrayItem
 from .pandas_dataframe_item import PandasDataFrameItem
@@ -72,7 +70,6 @@ def item_to_object(item: Item) -> Any:
 __all__ = [
     "CrossValidationItem",
     "Item",
-    "ItemRepository",
     "MediaItem",
     "NumpyArrayItem",
     "PandasDataFrameItem",

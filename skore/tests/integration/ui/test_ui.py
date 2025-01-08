@@ -1,7 +1,9 @@
 import datetime
+import json
 
 import numpy
 import pandas
+import plotly
 import polars
 import pytest
 from fastapi.testclient import TestClient
@@ -9,9 +11,8 @@ from PIL import Image
 from sklearn.linear_model import Lasso
 from sklearn.model_selection import KFold
 from skore import CrossValidationReporter
-from skore.item.media_item import MediaItem
+from skore.persistence.view.view import View
 from skore.ui.app import create_app
-from skore.view.view import View
 
 
 @pytest.fixture
@@ -136,16 +137,12 @@ def test_serialize_media_item(client, in_memory_project):
 
     html = "<h1>éàªªUœALDXIWDŸΩΩ</h1>"
     in_memory_project.put("html", html)
-    in_memory_project.put_item(
-        "media html", MediaItem.factory_str(html, media_type="text/html")
-    )
 
     response = client.get("/api/project/items")
     assert response.status_code == 200
     project = response.json()
     assert "image" in project["items"]["img"][0]["media_type"]
     assert project["items"]["html"][0]["value"] == html
-    assert project["items"]["media html"][0]["value"] == html
 
 
 @pytest.fixture
@@ -178,9 +175,21 @@ def test_serialize_cross_validation_item(
     mock_nowstr,
     fake_cross_validate,
 ):
-    monkeypatch.setattr("skore.item.item.datetime", MockDatetime)
+    monkeypatch.setattr("skore.persistence.item.item.datetime", MockDatetime)
     monkeypatch.setattr(
-        "skore.item.cross_validation_item.CrossValidationItem.plots", {}
+        "skore.persistence.item.cross_validation_item.CrossValidationItem.plots", {}
+    )
+    monkeypatch.setattr(
+        "skore.sklearn.cross_validation.cross_validation_reporter.plot_cross_validation_compare_scores",
+        lambda _: {},
+    )
+    monkeypatch.setattr(
+        "skore.sklearn.cross_validation.cross_validation_reporter.plot_cross_validation_timing_normalized",
+        lambda _: {},
+    )
+    monkeypatch.setattr(
+        "skore.sklearn.cross_validation.cross_validation_reporter.plot_cross_validation_timing",
+        lambda _: {},
     )
 
     def prepare_cv():
@@ -196,17 +205,12 @@ def test_serialize_cross_validation_item(
     reporter = CrossValidationReporter(model, X, y, cv=KFold(3))
     in_memory_project.put("cv", reporter)
 
-    # Mock the item to make the plot empty
-    item = in_memory_project.get_item("cv")
-    item.plots_bytes = {"compare_scores": b"{}"}
-    in_memory_project.put_item("cv_mocked", item)
-
     response = client.get("/api/project/items")
     assert response.status_code == 200
 
     project = response.json()
     expected = {
-        "name": "cv_mocked",
+        "name": "cv",
         "media_type": "application/vnd.skore.cross_validation+json",
         "value": {
             "scalar_results": [
@@ -227,7 +231,20 @@ def test_serialize_cross_validation_item(
                     ],
                 }
             ],
-            "plots": [{"name": "compare_scores", "value": {}}],
+            "plots": [
+                {
+                    "name": "Scores",
+                    "value": json.loads(plotly.io.to_json({}, engine="json")),
+                },
+                {
+                    "name": "Timings",
+                    "value": json.loads(plotly.io.to_json({}, engine="json")),
+                },
+                {
+                    "name": "Normalized timings",
+                    "value": json.loads(plotly.io.to_json({}, engine="json")),
+                },
+            ],
             "sections": [
                 {
                     "title": "Model",
@@ -266,7 +283,7 @@ def test_serialize_cross_validation_item(
         "updated_at": mock_nowstr,
         "created_at": mock_nowstr,
     }
-    actual = project["items"]["cv_mocked"][0]
+    actual = project["items"]["cv"][0]
     assert expected == actual
 
 
@@ -282,7 +299,7 @@ def test_activity_feed(monkeypatch, client, in_memory_project):
             MockDatetime.NOW += MockDatetime.TIMEDELTA
             return MockDatetime.NOW
 
-    monkeypatch.setattr("skore.item.item.datetime", MockDatetime)
+    monkeypatch.setattr("skore.persistence.item.item.datetime", MockDatetime)
 
     for i in range(5):
         in_memory_project.put(str(i), i)
