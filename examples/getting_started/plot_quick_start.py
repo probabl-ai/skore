@@ -43,9 +43,6 @@ my_project.put("cv_reporter", reporter)
 reporter.plots.scores
 
 # %%
-reporter.plots.timing_normalized
-
-# %%
 # Finally, from your shell (in the same directory), start the UI:
 #
 # .. code-block:: bash
