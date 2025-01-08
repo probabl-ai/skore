@@ -101,6 +101,12 @@ class _BaseAccessor(_HelpMixin):
             - "train" : use the train set provided when creating the reporter.
             - "X_y" : use the provided `X` and `y` to compute the metric.
 
+        X : array-like of shape (n_samples, n_features) or None, default=None
+            The input data.
+
+        y : array-like of shape (n_samples,) or None, default=None
+            The target data.
+
         Returns
         -------
         X : array-like of shape (n_samples, n_features)
