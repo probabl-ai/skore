@@ -184,5 +184,9 @@ class TestCrossValidationItem:
         ],
     )
     def test_metric_favorability(self, metric, expected):
-        """Test the _metric_favorability function with various metric names."""
+        """Test the _metric_favorability function with various metric names.
+
+        Non-regression test for:
+        https://github.com/probabl-ai/skore/issues/1061
+        """
         assert _metric_favorability(metric) == expected
