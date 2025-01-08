@@ -70,19 +70,29 @@ def _metric_favorability(
     metric: str,
 ) -> Literal["greater_is_better", "lower_is_better", "unknown"]:
     greater_is_better_metrics = (
-        "r2",
-        "test_r2",
-        "roc_auc",
-        "recall",
-        "recall_weighted",
+        "accuracy",
+        "balanced_accuracy",
+        "top_k_accuracy",
+        "average_precision",
+        "f1",
         "precision",
-        "precision_weighted",
-        "roc_auc_ovr_weighted",
+        "recall",
+        "jaccard",
+        "roc_auc",
+        "r2",
     )
-    lower_is_better_metrics = ("fit_time", "score_time")
-
-    if metric.endswith("_score") or metric in greater_is_better_metrics:
+    any_match_greater_is_better = any(
+        re.search(re.escape(pattern), metric) for pattern in greater_is_better_metrics
+    )
+    if (
+        any_match_greater_is_better
+        # other scikit-learn conventions
+        or metric.endswith("_score")  # score: higher is better
+        or metric.startswith("neg_")  # negative loss: negative of lower is better
+    ):
         return "greater_is_better"
+
+    lower_is_better_metrics = ("fit_time", "score_time")
     if (
         metric.endswith("_error")
         or metric.endswith("_loss")
