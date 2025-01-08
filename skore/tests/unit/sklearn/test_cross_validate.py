@@ -95,11 +95,11 @@ def test_cross_validate_return_estimator():
     ],
 )
 def test_get_scorers_to_add(estimator, dataset_func, dataset_kwargs, expected_keys):
-    # Generate data
+    """Check that the scorers to add are correct.
+
+    Non-regression test for:
+    https://github.com/probabl-ai/skore/issues/1050
+    """
     X, y = dataset_func(**dataset_kwargs)
-
-    # Get scorers
     scorers = _get_scorers_to_add(estimator, y)
-
-    # Check that we have exactly the expected keys
     assert set(scorers.keys()) == expected_keys
