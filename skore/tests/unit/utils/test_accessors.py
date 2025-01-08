@@ -3,7 +3,6 @@ from skore.utils._accessor import (
     DirNamesMixin,
     _check_supported_ml_task,
     _register_accessor,
-    doc,
 )
 
 
@@ -15,8 +14,8 @@ def test_register_accessor():
     class ParentClass(DirNamesMixin):
         pass
 
-    @doc(_register_accessor, klass="ParentClass")
     def register_parent_class_accessor(name: str):
+        """Register an accessor for the ParentClass class."""
         return _register_accessor(name, ParentClass)
 
     @register_parent_class_accessor("accessor")
