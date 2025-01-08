@@ -14,285 +14,18 @@ from skore.sklearn._plot import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
-from skore.utils._accessor import _check_supported_ml_task
-
-
-class _PlotMetricsAccessor(_BaseAccessor):
-    def __init__(self, parent):
-        # Note: parent here will be the MetricsAccessor instance
-        super().__init__(parent._parent, icon="🎨")
-        self._metrics_parent = parent
-
-    def _get_display(
-        self,
-        *,
-        X,
-        y,
-        data_source,
-        response_method,
-        display_class,
-        display_kwargs,
-        display_plot_kwargs,
-    ):
-        """Get the display from the cache or compute it.
-
-        Parameters
-        ----------
-        X : array-like of shape (n_samples, n_features)
-            The data.
-
-        y : array-like of shape (n_samples,)
-            The target.
-
-        data_source : {"test", "train", "X_y"}, default="test"
-            The data source to use.
-
-            - "test" : use the test set provided when creating the reporter.
-            - "train" : use the train set provided when creating the reporter.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
-
-        response_method : str
-            The response method.
-
-        display_class : class
-            The display class.
-
-        display_kwargs : dict
-            The display kwargs used by `display_class._from_predictions`.
-
-        display_plot_kwargs : dict
-            The display kwargs used by `display.plot`.
-
-        Returns
-        -------
-        display : display_class
-            The display.
-        """
-        X, y, data_source_hash = self._get_X_y_and_data_source_hash(
-            data_source=data_source, X=X, y=y
-        )
-
-        cache_key = (self._parent._hash, display_class.__name__)
-        cache_key += tuple(display_kwargs.values())
-        cache_key += (data_source_hash,) if data_source_hash else (data_source,)
-
-        if cache_key in self._parent._cache:
-            display = self._parent._cache[cache_key]
-            display.plot(**display_plot_kwargs)
-        else:
-            y_pred = self._parent._get_cached_response_values(
-                estimator_hash=self._parent._hash,
-                estimator=self._parent.estimator,
-                X=X,
-                response_method=response_method,
-                data_source=data_source,
-                data_source_hash=data_source_hash,
-                pos_label=display_kwargs.get("pos_label", None),
-            )
-
-            display = display_class._from_predictions(
-                y,
-                y_pred,
-                estimator=self._parent.estimator,
-                estimator_name=self._parent.estimator_name,
-                ml_task=self._parent._ml_task,
-                data_source=data_source,
-                **display_kwargs,
-                **display_plot_kwargs,
-            )
-            self._parent._cache[cache_key] = display
-
-        return display
-
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
-        )
-    )
-    def roc(self, *, data_source="test", X=None, y=None, pos_label=None, ax=None):
-        """Plot the ROC curve.
-
-        Parameters
-        ----------
-        data_source : {"test", "train", "X_y"}, default="test"
-            The data source to use.
-
-            - "test" : use the test set provided when creating the reporter.
-            - "train" : use the train set provided when creating the reporter.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            New data on which to compute the metric. By default, we use the validation
-            set provided when creating the reporter.
-
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the target
-            provided when creating the reporter.
-
-        pos_label : str, default=None
-            The positive class.
-
-        ax : matplotlib.axes.Axes, default=None
-            The axes to plot on.
-
-        Returns
-        -------
-        RocCurveDisplay
-            The ROC curve display.
-        """
-        response_method = ("predict_proba", "decision_function")
-        display_kwargs = {"pos_label": pos_label}
-        display_plot_kwargs = {"ax": ax, "plot_chance_level": True, "despine": True}
-        return self._get_display(
-            X=X,
-            y=y,
-            data_source=data_source,
-            response_method=response_method,
-            display_class=RocCurveDisplay,
-            display_kwargs=display_kwargs,
-            display_plot_kwargs=display_plot_kwargs,
-        )
-
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
-        )
-    )
-    def precision_recall(
-        self,
-        *,
-        data_source="test",
-        X=None,
-        y=None,
-        pos_label=None,
-        ax=None,
-    ):
-        """Plot the precision-recall curve.
-
-        Parameters
-        ----------
-        data_source : {"test", "train", "X_y"}, default="test"
-            The data source to use.
-
-            - "test" : use the test set provided when creating the reporter.
-            - "train" : use the train set provided when creating the reporter.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            New data on which to compute the metric. By default, we use the validation
-            set provided when creating the reporter.
-
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the target
-            provided when creating the reporter.
-
-        pos_label : str, default=None
-            The positive class.
-
-        ax : matplotlib.axes.Axes, default=None
-            The axes to plot on.
-
-        Returns
-        -------
-        PrecisionRecallCurveDisplay
-            The precision-recall curve display.
-        """
-        response_method = ("predict_proba", "decision_function")
-        display_kwargs = {"pos_label": pos_label}
-        display_plot_kwargs = {"ax": ax, "plot_chance_level": False, "despine": True}
-        return self._get_display(
-            X=X,
-            y=y,
-            data_source=data_source,
-            response_method=response_method,
-            display_class=PrecisionRecallCurveDisplay,
-            display_kwargs=display_kwargs,
-            display_plot_kwargs=display_plot_kwargs,
-        )
-
-    @available_if(_check_supported_ml_task(supported_ml_tasks=["regression"]))
-    def prediction_error(
-        self,
-        *,
-        data_source="test",
-        X=None,
-        y=None,
-        ax=None,
-        kind="residual_vs_predicted",
-        subsample=1_000,
-    ):
-        """Plot the prediction error of a regression model.
-
-        Extra keyword arguments will be passed to matplotlib's `plot`.
-
-        Parameters
-        ----------
-        data_source : {"test", "train", "X_y"}, default="test"
-            The data source to use.
-
-            - "test" : use the test set provided when creating the reporter.
-            - "train" : use the train set provided when creating the reporter.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            New data on which to compute the metric. By default, we use the validation
-            set provided when creating the reporter.
-
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the target
-            provided when creating the reporter.
-
-        ax : matplotlib axes, default=None
-            Axes object to plot on. If `None`, a new figure and axes is
-            created.
-
-        kind : {"actual_vs_predicted", "residual_vs_predicted"}, \
-                default="residual_vs_predicted"
-            The type of plot to draw:
-
-            - "actual_vs_predicted" draws the observed values (y-axis) vs.
-              the predicted values (x-axis).
-            - "residual_vs_predicted" draws the residuals, i.e. difference
-              between observed and predicted values, (y-axis) vs. the predicted
-              values (x-axis).
-
-        subsample : float, int or None, default=1_000
-            Sampling the samples to be shown on the scatter plot. If `float`,
-            it should be between 0 and 1 and represents the proportion of the
-            original dataset. If `int`, it represents the number of samples
-            display on the scatter plot. If `None`, no subsampling will be
-            applied. by default, 1,000 samples or less will be displayed.
-
-        Returns
-        -------
-        PredictionErrorDisplay
-            The prediction error display.
-        """
-        display_kwargs = {"kind": kind, "subsample": subsample}
-        display_plot_kwargs = {"ax": ax}
-        return self._get_display(
-            X=X,
-            y=y,
-            data_source=data_source,
-            response_method="predict",
-            display_class=PredictionErrorDisplay,
-            display_kwargs=display_kwargs,
-            display_plot_kwargs=display_plot_kwargs,
-        )
-
-    def _get_help_panel_title(self):
-        return f"[bold cyan]{self._icon} Available plot methods[/bold cyan]"
-
-    def _get_help_tree_title(self):
-        return "[bold cyan]reporter.metrics.plot[/bold cyan]"
-
+from skore.utils._accessor import (
+    DirNamesMixin,
+    _check_supported_ml_task,
+    _register_accessor,
+)
 
 ###############################################################################
 # Metrics accessor
 ###############################################################################
 
 
-class _MetricsAccessor(_BaseAccessor):
+class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     """Accessor for metrics-related operations.
 
     You can access this accessor using the `metrics` attribute.
@@ -313,8 +46,6 @@ class _MetricsAccessor(_BaseAccessor):
 
     def __init__(self, parent):
         super().__init__(parent, icon="📏")
-        # Create plot sub-accessor
-        self.plot = _PlotMetricsAccessor(self)
 
     # TODO: should build on the `add_scorers` function
     def report_metrics(
@@ -1083,3 +814,286 @@ class _MetricsAccessor(_BaseAccessor):
 
     def _get_help_tree_title(self):
         return "[bold cyan]reporter.metrics[/bold cyan]"
+
+
+def register_metrics_accessor(name: str):
+    """Register an accessor for the EstimatorReport class."""
+    return _register_accessor(name, _MetricsAccessor)
+
+
+########################################################################################
+# Sub-accessors
+# Plotting
+########################################################################################
+
+
+class _PlotMetricsAccessor(_BaseAccessor):
+    def __init__(self, parent):
+        super().__init__(parent._parent, icon="🎨")
+        self._metrics_parent = parent
+
+    def _get_display(
+        self,
+        *,
+        X,
+        y,
+        data_source,
+        response_method,
+        display_class,
+        display_kwargs,
+        display_plot_kwargs,
+    ):
+        """Get the display from the cache or compute it.
+
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features)
+            The data.
+
+        y : array-like of shape (n_samples,)
+            The target.
+
+        data_source : {"test", "train", "X_y"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the reporter.
+            - "train" : use the train set provided when creating the reporter.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
+        response_method : str
+            The response method.
+
+        display_class : class
+            The display class.
+
+        display_kwargs : dict
+            The display kwargs used by `display_class._from_predictions`.
+
+        display_plot_kwargs : dict
+            The display kwargs used by `display.plot`.
+
+        Returns
+        -------
+        display : display_class
+            The display.
+        """
+        X, y, data_source_hash = self._get_X_y_and_data_source_hash(
+            data_source=data_source, X=X, y=y
+        )
+
+        cache_key = (self._parent._hash, display_class.__name__)
+        cache_key += tuple(display_kwargs.values())
+        cache_key += (data_source_hash,) if data_source_hash else (data_source,)
+
+        if cache_key in self._parent._cache:
+            display = self._parent._cache[cache_key]
+            display.plot(**display_plot_kwargs)
+        else:
+            y_pred = self._parent._get_cached_response_values(
+                estimator_hash=self._parent._hash,
+                estimator=self._parent.estimator,
+                X=X,
+                response_method=response_method,
+                data_source=data_source,
+                data_source_hash=data_source_hash,
+                pos_label=display_kwargs.get("pos_label", None),
+            )
+
+            display = display_class._from_predictions(
+                y,
+                y_pred,
+                estimator=self._parent.estimator,
+                estimator_name=self._parent.estimator_name,
+                ml_task=self._parent._ml_task,
+                data_source=data_source,
+                **display_kwargs,
+                **display_plot_kwargs,
+            )
+            self._parent._cache[cache_key] = display
+
+        return display
+
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["binary-classification", "multiclass-classification"]
+        )
+    )
+    def roc(self, *, data_source="test", X=None, y=None, pos_label=None, ax=None):
+        """Plot the ROC curve.
+
+        Parameters
+        ----------
+        data_source : {"test", "train", "X_y"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the reporter.
+            - "train" : use the train set provided when creating the reporter.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the reporter.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the reporter.
+
+        pos_label : str, default=None
+            The positive class.
+
+        ax : matplotlib.axes.Axes, default=None
+            The axes to plot on.
+
+        Returns
+        -------
+        RocCurveDisplay
+            The ROC curve display.
+        """
+        response_method = ("predict_proba", "decision_function")
+        display_kwargs = {"pos_label": pos_label}
+        display_plot_kwargs = {"ax": ax, "plot_chance_level": True, "despine": True}
+        return self._get_display(
+            X=X,
+            y=y,
+            data_source=data_source,
+            response_method=response_method,
+            display_class=RocCurveDisplay,
+            display_kwargs=display_kwargs,
+            display_plot_kwargs=display_plot_kwargs,
+        )
+
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["binary-classification", "multiclass-classification"]
+        )
+    )
+    def precision_recall(
+        self,
+        *,
+        data_source="test",
+        X=None,
+        y=None,
+        pos_label=None,
+        ax=None,
+    ):
+        """Plot the precision-recall curve.
+
+        Parameters
+        ----------
+        data_source : {"test", "train", "X_y"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the reporter.
+            - "train" : use the train set provided when creating the reporter.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the reporter.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the reporter.
+
+        pos_label : str, default=None
+            The positive class.
+
+        ax : matplotlib.axes.Axes, default=None
+            The axes to plot on.
+
+        Returns
+        -------
+        PrecisionRecallCurveDisplay
+            The precision-recall curve display.
+        """
+        response_method = ("predict_proba", "decision_function")
+        display_kwargs = {"pos_label": pos_label}
+        display_plot_kwargs = {"ax": ax, "plot_chance_level": False, "despine": True}
+        return self._get_display(
+            X=X,
+            y=y,
+            data_source=data_source,
+            response_method=response_method,
+            display_class=PrecisionRecallCurveDisplay,
+            display_kwargs=display_kwargs,
+            display_plot_kwargs=display_plot_kwargs,
+        )
+
+    @available_if(_check_supported_ml_task(supported_ml_tasks=["regression"]))
+    def prediction_error(
+        self,
+        *,
+        data_source="test",
+        X=None,
+        y=None,
+        ax=None,
+        kind="residual_vs_predicted",
+        subsample=1_000,
+    ):
+        """Plot the prediction error of a regression model.
+
+        Extra keyword arguments will be passed to matplotlib's `plot`.
+
+        Parameters
+        ----------
+        data_source : {"test", "train", "X_y"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the reporter.
+            - "train" : use the train set provided when creating the reporter.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the reporter.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the reporter.
+
+        ax : matplotlib axes, default=None
+            Axes object to plot on. If `None`, a new figure and axes is
+            created.
+
+        kind : {"actual_vs_predicted", "residual_vs_predicted"}, \
+                default="residual_vs_predicted"
+            The type of plot to draw:
+
+            - "actual_vs_predicted" draws the observed values (y-axis) vs.
+              the predicted values (x-axis).
+            - "residual_vs_predicted" draws the residuals, i.e. difference
+              between observed and predicted values, (y-axis) vs. the predicted
+              values (x-axis).
+
+        subsample : float, int or None, default=1_000
+            Sampling the samples to be shown on the scatter plot. If `float`,
+            it should be between 0 and 1 and represents the proportion of the
+            original dataset. If `int`, it represents the number of samples
+            display on the scatter plot. If `None`, no subsampling will be
+            applied. by default, 1,000 samples or less will be displayed.
+
+        Returns
+        -------
+        PredictionErrorDisplay
+            The prediction error display.
+        """
+        display_kwargs = {"kind": kind, "subsample": subsample}
+        display_plot_kwargs = {"ax": ax}
+        return self._get_display(
+            X=X,
+            y=y,
+            data_source=data_source,
+            response_method="predict",
+            display_class=PredictionErrorDisplay,
+            display_kwargs=display_kwargs,
+            display_plot_kwargs=display_plot_kwargs,
+        )
+
+    def _get_help_panel_title(self):
+        return f"[bold cyan]{self._icon} Available plot methods[/bold cyan]"
+
+    def _get_help_tree_title(self):
+        return "[bold cyan]reporter.metrics.plot[/bold cyan]"
+
+
+register_metrics_accessor("plot")(_PlotMetricsAccessor)
