@@ -57,7 +57,7 @@ def _get_scorers_to_add(estimator, y) -> dict[str, Any]:
     return {}
 
 
-def _add_scorers(scorers, scorers_to_add):
+def _add_scorers(scorers, scorers_to_add, estimator):
     """Expand `scorers` with more scorers.
 
     The type of the resulting scorers object is dependent on the type of the input
@@ -78,6 +78,8 @@ def _add_scorers(scorers, scorers_to_add):
         The scorer(s) to expand.
     scorers_to_add : dict[str, str]
         The scorers to be added.
+    estimator : estimator
+        A scikit-learn estimator.
 
     Returns
     -------
@@ -88,10 +90,12 @@ def _add_scorers(scorers, scorers_to_add):
         in `scorers`).
     """
     if scorers is None or isinstance(scorers, str):
-        new_scorers, added_scorers = _add_scorers({"score": scorers}, scorers_to_add)
+        new_scorers, added_scorers = _add_scorers(
+            {"score": scorers}, scorers_to_add, estimator
+        )
     elif isinstance(scorers, (list, tuple)):
         new_scorers, added_scorers = _add_scorers(
-            {s: s for s in scorers}, scorers_to_add
+            {s: s for s in scorers}, scorers_to_add, estimator
         )
     elif isinstance(scorers, dict):
         # User-defined metrics have priority
@@ -102,9 +106,12 @@ def _add_scorers(scorers, scorers_to_add):
         from sklearn.metrics._scorer import _MultimetricScorer
 
         internal_scorer = _MultimetricScorer(
+            # NOTE: we pass `estimator` to `check_scoring` for compatibility with
+            # scikit-learn 1.4. However, because `scoring` is never `None`, this
+            # estimator will not have any effect.
             scorers={
                 name: (
-                    check_scoring(estimator=None, scoring=scoring)
+                    check_scoring(estimator=estimator, scoring=scoring)
                     if isinstance(scoring, str)
                     else scoring
                 )

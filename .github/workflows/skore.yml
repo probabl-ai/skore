@@ -5,38 +5,88 @@ on: [workflow_call]
 defaults:
   run:
     shell: "bash"
-    working-directory: "./skore"
 
 jobs:
   test-skore:
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         os: ["ubuntu-latest", "windows-latest"]
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        python: ["3.9", "3.10", "3.11", "3.12"]
+        scikit-learn: ["1.6"]
+        include:
+          - os: "ubuntu-latest"
+            python: "3.12"
+            scikit-learn: "1.4"
+          - os: "ubuntu-latest"
+            python: "3.12"
+            scikit-learn: "1.5"
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: ${{ matrix.python }}
           cache: "pip"
-      - name:
-        timeout-minutes: 10
-        run: |
-          # Install dependencies
-          python -m pip install --upgrade pip
-          python -m pip install --upgrade pre-commit
-          python -m pip install --upgrade build
 
+      - name: Restore python-venv
+        uses: actions/cache/restore@v4
+        id: cache-python-venv
+        with:
+          path: 'skore/venv'
+          key: python-venv-${{ matrix.os }}-${{ matrix.python }}-${{ matrix.scikit-learn }}-${{ hashFiles('skore/pyproject.toml') }}
+
+      - name: Setup python-venv
+        working-directory: "skore/"
+        run: |
+          set -eu
+
+          # Ensure venv is created
+          python -m venv venv
+
+          # Activate venv for each step depending on the OS
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+              echo "${GITHUB_WORKSPACE}/skore/venv/bin" >> ${GITHUB_PATH}
+              echo "VIRTUAL_ENV=${GITHUB_WORKSPACE}/skore/venv" >> ${GITHUB_ENV}
+          else
+              echo "${GITHUB_WORKSPACE}\\skore\\venv\\Scripts" >> ${GITHUB_PATH}
+              echo "VIRTUAL_ENV=${GITHUB_WORKSPACE}\\skore\\venv" >> ${GITHUB_ENV}
+          fi
+
+      - name: Install dependencies in python-venv
+        working-directory: "skore/"
+        if: steps.cache-python-venv.outputs.cache-hit != 'true'
+        run: |
+          python -m pip install --upgrade "pip"
+          python -m pip install --upgrade "build"
+          python -m pip install --upgrade "scikit-learn ==${{ matrix.scikit-learn }}"
+
+          # Install `skore` and its dependencies
+          python -m pip install --upgrade ".[test]"
+
+          # Uninstall the `skore` package itself
+          python -m pip uninstall -y "skore"
+
+      - name: Save python-venv
+        uses: actions/cache/save@v4
+        if: steps.cache-python-venv.outputs.cache-hit != 'true'
+        with:
+          path: 'skore/venv'
+          key: ${{ steps.cache-python-venv.outputs.cache-primary-key }}
+
+      - name: Lint and test
+        timeout-minutes: 10
+        working-directory: "skore/"
+        run: |
           # Lint
           pre-commit run --all-files ruff
 
           # Build
           python -m build
 
-          # Install
-          wheel=(dist/*.whl); python -m pip install "${wheel}[test]"
+          # Install `skore` without its dependencies, which are present in the venv
+          wheel=(dist/*.whl); python -m pip install --force-reinstall --no-deps "${wheel}"
 
           # Test
           python -m pytest --no-cov src/ tests/ -n auto
@@ -51,6 +101,7 @@ jobs:
           python-version: 3.12
           cache: "pip"
       - name: pytest coverage
+        working-directory: "skore/"
         run: |
           # Install dependencies
           python -m pip install --upgrade pip
