@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import re
 import warnings
 from typing import TYPE_CHECKING, Any, Optional, Union
 
@@ -38,15 +39,25 @@ HTML_WARNING_TEMPLATE = """
     background-color: transparent;
     color: var(--skore-warn-color);
     font-family: inherit;
-    font-size: 1em;
-    text-wrap: balance;
+
+    .title {{
+        font-size: 1.2em;
+        font-weight: bold;
+        margin: 1em 0;
+    }}
+
+    .content {{
+        font-size: 1em;
+        text-wrap: balance;
+    }}
 }}
 .jp-RenderedHTMLCommon .warning p {{
     margin-bottom: 0;
 }}
 </style>
 <div class="warning">
-    {warning}
+    <div class="title">{warning_class}</div>
+    <div class="content">{warning}</div>
 </div>
 """
 
@@ -209,8 +220,15 @@ def train_test_split(
             if InteractiveShell.initialized():
                 markup = "".join(
                     [
-                        HTML_WARNING_TEMPLATE.format(warning=markdown(w))
-                        for w, _ in to_display
+                        HTML_WARNING_TEMPLATE.format(
+                            warning=markdown(warning),
+                            warning_class=re.sub(
+                                "([A-Z][a-z]+)",
+                                r" \1",
+                                re.sub("([A-Z]+)", r" \1", warning_class.__name__),
+                            ).lstrip(),
+                        )
+                        for warning, warning_class in to_display
                     ]
                 )
                 display(HTML(markup))
