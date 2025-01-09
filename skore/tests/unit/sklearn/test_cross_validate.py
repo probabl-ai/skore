@@ -45,29 +45,28 @@ def test_cross_validate_return_estimator():
 @pytest.mark.parametrize(
     "estimator,dataset_func,dataset_kwargs,expected_keys",
     [
-        # Regression case
-        (
+        pytest.param(
             LinearRegression(),
             make_regression,
             {"n_targets": 1},
             {"r2", "root_mean_squared_error"},
+            id="regression",
         ),
-        # Binary classification with predict_proba
-        (
+        pytest.param(
             LogisticRegression(),
             make_classification,
             {"n_classes": 2},
             {"recall", "precision", "roc_auc", "brier_score_loss"},
+            id="binary_classification_with_proba",
         ),
-        # Binary classification without predict_proba
-        (
+        pytest.param(
             SVC(probability=False),
             make_classification,
             {"n_classes": 2},
             {"recall", "precision", "roc_auc"},
+            id="binary_classification_without_proba",
         ),
-        # Multiclass classification with predict_proba
-        (
+        pytest.param(
             LogisticRegression(),
             make_classification,
             {"n_classes": 3, "n_clusters_per_class": 1},
@@ -77,21 +76,15 @@ def test_cross_validate_return_estimator():
                 "roc_auc_ovr_weighted",
                 "log_loss",
             },
+            id="multiclass_with_proba",
         ),
-        # Multiclass classification without predict_proba
-        (
+        pytest.param(
             SVC(probability=False),
             make_classification,
             {"n_classes": 3, "n_clusters_per_class": 1},
             {"recall_weighted", "precision_weighted"},
+            id="multiclass_without_proba",
         ),
-    ],
-    ids=[
-        "regression",
-        "binary_classification_with_proba",
-        "binary_classification_without_proba",
-        "multiclass_with_proba",
-        "multiclass_without_proba",
     ],
 )
 def test_get_scorers_to_add(estimator, dataset_func, dataset_kwargs, expected_keys):
