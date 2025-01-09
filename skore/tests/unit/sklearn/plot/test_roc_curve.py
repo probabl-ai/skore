@@ -1,3 +1,4 @@
+import matplotlib as mpl
 import pytest
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
@@ -40,9 +41,6 @@ def test_roc_curve_display_binary_classification(pyplot, binary_classification_d
         assert list(attr.keys()) == [display.pos_label]
         assert isinstance(attr[estimator.classes_[1]], list)
         assert len(attr[estimator.classes_[1]]) == 1
-
-    # check the default plotting behaviour
-    import matplotlib as mpl
 
     assert isinstance(display.lines_, list)
     assert len(display.lines_) == 1
@@ -91,9 +89,6 @@ def test_roc_curve_display_multiclass_classification(
         for class_label in estimator.classes_:
             assert isinstance(attr[class_label], list)
             assert len(attr[class_label]) == 1
-
-    # check the default plotting behaviour
-    import matplotlib as mpl
 
     assert isinstance(display.lines_, list)
     assert len(display.lines_) == len(estimator.classes_)

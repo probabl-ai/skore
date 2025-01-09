@@ -9,12 +9,9 @@ from skore.view.view_repository import ViewRepository
 
 def pytest_configure(config):
     # Use matplotlib agg backend during the tests including doctests
-    try:
-        import matplotlib
+    import matplotlib
 
-        matplotlib.use("agg")
-    except ImportError:
-        pass
+    matplotlib.use("agg")
 
 
 @pytest.fixture
@@ -53,16 +50,15 @@ def in_memory_project():
 def pyplot():
     """Setup and teardown fixture for matplotlib.
 
-    This fixture checks if we can import matplotlib. If not, the tests will be
-    skipped. Otherwise, we close the figures before and after running the
-    functions.
+    This fixture closes the figures before and after running the functions.
 
     Returns
     -------
     pyplot : module
         The ``matplotlib.pyplot`` module.
     """
-    pyplot = pytest.importorskip("matplotlib.pyplot")
+    from matplotlib import pyplot
+
     pyplot.close("all")
     yield pyplot
     pyplot.close("all")

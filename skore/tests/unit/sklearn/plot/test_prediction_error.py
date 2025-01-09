@@ -1,3 +1,4 @@
+import matplotlib as mpl
 import numpy as np
 import pytest
 from sklearn.datasets import make_regression
@@ -51,9 +52,6 @@ def test_prediction_error_display_regression(pyplot, regression_data):
     np.testing.assert_allclose(display.y_pred, estimator.predict(X_test))
     assert display.data_source == "test"
 
-    # check the default plotting behaviour
-    import matplotlib as mpl
-
     assert isinstance(display.line_, mpl.lines.Line2D)
     assert display.line_.get_label() == "Perfect predictions"
     assert display.line_.get_color() == "black"
@@ -77,8 +75,6 @@ def test_prediction_error_display_regression_kind(pyplot, regression_data):
     )
     display = report.metrics.plot.prediction_error(kind="actual_vs_predicted")
     assert isinstance(display, PredictionErrorDisplay)
-
-    import matplotlib as mpl
 
     assert isinstance(display.line_, mpl.lines.Line2D)
     assert display.line_.get_label() == "Perfect predictions"

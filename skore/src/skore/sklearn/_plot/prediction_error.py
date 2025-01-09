@@ -1,7 +1,7 @@
 import numbers
 
+import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.utils._optional_dependencies import check_matplotlib_support
 from sklearn.utils.validation import check_random_state
 
 from skore.externals._sklearn_compat import _safe_indexing
@@ -114,16 +114,12 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         display : PredictionErrorDisplay
             Object that stores computed values.
         """
-        check_matplotlib_support(f"{self.__class__.__name__}.plot")
-
         expected_kind = ("actual_vs_predicted", "residual_vs_predicted")
         if kind not in expected_kind:
             raise ValueError(
                 f"`kind` must be one of {', '.join(expected_kind)}. "
                 f"Got {kind!r} instead."
             )
-
-        import matplotlib.pyplot as plt
 
         if scatter_kwargs is None:
             scatter_kwargs = {}
@@ -282,8 +278,6 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         display : PredictionErrorDisplay
             Object that stores the computed values.
         """
-        check_matplotlib_support(f"{cls.__name__}._from_predictions")
-
         random_state = check_random_state(random_state)
 
         n_samples = len(y_true)

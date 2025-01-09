@@ -1,11 +1,14 @@
 import inspect
 from io import StringIO
 
+import matplotlib.pyplot as plt
 from rich.console import Console
 from rich.panel import Panel
 from rich.tree import Tree
-from sklearn.utils._plotting import check_consistent_length, check_matplotlib_support
-from sklearn.utils.validation import _check_pos_label_consistency
+from sklearn.utils.validation import (
+    _check_pos_label_consistency,
+    check_consistent_length,
+)
 
 
 class HelpDisplayMixin:
@@ -91,9 +94,6 @@ class _ClassifierCurveDisplayMixin:
     """
 
     def _validate_plot_params(self, *, ax, estimator_name):
-        check_matplotlib_support(f"{self.__class__.__name__}.plot")
-        import matplotlib.pyplot as plt
-
         if ax is None:
             _, ax = plt.subplots()
 
@@ -112,7 +112,6 @@ class _ClassifierCurveDisplayMixin:
         sample_weight=None,
         pos_label=None,
     ):
-        check_matplotlib_support(f"{cls.__name__}._from_predictions")
         check_consistent_length(y_true, y_pred, sample_weight)
 
         if ml_task == "binary-classification":
