@@ -14,7 +14,7 @@ import json
 import re
 import statistics
 from functools import cached_property
-from typing import TYPE_CHECKING, Any, TypedDict, Union
+from typing import TYPE_CHECKING, Any, Literal, TypedDict, Union
 
 import numpy
 import plotly.graph_objects
@@ -64,6 +64,44 @@ def _metric_title(metric):
     if title.endswith(" time"):
         title = title + " (seconds)"
     return title
+
+
+def _metric_favorability(
+    metric: str,
+) -> Literal["greater_is_better", "lower_is_better", "unknown"]:
+    greater_is_better_metrics = (
+        "accuracy",
+        "balanced_accuracy",
+        "top_k_accuracy",
+        "average_precision",
+        "f1",
+        "precision",
+        "recall",
+        "jaccard",
+        "roc_auc",
+        "r2",
+    )
+    any_match_greater_is_better = any(
+        re.search(re.escape(pattern), metric) for pattern in greater_is_better_metrics
+    )
+    if (
+        any_match_greater_is_better
+        # other scikit-learn conventions
+        or metric.endswith("_score")  # score: higher is better
+        or metric.startswith("neg_")  # negative loss: negative of lower is better
+    ):
+        return "greater_is_better"
+
+    lower_is_better_metrics = ("fit_time", "score_time")
+    if (
+        metric.endswith("_error")
+        or metric.endswith("_loss")
+        or metric.endswith("_deviance")
+        or metric in lower_is_better_metrics
+    ):
+        return "lower_is_better"
+
+    return "unknown"
 
 
 def _params_to_str(estimator_info) -> str:
@@ -148,10 +186,12 @@ class CrossValidationItem(Item):
         cv_results = copy.deepcopy(self.cv_results_serialized)
         cv_results.pop("indices", None)
 
+        metrics_names = list(cv_results.keys())
         tabular_results = {
             "name": "Cross validation results",
-            "columns": list(cv_results.keys()),
+            "columns": metrics_names,
             "data": list(zip(*cv_results.values())),
+            "favorability": [_metric_favorability(m) for m in metrics_names],
         }
 
         # Get scalar results (summary statistics of the cv results)
@@ -160,6 +200,7 @@ class CrossValidationItem(Item):
                 "name": _metric_title(k),
                 "value": statistics.mean(v),
                 "stddev": statistics.stdev(v),
+                "favorability": _metric_favorability(k),
             }
             for k, v in cv_results.items()
         ]
@@ -313,7 +354,6 @@ class CrossValidationItem(Item):
         humanized_plot_names = {
             "scores": "Scores",
             "timing": "Timings",
-            "timing_normalized": "Normalized timings",
         }
         plots_bytes = {
             humanized_plot_names[plot_name]: (

@@ -1,17 +1,17 @@
 """CLI for Skore."""
 
 import argparse
-import pathlib
 from importlib.metadata import version
 
+from skore.cli.color_format import ColorArgumentParser
 from skore.cli.launch_dashboard import __launch
 from skore.cli.quickstart_command import __quickstart
-from skore.project import create
+from skore.project.create import _create
 
 
 def cli(args: list[str]):
     """CLI for Skore."""
-    parser = argparse.ArgumentParser(prog="skore")
+    parser = ColorArgumentParser(prog="skore")
 
     parser.add_argument(
         "--version", action="version", version=f"%(prog)s {version('skore')}"
@@ -39,6 +39,11 @@ def cli(args: list[str]):
         ),
         default=True,
     )
+    parser_launch.add_argument(
+        "--verbose",
+        action="store_true",
+        help="increase logging verbosity",
+    )
 
     parser_create = subparsers.add_parser("create", help="Create a project")
     parser_create.add_argument(
@@ -48,18 +53,14 @@ def cli(args: list[str]):
         default="project",
     )
     parser_create.add_argument(
-        "--working-dir",
-        type=pathlib.Path,
-        help=(
-            "the directory relative to which the project name will be interpreted; "
-            "default is the current working directory (mostly used for testing)"
-        ),
-        default=None,
-    )
-    parser_create.add_argument(
         "--overwrite",
         action="store_true",
         help="overwrite an existing project with the same name",
+    )
+    parser_create.add_argument(
+        "--verbose",
+        action="store_true",
+        help="increase logging verbosity",
     )
 
     parser_quickstart = subparsers.add_parser(
@@ -70,15 +71,6 @@ def cli(args: list[str]):
         nargs="?",
         help="the name or path of the project to create (default: %(default)s)",
         default="project",
-    )
-    parser_quickstart.add_argument(
-        "--working-dir",
-        type=pathlib.Path,
-        help=(
-            "the directory relative to which the project name will be interpreted; "
-            "default is the current working directory (mostly used for testing)"
-        ),
-        default=None,
     )
     parser_quickstart.add_argument(
         "--overwrite",
@@ -100,6 +92,11 @@ def cli(args: list[str]):
         ),
         default=True,
     )
+    parser_quickstart.add_argument(
+        "--verbose",
+        action="store_true",
+        help="increase logging verbosity",
+    )
 
     parsed_args: argparse.Namespace = parser.parse_args(args)
 
@@ -108,20 +105,21 @@ def cli(args: list[str]):
             project_name=parsed_args.project_name,
             port=parsed_args.port,
             open_browser=parsed_args.open_browser,
+            verbose=parsed_args.verbose,
         )
     elif parsed_args.subcommand == "create":
-        create(
+        _create(
             project_name=parsed_args.project_name,
-            working_dir=parsed_args.working_dir,
             overwrite=parsed_args.overwrite,
+            verbose=parsed_args.verbose,
         )
     elif parsed_args.subcommand == "quickstart":
         __quickstart(
             project_name=parsed_args.project_name,
-            working_dir=parsed_args.working_dir,
             overwrite=parsed_args.overwrite,
             port=parsed_args.port,
             open_browser=parsed_args.open_browser,
+            verbose=parsed_args.verbose,
         )
     else:
         parser.print_help()

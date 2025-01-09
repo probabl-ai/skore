@@ -8,7 +8,7 @@
          <img src="https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/Logo_Skore_Light@2x.svg" class="logo-landing only-light" alt="skore - Home"/>
          <img src="https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/Logo_Skore_Dark@2x.svg" class="logo-landing only-dark pst-js-only" alt="skore - Home"/>
       </div>
-      <h1 class="hero-title">The scikit-learn Modeling Companion</h1>
+      <h1 class="hero-title">the scikit-learn sidekick</h1>
       <p class="hero-description">Elevate ML Development with Tracking and Built-in Recommended Practices</p>
    </div>
 

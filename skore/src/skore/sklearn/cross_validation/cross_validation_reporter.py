@@ -16,7 +16,6 @@ from .cross_validation_helpers import (
     _strip_cv_results_scores,
 )
 from .plots.compare_scores_plot import plot_cross_validation_compare_scores
-from .plots.timing_normalized_plot import plot_cross_validation_timing_normalized
 from .plots.timing_plot import plot_cross_validation_timing
 
 
@@ -26,7 +25,6 @@ class CrossValidationPlots:
 
     scores: plotly.graph_objects.Figure
     timing: plotly.graph_objects.Figure
-    timing_normalized: plotly.graph_objects.Figure
 
 
 class CrossValidationReporter:
@@ -136,7 +134,9 @@ class CrossValidationReporter:
 
         # Extend scorers with other relevant scorers
         scorers_to_add = _get_scorers_to_add(self.estimator, self.y)
-        self._scorers, added_scorers = _add_scorers(self.scorers, scorers_to_add)
+        self._scorers, added_scorers = _add_scorers(
+            self.scorers, scorers_to_add, self.estimator
+        )
 
         self._cv_results = sklearn.model_selection.cross_validate(
             *args,
@@ -189,5 +189,4 @@ class CrossValidationReporter:
         return CrossValidationPlots(
             scores=plot_cross_validation_compare_scores(self._cv_results),
             timing=plot_cross_validation_timing(self._cv_results),
-            timing_normalized=plot_cross_validation_timing_normalized(self._cv_results),
         )

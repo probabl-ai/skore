@@ -245,14 +245,20 @@ const isCached = ref(false);
 
 const results: PrimaryResultsDto = {
   scalarResults: [
-    { name: "toto", value: 4.32 },
-    { name: "tata", value: 4.32 },
-    { name: "titi", value: 4.32, stddev: 1 },
-    { name: "tutu", value: 4.32 },
-    { name: "stab", value: 0.4, label: "Good" },
-    { name: "titi", value: 4.32, stddev: 1 },
-    { name: "tutu", value: 4.32 },
-    { name: "stab", value: 0.9, label: "Good", description: "your blabla is good" },
+    { name: "toto", value: 4.32, favorability: "greater_is_better" },
+    { name: "tata", value: 4.32, favorability: "greater_is_better" },
+    { name: "titi", value: 4.32, stddev: 1, favorability: "greater_is_better" },
+    { name: "tutu", value: 4.32, favorability: "greater_is_better" },
+    { name: "stab", value: 0.4, label: "Good", favorability: "greater_is_better" },
+    { name: "titi", value: 4.32, stddev: 1, favorability: "greater_is_better" },
+    { name: "tutu", value: 4.32, favorability: "greater_is_better" },
+    {
+      name: "stab",
+      value: 0.9,
+      label: "Good",
+      description: "your blabla is good",
+      favorability: "greater_is_better",
+    },
   ],
   tabularResults: [
     {
@@ -266,6 +272,9 @@ const results: PrimaryResultsDto = {
         Array.from({ length: 50 }, () => Math.random().toFixed(4)),
         Array.from({ length: 50 }, () => Math.random().toFixed(4)),
       ],
+      favorability: Array.from({ length: 50 }, (_, i) =>
+        i % 2 === 0 ? "greater_is_better" : "lower_is_better"
+      ),
     },
     {
       name: "b",
@@ -276,6 +285,7 @@ const results: PrimaryResultsDto = {
         [0.8, 0.4, 0.5, 0.6],
         [0.8, 0.4, 0.5, 0.6],
       ],
+      favorability: ["greater_is_better", "greater_is_better", "lower_is_better"],
     },
   ],
 };
@@ -1267,6 +1277,8 @@ const toggleModel = ref(true);
           <div>icon-square-cursor <i class="icon icon-square-cursor"></i></div>
           <div>icon-moon <i class="icon icon-moon"></i></div>
           <div>icon-sun <i class="icon icon-sun"></i></div>
+          <div>icon-ascending-arrow <i class="icon icon-ascending-arrow"></i></div>
+          <div>icon-descending-arrow <i class="icon icon-descending-arrow"></i></div>
         </div>
       </TabPanelContent>
       <TabPanelContent name="draggable">
