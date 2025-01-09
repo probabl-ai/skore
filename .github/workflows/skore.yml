@@ -30,7 +30,8 @@ jobs:
           python-version: ${{ matrix.python }}
           cache: "pip"
 
-      - uses: actions/cache/restore@v4
+      - name: Restore python-venv
+        uses: actions/cache/restore@v4
         id: cache-python-venv
         with:
           path: 'skore/venv'
@@ -53,22 +54,28 @@ jobs:
               echo "VIRTUAL_ENV=${GITHUB_WORKSPACE}\\skore\\venv" >> ${GITHUB_ENV}
           fi
 
-      - name: Install dependencies
+      - name: Install dependencies in python-venv
         working-directory: "skore/"
         if: steps.cache-python-venv.outputs.cache-hit != 'true'
         run: |
           python -m pip install --upgrade "pip"
           python -m pip install --upgrade "build"
           python -m pip install --upgrade "scikit-learn ==${{ matrix.scikit-learn }}"
+
+          # Install `skore` and its dependencies
           python -m pip install --upgrade ".[test]"
 
-      - uses: actions/cache/save@v4
+          # Uninstall the `skore` package itself
+          python -m pip uninstall -y "skore"
+
+      - name: Save python-venv
+        uses: actions/cache/save@v4
         if: steps.cache-python-venv.outputs.cache-hit != 'true'
         with:
           path: 'skore/venv'
           key: ${{ steps.cache-python-venv.outputs.cache-primary-key }}
 
-      - name:
+      - name: Lint and test
         timeout-minutes: 10
         working-directory: "skore/"
         run: |
@@ -78,7 +85,7 @@ jobs:
           # Build
           python -m build
 
-          # Install
+          # Install `skore` without its dependencies, which are present in the venv
           wheel=(dist/*.whl); python -m pip install --force-reinstall --no-deps "${wheel}"
 
           # Test
