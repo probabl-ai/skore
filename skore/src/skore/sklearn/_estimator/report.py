@@ -321,7 +321,12 @@ class EstimatorReport(_HelpMixin, DirNamesMixin):
     def _get_help_panel_title(self):
         return (
             f"[bold cyan]📓 Tools to diagnose estimator "
-            "{self.estimator_name}[/bold cyan]"
+            f"{self.estimator_name}[/bold cyan]"
+        )
+
+    def _get_help_legend(self):
+        return (
+            "[cyan](↗︎)[/cyan] higher is better [orange1](↘︎)[/orange1] lower is better"
         )
 
     def _create_help_tree(self):

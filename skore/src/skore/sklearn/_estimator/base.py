@@ -2,7 +2,7 @@ import inspect
 from io import StringIO
 
 import joblib
-from rich.console import Console
+from rich.console import Console, Group
 from rich.panel import Panel
 from rich.tree import Tree
 
@@ -42,10 +42,22 @@ class _HelpMixin:
             else "No description available"
         )
 
+    def _get_help_legend(self):
+        """Get the help legend."""
+        return None
+
     def _create_help_panel(self):
         """Create the help panel."""
+        if self._get_help_legend():
+            content = Group(
+                self._create_help_tree(),
+                f"\n\nLegend:\n{self._get_help_legend()}",
+            )
+        else:
+            content = self._create_help_tree()
+
         return Panel(
-            self._create_help_tree(),
+            content,
             title=self._get_help_panel_title(),
             expand=False,
             border_style="orange1",

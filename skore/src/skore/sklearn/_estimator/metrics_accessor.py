@@ -812,6 +812,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     def _get_help_panel_title(self):
         return f"[bold cyan]{self._icon} Available metrics methods[/bold cyan]"
 
+    def _get_help_legend(self):
+        return (
+            "[cyan](↗︎)[/cyan] higher is better [orange1](↘︎)[/orange1] lower is better"
+        )
+
     def _get_help_tree_title(self):
         return "[bold cyan]reporter.metrics[/bold cyan]"
 
