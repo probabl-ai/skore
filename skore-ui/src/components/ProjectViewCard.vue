@@ -116,6 +116,7 @@ onBeforeUnmount(() => {
     & .titles {
       position: relative;
       padding-left: calc(var(--spacing-8) + 4px);
+      color: var(--color-text-primary);
 
       & .title {
         font-size: var(--font-size-sm);

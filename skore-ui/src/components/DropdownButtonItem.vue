@@ -34,6 +34,7 @@ const props = withDefaults(defineProps<DropdownItemProps>(), { iconPosition: "le
   border: 0;
   border-bottom: 1px solid var(--color-stroke-background-primary);
   background-color: var(--color-background-primary);
+  color: var(--color-text-primary);
   cursor: pointer;
   text-align: left;
   white-space: nowrap;

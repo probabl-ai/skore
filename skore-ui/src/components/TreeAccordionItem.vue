@@ -169,6 +169,7 @@ onMounted(() => {
 
       & .text {
         border-radius: var(--radius-xs);
+        color: var(--color-text-primary);
       }
 
       &.has-children {
@@ -191,12 +192,13 @@ onMounted(() => {
         border: none;
         margin: 0;
         background-color: transparent;
+        color: var(--color-text-secondary);
         cursor: pointer;
         font-size: var(--font-size-md);
         transition: color var(--animation-duration) var(--animation-easing);
 
         &:hover {
-          color: var(--color-primary);
+          color: var(--color-text-primary);
         }
       }
     }
