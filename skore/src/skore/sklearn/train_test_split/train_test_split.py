@@ -18,17 +18,34 @@ if TYPE_CHECKING:
     from skore.project import Project
 
 
+# use variables for HTML warnings
+# pick vscode color then fallback to jupyter color
+# then fallback to orange
 HTML_WARNING_TEMPLATE = """
-<div style="
-    border: solid 1px var(--vscode-editorWarning-border, #f08b30);
-    color: var(--vscode-editorWarning-foreground, white);
+<style>
+.warning {{
+    --skore-warn-color: var(
+        --vscode-editorWarning-foreground,
+        var(--jp-warn-color0, light-dark(black, white))
+    );
+    --skore-warn-border-color: var(
+        --vscode-editorWarning-border,
+        var(--jp-warn-color2, #f08b30)
+    );
+    padding: 0.2em 1em;
+    border: solid 1px var(--skore-warn-border-color);
+    margin-bottom: 1px;
     background-color: transparent;
+    color: var(--skore-warn-color);
     font-family: inherit;
     font-size: 1em;
-    padding: 0.2em;
     text-wrap: balance;
-    margin-bottom: 1px;
-">
+}}
+.jp-RenderedHTMLCommon .warning p {{
+    margin-bottom: 0;
+}}
+</style>
+<div class="warning">
     {warning}
 </div>
 """
