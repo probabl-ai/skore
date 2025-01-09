@@ -131,28 +131,41 @@ class _BaseAccessor(_HelpMixin):
             The hash of the data source. None when we are able to track the data, and
             thus relying on X_train, y_train, X_test, y_test.
         """
+        is_cluster = is_clusterer(self._parent.estimator)
         if data_source == "test":
             if not (X is None or y is None):
                 raise ValueError("X and y must be None when data_source is test.")
+            if self._parent._X_test is None or (
+                not is_cluster and self._parent._y_test is None
+            ):
+                missing_data = "X_test" if is_cluster else "X_test and y_test"
+                raise ValueError(
+                    f"No {data_source} data (i.e. {missing_data}) were provided "
+                    f"when creating the reporter. Please provide the {data_source} "
+                    "data either when creating the reporter or by setting data_source "
+                    "to 'X_y' and providing X and y."
+                )
             return self._parent._X_test, self._parent._y_test, None
         elif data_source == "train":
             if not (X is None or y is None):
                 raise ValueError("X and y must be None when data_source is train.")
-            is_cluster = is_clusterer(self._parent.estimator)
             if self._parent._X_train is None or (
                 not is_cluster and self._parent._y_train is None
             ):
                 missing_data = "X_train" if is_cluster else "X_train and y_train"
                 raise ValueError(
-                    f"No training data (i.e. {missing_data}) were provided "
-                    "when creating the reporter. Please provide the training data."
+                    f"No {data_source} data (i.e. {missing_data}) were provided "
+                    f"when creating the reporter. Please provide the {data_source} "
+                    "data either when creating the reporter or by setting data_source "
+                    "to 'X_y' and providing X and y."
                 )
             return self._parent._X_train, self._parent._y_train, None
         elif data_source == "X_y":
-            is_cluster = is_clusterer(self._parent.estimator)
             if X is None or (not is_cluster and y is None):
                 missing_data = "X" if is_cluster else "X and y"
-                raise ValueError(f"{missing_data} must be provided.")
+                raise ValueError(
+                    f"{missing_data} must be provided when data_source is X_y."
+                )
             return X, y, joblib.hash((X, y))
         else:
             raise ValueError(

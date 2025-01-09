@@ -369,7 +369,7 @@ def test_estimator_report_display_binary_classification_external_data(
     when passing external data.
     """
     estimator, X_test, y_test = binary_classification_data
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    report = EstimatorReport(estimator)
     assert hasattr(report.metrics.plot, display)
     display_first_call = getattr(report.metrics.plot, display)(
         data_source="X_y", X=X_test, y=y_test
@@ -389,7 +389,7 @@ def test_estimator_report_display_regression_external_data(
     external data.
     """
     estimator, X_test, y_test = regression_data
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    report = EstimatorReport(estimator)
     assert hasattr(report.metrics.plot, display)
     display_first_call = getattr(report.metrics.plot, display)(
         data_source="X_y", X=X_test, y=y_test
@@ -827,7 +827,7 @@ def test_estimator_report_get_X_y_and_data_source_hash_error():
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
 
     estimator = LogisticRegression().fit(X_train, y_train)
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    report = EstimatorReport(estimator)
 
     err_msg = re.escape(
         "Invalid data source: unknown. Possible values are: " "test, train, X_y."
@@ -835,12 +835,15 @@ def test_estimator_report_get_X_y_and_data_source_hash_error():
     with pytest.raises(ValueError, match=err_msg):
         report.metrics.log_loss(data_source="unknown")
 
-    err_msg = re.escape(
-        "No training data (i.e. X_train and y_train) were provided "
-        "when creating the reporter. Please provide the training data."
-    )
-    with pytest.raises(ValueError, match=err_msg):
-        report.metrics.log_loss(data_source="train")
+    for data_source in ("train", "test"):
+        err_msg = re.escape(
+            f"No {data_source} data (i.e. X_{data_source} and y_{data_source}) were "
+            f"provided when creating the reporter. Please provide the {data_source} "
+            "data either when creating the reporter or by setting data_source to "
+            "'X_y' and providing X and y."
+        )
+        with pytest.raises(ValueError, match=err_msg):
+            report.metrics.log_loss(data_source=data_source)
 
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
@@ -865,14 +868,18 @@ def test_estimator_report_get_X_y_and_data_source_hash_error():
             rand_score, response_method="predict", data_source="X_y"
         )
 
-    err_msg = re.escape(
-        "No training data (i.e. X_train) were provided when creating the reporter. "
-        "Please provide the training data."
-    )
-    with pytest.raises(ValueError, match=err_msg):
-        report.metrics.custom_metric(
-            rand_score, response_method="predict", data_source="train"
+    report = EstimatorReport(estimator)
+    for data_source in ("train", "test"):
+        err_msg = re.escape(
+            f"No {data_source} data (i.e. X_{data_source}) were provided when "
+            f"creating the reporter. Please provide the {data_source} data either "
+            f"when creating the reporter or by setting data_source to 'X_y' and "
+            f"providing X and y."
         )
+        with pytest.raises(ValueError, match=err_msg):
+            report.metrics.custom_metric(
+                rand_score, response_method="predict", data_source=data_source
+            )
 
 
 @pytest.mark.parametrize("data_source", ("train", "test", "X_y"))
