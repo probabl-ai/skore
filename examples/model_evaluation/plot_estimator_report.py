@@ -47,8 +47,9 @@ X_train, X_test, y_train, y_test = train_test_split(df, y, random_state=42)
 #
 # Now, we need to define a predictive model. Hopefully, `skrub` provides a convenient
 # function (:func:`skrub.tabular_learner`) when it comes to getting strong baseline
-# predictive models with a single line of code. As its feature engineering is generic, it does not
-# provide some handcrafted and tailored feature engineering but still provides a good starting point.
+# predictive models with a single line of code. As its feature engineering is generic,
+# it does not provide some handcrafted and tailored feature engineering but still
+# provides a good starting point.
 #
 # So let's create a classifier for our task and fit it on the training set.
 from skrub import tabular_learner
