@@ -1,6 +1,3 @@
-from pandas.core.accessor import DirNamesMixin, _register_accessor  # noqa: F401
-
-
 def _check_supported_ml_task(supported_ml_tasks):
     def check(accessor):
         supported_task = any(

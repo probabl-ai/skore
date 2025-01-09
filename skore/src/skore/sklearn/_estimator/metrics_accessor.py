@@ -8,17 +8,14 @@ from sklearn import metrics
 from sklearn.metrics._scorer import _BaseScorer
 from sklearn.utils.metaestimators import available_if
 
+from skore.externals._pandas_accessors import DirNamesMixin
 from skore.sklearn._estimator.base import _BaseAccessor
 from skore.sklearn._plot import (
     PrecisionRecallCurveDisplay,
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
-from skore.utils._accessor import (
-    DirNamesMixin,
-    _check_supported_ml_task,
-    _register_accessor,
-)
+from skore.utils._accessor import _check_supported_ml_task
 
 ###############################################################################
 # Metrics accessor
@@ -821,11 +818,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         return "[bold cyan]reporter.metrics[/bold cyan]"
 
 
-def register_metrics_accessor(name: str):
-    """Register an accessor for the EstimatorReport class."""
-    return _register_accessor(name, _MetricsAccessor)
-
-
 ########################################################################################
 # Sub-accessors
 # Plotting
@@ -1101,6 +1093,3 @@ class _PlotMetricsAccessor(_BaseAccessor):
 
     def _get_help_tree_title(self):
         return "[bold cyan]reporter.metrics.plot[/bold cyan]"
-
-
-register_metrics_accessor("plot")(_PlotMetricsAccessor)
