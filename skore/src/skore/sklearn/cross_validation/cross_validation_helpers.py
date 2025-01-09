@@ -33,28 +33,27 @@ def _get_scorers_to_add(estimator, y) -> dict[str, Any]:
             ),
         }
     if ml_task == "binary-classification":
-        return {
-            "roc_auc": "roc_auc",
-            "brier_score_loss": metrics.make_scorer(
-                metrics.brier_score_loss, response_method="predict_proba"
-            ),
+        scorers_to_add = {
             "recall": "recall",
             "precision": "precision",
+            "roc_auc": "roc_auc",
         }
-    if ml_task == "multiclass-classification":
         if hasattr(estimator, "predict_proba"):
-            return {
-                "recall_weighted": "recall_weighted",
-                "precision_weighted": "precision_weighted",
-                "roc_auc_ovr_weighted": "roc_auc_ovr_weighted",
-                "log_loss": metrics.make_scorer(
-                    metrics.log_loss, response_method="predict_proba"
-                ),
-            }
-        return {
+            scorers_to_add["brier_score_loss"] = metrics.make_scorer(
+                metrics.brier_score_loss, response_method="predict_proba"
+            )
+        return scorers_to_add
+    if ml_task == "multiclass-classification":
+        scorers_to_add = {
             "recall_weighted": "recall_weighted",
             "precision_weighted": "precision_weighted",
         }
+        if hasattr(estimator, "predict_proba"):
+            scorers_to_add["roc_auc_ovr_weighted"] = "roc_auc_ovr_weighted"
+            scorers_to_add["log_loss"] = metrics.make_scorer(
+                metrics.log_loss, response_method="predict_proba"
+            )
+        return scorers_to_add
     return {}
 
 
@@ -111,9 +110,11 @@ def _add_scorers(scorers, scorers_to_add, estimator):
             # scikit-learn 1.4. However, because `scoring` is never `None`, this
             # estimator will not have any effect.
             scorers={
-                name: check_scoring(estimator=estimator, scoring=scoring)
-                if isinstance(scoring, str)
-                else scoring
+                name: (
+                    check_scoring(estimator=estimator, scoring=scoring)
+                    if isinstance(scoring, str)
+                    else scoring
+                )
                 for name, scoring in scorers_to_add.items()
             }
         )
