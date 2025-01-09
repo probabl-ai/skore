@@ -5,6 +5,7 @@ import joblib
 import numpy as np
 import pandas as pd
 import pytest
+from sklearn.base import clone
 from sklearn.cluster import KMeans
 from sklearn.datasets import make_classification, make_regression
 from sklearn.ensemble import RandomForestClassifier
@@ -565,8 +566,22 @@ def test_estimator_report_report_metrics_binary(
     result = report.metrics.report_metrics(pos_label=pos_label)
     expected_metrics = ("precision", "recall", "roc_auc", "brier_score")
     # depending on `pos_label`, we report a stats for each class or not for
-    # precision and recall
-    expected_nb_stats = 2 * nb_stats + 2
+    # precision, recall and brier_score
+    expected_nb_stats = 3 * nb_stats + 1
+    _check_results_report_metrics(result, expected_metrics, expected_nb_stats)
+
+    # Repeat the same experiment where we the target labels are not [0, 1] but
+    # ["neg", "pos"]. We check that the brier score is computed for each label.
+    target_names = np.array(["neg", "pos"], dtype=object)
+    pos_label_name = target_names[pos_label] if pos_label is not None else pos_label
+    y_test = target_names[y_test]
+    estimator = clone(estimator).fit(X_test, y_test)
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    result = report.metrics.report_metrics(pos_label=pos_label_name)
+    expected_metrics = ("precision", "recall", "roc_auc", "brier_score")
+    # depending on `pos_label`, we report a stats for each class or not for
+    # precision, recall and brier_score
+    expected_nb_stats = 3 * nb_stats + 1
     _check_results_report_metrics(result, expected_metrics, expected_nb_stats)
 
     estimator, X_test, y_test = binary_classification_data_svc

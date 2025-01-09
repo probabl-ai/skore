@@ -489,6 +489,30 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         pd.DataFrame
             The Brier score.
         """
+        if self._parent._ml_task == "binary-classification" and pos_label is None:
+            # for consistency with the precision and recall, we are going to compute
+            # the brier score for the all possible labels and return a dataframe with
+            # the brier score for each label
+            labels = self._parent._estimator.classes_
+            brier_scores = [
+                self._compute_metric_scores(
+                    metrics.brier_score_loss,
+                    X=X,
+                    y_true=y,
+                    data_source=data_source,
+                    response_method="predict_proba",
+                    metric_name=(
+                        f"Brier score {self._SCORE_OR_LOSS_ICONS['brier_score']}"
+                    ),
+                    pos_label=label,
+                )
+                for label in labels
+            ]
+            results = pd.concat(brier_scores, keys=labels, axis=1)
+            # the labels will be the level 0 and we need to swap it with the metric name
+            results.columns = results.columns.swaplevel(0, 1)
+            return results
+
         return self._compute_metric_scores(
             metrics.brier_score_loss,
             X=X,
