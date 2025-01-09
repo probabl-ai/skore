@@ -25,3 +25,9 @@ class PickleItem(Item):
     @classmethod
     def factory(cls, object: Any) -> PickleItem:
         return cls(dumps(object))
+
+    def as_serializable_dict(self):
+        return super().as_serializable_dict() | {
+            "media_type": "text/markdown",
+            "value": repr(self.object),
+        }
