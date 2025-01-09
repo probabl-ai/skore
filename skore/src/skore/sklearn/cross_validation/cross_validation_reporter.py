@@ -134,7 +134,9 @@ class CrossValidationReporter:
 
         # Extend scorers with other relevant scorers
         scorers_to_add = _get_scorers_to_add(self.estimator, self.y)
-        self._scorers, added_scorers = _add_scorers(self.scorers, scorers_to_add)
+        self._scorers, added_scorers = _add_scorers(
+            self.scorers, scorers_to_add, self.estimator
+        )
 
         self._cv_results = sklearn.model_selection.cross_validate(
             *args,
