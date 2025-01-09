@@ -1,13 +1,49 @@
-name: Reusable skore workflow
+name: backend
 
-on: [workflow_call]
+on:
+  pull_request:
+    paths:
+      - 'skore/src/**'
+      - 'skore/tests/**'
+      - 'skore/pyproject.toml'
+      - 'skore/requirements*.txt'
+      - '.github/workflows/backend.yml'
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 defaults:
   run:
     shell: "bash"
 
 jobs:
-  test-skore:
+  backend-lint:
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip pre-commit
+
+      - name: Lint
+        working-directory: skore/
+        run: pre-commit run --all-files ruff
+
+  backend-test:
     strategy:
       fail-fast: false
       matrix:
@@ -21,14 +57,20 @@ jobs:
           - os: "ubuntu-latest"
             python: "3.12"
             scikit-learn: "1.5"
+          - os: "ubuntu-latest"
+            python: "3.12"
+            scikit-learn: "1.6"
+            coverage: true
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
-          cache: "pip"
+          cache: pip
 
       - name: Restore python-venv
         uses: actions/cache/restore@v4
@@ -75,46 +117,33 @@ jobs:
           path: 'skore/venv'
           key: ${{ steps.cache-python-venv.outputs.cache-primary-key }}
 
-      - name: Lint and test
-        timeout-minutes: 10
-        working-directory: "skore/"
+      - name: Build
+        working-directory: skore/
+        run: python -m build
+
+      - name: Install
+        working-directory: skore/
         run: |
-          # Lint
-          pre-commit run --all-files ruff
-
-          # Build
-          python -m build
-
           # Install `skore` without its dependencies, which are present in the venv
           wheel=(dist/*.whl); python -m pip install --force-reinstall --no-deps "${wheel}"
 
-          # Test
-          python -m pytest --no-cov src/ tests/ -n auto
+      - name: Test without coverage
+        if: ${{ ! matrix.coverage }}
+        timeout-minutes: 10
+        working-directory: skore/
+        run: python -m pytest -n auto src/ tests/ --no-cov
 
-  coverage-skore:
-    runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'pull_request' }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: 3.12
-          cache: "pip"
-      - name: pytest coverage
-        working-directory: "skore/"
+      - name: Test with coverage
+        if: ${{ matrix.coverage }}
+        timeout-minutes: 10
+        working-directory: skore/
         run: |
-          # Install dependencies
-          python -m pip install --upgrade pip
-          python -m pip install --upgrade pre-commit
-          python -m pip install --upgrade build
-          python -m pip install -e .[test]
+          mkdir coverage
+          python -m pytest -n auto src/ tests/ --junitxml=coverage/coverage.xml --cov-config=pyproject.toml --cov | tee coverage/coverage.txt
 
-          # run coverage
-          python -m pytest -n auto --junitxml=coverage.xml --cov=skore src/ tests/ | tee pytest-coverage.txt
-      - name: Pytest coverage comment
-        if: ${{ ! github.event.pull_request.head.repo.fork }}
-        uses: MishaKav/pytest-coverage-comment@main
+      - name: Upload coverage reports
+        if: ${{ matrix.coverage && (github.event_name == 'pull_request') }}
+        uses: actions/upload-artifact@v4
         with:
-          pytest-coverage-path: ./skore/pytest-coverage.txt
-          junitxml-path: ./skore/coverage.xml
-          title: pytest coverage report
+          name: backend-coverage
+          path: skore/coverage/

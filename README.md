@@ -103,13 +103,15 @@ Thank you for considering contributing to skore! Join our mission to promote ope
 
 <br />
 
+<div align="center">
+
   ![license](https://img.shields.io/pypi/l/skore)
   ![python](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue?style=flat&logo=python)
   [![downloads](https://static.pepy.tech/badge/skore/month)](https://pepy.tech/projects/skore)
   [![pypi](https://img.shields.io/pypi/v/skore)](https://pypi.org/project/skore/)
-  ![ci](https://github.com/probabl-ai/skore/actions/workflows/ci.yml/badge.svg?event=push)
   [![Discord](https://img.shields.io/badge/Discord-%235865F2.svg?logo=discord&logoColor=white)](https://discord.probabl.ai/)
 
+</div>
 ---
 
 Brought to you by
