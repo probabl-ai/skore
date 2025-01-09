@@ -461,7 +461,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     @available_if(
         _check_supported_ml_task(supported_ml_tasks=["binary-classification"])
     )
-    def brier_score(self, *, data_source="test", X=None, y=None, pos_label=None):
+    def brier_score(self, *, data_source="test", X=None, y=None):
         """Compute the Brier score.
 
         Parameters
@@ -481,38 +481,15 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             New target on which to compute the metric. By default, we use the target
             provided when creating the reporter.
 
-        pos_label : int, default=None
-            The positive class.
-
         Returns
         -------
         pd.DataFrame
             The Brier score.
         """
-        if self._parent._ml_task == "binary-classification" and pos_label is None:
-            # for consistency with the precision and recall, we are going to compute
-            # the brier score for the all possible labels and return a dataframe with
-            # the brier score for each label
-            labels = self._parent._estimator.classes_
-            brier_scores = [
-                self._compute_metric_scores(
-                    metrics.brier_score_loss,
-                    X=X,
-                    y_true=y,
-                    data_source=data_source,
-                    response_method="predict_proba",
-                    metric_name=(
-                        f"Brier score {self._SCORE_OR_LOSS_ICONS['brier_score']}"
-                    ),
-                    pos_label=label,
-                )
-                for label in labels
-            ]
-            results = pd.concat(brier_scores, keys=labels, axis=1)
-            # the labels will be the level 0 and we need to swap it with the metric name
-            results.columns = results.columns.swaplevel(0, 1)
-            return results
-
+        # The Brier score in scikit-learn request `pos_label` to ensure that the
+        # integral encoding of `y_true` corresponds to the probabilities of the
+        # `pos_label`. Since we get the predictions with `get_response_method`, we
+        # can pass any `pos_label`, they will lead to the same result.
         return self._compute_metric_scores(
             metrics.brier_score_loss,
             X=X,
@@ -520,7 +497,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             data_source=data_source,
             response_method="predict_proba",
             metric_name=f"Brier score {self._SCORE_OR_LOSS_ICONS['brier_score']}",
-            pos_label=pos_label,
+            pos_label=self._parent._estimator.classes_[-1],
         )
 
     @available_if(

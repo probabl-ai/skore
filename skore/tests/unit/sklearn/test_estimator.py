@@ -566,12 +566,12 @@ def test_estimator_report_report_metrics_binary(
     result = report.metrics.report_metrics(pos_label=pos_label)
     expected_metrics = ("precision", "recall", "roc_auc", "brier_score")
     # depending on `pos_label`, we report a stats for each class or not for
-    # precision, recall and brier_score
-    expected_nb_stats = 3 * nb_stats + 1
+    # precision and recall
+    expected_nb_stats = 2 * nb_stats + 2
     _check_results_report_metrics(result, expected_metrics, expected_nb_stats)
 
     # Repeat the same experiment where we the target labels are not [0, 1] but
-    # ["neg", "pos"]. We check that the brier score is computed for each label.
+    # ["neg", "pos"]. We check that we don't get any error.
     target_names = np.array(["neg", "pos"], dtype=object)
     pos_label_name = target_names[pos_label] if pos_label is not None else pos_label
     y_test = target_names[y_test]
@@ -580,8 +580,8 @@ def test_estimator_report_report_metrics_binary(
     result = report.metrics.report_metrics(pos_label=pos_label_name)
     expected_metrics = ("precision", "recall", "roc_auc", "brier_score")
     # depending on `pos_label`, we report a stats for each class or not for
-    # precision, recall and brier_score
-    expected_nb_stats = 3 * nb_stats + 1
+    # precision and recall
+    expected_nb_stats = 2 * nb_stats + 2
     _check_results_report_metrics(result, expected_metrics, expected_nb_stats)
 
     estimator, X_test, y_test = binary_classification_data_svc
