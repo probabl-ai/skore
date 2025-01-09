@@ -320,8 +320,8 @@ class EstimatorReport(_HelpMixin, DirNamesMixin):
 
     def _get_help_panel_title(self):
         return (
-            f"[bold cyan]📓 Tools to diagnose {self.estimator_name} "
-            "estimator[/bold cyan]"
+            f"[bold cyan]📓 Tools to diagnose estimator "
+            "{self.estimator_name}[/bold cyan]"
         )
 
     def _create_help_tree(self):
