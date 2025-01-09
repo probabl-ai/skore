@@ -148,7 +148,6 @@ onMounted(() => {
     align-items: center;
     justify-content: space-between;
     background-color: var(--color-background-primary);
-    color: var(--color-text-primary);
 
     .label {
       display: flex;
@@ -170,6 +169,7 @@ onMounted(() => {
 
       & .text {
         border-radius: var(--radius-xs);
+        color: var(--color-text-primary);
       }
 
       &.has-children {

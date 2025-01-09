@@ -15,3 +15,11 @@
     background-color: var(--color-background-branding);
   }
 }
+
+.simplebar-inverted {
+  .simplebar-scrollbar {
+    &::before {
+      background-color: var(--color-text-tertiary);
+    }
+  }
+}
