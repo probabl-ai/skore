@@ -329,6 +329,35 @@ class EstimatorReport(_HelpMixin, DirNamesMixin):
             "[cyan](↗︎)[/cyan] higher is better [orange1](↘︎)[/orange1] lower is better"
         )
 
+    def _get_attributes_for_help(self):
+        """Get the public attributes to display in help."""
+        attributes = []
+        xy_attributes = []
+
+        for name in dir(self):
+            # Skip private attributes, callables, and accessors
+            if (
+                name.startswith("_")
+                or callable(getattr(self, name))
+                or isinstance(getattr(self, name), _BaseAccessor)
+            ):
+                continue
+
+            # Group X and y attributes separately
+            value = getattr(self, name)
+            if name.startswith(("X_", "y_")):
+                if value is not None:  # Only include non-None X/y attributes
+                    xy_attributes.append(name)
+            else:
+                attributes.append(name)
+
+        # Sort X/y attributes to keep them grouped
+        xy_attributes.sort()
+        attributes.sort()
+
+        # Return X/y attributes first, followed by other attributes
+        return xy_attributes + attributes
+
     def _create_help_tree(self):
         """Create a rich Tree with the available tools and accessor methods."""
         tree = Tree("reporter")
@@ -344,6 +373,7 @@ class EstimatorReport(_HelpMixin, DirNamesMixin):
             methods = accessor._get_methods_for_help()
             methods = accessor._sort_methods_for_help(methods)
 
+            # Add methods
             for name, method in methods:
                 displayed_name = accessor._format_method_name(name)
                 description = accessor._get_method_description(method)
@@ -365,12 +395,19 @@ class EstimatorReport(_HelpMixin, DirNamesMixin):
                         description = sub_obj._get_method_description(method)
                         sub_branch.add(f".{displayed_name.ljust(25)} - {description}")
 
-        # Add base methods last
+        # Add base methods
         base_methods = self._get_methods_for_help()
         base_methods = self._sort_methods_for_help(base_methods)
 
         for name, method in base_methods:
             description = self._get_method_description(method)
             tree.add(f".{name}(...)".ljust(34) + f" - {description}")
+
+        # Add attributes section
+        attributes = self._get_attributes_for_help()
+        if attributes:
+            attr_branch = tree.add("[bold cyan]Attributes[/bold cyan]")
+            for attr in attributes:
+                attr_branch.add(f".{attr}")
 
         return tree
