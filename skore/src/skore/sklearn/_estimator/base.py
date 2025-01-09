@@ -19,7 +19,7 @@ class _HelpMixin:
         for name, method in methods:
             is_private_method = name.startswith("_")
             # we cannot use `isinstance(method, classmethod)` because it is already
-            # already transformed by the decorator `@classmethod`.
+            # transformed by the decorator `@classmethod`.
             is_class_method = inspect.ismethod(method) and method.__self__ is type(self)
             is_help_method = name == "help"
             if not (is_private_method or is_class_method or is_help_method):
