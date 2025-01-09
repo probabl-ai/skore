@@ -1,9 +1,6 @@
 import pytest
-from skore.utils._accessor import (
-    DirNamesMixin,
-    _check_supported_ml_task,
-    _register_accessor,
-)
+from skore.externals._pandas_accessors import DirNamesMixin, _register_accessor
+from skore.utils._accessor import _check_supported_ml_task
 
 
 def test_register_accessor():

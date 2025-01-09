@@ -12,10 +12,10 @@ from sklearn.pipeline import Pipeline
 from sklearn.utils._response import _check_response_method, _get_response_values
 from sklearn.utils.validation import check_is_fitted
 
+from skore.externals._pandas_accessors import DirNamesMixin
 from skore.externals._sklearn_compat import is_clusterer
 from skore.sklearn._estimator.base import _BaseAccessor, _HelpMixin
 from skore.sklearn.find_ml_task import _find_ml_task
-from skore.utils._accessor import DirNamesMixin
 
 
 class EstimatorReport(_HelpMixin, DirNamesMixin):
