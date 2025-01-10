@@ -1,5 +1,7 @@
+import copy
 import inspect
 import time
+import warnings
 from itertools import product
 
 import joblib
@@ -99,6 +101,18 @@ class EstimatorReport(_HelpMixin, DirNamesMixin):
             self._estimator = self._fit_estimator(estimator, X_train, y_train)
         else:  # fit is False
             self._estimator = estimator
+
+        try:
+            self._estimator = copy.deepcopy(self._estimator)
+        except Exception as e:
+            warnings.warn(
+                "Deepcopy failed; using estimator as-is. "
+                "Be aware that modifying the estimator outside of "
+                f"{self.__class__.__name__} will modify the internal estimator. "
+                "Consider using a FrozenEstimator from scikit-learn to prevent this. "
+                f"Original error: {e}",
+                stacklevel=1,
+            )
 
         # private storage to be able to invalidate the cache when the user alters
         # those attributes
