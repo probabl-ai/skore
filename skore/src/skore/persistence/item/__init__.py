@@ -47,6 +47,7 @@ def object_to_item(object: Any) -> Item:
 
 
 def item_to_object(item: Item) -> Any:
+    """Transform an Item into its original object."""
     if isinstance(item, PrimitiveItem):
         return item.primitive
     elif isinstance(item, NumpyArrayItem):
