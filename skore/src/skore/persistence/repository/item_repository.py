@@ -8,17 +8,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from skore.persistence.item import (
-    CrossValidationItem,
-    MediaItem,
-    NumpyArrayItem,
-    PandasDataFrameItem,
-    PandasSeriesItem,
-    PolarsDataFrameItem,
-    PolarsSeriesItem,
-    PrimitiveItem,
-    SklearnBaseEstimatorItem,
-)
+import skore.persistence.item
 
 if TYPE_CHECKING:
     from skore.persistence.item import Item
@@ -34,18 +24,6 @@ class ItemRepository:
     Additionally, it keeps a record of all previously inserted items, by treating the
     storage as a map from keys to *lists of* values.
     """
-
-    ITEM_CLASS_NAME_TO_ITEM_CLASS = {
-        "MediaItem": MediaItem,
-        "NumpyArrayItem": NumpyArrayItem,
-        "PandasDataFrameItem": PandasDataFrameItem,
-        "PandasSeriesItem": PandasSeriesItem,
-        "PolarsDataFrameItem": PolarsDataFrameItem,
-        "PolarsSeriesItem": PolarsSeriesItem,
-        "PrimitiveItem": PrimitiveItem,
-        "CrossValidationItem": CrossValidationItem,
-        "SklearnBaseEstimatorItem": SklearnBaseEstimatorItem,
-    }
 
     def __init__(self, storage: AbstractStorage):
         """
@@ -68,7 +46,7 @@ class ItemRepository:
     @staticmethod
     def __construct_item(value) -> Item:
         item_class_name = value["item_class_name"]
-        item_class = ItemRepository.ITEM_CLASS_NAME_TO_ITEM_CLASS[item_class_name]
+        item_class = getattr(skore.persistence.item, item_class_name)
         item = value["item"]
 
         return item_class(**item)

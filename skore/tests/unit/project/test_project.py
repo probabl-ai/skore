@@ -235,13 +235,8 @@ def test_put_several_nested(in_memory_project):
     assert in_memory_project.get("a") == {"b": "baz"}
 
 
-def test_put_several_lambda(in_memory_project):
-    in_memory_project.put(
-        {
-            "a": "foo",
-            "b": (lambda: "unsupported object"),
-        }
-    )
+def test_put_several_complex(in_memory_project):
+    in_memory_project.put({"a": int, "b": float})
 
     assert in_memory_project.list_item_keys() == ["a", "b"]
 

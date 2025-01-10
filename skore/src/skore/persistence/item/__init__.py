@@ -43,7 +43,7 @@ def object_to_item(object: Any) -> Item:
             #     correct type. If not, they throw a ItemTypeError exception.
             return cls.factory(object)
 
-    return PickleItem(object)
+    return PickleItem.factory(object)
 
 
 def item_to_object(item: Item) -> Any:
@@ -51,9 +51,9 @@ def item_to_object(item: Item) -> Any:
         return item.primitive
     elif isinstance(item, NumpyArrayItem):
         return item.array
-    elif isinstance(item, PandasDataFrameItem) or isinstance(item, PolarsDataFrameItem):
+    elif isinstance(item, (PandasDataFrameItem, PolarsDataFrameItem)):
         return item.dataframe
-    elif isinstance(item, PandasSeriesItem) or isinstance(item, PolarsSeriesItem):
+    elif isinstance(item, (PandasSeriesItem, PolarsSeriesItem)):
         return item.series
     elif isinstance(item, SklearnBaseEstimatorItem):
         return item.estimator

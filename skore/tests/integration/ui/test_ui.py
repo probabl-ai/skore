@@ -337,3 +337,32 @@ def test_activity_feed(monkeypatch, client, in_memory_project):
         ("5", 5),
         ("4", 5),
     ]
+
+
+def test_get_items_with_pickle_item(
+    monkeypatch,
+    MockDatetime,
+    mock_nowstr,
+    client,
+    in_memory_project,
+):
+    monkeypatch.setattr("skore.persistence.item.item.datetime", MockDatetime)
+    in_memory_project.put("pickle", object)
+
+    response = client.get("/api/project/items")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "items": {
+            "pickle": [
+                {
+                    "created_at": mock_nowstr,
+                    "updated_at": mock_nowstr,
+                    "name": "pickle",
+                    "media_type": "text/markdown",
+                    "value": "<class 'object'>",
+                },
+            ],
+        },
+        "views": {},
+    }
