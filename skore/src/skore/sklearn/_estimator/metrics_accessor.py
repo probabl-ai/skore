@@ -42,7 +42,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     }
 
     def __init__(self, parent):
-        super().__init__(parent, icon="📏")
+        super().__init__(parent, icon=":straight_ruler:")
 
     # TODO: should build on the `add_scorers` function
     def report_metrics(
@@ -796,7 +796,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         tree = super()._create_help_tree()
 
         # Add plot methods in a separate branch
-        plot_branch = tree.add("[bold cyan].plot 🎨[/bold cyan]")
+        plot_branch = tree.add("[bold cyan].plot :art:[/bold cyan]")
         plot_methods = self.plot._get_methods_for_help()
         plot_methods = self.plot._sort_methods_for_help(plot_methods)
 
@@ -829,7 +829,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
     """Plotting methods for the metrics accessor."""
 
     def __init__(self, parent):
-        super().__init__(parent._parent, icon="🎨")
+        super().__init__(parent._parent, icon=":art:")
         self._metrics_parent = parent
 
     def _get_display(
