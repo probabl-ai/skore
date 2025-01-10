@@ -7,6 +7,7 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 import os
+import sphinx_autosummary_accessors
 from sphinx_gallery.sorting import ExplicitOrder
 
 project = "skore"
@@ -27,11 +28,16 @@ extensions = [
     "sphinx_gallery.gen_gallery",
     "sphinx_copybutton",
     "sphinx_tabs.tabs",
+    "sphinx_autosummary_accessors",
 ]
-templates_path = ["_templates"]
 exclude_patterns = ["build", "Thumbs.db", ".DS_Store"]
 
+# The reST default role (used for this markup: `text`) to use for all
+# documents.
+default_role = "literal"
+
 # Add any paths that contain templates here, relative to this directory.
+autosummary_generate = True  # generate stubs for all classes
 templates_path = ["_templates"]
 
 # -- Options for HTML output -------------------------------------------------
@@ -107,7 +113,7 @@ html_theme_options = {
     # Use :html_theme.sidebar_secondary.remove: for file-wide removal
     "secondary_sidebar_items": {
         "**": ["page-toc", "sourcelink", "sg_download_links", "sg_launcher_links"],
-        "index": [], # hide secondary sidebar items for the landing page
+        "index": [],  # hide secondary sidebar items for the landing page
         "install": [],
     },
     "external_links": [
