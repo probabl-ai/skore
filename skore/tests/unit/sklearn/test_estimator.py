@@ -946,11 +946,8 @@ def test_estimator_has_side_effects():
     )
 
     predictions_before = report.estimator.predict_proba(X_test)
-
-    estimator.fit(X_train2, y_train2)
-
+    estimator.fit(X_test, y_test)
     predictions_after = report.estimator.predict_proba(X_test)
-
     np.testing.assert_array_equal(predictions_before, predictions_after)
 
 
