@@ -65,12 +65,17 @@ You can find information on the latest version [here](https://anaconda.org/conda
 2. Evaluate your model using `skore.CrossValidationReporter`:
     ```python
     from sklearn.datasets import load_iris
-    from sklearn.svm import SVC
+    from sklearn.pipeline import Pipeline
+    from sklearn.preprocessing import StandardScaler
+    from sklearn.linear_model import LogisticRegression
 
     X, y = load_iris(return_X_y=True)
-    clf = SVC(kernel="linear", C=1, random_state=0)
+    clf_pipeline = Pipeline([
+        ('scaler', StandardScaler()),
+        ('clf', LogisticRegression())
+    ])
 
-    reporter = skore.CrossValidationReporter(clf, X, y, cv=5)
+    reporter = skore.CrossValidationReporter(clf_pipeline, X, y, cv=5)
 
     # Store the results in the project
     my_project.put("cv_reporter", reporter)
