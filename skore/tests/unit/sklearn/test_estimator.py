@@ -187,7 +187,8 @@ def test_estimator_report_from_fitted_estimator(binary_classification_data, fit)
     estimator, X, y = binary_classification_data
     report = EstimatorReport(estimator, fit=fit, X_test=X, y_test=y)
 
-    assert report.estimator is estimator  # we should not clone the estimator
+    check_is_fitted(report.estimator)
+    assert isinstance(report.estimator, RandomForestClassifier)
     assert report.X_train is None
     assert report.y_train is None
     assert report.X_test is X
@@ -209,7 +210,8 @@ def test_estimator_report_from_fitted_pipeline(binary_classification_data_pipeli
     estimator, X, y = binary_classification_data_pipeline
     report = EstimatorReport(estimator, X_test=X, y_test=y)
 
-    assert report.estimator is estimator  # we should not clone the estimator
+    check_is_fitted(report.estimator)
+    assert isinstance(report.estimator, Pipeline)
     assert report.estimator_name == estimator[-1].__class__.__name__
     assert report.X_train is None
     assert report.y_train is None
@@ -925,3 +927,50 @@ def test_estimator_report_get_X_y_and_data_source_hash(data_source):
         assert X is X_test
         assert y is y_test
         assert data_source_hash == joblib.hash((X_test, y_test))
+
+
+@pytest.mark.parametrize("prefit_estimator", [True, False])
+def test_estimator_has_side_effects(prefit_estimator):
+    """Re-fitting the estimator outside the EstimatorReport
+    should not have an effect on the EstimatorReport's internal estimator."""
+    X, y = make_classification(n_classes=2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+
+    estimator = LogisticRegression()
+    if prefit_estimator:
+        estimator.fit(X_train, y_train)
+
+    report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        X_test=X_test,
+        y_train=y_train,
+        y_test=y_test,
+    )
+
+    predictions_before = report.estimator.predict_proba(X_test)
+    estimator.fit(X_test, y_test)
+    predictions_after = report.estimator.predict_proba(X_test)
+    np.testing.assert_array_equal(predictions_before, predictions_after)
+
+
+def test_estimator_has_no_deep_copy():
+    """Check that we raise a warning if the deep copy failed with a fitted
+    estimator."""
+    X, y = make_classification(n_classes=2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+
+    estimator = LogisticRegression()
+    # Make it so deepcopy does not work
+    estimator.__reduce_ex__ = None
+    estimator.__reduce__ = None
+
+    with pytest.warns(UserWarning, match="Deepcopy failed"):
+        EstimatorReport(
+            estimator,
+            fit=False,
+            X_train=X_train,
+            X_test=X_test,
+            y_train=y_train,
+            y_test=y_test,
+        )
