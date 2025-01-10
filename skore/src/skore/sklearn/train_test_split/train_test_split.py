@@ -51,8 +51,8 @@ HTML_WARNING_TEMPLATE = """
         text-wrap: balance;
     }}
 }}
-.jp-RenderedHTMLCommon .warning p {{
-    margin-bottom: 0;
+.jp-RenderedHTMLCommon .warning .content p {{
+    margin-bottom: 1em;
 }}
 </style>
 <div class="warning">
