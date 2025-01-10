@@ -31,6 +31,7 @@ class PandasDataFrameItem(Item):
         dataframe_json: str,
         created_at: str | None = None,
         updated_at: str | None = None,
+        note: str | None = None,
     ):
         """
         Initialize a PandasDataFrameItem.
@@ -45,8 +46,10 @@ class PandasDataFrameItem(Item):
             The creation timestamp in ISO format.
         updated_at : str
             The last update timestamp in ISO format.
+        note : str | None
+            An optional note.
         """
-        super().__init__(created_at, updated_at)
+        super().__init__(created_at, updated_at, note)
 
         self.index_json = index_json
         self.dataframe_json = dataframe_json

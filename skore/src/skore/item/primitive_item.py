@@ -50,6 +50,7 @@ class PrimitiveItem(Item):
         primitive: Primitive,
         created_at: str | None = None,
         updated_at: str | None = None,
+        note: str | None = None,
     ):
         """
         Initialize a PrimitiveItem.
@@ -62,8 +63,10 @@ class PrimitiveItem(Item):
             The creation timestamp as ISO format.
         updated_at : str, optional
             The last update timestamp as ISO format.
+        note : str | None
+            An optional note.
         """
-        super().__init__(created_at, updated_at)
+        super().__init__(created_at, updated_at, note)
 
         self.primitive = primitive
 

@@ -30,6 +30,7 @@ class SklearnBaseEstimatorItem(Item):
         estimator_skops_untrusted_types: list[str],
         created_at: str | None = None,
         updated_at: str | None = None,
+        note: str | None = None,
     ):
         """
         Initialize a SklearnBaseEstimatorItem.
@@ -46,8 +47,10 @@ class SklearnBaseEstimatorItem(Item):
             The creation timestamp in ISO format.
         updated_at : str, optional
             The last update timestamp in ISO format.
+        note : str | None
+            An optional note.
         """
-        super().__init__(created_at, updated_at)
+        super().__init__(created_at, updated_at, note)
 
         self.estimator_html_repr = estimator_html_repr
         self.estimator_skops = estimator_skops

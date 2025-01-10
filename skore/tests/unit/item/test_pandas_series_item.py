@@ -88,6 +88,7 @@ class TestPandasSeriesItem:
         assert serializable == {
             "updated_at": mock_nowstr,
             "created_at": mock_nowstr,
+            "note": None,
             "media_type": "text/markdown",
             "value": series.to_list(),
         }
