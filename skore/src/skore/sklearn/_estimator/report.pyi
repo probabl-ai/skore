@@ -3,8 +3,8 @@ from typing import Any, Literal, Optional, Union
 import numpy as np
 from sklearn.base import BaseEstimator
 
-from skore.sklearn._estimator.base import _HelpMixin
 from skore.sklearn._estimator.metrics_accessor import _MetricsAccessor
+from skore.sklearn.base import _HelpMixin
 
 class EstimatorReport(_HelpMixin):
     _ACCESSOR_CONFIG: dict[str, dict[str, str]]

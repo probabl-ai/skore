@@ -76,6 +76,99 @@ class _HelpMixin:
         return console.file.getvalue()
 
 
+class _BaseReport(_HelpMixin):
+    """Base class for all reports."""
+
+    def _get_help_panel_title(self):
+        return ""
+
+    def _get_help_legend(self):
+        return ""
+
+    def _get_attributes_for_help(self):
+        """Get the public attributes to display in help."""
+        attributes = []
+        xy_attributes = []
+
+        for name in dir(self):
+            # Skip private attributes, callables, and accessors
+            if (
+                name.startswith("_")
+                or callable(getattr(self, name))
+                or isinstance(getattr(self, name), _BaseAccessor)
+            ):
+                continue
+
+            # Group X and y attributes separately
+            value = getattr(self, name)
+            if name.startswith(("X_", "y_")):
+                if value is not None:  # Only include non-None X/y attributes
+                    xy_attributes.append(name)
+            else:
+                attributes.append(name)
+
+        # Sort X/y attributes to keep them grouped
+        xy_attributes.sort()
+        attributes.sort()
+
+        # Return X/y attributes first, followed by other attributes
+        return xy_attributes + attributes
+
+    def _create_help_tree(self):
+        """Create a rich Tree with the available tools and accessor methods."""
+        tree = Tree("reporter")
+
+        # Add accessor methods first
+        for accessor_attr, config in self._ACCESSOR_CONFIG.items():
+            accessor = getattr(self, accessor_attr)
+            branch = tree.add(
+                f"[bold cyan].{config['name']} {config['icon']}[/bold cyan]"
+            )
+
+            # Add main accessor methods first
+            methods = accessor._get_methods_for_help()
+            methods = accessor._sort_methods_for_help(methods)
+
+            # Add methods
+            for name, method in methods:
+                displayed_name = accessor._format_method_name(name)
+                description = accessor._get_method_description(method)
+                branch.add(f".{displayed_name} - {description}")
+
+            # Add sub-accessors after main methods
+            for sub_attr, sub_obj in inspect.getmembers(accessor):
+                if isinstance(sub_obj, _BaseAccessor) and not sub_attr.startswith("_"):
+                    sub_branch = branch.add(
+                        f"[bold cyan].{sub_attr} {sub_obj._icon}[/bold cyan]"
+                    )
+
+                    # Add sub-accessor methods
+                    sub_methods = sub_obj._get_methods_for_help()
+                    sub_methods = sub_obj._sort_methods_for_help(sub_methods)
+
+                    for name, method in sub_methods:
+                        displayed_name = sub_obj._format_method_name(name)
+                        description = sub_obj._get_method_description(method)
+                        sub_branch.add(f".{displayed_name.ljust(25)} - {description}")
+
+        # Add base methods
+        base_methods = self._get_methods_for_help()
+        base_methods = self._sort_methods_for_help(base_methods)
+
+        for name, method in base_methods:
+            description = self._get_method_description(method)
+            tree.add(f".{name}(...)".ljust(34) + f" - {description}")
+
+        # Add attributes section
+        attributes = self._get_attributes_for_help()
+        if attributes:
+            attr_branch = tree.add("[bold cyan]Attributes[/bold cyan]")
+            for attr in attributes:
+                attr_branch.add(f".{attr}")
+
+        return tree
+
+
 class _BaseAccessor(_HelpMixin):
     """Base class for all accessors."""
 
