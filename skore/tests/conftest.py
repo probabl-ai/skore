@@ -7,6 +7,13 @@ from skore.project import Project
 from skore.view.view_repository import ViewRepository
 
 
+def pytest_configure(config):
+    # Use matplotlib agg backend during the tests including doctests
+    import matplotlib
+
+    matplotlib.use("agg")
+
+
 @pytest.fixture
 def mock_now():
     return datetime.now(tz=timezone.utc)
@@ -37,3 +44,21 @@ def in_memory_project():
         item_repository=item_repository,
         view_repository=view_repository,
     )
+
+
+@pytest.fixture(scope="function")
+def pyplot():
+    """Setup and teardown fixture for matplotlib.
+
+    This fixture closes the figures before and after running the functions.
+
+    Returns
+    -------
+    pyplot : module
+        The ``matplotlib.pyplot`` module.
+    """
+    from matplotlib import pyplot
+
+    pyplot.close("all")
+    yield pyplot
+    pyplot.close("all")

@@ -6,11 +6,12 @@ from rich.console import Console
 from rich.theme import Theme
 
 from skore.project import Project, open
-from skore.sklearn import CrossValidationReporter, train_test_split
+from skore.sklearn import CrossValidationReporter, EstimatorReport, train_test_split
 from skore.utils._show_versions import show_versions
 
 __all__ = [
     "CrossValidationReporter",
+    "EstimatorReport",
     "open",
     "Project",
     "show_versions",
