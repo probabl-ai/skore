@@ -73,7 +73,7 @@ my_project.put("my_int", 16)
 # We retrieve the history of the ``my_int`` item:
 
 # %%
-item_histories = my_project.get_item_versions("my_int")
+item_histories = my_project.get_item_versions("my_int")  # TO CHANGE /!\
 
 # %%
 # We can print the first history (first iteration) of this item:

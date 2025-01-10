@@ -119,25 +119,19 @@ def my_func(x):
 )
 
 # %%
-# Moreover, we can also explicitly tell skore the media type of an object, for example
-# in HTML:
+# Moreover, we can also explicitly tell skore the way we want to display an object, for
+# example in HTML:
 
 # %%
-from skore.item import MediaItem
 
-my_project.put_item(
+my_project.put(
     "my_string_3",
-    MediaItem.factory(
-        "<p><h1>Title</h1> <b>bold</b>, <i>italic</i>, etc.</p>", media_type="text/html"
-    ),
+    "<p><h1>Title</h1> <b>bold</b>, <i>italic</i>, etc.</p>",
+    display_as="html",
 )
 
 # %%
-# .. note::
-#   We used :func:`~skore.Project.put_item` instead of :func:`~skore.Project.put`.
-
-# %%
-# Note that the media type is only used for the UI, and not in this notebook at hand:
+# Note that the `display_as` is only used for the UI, and not in this notebook at hand:
 
 # %%
 my_project.get("my_string_3")
