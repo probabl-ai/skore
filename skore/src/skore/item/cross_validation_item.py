@@ -14,7 +14,7 @@ import json
 import re
 import statistics
 from functools import cached_property
-from typing import TYPE_CHECKING, Any, Literal, TypedDict, Union
+from typing import TYPE_CHECKING, Any, Literal, TypedDict
 
 import numpy
 import plotly.graph_objects
@@ -136,11 +136,11 @@ class CrossValidationItem(Item):
         cv_results_serialized: dict,
         estimator_info: EstimatorInfo,
         X_info: dict,
-        y_info: Union[dict, None],
+        y_info: dict | None,
         plots_bytes: dict[str, bytes],
         cv_info: dict,
-        created_at: Union[str, None] = None,
-        updated_at: Union[str, None] = None,
+        created_at: str | None = None,
+        updated_at: str | None = None,
     ):
         """
         Initialize a CrossValidationItem.
