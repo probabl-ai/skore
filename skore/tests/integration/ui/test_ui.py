@@ -184,10 +184,6 @@ def test_serialize_cross_validation_item(
         lambda _: {},
     )
     monkeypatch.setattr(
-        "skore.sklearn.cross_validation.cross_validation_reporter.plot_cross_validation_timing_normalized",
-        lambda _: {},
-    )
-    monkeypatch.setattr(
         "skore.sklearn.cross_validation.cross_validation_reporter.plot_cross_validation_timing",
         lambda _: {},
     )
@@ -214,9 +210,24 @@ def test_serialize_cross_validation_item(
         "media_type": "application/vnd.skore.cross_validation+json",
         "value": {
             "scalar_results": [
-                {"name": "Mean test score", "value": 1.0, "stddev": 0.0},
-                {"name": "Mean score time (seconds)", "value": 1.0, "stddev": 0.0},
-                {"name": "Mean fit time (seconds)", "value": 1.0, "stddev": 0.0},
+                {
+                    "name": "Mean test score",
+                    "value": 1.0,
+                    "stddev": 0.0,
+                    "favorability": "greater_is_better",
+                },
+                {
+                    "name": "Mean score time (seconds)",
+                    "value": 1.0,
+                    "stddev": 0.0,
+                    "favorability": "lower_is_better",
+                },
+                {
+                    "name": "Mean fit time (seconds)",
+                    "value": 1.0,
+                    "stddev": 0.0,
+                    "favorability": "lower_is_better",
+                },
             ],
             "tabular_results": [
                 {
@@ -229,6 +240,11 @@ def test_serialize_cross_validation_item(
                         [1.0, 1.0, 1.0],
                         [1.0, 1.0, 1.0],
                     ],
+                    "favorability": [
+                        "greater_is_better",
+                        "lower_is_better",
+                        "lower_is_better",
+                    ],
                 }
             ],
             "plots": [
@@ -238,10 +254,6 @@ def test_serialize_cross_validation_item(
                 },
                 {
                     "name": "Timings",
-                    "value": json.loads(plotly.io.to_json({}, engine="json")),
-                },
-                {
-                    "name": "Normalized timings",
                     "value": json.loads(plotly.io.to_json({}, engine="json")),
                 },
             ],

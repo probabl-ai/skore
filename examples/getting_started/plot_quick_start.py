@@ -12,7 +12,7 @@ Quick start
 # %%
 import skore
 
-my_project = skore.create("quick_start", overwrite=True)
+my_project = skore.open("quick_start", overwrite=True)
 
 # %%
 # This will create a skore project directory named ``quick_start.skore`` in your
@@ -41,9 +41,6 @@ my_project.put("cv_reporter", reporter)
 
 # %%
 reporter.plots.scores
-
-# %%
-reporter.plots.timing_normalized
 
 # %%
 # Finally, from your shell (in the same directory), start the UI:

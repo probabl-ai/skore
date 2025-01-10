@@ -1,4 +1,3 @@
-import os
 from io import BytesIO
 
 import altair
@@ -14,17 +13,10 @@ from PIL import Image
 from sklearn.ensemble import RandomForestClassifier
 from skore.exceptions import (
     InvalidProjectNameError,
-    ProjectAlreadyExistsError,
     ProjectCreationError,
 )
 from skore.persistence.view.view import View
-from skore.project import (
-    Project,
-    create,
-    load,
-)
-from skore.project.create import _validate_project_name
-from skore.project.load import ProjectLoadError
+from skore.project.create import _create, _validate_project_name
 
 
 def test_put_string_item(in_memory_project):
@@ -145,25 +137,6 @@ def test_put_rf_model(in_memory_project, monkeypatch):
     model.fit(numpy.array([[1, 2], [3, 4]]), [0, 1])
     in_memory_project.put("rf_model", model)  # ScikitLearnModelItem
     assert isinstance(in_memory_project.get("rf_model"), RandomForestClassifier)
-
-
-def test_load(tmp_path):
-    with pytest.raises(ProjectLoadError):
-        load("/empty")
-
-    # Project path must end with ".skore"
-    project_path = tmp_path.parent / (tmp_path.name + ".skore")
-    os.mkdir(project_path)
-    os.mkdir(project_path / "items")
-    os.mkdir(project_path / "views")
-
-    p = load(project_path)
-    assert isinstance(p, Project)
-
-    # Test without `.skore`
-    os.chdir(tmp_path.parent)
-    p = load(tmp_path.name)
-    assert isinstance(p, Project)
 
 
 def test_put(in_memory_project):
@@ -321,30 +294,30 @@ def test_validate_project_name(project_name, expected):
 
 @pytest.mark.parametrize("project_name", ["hello", "hello.skore"])
 def test_create_project(project_name, tmp_path):
-    create(project_name, working_dir=tmp_path)
+    _create(tmp_path / project_name)
     assert (tmp_path / "hello.skore").exists()
 
 
 # TODO: If using fixtures in test cases is possible, join this with
 # `test_create_project`
 def test_create_project_absolute_path(tmp_path):
-    create(tmp_path / "hello")
+    _create(tmp_path / "hello")
     assert (tmp_path / "hello.skore").exists()
 
 
 def test_create_project_fails_if_file_exists(tmp_path):
-    create(tmp_path / "hello")
+    _create(tmp_path / "hello")
     assert (tmp_path / "hello.skore").exists()
-    with pytest.raises(ProjectAlreadyExistsError):
-        create(tmp_path / "hello")
+    with pytest.raises(FileExistsError):
+        _create(tmp_path / "hello")
 
 
 def test_create_project_fails_if_permission_denied(tmp_path):
     with pytest.raises(ProjectCreationError):
-        create("/")
+        _create("/")
 
 
 @pytest.mark.parametrize("project_name", ["hello.txt", "%%%", "COM1"])
 def test_create_project_fails_if_invalid_name(project_name, tmp_path):
     with pytest.raises(ProjectCreationError):
-        create(project_name, working_dir=tmp_path)
+        _create(tmp_path / project_name)

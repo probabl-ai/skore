@@ -128,9 +128,8 @@ onMounted(() => {
       transition: font-weight var(--animation-duration) var(--animation-easing);
 
       &[contenteditable="true"] {
-        background-color: var(--color-background-branding);
-        caret-color: var(--color-text-button-primary);
-        color: var(--color-text-button-primary);
+        caret-color: var(--color-text-branding);
+        color: var(--color-text-primary);
         cursor: text;
       }
     }
