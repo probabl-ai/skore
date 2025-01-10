@@ -164,6 +164,15 @@ html_theme_options = {
     "navbar_start": ["navbar-logo", "version-switcher"],
     "navbar_center": ["navbar-nav"],
     "navbar_end": ["theme-switcher", "navbar-icon-links"],
+    "use_edit_page_button": True,  # add an edit button
+}
+
+# Configure edit button to GitHub
+html_context = {
+    "github_user": "probabl-ai",
+    "github_repo": "skore",
+    "github_version": "main",
+    "doc_path": "sphinx",
 }
 
 # Plausible Analytics
