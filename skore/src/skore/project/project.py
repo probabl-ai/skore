@@ -289,7 +289,9 @@ class Project:
         # Annotate first version of key "key"
         >>> project.set_note("key", "message", version=0)  # doctest: +SKIP
         """
-        pass
+        return self.item_repository.set_item_note(
+            key=key, message=message, version=version
+        )
 
     def get_note(self, key: str, *, version=-1) -> Union[str, None]:
         """Retrieve a note previously attached to key ``key``.
@@ -319,7 +321,7 @@ class Project:
         # Retrieve note attached to first version of key "key"
         >>> project.get_note("key", version=0)  # doctest: +SKIP
         """
-        pass
+        return self.item_repository.get_item_note(key=key, version=version)
 
     def delete_note(self, key: str, *, version=-1):
         """Delete a note previously attached to key ``key``.
@@ -347,4 +349,4 @@ class Project:
         # Delete note attached to first version of key "key"
         >>> project.delete_note("key", version=0)  # doctest: +SKIP
         """
-        pass
+        return self.item_repository.delete_item_note(key=key, version=version)
