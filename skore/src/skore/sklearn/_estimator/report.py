@@ -5,17 +5,16 @@ from itertools import product
 
 import joblib
 import numpy as np
-from rich.progress import track
 from sklearn.base import clone
 from sklearn.exceptions import NotFittedError
 from sklearn.pipeline import Pipeline
-from sklearn.utils._response import _check_response_method, _get_response_values
 from sklearn.utils.validation import check_is_fitted
 
 from skore.externals._pandas_accessors import DirNamesMixin
 from skore.externals._sklearn_compat import is_clusterer
-from skore.sklearn._base import _BaseReport
+from skore.sklearn._base import _BaseReport, _get_cached_response_values
 from skore.sklearn.find_ml_task import _find_ml_task
+from skore.utils._progress_bar import ProgressDecorator, ProgressManager
 
 
 class EstimatorReport(_BaseReport, DirNamesMixin):
@@ -123,6 +122,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self._X_test = X_test
         self._y_test = y_test
 
+        self._parent_progress = None
+
         self._initialize_state()
 
     def _initialize_state(self):
@@ -142,62 +143,56 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         """Clean the cache."""
         self._cache = {}
 
+    @ProgressDecorator(description="Estimator predictions")
     def cache_predictions(self, response_methods="auto", n_jobs=None):
-        """Force caching of estimator's predictions.
+        progress = self._progress_info["current_progress"]
+        task = self._progress_info["current_task"]
 
-        Parameters
-        ----------
-        response_methods : "auto" or list of str, default="auto"
-            The response methods to precompute. If "auto", the response methods are
-            inferred from the ml task: for classification we compute the response of
-            the `predict_proba`, `decision_function` and `predict` methods; for
-            regression we compute the response of the `predict` method.
+        try:
+            if self._ml_task in ("binary-classification", "multiclass-classification"):
+                if response_methods == "auto":
+                    response_methods = ["predict"]
+                    if hasattr(self._estimator, "predict_proba"):
+                        response_methods.append("predict_proba")
+                    if hasattr(self._estimator, "decision_function"):
+                        response_methods.append("decision_function")
+                pos_labels = self._estimator.classes_
+            else:
+                if response_methods == "auto":
+                    response_methods = ["predict"]
+                pos_labels = [None]
 
-        n_jobs : int or None, default=None
-            The number of jobs to run in parallel. None means 1 unless in a
-            joblib.parallel_backend context. -1 means using all processors.
-        """
-        if self._ml_task in ("binary-classification", "multiclass-classification"):
-            if response_methods == "auto":
-                response_methods = ("predict",)
-                if hasattr(self._estimator, "predict_proba"):
-                    response_methods = ("predict_proba",)
-                if hasattr(self._estimator, "decision_function"):
-                    response_methods = ("decision_function",)
-            pos_labels = self._estimator.classes_
-        else:
-            if response_methods == "auto":
-                response_methods = ("predict",)
-            pos_labels = [None]
+            data_sources = [("test", self._X_test)]
+            if self._X_train is not None:
+                data_sources.append(("train", self._X_train))
 
-        data_sources = ("test",)
-        Xs = (self._X_test,)
-        if self._X_train is not None:
-            data_sources = ("train",)
-            Xs = (self._X_train,)
-
-        parallel = joblib.Parallel(n_jobs=n_jobs, return_as="generator_unordered")
-        generator = parallel(
-            joblib.delayed(self._get_cached_response_values)(
-                estimator_hash=self._hash,
-                estimator=self._estimator,
-                X=X,
-                response_method=response_method,
-                pos_label=pos_label,
-                data_source=data_source,
+            total_iterations = (
+                len(response_methods) * len(pos_labels) * len(data_sources)
             )
-            for response_method, pos_label, data_source, X in product(
-                response_methods, pos_labels, data_sources, Xs
+            progress.update(task, total=total_iterations)
+
+            parallel = joblib.Parallel(n_jobs=n_jobs, return_as="generator_unordered")
+            generator = parallel(
+                joblib.delayed(_get_cached_response_values)(
+                    cache=self._cache,
+                    estimator_hash=self._hash,
+                    estimator=self._estimator,
+                    X=X,
+                    response_method=response_method,
+                    pos_label=pos_label,
+                    data_source=data_source,
+                )
+                for response_method, pos_label, (data_source, X) in product(
+                    response_methods, pos_labels, data_sources
+                )
             )
-        )
-        # trigger the computation
-        list(
-            track(
-                generator,
-                total=len(response_methods) * len(pos_labels) * len(data_sources),
-                description="Caching predictions",
-            )
-        )
+
+            for _ in generator:
+                progress.update(task, advance=1, refresh=True)
+
+        finally:
+            if self._parent_progress is None:
+                ProgressManager.stop_progress()
 
     @property
     def estimator(self):
@@ -257,78 +252,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         else:
             name = self._estimator.__class__.__name__
         return name
-
-    def _get_cached_response_values(
-        self,
-        *,
-        estimator_hash,
-        estimator,
-        X,
-        response_method,
-        pos_label=None,
-        data_source="test",
-        data_source_hash=None,
-    ):
-        """Compute or load from local cache the response values.
-
-        Parameters
-        ----------
-        estimator_hash : int
-            A hash associated with the estimator such that we can retrieve the data from
-            the cache.
-
-        estimator : estimator object
-            The estimator.
-
-        X : {array-like, sparse matrix} of shape (n_samples, n_features)
-            The data.
-
-        response_method : str
-            The response method.
-
-        pos_label : str, default=None
-            The positive label.
-
-        data_source : {"test", "train", "X_y"}, default="test"
-            The data source to use.
-
-            - "test" : use the test set provided when creating the reporter.
-            - "train" : use the train set provided when creating the reporter.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
-
-        data_source_hash : int or None
-            The hash of the data source when `data_source` is "X_y".
-
-        Returns
-        -------
-        array-like of shape (n_samples,) or (n_samples, n_outputs)
-            The response values.
-        """
-        prediction_method = _check_response_method(estimator, response_method).__name__
-        if prediction_method in ("predict_proba", "decision_function"):
-            # pos_label is only important in classification and with probabilities
-            # and decision functions
-            cache_key = (estimator_hash, pos_label, prediction_method, data_source)
-        else:
-            cache_key = (estimator_hash, prediction_method, data_source)
-
-        if data_source == "X_y":
-            data_source_hash = joblib.hash(X)
-            cache_key += (data_source_hash,)
-
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-
-        predictions, _ = _get_response_values(
-            estimator,
-            X=X,
-            response_method=prediction_method,
-            pos_label=pos_label,
-            return_response_method_used=False,
-        )
-        self._cache[cache_key] = predictions
-
-        return predictions
 
     ####################################################################################
     # Methods related to the help and repr

@@ -5,6 +5,7 @@ import joblib
 from rich.console import Console, Group
 from rich.panel import Panel
 from rich.tree import Tree
+from sklearn.utils._response import _check_response_method, _get_response_values
 
 from skore.externals._sklearn_compat import is_clusterer
 
@@ -265,3 +266,76 @@ class _BaseAccessor(_HelpMixin):
                 f"Invalid data source: {data_source}. Possible values are: "
                 "test, train, X_y."
             )
+
+
+def _get_cached_response_values(
+    *,
+    cache,
+    estimator_hash,
+    estimator,
+    X,
+    response_method,
+    pos_label=None,
+    data_source="test",
+    data_source_hash=None,
+):
+    """Compute or load from local cache the response values.
+
+    Parameters
+    ----------
+    estimator_hash : int
+        A hash associated with the estimator such that we can retrieve the data from
+        the cache.
+
+    estimator : estimator object
+        The estimator.
+
+    X : {array-like, sparse matrix} of shape (n_samples, n_features)
+        The data.
+
+    response_method : str
+        The response method.
+
+    pos_label : str, default=None
+        The positive label.
+
+    data_source : {"test", "train", "X_y"}, default="test"
+        The data source to use.
+
+        - "test" : use the test set provided when creating the reporter.
+        - "train" : use the train set provided when creating the reporter.
+        - "X_y" : use the provided `X` and `y` to compute the metric.
+
+    data_source_hash : int or None
+        The hash of the data source when `data_source` is "X_y".
+
+    Returns
+    -------
+    array-like of shape (n_samples,) or (n_samples, n_outputs)
+        The response values.
+    """
+    prediction_method = _check_response_method(estimator, response_method).__name__
+    if prediction_method in ("predict_proba", "decision_function"):
+        # pos_label is only important in classification and with probabilities
+        # and decision functions
+        cache_key = (estimator_hash, pos_label, prediction_method, data_source)
+    else:
+        cache_key = (estimator_hash, prediction_method, data_source)
+
+    if data_source == "X_y":
+        data_source_hash = joblib.hash(X)
+        cache_key += (data_source_hash,)
+
+    if cache_key in cache:
+        return cache[cache_key]
+
+    predictions, _ = _get_response_values(
+        estimator,
+        X=X,
+        response_method=prediction_method,
+        pos_label=pos_label,
+        return_response_method_used=False,
+    )
+    cache[cache_key] = predictions
+
+    return predictions

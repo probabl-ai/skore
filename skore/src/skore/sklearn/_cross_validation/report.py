@@ -1,13 +1,18 @@
+import time
+
 import joblib
+import numpy as np
 from rich.progress import track
-from sklearn.base import is_classifier
+from sklearn.base import clone, is_classifier
 from sklearn.model_selection import check_cv
+from sklearn.pipeline import Pipeline
 
 from skore.externals._pandas_accessors import DirNamesMixin
 from skore.externals._sklearn_compat import _safe_indexing
 from skore.sklearn._base import _BaseReport
 from skore.sklearn._estimator.report import EstimatorReport
 from skore.sklearn.find_ml_task import _find_ml_task
+from skore.utils._progress_bar import ProgressDecorator, ProgressManager
 
 
 def _generate_estimator_report(estimator, X, y, train_indices, test_indices):
@@ -71,7 +76,15 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         cv=None,
         n_jobs=None,
     ):
-        cv = check_cv(cv, y, classifier=is_classifier(estimator))
+        self._estimator = clone(estimator)
+
+        # private storage to be able to invalidate the cache when the user alters
+        # those attributes
+        self._X = X
+        self._y = y
+        self._cv = check_cv(cv, y, classifier=is_classifier(estimator))
+        self._n_jobs = n_jobs
+
         parallel = joblib.Parallel(n_jobs=n_jobs, return_as="generator_unordered")
         # do not split the data to take advantage of the memory mapping
         generator = parallel(
@@ -82,15 +95,88 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 train_indices,
                 test_indices,
             )
-            for train_indices, test_indices in cv.split(X, y)
+            for train_indices, test_indices in self._cv.split(X, y)
         )
 
-        n_splits = cv.get_n_splits(X, y)
+        n_splits = self._cv.get_n_splits(X, y)
 
-        self.cv_results = list(
+        self.estimator_reports = list(
             track(generator, total=n_splits, description="Processing cross-validation")
         )
-        self._ml_task = _find_ml_task(y, estimator=self.cv_results[0].estimator)
+
+        self._rng = np.random.default_rng(time.time_ns())
+        self._hash = self._rng.integers(
+            low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
+        )
+        self._cache = {}
+        self._ml_task = _find_ml_task(y, estimator=self.estimator_reports[0].estimator)
+
+        self._parent_progress = None
+
+    def clean_cache(self):
+        """Clean the cache."""
+        self._cache = {}
+
+    @ProgressDecorator(description="Cross-validation predictions")
+    def cache_predictions(self, response_methods="auto", n_jobs=None):
+        progress = self._progress_info["current_progress"]
+        main_task = self._progress_info["current_task"]
+
+        total_estimators = len(self.estimator_reports)
+        progress.update(main_task, total=total_estimators)
+
+        try:
+            for estimator_report in self.estimator_reports:
+                # Pass the progress manager to child tasks
+                estimator_report._parent_progress = progress
+                estimator_report.cache_predictions(
+                    response_methods=response_methods, n_jobs=n_jobs
+                )
+                progress.update(main_task, advance=1, refresh=True)
+        finally:
+            if self._parent_progress is None:
+                ProgressManager.stop_progress()
+
+    @property
+    def estimator(self):
+        return self._estimator
+
+    @estimator.setter
+    def estimator(self, value):
+        raise AttributeError(
+            "The estimator attribute is immutable. "
+            f"Call the constructor of {self.__class__.__name__} to create a new report."
+        )
+
+    @property
+    def estimator_name(self):
+        if isinstance(self.estimator, Pipeline):
+            name = self.estimator[-1].__class__.__name__
+        else:
+            name = self.estimator.__class__.__name__
+        return name
+
+    @property
+    def X(self):
+        return self._X
+
+    @X.setter
+    def X(self, value):
+        raise AttributeError(
+            "The X attribute is immutable. "
+            "Please use the `from_unfitted_estimator` method to create a new report."
+        )
+
+    @property
+    def y(self):
+        return self._y
+
+    @y.setter
+    def y(self, value):
+        raise AttributeError(
+            "The y attribute is immutable. "
+            "Please use the `from_unfitted_estimator` method to create a new report."
+        )
 
     ####################################################################################
     # Methods related to the help and repr
