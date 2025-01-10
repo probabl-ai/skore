@@ -191,7 +191,7 @@ class EstimatorReport(_HelpMixin, DirNamesMixin):
     def estimator(self, value):
         raise AttributeError(
             "The estimator attribute is immutable. "
-            "Call the constructor of {self.__class__.__name__} to create a new report."
+            f"Call the constructor of {self.__class__.__name__} to create a new report."
         )
 
     @property
