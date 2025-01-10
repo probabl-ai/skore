@@ -929,14 +929,17 @@ def test_estimator_report_get_X_y_and_data_source_hash(data_source):
         assert data_source_hash == joblib.hash((X_test, y_test))
 
 
-def test_estimator_has_side_effects():
+@pytest.mark.parametrize("prefit_estimator", [True, False])
+def test_estimator_has_side_effects(prefit_estimator):
     """Re-fitting the estimator outside the EstimatorReport
-    should not have an effect on the EstimatorReport's internal estimator"""
+    should not have an effect on the EstimatorReport's internal estimator."""
     X, y = make_classification(n_classes=2, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-    X_train2, _, y_train2, _ = train_test_split(X, y, random_state=420)
 
-    estimator = LogisticRegression().fit(X_train, y_train)
+    estimator = LogisticRegression()
+    if prefit_estimator:
+        estimator.fit(X_train, y_train)
+
     report = EstimatorReport(
         estimator,
         X_train=X_train,
@@ -952,6 +955,8 @@ def test_estimator_has_side_effects():
 
 
 def test_estimator_has_no_deep_copy():
+    """Check that we raise a warning if the deep copy failed with a fitted
+    estimator."""
     X, y = make_classification(n_classes=2, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
 
