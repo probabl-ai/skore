@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, Optional, Union
 
 import numpy as np
 from numpy.random import RandomState
+from rich.panel import Panel
 
 from skore.sklearn.find_ml_task import _find_ml_task
 from skore.sklearn.train_test_split.warning import TRAIN_TEST_SPLIT_WARNINGS
@@ -158,10 +159,24 @@ def train_test_split(
         ml_task=ml_task,
     )
 
+    from skore import console  # avoid circular import
+
     for warning_class in TRAIN_TEST_SPLIT_WARNINGS:
         warning = warning_class.check(**kwargs)
 
-        if warning is not None:
-            warnings.warn(message=warning, category=warning_class, stacklevel=1)
+        if warning is not None and (
+            not warnings.filters
+            or not any(
+                f[0] == "ignore" and f[2] == warning_class for f in warnings.filters
+            )
+        ):
+            console.print(
+                Panel(
+                    title=warning_class.__name__,
+                    renderable=warning,
+                    style="orange1",
+                    border_style="cyan",
+                )
+            )
 
     return output

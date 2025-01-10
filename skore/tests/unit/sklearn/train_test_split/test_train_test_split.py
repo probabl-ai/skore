@@ -129,14 +129,44 @@ def case_time_based_column_polars_dates():
         case_time_based_column_polars_dates,
     ],
 )
-def test_train_test_split_warns(params):
+def test_train_test_split_warns(params, capsys):
     """When train_test_split is called with these args and kwargs, the corresponding
-    warning should fire."""
-    warnings.simplefilter("ignore")
+    warning should be printed to the console."""
     args, kwargs, warning_cls = params()
 
-    with pytest.warns(warning_cls):
+    train_test_split(*args, **kwargs)
+
+    captured = capsys.readouterr()
+    assert warning_cls.__name__ in captured.out
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        case_high_class_imbalance,
+        case_high_class_imbalance_too_few_examples,
+        case_high_class_imbalance_too_few_examples_kwargs,
+        case_high_class_imbalance_too_few_examples_kwargs_mixed,
+        case_stratify,
+        case_random_state_unset,
+        case_shuffle_true,
+        case_shuffle_none,
+        case_time_based_column,
+        case_time_based_columns_several,
+        case_time_based_column_polars,
+        case_time_based_column_polars_dates,
+    ],
+)
+def test_train_test_split_warns_suppressed(params, capsys):
+    """Verify that warnings can be suppressed and don't appear in the console output."""
+    args, kwargs, warning_cls = params()
+
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=warning_cls)
         train_test_split(*args, **kwargs)
+
+    captured = capsys.readouterr()
+    assert warning_cls.__name__ not in captured.out
 
 
 def test_train_test_split_kwargs():
