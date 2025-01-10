@@ -262,3 +262,89 @@ class Project:
             The list of view keys. The list is empty if there is no view.
         """
         return self.view_repository.keys()
+
+    def set_note(self, key: str, message: str, *, version=-1):
+        """Attach a note to key ``key``.
+
+        Parameters
+        ----------
+        key : str
+            The key of the item to annotate.
+            May be qualified with a version number through the ``version`` argument.
+        message : str
+            The message to be attached.
+        version : int, default=-1
+            The version of the key to annotate. Default is the latest version.
+
+        Raises
+        ------
+        KeyError
+            If the ``(key, version)`` couple does not exist.
+
+        Examples
+        --------
+        # Annotate latest version of key "key"
+        >>> project.set_note("key", "message")  # doctest: +SKIP
+
+        # Annotate first version of key "key"
+        >>> project.set_note("key", "message", version=0)  # doctest: +SKIP
+        """
+        pass
+
+    def get_note(self, key: str, *, version=-1) -> Union[str, None]:
+        """Retrieve a note previously attached to key ``key``.
+
+        Parameters
+        ----------
+        key : str
+            The key of the annotated item.
+            May be qualified with a version number through the ``version`` argument.
+        version : int, default=-1
+            The version of the annotated key. Default is the latest version.
+
+        Returns
+        -------
+        The attached note, or None if no note is attached.
+
+        Raises
+        ------
+        KeyError
+            If the ``(key, version)`` couple does not exist.
+
+        Examples
+        --------
+        # Retrieve note attached to latest version of key "key"
+        >>> project.get_note("key")  # doctest: +SKIP
+
+        # Retrieve note attached to first version of key "key"
+        >>> project.get_note("key", version=0)  # doctest: +SKIP
+        """
+        pass
+
+    def delete_note(self, key: str, *, version=-1):
+        """Delete a note previously attached to key ``key``.
+
+        If no note is attached, does nothing.
+
+        Parameters
+        ----------
+        key : str
+            The key of the annotated item.
+            May be qualified with a version number through the ``version`` argument.
+        version : int, default=-1
+            The version of the annotated key. Default is the latest version.
+
+        Raises
+        ------
+        KeyError
+            If the ``(key, version)`` couple does not exist.
+
+        Examples
+        --------
+        # Delete note attached to latest version of key "key"
+        >>> project.delete_note("key")  # doctest: +SKIP
+
+        # Delete note attached to first version of key "key"
+        >>> project.delete_note("key", version=0)  # doctest: +SKIP
+        """
+        pass
