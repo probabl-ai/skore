@@ -82,6 +82,21 @@ class EstimatorReport(_HelpMixin, DirNamesMixin):
             )
         return clone(estimator).fit(X_train, y_train)
 
+    @classmethod
+    def _copy_estimator(cls, estimator):
+        try:
+            return copy.deepcopy(estimator)
+        except Exception as e:
+            warnings.warn(
+                "Deepcopy failed; using estimator as-is. "
+                "Be aware that modifying the estimator outside of "
+                f"{cls.__name__} will modify the internal estimator. "
+                "Consider using a FrozenEstimator from scikit-learn to prevent this. "
+                f"Original error: {e}",
+                stacklevel=1,
+            )
+        return estimator
+
     def __init__(
         self,
         estimator,
@@ -120,19 +135,6 @@ class EstimatorReport(_HelpMixin, DirNamesMixin):
         )
         self._cache = {}
         self._ml_task = _find_ml_task(self._y_test, estimator=self._estimator)
-
-    def _copy_estimator(self, estimator):
-        try:
-            return copy.deepcopy(estimator)
-        except Exception as e:
-            warnings.warn(
-                "Deepcopy failed; using estimator as-is. "
-                "Be aware that modifying the estimator outside of "
-                f"{self.__class__.__name__} will modify the internal estimator. "
-                "Consider using a FrozenEstimator from scikit-learn to prevent this. "
-                f"Original error: {e}",
-                stacklevel=1,
-            )
 
     # NOTE:
     # For the moment, we do not allow to alter the estimator and the training data.
