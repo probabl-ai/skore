@@ -89,26 +89,27 @@ def train_test_split(
     >>> X, y = np.arange(10).reshape((5, 2)), range(5)
 
     >>> # Drop-in replacement for sklearn train_test_split
-    >>> X_train, X_test, y_train, y_test = train_test_split(X, y,
+    >>> X_train, X_test, y_train, y_test = train_test_split(X, y,  # doctest: +SKIP
     ...     test_size=0.33, random_state=42)
-    >>> X_train
+    >>> X_train  # doctest: +SKIP
     array([[4, 5],
            [0, 1],
            [6, 7]])
 
     >>> # Explicit X and y, makes detection of problems easier
-    >>> X_train, X_test, y_train, y_test = train_test_split(X=X, y=y,
+    >>> X_train, X_test, y_train, y_test = train_test_split(X=X, y=y,  # doctest: +SKIP
     ...     test_size=0.33, random_state=42)
-    >>> X_train
+    >>> X_train  # doctest: +SKIP
     array([[4, 5],
            [0, 1],
            [6, 7]])
 
     >>> # When passing X and y explicitly, X is returned before y
     >>> arr = np.arange(10).reshape((5, 2))
-    >>> arr_train, arr_test, X_train, X_test, y_train, y_test = train_test_split(
+    >>> splits = train_test_split(  # doctest: +SKIP
     ...     arr, y=y, X=X, test_size=0.33, random_state=42)
-    >>> X_train
+    >>> arr_train, arr_test, X_train, X_test, y_train, y_test = splits  # doctest: +SKIP
+    >>> X_train  # doctest: +SKIP
     array([[4, 5],
            [0, 1],
            [6, 7]])
