@@ -65,6 +65,9 @@ reporter = CrossValidationReport(estimator, X=df, y=y, n_jobs=-1)
 reporter
 
 # %%
+reporter.metrics.accuracy()
+
+# %%
 reporter.cache_predictions(n_jobs=-1)
 
 # %%

@@ -616,6 +616,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         Parameters
         ----------
+        data_source : {"test", "train", "X_y"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the reporter.
+            - "train" : use the train set provided when creating the reporter.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
             set provided when creating the reporter.
@@ -655,6 +662,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         Parameters
         ----------
+        data_source : {"test", "train", "X_y"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the reporter.
+            - "train" : use the train set provided when creating the reporter.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
             set provided when creating the reporter.
@@ -724,6 +738,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         metric_name : str, default=None
             The name of the metric. If not provided, it will be inferred from the
             metric function.
+
+        data_source : {"test", "train", "X_y"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the reporter.
+            - "train" : use the train set provided when creating the reporter.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
 
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation

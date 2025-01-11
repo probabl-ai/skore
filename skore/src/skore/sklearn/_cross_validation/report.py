@@ -67,7 +67,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     """
 
     _ACCESSOR_CONFIG = {
-        # "metrics": {"icon": ":straight_ruler:", "name": "metrics"},
+        "metrics": {"icon": ":straight_ruler:", "name": "metrics"},
     }
 
     def __init__(
