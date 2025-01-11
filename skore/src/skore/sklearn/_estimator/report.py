@@ -171,7 +171,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             )
             progress.update(task, total=total_iterations)
 
-            parallel = joblib.Parallel(n_jobs=n_jobs, return_as="generator_unordered")
+            parallel = joblib.Parallel(
+                n_jobs=n_jobs, return_as="generator_unordered", require="sharedmem"
+            )
             generator = parallel(
                 joblib.delayed(_get_cached_response_values)(
                     cache=self._cache,

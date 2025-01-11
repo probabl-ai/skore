@@ -1,3 +1,4 @@
+# %%
 """
 ============================================
 Get insights from any scikit-learn estimator
@@ -73,7 +74,16 @@ reporter = EstimatorReport(
 reporter
 
 # %%
+reporter.clean_cache()
+
+# %%
+reporter._cache
+
+# %%
 reporter.cache_predictions(n_jobs=-1)
+
+# %%
+reporter._cache
 
 # %%
 #

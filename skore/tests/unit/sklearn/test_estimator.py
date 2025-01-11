@@ -291,7 +291,8 @@ def test_estimator_report_repr(binary_classification_data):
 @pytest.mark.parametrize(
     "fixture_name", ["binary_classification_data", "regression_data"]
 )
-def test_estimator_report_cache_predictions(request, fixture_name):
+@pytest.mark.parametrize("n_jobs", [1, 2])
+def test_estimator_report_cache_predictions(request, fixture_name, n_jobs):
     """Check that calling cache_predictions fills the cache."""
     estimator, X_test, y_test = request.getfixturevalue(fixture_name)
     report = EstimatorReport(
@@ -299,10 +300,10 @@ def test_estimator_report_cache_predictions(request, fixture_name):
     )
 
     assert report._cache == {}
-    report.cache_predictions()
+    report.cache_predictions(n_jobs=n_jobs)
     assert report._cache != {}
     stored_cache = deepcopy(report._cache)
-    report.cache_predictions()
+    report.cache_predictions(n_jobs=n_jobs)
     # check that the keys are exactly the same
     assert report._cache.keys() == stored_cache.keys()
 
