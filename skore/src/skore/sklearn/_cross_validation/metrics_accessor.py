@@ -40,13 +40,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     @ProgressDecorator(description="Compute metric for each split")
     def _compute_metric_scores(
         self,
-        metric_name,
+        report_metric_name,
         *,
         data_source="test",
         aggregate=None,
         **metric_kwargs,
     ):
-        cache_key = (self._parent._hash, metric_name, data_source)
+        cache_key = (self._parent._hash, report_metric_name, data_source)
         cache_key += (aggregate,) if aggregate is None else tuple(aggregate)
 
         if metric_kwargs != {}:
@@ -76,7 +76,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             try:
                 for report in self._parent.estimator_reports:
                     results.append(
-                        getattr(report.metrics, metric_name)(
+                        getattr(report.metrics, report_metric_name)(
                             data_source=data_source, **metric_kwargs
                         )
                     )
@@ -125,7 +125,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             The accuracy score.
         """
         return self._compute_metric_scores(
-            metric_name="accuracy",
+            report_metric_name="accuracy",
             data_source=data_source,
             aggregate=aggregate,
         )
@@ -190,7 +190,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             The precision score.
         """
         return self._compute_metric_scores(
-            metric_name="precision",
+            report_metric_name="precision",
             data_source=data_source,
             aggregate=aggregate,
             average=average,
@@ -258,7 +258,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             The recall score.
         """
         return self._compute_metric_scores(
-            metric_name="recall",
+            report_metric_name="recall",
             data_source=data_source,
             aggregate=aggregate,
             average=average,
@@ -288,7 +288,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             The Brier score.
         """
         return self._compute_metric_scores(
-            metric_name="brier_score",
+            report_metric_name="brier_score",
             data_source=data_source,
             aggregate=aggregate,
         )
@@ -359,7 +359,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             The ROC AUC score.
         """
         return self._compute_metric_scores(
-            metric_name="roc_auc",
+            report_metric_name="roc_auc",
             data_source=data_source,
             aggregate=aggregate,
             average=average,
@@ -391,7 +391,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             The log-loss.
         """
         return self._compute_metric_scores(
-            metric_name="log_loss",
+            report_metric_name="log_loss",
             data_source=data_source,
             aggregate=aggregate,
         )
@@ -433,7 +433,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             The R² score.
         """
         return self._compute_metric_scores(
-            metric_name="r2",
+            report_metric_name="r2",
             data_source=data_source,
             aggregate=aggregate,
             multioutput=multioutput,
@@ -476,10 +476,73 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             The root mean squared error.
         """
         return self._compute_metric_scores(
-            metric_name="rmse",
+            report_metric_name="rmse",
             data_source=data_source,
             aggregate=aggregate,
             multioutput=multioutput,
+        )
+
+    def custom_metric(
+        self,
+        metric_function,
+        response_method,
+        *,
+        metric_name=None,
+        data_source="test",
+        aggregate=None,
+        **kwargs,
+    ):
+        """Compute a custom metric.
+
+        It brings some flexibility to compute any desired metric. However, we need to
+        follow some rules:
+
+        - `metric_function` should take `y_true` and `y_pred` as the first two
+          positional arguments.
+        - `response_method` corresponds to the estimator's method to be invoked to get
+          the predictions. It can be a string or a list of strings to defined in which
+          order the methods should be invoked.
+
+        Parameters
+        ----------
+        metric_function : callable
+            The metric function to be computed. The expected signature is
+            `metric_function(y_true, y_pred, **kwargs)`.
+
+        response_method : str or list of str
+            The estimator's method to be invoked to get the predictions. The possible
+            values are: `predict`, `predict_proba`, `predict_log_proba`, and
+            `decision_function`.
+
+        metric_name : str, default=None
+            The name of the metric. If not provided, it will be inferred from the
+            metric function.
+
+        data_source : {"test", "train"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the reporter.
+            - "train" : use the train set provided when creating the reporter.
+
+        aggregate : {"mean", "std"} or list of such str, default=None
+            Function to aggregate the scores across the cross-validation splits.
+
+        **kwargs : dict
+            Any additional keyword arguments to be passed to the metric function.
+
+        Returns
+        -------
+        pd.DataFrame
+            The custom metric.
+        """
+        return self._compute_metric_scores(
+            report_metric_name="custom_metric",
+            data_source=data_source,
+            aggregate=aggregate,
+            metric_function=metric_function,
+            response_method=response_method,
+            metric_name=metric_name,
+            **kwargs,
         )
 
     ####################################################################################
