@@ -13,11 +13,16 @@ def create_progress_bar():
     """Create a consistent progress bar style."""
     return Progress(
         SpinnerColumn(),
-        TextColumn("[bold blue]{task.description}"),
-        BarColumn(),
-        TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+        TextColumn("[bold cyan]{task.description}"),
+        BarColumn(
+            complete_style="dark_orange",
+            finished_style="dark_orange",
+            pulse_style="orange1",
+        ),
+        TextColumn("[orange1]{task.percentage:>3.0f}%"),
         TextColumn("•"),
         TimeRemainingColumn(),
+        expand=False,
     )
 
 

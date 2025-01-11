@@ -2,7 +2,6 @@ import time
 
 import joblib
 import numpy as np
-from rich.progress import track
 from sklearn.base import clone, is_classifier
 from sklearn.model_selection import check_cv
 from sklearn.pipeline import Pipeline
@@ -12,7 +11,11 @@ from skore.externals._sklearn_compat import _safe_indexing
 from skore.sklearn._base import _BaseReport
 from skore.sklearn._estimator.report import EstimatorReport
 from skore.sklearn.find_ml_task import _find_ml_task
-from skore.utils._progress_bar import ProgressDecorator, ProgressManager
+from skore.utils._progress_bar import (
+    ProgressDecorator,
+    ProgressManager,
+    create_progress_bar,
+)
 
 
 def _generate_estimator_report(estimator, X, y, train_indices, test_indices):
@@ -100,9 +103,12 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
         n_splits = self._cv.get_n_splits(X, y)
 
-        self.estimator_reports = list(
-            track(generator, total=n_splits, description="Processing cross-validation")
-        )
+        with create_progress_bar() as progress:
+            self.estimator_reports = list(
+                progress.track(
+                    generator, total=n_splits, description="Processing cross-validation"
+                )
+            )
 
         self._rng = np.random.default_rng(time.time_ns())
         self._hash = self._rng.integers(
