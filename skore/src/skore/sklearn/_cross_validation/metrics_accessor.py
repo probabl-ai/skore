@@ -123,6 +123,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         if cache_key in self._parent._cache:
             results = self._parent._cache[cache_key]
             if self._parent_progress is None:
+                progress.update(
+                    main_task,
+                    completed=total_estimators,
+                    refresh=True,
+                )
                 ProgressManager.stop_progress()
         else:
             results = []
@@ -724,15 +729,20 @@ class _PlotMetricsAccessor(_BaseAccessor):
 
         progress = self._progress_info["current_progress"]
         main_task = self._progress_info["current_task"]
+        total_estimators = len(self._parent.estimator_reports)
+        progress.update(main_task, total=total_estimators)
 
         if cache_key in self._parent._cache:
             display = self._parent._cache[cache_key]
             display.plot(**display_plot_kwargs)
             if self._parent_progress is None:
+                progress.update(
+                    main_task,
+                    completed=total_estimators,
+                    refresh=True,
+                )
                 ProgressManager.stop_progress()
         else:
-            total_estimators = len(self._parent.estimator_reports)
-            progress.update(main_task, total=total_estimators)
             y_true, y_pred = [], []
             try:
                 for report in self._parent.estimator_reports:
