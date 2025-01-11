@@ -399,3 +399,13 @@ print(f"Time taken to compute the ROC curve: {end - start:.2f} seconds")
 
 # %%
 # As expected, since we need to recompute the predictions, it takes more time.
+
+# %%
+from ipywidgets import IntSlider
+
+s1 = IntSlider(description="Blue handle")
+s1.style.handle_color = "lightblue"
+s1
+
+
+# %%
