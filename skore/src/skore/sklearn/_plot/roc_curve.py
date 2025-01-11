@@ -202,7 +202,6 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
                             f"(AUC = {roc_auc:0.2f})"
                         )
                     }
-
                     line_kwargs = _validate_style_kwargs(
                         default_line_kwargs, roc_curve_kwargs[split_idx]
                     )

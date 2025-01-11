@@ -1035,7 +1035,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
         """
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
-        display_plot_kwargs = {"ax": ax, "plot_chance_level": False, "despine": True}
+        display_plot_kwargs = {"ax": ax, "despine": True}
         return self._get_display(
             X=X,
             y=y,

@@ -412,3 +412,9 @@ display = reporter_estimator.metrics.plot.roc()
 display = reporter_cv.metrics.plot.roc()
 
 # %%
+display = reporter_estimator.metrics.plot.precision_recall()
+
+# %%
+display = reporter_cv.metrics.plot.precision_recall()
+
+# %%

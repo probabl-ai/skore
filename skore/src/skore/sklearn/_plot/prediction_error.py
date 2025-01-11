@@ -219,10 +219,10 @@ class PredictionErrorDisplay(HelpDisplayMixin):
 
         Parameters
         ----------
-        y_true : array-like of shape (n_samples,)
+        y_true : list of array-like of shape (n_samples,)
             True target values.
 
-        y_pred : array-like of shape (n_samples,)
+        y_pred : list of array-like of shape (n_samples,)
             Predicted target values.
 
         estimator : estimator instance
@@ -280,6 +280,7 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         """
         random_state = check_random_state(random_state)
 
+        y_true, y_pred = y_true[0], y_pred[0]
         n_samples = len(y_true)
         if isinstance(subsample, numbers.Integral):
             if subsample <= 0:

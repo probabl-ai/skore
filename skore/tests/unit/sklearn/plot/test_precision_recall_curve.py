@@ -5,6 +5,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from skore import EstimatorReport
 from skore.sklearn._plot import PrecisionRecallCurveDisplay
+from skore.sklearn._plot.utils import sample_mpl_colormap
 
 
 @pytest.fixture
@@ -35,7 +36,7 @@ def test_precision_recall_curve_display_binary_classification(
     assert isinstance(display, PrecisionRecallCurveDisplay)
 
     # check the structure of the attributes
-    for attr_name in ("precision", "recall", "average_precision", "prevalence"):
+    for attr_name in ("precision", "recall", "average_precision"):
         assert isinstance(getattr(display, attr_name), dict)
         assert len(getattr(display, attr_name)) == 1
 
@@ -54,8 +55,6 @@ def test_precision_recall_curve_display_binary_classification(
         == f"Test set (AP = {display.average_precision[estimator.classes_[1]][0]:0.2f})"
     )
     assert precision_recall_curve_mpl.get_color() == "#1f77b4"  # tab:blue in hex
-
-    assert display.chance_levels_ is None
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
@@ -100,7 +99,7 @@ def test_precision_recall_curve_display_multiclass_classification(
     assert isinstance(display, PrecisionRecallCurveDisplay)
 
     # check the structure of the attributes
-    for attr_name in ("precision", "recall", "average_precision", "prevalence"):
+    for attr_name in ("precision", "recall", "average_precision"):
         assert isinstance(getattr(display, attr_name), dict)
         assert len(getattr(display, attr_name)) == len(estimator.classes_)
 
@@ -111,7 +110,7 @@ def test_precision_recall_curve_display_multiclass_classification(
 
     assert isinstance(display.lines_, list)
     assert len(display.lines_) == len(estimator.classes_)
-    default_colors = ["#1f77b4", "#ff7f0e", "#2ca02c"]
+    default_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
     for class_label, expected_color in zip(estimator.classes_, default_colors):
         precision_recall_curve_mpl = display.lines_[class_label]
         assert isinstance(precision_recall_curve_mpl, mpl.lines.Line2D)
@@ -120,8 +119,6 @@ def test_precision_recall_curve_display_multiclass_classification(
             f"(AP = {display.average_precision[class_label][0]:0.2f})"
         )
         assert precision_recall_curve_mpl.get_color() == expected_color
-
-    assert display.chance_levels_ is None
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
@@ -145,20 +142,9 @@ def test_precision_recall_curve_display_pr_curve_kwargs(
     )
     display = report.metrics.plot.precision_recall()
     for pr_curve_kwargs in ({"color": "red"}, [{"color": "red"}]):
-        display.plot(
-            pr_curve_kwargs=pr_curve_kwargs,
-            plot_chance_level=True,
-            chance_level_kwargs={"color": "blue"},
-        )
+        display.plot(pr_curve_kwargs=pr_curve_kwargs)
 
         assert display.lines_[0].get_color() == "red"
-        assert display.chance_levels_[0].get_color() == "blue"
-
-    display.plot(plot_chance_level=True)
-    assert display.chance_levels_[0].get_color() == "k"
-
-    display.plot(plot_chance_level=True, chance_level_kwargs=[{"color": "red"}])
-    assert display.chance_levels_[0].get_color() == "red"
 
     estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
     report = EstimatorReport(
@@ -167,23 +153,10 @@ def test_precision_recall_curve_display_pr_curve_kwargs(
     display = report.metrics.plot.precision_recall()
     display.plot(
         pr_curve_kwargs=[dict(color="red"), dict(color="blue"), dict(color="green")],
-        plot_chance_level=True,
-        chance_level_kwargs=[
-            dict(color="red"),
-            dict(color="blue"),
-            dict(color="green"),
-        ],
     )
     assert display.lines_[0].get_color() == "red"
     assert display.lines_[1].get_color() == "blue"
     assert display.lines_[2].get_color() == "green"
-    assert display.chance_levels_[0].get_color() == "red"
-    assert display.chance_levels_[1].get_color() == "blue"
-    assert display.chance_levels_[2].get_color() == "green"
-
-    display.plot(plot_chance_level=True)
-    for chance_level in display.chance_levels_:
-        assert chance_level.get_color() == "k"
 
     display.plot(despine=False)
     assert display.ax_.spines["top"].get_visible()
@@ -208,13 +181,6 @@ def test_precision_recall_curve_display_plot_error_wrong_pr_curve_kwargs(
     with pytest.raises(ValueError, match=err_msg):
         display.plot(pr_curve_kwargs=[{}, {}])
 
-    err_msg = (
-        "You intend to plot a single chance level line and provide multiple chance "
-        "level line keyword arguments"
-    )
-    with pytest.raises(ValueError, match=err_msg):
-        display.plot(plot_chance_level=True, chance_level_kwargs=[{}, {}])
-
     estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
@@ -226,13 +192,3 @@ def test_precision_recall_curve_display_plot_error_wrong_pr_curve_kwargs(
 
     with pytest.raises(ValueError, match=err_msg):
         display.plot(pr_curve_kwargs={})
-
-    err_msg = (
-        "You intend to plot multiple precision-recall curves. We expect "
-        "`chance_level_kwargs` to be a list"
-    )
-    with pytest.raises(ValueError, match=err_msg):
-        display.plot(plot_chance_level=True, chance_level_kwargs=[{}, {}])
-
-    with pytest.raises(ValueError, match=err_msg):
-        display.plot(plot_chance_level=True, chance_level_kwargs={})

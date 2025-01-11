@@ -5,7 +5,7 @@ from sklearn.utils.metaestimators import available_if
 
 from skore.externals._pandas_accessors import DirNamesMixin
 from skore.sklearn._base import _BaseAccessor, _get_cached_response_values
-from skore.sklearn._plot import RocCurveDisplay
+from skore.sklearn._plot import PrecisionRecallCurveDisplay, RocCurveDisplay
 from skore.utils._accessor import _check_supported_ml_task
 from skore.utils._progress_bar import ProgressDecorator, ProgressManager
 
@@ -805,6 +805,44 @@ class _PlotMetricsAccessor(_BaseAccessor):
             data_source=data_source,
             response_method=response_method,
             display_class=RocCurveDisplay,
+            display_kwargs=display_kwargs,
+            display_plot_kwargs=display_plot_kwargs,
+        )
+
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["binary-classification", "multiclass-classification"]
+        )
+    )
+    def precision_recall(self, *, data_source="test", pos_label=None, ax=None):
+        """Plot the precision-recall curve.
+
+        Parameters
+        ----------
+        data_source : {"test", "train", "X_y"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the reporter.
+            - "train" : use the train set provided when creating the reporter.
+
+        pos_label : str, default=None
+            The positive class.
+
+        ax : matplotlib.axes.Axes, default=None
+            The axes to plot on.
+
+        Returns
+        -------
+        PrecisionRecallCurveDisplay
+            The precision-recall curve display.
+        """
+        response_method = ("predict_proba", "decision_function")
+        display_kwargs = {"pos_label": pos_label}
+        display_plot_kwargs = {"ax": ax, "despine": True}
+        return self._get_display(
+            data_source=data_source,
+            response_method=response_method,
+            display_class=PrecisionRecallCurveDisplay,
             display_kwargs=display_kwargs,
             display_plot_kwargs=display_plot_kwargs,
         )
