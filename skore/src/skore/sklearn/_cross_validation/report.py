@@ -14,7 +14,6 @@ from skore.sklearn.find_ml_task import _find_ml_task
 from skore.utils._progress_bar import (
     ProgressDecorator,
     ProgressManager,
-    create_progress_bar,
 )
 
 
@@ -79,6 +78,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         cv=None,
         n_jobs=None,
     ):
+        self._parent_progress = None  # used for the different progress bars
         self._estimator = clone(estimator)
 
         # private storage to be able to invalidate the cache when the user alters
@@ -88,27 +88,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         self._cv = check_cv(cv, y, classifier=is_classifier(estimator))
         self._n_jobs = n_jobs
 
-        parallel = joblib.Parallel(n_jobs=n_jobs, return_as="generator_unordered")
-        # do not split the data to take advantage of the memory mapping
-        generator = parallel(
-            joblib.delayed(_generate_estimator_report)(
-                estimator,
-                X,
-                y,
-                train_indices,
-                test_indices,
-            )
-            for train_indices, test_indices in self._cv.split(X, y)
-        )
-
-        n_splits = self._cv.get_n_splits(X, y)
-
-        with create_progress_bar() as progress:
-            self.estimator_reports = list(
-                progress.track(
-                    generator, total=n_splits, description="Processing cross-validation"
-                )
-            )
+        self.estimator_reports = self._fit_estimator_reports()
 
         self._rng = np.random.default_rng(time.time_ns())
         self._hash = self._rng.integers(
@@ -117,10 +97,52 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         self._cache = {}
         self._ml_task = _find_ml_task(y, estimator=self.estimator_reports[0].estimator)
 
-        self._parent_progress = None
+    @ProgressDecorator(description="Processing cross-validation")
+    def _fit_estimator_reports(self):
+        """Fit the estimator reports.
+
+        This function is created to be able to use the progress bar. It works well
+        with the patch of `rich` in VS Code.
+
+        Returns
+        -------
+        estimator_reports : list of EstimatorReport
+            The estimator reports.
+        """
+        progress = self._progress_info["current_progress"]
+        task = self._progress_info["current_task"]
+
+        n_splits = self._cv.get_n_splits(self._X, self._y)
+        progress.update(task, total=n_splits)
+
+        parallel = joblib.Parallel(n_jobs=self._n_jobs, return_as="generator_unordered")
+        # do not split the data to take advantage of the memory mapping
+        generator = parallel(
+            joblib.delayed(_generate_estimator_report)(
+                clone(self._estimator),
+                self._X,
+                self._y,
+                train_indices,
+                test_indices,
+            )
+            for train_indices, test_indices in self._cv.split(self._X, self._y)
+        )
+
+        estimator_reports = []
+        try:
+            for report in generator:
+                estimator_reports.append(report)
+                progress.update(task, advance=1, refresh=True)
+        finally:
+            if self._parent_progress is None:
+                ProgressManager.stop_progress()
+
+        return estimator_reports
 
     def clean_cache(self):
         """Clean the cache."""
+        for report in self.estimator_reports:
+            report.clean_cache()
         self._cache = {}
 
     @ProgressDecorator(description="Cross-validation predictions")

@@ -5,7 +5,6 @@ from rich.progress import (
     Progress,
     SpinnerColumn,
     TextColumn,
-    TimeRemainingColumn,
 )
 
 
@@ -20,8 +19,6 @@ def create_progress_bar():
             pulse_style="orange1",
         ),
         TextColumn("[orange1]{task.percentage:>3.0f}%"),
-        TextColumn("•"),
-        TimeRemainingColumn(),
         expand=False,
     )
 
