@@ -102,7 +102,7 @@ class _BaseReport(_HelpMixin):
 
             # Group X and y attributes separately
             value = getattr(self, name)
-            if name.startswith(("X_", "y_")):
+            if name.startswith(("X", "y")):
                 if value is not None:  # Only include non-None X/y attributes
                     xy_attributes.append(name)
             else:
