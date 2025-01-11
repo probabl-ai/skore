@@ -65,6 +65,9 @@ reporter = CrossValidationReport(estimator, X=df, y=y, n_jobs=-1)
 reporter
 
 # %%
+display = reporter.metrics.plot.roc(pos_label=pos_label)
+
+# %%
 reporter.metrics.accuracy()
 
 # %%
@@ -381,3 +384,31 @@ reporter.metrics.plot.help()
 
 # # %%
 # # As expected, since we need to recompute the predictions, it takes more time.
+# %%
+import numpy as np
+from skore import CrossValidationReport, EstimatorReport
+from sklearn.datasets import make_classification
+from sklearn.linear_model import LogisticRegression
+
+X, y = make_classification(
+    n_samples=10_000,
+    class_sep=0.5,
+    n_classes=3,
+    n_clusters_per_class=1,
+    random_state=42,
+)
+target_names = np.array(["class 0", "class 1", "class 2"], dtype=object)
+y = target_names[y]
+
+reporter_cv = CrossValidationReport(LogisticRegression(), X=X, y=y, n_jobs=-1)
+reporter_estimator = EstimatorReport(
+    LogisticRegression(), X_train=X, y_train=y, X_test=X, y_test=y
+)
+
+# %%
+display = reporter_estimator.metrics.plot.roc()
+
+# %%
+display = reporter_cv.metrics.plot.roc()
+
+# %%

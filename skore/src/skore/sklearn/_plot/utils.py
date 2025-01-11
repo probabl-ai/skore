@@ -2,6 +2,7 @@ import inspect
 from io import StringIO
 
 import matplotlib.pyplot as plt
+import numpy as np
 from rich.console import Console
 from rich.panel import Panel
 from rich.tree import Tree
@@ -109,13 +110,13 @@ class _ClassifierCurveDisplayMixin:
         y_pred,
         *,
         ml_task,
-        sample_weight=None,
         pos_label=None,
     ):
-        check_consistent_length(y_true, y_pred, sample_weight)
+        for y_true_i, y_pred_i in zip(y_true, y_pred):
+            check_consistent_length(y_true_i, y_pred_i)
 
         if ml_task == "binary-classification":
-            pos_label = _check_pos_label_consistency(pos_label, y_true)
+            pos_label = _check_pos_label_consistency(pos_label, y_true[0])
 
         return pos_label
 
@@ -198,3 +199,22 @@ def _validate_style_kwargs(default_style_kwargs, user_style_kwargs):
             valid_style_kwargs[key] = user_style_kwargs[key]
 
     return valid_style_kwargs
+
+
+def sample_mpl_colormap(cmap, n):
+    """Sample colors from a Matplotlib colormap.
+
+    Parameters
+    ----------
+    cmap : matplotlib.colors.Colormap
+        The Matplotlib colormap to sample from.
+    n : int
+        The number of colors to sample.
+
+    Returns
+    -------
+    colors : list of str
+        The sampled colors.
+    """
+    indices = np.linspace(0, 1, n)
+    return [cmap(i) for i in indices]

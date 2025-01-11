@@ -923,8 +923,12 @@ class _PlotMetricsAccessor(_BaseAccessor):
             )
 
             display = display_class._from_predictions(
-                y,
-                y_pred,
+                [
+                    y,
+                ],
+                [
+                    y_pred,
+                ],
                 estimator=self._parent.estimator,
                 estimator_name=self._parent.estimator_name,
                 ml_task=self._parent._ml_task,

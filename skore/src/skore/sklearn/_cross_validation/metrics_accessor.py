@@ -4,7 +4,8 @@ import pandas as pd
 from sklearn.utils.metaestimators import available_if
 
 from skore.externals._pandas_accessors import DirNamesMixin
-from skore.sklearn._base import _BaseAccessor
+from skore.sklearn._base import _BaseAccessor, _get_cached_response_values
+from skore.sklearn._plot import RocCurveDisplay
 from skore.utils._accessor import _check_supported_ml_task
 from skore.utils._progress_bar import ProgressDecorator, ProgressManager
 
@@ -113,16 +114,17 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 for key in ordered_metric_kwargs
             )
 
+        progress = self._progress_info["current_progress"]
+        main_task = self._progress_info["current_task"]
+
+        total_estimators = len(self._parent.estimator_reports)
+        progress.update(main_task, total=total_estimators)
+
         if cache_key in self._parent._cache:
             results = self._parent._cache[cache_key]
             if self._parent_progress is None:
                 ProgressManager.stop_progress()
         else:
-            progress = self._progress_info["current_progress"]
-            main_task = self._progress_info["current_task"]
-
-            total_estimators = len(self._parent.estimator_reports)
-            progress.update(main_task, total=total_estimators)
             results = []
             try:
                 for report in self._parent.estimator_reports:
@@ -677,6 +679,135 @@ class _PlotMetricsAccessor(_BaseAccessor):
     def __init__(self, parent):
         super().__init__(parent._parent, icon=":art:")
         self._metrics_parent = parent
+        self._parent_progress = None
+
+    @ProgressDecorator(description="Computing predictions for display")
+    def _get_display(
+        self,
+        *,
+        data_source,
+        response_method,
+        display_class,
+        display_kwargs,
+        display_plot_kwargs,
+    ):
+        """Get the display from the cache or compute it.
+
+        Parameters
+        ----------
+        data_source : {"test", "train"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the reporter.
+            - "train" : use the train set provided when creating the reporter.
+
+        response_method : str
+            The response method.
+
+        display_class : class
+            The display class.
+
+        display_kwargs : dict
+            The display kwargs used by `display_class._from_predictions`.
+
+        display_plot_kwargs : dict
+            The display kwargs used by `display.plot`.
+
+        Returns
+        -------
+        display : display_class
+            The display.
+        """
+        cache_key = (self._parent._hash, display_class.__name__)
+        cache_key += tuple(display_kwargs.values())
+        cache_key += (data_source,)
+
+        progress = self._progress_info["current_progress"]
+        main_task = self._progress_info["current_task"]
+
+        if cache_key in self._parent._cache:
+            display = self._parent._cache[cache_key]
+            display.plot(**display_plot_kwargs)
+            if self._parent_progress is None:
+                ProgressManager.stop_progress()
+        else:
+            total_estimators = len(self._parent.estimator_reports)
+            progress.update(main_task, total=total_estimators)
+            y_true, y_pred = [], []
+            try:
+                for report in self._parent.estimator_reports:
+                    X, y, _ = report.metrics._get_X_y_and_data_source_hash(
+                        data_source=data_source
+                    )
+                    y_true.append(y)
+                    y_pred.append(
+                        _get_cached_response_values(
+                            cache=report._cache,
+                            estimator_hash=report._hash,
+                            estimator=report.estimator,
+                            X=X,
+                            response_method=response_method,
+                            data_source=data_source,
+                            data_source_hash=None,
+                            pos_label=display_kwargs.get("pos_label", None),
+                        )
+                    )
+                    progress.update(main_task, advance=1, refresh=True)
+            finally:
+                if self._parent_progress is None:
+                    ProgressManager.stop_progress()
+
+            display = display_class._from_predictions(
+                y_true,
+                y_pred,
+                estimator=self._parent.estimator_reports[0].estimator,
+                estimator_name=self._parent.estimator_name,
+                ml_task=self._parent._ml_task,
+                data_source=data_source,
+                **display_kwargs,
+                **display_plot_kwargs,
+            )
+            self._parent._cache[cache_key] = display
+
+        return display
+
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["binary-classification", "multiclass-classification"]
+        )
+    )
+    def roc(self, *, data_source="test", pos_label=None, ax=None):
+        """Plot the ROC curve.
+
+        Parameters
+        ----------
+        data_source : {"test", "train"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the reporter.
+            - "train" : use the train set provided when creating the reporter.
+
+        pos_label : str, default=None
+            The positive class.
+
+        ax : matplotlib.axes.Axes, default=None
+            The axes to plot on.
+
+        Returns
+        -------
+        RocCurveDisplay
+            The ROC curve display.
+        """
+        response_method = ("predict_proba", "decision_function")
+        display_kwargs = {"pos_label": pos_label}
+        display_plot_kwargs = {"ax": ax, "plot_chance_level": True, "despine": True}
+        return self._get_display(
+            data_source=data_source,
+            response_method=response_method,
+            display_class=RocCurveDisplay,
+            display_kwargs=display_kwargs,
+            display_plot_kwargs=display_plot_kwargs,
+        )
 
     def _get_help_panel_title(self):
         return f"[bold cyan]{self._icon} Available plot methods[/bold cyan]"

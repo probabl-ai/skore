@@ -5,6 +5,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from skore import EstimatorReport
 from skore.sklearn._plot import RocCurveDisplay
+from skore.sklearn._plot.utils import sample_mpl_colormap
 
 
 @pytest.fixture
@@ -92,7 +93,7 @@ def test_roc_curve_display_multiclass_classification(
 
     assert isinstance(display.lines_, list)
     assert len(display.lines_) == len(estimator.classes_)
-    default_colors = ["#1f77b4", "#ff7f0e", "#2ca02c"]
+    default_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
     for class_label, expected_color in zip(estimator.classes_, default_colors):
         roc_curve_mpl = display.lines_[class_label]
         assert isinstance(roc_curve_mpl, mpl.lines.Line2D)
