@@ -37,6 +37,57 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         self._parent_progress = None
 
+    def report_metrics(
+        self,
+        *,
+        data_source="test",
+        scoring=None,
+        pos_label=None,
+        scoring_kwargs=None,
+        aggregate=None,
+    ):
+        """Report a set of metrics for our estimator.
+
+        Parameters
+        ----------
+        data_source : {"test", "train"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the reporter.
+            - "train" : use the train set provided when creating the reporter.
+
+        scoring : list of str, callable, or scorer, default=None
+            The metrics to report. You can get the possible list of string by calling
+            `reporter.metrics.help()`. When passing a callable, it should take as
+            arguments `y_true`, `y_pred` as the two first arguments. Additional
+            arguments can be passed as keyword arguments and will be forwarded with
+            `scoring_kwargs`. If the callable API is too restrictive (e.g. need to pass
+            same parameter name with different values), you can use scikit-learn scorers
+            as provided by :func:`sklearn.metrics.make_scorer`.
+
+        pos_label : int, default=None
+            The positive class.
+
+        scoring_kwargs : dict, default=None
+            The keyword arguments to pass to the scoring functions.
+
+        aggregate : {"mean", "std"} or list of such str, default=None
+            Function to aggregate the scores across the cross-validation splits.
+
+        Returns
+        -------
+        pd.DataFrame
+            The statistics for the metrics.
+        """
+        return self._compute_metric_scores(
+            report_metric_name="report_metrics",
+            data_source=data_source,
+            aggregate=aggregate,
+            scoring=scoring,
+            pos_label=pos_label,
+            scoring_kwargs=scoring_kwargs,
+        )
+
     @ProgressDecorator(description="Compute metric for each split")
     def _compute_metric_scores(
         self,
