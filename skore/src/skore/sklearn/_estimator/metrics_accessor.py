@@ -139,6 +139,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 if scoring_name is not None:
                     metrics_kwargs["metric_name"] = scoring_name[metric_idx]
                 metrics_kwargs["data_source_hash"] = data_source_hash
+                metrics_params = inspect.signature(metric._score_func).parameters
+                if "pos_label" in metrics_params:
+                    metrics_kwargs["pos_label"] = pos_label
             elif isinstance(metric, str) or callable(metric):
                 if isinstance(metric, str):
                     err_msg = (
