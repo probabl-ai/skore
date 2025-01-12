@@ -134,14 +134,21 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 )
                 ProgressManager.stop_progress()
         else:
+            parallel = joblib.Parallel(
+                n_jobs=self._parent._n_jobs,
+                return_as="generator",
+                require="sharedmem",
+            )
+            generator = parallel(
+                joblib.delayed(getattr(report.metrics, report_metric_name))(
+                    data_source=data_source, **metric_kwargs
+                )
+                for report in self._parent.estimator_reports
+            )
             results = []
             try:
-                for report in self._parent.estimator_reports:
-                    results.append(
-                        getattr(report.metrics, report_metric_name)(
-                            data_source=data_source, **metric_kwargs
-                        )
-                    )
+                for result in generator:
+                    results.append(result)
                     progress.update(main_task, advance=1, refresh=True)
             finally:
                 if self._parent_progress is None:
