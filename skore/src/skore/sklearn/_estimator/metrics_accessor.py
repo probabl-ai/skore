@@ -1262,6 +1262,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
         ax=None,
         kind="residual_vs_predicted",
         subsample=1_000,
+        random_state=None,
     ):
         """Plot the prediction error of a regression model.
 
@@ -1305,12 +1306,15 @@ class _PlotMetricsAccessor(_BaseAccessor):
             display on the scatter plot. If `None`, no subsampling will be
             applied. by default, 1,000 samples or less will be displayed.
 
+        random_state : int, default=None
+            The random state to use for the subsampling.
+
         Returns
         -------
         PredictionErrorDisplay
             The prediction error display.
         """
-        display_kwargs = {"subsample": subsample}
+        display_kwargs = {"subsample": subsample, "random_state": random_state}
         display_plot_kwargs = {"ax": ax, "kind": kind}
         return self._get_display(
             X=X,

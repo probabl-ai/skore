@@ -70,6 +70,7 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         *,
         estimator_name=None,
         kind="residual_vs_predicted",
+        density_type="kde",
         scatter_kwargs=None,
         line_kwargs=None,
         despine=True,
@@ -97,6 +98,9 @@ class PredictionErrorDisplay(HelpDisplayMixin):
             - "residual_vs_predicted" draws the residuals, i.e. difference
               between observed and predicted values, (y-axis) vs. the predicted
               values (x-axis).
+
+        density_type : {"kde", "histogram"}, default="kde"
+            The type of density to plot.
 
         scatter_kwargs : dict, default=None
             Dictionary with keywords passed to the `matplotlib.pyplot.scatter`
@@ -136,16 +140,34 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         if ax is None:
             _, ax = plt.subplots()
 
+        x_range_perfect_pred = [np.inf, -np.inf]
+        y_range_perfect_pred = [np.inf, -np.inf]
+        for y_true, y_pred in zip(self.y_true, self.y_pred):
+            if kind == "actual_vs_predicted":
+                min_value = min(y_pred.min(), y_true.min())
+                max_value = max(y_pred.max(), y_true.max())
+                x_range_perfect_pred[0] = min(x_range_perfect_pred[0], min_value)
+                x_range_perfect_pred[1] = max(x_range_perfect_pred[1], max_value)
+                y_range_perfect_pred[0] = min(y_range_perfect_pred[0], min_value)
+                y_range_perfect_pred[1] = max(y_range_perfect_pred[1], max_value)
+            else:
+                residuals = y_true - y_pred
+                x_range_perfect_pred[0] = min(x_range_perfect_pred[0], y_pred.min())
+                x_range_perfect_pred[1] = max(x_range_perfect_pred[1], y_pred.max())
+                y_range_perfect_pred[0] = min(y_range_perfect_pred[0], residuals.min())
+                y_range_perfect_pred[1] = max(y_range_perfect_pred[1], residuals.max())
+
         colors_markers = sample_mpl_colormap(
             plt.cm.tab10, len(self.y_true) if len(self.y_true) > 10 else 10
         )
-        # scatter plot
-        x_range_perfect_pred = [np.inf, -np.inf]
-        y_range_perfect_pred = [np.inf, -np.inf]
         for split_idx in range(len(self.y_true)):
             y_true, y_pred = self.y_true[split_idx], self.y_pred[split_idx]
 
-            default_scatter_kwargs = {"color": colors_markers[split_idx], "alpha": 0.3}
+            default_scatter_kwargs = {
+                "color": colors_markers[split_idx],
+                "alpha": 0.3,
+                "s": 10,
+            }
             prediction_error_scatter_kwargs = _validate_style_kwargs(
                 default_scatter_kwargs, scatter_kwargs
             )
@@ -165,12 +187,6 @@ class PredictionErrorDisplay(HelpDisplayMixin):
                     label=scatter_label,
                     **prediction_error_scatter_kwargs,
                 )
-                min_value = min(y_pred.min(), y_true.min())
-                max_value = max(y_pred.max(), y_true.max())
-                x_range_perfect_pred[0] = min(x_range_perfect_pred[0], min_value)
-                x_range_perfect_pred[1] = max(x_range_perfect_pred[1], max_value)
-                y_range_perfect_pred[0] = min(y_range_perfect_pred[0], min_value)
-                y_range_perfect_pred[1] = max(y_range_perfect_pred[1], max_value)
 
             else:  # kind == "residual_vs_predicted"
                 residuals = y_true - y_pred
@@ -180,12 +196,7 @@ class PredictionErrorDisplay(HelpDisplayMixin):
                     label=scatter_label,
                     **prediction_error_scatter_kwargs,
                 )
-                x_range_perfect_pred[0] = min(x_range_perfect_pred[0], y_pred.min())
-                x_range_perfect_pred[1] = max(x_range_perfect_pred[1], y_pred.max())
-                y_range_perfect_pred[0] = min(y_range_perfect_pred[0], residuals.min())
-                y_range_perfect_pred[1] = max(y_range_perfect_pred[1], residuals.max())
 
-        # plot the perfect predictions line once
         default_line_kwargs = {
             "color": "black",
             "alpha": 0.7,
