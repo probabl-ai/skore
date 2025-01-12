@@ -46,10 +46,10 @@ def test_prediction_error_display_regression(pyplot, regression_data):
     assert isinstance(display, PredictionErrorDisplay)
 
     # check the structure of the attributes
-    assert isinstance(display.y_true, np.ndarray)
-    assert isinstance(display.y_pred, np.ndarray)
-    np.testing.assert_allclose(display.y_true, y_test)
-    np.testing.assert_allclose(display.y_pred, estimator.predict(X_test))
+    assert isinstance(display.y_true, list)
+    assert isinstance(display.y_pred, list)
+    np.testing.assert_allclose(display.y_true[0], y_test)
+    np.testing.assert_allclose(display.y_pred[0], estimator.predict(X_test))
     assert display.data_source == "test"
 
     assert isinstance(display.line_, mpl.lines.Line2D)
@@ -120,7 +120,7 @@ def test_prediction_error_display_kwargs(pyplot, regression_data):
     )
     display = report.metrics.plot.prediction_error()
     display.plot(scatter_kwargs={"color": "red"}, line_kwargs={"color": "blue"})
-    np.testing.assert_allclose(display.scatter_.get_facecolor(), [[1, 0, 0, 0.8]])
+    np.testing.assert_allclose(display.scatter_.get_facecolor(), [[1, 0, 0, 0.3]])
     assert display.line_.get_color() == "blue"
 
     display.plot(despine=False)

@@ -1310,8 +1310,8 @@ class _PlotMetricsAccessor(_BaseAccessor):
         PredictionErrorDisplay
             The prediction error display.
         """
-        display_kwargs = {"kind": kind, "subsample": subsample}
-        display_plot_kwargs = {"ax": ax}
+        display_kwargs = {"subsample": subsample}
+        display_plot_kwargs = {"ax": ax, "kind": kind}
         return self._get_display(
             X=X,
             y=y,

@@ -5,7 +5,11 @@ from sklearn.utils.metaestimators import available_if
 
 from skore.externals._pandas_accessors import DirNamesMixin
 from skore.sklearn._base import _BaseAccessor, _get_cached_response_values
-from skore.sklearn._plot import PrecisionRecallCurveDisplay, RocCurveDisplay
+from skore.sklearn._plot import (
+    PrecisionRecallCurveDisplay,
+    PredictionErrorDisplay,
+    RocCurveDisplay,
+)
 from skore.utils._accessor import _check_supported_ml_task
 from skore.utils._progress_bar import ProgressDecorator, ProgressManager
 
@@ -853,6 +857,63 @@ class _PlotMetricsAccessor(_BaseAccessor):
             data_source=data_source,
             response_method=response_method,
             display_class=PrecisionRecallCurveDisplay,
+            display_kwargs=display_kwargs,
+            display_plot_kwargs=display_plot_kwargs,
+        )
+
+    @available_if(_check_supported_ml_task(supported_ml_tasks=["regression"]))
+    def prediction_error(
+        self,
+        *,
+        data_source="test",
+        ax=None,
+        kind="residual_vs_predicted",
+        subsample=1_000,
+    ):
+        """Plot the prediction error of a regression model.
+
+        Extra keyword arguments will be passed to matplotlib's `plot`.
+
+        Parameters
+        ----------
+        data_source : {"test", "train"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the reporter.
+            - "train" : use the train set provided when creating the reporter.
+
+        ax : matplotlib axes, default=None
+            Axes object to plot on. If `None`, a new figure and axes is
+            created.
+
+        kind : {"actual_vs_predicted", "residual_vs_predicted"}, \
+                default="residual_vs_predicted"
+            The type of plot to draw:
+
+            - "actual_vs_predicted" draws the observed values (y-axis) vs.
+              the predicted values (x-axis).
+            - "residual_vs_predicted" draws the residuals, i.e. difference
+              between observed and predicted values, (y-axis) vs. the predicted
+              values (x-axis).
+
+        subsample : float, int or None, default=1_000
+            Sampling the samples to be shown on the scatter plot. If `float`,
+            it should be between 0 and 1 and represents the proportion of the
+            original dataset. If `int`, it represents the number of samples
+            display on the scatter plot. If `None`, no subsampling will be
+            applied. by default, 1,000 samples or less will be displayed.
+
+        Returns
+        -------
+        PredictionErrorDisplay
+            The prediction error display.
+        """
+        display_kwargs = {"subsample": subsample}
+        display_plot_kwargs = {"ax": ax, "kind": kind}
+        return self._get_display(
+            data_source=data_source,
+            response_method="predict",
+            display_class=PredictionErrorDisplay,
             display_kwargs=display_kwargs,
             display_plot_kwargs=display_plot_kwargs,
         )
