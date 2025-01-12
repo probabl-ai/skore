@@ -112,15 +112,15 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         if scoring is None:
             # Equivalent to _get_scorers_to_add
             if self._parent._ml_task == "binary-classification":
-                scoring = ["precision", "recall", "roc_auc"]
+                scoring = ["_precision", "_recall", "_roc_auc"]
                 if hasattr(self._parent._estimator, "predict_proba"):
-                    scoring.append("brier_score")
+                    scoring.append("_brier_score")
             elif self._parent._ml_task == "multiclass-classification":
-                scoring = ["precision", "recall"]
+                scoring = ["_precision", "_recall"]
                 if hasattr(self._parent._estimator, "predict_proba"):
-                    scoring += ["roc_auc", "log_loss"]
+                    scoring += ["_roc_auc", "_log_loss"]
             else:
-                scoring = ["r2", "rmse"]
+                scoring = ["_r2", "_rmse"]
 
         scores = []
 
@@ -130,7 +130,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             if isinstance(metric, _BaseScorer):
                 # scorers have the advantage to have scoped defined kwargs
                 metric_fn = partial(
-                    self.custom_metric,
+                    self._custom_metric,
                     metric_function=metric._score_func,
                     response_method=metric._response_method,
                 )
@@ -141,12 +141,26 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 metrics_kwargs["data_source_hash"] = data_source_hash
             elif isinstance(metric, str) or callable(metric):
                 if isinstance(metric, str):
+                    err_msg = (
+                        f"Invalid metric: {metric!r}. Please use a valid metric"
+                        " from the list of supported metrics: "
+                        f"{list(self._SCORE_OR_LOSS_ICONS.keys())}"
+                    )
+                    if (
+                        metric.startswith("_")
+                        and metric[1:] not in self._SCORE_OR_LOSS_ICONS
+                    ):
+                        raise ValueError(err_msg)
+                    if not metric.startswith("_"):
+                        if metric not in self._SCORE_OR_LOSS_ICONS:
+                            raise ValueError(err_msg)
+                        metric = f"_{metric}"
                     metric_fn = getattr(self, metric)
-                    metrics_kwargs = {}
+                    metrics_kwargs = {"data_source_hash": data_source_hash}
                     if scoring_name is not None:
                         metrics_kwargs["metric_name"] = scoring_name[metric_idx]
                 else:
-                    metric_fn = partial(self.custom_metric, metric_function=metric)
+                    metric_fn = partial(self._custom_metric, metric_function=metric)
                     if scoring_kwargs is None:
                         metrics_kwargs = {"data_source_hash": data_source_hash}
                     else:
@@ -327,11 +341,16 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         pd.DataFrame
             The accuracy score.
         """
+        return self._accuracy(data_source=data_source, data_source_hash=None, X=X, y=y)
+
+    def _accuracy(self, *, data_source="test", data_source_hash=None, X=None, y=None):
+        """Private interface of accuracy to be able to pass `data_source_hash`."""
         return self._compute_metric_scores(
             metrics.accuracy_score,
             X=X,
             y_true=y,
             data_source=data_source,
+            data_source_hash=data_source_hash,
             response_method="predict",
             metric_name=f"Accuracy {self._SCORE_OR_LOSS_ICONS['accuracy']}",
         )
@@ -396,6 +415,26 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         pd.DataFrame
             The precision score.
         """
+        return self._precision(
+            data_source=data_source,
+            data_source_hash=None,
+            X=X,
+            y=y,
+            average=average,
+            pos_label=pos_label,
+        )
+
+    def _precision(
+        self,
+        *,
+        data_source="test",
+        data_source_hash=None,
+        X=None,
+        y=None,
+        average=None,
+        pos_label=None,
+    ):
+        """Private interface of precision to be able to pass `data_source_hash`."""
         if self._parent._ml_task == "binary-classification" and pos_label is not None:
             # if `pos_label` is specified by our user, then we can safely report only
             # the statistics of the positive class
@@ -406,6 +445,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             X=X,
             y_true=y,
             data_source=data_source,
+            data_source_hash=data_source_hash,
             response_method="predict",
             pos_label=pos_label,
             metric_name=f"Precision {self._SCORE_OR_LOSS_ICONS['precision']}",
@@ -473,6 +513,26 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         pd.DataFrame
             The recall score.
         """
+        return self._recall(
+            data_source=data_source,
+            data_source_hash=None,
+            X=X,
+            y=y,
+            average=average,
+            pos_label=pos_label,
+        )
+
+    def _recall(
+        self,
+        *,
+        data_source="test",
+        data_source_hash=None,
+        X=None,
+        y=None,
+        average=None,
+        pos_label=None,
+    ):
+        """Private interface of recall to be able to pass `data_source_hash`."""
         if self._parent._ml_task == "binary-classification" and pos_label is not None:
             # if `pos_label` is specified by our user, then we can safely report only
             # the statistics of the positive class
@@ -483,6 +543,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             X=X,
             y_true=y,
             data_source=data_source,
+            data_source_hash=data_source_hash,
             response_method="predict",
             pos_label=pos_label,
             metric_name=f"Recall {self._SCORE_OR_LOSS_ICONS['recall']}",
@@ -517,6 +578,17 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         pd.DataFrame
             The Brier score.
         """
+        return self._brier_score(
+            data_source=data_source,
+            data_source_hash=None,
+            X=X,
+            y=y,
+        )
+
+    def _brier_score(
+        self, *, data_source="test", data_source_hash=None, X=None, y=None
+    ):
+        """Private interface of brier_score to be able to pass `data_source_hash`."""
         # The Brier score in scikit-learn request `pos_label` to ensure that the
         # integral encoding of `y_true` corresponds to the probabilities of the
         # `pos_label`. Since we get the predictions with `get_response_method`, we
@@ -526,6 +598,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             X=X,
             y_true=y,
             data_source=data_source,
+            data_source_hash=data_source_hash,
             response_method="predict_proba",
             metric_name=f"Brier score {self._SCORE_OR_LOSS_ICONS['brier_score']}",
             pos_label=self._parent._estimator.classes_[-1],
@@ -597,11 +670,32 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         pd.DataFrame
             The ROC AUC score.
         """
+        return self._roc_auc(
+            data_source=data_source,
+            data_source_hash=None,
+            X=X,
+            y=y,
+            average=average,
+            multi_class=multi_class,
+        )
+
+    def _roc_auc(
+        self,
+        *,
+        data_source="test",
+        data_source_hash=None,
+        X=None,
+        y=None,
+        average=None,
+        multi_class="ovr",
+    ):
+        """Private interface of roc_auc to be able to pass `data_source_hash`."""
         return self._compute_metric_scores(
             metrics.roc_auc_score,
             X=X,
             y_true=y,
             data_source=data_source,
+            data_source_hash=data_source_hash,
             response_method=["predict_proba", "decision_function"],
             metric_name=f"ROC AUC {self._SCORE_OR_LOSS_ICONS['roc_auc']}",
             average=average,
@@ -631,11 +725,28 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         pd.DataFrame
             The log-loss.
         """
+        return self._log_loss(
+            data_source=data_source,
+            data_source_hash=None,
+            X=X,
+            y=y,
+        )
+
+    def _log_loss(
+        self,
+        *,
+        data_source="test",
+        data_source_hash=None,
+        X=None,
+        y=None,
+    ):
+        """Private interface of log_loss to be able to pass `data_source_hash`."""
         return self._compute_metric_scores(
             metrics.log_loss,
             X=X,
             y_true=y,
             data_source=data_source,
+            data_source_hash=data_source_hash,
             response_method="predict_proba",
             metric_name=f"Log loss {self._SCORE_OR_LOSS_ICONS['log_loss']}",
         )
@@ -676,11 +787,29 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         pd.DataFrame
             The R² score.
         """
+        return self._r2(
+            data_source=data_source,
+            data_source_hash=None,
+            X=X,
+            y=y,
+            multioutput=multioutput,
+        )
+
+    def _r2(
+        self,
+        *,
+        data_source="test",
+        data_source_hash=None,
+        X=None,
+        y=None,
+        multioutput="raw_values",
+    ):
         return self._compute_metric_scores(
             metrics.r2_score,
             X=X,
             y_true=y,
             data_source=data_source,
+            data_source_hash=data_source_hash,
             response_method="predict",
             metric_name=f"R² {self._SCORE_OR_LOSS_ICONS['r2']}",
             multioutput=multioutput,
@@ -722,11 +851,30 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         pd.DataFrame
             The root mean squared error.
         """
+        return self._rmse(
+            data_source=data_source,
+            data_source_hash=None,
+            X=X,
+            y=y,
+            multioutput=multioutput,
+        )
+
+    def _rmse(
+        self,
+        *,
+        data_source="test",
+        data_source_hash=None,
+        X=None,
+        y=None,
+        multioutput="raw_values",
+    ):
+        """Private interface of rmse to be able to pass `data_source_hash`."""
         return self._compute_metric_scores(
             metrics.root_mean_squared_error,
             X=X,
             y_true=y,
             data_source=data_source,
+            data_source_hash=data_source_hash,
             response_method="predict",
             metric_name=f"RMSE {self._SCORE_OR_LOSS_ICONS['rmse']}",
             multioutput=multioutput,
@@ -792,11 +940,36 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         pd.DataFrame
             The custom metric.
         """
+        return self._custom_metric(
+            data_source=data_source,
+            data_source_hash=None,
+            X=X,
+            y=y,
+            metric_function=metric_function,
+            response_method=response_method,
+            metric_name=metric_name,
+            **kwargs,
+        )
+
+    def _custom_metric(
+        self,
+        *,
+        data_source="test",
+        data_source_hash=None,
+        X=None,
+        y=None,
+        metric_function=None,
+        response_method=None,
+        metric_name=None,
+        **kwargs,
+    ):
+        """Private interface of custom_metric to be able to pass `data_source_hash`."""
         return self._compute_metric_scores(
             metric_function,
             X=X,
             y_true=y,
             data_source=data_source,
+            data_source_hash=data_source_hash,
             response_method=response_method,
             metric_name=metric_name,
             **kwargs,
