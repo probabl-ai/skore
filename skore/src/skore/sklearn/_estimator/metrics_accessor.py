@@ -52,6 +52,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         X=None,
         y=None,
         scoring=None,
+        scoring_name=None,
         pos_label=None,
         scoring_kwargs=None,
     ):
@@ -83,6 +84,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             same parameter name with different values), you can use scikit-learn scorers
             as provided by :func:`sklearn.metrics.make_scorer`.
 
+        scoring_name : list of str, default=None
+            Overwrite the name of the metrics.
+
         pos_label : int, default=None
             The positive class.
 
@@ -94,6 +98,17 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         pd.DataFrame
             The statistics for the metrics.
         """
+        if data_source == "X_y":
+            # optimization of the hash computation to avoid recomputing it
+            # FIXME: we are still recomputing the hash for all the metrics that we
+            # support in the report because we don't call `_compute_metric_scores`
+            # here. We should fix it.
+            X, y, data_source_hash = self._get_X_y_and_data_source_hash(
+                data_source=data_source, X=X, y=y
+            )
+        else:
+            data_source_hash = None
+
         if scoring is None:
             # Equivalent to _get_scorers_to_add
             if self._parent._ml_task == "binary-classification":
@@ -109,7 +124,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         scores = []
 
-        for metric in scoring:
+        for metric_idx, metric in enumerate(scoring):
             # NOTE: we have to check specifically for `_BaseScorer` first because this
             # is also a callable but it has a special private API that we can leverage
             if isinstance(metric, _BaseScorer):
@@ -121,14 +136,19 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 )
                 # forward the additional parameters specific to the scorer
                 metrics_kwargs = {**metric._kwargs}
+                if scoring_name is not None:
+                    metrics_kwargs["metric_name"] = scoring_name[metric_idx]
+                metrics_kwargs["data_source_hash"] = data_source_hash
             elif isinstance(metric, str) or callable(metric):
                 if isinstance(metric, str):
                     metric_fn = getattr(self, metric)
                     metrics_kwargs = {}
+                    if scoring_name is not None:
+                        metrics_kwargs["metric_name"] = scoring_name[metric_idx]
                 else:
                     metric_fn = partial(self.custom_metric, metric_function=metric)
                     if scoring_kwargs is None:
-                        metrics_kwargs = {}
+                        metrics_kwargs = {"data_source_hash": data_source_hash}
                     else:
                         # check if we should pass any parameters specific to the metric
                         # callable
@@ -138,6 +158,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                             for param in metric_callable_params
                             if param in scoring_kwargs
                         }
+                    if scoring_name is not None:
+                        metrics_kwargs["metric_name"] = scoring_name[metric_idx]
+                    metrics_kwargs["data_source_hash"] = data_source_hash
                 metrics_params = inspect.signature(metric_fn).parameters
                 if scoring_kwargs is not None:
                     for param in metrics_params:
@@ -151,7 +174,12 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 )
 
             scores.append(
-                metric_fn(data_source=data_source, X=X, y=y, **metrics_kwargs)
+                metric_fn(
+                    data_source=data_source,
+                    X=X,
+                    y=y,
+                    **metrics_kwargs,
+                )
             )
 
         has_multilevel = any(
@@ -184,25 +212,17 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         y_true,
         *,
         data_source="test",
+        data_source_hash=None,
         response_method,
         pos_label=None,
         metric_name=None,
         **metric_kwargs,
     ):
-        X, y_true, data_source_hash = self._get_X_y_and_data_source_hash(
-            data_source=data_source, X=X, y=y_true
-        )
+        if data_source_hash is None:
+            X, y_true, data_source_hash = self._get_X_y_and_data_source_hash(
+                data_source=data_source, X=X, y=y_true
+            )
 
-        y_pred = _get_cached_response_values(
-            cache=self._parent._cache,
-            estimator_hash=self._parent._hash,
-            estimator=self._parent.estimator,
-            X=X,
-            response_method=response_method,
-            pos_label=pos_label,
-            data_source=data_source,
-            data_source_hash=data_source_hash,
-        )
         cache_key = (self._parent._hash, metric_fn.__name__, data_source)
         if data_source_hash:
             cache_key += (data_source_hash,)
@@ -230,6 +250,17 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             kwargs = {**metric_kwargs}
             if "pos_label" in metric_params:
                 kwargs.update(pos_label=pos_label)
+
+            y_pred = _get_cached_response_values(
+                cache=self._parent._cache,
+                estimator_hash=self._parent._hash,
+                estimator=self._parent.estimator,
+                X=X,
+                response_method=response_method,
+                pos_label=pos_label,
+                data_source=data_source,
+                data_source_hash=data_source_hash,
+            )
 
             score = metric_fn(y_true, y_pred, **kwargs)
             self._parent._cache[cache_key] = score
@@ -262,9 +293,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                     names=["Metric", "Output"],
                 )
                 score = score.reshape(1, -1)
-        else:
-            # FIXME: clusterer would fall here.
-            columns = None
+        else:  # unknown task - try our best
+            columns = [metric_name] if score.shape[0] == 1 else None
         return pd.DataFrame(score, columns=columns, index=[self._parent.estimator_name])
 
     @available_if(
