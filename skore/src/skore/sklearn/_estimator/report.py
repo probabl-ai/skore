@@ -145,6 +145,16 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     @ProgressDecorator(description="Estimator predictions")
     def cache_predictions(self, response_methods="auto", n_jobs=None):
+        """Cache the predictions for the estimator.
+
+        Parameters
+        ----------
+        response_methods : {"auto", "predict", "predict_proba", "decision_function"},\
+                default="auto
+            The methods to use to compute the predictions.
+        n_jobs : int, default=None
+            The number of jobs to run in parallel.
+        """
         progress = self._progress_info["current_progress"]
         task = self._progress_info["current_task"]
 

@@ -10,6 +10,8 @@ from rich.progress import (
 
 def create_progress_bar():
     """Create a consistent progress bar style."""
+    from skore import console  # avoid circular import
+
     return Progress(
         SpinnerColumn(),
         TextColumn("[bold cyan]{task.description}"),
@@ -19,6 +21,7 @@ def create_progress_bar():
             pulse_style="orange1",
         ),
         TextColumn("[orange1]{task.percentage:>3.0f}%"),
+        console=console,
         expand=False,
     )
 
@@ -51,12 +54,19 @@ class ProgressDecorator:
         @wraps(func)
         def wrapper(*args, **kwargs):
             self_obj = args[0]
+
+            desc = (
+                self.description(self_obj)
+                if callable(self.description)
+                else self.description
+            )
+
             if getattr(self_obj, "_parent_progress", None) is not None:
                 progress = self_obj._parent_progress
             else:
                 progress = ProgressManager.get_progress()
 
-            task = progress.add_task(self.description, total=None)
+            task = progress.add_task(desc, total=None)
             self_obj._progress_info = {
                 "current_progress": progress,
                 "current_task": task,

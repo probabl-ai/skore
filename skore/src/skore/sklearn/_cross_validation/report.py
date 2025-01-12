@@ -97,7 +97,11 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         self._cache = {}
         self._ml_task = _find_ml_task(y, estimator=self.estimator_reports[0].estimator)
 
-    @ProgressDecorator(description="Processing cross-validation")
+    @ProgressDecorator(
+        description=lambda self: (
+            f"Processing cross-validation\nfor {self.estimator_name}"
+        )
+    )
     def _fit_estimator_reports(self):
         """Fit the estimator reports.
 
@@ -146,7 +150,15 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         self._cache = {}
 
     @ProgressDecorator(description="Cross-validation predictions")
-    def cache_predictions(self, response_methods="auto", n_jobs=None):
+    def cache_predictions(self, response_methods="auto"):
+        """Cache the predictions for sub-estimators reports.
+
+        Parameters
+        ----------
+        response_methods : {"auto", "predict", "predict_proba", "decision_function"},\
+                default="auto
+            The methods to use to compute the predictions.
+        """
         progress = self._progress_info["current_progress"]
         main_task = self._progress_info["current_task"]
 
@@ -158,7 +170,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 # Pass the progress manager to child tasks
                 estimator_report._parent_progress = progress
                 estimator_report.cache_predictions(
-                    response_methods=response_methods, n_jobs=n_jobs
+                    response_methods=response_methods, n_jobs=self._n_jobs
                 )
                 progress.update(main_task, advance=1, refresh=True)
         finally:

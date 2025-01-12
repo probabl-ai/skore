@@ -78,4 +78,4 @@ skore_console_theme = Theme(
     }
 )
 
-console = Console(theme=skore_console_theme, width=79)
+console = Console(theme=skore_console_theme, width=88)
