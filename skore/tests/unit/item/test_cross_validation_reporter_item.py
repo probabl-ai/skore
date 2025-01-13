@@ -1,13 +1,13 @@
 from dataclasses import dataclass
+from pickle import dumps
 
 import numpy
 import plotly.graph_objects
 import pytest
 from sklearn.model_selection import StratifiedKFold
 from skore.persistence.item import ItemTypeError
-from skore.persistence.item.cross_validation_item import (
-    CrossValidationItem,
-    _hash_numpy,
+from skore.persistence.item.cross_validation_reporter_item import (
+    CrossValidationReporterItem,
     _metric_favorability,
 )
 from skore.sklearn.cross_validation import CrossValidationReporter
@@ -27,7 +27,7 @@ class FakeEstimatorNoGetParams:
 
 @dataclass
 class FakeCrossValidationReporter(CrossValidationReporter):
-    _cv_results = {
+    cv_results = {
         "test_score": numpy.array([1, 2, 3]),
         "estimator": [FakeEstimator(), FakeEstimator(), FakeEstimator()],
         "fit_time": [1, 2, 3],
@@ -44,7 +44,7 @@ class FakeCrossValidationReporter(CrossValidationReporter):
 
 @dataclass
 class FakeCrossValidationReporterNoGetParams(CrossValidationReporter):
-    _cv_results = {
+    cv_results = {
         "test_score": numpy.array([1, 2, 3]),
         "estimator": [
             FakeEstimatorNoGetParams(),
@@ -63,14 +63,14 @@ class FakeCrossValidationReporterNoGetParams(CrossValidationReporter):
     cv = StratifiedKFold(n_splits=5)
 
 
-class TestCrossValidationItem:
+class TestCrossValidationReporterItem:
     @pytest.fixture(autouse=True)
     def monkeypatch_datetime(self, monkeypatch, MockDatetime):
         monkeypatch.setattr("skore.persistence.item.item.datetime", MockDatetime)
 
     def test_factory_exception(self):
         with pytest.raises(ItemTypeError):
-            CrossValidationItem.factory(None)
+            CrossValidationReporterItem.factory(None)
 
     @pytest.mark.parametrize(
         "reporter",
@@ -82,42 +82,32 @@ class TestCrossValidationItem:
         ],
     )
     def test_factory(self, mock_nowstr, reporter):
-        item = CrossValidationItem.factory(reporter)
+        item = CrossValidationReporterItem.factory(reporter)
 
-        assert item.cv_results_serialized == {"test_score": [1, 2, 3]}
-        assert item.estimator_info == {
-            "name": reporter.estimator.__class__.__name__,
-            "params": (
-                {}
-                if isinstance(reporter.estimator, FakeEstimatorNoGetParams)
-                else {"alpha": {"value": "3", "default": True}}
-            ),
-            "module": "tests.unit.item.test_cross_validation_item",
-        }
-        assert item.X_info == {
-            "nb_cols": 1,
-            "nb_rows": 1,
-            "hash": _hash_numpy(FakeCrossValidationReporter.X),
-        }
-        assert item.y_info == {"hash": _hash_numpy(FakeCrossValidationReporter.y)}
-        assert item.cv_info == {
-            "n_splits": "5",
-            "random_state": "None",
-            "shuffle": "False",
-        }
-        assert isinstance(item.plots_bytes, dict)
-        assert isinstance(item.plots, dict)
+        assert item.reporter_bytes == dumps(reporter)
         assert item.created_at == mock_nowstr
         assert item.updated_at == mock_nowstr
 
+    def test_reporter(self, mock_nowstr):
+        reporter = FakeCrossValidationReporter()
+        item1 = CrossValidationReporterItem.factory(reporter)
+        item2 = CrossValidationReporterItem(
+            reporter_bytes=dumps(reporter),
+            created_at=mock_nowstr,
+            updated_at=mock_nowstr,
+        )
+
+        assert item1.reporter == reporter
+        assert item2.reporter == reporter
+
     def test_get_serializable_dict(self, monkeypatch, mock_nowstr):
         monkeypatch.setattr(
-            "skore.persistence.item.cross_validation_item.CrossValidationReporter",
+            "skore.persistence.item.cross_validation_reporter_item.CrossValidationReporter",
             FakeCrossValidationReporter,
         )
 
         reporter = FakeCrossValidationReporter()
-        item = CrossValidationItem.factory(reporter)
+        item = CrossValidationReporterItem.factory(reporter)
         serializable = item.as_serializable_dict()
 
         assert serializable["updated_at"] == mock_nowstr

@@ -10,7 +10,7 @@ from sklearn.model_selection import cross_validate
 from sklearn.multiclass import OneVsOneClassifier
 from sklearn.svm import SVC
 from skore import CrossValidationReporter
-from skore.persistence.item.cross_validation_item import CrossValidationItem
+from skore.persistence.item import CrossValidationReporterItem
 from skore.sklearn.cross_validation.cross_validation_helpers import _get_scorers_to_add
 
 
@@ -201,7 +201,7 @@ def test_cross_validation_reporter(in_memory_project, fixture_name, request):
     in_memory_project.put("cross-validation", reporter)
 
     retrieved_item = in_memory_project.item_repository.get_item("cross-validation")
-    assert isinstance(retrieved_item, CrossValidationItem)
+    assert isinstance(retrieved_item, CrossValidationReporterItem)
 
 
 @pytest.mark.parametrize(

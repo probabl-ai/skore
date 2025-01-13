@@ -167,7 +167,7 @@ def fake_cross_validate(monkeypatch):
     monkeypatch.setattr("sklearn.model_selection.cross_validate", _fake_cross_validate)
 
 
-def test_serialize_cross_validation_item(
+def test_serialize_cross_validation_reporter_item(
     client,
     in_memory_project,
     monkeypatch,
@@ -176,9 +176,6 @@ def test_serialize_cross_validation_item(
     fake_cross_validate,
 ):
     monkeypatch.setattr("skore.persistence.item.item.datetime", MockDatetime)
-    monkeypatch.setattr(
-        "skore.persistence.item.cross_validation_item.CrossValidationItem.plots", {}
-    )
     monkeypatch.setattr(
         "skore.sklearn.cross_validation.cross_validation_reporter.plot_cross_validation_compare_scores",
         lambda _: {},
