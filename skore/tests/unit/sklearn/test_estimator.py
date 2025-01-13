@@ -289,17 +289,33 @@ def test_estimator_report_repr(binary_classification_data):
 
 
 @pytest.mark.parametrize(
-    "fixture_name", ["binary_classification_data", "regression_data"]
+    "fixture_name, pass_train_data, expected_n_keys",
+    [
+        ("binary_classification_data", True, 6),
+        ("binary_classification_data_svc", True, 6),
+        ("multiclass_classification_data", True, 8),
+        ("regression_data", True, 2),
+        ("binary_classification_data", False, 3),
+        ("binary_classification_data_svc", False, 3),
+        ("multiclass_classification_data", False, 4),
+        ("regression_data", False, 1),
+    ],
 )
-def test_estimator_report_cache_predictions(request, fixture_name):
+def test_estimator_report_cache_predictions(
+    request, fixture_name, pass_train_data, expected_n_keys
+):
     """Check that calling cache_predictions fills the cache."""
     estimator, X_test, y_test = request.getfixturevalue(fixture_name)
-    report = EstimatorReport(
-        estimator, X_train=X_test, y_train=y_test, X_test=X_test, y_test=y_test
-    )
+    if pass_train_data:
+        report = EstimatorReport(
+            estimator, X_train=X_test, y_train=y_test, X_test=X_test, y_test=y_test
+        )
+    else:
+        report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
     assert report._cache == {}
     report.cache_predictions()
+    assert len(report._cache) == expected_n_keys
     assert report._cache != {}
     stored_cache = deepcopy(report._cache)
     report.cache_predictions()
