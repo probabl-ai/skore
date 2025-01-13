@@ -131,7 +131,7 @@ df[["param_alpha", "rmse"]].head()
 # %%
 import matplotlib.pyplot as plt
 
-fig = plt.figure(layout="constrained", dpi=200)
+fig = plt.figure(layout="constrained")
 plt.plot(df["param_alpha"], df["rmse"])
 plt.xscale("log")
 plt.xlabel("Alpha hyperparameter")

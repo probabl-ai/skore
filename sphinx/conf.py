@@ -65,6 +65,14 @@ examples_ordered = [
     "../examples/model_evaluation/plot_cross_validate",
 ]
 
+
+# https://sphinx-gallery.github.io/stable/advanced.html#resetting-before-each-example
+def reset_mpl(gallery_conf, fname):
+    import matplotlib
+
+    matplotlib.rcParams["figure.dpi"] = 200
+
+
 # sphinx_gallery options
 sphinx_gallery_conf = {
     "examples_dirs": "../examples",  # path to example scripts
@@ -80,6 +88,7 @@ sphinx_gallery_conf = {
     "backreferences_dir": "generated",
     "doc_module": "skore",
     "default_thumb_file": "./_static/images/Logo_Skore_Light@2x.svg",
+    "reset_modules": (reset_mpl, "seaborn"),
 }
 
 # intersphinx configuration
