@@ -327,8 +327,10 @@ def _get_cached_response_values(
     else:
         cache_key = (estimator_hash, prediction_method, data_source)
 
-    if data_source == "X_y":
+    if data_source_hash is None and data_source == "X_y":
         data_source_hash = joblib.hash(X)
+        cache_key += (data_source_hash,)
+    elif data_source_hash is not None:
         cache_key += (data_source_hash,)
 
     if cache_key in cache:
