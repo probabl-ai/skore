@@ -6,7 +6,7 @@ from contextlib import suppress
 from typing import Any
 
 from . import skrub_table_report_item as SkrubTableReportItem
-from .cross_validation_item import CrossValidationItem
+from .cross_validation_reporter_item import CrossValidationReporterItem
 from .item import Item, ItemTypeError
 from .media_item import MediaItem
 from .numpy_array_item import NumpyArrayItem
@@ -31,7 +31,7 @@ def object_to_item(object: Any) -> Item:
         SklearnBaseEstimatorItem,
         MediaItem,
         SkrubTableReportItem,
-        CrossValidationItem,
+        CrossValidationReporterItem,
     ):
         with suppress(ImportError, ItemTypeError):
             # ImportError:
@@ -58,8 +58,8 @@ def item_to_object(item: Item) -> Any:
         return item.series
     elif isinstance(item, SklearnBaseEstimatorItem):
         return item.estimator
-    elif isinstance(item, CrossValidationItem):
-        return item.cv_results_serialized
+    elif isinstance(item, CrossValidationReporterItem):
+        return item.reporter
     elif isinstance(item, MediaItem):
         return item.media_bytes
     elif isinstance(item, PickleItem):
@@ -69,7 +69,7 @@ def item_to_object(item: Item) -> Any:
 
 
 __all__ = [
-    "CrossValidationItem",
+    "CrossValidationReporterItem",
     "Item",
     "MediaItem",
     "NumpyArrayItem",
