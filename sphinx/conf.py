@@ -7,7 +7,6 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 import os
-import sphinx_autosummary_accessors
 from sphinx_gallery.sorting import ExplicitOrder
 
 project = "skore"

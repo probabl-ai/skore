@@ -47,7 +47,6 @@ reporter are accessible through accessors.
 .. autosummary::
     :toctree: generated/
     :template: base.rst
-    :caption: Reporting for a single estimator
 
     EstimatorReport
 
