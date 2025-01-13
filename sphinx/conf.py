@@ -156,7 +156,7 @@ html_theme_options = {
     ],
     "switcher": {
         "json_url": "https://skore.probabl.ai/versions.json",
-        "version_match": version,
+        "version_match": release,
     },
     "check_switcher": True,
     "show_version_warning_banner": True,
