@@ -158,14 +158,14 @@ jobs:
             # Add new version to history
             history[version] = release
 
-            # Sort history to keep only the latest versions
+            # Sort history, and always keep "dev" at the beginning
             history = sorted(
                 history.items(),
                 key=lambda item: float(item[0]) if item[0] != "dev" else float('inf'),
                 reverse=True
             )
 
-            # Rewrite the history
+            # Rewrite the history with "dev" and the 10 latest versions
             new = [
                 {
                     "name": version,
