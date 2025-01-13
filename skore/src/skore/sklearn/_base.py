@@ -5,6 +5,7 @@ import joblib
 from rich.console import Console, Group
 from rich.panel import Panel
 from rich.tree import Tree
+from sklearn.utils._response import _check_response_method, _get_response_values
 
 from skore.externals._sklearn_compat import is_clusterer
 
@@ -74,6 +75,102 @@ class _HelpMixin:
         console = Console(file=StringIO(), force_terminal=False)
         console.print(self._create_help_panel())
         return console.file.getvalue()
+
+
+class _BaseReport(_HelpMixin):
+    def _get_help_panel_title(self):
+        return (
+            f"[bold cyan]:notebook: Tools to diagnose estimator "
+            f"{self.estimator_name}[/bold cyan]"
+        )
+
+    def _get_help_legend(self):
+        return (
+            "[cyan](↗︎)[/cyan] higher is better [orange1](↘︎)[/orange1] lower is better"
+        )
+
+    def _get_attributes_for_help(self):
+        """Get the public attributes to display in help."""
+        attributes = []
+        xy_attributes = []
+
+        for name in dir(self):
+            # Skip private attributes, callables, and accessors
+            if (
+                name.startswith("_")
+                or callable(getattr(self, name))
+                or isinstance(getattr(self, name), _BaseAccessor)
+            ):
+                continue
+
+            # Group X and y attributes separately
+            value = getattr(self, name)
+            if name.startswith(("X_", "y_")):
+                if value is not None:  # Only include non-None X/y attributes
+                    xy_attributes.append(name)
+            else:
+                attributes.append(name)
+
+        # Sort X/y attributes to keep them grouped
+        xy_attributes.sort()
+        attributes.sort()
+
+        # Return X/y attributes first, followed by other attributes
+        return xy_attributes + attributes
+
+    def _create_help_tree(self):
+        """Create a rich Tree with the available tools and accessor methods."""
+        tree = Tree("reporter")
+
+        # Add accessor methods first
+        for accessor_attr, config in self._ACCESSOR_CONFIG.items():
+            accessor = getattr(self, accessor_attr)
+            branch = tree.add(
+                f"[bold cyan].{config['name']} {config['icon']}[/bold cyan]"
+            )
+
+            # Add main accessor methods first
+            methods = accessor._get_methods_for_help()
+            methods = accessor._sort_methods_for_help(methods)
+
+            # Add methods
+            for name, method in methods:
+                displayed_name = accessor._format_method_name(name)
+                description = accessor._get_method_description(method)
+                branch.add(f".{displayed_name} - {description}")
+
+            # Add sub-accessors after main methods
+            for sub_attr, sub_obj in inspect.getmembers(accessor):
+                if isinstance(sub_obj, _BaseAccessor) and not sub_attr.startswith("_"):
+                    sub_branch = branch.add(
+                        f"[bold cyan].{sub_attr} {sub_obj._icon}[/bold cyan]"
+                    )
+
+                    # Add sub-accessor methods
+                    sub_methods = sub_obj._get_methods_for_help()
+                    sub_methods = sub_obj._sort_methods_for_help(sub_methods)
+
+                    for name, method in sub_methods:
+                        displayed_name = sub_obj._format_method_name(name)
+                        description = sub_obj._get_method_description(method)
+                        sub_branch.add(f".{displayed_name.ljust(25)} - {description}")
+
+        # Add base methods
+        base_methods = self._get_methods_for_help()
+        base_methods = self._sort_methods_for_help(base_methods)
+
+        for name, method in base_methods:
+            description = self._get_method_description(method)
+            tree.add(f".{name}(...)".ljust(34) + f" - {description}")
+
+        # Add attributes section
+        attributes = self._get_attributes_for_help()
+        if attributes:
+            attr_branch = tree.add("[bold cyan]Attributes[/bold cyan]")
+            for attr in attributes:
+                attr_branch.add(f".{attr}")
+
+        return tree
 
 
 class _BaseAccessor(_HelpMixin):
@@ -172,3 +269,78 @@ class _BaseAccessor(_HelpMixin):
                 f"Invalid data source: {data_source}. Possible values are: "
                 "test, train, X_y."
             )
+
+
+def _get_cached_response_values(
+    *,
+    cache,
+    estimator_hash,
+    estimator,
+    X,
+    response_method,
+    pos_label=None,
+    data_source="test",
+    data_source_hash=None,
+):
+    """Compute or load from local cache the response values.
+
+    Parameters
+    ----------
+    cache : dict
+        The cache to use.
+
+    estimator_hash : int
+        A hash associated with the estimator such that we can retrieve the data from
+        the cache.
+
+    estimator : estimator object
+        The estimator.
+
+    X : {array-like, sparse matrix} of shape (n_samples, n_features)
+        The data.
+
+    response_method : str
+        The response method.
+
+    pos_label : str, default=None
+        The positive label.
+
+    data_source : {"test", "train", "X_y"}, default="test"
+        The data source to use.
+        - "test" : use the test set provided when creating the reporter.
+        - "train" : use the train set provided when creating the reporter.
+        - "X_y" : use the provided `X` and `y` to compute the metric.
+
+    data_source_hash : int or None
+        The hash of the data source when `data_source` is "X_y".
+
+    Returns
+    -------
+    array-like of shape (n_samples,) or (n_samples, n_outputs)
+        The response values.
+    """
+    prediction_method = _check_response_method(estimator, response_method).__name__
+    if prediction_method in ("predict_proba", "decision_function"):
+        # pos_label is only important in classification and with probabilities
+        # and decision functions
+        cache_key = (estimator_hash, pos_label, prediction_method, data_source)
+    else:
+        cache_key = (estimator_hash, prediction_method, data_source)
+
+    if data_source == "X_y":
+        data_source_hash = joblib.hash(X)
+        cache_key += (data_source_hash,)
+
+    if cache_key in cache:
+        return cache[cache_key]
+
+    predictions, _ = _get_response_values(
+        estimator,
+        X=X,
+        response_method=prediction_method,
+        pos_label=pos_label,
+        return_response_method_used=False,
+    )
+    cache[cache_key] = predictions
+
+    return predictions
