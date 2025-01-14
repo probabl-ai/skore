@@ -285,7 +285,8 @@ def test_estimator_report_repr(binary_classification_data):
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
     repr_str = repr(report)
-    assert f"📓 Tools to diagnose estimator {estimator.__class__.__name__}" in repr_str
+    assert "skore.EstimatorReport" in repr_str
+    assert "reporter.help()" in repr_str
 
 
 @pytest.mark.parametrize(
@@ -344,7 +345,8 @@ def test_estimator_report_plot_repr(binary_classification_data):
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
     repr_str = repr(report.metrics.plot)
-    assert "🎨 Available plot methods" in repr_str
+    assert "skore.EstimatorReport.metrics.plot" in repr_str
+    assert "reporter.metrics.plot.help()" in repr_str
 
 
 def test_estimator_report_plot_roc(binary_classification_data):
@@ -483,7 +485,8 @@ def test_estimator_report_metrics_repr(binary_classification_data):
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
     repr_str = repr(report.metrics)
-    assert "📏 Available metrics methods" in repr_str
+    assert "skore.EstimatorReport.metrics" in repr_str
+    assert "reporter.metrics.help()" in repr_str
 
 
 @pytest.mark.parametrize(

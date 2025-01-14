@@ -819,6 +819,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     def _get_help_tree_title(self):
         return "[bold cyan]reporter.metrics[/bold cyan]"
 
+    def __repr__(self):
+        """Return a string representation using rich."""
+        return self._rich_repr(
+            class_name="skore.EstimatorReport.metrics",
+            help_method_name="reporter.metrics.help()",
+        )
+
 
 ########################################################################################
 # Sub-accessors
@@ -1096,3 +1103,10 @@ class _PlotMetricsAccessor(_BaseAccessor):
 
     def _get_help_tree_title(self):
         return "[bold cyan]reporter.metrics.plot[/bold cyan]"
+
+    def __repr__(self):
+        """Return a string representation using rich."""
+        return self._rich_repr(
+            class_name="skore.EstimatorReport.metrics.plot",
+            help_method_name="reporter.metrics.plot.help()",
+        )
