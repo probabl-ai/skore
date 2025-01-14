@@ -6,7 +6,7 @@ storing, retrieving, and deleting items in a storage system.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 import skore.persistence.item
 
@@ -132,3 +132,79 @@ class ItemRepository:
             A list of all keys in the storage.
         """
         return list(self.storage.keys())
+
+    def set_item_note(self, key: str, message: str, *, version=-1):
+        """Attach a note to key ``key``.
+
+        Parameters
+        ----------
+        key : str
+            The key of the item to annotate.
+            May be qualified with a version number through the ``version`` argument.
+        message : str
+            The message to be attached.
+        version : int, default=-1
+            The version of the key to annotate. Default is the latest version.
+
+        Raises
+        ------
+        KeyError
+            If the ``(key, version)`` couple does not exist.
+        TypeError
+            If ``key`` or ``message`` is not a string.
+        """
+        if not isinstance(key, str):
+            raise TypeError(f"Key should be a string; got {type(key)}")
+        if not isinstance(message, str):
+            raise TypeError(f"Message should be a string; got {type(message)}")
+
+        try:
+            self.storage[key][version]["item"]["note"] = message
+        except IndexError as e:
+            raise KeyError((key, version)) from e
+
+    def get_item_note(self, key: str, *, version=-1) -> Union[str, None]:
+        """Retrieve a note previously attached to key ``key``.
+
+        Parameters
+        ----------
+        key : str
+            The key of the annotated item.
+            May be qualified with a version number through the ``version`` argument.
+        version : int, default=-1
+            The version of the annotated key. Default is the latest version.
+
+        Returns
+        -------
+        The attached note, or None if no note is attached.
+
+        Raises
+        ------
+        KeyError
+            If no note is attached to the ``(key, version)`` couple.
+        """
+        try:
+            return self.storage[key][version]["item"]["note"]
+        except IndexError as e:
+            raise KeyError((key, version)) from e
+
+    def delete_item_note(self, key: str, *, version=-1):
+        """Delete a note previously attached to key ``key``.
+
+        Parameters
+        ----------
+        key : str
+            The key of the annotated item.
+            May be qualified with a version number through the ``version`` argument.
+        version : int, default=-1
+            The version of the annotated key. Default is the latest version.
+
+        Raises
+        ------
+        KeyError
+            If no note is attached to the ``(key, version)`` couple.
+        """
+        try:
+            self.storage[key][version]["item"]["note"] = None
+        except IndexError as e:
+            raise KeyError((key, version)) from e

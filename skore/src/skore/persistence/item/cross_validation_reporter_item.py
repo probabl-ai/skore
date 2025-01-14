@@ -167,6 +167,7 @@ class CrossValidationReporterItem(Item):
         reporter_bytes: bytes,
         created_at: Optional[str] = None,
         updated_at: Optional[str] = None,
+        note: Optional[str] = None,
     ):
         """
         Initialize a CrossValidationReporterItem.
@@ -179,8 +180,10 @@ class CrossValidationReporterItem(Item):
             The creation timestamp in ISO format.
         updated_at : str, optional
             The last update timestamp in ISO format.
+        note : str, optional
+            A note.
         """
-        super().__init__(created_at, updated_at)
+        super().__init__(created_at, updated_at, note)
 
         self.reporter_bytes = reporter_bytes
 

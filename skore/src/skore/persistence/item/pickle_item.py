@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from functools import cached_property
 from pickle import dumps, loads
-from typing import Any
+from typing import Any, Optional
 
 from .item import Item
 
@@ -25,8 +25,9 @@ class PickleItem(Item):
     def __init__(
         self,
         pickle_bytes: bytes,
-        created_at: str | None = None,
-        updated_at: str | None = None,
+        created_at: Optional[str] = None,
+        updated_at: Optional[str] = None,
+        note: Optional[str] = None,
     ):
         """
         Initialize a PickleItem.
@@ -35,12 +36,14 @@ class PickleItem(Item):
         ----------
         pickle_bytes : bytes
             The raw bytes of the object pickle representation.
-        created_at : str
+        created_at : str, optional
             The creation timestamp in ISO format.
-        updated_at : str
+        updated_at : str, optional
             The last update timestamp in ISO format.
+        note : str, optional
+            A note.
         """
-        super().__init__(created_at, updated_at)
+        super().__init__(created_at, updated_at, note)
 
         self.pickle_bytes = pickle_bytes
 

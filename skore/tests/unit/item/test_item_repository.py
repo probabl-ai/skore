@@ -45,6 +45,7 @@ class TestItemRepository:
             media_type="application/octet-stream",
             created_at=now,
             updated_at=now,
+            note=None,
         )
 
         storage = {}
@@ -61,6 +62,7 @@ class TestItemRepository:
                         "media_type": "application/octet-stream",
                         "created_at": now,
                         "updated_at": now,
+                        "note": None,
                     },
                 }
             ]
@@ -73,6 +75,7 @@ class TestItemRepository:
             media_type="application/octet-stream",
             created_at=now2,
             updated_at=now2,
+            note=None,
         )
 
         repository.put_item("key", item2)
@@ -87,6 +90,7 @@ class TestItemRepository:
                         "media_type": "application/octet-stream",
                         "created_at": now,
                         "updated_at": now,
+                        "note": None,
                     },
                 },
                 {
@@ -97,6 +101,7 @@ class TestItemRepository:
                         "media_type": "application/octet-stream",
                         "created_at": now,
                         "updated_at": now2,
+                        "note": None,
                     },
                 },
             ]

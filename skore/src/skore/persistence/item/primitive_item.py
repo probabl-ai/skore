@@ -19,7 +19,7 @@ if TYPE_CHECKING:
         str,
         list["Primitive"],
         tuple["Primitive"],
-        dict[str | int | float, "Primitive"],
+        dict[Union[str, int, float], "Primitive"],
     ]
 
 
@@ -48,8 +48,9 @@ class PrimitiveItem(Item):
     def __init__(
         self,
         primitive: Primitive,
-        created_at: str | None = None,
-        updated_at: str | None = None,
+        created_at: Union[str, None] = None,
+        updated_at: Union[str, None] = None,
+        note: Union[str, None] = None,
     ):
         """
         Initialize a PrimitiveItem.
@@ -62,8 +63,10 @@ class PrimitiveItem(Item):
             The creation timestamp as ISO format.
         updated_at : str, optional
             The last update timestamp as ISO format.
+        note : Union[str, None]
+            An optional note.
         """
-        super().__init__(created_at, updated_at)
+        super().__init__(created_at, updated_at, note)
 
         self.primitive = primitive
 

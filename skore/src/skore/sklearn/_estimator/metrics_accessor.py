@@ -9,7 +9,7 @@ from sklearn.metrics._scorer import _BaseScorer
 from sklearn.utils.metaestimators import available_if
 
 from skore.externals._pandas_accessors import DirNamesMixin
-from skore.sklearn._estimator.base import _BaseAccessor
+from skore.sklearn._base import _BaseAccessor, _get_cached_response_values
 from skore.sklearn._plot import (
     PrecisionRecallCurveDisplay,
     PredictionErrorDisplay,
@@ -42,7 +42,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     }
 
     def __init__(self, parent):
-        super().__init__(parent, icon="📏")
+        super().__init__(parent, icon=":straight_ruler:")
 
     # TODO: should build on the `add_scorers` function
     def report_metrics(
@@ -83,7 +83,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             same parameter name with different values), you can use scikit-learn scorers
             as provided by :func:`sklearn.metrics.make_scorer`.
 
-        pos_label : int, default=None
+        pos_label : int, float, bool or str, default=None
             The positive class.
 
         scoring_kwargs : dict, default=None
@@ -193,7 +193,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             data_source=data_source, X=X, y=y_true
         )
 
-        y_pred = self._parent._get_cached_response_values(
+        y_pred = _get_cached_response_values(
+            cache=self._parent._cache,
             estimator_hash=self._parent._hash,
             estimator=self._parent.estimator,
             X=X,
@@ -357,7 +358,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 only the statistics of the positive class (i.e. equivalent to
                 `average="binary"`).
 
-        pos_label : int, default=None
+        pos_label : int, float, bool or str, default=None
             The positive class.
 
         Returns
@@ -434,7 +435,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 only the statistics of the positive class (i.e. equivalent to
                 `average="binary"`).
 
-        pos_label : int, default=None
+        pos_label : int, float, bool or str, default=None
             The positive class.
 
         Returns
@@ -796,7 +797,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         tree = super()._create_help_tree()
 
         # Add plot methods in a separate branch
-        plot_branch = tree.add("[bold cyan].plot 🎨[/bold cyan]")
+        plot_branch = tree.add("[bold cyan].plot :art:[/bold cyan]")
         plot_methods = self.plot._get_methods_for_help()
         plot_methods = self.plot._sort_methods_for_help(plot_methods)
 
@@ -829,7 +830,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
     """Plotting methods for the metrics accessor."""
 
     def __init__(self, parent):
-        super().__init__(parent._parent, icon="🎨")
+        super().__init__(parent._parent, icon=":art:")
         self._metrics_parent = parent
 
     def _get_display(
@@ -889,7 +890,8 @@ class _PlotMetricsAccessor(_BaseAccessor):
             display = self._parent._cache[cache_key]
             display.plot(**display_plot_kwargs)
         else:
-            y_pred = self._parent._get_cached_response_values(
+            y_pred = _get_cached_response_values(
+                cache=self._parent._cache,
                 estimator_hash=self._parent._hash,
                 estimator=self._parent.estimator,
                 X=X,
@@ -938,7 +940,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
             New target on which to compute the metric. By default, we use the target
             provided when creating the reporter.
 
-        pos_label : str, default=None
+        pos_label : int, float, bool or str, default=None
             The positive class.
 
         ax : matplotlib.axes.Axes, default=None
@@ -995,7 +997,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
             New target on which to compute the metric. By default, we use the target
             provided when creating the reporter.
 
-        pos_label : str, default=None
+        pos_label : int, float, bool or str, default=None
             The positive class.
 
         ax : matplotlib.axes.Axes, default=None

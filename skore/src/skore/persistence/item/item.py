@@ -30,10 +30,12 @@ class Item(ABC):
 
     Parameters
     ----------
-    created_at : str | None, optional
+    created_at : Union[str, None], optional
         The creation timestamp of the item. If None, the current time is used.
-    updated_at : str | None, optional
+    updated_at : Union[str, None], optional
         The last update timestamp of the item. If None, the current time is used.
+    note : Union[str, None]
+        An optional note.
 
     Attributes
     ----------
@@ -41,17 +43,21 @@ class Item(ABC):
         The creation timestamp of the item.
     updated_at : str
         The last update timestamp of the item.
+    note : Union[str, None]
+        An optional note.
     """
 
     def __init__(
         self,
         created_at: Optional[str] = None,
         updated_at: Optional[str] = None,
+        note: Optional[str] = None,
     ):
         now = datetime.now(tz=timezone.utc).isoformat()
 
         self.created_at = created_at or now
         self.updated_at = updated_at or now
+        self.note = note
 
     @classmethod
     @abstractmethod
@@ -120,4 +126,5 @@ class Item(ABC):
         return {
             "updated_at": self.updated_at,
             "created_at": self.created_at,
+            "note": self.note,
         }

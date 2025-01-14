@@ -225,7 +225,7 @@ import matplotlib.pyplot as plt
 
 x = np.linspace(0, 2, 100)
 
-fig, ax = plt.subplots(layout="constrained", dpi=200)
+fig, ax = plt.subplots(layout="constrained")
 ax.plot(x, x, label="linear")
 ax.plot(x, x**2, label="quadratic")
 ax.plot(x, x**3, label="cubic")

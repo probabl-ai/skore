@@ -99,6 +99,7 @@ class TestSklearnBaseEstimatorItem:
         assert serializable == {
             "updated_at": mock_nowstr,
             "created_at": mock_nowstr,
+            "note": None,
             "media_type": "application/vnd.sklearn.estimator+html",
             "value": item.estimator_html_repr,
         }
