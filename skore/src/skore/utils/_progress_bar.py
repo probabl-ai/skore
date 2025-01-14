@@ -9,6 +9,20 @@ from rich.progress import (
 
 
 def progress_decorator(description):
+    """Decorate class methods to add a progress bar.
+
+    Parameters
+    ----------
+    description : str or callable
+        The description of the progress bar. If a callable, it should take the
+        self object as an argument and return a string.
+
+    Returns
+    -------
+    decorator : function
+        A decorator that wraps the input function and adds a progress bar to it.
+    """
+
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -40,10 +54,9 @@ def progress_decorator(description):
             has_errored = False
             try:
                 result = func(*args, **kwargs)
-                if progress.tasks[task].total is not None:
-                    progress.update(
-                        task, completed=progress.tasks[task].total, refresh=True
-                    )
+                progress.update(
+                    task, completed=progress.tasks[task].total, refresh=True
+                )
                 return result
             except Exception:
                 has_errored = True
