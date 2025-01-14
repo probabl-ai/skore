@@ -157,7 +157,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 else:
                     metric_fn = partial(self._custom_metric, metric_function=metric)
                     if scoring_kwargs is None:
-                        metrics_kwargs = {"data_source_hash": data_source_hash}
+                        metrics_kwargs = {}
                     else:
                         # check if we should pass any parameters specific to the metric
                         # callable

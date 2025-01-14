@@ -882,6 +882,37 @@ def test_estimator_report_report_metrics_with_scorer(regression_data):
     )
 
 
+def test_estimator_report_custom_metric_compatible_estimator(
+    binary_classification_data,
+):
+    """Check that the estimator report still works if an estimator has a compatible
+    scikit-learn API.
+    """
+    _, X_test, y_test = binary_classification_data
+
+    class CompatibleEstimator:
+        """Estimator exposing only a predict method but it should be enough for the
+        reporters.
+        """
+
+        def fit(self, X, y):
+            self.fitted_ = True
+            return self
+
+        def predict(self, X):
+            return np.ones(X.shape[0])
+
+    estimator = CompatibleEstimator()
+    report = EstimatorReport(estimator, fit=False, X_test=X_test, y_test=y_test)
+    result = report.metrics.custom_metric(
+        metric_function=lambda y_true, y_pred: 1,
+        metric_name="Custom Metric",
+        response_method="predict",
+    )
+    assert result.columns.tolist() == ["Custom Metric"]
+    assert result.to_numpy()[0, 0] == 1
+
+
 def test_estimator_report_report_metrics_with_scorer_binary_classification(
     binary_classification_data,
 ):
@@ -894,13 +925,14 @@ def test_estimator_report_report_metrics_with_scorer_binary_classification(
         f1_score, response_method="predict", average="macro", pos_label=1
     )
     result = report.metrics.report_metrics(
-        scoring=["accuracy", f1_scorer],
+        scoring=["accuracy", accuracy_score, f1_scorer],
     )
-    assert result.shape == (1, 2)
+    assert result.shape == (1, 3)
     np.testing.assert_allclose(
         result.to_numpy(),
         [
             [
+                accuracy_score(y_test, estimator.predict(X_test)),
                 accuracy_score(y_test, estimator.predict(X_test)),
                 f1_score(
                     y_test, estimator.predict(X_test), average="macro", pos_label=1
