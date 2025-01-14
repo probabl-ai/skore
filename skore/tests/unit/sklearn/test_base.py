@@ -1,3 +1,4 @@
+import joblib
 import numpy as np
 import pytest
 from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
@@ -140,18 +141,30 @@ def test_get_cached_response_values_different_data_source_hash(
         "response_method": response_method,
         "pos_label": 1,
         "data_source": "X_y",
-        "data_source_hash": 456,
+        "data_source_hash": None,
     }
     response_values = _get_cached_response_values(cache=cache, **params)
     assert response_values.shape == y.shape
     initial_calls = getattr(estimator, f"n_call_{response_method}")
 
-    # Second call with different hash should trigger new computation
-    params["data_source_hash"] = 789
+    # Second call by passing the hash of the data should not trigger new computation
+    # because we consider it trustworthy
+    params["data_source_hash"] = joblib.hash(X)
+    response_values = _get_cached_response_values(cache=cache, **params)
+    assert response_values.shape == y.shape
+    current_calls = getattr(estimator, f"n_call_{response_method}")
+    assert current_calls == initial_calls, (
+        f"Passing a hash corresponding to the data should not trigger new "
+        f"computation for {response_method}"
+    )
+
+    # Third call by passing a data hash not in the keys should trigger new computation
+    # It is should never happen in practice but the behaviour is safe
+    params["data_source_hash"] = 456
     response_values = _get_cached_response_values(cache=cache, **params)
     assert response_values.shape == y.shape
     current_calls = getattr(estimator, f"n_call_{response_method}")
     assert current_calls == initial_calls + 1, (
-        f"Different data source hash should trigger new "
+        f"Passing a hash not present in the cache keys should trigger new "
         f"computation for {response_method}"
     )
