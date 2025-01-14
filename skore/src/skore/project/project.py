@@ -1,7 +1,7 @@
 """Define a Project."""
 
 import logging
-from typing import Any, Optional, Union
+from typing import Any
 
 from skore.item import (
     CrossValidationItem,
@@ -23,9 +23,6 @@ from skore.view.view_repository import ViewRepository
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())  # Default to no output
 logger.setLevel(logging.INFO)
-
-
-MISSING = object()
 
 
 class Project:
@@ -80,44 +77,18 @@ class Project:
         self.item_repository = item_repository
         self.view_repository = view_repository
 
-    def put(self, key: Union[str, dict[str, Any]], value: Optional[Any] = MISSING):
-        """Add one or more key-value pairs to the Project.
+    def put(self, key: str, value: Any):
+        """Add a key-value pair to the Project.
 
         If an item with the same key already exists, its value is replaced by the new
         one.
 
-        If ``key`` is a string, then :func:`~skore.Project.put` adds the single
-        ``key``-``value`` pair mapping to the Project.
-        If ``key`` is a dict, it is interpreted as multiple key-value pairs to add to
-        the Project.
-
-        The dict format is equivalent to running :func:`~skore.Project.put`
-        for each individual key-value pair. In other words,
-
-        .. code-block:: python
-
-            project.put({"hello": 1, "goodbye": 2})
-
-        is equivalent to
-
-        .. code-block:: python
-
-            project.put("hello", 1)
-            project.put("goodbye", 2)
-
-        In particular, this means that if some key-value pair is invalid
-        (e.g. if a key is not a string, or a value's type is not supported),
-        then all the key-value pairs up to the first offending key-value pair will
-        be successfully inserted, *and then* an error will be raised.
-
         Parameters
         ----------
-        key : str | dict[str, Any]
-            The key to associate with ``value`` in the Project,
-            or dict of key-value pairs to add to the Project.
-        value : Any, optional
+        key : str
+            The key to associate with ``value`` in the Project.
+        value : Any
             The value to associate with ``key`` in the Project.
-            If ``key`` is a dict, this argument is ignored.
 
         Raises
         ------
@@ -127,21 +98,10 @@ class Project:
         NotImplementedError
             If the value type is not supported.
         """
-        if value is not MISSING:
-            key_to_item = {key: value}
-        elif isinstance(key, dict):
-            key_to_item = key
-        else:
-            raise TypeError(
-                f"Bad parameters. "
-                f"When value is not specified, key must be a dict (found '{type(key)}')"
-            )
+        if not isinstance(key, str):
+            raise TypeError(f"Key must be a string (found '{type(key)}')")
 
-        for key, value in key_to_item.items():
-            if not isinstance(key, str):
-                raise TypeError(f"Key must be a string (found '{type(key)}')")
-
-            self.item_repository.put_item(key, object_to_item(value))
+        self.item_repository.put_item(key, object_to_item(value))
 
     def put_item(self, key: str, item: Item):
         """Add an Item to the Project."""

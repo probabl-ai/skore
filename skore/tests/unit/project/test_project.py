@@ -218,36 +218,6 @@ def test_list_view_keys(in_memory_project):
     assert in_memory_project.list_view_keys() == ["view"]
 
 
-def test_put_several_happy_path(in_memory_project):
-    in_memory_project.put({"a": "foo", "b": "bar"})
-    assert in_memory_project.list_item_keys() == ["a", "b"]
-
-
-def test_put_several_some_errors(in_memory_project):
-    with pytest.raises(TypeError):
-        in_memory_project.put({0: "hello", 1: "hello", 2: "hello"})
-    assert in_memory_project.list_item_keys() == []
-
-
-def test_put_several_nested(in_memory_project):
-    in_memory_project.put({"a": {"b": "baz"}})
-    assert in_memory_project.list_item_keys() == ["a"]
-    assert in_memory_project.get("a") == {"b": "baz"}
-
-
-def test_put_several_error(in_memory_project):
-    """If some key-value pairs are wrong, add all that are valid and print a warning."""
-    with pytest.raises(NotImplementedError):
-        in_memory_project.put(
-            {
-                "a": "foo",
-                "b": (lambda: "unsupported object"),
-            }
-        )
-
-    assert in_memory_project.list_item_keys() == ["a"]
-
-
 def test_put_key_is_a_tuple(in_memory_project):
     """If key is not a string, warn."""
     with pytest.raises(TypeError):
