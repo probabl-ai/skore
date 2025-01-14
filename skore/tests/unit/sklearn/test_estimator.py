@@ -752,6 +752,18 @@ def test_estimator_report_custom_metric(regression_data):
     )
 
 
+@pytest.mark.parametrize("scoring", ["public_metric", "_private_metric"])
+def test_estimator_report_report_metrics_error_scoring_strings(
+    regression_data, scoring
+):
+    """Check that we raise an error if a scoring string is not a valid metric."""
+    estimator, X_test, y_test = regression_data
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    err_msg = re.escape(f"Invalid metric: {scoring!r}.")
+    with pytest.raises(ValueError, match=err_msg):
+        report.metrics.report_metrics(scoring=[scoring])
+
+
 def test_estimator_report_custom_function_kwargs_numpy_array(regression_data):
     """Check that we are able to store a hash of a numpy array in the cache when they
     are passed as kwargs.
