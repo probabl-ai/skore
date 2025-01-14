@@ -21,8 +21,12 @@ __all__ = [
 ]
 
 ########################################################################################
-# FIXME: This is a temporary patch to make the output of the Jupyter notebook look nice.
-# We should find a better solution in the future.
+# FIXME: This is to make sure that the CSS style exposed by jupyter notebook and used
+# by ipywidgets is applied to rich output.
+# Currently, the VS Code extension does not support the CSS style exposed by jupyter
+# notebook and used by ipywidgets.
+# We should track the progress in the following issue:
+# https://github.com/microsoft/vscode-jupyter/issues/7161
 ########################################################################################
 
 # Store the original display function
