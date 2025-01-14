@@ -113,7 +113,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ... )
         >>> reporter.metrics.report_metrics(pos_label=1)
         Metric              Precision (↗︎)  Recall (↗︎)  ROC AUC (↗︎)  Brier score (↘︎)
-        LogisticRegression        0.988235     0.933333      0.995178          0.033982
+        LogisticRegression        0.98...     0.93...      0.99...          0.03...
         """
         if scoring is None:
             # Equivalent to _get_scorers_to_add
@@ -337,7 +337,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ... )
         >>> reporter.metrics.accuracy()
         Metric              Accuracy (↗︎)
-        LogisticRegression       0.951049
+        LogisticRegression       0.95...
         """
         return self._compute_metric_scores(
             metrics.accuracy_score,
@@ -427,7 +427,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ... )
         >>> reporter.metrics.precision(pos_label=1)
         Metric              Precision (↗︎)
-        LogisticRegression        0.988235
+        LogisticRegression        0.98...
         """
         if self._parent._ml_task == "binary-classification" and pos_label is not None:
             # if `pos_label` is specified by our user, then we can safely report only
@@ -525,7 +525,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ... )
         >>> reporter.metrics.recall(pos_label=1)
         Metric              Recall (↗︎)
-        LogisticRegression     0.933333
+        LogisticRegression     0.93...
         """
         if self._parent._ml_task == "binary-classification" and pos_label is not None:
             # if `pos_label` is specified by our user, then we can safely report only
@@ -590,7 +590,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ... )
         >>> reporter.metrics.brier_score()
         Metric              Brier score (↘︎)
-        LogisticRegression          0.033982
+        LogisticRegression          0.03...
         """
         # The Brier score in scikit-learn request `pos_label` to ensure that the
         # integral encoding of `y_true` corresponds to the probabilities of the
@@ -691,7 +691,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ... )
         >>> reporter.metrics.roc_auc()
         Metric              ROC AUC (↗︎)
-        LogisticRegression      0.995178
+        LogisticRegression      0.99...
         """
         return self._compute_metric_scores(
             metrics.roc_auc_score,
@@ -746,7 +746,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ... )
         >>> reporter.metrics.log_loss()
         Metric              Log loss (↘︎)
-        LogisticRegression       0.106542
+        LogisticRegression       0.10...
         """
         return self._compute_metric_scores(
             metrics.log_loss,
@@ -805,7 +805,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ... )
         >>> reporter.metrics.r2()
         Metric  R² (↗︎)
-        Ridge   0.35696
+        Ridge   0.35...
         """
         return self._compute_metric_scores(
             metrics.r2_score,
@@ -865,7 +865,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ... )
         >>> reporter.metrics.rmse()
         Metric  RMSE (↘︎)
-        Ridge   56.500606
+        Ridge   56.5...
         """
         return self._compute_metric_scores(
             metrics.root_mean_squared_error,
@@ -954,7 +954,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     metric_name="MAE (↗︎)",
         ... )
         Metric        MAE (↗︎)
-        Ridge   44.922683
+        Ridge   44.9...
         """
         return self._compute_metric_scores(
             metric_function,
