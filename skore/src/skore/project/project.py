@@ -1,7 +1,7 @@
 """Define a Project."""
 
 import logging
-from typing import Any, Union
+from typing import Any, Optional, Union
 
 from skore.item import (
     CrossValidationItem,
@@ -77,7 +77,7 @@ class Project:
         self.item_repository = item_repository
         self.view_repository = view_repository
 
-    def put(self, key: str, value: Any):
+    def put(self, key: str, value: Any, *, note: Optional[str] = None):
         """Add a key-value pair to the Project.
 
         If an item with the same key already exists, its value is replaced by the new
@@ -89,6 +89,8 @@ class Project:
             The key to associate with ``value`` in the Project.
         value : Any
             The value to associate with ``key`` in the Project.
+        note : str or None, optional
+            A note to attach with the item.
 
         Raises
         ------
@@ -101,7 +103,14 @@ class Project:
         if not isinstance(key, str):
             raise TypeError(f"Key must be a string (found '{type(key)}')")
 
-        self.item_repository.put_item(key, object_to_item(value))
+        item = object_to_item(value)
+
+        if note is not None:
+            if not isinstance(note, str):
+                raise TypeError(f"Note must be a string (found '{type(note)}')")
+            item.note = note
+
+        self.item_repository.put_item(key, item)
 
     def put_item(self, key: str, item: Item):
         """Add an Item to the Project."""
