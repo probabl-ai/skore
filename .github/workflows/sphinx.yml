@@ -120,17 +120,35 @@ jobs:
     runs-on: ubuntu-latest
     needs: [sphinx-version, sphinx-build]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download HTML artifacts
+        uses: actions/download-artifact@v4
         with:
           name: sphinx-html-artifact
           path: html/
-      - uses: ./.github/actions/sphinx/deploy
+
+      - name: Deploy HTML artifacts
+        uses: ./.github/actions/sphinx/deploy
         with:
           CONFIGURATION: ${{ secrets.RCLONE_CONFIG_DOCS }}
           BUCKET: ${{ vars.DOCUMENTATION_BUCKET }}
           SOURCE: html/
           DESTINATION: ${{ needs.sphinx-version.outputs.SPHINX_VERSION }}/
+
+      - name: Purge CDN cache
+        shell: bash
+        run: |
+          curl --fail-with-body \
+          -X POST \
+          -H "X-Auth-Token: ${TOKEN}" \
+          -H "Content-Type: application/json" \
+          -d "{\"pipeline_id\":\"${PIPELINE_ID}\",\"all\":true}" \
+          "https://api.scaleway.com/edge-services/v1alpha1/purge-requests"
+        env:
+          TOKEN: ${{ secrets.SCW_SECRET_KEY }}
+          PIPELINE_ID: ${{ vars.DOCUMENTATION_EDGE_SERVICES_PIPELINE_ID }}
 
   sphinx-deploy-root-files:
     if: ${{ github.event_name == 'release' }}
