@@ -16,6 +16,45 @@ from skore.sklearn import (
 )
 from skore.utils._show_versions import show_versions
 
+########################################################################################
+# FIXME: This is a temporary patch to make the output of the Jupyter notebook look nice.
+# We should find a better solution in the future.
+########################################################################################
+
+# Store the original display function
+original_display = jupyter.display
+
+
+def patched_display(segments, text):
+    """Patched version of rich.jupyter.display that includes VS Code styling."""
+    # Call the original display function first
+    original_display(segments, text)
+
+    # Apply VS Code styling if we're in VS Code
+    if "VSCODE_PID" in os.environ:
+        from IPython.display import HTML, display
+
+        css = """
+        <style>
+        .cell-output-ipywidget-background {
+            background-color: transparent !important;
+        }
+        :root {
+            --jp-widgets-color: var(--vscode-editor-foreground);
+            --jp-widgets-font-size: var(--vscode-editor-font-size);
+        }
+        </style>
+        """
+        display(HTML(css))
+
+
+# Patch the display function
+jupyter.display = patched_display
+
+########################################################################################
+# End of the temporary patch
+########################################################################################
+
 __all__ = [
     "CrossValidationReporter",
     "CrossValidationReport",

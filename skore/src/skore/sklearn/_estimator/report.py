@@ -104,6 +104,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         X_test=None,
         y_test=None,
     ):
+        self._parent_progress = None  # used to display progress bar
+
         if fit == "auto":
             try:
                 check_is_fitted(estimator)
@@ -143,7 +145,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         """Clean the cache."""
         self._cache = {}
 
-    @progress_decorator(description="Estimator predictions")
+    @progress_decorator(description="Caching predictions")
     def cache_predictions(self, response_methods="auto", n_jobs=None):
         """Cache the predictions for the estimator.
 
@@ -155,9 +157,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         n_jobs : int, default=None
             The number of jobs to run in parallel.
         """
-        progress = self._progress_info["current_progress"]
-        task = self._progress_info["current_task"]
-
         if self._ml_task in ("binary-classification", "multiclass-classification"):
             if response_methods == "auto":
                 response_methods = ["predict"]
@@ -174,9 +173,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         data_sources = [("test", self._X_test)]
         if self._X_train is not None:
             data_sources.append(("train", self._X_train))
-
-        total_iterations = len(response_methods) * len(pos_labels) * len(data_sources)
-        progress.update(task, total=total_iterations)
 
         parallel = joblib.Parallel(
             n_jobs=n_jobs, return_as="generator_unordered", require="sharedmem"
@@ -195,6 +191,13 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 response_methods, pos_labels, data_sources
             )
         )
+        # trigger the computation
+        progress = self._progress_info["current_progress"]
+        task = self._progress_info["current_task"]
+        total_iterations = len(response_methods) * len(pos_labels) * len(data_sources)
+        progress.update(task, total=total_iterations)
+        for _ in generator:
+            progress.update(task, advance=1, refresh=True)
 
         for _ in generator:
             progress.update(task, advance=1, refresh=True)
