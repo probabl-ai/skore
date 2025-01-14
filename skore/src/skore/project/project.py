@@ -1,7 +1,7 @@
 """Define a Project."""
 
 import logging
-from typing import Any
+from typing import Any, Union
 
 from skore.item import (
     CrossValidationItem,

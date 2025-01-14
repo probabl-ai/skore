@@ -6,7 +6,7 @@ storing, retrieving, and deleting items in a storage system.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     from skore.item.item import Item
