@@ -572,8 +572,13 @@ def _check_results_report_metrics(result, expected_metrics, expected_nb_stats):
 
 
 @pytest.mark.parametrize("pos_label, nb_stats", [(None, 2), (1, 1)])
+@pytest.mark.parametrize("data_source", ["test", "X_y"])
 def test_estimator_report_report_metrics_binary(
-    binary_classification_data, binary_classification_data_svc, pos_label, nb_stats
+    binary_classification_data,
+    binary_classification_data_svc,
+    pos_label,
+    nb_stats,
+    data_source,
 ):
     """Check the behaviour of the `report_metrics` method with binary
     classification. We test both with an SVC that does not support `predict_proba` and a
@@ -581,7 +586,10 @@ def test_estimator_report_report_metrics_binary(
     """
     estimator, X_test, y_test = binary_classification_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    result = report.metrics.report_metrics(pos_label=pos_label)
+    kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
+    result = report.metrics.report_metrics(
+        pos_label=pos_label, data_source=data_source, **kwargs
+    )
     expected_metrics = ("precision", "recall", "roc_auc", "brier_score")
     # depending on `pos_label`, we report a stats for each class or not for
     # precision and recall
@@ -595,7 +603,10 @@ def test_estimator_report_report_metrics_binary(
     y_test = target_names[y_test]
     estimator = clone(estimator).fit(X_test, y_test)
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    result = report.metrics.report_metrics(pos_label=pos_label_name)
+    kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
+    result = report.metrics.report_metrics(
+        pos_label=pos_label_name, data_source=data_source, **kwargs
+    )
     expected_metrics = ("precision", "recall", "roc_auc", "brier_score")
     # depending on `pos_label`, we report a stats for each class or not for
     # precision and recall
@@ -604,7 +615,10 @@ def test_estimator_report_report_metrics_binary(
 
     estimator, X_test, y_test = binary_classification_data_svc
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    result = report.metrics.report_metrics(pos_label=pos_label)
+    kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
+    result = report.metrics.report_metrics(
+        pos_label=pos_label, data_source=data_source, **kwargs
+    )
     expected_metrics = ("precision", "recall", "roc_auc")
     # depending on `pos_label`, we report a stats for each class or not for
     # precision and recall
@@ -612,15 +626,17 @@ def test_estimator_report_report_metrics_binary(
     _check_results_report_metrics(result, expected_metrics, expected_nb_stats)
 
 
+@pytest.mark.parametrize("data_source", ["test", "X_y"])
 def test_estimator_report_report_metrics_multiclass(
-    multiclass_classification_data, multiclass_classification_data_svc
+    multiclass_classification_data, multiclass_classification_data_svc, data_source
 ):
     """Check the behaviour of the `report_metrics` method with multiclass
     classification.
     """
     estimator, X_test, y_test = multiclass_classification_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    result = report.metrics.report_metrics()
+    kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
+    result = report.metrics.report_metrics(data_source=data_source, **kwargs)
     expected_metrics = ("precision", "recall", "roc_auc", "log_loss")
     # since we are not averaging by default, we report 3 statistics for
     # precision, recall and roc_auc
@@ -629,7 +645,8 @@ def test_estimator_report_report_metrics_multiclass(
 
     estimator, X_test, y_test = multiclass_classification_data_svc
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    result = report.metrics.report_metrics()
+    kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
+    result = report.metrics.report_metrics(data_source=data_source, **kwargs)
     expected_metrics = ("precision", "recall")
     # since we are not averaging by default, we report 3 statistics for
     # precision and recall
@@ -637,11 +654,13 @@ def test_estimator_report_report_metrics_multiclass(
     _check_results_report_metrics(result, expected_metrics, expected_nb_stats)
 
 
-def test_estimator_report_report_metrics_regression(regression_data):
+@pytest.mark.parametrize("data_source", ["test", "X_y"])
+def test_estimator_report_report_metrics_regression(regression_data, data_source):
     """Check the behaviour of the `report_metrics` method with regression."""
     estimator, X_test, y_test = regression_data
+    kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    result = report.metrics.report_metrics()
+    result = report.metrics.report_metrics(data_source=data_source, **kwargs)
     expected_metrics = ("r2", "rmse")
     _check_results_report_metrics(result, expected_metrics, len(expected_metrics))
 

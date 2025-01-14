@@ -52,7 +52,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         X=None,
         y=None,
         scoring=None,
-        scoring_name=None,
         pos_label=None,
         scoring_kwargs=None,
     ):
@@ -83,9 +82,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             `scoring_kwargs`. If the callable API is too restrictive (e.g. need to pass
             same parameter name with different values), you can use scikit-learn scorers
             as provided by :func:`sklearn.metrics.make_scorer`.
-
-        scoring_name : list of str, default=None
-            Overwrite the name of the metrics.
 
         pos_label : int, float, bool or str, default=None
             The positive class.
@@ -124,7 +120,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         scores = []
 
-        for metric_idx, metric in enumerate(scoring):
+        for metric in scoring:
             # NOTE: we have to check specifically for `_BaseScorer` first because this
             # is also a callable but it has a special private API that we can leverage
             if isinstance(metric, _BaseScorer):
@@ -136,8 +132,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 )
                 # forward the additional parameters specific to the scorer
                 metrics_kwargs = {**metric._kwargs}
-                if scoring_name is not None:
-                    metrics_kwargs["metric_name"] = scoring_name[metric_idx]
                 metrics_kwargs["data_source_hash"] = data_source_hash
                 metrics_params = inspect.signature(metric._score_func).parameters
                 if "pos_label" in metrics_params:
@@ -160,8 +154,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                         metric = f"_{metric}"
                     metric_fn = getattr(self, metric)
                     metrics_kwargs = {"data_source_hash": data_source_hash}
-                    if scoring_name is not None:
-                        metrics_kwargs["metric_name"] = scoring_name[metric_idx]
                 else:
                     metric_fn = partial(self._custom_metric, metric_function=metric)
                     if scoring_kwargs is None:
@@ -175,8 +167,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                             for param in metric_callable_params
                             if param in scoring_kwargs
                         }
-                    if scoring_name is not None:
-                        metrics_kwargs["metric_name"] = scoring_name[metric_idx]
                     metrics_kwargs["data_source_hash"] = data_source_hash
                 metrics_params = inspect.signature(metric_fn).parameters
                 if scoring_kwargs is not None:
