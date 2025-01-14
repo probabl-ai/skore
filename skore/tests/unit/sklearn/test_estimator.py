@@ -693,6 +693,46 @@ def test_estimator_report_report_metrics_scoring_kwargs(
     assert result.columns.names == ["Metric", "Class label"]
 
 
+@pytest.mark.parametrize(
+    "fixture_name, scoring_names, expected_columns",
+    [
+        ("regression_data", ["R2", "RMSE"], ["R2", "RMSE"]),
+        (
+            "multiclass_classification_data",
+            ["Precision", "Recall", "ROC AUC", "Log Loss"],
+            [
+                "Precision",
+                "Precision",
+                "Precision",
+                "Recall",
+                "Recall",
+                "Recall",
+                "ROC AUC",
+                "ROC AUC",
+                "ROC AUC",
+                "Log Loss",
+            ],
+        ),
+    ],
+)
+def test_estimator_report_report_metrics_overwrite_scoring_names(
+    request, fixture_name, scoring_names, expected_columns
+):
+    """Test that we can overwrite the scoring names in report_metrics."""
+    estimator, X_test, y_test = request.getfixturevalue(fixture_name)
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    result = report.metrics.report_metrics(scoring_names=scoring_names)
+    assert result.shape == (1, len(expected_columns))
+
+    # Get level 0 names if MultiIndex, otherwise get column names
+    result_columns = (
+        result.columns.get_level_values(0).tolist()
+        if isinstance(result.columns, pd.MultiIndex)
+        else result.columns.tolist()
+    )
+    assert result_columns == expected_columns
+
+
 def test_estimator_report_interaction_cache_metrics(regression_multioutput_data):
     """Check that the cache take into account the 'kwargs' of a metric."""
     estimator, X_test, y_test = regression_multioutput_data

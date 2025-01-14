@@ -52,6 +52,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         X=None,
         y=None,
         scoring=None,
+        scoring_names=None,
         pos_label=None,
         scoring_kwargs=None,
     ):
@@ -83,6 +84,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             same parameter name with different values), you can use scikit-learn scorers
             as provided by :func:`sklearn.metrics.make_scorer`.
 
+        scoring_names : list of str, default=None
+            Used to overwrite the default scoring names in the report. It should be of
+            the same length as the `scoring` parameter.
+
         pos_label : int, float, bool or str, default=None
             The positive class.
 
@@ -105,6 +110,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         else:
             data_source_hash = None
 
+        scoring_was_none = scoring is None
         if scoring is None:
             # Equivalent to _get_scorers_to_add
             if self._parent._ml_task == "binary-classification":
@@ -118,9 +124,26 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             else:
                 scoring = ["_r2", "_rmse"]
 
-        scores = []
+        if scoring_names is not None and len(scoring_names) != len(scoring):
+            if scoring_was_none:
+                # we raise a better error message since we decide the default scores
+                raise ValueError(
+                    "The `scoring_names` parameter should be of the same length as "
+                    "the `scoring` parameter. In your case, `scoring` was set to None "
+                    f"and you are using our default scores that are {len(scoring)}. "
+                    "The list is the following: {scoring}."
+                )
+            else:
+                raise ValueError(
+                    "The `scoring_names` parameter should be of the same length as "
+                    f"the `scoring` parameter. Got {len(scoring_names)} names for "
+                    f"{len(scoring)} scoring functions."
+                )
+        elif scoring_names is None:
+            scoring_names = [None] * len(scoring)
 
-        for metric in scoring:
+        scores = []
+        for metric_name, metric in zip(scoring_names, scoring):
             # NOTE: we have to check specifically for `_BaseScorer` first because this
             # is also a callable but it has a special private API that we can leverage
             if isinstance(metric, _BaseScorer):
@@ -180,13 +203,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                     f"Invalid type of metric: {type(metric)} for {metric!r}"
                 )
 
+            if metric_name is not None:
+                metrics_kwargs["metric_name"] = metric_name
             scores.append(
-                metric_fn(
-                    data_source=data_source,
-                    X=X,
-                    y=y,
-                    **metrics_kwargs,
-                )
+                metric_fn(data_source=data_source, X=X, y=y, **metrics_kwargs)
             )
 
         has_multilevel = any(
@@ -336,13 +356,26 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         """
         return self._accuracy(data_source=data_source, data_source_hash=None, X=X, y=y)
 
-    def _accuracy(self, *, data_source="test", data_source_hash=None, X=None, y=None):
+    def _accuracy(
+        self,
+        *,
+        data_source="test",
+        data_source_hash=None,
+        X=None,
+        y=None,
+        metric_name=None,
+    ):
         """Private interface of `accuracy` to be able to pass `data_source_hash`.
 
         `data_source_hash` is either an `int` when we already computed the hash
         and are able to pass it around or `None` and thus trigger its computation
         in the underlying process.
+
+        `metric_name` allows to overwrite the default name of the metric in the report.
         """
+        if metric_name is None:
+            metric_name = f"Accuracy {self._SCORE_OR_LOSS_ICONS['accuracy']}"
+
         return self._compute_metric_scores(
             metrics.accuracy_score,
             X=X,
@@ -350,7 +383,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             data_source=data_source,
             data_source_hash=data_source_hash,
             response_method="predict",
-            metric_name=f"Accuracy {self._SCORE_OR_LOSS_ICONS['accuracy']}",
+            metric_name=metric_name,
         )
 
     @available_if(
@@ -429,6 +462,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source_hash=None,
         X=None,
         y=None,
+        metric_name=None,
         average=None,
         pos_label=None,
     ):
@@ -437,11 +471,16 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         `data_source_hash` is either an `int` when we already computed the hash
         and are able to pass it around or `None` and thus trigger its computation
         in the underlying process.
+
+        `metric_name` allows to overwrite the default name of the metric in the report.
         """
         if self._parent._ml_task == "binary-classification" and pos_label is not None:
             # if `pos_label` is specified by our user, then we can safely report only
             # the statistics of the positive class
             average = "binary"
+
+        if metric_name is None:
+            metric_name = f"Precision {self._SCORE_OR_LOSS_ICONS['precision']}"
 
         return self._compute_metric_scores(
             metrics.precision_score,
@@ -451,7 +490,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             data_source_hash=data_source_hash,
             response_method="predict",
             pos_label=pos_label,
-            metric_name=f"Precision {self._SCORE_OR_LOSS_ICONS['precision']}",
+            metric_name=metric_name,
             average=average,
         )
 
@@ -532,6 +571,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source_hash=None,
         X=None,
         y=None,
+        metric_name=None,
         average=None,
         pos_label=None,
     ):
@@ -540,11 +580,16 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         `data_source_hash` is either an `int` when we already computed the hash
         and are able to pass it around or `None` and thus trigger its computation
         in the underlying process.
+
+        `metric_name` allows to overwrite the default name of the metric in the report.
         """
         if self._parent._ml_task == "binary-classification" and pos_label is not None:
             # if `pos_label` is specified by our user, then we can safely report only
             # the statistics of the positive class
             average = "binary"
+
+        if metric_name is None:
+            metric_name = f"Recall {self._SCORE_OR_LOSS_ICONS['recall']}"
 
         return self._compute_metric_scores(
             metrics.recall_score,
@@ -554,7 +599,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             data_source_hash=data_source_hash,
             response_method="predict",
             pos_label=pos_label,
-            metric_name=f"Recall {self._SCORE_OR_LOSS_ICONS['recall']}",
+            metric_name=metric_name,
             average=average,
         )
 
@@ -594,18 +639,29 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         )
 
     def _brier_score(
-        self, *, data_source="test", data_source_hash=None, X=None, y=None
+        self,
+        *,
+        data_source="test",
+        data_source_hash=None,
+        X=None,
+        y=None,
+        metric_name=None,
     ):
         """Private interface of `brier_score` to be able to pass `data_source_hash`.
 
         `data_source_hash` is either an `int` when we already computed the hash
         and are able to pass it around or `None` and thus trigger its computation
         in the underlying process.
+
+        `metric_name` allows to overwrite the default name of the metric in the report.
         """
         # The Brier score in scikit-learn request `pos_label` to ensure that the
         # integral encoding of `y_true` corresponds to the probabilities of the
         # `pos_label`. Since we get the predictions with `get_response_method`, we
         # can pass any `pos_label`, they will lead to the same result.
+        if metric_name is None:
+            metric_name = f"Brier score {self._SCORE_OR_LOSS_ICONS['brier_score']}"
+
         return self._compute_metric_scores(
             metrics.brier_score_loss,
             X=X,
@@ -613,7 +669,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             data_source=data_source,
             data_source_hash=data_source_hash,
             response_method="predict_proba",
-            metric_name=f"Brier score {self._SCORE_OR_LOSS_ICONS['brier_score']}",
+            metric_name=metric_name,
             pos_label=self._parent._estimator.classes_[-1],
         )
 
@@ -699,6 +755,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source_hash=None,
         X=None,
         y=None,
+        metric_name=None,
         average=None,
         multi_class="ovr",
     ):
@@ -707,7 +764,12 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         `data_source_hash` is either an `int` when we already computed the hash
         and are able to pass it around or `None` and thus trigger its computation
         in the underlying process.
+
+        `metric_name` allows to overwrite the default name of the metric in the report.
         """
+        if metric_name is None:
+            metric_name = f"ROC AUC {self._SCORE_OR_LOSS_ICONS['roc_auc']}"
+
         return self._compute_metric_scores(
             metrics.roc_auc_score,
             X=X,
@@ -715,7 +777,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             data_source=data_source,
             data_source_hash=data_source_hash,
             response_method=["predict_proba", "decision_function"],
-            metric_name=f"ROC AUC {self._SCORE_OR_LOSS_ICONS['roc_auc']}",
+            metric_name=metric_name,
             average=average,
             multi_class=multi_class,
         )
@@ -757,13 +819,19 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source_hash=None,
         X=None,
         y=None,
+        metric_name=None,
     ):
         """Private interface of `log_loss` to be able to pass `data_source_hash`.
 
         `data_source_hash` is either an `int` when we already computed the hash
         and are able to pass it around or `None` and thus trigger its computation
         in the underlying process.
+
+        `metric_name` allows to overwrite the default name of the metric in the report.
         """
+        if metric_name is None:
+            metric_name = f"Log loss {self._SCORE_OR_LOSS_ICONS['log_loss']}"
+
         return self._compute_metric_scores(
             metrics.log_loss,
             X=X,
@@ -771,7 +839,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             data_source=data_source,
             data_source_hash=data_source_hash,
             response_method="predict_proba",
-            metric_name=f"Log loss {self._SCORE_OR_LOSS_ICONS['log_loss']}",
+            metric_name=metric_name,
         )
 
     @available_if(_check_supported_ml_task(supported_ml_tasks=["regression"]))
@@ -825,6 +893,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source_hash=None,
         X=None,
         y=None,
+        metric_name=None,
         multioutput="raw_values",
     ):
         """Private interface of `r2` to be able to pass `data_source_hash`.
@@ -832,7 +901,12 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         `data_source_hash` is either an `int` when we already computed the hash
         and are able to pass it around or `None` and thus trigger its computation
         in the underlying process.
+
+        `metric_name` allows to overwrite the default name of the metric in the report.
         """
+        if metric_name is None:
+            metric_name = f"R² {self._SCORE_OR_LOSS_ICONS['r2']}"
+
         return self._compute_metric_scores(
             metrics.r2_score,
             X=X,
@@ -840,7 +914,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             data_source=data_source,
             data_source_hash=data_source_hash,
             response_method="predict",
-            metric_name=f"R² {self._SCORE_OR_LOSS_ICONS['r2']}",
+            metric_name=metric_name,
             multioutput=multioutput,
         )
 
@@ -895,6 +969,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source_hash=None,
         X=None,
         y=None,
+        metric_name=None,
         multioutput="raw_values",
     ):
         """Private interface of `rmse` to be able to pass `data_source_hash`.
@@ -902,7 +977,12 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         `data_source_hash` is either an `int` when we already computed the hash
         and are able to pass it around or `None` and thus trigger its computation
         in the underlying process.
+
+        `metric_name` allows to overwrite the default name of the metric in the report.
         """
+        if metric_name is None:
+            metric_name = f"RMSE {self._SCORE_OR_LOSS_ICONS['rmse']}"
+
         return self._compute_metric_scores(
             metrics.root_mean_squared_error,
             X=X,
@@ -910,7 +990,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             data_source=data_source,
             data_source_hash=data_source_hash,
             response_method="predict",
-            metric_name=f"RMSE {self._SCORE_OR_LOSS_ICONS['rmse']}",
+            metric_name=metric_name,
             multioutput=multioutput,
         )
 
