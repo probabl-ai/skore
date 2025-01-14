@@ -161,9 +161,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             if response_methods == "auto":
                 response_methods = ["predict"]
                 if hasattr(self._estimator, "predict_proba"):
-                    response_methods.append("predict_proba")
+                    response_methods += ["predict_proba"]
                 if hasattr(self._estimator, "decision_function"):
-                    response_methods.append("decision_function")
+                    response_methods += ["decision_function"]
             pos_labels = self._estimator.classes_
         else:
             if response_methods == "auto":
@@ -172,7 +172,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
         data_sources = [("test", self._X_test)]
         if self._X_train is not None:
-            data_sources.append(("train", self._X_train))
+            data_sources += [("train", self._X_train)]
 
         parallel = joblib.Parallel(
             n_jobs=n_jobs, return_as="generator_unordered", require="sharedmem"
