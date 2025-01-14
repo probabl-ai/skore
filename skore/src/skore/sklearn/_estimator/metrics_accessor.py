@@ -83,7 +83,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             same parameter name with different values), you can use scikit-learn scorers
             as provided by :func:`sklearn.metrics.make_scorer`.
 
-        pos_label : int, default=None
+        pos_label : int, float, bool or str, default=None
             The positive class.
 
         scoring_kwargs : dict, default=None
@@ -357,7 +357,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 only the statistics of the positive class (i.e. equivalent to
                 `average="binary"`).
 
-        pos_label : int, default=None
+        pos_label : int, float, bool or str, default=None
             The positive class.
 
         Returns
@@ -434,7 +434,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 only the statistics of the positive class (i.e. equivalent to
                 `average="binary"`).
 
-        pos_label : int, default=None
+        pos_label : int, float, bool or str, default=None
             The positive class.
 
         Returns
@@ -938,7 +938,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
             New target on which to compute the metric. By default, we use the target
             provided when creating the reporter.
 
-        pos_label : str, default=None
+        pos_label : int, float, bool or str, default=None
             The positive class.
 
         ax : matplotlib.axes.Axes, default=None
@@ -995,7 +995,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
             New target on which to compute the metric. By default, we use the target
             provided when creating the reporter.
 
-        pos_label : str, default=None
+        pos_label : int, float, bool or str, default=None
             The positive class.
 
         ax : matplotlib.axes.Axes, default=None
