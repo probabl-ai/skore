@@ -53,6 +53,7 @@ def test_display_repr(pyplot, plot_func, estimator, dataset):
 
     repr_str = repr(display)
     assert f"{display.__class__.__name__}" in repr_str
+    assert "display.help()" in repr_str
 
 
 @pytest.mark.parametrize(
