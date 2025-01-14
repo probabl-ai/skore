@@ -136,10 +136,10 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
         return estimator_reports
 
-    def clean_cache(self):
+    def clear_cache(self):
         """Clean the cache."""
         for report in self.estimator_reports:
-            report.clean_cache()
+            report.clear_cache()
         self._cache = {}
 
     @progress_decorator(description="Cross-validation predictions")

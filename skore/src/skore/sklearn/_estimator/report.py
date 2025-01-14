@@ -141,7 +141,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     # For the moment, we do not allow to alter the estimator and the training data.
     # For the validation set, we allow it and we invalidate the cache.
 
-    def clean_cache(self):
+    def clear_cache(self):
         """Clean the cache."""
         self._cache = {}
 

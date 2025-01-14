@@ -155,7 +155,7 @@ reporter.metrics.plot.help()
 # #
 # # We can show that without initial cache, it would have taken more time to compute
 # # the log loss.
-# reporter.clean_cache()
+# reporter.clear_cache()
 
 # start = time.time()
 # log_loss = reporter.metrics.log_loss()
@@ -267,7 +267,7 @@ reporter.metrics.plot.help()
 # # %%
 # #
 # # Let's now clean the cache and see if it is faster.
-# reporter.clean_cache()
+# reporter.clear_cache()
 
 # # %%
 # start = time.time()
@@ -371,7 +371,7 @@ reporter.metrics.plot.help()
 # # %%
 # #
 # # Now, let's clean the cache and check if we get a slowdown.
-# reporter.clean_cache()
+# reporter.clear_cache()
 
 # # %%
 # start = time.time()
