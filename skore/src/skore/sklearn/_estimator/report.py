@@ -64,10 +64,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     """
 
     _ACCESSOR_CONFIG = {
-        "metrics": {"icon": ":straight_ruler:", "name": "metrics"},
-        # Add other accessors as they're implemented
-        # "inspection": {"icon": ":magnifying_glass:", "name": "inspection"},
-        # "linting": {"icon": ":check:", "name": "linting"},
+        "metrics": {"name": "metrics"},
     }
 
     @staticmethod
@@ -267,7 +264,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     def _get_help_panel_title(self):
         return (
-            f"[bold cyan]:notebook: Tools to diagnose estimator "
+            f"[bold cyan]Tools to diagnose estimator "
             f"{self.estimator_name}[/bold cyan]"
         )
 

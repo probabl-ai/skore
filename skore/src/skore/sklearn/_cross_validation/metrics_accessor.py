@@ -38,7 +38,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     }
 
     def __init__(self, parent):
-        super().__init__(parent, icon=":straight_ruler:")
+        super().__init__(parent)
 
         self._parent_progress = None
 
@@ -661,7 +661,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         return tree
 
     def _get_help_panel_title(self):
-        return f"[bold cyan]{self._icon} Available metrics methods[/bold cyan]"
+        return "[bold cyan]Available metrics methods[/bold cyan]"
 
     def _get_help_legend(self):
         return (
@@ -689,7 +689,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
     """Plotting methods for the metrics accessor."""
 
     def __init__(self, parent):
-        super().__init__(parent._parent, icon=":art:")
+        super().__init__(parent._parent)
         self._metrics_parent = parent
         self._parent_progress = None
 
@@ -915,7 +915,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
         )
 
     def _get_help_panel_title(self):
-        return f"[bold cyan]{self._icon} Available plot methods[/bold cyan]"
+        return "[bold cyan]Available plot methods[/bold cyan]"
 
     def _get_help_tree_title(self):
         return "[bold cyan]reporter.metrics.plot[/bold cyan]"

@@ -64,7 +64,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     """
 
     _ACCESSOR_CONFIG = {
-        "metrics": {"icon": ":straight_ruler:", "name": "metrics"},
+        "metrics": {"name": "metrics"},
     }
 
     def __init__(
@@ -213,7 +213,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
     def _get_help_panel_title(self):
         return (
-            f"[bold cyan]📓 Tools to diagnose estimator "
+            f"[bold cyan]Tools to diagnose estimator "
             f"{self.estimator_name}[/bold cyan]"
         )
 
