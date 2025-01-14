@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 
 from skore.persistence.item import item_to_object, object_to_item
 
@@ -73,7 +73,14 @@ class Project:
         self.item_repository = item_repository
         self.view_repository = view_repository
 
-    def put(self, key: str, value: Any, *, note: Optional[str] = None):
+    def put(
+        self,
+        key: str,
+        value: Any,
+        *,
+        note: Optional[str] = None,
+        display_as: Optional[Literal["HTML", "MARKDOWN", "SVG"]] = None,
+    ):
         """Add a key-value pair to the Project.
 
         If an item with the same key already exists, its value is replaced by the new
@@ -85,8 +92,11 @@ class Project:
             The key to associate with ``value`` in the Project.
         value : Any
             The value to associate with ``key`` in the Project.
-        note : str or None, optional
+        note : str, optional
             A note to attach with the item.
+        display_as : str, optional
+            Used in combination with a string value, it customizes the way the value is
+            displayed in the interface.
 
         Raises
         ------
@@ -99,14 +109,14 @@ class Project:
         if not isinstance(key, str):
             raise TypeError(f"Key must be a string (found '{type(key)}')")
 
-        item = object_to_item(value)
-
-        if note is not None:
-            if not isinstance(note, str):
-                raise TypeError(f"Note must be a string (found '{type(note)}')")
-            item.note = note
-
-        self.item_repository.put_item(key, item)
+        self.item_repository.put_item(
+            key,
+            object_to_item(
+                value,
+                note=note,
+                display_as=display_as,
+            ),
+        )
 
     def get(self, key: str) -> Any:
         """Get the value corresponding to ``key`` from the Project.

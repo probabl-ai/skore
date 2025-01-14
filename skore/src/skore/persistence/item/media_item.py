@@ -6,6 +6,7 @@ This module defines the MediaItem class, which represents media items.
 from __future__ import annotations
 
 import base64
+from enum import Enum
 from io import BytesIO
 from typing import TYPE_CHECKING, Any, Union
 
@@ -23,6 +24,14 @@ def lazy_is_instance(object: Any, cls_fullname: str) -> bool:
     return cls_fullname in {
         f"{cls.__module__}.{cls.__name__}" for cls in object.__class__.__mro__
     }
+
+
+class MediaType(Enum):
+    """Enum used to map aliases and media types."""
+
+    HTML = "text/html"
+    MARKDOWN = "text/markdown"
+    SVG = "image/svg+xml"
 
 
 class MediaItem(Item):
@@ -165,7 +174,7 @@ class MediaItem(Item):
         media : str
             The string content to store.
         media_type : str, optional
-            The MIME type of the media content, by default "text/html".
+            The MIME type of the media content, by default "text/markdown".
 
         Returns
         -------
