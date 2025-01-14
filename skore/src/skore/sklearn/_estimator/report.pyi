@@ -3,8 +3,8 @@ from typing import Any, Literal, Optional, Union
 import numpy as np
 from sklearn.base import BaseEstimator
 
+from skore.sklearn._base import _HelpMixin
 from skore.sklearn._estimator.metrics_accessor import _MetricsAccessor
-from skore.sklearn.base import _HelpMixin
 
 class EstimatorReport(_HelpMixin):
     _ACCESSOR_CONFIG: dict[str, dict[str, str]]
@@ -56,16 +56,5 @@ class EstimatorReport(_HelpMixin):
     def y_test(self, value: Optional[np.ndarray]) -> None: ...
     @property
     def estimator_name(self) -> str: ...
-    def _get_cached_response_values(
-        self,
-        *,
-        estimator_hash: int,
-        estimator: BaseEstimator,
-        X: np.ndarray,
-        response_method: Union[str, list[str]],
-        pos_label: Optional[Union[str, int]] = None,
-        data_source: Literal["test", "train", "X_y"] = "test",
-        data_source_hash: Optional[str] = None,
-    ) -> np.ndarray: ...
     def _get_help_panel_title(self) -> str: ...
     def _create_help_tree(self) -> Any: ...  # Returns rich.tree.Tree

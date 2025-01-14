@@ -283,6 +283,9 @@ def _get_cached_response_values(
 
     Parameters
     ----------
+    cache : dict
+        The cache to use.
+
     estimator_hash : int
         A hash associated with the estimator such that we can retrieve the data from
         the cache.
@@ -324,6 +327,9 @@ def _get_cached_response_values(
 
     if data_source == "X_y":
         if data_source_hash is None:
+            # Only trigger hash computation if it was not previously done.
+            # If data_source_hash is not None, we internally computed ourself the hash
+            # and it is trustful
             data_source_hash = joblib.hash(X)
         cache_key += (data_source_hash,)
 

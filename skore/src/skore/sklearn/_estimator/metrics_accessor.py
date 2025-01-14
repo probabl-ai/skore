@@ -87,7 +87,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         scoring_name : list of str, default=None
             Overwrite the name of the metrics.
 
-        pos_label : int, default=None
+        pos_label : int, float, bool or str, default=None
             The positive class.
 
         scoring_kwargs : dict, default=None
@@ -410,7 +410,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 only the statistics of the positive class (i.e. equivalent to
                 `average="binary"`).
 
-        pos_label : int, default=None
+        pos_label : int, float, bool or str, default=None
             The positive class.
 
         Returns
@@ -508,7 +508,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 only the statistics of the positive class (i.e. equivalent to
                 `average="binary"`).
 
-        pos_label : int, default=None
+        pos_label : int, float, bool or str, default=None
             The positive class.
 
         Returns
@@ -1171,7 +1171,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
             New target on which to compute the metric. By default, we use the target
             provided when creating the reporter.
 
-        pos_label : str, default=None
+        pos_label : int, float, bool or str, default=None
             The positive class.
 
         ax : matplotlib.axes.Axes, default=None
@@ -1228,7 +1228,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
             New target on which to compute the metric. By default, we use the target
             provided when creating the reporter.
 
-        pos_label : str, default=None
+        pos_label : int, float, bool or str, default=None
             The positive class.
 
         ax : matplotlib.axes.Axes, default=None

@@ -146,22 +146,34 @@ jobs:
             import json
 
             url = os.environ["URL"]
-            current = os.environ["CURRENT"]
+            version = os.environ["SPHINX_VERSION"]
+            release = os.environ["SPHINX_RELEASE"]
 
+            # Retrieve history
             response = requests.get(f"{url}/versions.json")
             response.raise_for_status()
 
-            history = set(map(operator.itemgetter("version"), response.json())) - {"dev"} | {current}
-            history = sorted(history, key=lambda x: float(x), reverse=True)[:10]
+            history = {version["name"]: version["version"] for version in response.json()}
 
+            # Add new version to history
+            history[version] = release
+
+            # Sort history, and always keep "dev" at the beginning
+            history = sorted(
+                history.items(),
+                key=lambda item: float(item[0]) if item[0] != "dev" else float('inf'),
+                reverse=True
+            )
+
+            # Rewrite the history with "dev" and the 10 latest versions
             new = [
                 {
                     "name": version,
-                    "version": version,
+                    "version": release,
                     "url": f"{url}/{version}/",
                     "preferred": i == 1,
                 }
-                for i, version in enumerate(["dev"] + history)
+                for i, (version, release) in enumerate(history[:11])
             ]
 
             os.mkdir("artifacts")
@@ -179,7 +191,8 @@ jobs:
               )
         env:
           URL: ${{ vars.DOCUMENTATION_URL }}
-          CURRENT: ${{ needs.sphinx-version.outputs.SPHINX_VERSION }}
+          SPHINX_VERSION: ${{ needs.sphinx-version.outputs.SPHINX_VERSION }}
+          SPHINX_RELEASE: ${{ needs.sphinx-version.outputs.SPHINX_RELEASE }}
       - uses: ./.github/actions/sphinx/deploy
         with:
           CONFIGURATION: ${{ secrets.RCLONE_CONFIG_DOCS }}
