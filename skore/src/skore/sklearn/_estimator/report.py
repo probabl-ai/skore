@@ -163,9 +163,9 @@ class EstimatorReport(_HelpMixin, DirNamesMixin):
             if response_methods == "auto":
                 response_methods = ("predict",)
                 if hasattr(self._estimator, "predict_proba"):
-                    response_methods = ("predict_proba",)
+                    response_methods += ("predict_proba",)
                 if hasattr(self._estimator, "decision_function"):
-                    response_methods = ("decision_function",)
+                    response_methods += ("decision_function",)
             pos_labels = self._estimator.classes_
         else:
             if response_methods == "auto":
@@ -175,8 +175,8 @@ class EstimatorReport(_HelpMixin, DirNamesMixin):
         data_sources = ("test",)
         Xs = (self._X_test,)
         if self._X_train is not None:
-            data_sources = ("train",)
-            Xs = (self._X_train,)
+            data_sources += ("train",)
+            Xs += (self._X_train,)
 
         parallel = joblib.Parallel(n_jobs=n_jobs, return_as="generator_unordered")
         generator = parallel(
@@ -188,8 +188,8 @@ class EstimatorReport(_HelpMixin, DirNamesMixin):
                 pos_label=pos_label,
                 data_source=data_source,
             )
-            for response_method, pos_label, data_source, X in product(
-                response_methods, pos_labels, data_sources, Xs
+            for response_method, pos_label, (data_source, X) in product(
+                response_methods, pos_labels, zip(data_sources, Xs)
             )
         )
         # trigger the computation
