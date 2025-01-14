@@ -70,10 +70,17 @@ class _HelpMixin:
 
         console.print(self._create_help_panel())
 
-    def __repr__(self):
+    def _rich_repr(self, class_name, help_method_name):
         """Return a string representation using rich."""
         console = Console(file=StringIO(), force_terminal=False)
-        console.print(self._create_help_panel())
+        console.print(
+            Panel(
+                f"Get guidance using the {help_method_name} method",
+                title=f"[cyan]{class_name}[/cyan]",
+                border_style="orange1",
+                expand=False,
+            )
+        )
         return console.file.getvalue()
 
 

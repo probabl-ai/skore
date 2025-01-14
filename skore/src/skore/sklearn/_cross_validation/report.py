@@ -221,3 +221,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         return (
             "[cyan](↗︎)[/cyan] higher is better [orange1](↘︎)[/orange1] lower is better"
         )
+
+    def __repr__(self):
+        """Return a string representation using rich."""
+        return self._rich_repr(
+            class_name="skore.CrossValidationReport", help_method_name="reporter.help()"
+        )

@@ -18,7 +18,7 @@ import platform
 import sys
 import types
 from dataclasses import dataclass, field
-from typing import Callable, Literal
+from typing import Callable, Literal, Union
 
 import sklearn
 from sklearn.utils.fixes import parse_version
@@ -775,11 +775,11 @@ if sklearn_version < parse_version("1.6"):
             The input data(X) tags.
         """
 
-        estimator_type: str | None
+        estimator_type: Union[str, None]
         target_tags: TargetTags
-        transformer_tags: TransformerTags | None = None
-        classifier_tags: ClassifierTags | None = None
-        regressor_tags: RegressorTags | None = None
+        transformer_tags: Union[TransformerTags, None] = None
+        classifier_tags: Union[ClassifierTags, None] = None
+        regressor_tags: Union[RegressorTags, None] = None
         array_api_support: bool = False
         no_validation: bool = False
         non_deterministic: bool = False
@@ -808,10 +808,10 @@ if sklearn_version < parse_version("1.6"):
         generate_only=False,
         *,
         legacy: bool = True,
-        expected_failed_checks: dict[str, str] | None = None,
-        on_skip: Literal["warn"] | None = "warn",
-        on_fail: Literal["raise", "warn"] | None = "raise",
-        callback: Callable | None = None,
+        expected_failed_checks: Union[dict[str, str], None] = None,
+        on_skip: Union[Literal["warn"], None] = "warn",
+        on_fail: Union[Literal["raise", "warn"], None] = "raise",
+        callback: Union[Callable, None] = None,
     ):
         # legacy, on_skip, on_fail, and callback are not supported and ignored
         from sklearn.utils.estimator_checks import check_estimator
@@ -825,7 +825,7 @@ if sklearn_version < parse_version("1.6"):
         estimators,
         *,
         legacy: bool = True,
-        expected_failed_checks: Callable | None = None,
+        expected_failed_checks: Union[Callable, None] = None,
     ):
         # legacy is not supported and ignored
         from sklearn.utils.estimator_checks import parametrize_with_checks

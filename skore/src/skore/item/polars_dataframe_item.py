@@ -7,7 +7,7 @@ which represents a polars DataFrame item.
 from __future__ import annotations
 
 from functools import cached_property
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 from skore.item.item import Item, ItemTypeError
 
@@ -30,8 +30,9 @@ class PolarsDataFrameItem(Item):
     def __init__(
         self,
         dataframe_json: str,
-        created_at: str | None = None,
-        updated_at: str | None = None,
+        created_at: Union[str, None] = None,
+        updated_at: Union[str, None] = None,
+        note: Union[str, None] = None,
     ):
         """
         Initialize a PolarsDataFrameItem.
@@ -44,8 +45,10 @@ class PolarsDataFrameItem(Item):
             The creation timestamp in ISO format.
         updated_at : str
             The last update timestamp in ISO format.
+        note : Union[str, None]
+            An optional note.
         """
-        super().__init__(created_at, updated_at)
+        super().__init__(created_at, updated_at, note)
 
         self.dataframe_json = dataframe_json
 
