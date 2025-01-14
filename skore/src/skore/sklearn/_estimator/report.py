@@ -221,7 +221,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     def X_train(self, value):
         raise AttributeError(
             "The X_train attribute is immutable. "
-            "Please use the `from_unfitted_estimator` method to create a new report."
+            f"Call the constructor of {self.__class__.__name__} to create a new report."
         )
 
     @property
@@ -232,7 +232,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     def y_train(self, value):
         raise AttributeError(
             "The y_train attribute is immutable. "
-            "Please use the `from_unfitted_estimator` method to create a new report."
+            f"Call the constructor of {self.__class__.__name__} to create a new report."
         )
 
     @property
