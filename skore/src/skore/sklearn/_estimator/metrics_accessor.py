@@ -347,7 +347,12 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         return self._accuracy(data_source=data_source, data_source_hash=None, X=X, y=y)
 
     def _accuracy(self, *, data_source="test", data_source_hash=None, X=None, y=None):
-        """Private interface of accuracy to be able to pass `data_source_hash`."""
+        """Private interface of `accuracy` to be able to pass `data_source_hash`.
+
+        `data_source_hash` is either an `int` when we already computed the hash
+        and are able to pass it around or `None` and thus trigger its computation
+        in the underlying process.
+        """
         return self._compute_metric_scores(
             metrics.accuracy_score,
             X=X,
@@ -437,7 +442,12 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         average=None,
         pos_label=None,
     ):
-        """Private interface of precision to be able to pass `data_source_hash`."""
+        """Private interface of `precision` to be able to pass `data_source_hash`.
+
+        `data_source_hash` is either an `int` when we already computed the hash
+        and are able to pass it around or `None` and thus trigger its computation
+        in the underlying process.
+        """
         if self._parent._ml_task == "binary-classification" and pos_label is not None:
             # if `pos_label` is specified by our user, then we can safely report only
             # the statistics of the positive class
@@ -535,7 +545,12 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         average=None,
         pos_label=None,
     ):
-        """Private interface of recall to be able to pass `data_source_hash`."""
+        """Private interface of `recall` to be able to pass `data_source_hash`.
+
+        `data_source_hash` is either an `int` when we already computed the hash
+        and are able to pass it around or `None` and thus trigger its computation
+        in the underlying process.
+        """
         if self._parent._ml_task == "binary-classification" and pos_label is not None:
             # if `pos_label` is specified by our user, then we can safely report only
             # the statistics of the positive class
@@ -591,7 +606,12 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     def _brier_score(
         self, *, data_source="test", data_source_hash=None, X=None, y=None
     ):
-        """Private interface of brier_score to be able to pass `data_source_hash`."""
+        """Private interface of `brier_score` to be able to pass `data_source_hash`.
+
+        `data_source_hash` is either an `int` when we already computed the hash
+        and are able to pass it around or `None` and thus trigger its computation
+        in the underlying process.
+        """
         # The Brier score in scikit-learn request `pos_label` to ensure that the
         # integral encoding of `y_true` corresponds to the probabilities of the
         # `pos_label`. Since we get the predictions with `get_response_method`, we
@@ -692,7 +712,12 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         average=None,
         multi_class="ovr",
     ):
-        """Private interface of roc_auc to be able to pass `data_source_hash`."""
+        """Private interface of `roc_auc` to be able to pass `data_source_hash`.
+
+        `data_source_hash` is either an `int` when we already computed the hash
+        and are able to pass it around or `None` and thus trigger its computation
+        in the underlying process.
+        """
         return self._compute_metric_scores(
             metrics.roc_auc_score,
             X=X,
@@ -743,7 +768,12 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         X=None,
         y=None,
     ):
-        """Private interface of log_loss to be able to pass `data_source_hash`."""
+        """Private interface of `log_loss` to be able to pass `data_source_hash`.
+
+        `data_source_hash` is either an `int` when we already computed the hash
+        and are able to pass it around or `None` and thus trigger its computation
+        in the underlying process.
+        """
         return self._compute_metric_scores(
             metrics.log_loss,
             X=X,
@@ -807,6 +837,12 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         y=None,
         multioutput="raw_values",
     ):
+        """Private interface of `r2` to be able to pass `data_source_hash`.
+
+        `data_source_hash` is either an `int` when we already computed the hash
+        and are able to pass it around or `None` and thus trigger its computation
+        in the underlying process.
+        """
         return self._compute_metric_scores(
             metrics.r2_score,
             X=X,
@@ -871,7 +907,12 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         y=None,
         multioutput="raw_values",
     ):
-        """Private interface of rmse to be able to pass `data_source_hash`."""
+        """Private interface of `rmse` to be able to pass `data_source_hash`.
+
+        `data_source_hash` is either an `int` when we already computed the hash
+        and are able to pass it around or `None` and thus trigger its computation
+        in the underlying process.
+        """
         return self._compute_metric_scores(
             metrics.root_mean_squared_error,
             X=X,
@@ -966,7 +1007,12 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         metric_name=None,
         **kwargs,
     ):
-        """Private interface of custom_metric to be able to pass `data_source_hash`."""
+        """Private interface of `custom_metric` to be able to pass `data_source_hash`.
+
+        `data_source_hash` is either an `int` when we already computed the hash
+        and are able to pass it around or `None` and thus trigger its computation
+        in the underlying process.
+        """
         return self._compute_metric_scores(
             metric_function,
             X=X,
