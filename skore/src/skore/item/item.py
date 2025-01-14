@@ -30,11 +30,11 @@ class Item(ABC):
 
     Parameters
     ----------
-    created_at : str | None, optional
+    created_at : Union[str, None], optional
         The creation timestamp of the item. If None, the current time is used.
-    updated_at : str | None, optional
+    updated_at : Union[str, None], optional
         The last update timestamp of the item. If None, the current time is used.
-    note : str | None
+    note : Union[str, None]
         An optional note.
 
     Attributes
@@ -43,7 +43,7 @@ class Item(ABC):
         The creation timestamp of the item.
     updated_at : str
         The last update timestamp of the item.
-    note : str | None
+    note : Union[str, None]
         An optional note.
     """
 

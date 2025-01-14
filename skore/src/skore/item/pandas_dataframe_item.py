@@ -7,7 +7,7 @@ which represents a pandas DataFrame item.
 from __future__ import annotations
 
 from functools import cached_property
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 from skore.item.item import Item, ItemTypeError
 
@@ -29,9 +29,9 @@ class PandasDataFrameItem(Item):
         self,
         index_json: str,
         dataframe_json: str,
-        created_at: str | None = None,
-        updated_at: str | None = None,
-        note: str | None = None,
+        created_at: Union[str, None] = None,
+        updated_at: Union[str, None] = None,
+        note: Union[str, None] = None,
     ):
         """
         Initialize a PandasDataFrameItem.
@@ -46,7 +46,7 @@ class PandasDataFrameItem(Item):
             The creation timestamp in ISO format.
         updated_at : str
             The last update timestamp in ISO format.
-        note : str | None
+        note : Union[str, None]
             An optional note.
         """
         super().__init__(created_at, updated_at, note)

@@ -14,7 +14,7 @@ import json
 import re
 import statistics
 from functools import cached_property
-from typing import TYPE_CHECKING, Any, Literal, TypedDict
+from typing import TYPE_CHECKING, Any, Literal, TypedDict, Union
 
 import numpy
 import plotly.graph_objects
@@ -136,12 +136,12 @@ class CrossValidationItem(Item):
         cv_results_serialized: dict,
         estimator_info: EstimatorInfo,
         X_info: dict,
-        y_info: dict | None,
+        y_info: Union[dict, None],
         plots_bytes: dict[str, bytes],
         cv_info: dict,
-        created_at: str | None = None,
-        updated_at: str | None = None,
-        note: str | None = None,
+        created_at: Union[str, None] = None,
+        updated_at: Union[str, None] = None,
+        note: Union[str, None] = None,
     ):
         """
         Initialize a CrossValidationItem.
@@ -167,7 +167,7 @@ class CrossValidationItem(Item):
             The creation timestamp in ISO format.
         updated_at : str
             The last update timestamp in ISO format.
-        note : str | None
+        note : Union[str, None]
             An optional note.
         """
         super().__init__(created_at, updated_at, note)

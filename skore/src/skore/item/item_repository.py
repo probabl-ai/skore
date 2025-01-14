@@ -184,7 +184,7 @@ class ItemRepository:
         except IndexError as e:
             raise KeyError((key, version)) from e
 
-    def get_item_note(self, key: str, *, version=-1) -> str | None:
+    def get_item_note(self, key: str, *, version=-1) -> Union[str, None]:
         """Retrieve a note previously attached to key ``key``.
 
         Parameters

@@ -7,7 +7,7 @@ which represents a scikit-learn BaseEstimator item.
 from __future__ import annotations
 
 from functools import cached_property
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 from skore.item.item import Item, ItemTypeError
 
@@ -28,9 +28,9 @@ class SklearnBaseEstimatorItem(Item):
         estimator_html_repr: str,
         estimator_skops: bytes,
         estimator_skops_untrusted_types: list[str],
-        created_at: str | None = None,
-        updated_at: str | None = None,
-        note: str | None = None,
+        created_at: Union[str, None] = None,
+        updated_at: Union[str, None] = None,
+        note: Union[str, None] = None,
     ):
         """
         Initialize a SklearnBaseEstimatorItem.
@@ -47,7 +47,7 @@ class SklearnBaseEstimatorItem(Item):
             The creation timestamp in ISO format.
         updated_at : str, optional
             The last update timestamp in ISO format.
-        note : str | None
+        note : Union[str, None]
             An optional note.
         """
         super().__init__(created_at, updated_at, note)
