@@ -171,7 +171,14 @@ class ItemRepository:
         ------
         KeyError
             If the ``(key, version)`` couple does not exist.
+        TypeError
+            If ``key`` or ``message`` is not a string.
         """
+        if not isinstance(key, str):
+            raise TypeError(f"Key should be a string; got {type(key)}")
+        if not isinstance(message, str):
+            raise TypeError(f"Message should be a string; got {type(message)}")
+
         try:
             self.storage[key][version]["item"]["note"] = message
         except IndexError as e:

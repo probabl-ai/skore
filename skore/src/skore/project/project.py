@@ -280,6 +280,8 @@ class Project:
         ------
         KeyError
             If the ``(key, version)`` couple does not exist.
+        TypeError
+            If ``key`` or ``message`` is not a string.
 
         Examples
         --------

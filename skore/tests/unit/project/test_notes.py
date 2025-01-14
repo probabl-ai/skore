@@ -29,6 +29,15 @@ def test_set_note_no_key(in_memory_project):
         in_memory_project.set_note("key", "hello", version=10)
 
 
+def test_set_note_not_strings(in_memory_project):
+    """If key or message is not a string, raise a TypeError."""
+    with pytest.raises(TypeError):
+        in_memory_project.set_note(1, "hello")
+
+    with pytest.raises(TypeError):
+        in_memory_project.set_note("key", 1)
+
+
 def test_delete_note(in_memory_project):
     in_memory_project.put("key", "hello")
     in_memory_project.set_note("key", "message")
