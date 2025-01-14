@@ -9,7 +9,7 @@ from sklearn.metrics._scorer import _BaseScorer
 from sklearn.utils.metaestimators import available_if
 
 from skore.externals._pandas_accessors import DirNamesMixin
-from skore.sklearn._estimator.base import _BaseAccessor
+from skore.sklearn._base import _BaseAccessor, _get_cached_response_values
 from skore.sklearn._plot import (
     PrecisionRecallCurveDisplay,
     PredictionErrorDisplay,
@@ -193,7 +193,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             data_source=data_source, X=X, y=y_true
         )
 
-        y_pred = self._parent._get_cached_response_values(
+        y_pred = _get_cached_response_values(
+            cache=self._parent._cache,
             estimator_hash=self._parent._hash,
             estimator=self._parent.estimator,
             X=X,
@@ -889,7 +890,8 @@ class _PlotMetricsAccessor(_BaseAccessor):
             display = self._parent._cache[cache_key]
             display.plot(**display_plot_kwargs)
         else:
-            y_pred = self._parent._get_cached_response_values(
+            y_pred = _get_cached_response_values(
+                cache=self._parent._cache,
                 estimator_hash=self._parent._hash,
                 estimator=self._parent.estimator,
                 X=X,
