@@ -506,7 +506,7 @@ def test_estimator_report_metrics_binary_classification(
 
     # check that something was written to the cache
     assert report._cache != {}
-    report.clean_cache()
+    report.clear_cache()
 
     # check that passing using data outside from the report works and that we they
     # don't come from the cache
@@ -532,7 +532,7 @@ def test_estimator_report_metrics_regression(regression_data, metric):
 
     # check that something was written to the cache
     assert report._cache != {}
-    report.clean_cache()
+    report.clear_cache()
 
     # check that passing using data outside from the report works and that we they
     # don't come from the cache
