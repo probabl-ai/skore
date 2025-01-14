@@ -58,3 +58,21 @@ def test_delete_note_no_key(in_memory_project):
 def test_delete_note_no_note(in_memory_project):
     in_memory_project.put("key", "hello")
     assert in_memory_project.get_note("key") is None
+
+
+def test_put_with_note(in_memory_project):
+    in_memory_project.put("key", "hello", note="note")
+    assert in_memory_project.get_note("key") == "note"
+
+
+def test_put_with_note_annotates_latest(in_memory_project):
+    """Adding the `note` argument annotates the latest version of the item."""
+    in_memory_project.put("key", "hello")
+    in_memory_project.put("key", "goodbye", note="note")
+    assert in_memory_project.get_note("key", version=0) is None
+
+
+def test_put_with_note_wrong_type(in_memory_project):
+    """Adding the `note` argument annotates the latest version of the item."""
+    with pytest.raises(TypeError):
+        in_memory_project.put("key", "hello", note=0)
