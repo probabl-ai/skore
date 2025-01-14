@@ -10,7 +10,14 @@ from sklearn.cluster import KMeans
 from sklearn.datasets import make_classification, make_regression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
-from sklearn.metrics import make_scorer, median_absolute_error, r2_score, rand_score
+from sklearn.metrics import (
+    accuracy_score,
+    f1_score,
+    make_scorer,
+    median_absolute_error,
+    r2_score,
+    rand_score,
+)
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -870,6 +877,34 @@ def test_estimator_report_report_metrics_with_scorer(regression_data):
                 r2_score(y_test, estimator.predict(X_test)),
                 median_absolute_error(y_test, estimator.predict(X_test)),
                 custom_metric(y_test, estimator.predict(X_test), weights),
+            ]
+        ],
+    )
+
+
+def test_estimator_report_report_metrics_with_scorer_binary_classification(
+    binary_classification_data,
+):
+    """Check that we can pass scikit-learn scorer with different parameters to
+    the `report_metrics` method."""
+    estimator, X_test, y_test = binary_classification_data
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    f1_scorer = make_scorer(
+        f1_score, response_method="predict", average="macro", pos_label=1
+    )
+    result = report.metrics.report_metrics(
+        scoring=["accuracy", f1_scorer],
+    )
+    assert result.shape == (1, 2)
+    np.testing.assert_allclose(
+        result.to_numpy(),
+        [
+            [
+                accuracy_score(y_test, estimator.predict(X_test)),
+                f1_score(
+                    y_test, estimator.predict(X_test), average="macro", pos_label=1
+                ),
             ]
         ],
     )
