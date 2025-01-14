@@ -64,10 +64,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     """
 
     _ACCESSOR_CONFIG = {
-        "metrics": {"icon": ":straight_ruler:", "name": "metrics"},
-        # Add other accessors as they're implemented
-        # "inspection": {"icon": ":magnifying_glass:", "name": "inspection"},
-        # "linting": {"icon": ":check:", "name": "linting"},
+        "metrics": {"name": "metrics"},
     }
 
     @staticmethod

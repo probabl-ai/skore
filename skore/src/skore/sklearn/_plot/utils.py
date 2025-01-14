@@ -66,7 +66,7 @@ class HelpDisplayMixin:
         return Panel(
             self._create_help_tree(),
             title=(
-                f"[bold cyan]:bar_chart: {self.__class__.__name__} for "
+                f"[bold cyan]{self.__class__.__name__} for "
                 f"{self.estimator_name}[/bold cyan]"
             ),
             border_style="orange1",
