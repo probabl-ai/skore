@@ -1,8 +1,14 @@
+import re
+
 import joblib
 import numpy as np
 import pytest
 from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
-from skore.sklearn._base import _get_cached_response_values
+from sklearn.cluster import KMeans
+from sklearn.datasets import make_classification
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from skore.sklearn._base import _BaseAccessor, _get_cached_response_values
 
 
 class MockClassifier(ClassifierMixin, BaseEstimator):
@@ -168,3 +174,126 @@ def test_get_cached_response_values_different_data_source_hash(
         f"Passing a hash not present in the cache keys should trigger new "
         f"computation for {response_method}"
     )
+
+
+class MockReport:
+    def __init__(self, estimator, X_train=None, y_train=None, X_test=None, y_test=None):
+        """Mock a reporter with the minimal required attributes."""
+        self._estimator = estimator
+        self._X_train = X_train
+        self._y_train = y_train
+        self._X_test = X_test
+        self._y_test = y_test
+
+    @property
+    def estimator(self):
+        return self._estimator
+
+    @property
+    def X_train(self):
+        return self._X_train
+
+    @property
+    def y_train(self):
+        return self._y_train
+
+    @property
+    def X_test(self):
+        return self._X_test
+
+    @property
+    def y_test(self):
+        return self._y_test
+
+
+def test_base_accessor_get_X_y_and_data_source_hash_error():
+    """Check that we raise the proper error in `get_X_y_and_use_cache`."""
+    X, y = make_classification(n_samples=10, n_classes=2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+
+    estimator = LogisticRegression().fit(X_train, y_train)
+    report = MockReport(estimator, X_train=None, y_train=None, X_test=None, y_test=None)
+    accessor = _BaseAccessor(parent=report, icon="")
+
+    err_msg = re.escape(
+        "Invalid data source: unknown. Possible values are: " "test, train, X_y."
+    )
+    with pytest.raises(ValueError, match=err_msg):
+        accessor._get_X_y_and_data_source_hash(data_source="unknown")
+
+    for data_source in ("train", "test"):
+        err_msg = re.escape(
+            f"No {data_source} data (i.e. X_{data_source} and y_{data_source}) were "
+            f"provided when creating the reporter. Please provide the {data_source} "
+            "data either when creating the reporter or by setting data_source to "
+            "'X_y' and providing X and y."
+        )
+        with pytest.raises(ValueError, match=err_msg):
+            accessor._get_X_y_and_data_source_hash(data_source=data_source)
+
+    report = MockReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    accessor = _BaseAccessor(parent=report, icon="")
+
+    for data_source in ("train", "test"):
+        err_msg = f"X and y must be None when data_source is {data_source}."
+        with pytest.raises(ValueError, match=err_msg):
+            accessor._get_X_y_and_data_source_hash(
+                data_source=data_source, X=X_test, y=y_test
+            )
+
+    err_msg = "X and y must be provided."
+    with pytest.raises(ValueError, match=err_msg):
+        accessor._get_X_y_and_data_source_hash(data_source="X_y")
+
+    # FIXME: once we choose some basic metrics for clustering, then we don't need to
+    # use `custom_metric` for them.
+    estimator = KMeans(n_clusters=2).fit(X_train)
+    report = MockReport(estimator, X_test=X_test)
+    accessor = _BaseAccessor(parent=report, icon="")
+    err_msg = "X must be provided."
+    with pytest.raises(ValueError, match=err_msg):
+        accessor._get_X_y_and_data_source_hash(data_source="X_y")
+
+    report = MockReport(estimator)
+    accessor = _BaseAccessor(parent=report, icon="")
+    for data_source in ("train", "test"):
+        err_msg = re.escape(
+            f"No {data_source} data (i.e. X_{data_source}) were provided when "
+            f"creating the reporter. Please provide the {data_source} data either "
+            f"when creating the reporter or by setting data_source to 'X_y' and "
+            f"providing X and y."
+        )
+        with pytest.raises(ValueError, match=err_msg):
+            accessor._get_X_y_and_data_source_hash(data_source=data_source)
+
+
+@pytest.mark.parametrize("data_source", ("train", "test", "X_y"))
+def test_base_accessor_get_X_y_and_data_source_hash(data_source):
+    """Check the general behaviour of `get_X_y_and_use_cache`."""
+    X, y = make_classification(n_samples=10, n_classes=2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+
+    estimator = LogisticRegression().fit(X_train, y_train)
+    report = MockReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    accessor = _BaseAccessor(parent=report, icon="")
+    kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
+    X, y, data_source_hash = accessor._get_X_y_and_data_source_hash(
+        data_source=data_source, **kwargs
+    )
+
+    if data_source == "train":
+        assert X is X_train
+        assert y is y_train
+        assert data_source_hash is None
+    elif data_source == "test":
+        assert X is X_test
+        assert y is y_test
+        assert data_source_hash is None
+    elif data_source == "X_y":
+        assert X is X_test
+        assert y is y_test
+        assert data_source_hash == joblib.hash((X_test, y_test))
