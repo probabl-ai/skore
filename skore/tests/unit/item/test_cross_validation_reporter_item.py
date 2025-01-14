@@ -27,7 +27,7 @@ class FakeEstimatorNoGetParams:
 
 @dataclass
 class FakeCrossValidationReporter(CrossValidationReporter):
-    cv_results = {
+    _cv_results = {
         "test_score": numpy.array([1, 2, 3]),
         "estimator": [FakeEstimator(), FakeEstimator(), FakeEstimator()],
         "fit_time": [1, 2, 3],
@@ -44,7 +44,7 @@ class FakeCrossValidationReporter(CrossValidationReporter):
 
 @dataclass
 class FakeCrossValidationReporterNoGetParams(CrossValidationReporter):
-    cv_results = {
+    _cv_results = {
         "test_score": numpy.array([1, 2, 3]),
         "estimator": [
             FakeEstimatorNoGetParams(),

@@ -218,12 +218,8 @@ class CrossValidationReporterItem(Item):
         # Get tabular results (the cv results in a dataframe-like structure)
         cv_results = {
             key: value.tolist()
-            for key, value in self.reporter.cv_results.items()
-            if (
-                key != "estimator"
-                and key != "indices"
-                and isinstance(value, numpy.ndarray)
-            )
+            for key, value in self.reporter._cv_results.items()
+            if key not in ("estimator", "indices") and isinstance(value, numpy.ndarray)
         }
 
         metrics_names = list(cv_results)
