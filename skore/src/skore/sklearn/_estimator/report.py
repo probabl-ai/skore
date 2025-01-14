@@ -14,7 +14,7 @@ from skore.externals._pandas_accessors import DirNamesMixin
 from skore.externals._sklearn_compat import is_clusterer
 from skore.sklearn._base import _BaseReport, _get_cached_response_values
 from skore.sklearn.find_ml_task import _find_ml_task
-from skore.utils._progress_bar import ProgressManager, progress_decorator
+from skore.utils._progress_bar import progress_decorator
 
 
 class EstimatorReport(_BaseReport, DirNamesMixin):
@@ -158,53 +158,46 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         progress = self._progress_info["current_progress"]
         task = self._progress_info["current_task"]
 
-        try:
-            if self._ml_task in ("binary-classification", "multiclass-classification"):
-                if response_methods == "auto":
-                    response_methods = ["predict"]
-                    if hasattr(self._estimator, "predict_proba"):
-                        response_methods.append("predict_proba")
-                    if hasattr(self._estimator, "decision_function"):
-                        response_methods.append("decision_function")
-                pos_labels = self._estimator.classes_
-            else:
-                if response_methods == "auto":
-                    response_methods = ["predict"]
-                pos_labels = [None]
+        if self._ml_task in ("binary-classification", "multiclass-classification"):
+            if response_methods == "auto":
+                response_methods = ["predict"]
+                if hasattr(self._estimator, "predict_proba"):
+                    response_methods.append("predict_proba")
+                if hasattr(self._estimator, "decision_function"):
+                    response_methods.append("decision_function")
+            pos_labels = self._estimator.classes_
+        else:
+            if response_methods == "auto":
+                response_methods = ["predict"]
+            pos_labels = [None]
 
-            data_sources = [("test", self._X_test)]
-            if self._X_train is not None:
-                data_sources.append(("train", self._X_train))
+        data_sources = [("test", self._X_test)]
+        if self._X_train is not None:
+            data_sources.append(("train", self._X_train))
 
-            total_iterations = (
-                len(response_methods) * len(pos_labels) * len(data_sources)
+        total_iterations = len(response_methods) * len(pos_labels) * len(data_sources)
+        progress.update(task, total=total_iterations)
+
+        parallel = joblib.Parallel(
+            n_jobs=n_jobs, return_as="generator_unordered", require="sharedmem"
+        )
+        generator = parallel(
+            joblib.delayed(_get_cached_response_values)(
+                cache=self._cache,
+                estimator_hash=self._hash,
+                estimator=self._estimator,
+                X=X,
+                response_method=response_method,
+                pos_label=pos_label,
+                data_source=data_source,
             )
-            progress.update(task, total=total_iterations)
-
-            parallel = joblib.Parallel(
-                n_jobs=n_jobs, return_as="generator_unordered", require="sharedmem"
+            for response_method, pos_label, (data_source, X) in product(
+                response_methods, pos_labels, data_sources
             )
-            generator = parallel(
-                joblib.delayed(_get_cached_response_values)(
-                    cache=self._cache,
-                    estimator_hash=self._hash,
-                    estimator=self._estimator,
-                    X=X,
-                    response_method=response_method,
-                    pos_label=pos_label,
-                    data_source=data_source,
-                )
-                for response_method, pos_label, (data_source, X) in product(
-                    response_methods, pos_labels, data_sources
-                )
-            )
+        )
 
-            for _ in generator:
-                progress.update(task, advance=1, refresh=True)
-
-        finally:
-            if self._parent_progress is None:
-                ProgressManager.stop_progress()
+        for _ in generator:
+            progress.update(task, advance=1, refresh=True)
 
     @property
     def estimator(self):

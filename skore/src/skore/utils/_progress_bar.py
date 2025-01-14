@@ -8,44 +8,6 @@ from rich.progress import (
 )
 
 
-def create_progress_bar():
-    """Create a consistent progress bar style."""
-    from skore import console  # avoid circular import
-
-    return Progress(
-        SpinnerColumn(),
-        TextColumn("[bold cyan]{task.description}"),
-        BarColumn(
-            complete_style="dark_orange",
-            finished_style="dark_orange",
-            pulse_style="orange1",
-        ),
-        TextColumn("[orange1]{task.percentage:>3.0f}%"),
-        console=console,
-        expand=False,
-    )
-
-
-class ProgressManager:
-    _instance = None
-    _progress = None
-
-    @classmethod
-    def get_progress(cls):
-        if cls._progress is None:
-            cls._progress = create_progress_bar()
-            cls._progress.start()
-        return cls._progress
-
-    @classmethod
-    def stop_progress(cls):
-        if cls._progress is not None:
-            try:
-                cls._progress.stop()
-            finally:
-                cls._progress = None
-
-
 def progress_decorator(description):
     def decorator(func):
         @wraps(func)
@@ -57,7 +19,18 @@ def progress_decorator(description):
             if getattr(self_obj, "_parent_progress", None) is not None:
                 progress = self_obj._parent_progress
             else:
-                progress = ProgressManager.get_progress()
+                progress = Progress(
+                    SpinnerColumn(),
+                    TextColumn("[bold cyan]{task.description}"),
+                    BarColumn(
+                        complete_style="dark_orange",
+                        finished_style="dark_orange",
+                        pulse_style="orange1",
+                    ),
+                    TextColumn("[orange1]{task.percentage:>3.0f}%"),
+                    expand=False,
+                )
+                progress.start()
 
             task = progress.add_task(desc, total=None)
             self_obj._progress_info = {
@@ -73,6 +46,12 @@ def progress_decorator(description):
                 return result
             except Exception:
                 raise
+            finally:
+                if self_obj._parent_progress is None:
+                    progress.update(
+                        task, completed=progress.tasks[task].total, refresh=True
+                    )
+                    progress.stop()
 
         return wrapper
 

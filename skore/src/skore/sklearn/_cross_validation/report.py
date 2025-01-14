@@ -11,10 +11,7 @@ from skore.externals._sklearn_compat import _safe_indexing
 from skore.sklearn._base import _BaseReport
 from skore.sklearn._estimator.report import EstimatorReport
 from skore.sklearn.find_ml_task import _find_ml_task
-from skore.utils._progress_bar import (
-    ProgressManager,
-    progress_decorator,
-)
+from skore.utils._progress_bar import progress_decorator
 
 
 def _generate_estimator_report(estimator, X, y, train_indices, test_indices):
@@ -133,13 +130,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         )
 
         estimator_reports = []
-        try:
-            for report in generator:
-                estimator_reports.append(report)
-                progress.update(task, advance=1, refresh=True)
-        finally:
-            if self._parent_progress is None:
-                ProgressManager.stop_progress()
+        for report in generator:
+            estimator_reports.append(report)
+            progress.update(task, advance=1, refresh=True)
 
         return estimator_reports
 
@@ -165,17 +158,13 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         total_estimators = len(self.estimator_reports)
         progress.update(main_task, total=total_estimators)
 
-        try:
-            for estimator_report in self.estimator_reports:
-                # Pass the progress manager to child tasks
-                estimator_report._parent_progress = progress
-                estimator_report.cache_predictions(
-                    response_methods=response_methods, n_jobs=self._n_jobs
-                )
-                progress.update(main_task, advance=1, refresh=True)
-        finally:
-            if self._parent_progress is None:
-                ProgressManager.stop_progress()
+        for estimator_report in self.estimator_reports:
+            # Pass the progress manager to child tasks
+            estimator_report._parent_progress = progress
+            estimator_report.cache_predictions(
+                response_methods=response_methods, n_jobs=self._n_jobs
+            )
+            progress.update(main_task, advance=1, refresh=True)
 
     @property
     def estimator(self):

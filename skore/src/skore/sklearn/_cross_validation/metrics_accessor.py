@@ -11,7 +11,7 @@ from skore.sklearn._plot import (
     RocCurveDisplay,
 )
 from skore.utils._accessor import _check_supported_ml_task
-from skore.utils._progress_bar import ProgressManager, progress_decorator
+from skore.utils._progress_bar import progress_decorator
 
 ###############################################################################
 # Metrics accessor
@@ -126,13 +126,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         if cache_key in self._parent._cache:
             results = self._parent._cache[cache_key]
-            if self._parent_progress is None:
-                progress.update(
-                    main_task,
-                    completed=total_estimators,
-                    refresh=True,
-                )
-                ProgressManager.stop_progress()
         else:
             parallel = joblib.Parallel(
                 n_jobs=self._parent._n_jobs,
@@ -146,13 +139,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 for report in self._parent.estimator_reports
             )
             results = []
-            try:
-                for result in generator:
-                    results.append(result)
-                    progress.update(main_task, advance=1, refresh=True)
-            finally:
-                if self._parent_progress is None:
-                    ProgressManager.stop_progress()
+            for result in generator:
+                results.append(result)
+                progress.update(main_task, advance=1, refresh=True)
 
             results = pd.concat(
                 results,
@@ -746,37 +735,26 @@ class _PlotMetricsAccessor(_BaseAccessor):
         if cache_key in self._parent._cache:
             display = self._parent._cache[cache_key]
             display.plot(**display_plot_kwargs)
-            if self._parent_progress is None:
-                progress.update(
-                    main_task,
-                    completed=total_estimators,
-                    refresh=True,
-                )
-                ProgressManager.stop_progress()
         else:
             y_true, y_pred = [], []
-            try:
-                for report in self._parent.estimator_reports:
-                    X, y, _ = report.metrics._get_X_y_and_data_source_hash(
-                        data_source=data_source
+            for report in self._parent.estimator_reports:
+                X, y, _ = report.metrics._get_X_y_and_data_source_hash(
+                    data_source=data_source
+                )
+                y_true.append(y)
+                y_pred.append(
+                    _get_cached_response_values(
+                        cache=report._cache,
+                        estimator_hash=report._hash,
+                        estimator=report.estimator,
+                        X=X,
+                        response_method=response_method,
+                        data_source=data_source,
+                        data_source_hash=None,
+                        pos_label=display_kwargs.get("pos_label", None),
                     )
-                    y_true.append(y)
-                    y_pred.append(
-                        _get_cached_response_values(
-                            cache=report._cache,
-                            estimator_hash=report._hash,
-                            estimator=report.estimator,
-                            X=X,
-                            response_method=response_method,
-                            data_source=data_source,
-                            data_source_hash=None,
-                            pos_label=display_kwargs.get("pos_label", None),
-                        )
-                    )
-                    progress.update(main_task, advance=1, refresh=True)
-            finally:
-                if self._parent_progress is None:
-                    ProgressManager.stop_progress()
+                )
+                progress.update(main_task, advance=1, refresh=True)
 
             display = display_class._from_predictions(
                 y_true,
