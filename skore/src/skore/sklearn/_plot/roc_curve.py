@@ -56,7 +56,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
     estimator_name : str
         Name of the estimator.
 
-    pos_label : str, default=None
+    pos_label : int, float, bool or str, default=None
         The class considered as positive. Only meaningful for binary classification.
 
     data_source : {"train", "test", "X_y"}, default=None
