@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import base64
 from io import BytesIO
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Union
 
 from skore.item.item import Item, ItemTypeError
 
@@ -37,8 +37,9 @@ class MediaItem(Item):
         media_bytes: bytes,
         media_encoding: str,
         media_type: str,
-        created_at: str | None = None,
-        updated_at: str | None = None,
+        created_at: Union[str, None] = None,
+        updated_at: Union[str, None] = None,
+        note: Union[str, None] = None,
     ):
         """
         Initialize a MediaItem.
@@ -55,8 +56,10 @@ class MediaItem(Item):
             The creation timestamp in ISO format.
         updated_at : str, optional
             The last update timestamp in ISO format.
+        note : Union[str, None]
+            An optional note.
         """
-        super().__init__(created_at, updated_at)
+        super().__init__(created_at, updated_at, note)
 
         self.media_bytes = media_bytes
         self.media_encoding = media_encoding
