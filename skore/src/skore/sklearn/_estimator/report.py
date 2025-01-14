@@ -14,7 +14,7 @@ from skore.externals._pandas_accessors import DirNamesMixin
 from skore.externals._sklearn_compat import is_clusterer
 from skore.sklearn._base import _BaseReport, _get_cached_response_values
 from skore.sklearn.find_ml_task import _find_ml_task
-from skore.utils._progress_bar import ProgressDecorator, ProgressManager
+from skore.utils._progress_bar import ProgressManager, progress_decorator
 
 
 class EstimatorReport(_BaseReport, DirNamesMixin):
@@ -143,7 +143,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         """Clean the cache."""
         self._cache = {}
 
-    @ProgressDecorator(description="Estimator predictions")
+    @progress_decorator(description="Estimator predictions")
     def cache_predictions(self, response_methods="auto", n_jobs=None):
         """Cache the predictions for the estimator.
 

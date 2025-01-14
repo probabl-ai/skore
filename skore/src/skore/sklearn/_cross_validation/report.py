@@ -12,8 +12,8 @@ from skore.sklearn._base import _BaseReport
 from skore.sklearn._estimator.report import EstimatorReport
 from skore.sklearn.find_ml_task import _find_ml_task
 from skore.utils._progress_bar import (
-    ProgressDecorator,
     ProgressManager,
+    progress_decorator,
 )
 
 
@@ -97,7 +97,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         self._cache = {}
         self._ml_task = _find_ml_task(y, estimator=self.estimator_reports[0].estimator)
 
-    @ProgressDecorator(
+    @progress_decorator(
         description=lambda self: (
             f"Processing cross-validation\nfor {self.estimator_name}"
         )
@@ -149,7 +149,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             report.clean_cache()
         self._cache = {}
 
-    @ProgressDecorator(description="Cross-validation predictions")
+    @progress_decorator(description="Cross-validation predictions")
     def cache_predictions(self, response_methods="auto"):
         """Cache the predictions for sub-estimators reports.
 

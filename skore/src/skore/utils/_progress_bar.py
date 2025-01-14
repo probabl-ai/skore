@@ -46,20 +46,13 @@ class ProgressManager:
                 cls._progress = None
 
 
-class ProgressDecorator:
-    def __init__(self, description):
-        self.description = description
-
-    def __call__(self, func):
+def progress_decorator(description):
+    def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
             self_obj = args[0]
 
-            desc = (
-                self.description(self_obj)
-                if callable(self.description)
-                else self.description
-            )
+            desc = description(self_obj) if callable(description) else description
 
             if getattr(self_obj, "_parent_progress", None) is not None:
                 progress = self_obj._parent_progress
@@ -82,3 +75,5 @@ class ProgressDecorator:
                 raise
 
         return wrapper
+
+    return decorator

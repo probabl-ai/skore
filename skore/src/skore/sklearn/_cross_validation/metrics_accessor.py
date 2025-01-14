@@ -11,7 +11,7 @@ from skore.sklearn._plot import (
     RocCurveDisplay,
 )
 from skore.utils._accessor import _check_supported_ml_task
-from skore.utils._progress_bar import ProgressDecorator, ProgressManager
+from skore.utils._progress_bar import ProgressManager, progress_decorator
 
 ###############################################################################
 # Metrics accessor
@@ -93,7 +93,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             scoring_kwargs=scoring_kwargs,
         )
 
-    @ProgressDecorator(description="Compute metric for each split")
+    @progress_decorator(description="Compute metric for each split")
     def _compute_metric_scores(
         self,
         report_metric_name,
@@ -697,7 +697,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
         self._metrics_parent = parent
         self._parent_progress = None
 
-    @ProgressDecorator(description="Computing predictions for display")
+    @progress_decorator(description="Computing predictions for display")
     def _get_display(
         self,
         *,
