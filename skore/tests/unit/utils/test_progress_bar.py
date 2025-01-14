@@ -86,6 +86,9 @@ def test_nested_progress():
 
 
 def test_dynamic_description():
+    """Check that we can pass a dynamic description using `self` when calling the
+    decorator."""
+
     class DynamicTask:
         def __init__(self, name):
             self._parent_progress = None
