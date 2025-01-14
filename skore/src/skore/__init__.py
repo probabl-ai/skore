@@ -11,6 +11,15 @@ from skore.project import Project, open
 from skore.sklearn import CrossValidationReporter, EstimatorReport, train_test_split
 from skore.utils._show_versions import show_versions
 
+__all__ = [
+    "CrossValidationReporter",
+    "EstimatorReport",
+    "open",
+    "Project",
+    "show_versions",
+    "train_test_split",
+]
+
 ########################################################################################
 # FIXME: This is a temporary patch to make the output of the Jupyter notebook look nice.
 # We should find a better solution in the future.
@@ -50,14 +59,6 @@ jupyter.display = patched_display
 # End of the temporary patch
 ########################################################################################
 
-__all__ = [
-    "CrossValidationReporter",
-    "EstimatorReport",
-    "open",
-    "Project",
-    "show_versions",
-    "train_test_split",
-]
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())  # Default to no output
