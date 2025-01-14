@@ -142,7 +142,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self._cache = {}
 
     def cache_predictions(self, response_methods="auto", n_jobs=None):
-        """Force caching of estimator's predictions.
+        """Cache estimator's predictions.
 
         Parameters
         ----------

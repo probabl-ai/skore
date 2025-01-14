@@ -93,6 +93,27 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         -------
         pd.DataFrame
             The statistics for the metrics.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_breast_cancer(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> reporter.metrics.report_metrics(pos_label=1)
+        Metric              Precision (↗︎)  Recall (↗︎)  ROC AUC (↗︎)  Brier score (↘︎)
+        LogisticRegression        0.988235     0.933333      0.995178          0.033982
         """
         if scoring is None:
             # Equivalent to _get_scorers_to_add
@@ -296,6 +317,27 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         -------
         pd.DataFrame
             The accuracy score.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_breast_cancer(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> reporter.metrics.accuracy()
+        Metric              Accuracy (↗︎)
+        LogisticRegression       0.951049
         """
         return self._compute_metric_scores(
             metrics.accuracy_score,
@@ -365,6 +407,27 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         -------
         pd.DataFrame
             The precision score.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_breast_cancer(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> reporter.metrics.precision(pos_label=1)
+        Metric              Precision (↗︎)
+        LogisticRegression        0.988235
         """
         if self._parent._ml_task == "binary-classification" and pos_label is not None:
             # if `pos_label` is specified by our user, then we can safely report only
@@ -442,6 +505,27 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         -------
         pd.DataFrame
             The recall score.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_breast_cancer(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> reporter.metrics.recall(pos_label=1)
+        Metric              Recall (↗︎)
+        LogisticRegression     0.933333
         """
         if self._parent._ml_task == "binary-classification" and pos_label is not None:
             # if `pos_label` is specified by our user, then we can safely report only
@@ -486,6 +570,27 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         -------
         pd.DataFrame
             The Brier score.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_breast_cancer(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> reporter.metrics.brier_score()
+        Metric              Brier score (↘︎)
+        LogisticRegression          0.033982
         """
         # The Brier score in scikit-learn request `pos_label` to ensure that the
         # integral encoding of `y_true` corresponds to the probabilities of the
@@ -566,6 +671,27 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         -------
         pd.DataFrame
             The ROC AUC score.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_breast_cancer(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> reporter.metrics.roc_auc()
+        Metric              ROC AUC (↗︎)
+        LogisticRegression      0.995178
         """
         return self._compute_metric_scores(
             metrics.roc_auc_score,
@@ -600,6 +726,27 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         -------
         pd.DataFrame
             The log-loss.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_breast_cancer(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> reporter.metrics.log_loss()
+        Metric              Log loss (↘︎)
+        LogisticRegression       0.106542
         """
         return self._compute_metric_scores(
             metrics.log_loss,
@@ -638,6 +785,27 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         -------
         pd.DataFrame
             The R² score.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_diabetes
+        >>> from sklearn.linear_model import Ridge
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_diabetes(return_X_y=True), random_state=0
+        ... )
+        >>> regressor = Ridge()
+        >>> reporter = EstimatorReport(
+        ...     regressor,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> reporter.metrics.r2()
+        Metric  R² (↗︎)
+        Ridge   0.35696
         """
         return self._compute_metric_scores(
             metrics.r2_score,
@@ -677,6 +845,27 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         -------
         pd.DataFrame
             The root mean squared error.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_diabetes
+        >>> from sklearn.linear_model import Ridge
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_diabetes(return_X_y=True), random_state=0
+        ... )
+        >>> regressor = Ridge()
+        >>> reporter = EstimatorReport(
+        ...     regressor,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> reporter.metrics.rmse()
+        Metric  RMSE (↘︎)
+        Ridge   56.500606
         """
         return self._compute_metric_scores(
             metrics.root_mean_squared_error,
@@ -740,6 +929,32 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         -------
         pd.DataFrame
             The custom metric.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_diabetes
+        >>> from sklearn.linear_model import Ridge
+        >>> from sklearn.metrics import mean_absolute_error
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_diabetes(return_X_y=True), random_state=0
+        ... )
+        >>> regressor = Ridge()
+        >>> reporter = EstimatorReport(
+        ...     regressor,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> reporter.metrics.custom_metric(
+        ...     metric_function=mean_absolute_error,
+        ...     response_method="predict",
+        ...     metric_name="MAE (↗︎)",
+        ... )
+        Metric        MAE (↗︎)
+        Ridge   44.922683
         """
         return self._compute_metric_scores(
             metric_function,
@@ -957,6 +1172,26 @@ class _PlotMetricsAccessor(_BaseAccessor):
         -------
         RocCurveDisplay
             The ROC curve display.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_breast_cancer(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> display = reporter.metrics.plot.roc()
+        >>> display.plot(roc_curve_kwargs={"color": "tab:red"})
         """
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
@@ -1014,6 +1249,26 @@ class _PlotMetricsAccessor(_BaseAccessor):
         -------
         PrecisionRecallCurveDisplay
             The precision-recall curve display.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_breast_cancer(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> display = reporter.metrics.plot.precision_recall()
+        >>> display.plot(pr_curve_kwargs={"color": "tab:red"})
         """
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
@@ -1085,6 +1340,28 @@ class _PlotMetricsAccessor(_BaseAccessor):
         -------
         PredictionErrorDisplay
             The prediction error display.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_diabetes
+        >>> from sklearn.linear_model import Ridge
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_diabetes(return_X_y=True), random_state=0
+        ... )
+        >>> regressor = Ridge()
+        >>> reporter = EstimatorReport(
+        ...     regressor,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> display = reporter.metrics.plot.prediction_error(
+        ...     kind="actual_vs_predicted"
+        ... )
+        >>> display.plot(line_kwargs={"color": "tab:red"})
         """
         display_kwargs = {"kind": kind, "subsample": subsample}
         display_plot_kwargs = {"ax": ax}

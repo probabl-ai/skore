@@ -111,6 +111,7 @@ addopts = [
   "--ignore=examples",
   "--ignore=notebooks",
 ]
+doctest_optionflags = ["ELLIPSIS", "NORMALIZE_WHITESPACE"]
 
 [tool.coverage.run]
 branch = true
