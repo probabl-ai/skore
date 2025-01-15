@@ -59,6 +59,8 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     n_jobs : int, default=None
         Number of jobs to run in parallel. Training the estimator and computing
         the score are parallelized over the cross-validation splits.
+        When accessing some methods of the `CrossValidationReport`, the `n_jobs`
+        parameter is used to parallelize the computation.
         ``None`` means 1 unless in a :obj:`joblib.parallel_backend` context.
         ``-1`` means using all processors.
     """
@@ -83,7 +85,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         self._X = X
         self._y = y
         self._cv = check_cv(cv, y, classifier=is_classifier(estimator))
-        self._n_jobs = n_jobs
+        self.n_jobs = n_jobs
 
         self.estimator_reports = self._fit_estimator_reports()
 
@@ -116,7 +118,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         n_splits = self._cv.get_n_splits(self._X, self._y)
         progress.update(task, total=n_splits)
 
-        parallel = joblib.Parallel(n_jobs=self._n_jobs, return_as="generator_unordered")
+        parallel = joblib.Parallel(n_jobs=self.n_jobs, return_as="generator_unordered")
         # do not split the data to take advantage of the memory mapping
         generator = parallel(
             joblib.delayed(_generate_estimator_report)(
@@ -162,7 +164,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             # Pass the progress manager to child tasks
             estimator_report._parent_progress = progress
             estimator_report.cache_predictions(
-                response_methods=response_methods, n_jobs=self._n_jobs
+                response_methods=response_methods, n_jobs=self.n_jobs
             )
             progress.update(main_task, advance=1, refresh=True)
 
