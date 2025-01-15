@@ -139,20 +139,70 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     # For the validation set, we allow it and we invalidate the cache.
 
     def clear_cache(self):
-        """Clean the cache."""
+        """Clear the cache.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_breast_cancer(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> reporter.cache_predictions()
+        Caching predictions ...
+        >>> reporter.clear_cache()
+        >>> reporter._cache
+        {}
+        """
         self._cache = {}
 
     @progress_decorator(description="Caching predictions")
     def cache_predictions(self, response_methods="auto", n_jobs=None):
-        """Cache the predictions for the estimator.
+        """Cache estimator's predictions.
 
         Parameters
         ----------
-        response_methods : {"auto", "predict", "predict_proba", "decision_function"},\
-                default="auto
-            The methods to use to compute the predictions.
-        n_jobs : int, default=None
-            The number of jobs to run in parallel.
+        response_methods : "auto" or list of str, default="auto"
+            The response methods to precompute. If "auto", the response methods are
+            inferred from the ml task: for classification we compute the response of
+            the `predict_proba`, `decision_function` and `predict` methods; for
+            regression we compute the response of the `predict` method.
+
+        n_jobs : int or None, default=None
+            The number of jobs to run in parallel. None means 1 unless in a
+            joblib.parallel_backend context. -1 means using all processors.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_breast_cancer(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> reporter.cache_predictions()
+        Caching predictions ...
+        >>> reporter._cache
+        {...}
         """
         if self._ml_task in ("binary-classification", "multiclass-classification"):
             if response_methods == "auto":
@@ -193,9 +243,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         task = self._progress_info["current_task"]
         total_iterations = len(response_methods) * len(pos_labels) * len(data_sources)
         progress.update(task, total=total_iterations)
-        for _ in generator:
-            progress.update(task, advance=1, refresh=True)
-
         for _ in generator:
             progress.update(task, advance=1, refresh=True)
 

@@ -142,26 +142,6 @@ html_theme_options = {
             "url": "https://discord.gg/scBZerAGwW",
             "icon": "fa-brands fa-discord",
         },
-        {
-            "name": "YouTube",
-            "url": "https://www.youtube.com/@probabl_ai",
-            "icon": "fa-brands fa-youtube",
-        },
-        {
-            "name": "LinkedIn",
-            "url": "https://www.linkedin.com/company/probabl/",
-            "icon": "fa-brands fa-linkedin-in",
-        },
-        {
-            "name": "Bluesky",
-            "url": "https://bsky.app/profile/probabl.ai",
-            "icon": "fa-brands fa-bluesky",
-        },
-        {
-            "name": "X (ex-Twitter)",
-            "url": "https://x.com/probabl_ai",
-            "icon": "fa-brands fa-x-twitter",
-        },
     ],
     "switcher": {
         "json_url": "https://skore.probabl.ai/versions.json",

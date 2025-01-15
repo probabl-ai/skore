@@ -322,10 +322,7 @@ reporter.metrics.report_metrics(
 from sklearn.metrics import make_scorer, f1_score
 
 f1_scorer = make_scorer(
-    f1_score,
-    response_method="predict",
-    metric_name="F1 Score",
-    pos_label=pos_label,
+    f1_score, response_method="predict", metric_name="F1 Score", pos_label=pos_label
 )
 operational_decision_cost_scorer = make_scorer(
     operational_decision_cost,

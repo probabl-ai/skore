@@ -192,8 +192,10 @@ my_project.put("my_fig", fig)
 #     import time
 #
 #     my_project.put("my_int", 4)
+#
 #     time.sleep(0.1)
 #     my_project.put("my_int", 9)
+#
 #     time.sleep(0.1)
 #     my_project.put("my_int", 16)
 #
