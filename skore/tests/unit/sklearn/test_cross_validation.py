@@ -24,6 +24,7 @@ from skore.sklearn._cross_validation.report import (
     _generate_estimator_report,
 )
 from skore.sklearn._estimator import EstimatorReport
+from skore.sklearn._plot.roc_curve import RocCurveDisplay
 
 
 @pytest.fixture
@@ -224,6 +225,39 @@ def test_cross_validation_report_plot_repr(binary_classification_data):
     repr_str = repr(report.metrics.plot)
     assert "skore.CrossValidationReport.metrics.plot" in repr_str
     assert "reporter.metrics.plot.help()" in repr_str
+
+
+def test_cross_validation_report_plot_roc(binary_classification_data):
+    """Check that the ROC plot method works."""
+    estimator, X, y = binary_classification_data
+    report = CrossValidationReport(estimator, X, y, cv=2)
+    assert isinstance(report.metrics.plot.roc(), RocCurveDisplay)
+
+
+@pytest.mark.parametrize("display", ["roc", "precision_recall"])
+def test_cross_validation_report_display_binary_classification(
+    pyplot, binary_classification_data, display
+):
+    """General behaviour of the function creating display on binary classification."""
+    estimator, X, y = binary_classification_data
+    report = CrossValidationReport(estimator, X, y, cv=2)
+    assert hasattr(report.metrics.plot, display)
+    display_first_call = getattr(report.metrics.plot, display)()
+    assert report._cache != {}
+    display_second_call = getattr(report.metrics.plot, display)()
+    assert display_first_call is display_second_call
+
+
+@pytest.mark.parametrize("display", ["prediction_error"])
+def test_cross_validation_report_display_regression(pyplot, regression_data, display):
+    """General behaviour of the function creating display on regression."""
+    estimator, X, y = regression_data
+    report = CrossValidationReport(estimator, X, y, cv=2)
+    assert hasattr(report.metrics.plot, display)
+    display_first_call = getattr(report.metrics.plot, display)()
+    assert report._cache != {}
+    display_second_call = getattr(report.metrics.plot, display)()
+    assert display_first_call is display_second_call
 
 
 ########################################################################################
@@ -677,3 +711,16 @@ def test_cross_validation_report_report_metrics_invalid_metric_type(regression_d
     err_msg = re.escape("Invalid type of metric: <class 'int'> for 1")
     with pytest.raises(ValueError, match=err_msg):
         report.metrics.report_metrics(scoring=[1])
+
+
+def test_cross_validation_report_custom_metric(binary_classification_data):
+    """Check that we can compute a custom metric."""
+    estimator, X, y = binary_classification_data
+    report = CrossValidationReport(estimator, X, y, cv=2)
+
+    result = report.metrics.custom_metric(
+        metric_function=accuracy_score,
+        response_method="predict",
+    )
+    assert result.shape == (2, 1)
+    assert result.columns == ["accuracy_score"]
