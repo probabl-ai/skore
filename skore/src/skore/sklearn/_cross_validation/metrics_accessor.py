@@ -47,6 +47,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         *,
         data_source="test",
         scoring=None,
+        scoring_names=None,
         pos_label=None,
         scoring_kwargs=None,
         aggregate=None,
@@ -70,6 +71,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             same parameter name with different values), you can use scikit-learn scorers
             as provided by :func:`sklearn.metrics.make_scorer`.
 
+        scoring_names : list of str, default=None
+            Used to overwrite the default scoring names in the report. It should be of
+            the same length as the `scoring` parameter.
+
         pos_label : int, default=None
             The positive class.
 
@@ -91,6 +96,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             scoring=scoring,
             pos_label=pos_label,
             scoring_kwargs=scoring_kwargs,
+            scoring_names=scoring_names,
         )
 
     @progress_decorator(description="Compute metric for each split")

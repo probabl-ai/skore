@@ -271,7 +271,7 @@ def _check_results_single_metric(report, metric, expected_n_splits, expected_nb_
     assert report._cache != {}
     report.clear_cache()
 
-    _check_results_report_metrics(result, [metric], expected_nb_stats)
+    _check_metrics_names(result, [metric], expected_nb_stats)
 
     # check the aggregate parameter
     stats = ["mean", "std"]
@@ -281,7 +281,32 @@ def _check_results_single_metric(report, metric, expected_n_splits, expected_nb_
     assert list(split_names) == stats
 
 
-def _check_results_report_metrics(result, expected_metrics, expected_nb_stats):
+def _check_results_report_metric(
+    report, params, expected_n_splits, expected_metrics, expected_nb_stats
+):
+    result = report.metrics.report_metrics(**params)
+    assert isinstance(result, pd.DataFrame)
+    assert result.shape[0] == expected_n_splits
+    # check that we hit the cache
+    result_with_cache = report.metrics.report_metrics(**params)
+    pd.testing.assert_frame_equal(result, result_with_cache)
+
+    # check that the index contains the expected split names
+    split_names = result.index.get_level_values(1).unique()
+    expected_split_names = [f"Split #{i}" for i in range(expected_n_splits)]
+    assert list(split_names) == expected_split_names
+
+    _check_metrics_names(result, expected_metrics, expected_nb_stats)
+
+    # check the aggregate parameter
+    stats = ["mean", "std"]
+    result = report.metrics.report_metrics(aggregate=stats, **params)
+    # check that the index contains the expected split names
+    split_names = result.index.get_level_values(1).unique()
+    assert list(split_names) == stats
+
+
+def _check_metrics_names(result, expected_metrics, expected_nb_stats):
     assert isinstance(result, pd.DataFrame)
     assert len(result.columns) == expected_nb_stats
 
@@ -358,3 +383,110 @@ def test_cross_validation_report_metrics_regression_multioutput(
     (estimator, X, y), cv = regression_multioutput_data, 2
     report = CrossValidationReport(estimator, X, y, cv=cv)
     _check_results_single_metric(report, metric, cv, nb_stats)
+
+
+@pytest.mark.parametrize("pos_label, nb_stats", [(None, 2), (1, 1)])
+def test_cross_validation_report_report_metrics_binary(
+    binary_classification_data,
+    binary_classification_data_svc,
+    pos_label,
+    nb_stats,
+):
+    """Check the behaviour of the `report_metrics` method with binary
+    classification. We test both with an SVC that does not support `predict_proba` and a
+    RandomForestClassifier that does.
+    """
+    estimator, X, y = binary_classification_data
+    report = CrossValidationReport(estimator, X, y, cv=2)
+    expected_metrics = ("precision", "recall", "roc_auc", "brier_score")
+    # depending on `pos_label`, we report a stats for each class or not for
+    # precision and recall
+    expected_nb_stats = 2 * nb_stats + 2
+    _check_results_report_metric(
+        report,
+        params={"pos_label": pos_label},
+        expected_n_splits=2,
+        expected_metrics=expected_metrics,
+        expected_nb_stats=expected_nb_stats,
+    )
+
+    # Repeat the same experiment where we the target labels are not [0, 1] but
+    # ["neg", "pos"]. We check that we don't get any error.
+    target_names = np.array(["neg", "pos"], dtype=object)
+    pos_label_name = target_names[pos_label] if pos_label is not None else pos_label
+    y = target_names[y]
+    report = CrossValidationReport(estimator, X, y, cv=2)
+    expected_metrics = ("precision", "recall", "roc_auc", "brier_score")
+    # depending on `pos_label`, we report a stats for each class or not for
+    # precision and recall
+    expected_nb_stats = 2 * nb_stats + 2
+    _check_results_report_metric(
+        report,
+        params={"pos_label": pos_label_name},
+        expected_n_splits=2,
+        expected_metrics=expected_metrics,
+        expected_nb_stats=expected_nb_stats,
+    )
+
+    estimator, X, y = binary_classification_data_svc
+    report = CrossValidationReport(estimator, X, y, cv=2)
+    expected_metrics = ("precision", "recall", "roc_auc")
+    # depending on `pos_label`, we report a stats for each class or not for
+    # precision and recall
+    expected_nb_stats = 2 * nb_stats + 1
+    _check_results_report_metric(
+        report,
+        params={"pos_label": pos_label},
+        expected_n_splits=2,
+        expected_metrics=expected_metrics,
+        expected_nb_stats=expected_nb_stats,
+    )
+
+
+def test_cross_validation_report_report_metrics_multiclass(
+    multiclass_classification_data, multiclass_classification_data_svc
+):
+    """Check the behaviour of the `report_metrics` method with multiclass
+    classification.
+    """
+    estimator, X, y = multiclass_classification_data
+    report = CrossValidationReport(estimator, X, y, cv=2)
+    expected_metrics = ("precision", "recall", "roc_auc", "log_loss")
+    # since we are not averaging by default, we report 3 statistics for
+    # precision, recall and roc_auc
+    expected_nb_stats = 3 * 3 + 1
+    _check_results_report_metric(
+        report,
+        params={},
+        expected_n_splits=2,
+        expected_metrics=expected_metrics,
+        expected_nb_stats=expected_nb_stats,
+    )
+
+    estimator, X, y = multiclass_classification_data_svc
+    report = CrossValidationReport(estimator, X, y, cv=2)
+    expected_metrics = ("precision", "recall")
+    # since we are not averaging by default, we report 3 statistics for
+    # precision and recall
+    expected_nb_stats = 3 * 2
+    _check_results_report_metric(
+        report,
+        params={},
+        expected_n_splits=2,
+        expected_metrics=expected_metrics,
+        expected_nb_stats=expected_nb_stats,
+    )
+
+
+def test_cross_validation_report_report_metrics_regression(regression_data):
+    """Check the behaviour of the `report_metrics` method with regression."""
+    estimator, X, y = regression_data
+    report = CrossValidationReport(estimator, X, y, cv=2)
+    expected_metrics = ("r2", "rmse")
+    _check_results_report_metric(
+        report,
+        params={},
+        expected_n_splits=2,
+        expected_metrics=expected_metrics,
+        expected_nb_stats=len(expected_metrics),
+    )
