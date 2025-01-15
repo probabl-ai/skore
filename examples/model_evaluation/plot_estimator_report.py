@@ -154,7 +154,7 @@ print(f"Time taken to compute the log loss: {end - start:.2f} seconds")
 #
 # We can show that without initial cache, it would have taken more time to compute
 # the log loss.
-reporter.clean_cache()
+reporter.clear_cache()
 
 start = time.time()
 log_loss = reporter.metrics.log_loss()
@@ -266,7 +266,7 @@ print(f"Time taken to compute the cost: {end - start:.2f} seconds")
 # %%
 #
 # Let's now clean the cache and see if it is faster.
-reporter.clean_cache()
+reporter.clear_cache()
 
 # %%
 start = time.time()
@@ -370,7 +370,7 @@ print(f"Time taken to compute the ROC curve: {end - start:.2f} seconds")
 # %%
 #
 # Now, let's clean the cache and check if we get a slowdown.
-reporter.clean_cache()
+reporter.clear_cache()
 
 # %%
 start = time.time()

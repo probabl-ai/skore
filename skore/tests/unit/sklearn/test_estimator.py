@@ -281,9 +281,7 @@ def test_estimator_report_help(capsys, binary_classification_data):
 
     report.help()
     captured = capsys.readouterr()
-    assert (
-        f"📓 Tools to diagnose estimator {estimator.__class__.__name__}" in captured.out
-    )
+    assert f"Tools to diagnose estimator {estimator.__class__.__name__}" in captured.out
 
 
 def test_estimator_report_repr(binary_classification_data):
@@ -292,7 +290,8 @@ def test_estimator_report_repr(binary_classification_data):
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
     repr_str = repr(report)
-    assert f"📓 Tools to diagnose estimator {estimator.__class__.__name__}" in repr_str
+    assert "skore.EstimatorReport" in repr_str
+    assert "reporter.help()" in repr_str
 
 
 @pytest.mark.parametrize(
@@ -342,7 +341,7 @@ def test_estimator_report_plot_help(capsys, binary_classification_data):
 
     report.metrics.plot.help()
     captured = capsys.readouterr()
-    assert "🎨 Available plot methods" in captured.out
+    assert "Available plot methods" in captured.out
 
 
 def test_estimator_report_plot_repr(binary_classification_data):
@@ -351,7 +350,8 @@ def test_estimator_report_plot_repr(binary_classification_data):
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
     repr_str = repr(report.metrics.plot)
-    assert "🎨 Available plot methods" in repr_str
+    assert "skore.EstimatorReport.metrics.plot" in repr_str
+    assert "reporter.metrics.plot.help()" in repr_str
 
 
 def test_estimator_report_plot_roc(binary_classification_data):
@@ -481,7 +481,7 @@ def test_estimator_report_metrics_help(capsys, binary_classification_data):
 
     report.metrics.help()
     captured = capsys.readouterr()
-    assert "📏 Available metrics methods" in captured.out
+    assert "Available metrics methods" in captured.out
 
 
 def test_estimator_report_metrics_repr(binary_classification_data):
@@ -490,7 +490,8 @@ def test_estimator_report_metrics_repr(binary_classification_data):
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
     repr_str = repr(report.metrics)
-    assert "📏 Available metrics methods" in repr_str
+    assert "skore.EstimatorReport.metrics" in repr_str
+    assert "reporter.metrics.help()" in repr_str
 
 
 @pytest.mark.parametrize(
@@ -513,7 +514,7 @@ def test_estimator_report_metrics_binary_classification(
 
     # check that something was written to the cache
     assert report._cache != {}
-    report.clean_cache()
+    report.clear_cache()
 
     # check that passing using data outside from the report works and that we they
     # don't come from the cache
@@ -539,7 +540,7 @@ def test_estimator_report_metrics_regression(regression_data, metric):
 
     # check that something was written to the cache
     assert report._cache != {}
-    report.clean_cache()
+    report.clear_cache()
 
     # check that passing using data outside from the report works and that we they
     # don't come from the cache

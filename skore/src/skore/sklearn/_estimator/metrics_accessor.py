@@ -42,7 +42,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     }
 
     def __init__(self, parent):
-        super().__init__(parent, icon=":straight_ruler:")
+        super().__init__(parent)
 
     # TODO: should build on the `add_scorers` function
     def report_metrics(
@@ -98,6 +98,27 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         -------
         pd.DataFrame
             The statistics for the metrics.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_breast_cancer(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> reporter.metrics.report_metrics(pos_label=1)
+        Metric              Precision (↗︎)  Recall (↗︎)  ROC AUC (↗︎)  Brier score (↘︎)
+        LogisticRegression        0.98...     0.93...      0.99...          0.03...
         """
         if data_source == "X_y":
             # optimization of the hash computation to avoid recomputing it
@@ -353,6 +374,27 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         -------
         pd.DataFrame
             The accuracy score.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_breast_cancer(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> reporter.metrics.accuracy()
+        Metric              Accuracy (↗︎)
+        LogisticRegression       0.95...
         """
         return self._accuracy(data_source=data_source, data_source_hash=None, X=X, y=y)
 
@@ -445,6 +487,27 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         -------
         pd.DataFrame
             The precision score.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_breast_cancer(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> reporter.metrics.precision(pos_label=1)
+        Metric              Precision (↗︎)
+        LogisticRegression        0.98...
         """
         return self._precision(
             data_source=data_source,
@@ -554,6 +617,27 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         -------
         pd.DataFrame
             The recall score.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_breast_cancer(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> reporter.metrics.recall(pos_label=1)
+        Metric              Recall (↗︎)
+        LogisticRegression     0.93...
         """
         return self._recall(
             data_source=data_source,
@@ -630,6 +714,27 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         -------
         pd.DataFrame
             The Brier score.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_breast_cancer(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> reporter.metrics.brier_score()
+        Metric              Brier score (↘︎)
+        LogisticRegression          0.03...
         """
         return self._brier_score(
             data_source=data_source,
@@ -738,6 +843,27 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         -------
         pd.DataFrame
             The ROC AUC score.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_breast_cancer(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> reporter.metrics.roc_auc()
+        Metric              ROC AUC (↗︎)
+        LogisticRegression      0.99...
         """
         return self._roc_auc(
             data_source=data_source,
@@ -804,6 +930,27 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         -------
         pd.DataFrame
             The log-loss.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_breast_cancer(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> reporter.metrics.log_loss()
+        Metric              Log loss (↘︎)
+        LogisticRegression       0.10...
         """
         return self._log_loss(
             data_source=data_source,
@@ -877,6 +1024,27 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         -------
         pd.DataFrame
             The R² score.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_diabetes
+        >>> from sklearn.linear_model import Ridge
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_diabetes(return_X_y=True), random_state=0
+        ... )
+        >>> regressor = Ridge()
+        >>> reporter = EstimatorReport(
+        ...     regressor,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> reporter.metrics.r2()
+        Metric  R² (↗︎)
+        Ridge   0.35...
         """
         return self._r2(
             data_source=data_source,
@@ -953,6 +1121,27 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         -------
         pd.DataFrame
             The root mean squared error.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_diabetes
+        >>> from sklearn.linear_model import Ridge
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_diabetes(return_X_y=True), random_state=0
+        ... )
+        >>> regressor = Ridge()
+        >>> reporter = EstimatorReport(
+        ...     regressor,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> reporter.metrics.rmse()
+        Metric  RMSE (↘︎)
+        Ridge   56.5...
         """
         return self._rmse(
             data_source=data_source,
@@ -1053,6 +1242,32 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         -------
         pd.DataFrame
             The custom metric.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_diabetes
+        >>> from sklearn.linear_model import Ridge
+        >>> from sklearn.metrics import mean_absolute_error
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_diabetes(return_X_y=True), random_state=0
+        ... )
+        >>> regressor = Ridge()
+        >>> reporter = EstimatorReport(
+        ...     regressor,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> reporter.metrics.custom_metric(
+        ...     metric_function=mean_absolute_error,
+        ...     response_method="predict",
+        ...     metric_name="MAE (↗︎)",
+        ... )
+        Metric        MAE (↗︎)
+        Ridge   44.9...
         """
         return self._custom_metric(
             data_source=data_source,
@@ -1140,7 +1355,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         tree = super()._create_help_tree()
 
         # Add plot methods in a separate branch
-        plot_branch = tree.add("[bold cyan].plot :art:[/bold cyan]")
+        plot_branch = tree.add("[bold cyan].plot[/bold cyan]")
         plot_methods = self.plot._get_methods_for_help()
         plot_methods = self.plot._sort_methods_for_help(plot_methods)
 
@@ -1152,7 +1367,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         return tree
 
     def _get_help_panel_title(self):
-        return f"[bold cyan]{self._icon} Available metrics methods[/bold cyan]"
+        return "[bold cyan]Available metrics methods[/bold cyan]"
 
     def _get_help_legend(self):
         return (
@@ -1161,6 +1376,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
     def _get_help_tree_title(self):
         return "[bold cyan]reporter.metrics[/bold cyan]"
+
+    def __repr__(self):
+        """Return a string representation using rich."""
+        return self._rich_repr(
+            class_name="skore.EstimatorReport.metrics",
+            help_method_name="reporter.metrics.help()",
+        )
 
 
 ########################################################################################
@@ -1173,7 +1395,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
     """Plotting methods for the metrics accessor."""
 
     def __init__(self, parent):
-        super().__init__(parent._parent, icon=":art:")
+        super().__init__(parent._parent)
         self._metrics_parent = parent
 
     def _get_display(
@@ -1293,6 +1515,26 @@ class _PlotMetricsAccessor(_BaseAccessor):
         -------
         RocCurveDisplay
             The ROC curve display.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_breast_cancer(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> display = reporter.metrics.plot.roc()
+        >>> display.plot(roc_curve_kwargs={"color": "tab:red"})
         """
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
@@ -1350,6 +1592,26 @@ class _PlotMetricsAccessor(_BaseAccessor):
         -------
         PrecisionRecallCurveDisplay
             The precision-recall curve display.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_breast_cancer(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> display = reporter.metrics.plot.precision_recall()
+        >>> display.plot(pr_curve_kwargs={"color": "tab:red"})
         """
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
@@ -1421,6 +1683,28 @@ class _PlotMetricsAccessor(_BaseAccessor):
         -------
         PredictionErrorDisplay
             The prediction error display.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_diabetes
+        >>> from sklearn.linear_model import Ridge
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_diabetes(return_X_y=True), random_state=0
+        ... )
+        >>> regressor = Ridge()
+        >>> reporter = EstimatorReport(
+        ...     regressor,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> display = reporter.metrics.plot.prediction_error(
+        ...     kind="actual_vs_predicted"
+        ... )
+        >>> display.plot(line_kwargs={"color": "tab:red"})
         """
         display_kwargs = {"kind": kind, "subsample": subsample}
         display_plot_kwargs = {"ax": ax}
@@ -1435,7 +1719,14 @@ class _PlotMetricsAccessor(_BaseAccessor):
         )
 
     def _get_help_panel_title(self):
-        return f"[bold cyan]{self._icon} Available plot methods[/bold cyan]"
+        return "[bold cyan]Available plot methods[/bold cyan]"
 
     def _get_help_tree_title(self):
         return "[bold cyan]reporter.metrics.plot[/bold cyan]"
+
+    def __repr__(self):
+        """Return a string representation using rich."""
+        return self._rich_repr(
+            class_name="skore.EstimatorReport.metrics.plot",
+            help_method_name="reporter.metrics.plot.help()",
+        )
