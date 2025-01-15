@@ -139,7 +139,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         return estimator_reports
 
     def clear_cache(self):
-        """Clean the cache."""
+        """Clear the cache."""
         for report in self.estimator_reports:
             report.clear_cache()
         self._cache = {}
