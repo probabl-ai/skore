@@ -70,17 +70,24 @@ class _HelpMixin:
 
         console.print(self._create_help_panel())
 
-    def __repr__(self):
+    def _rich_repr(self, class_name, help_method_name):
         """Return a string representation using rich."""
         console = Console(file=StringIO(), force_terminal=False)
-        console.print(self._create_help_panel())
+        console.print(
+            Panel(
+                f"Get guidance using the {help_method_name} method",
+                title=f"[cyan]{class_name}[/cyan]",
+                border_style="orange1",
+                expand=False,
+            )
+        )
         return console.file.getvalue()
 
 
 class _BaseReport(_HelpMixin):
     def _get_help_panel_title(self):
         return (
-            f"[bold cyan]:notebook: Tools to diagnose estimator "
+            f"[bold cyan]Tools to diagnose estimator "
             f"{self.estimator_name}[/bold cyan]"
         )
 
@@ -125,9 +132,7 @@ class _BaseReport(_HelpMixin):
         # Add accessor methods first
         for accessor_attr, config in self._ACCESSOR_CONFIG.items():
             accessor = getattr(self, accessor_attr)
-            branch = tree.add(
-                f"[bold cyan].{config['name']} {config['icon']}[/bold cyan]"
-            )
+            branch = tree.add(f"[bold cyan].{config['name']}[/bold cyan]")
 
             # Add main accessor methods first
             methods = accessor._get_methods_for_help()
@@ -142,9 +147,7 @@ class _BaseReport(_HelpMixin):
             # Add sub-accessors after main methods
             for sub_attr, sub_obj in inspect.getmembers(accessor):
                 if isinstance(sub_obj, _BaseAccessor) and not sub_attr.startswith("_"):
-                    sub_branch = branch.add(
-                        f"[bold cyan].{sub_attr} {sub_obj._icon}[/bold cyan]"
-                    )
+                    sub_branch = branch.add(f"[bold cyan].{sub_attr}[/bold cyan]")
 
                     # Add sub-accessor methods
                     sub_methods = sub_obj._get_methods_for_help()
@@ -176,13 +179,12 @@ class _BaseReport(_HelpMixin):
 class _BaseAccessor(_HelpMixin):
     """Base class for all accessors."""
 
-    def __init__(self, parent, icon):
+    def __init__(self, parent):
         self._parent = parent
-        self._icon = icon
 
     def _get_help_panel_title(self):
         name = self.__class__.__name__.replace("_", "").replace("Accessor", "").lower()
-        return f"{self._icon} Available {name} methods"
+        return f"Available {name} methods"
 
     def _create_help_tree(self):
         """Create a rich Tree with the available methods."""
