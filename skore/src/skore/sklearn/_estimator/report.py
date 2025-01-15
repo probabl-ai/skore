@@ -64,10 +64,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     """
 
     _ACCESSOR_CONFIG = {
-        "metrics": {"icon": ":straight_ruler:", "name": "metrics"},
-        # Add other accessors as they're implemented
-        # "inspection": {"icon": ":magnifying_glass:", "name": "inspection"},
-        # "linting": {"icon": ":check:", "name": "linting"},
+        "metrics": {"name": "metrics"},
     }
 
     @staticmethod
@@ -139,13 +136,37 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     # For the moment, we do not allow to alter the estimator and the training data.
     # For the validation set, we allow it and we invalidate the cache.
 
-    def clean_cache(self):
-        """Clean the cache."""
+    def clear_cache(self):
+        """Clear the cache.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_breast_cancer(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> reporter.cache_predictions()
+        Caching predictions ...
+        >>> reporter.clear_cache()
+        >>> reporter._cache
+        {}
+        """
         self._cache = {}
 
     @progress_decorator(description="Caching predictions")
     def cache_predictions(self, response_methods="auto", n_jobs=None):
-        """Force caching of estimator's predictions.
+        """Cache estimator's predictions.
 
         Parameters
         ----------
@@ -158,25 +179,45 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         n_jobs : int or None, default=None
             The number of jobs to run in parallel. None means 1 unless in a
             joblib.parallel_backend context. -1 means using all processors.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_breast_cancer(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> reporter.cache_predictions()
+        Caching predictions ...
+        >>> reporter._cache
+        {...}
         """
         if self._ml_task in ("binary-classification", "multiclass-classification"):
             if response_methods == "auto":
-                response_methods = ("predict",)
+                response_methods = ["predict"]
                 if hasattr(self._estimator, "predict_proba"):
-                    response_methods += ("predict_proba",)
+                    response_methods += ["predict_proba"]
                 if hasattr(self._estimator, "decision_function"):
-                    response_methods += ("decision_function",)
+                    response_methods += ["decision_function"]
             pos_labels = self._estimator.classes_
         else:
             if response_methods == "auto":
-                response_methods = ("predict",)
+                response_methods = ["predict"]
             pos_labels = [None]
 
-        data_sources = ("test",)
-        Xs = (self._X_test,)
+        data_sources = [("test", self._X_test)]
         if self._X_train is not None:
-            data_sources += ("train",)
-            Xs += (self._X_train,)
+            data_sources += [("train", self._X_train)]
 
         parallel = joblib.Parallel(n_jobs=n_jobs, return_as="generator_unordered")
         generator = parallel(
@@ -190,7 +231,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 data_source=data_source,
             )
             for response_method, pos_label, (data_source, X) in product(
-                response_methods, pos_labels, zip(data_sources, Xs)
+                response_methods, pos_labels, data_sources
             )
         )
         # trigger the computation
@@ -220,7 +261,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     def X_train(self, value):
         raise AttributeError(
             "The X_train attribute is immutable. "
-            "Please use the `from_unfitted_estimator` method to create a new report."
+            f"Call the constructor of {self.__class__.__name__} to create a new report."
         )
 
     @property
@@ -231,7 +272,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     def y_train(self, value):
         raise AttributeError(
             "The y_train attribute is immutable. "
-            "Please use the `from_unfitted_estimator` method to create a new report."
+            f"Call the constructor of {self.__class__.__name__} to create a new report."
         )
 
     @property
@@ -259,3 +300,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         else:
             name = self._estimator.__class__.__name__
         return name
+
+    def __repr__(self):
+        """Return a string representation using rich."""
+        return self._rich_repr(
+            class_name="skore.EstimatorReport", help_method_name="reporter.help()"
+        )

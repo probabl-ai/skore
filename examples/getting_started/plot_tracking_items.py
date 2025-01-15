@@ -44,8 +44,10 @@ my_project = skore.open(temp_dir_path / "my_project")
 import time
 
 my_project.put("my_int", 4)
+
 time.sleep(0.1)
 my_project.put("my_int", 9)
+
 time.sleep(0.1)
 my_project.put("my_int", 16)
 
@@ -73,17 +75,17 @@ my_project.put("my_int", 16)
 # We retrieve the history of the ``my_int`` item:
 
 # %%
-item_histories = my_project.get_item_versions("my_int")
+item_versions = my_project.get_item_versions("my_int")
 
 # %%
-# We can print the first history (first iteration) of this item:
+# We can print the details of the first version of this item:
 
 # %%
-passed_item = item_histories[0]
-print(passed_item)
-print(passed_item.primitive)
-print(passed_item.created_at)
-print(passed_item.updated_at)
+first_item = item_versions[0]
+print(first_item)
+print(first_item.primitive)
+print(first_item.created_at)
+print(first_item.updated_at)
 
 # %%
 # Let us construct a dataframe with the values and last updated times:
@@ -93,7 +95,7 @@ import numpy as np
 import pandas as pd
 
 list_primitive, list_created_at, list_updated_at = zip(
-    *[(elem.primitive, elem.created_at, elem.updated_at) for elem in item_histories]
+    *[(elem.primitive, elem.created_at, elem.updated_at) for elem in item_versions]
 )
 
 df_track = pd.DataFrame(
@@ -103,7 +105,7 @@ df_track = pd.DataFrame(
         "updated_at": list_updated_at,
     }
 )
-df_track.insert(0, "iteration_number", np.arange(len(df_track)))
+df_track.insert(0, "version_number", np.arange(len(df_track)))
 df_track
 
 # %%
@@ -123,7 +125,7 @@ import plotly.express as px
 
 fig = px.line(
     df_track,
-    x="iteration_number",
+    x="version_number",
     y="primitive",
     hover_data=df_track.columns,
     markers=True,
@@ -137,8 +139,8 @@ fig
 #   example.
 
 # %%
-# Here, we focused on `how` to use skore's tracking of history of items.
-# But `why` track items?
+# Here, we focused on *how* to use skore's tracking of history of items.
+# But *why* track items?
 #
 # * We could track some items such as machine learning scores over time to better
 #   understand which feature engineering works best.

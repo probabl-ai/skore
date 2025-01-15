@@ -54,6 +54,7 @@ class TestPolarsDataFrameItem:
         assert serializable == {
             "updated_at": mock_nowstr,
             "created_at": mock_nowstr,
+            "note": None,
             "media_type": "application/vnd.dataframe",
             "value": dataframe.to_pandas().fillna("NaN").to_dict(orient="tight"),
         }
