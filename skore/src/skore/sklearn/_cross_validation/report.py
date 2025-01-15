@@ -74,6 +74,22 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
     estimator_reports_ : list of EstimatorReport
         The estimator reports for each split.
+
+    See Also
+    --------
+    skore.sklearn.estimator.report.EstimatorReport :
+        Report for a fitted estimator.
+
+    Examples
+    --------
+    >>> from sklearn.datasets import make_classification
+    >>> from sklearn.model_selection import train_test_split
+    >>> from sklearn.linear_model import LogisticRegression
+    >>> X, y = make_classification(random_state=42)
+    >>> estimator = LogisticRegression()
+    >>> from skore import CrossValidationReport
+    >>> report = CrossValidationReport(estimator, X=X, y=y, cv=2)
+    Processing cross-validation ...
     """
 
     _ACCESSOR_CONFIG = {
@@ -152,7 +168,25 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         return estimator_reports
 
     def clear_cache(self):
-        """Clear the cache."""
+        """Clear the cache.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import CrossValidationReport
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv=2)
+        Processing cross-validation ...
+        >>> reporter.cache_predictions()
+        Cross-validation predictions ...
+        Caching predictions ...
+        Caching predictions ...
+        >>> reporter.clear_cache()
+        >>> reporter._cache
+        {}
+        """
         for report in self.estimator_reports_:
             report.clear_cache()
         self._cache = {}
@@ -170,6 +204,22 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         n_jobs : int, default=None
             The number of jobs to run in parallel. If `None`, we use the `n_jobs`
             parameter when initializing `CrossValidationReport`.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import CrossValidationReport
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv=2)
+        Processing cross-validation ...
+        >>> reporter.cache_predictions()
+        Cross-validation predictions ...
+        Caching predictions ...
+        Caching predictions ...
+        >>> reporter._cache
+        {...}
         """
         if n_jobs is None:
             n_jobs = self.n_jobs
