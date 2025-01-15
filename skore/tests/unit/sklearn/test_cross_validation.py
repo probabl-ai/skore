@@ -114,9 +114,13 @@ def test_generate_estimator_report(binary_classification_data):
 
 @pytest.mark.parametrize("cv", [5, 10])
 @pytest.mark.parametrize("n_jobs", [1, 2])
-def test_cross_validation_report_attributes(binary_classification_data, cv, n_jobs):
+@pytest.mark.parametrize(
+    "fixture_name",
+    ["binary_classification_data", "binary_classification_data_pipeline"],
+)
+def test_cross_validation_report_attributes(fixture_name, request, cv, n_jobs):
     """Test the attributes of the cross-validation report."""
-    estimator, X, y = binary_classification_data
+    estimator, X, y = request.getfixturevalue(fixture_name)
     report = CrossValidationReport(estimator, X, y, cv=cv, n_jobs=n_jobs)
     assert isinstance(report, CrossValidationReport)
     assert isinstance(report.estimator_reports, list)
@@ -126,7 +130,10 @@ def test_cross_validation_report_attributes(binary_classification_data, cv, n_jo
     assert report.y is y
     assert report.n_jobs == n_jobs
     assert len(report.estimator_reports) == cv
-    assert report.estimator_name == "RandomForestClassifier"
+    if isinstance(estimator, Pipeline):
+        assert report.estimator_name == estimator[-1].__class__.__name__
+    else:
+        assert report.estimator_name == estimator.__class__.__name__
 
     err_msg = "attribute is immutable"
     with pytest.raises(AttributeError, match=err_msg):
@@ -166,7 +173,7 @@ def test_cross_validation_report_repr(binary_classification_data):
         ("regression_data", 2),
     ],
 )
-@pytest.mark.parametrize("n_jobs", [1, 2])
+@pytest.mark.parametrize("n_jobs", [None, 1, 2])
 def test_estimator_report_cache_predictions(
     request, fixture_name, expected_n_keys, n_jobs
 ):
