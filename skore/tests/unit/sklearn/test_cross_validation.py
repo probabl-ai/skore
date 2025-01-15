@@ -182,3 +182,53 @@ def test_estimator_report_cache_predictions(
     assert report._cache == {}
     for estimator_report in report.estimator_reports:
         assert estimator_report._cache == {}
+
+
+########################################################################################
+# Check the plot methods
+########################################################################################
+
+
+def test_cross_validation_report_plot_help(capsys, binary_classification_data):
+    """Check that the help method writes to the console."""
+    estimator, X, y = binary_classification_data
+    report = CrossValidationReport(estimator, X, y, cv=2)
+
+    report.metrics.plot.help()
+    captured = capsys.readouterr()
+    assert "Available plot methods" in captured.out
+
+
+def test_cross_validation_report_plot_repr(binary_classification_data):
+    """Check that __repr__ returns a string starting with the expected prefix."""
+    estimator, X, y = binary_classification_data
+    report = CrossValidationReport(estimator, X, y, cv=2)
+
+    repr_str = repr(report.metrics.plot)
+    assert "skore.CrossValidationReport.metrics.plot" in repr_str
+    assert "reporter.metrics.plot.help()" in repr_str
+
+
+########################################################################################
+# Check the metrics methods
+########################################################################################
+
+
+def test_estimator_report_metrics_help(capsys, binary_classification_data):
+    """Check that the help method writes to the console."""
+    estimator, X, y = binary_classification_data
+    report = CrossValidationReport(estimator, X, y, cv=2)
+
+    report.metrics.help()
+    captured = capsys.readouterr()
+    assert "Available metrics methods" in captured.out
+
+
+def test_estimator_report_metrics_repr(binary_classification_data):
+    """Check that __repr__ returns a string starting with the expected prefix."""
+    estimator, X, y = binary_classification_data
+    report = CrossValidationReport(estimator, X, y, cv=2)
+
+    repr_str = repr(report.metrics)
+    assert "skore.CrossValidationReport.metrics" in repr_str
+    assert "reporter.metrics.help()" in repr_str
