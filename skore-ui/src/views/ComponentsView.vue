@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Simplebar from "simplebar-vue";
 import type { VisualizationSpec } from "vega-embed";
-import { ref } from "vue";
+import { ref, useTemplateRef } from "vue";
 
 import datatable from "@/assets/fixtures/datatable.json";
 import htmlSnippet from "@/assets/fixtures/html-snippet.html?raw";
@@ -23,6 +23,7 @@ import FloatingTooltip from "@/components/FloatingTooltip.vue";
 import HtmlSnippetWidget from "@/components/HtmlSnippetWidget.vue";
 import ImageWidget from "@/components/ImageWidget.vue";
 import MarkdownWidget from "@/components/MarkdownWidget.vue";
+import RichTextEditor from "@/components/RichTextEditor.vue";
 import SectionHeader from "@/components/SectionHeader.vue";
 import SimpleButton from "@/components/SimpleButton.vue";
 import SlideToggle from "@/components/SlideToggle.vue";
@@ -1008,6 +1009,11 @@ const sections: DetailSectionDto[] = [
 ];
 
 const toggleModel = ref(true);
+
+const richTextEditor = useTemplateRef<InstanceType<typeof RichTextEditor>>("richTextEditor");
+const richText = ref(
+  "I don’t ‘need’ to drink. I can quit anytime I want! Hello, little man. I will destroy you! Kids have names? You won’t have time for sleeping, soldier, not with all the bed making you’ll be doing. When the lights go out, it’s nobody’s business what goes on between two consenting adults."
+);
 </script>
 
 <template>
@@ -1203,7 +1209,9 @@ const toggleModel = ref(true);
         <div style="margin-top: 20px">last item action {{ lastAction }}</div>
         <TreeAccordion
           :nodes="fileTreeItemWithActions"
-          @item-action="(action, itemName) => (lastAction = `${action} ${itemName}`)"
+          @item-action="
+            (action: string, itemName: string) => (lastAction = `${action} ${itemName}`)
+          "
         />
       </TabPanelContent>
       <TabPanelContent name="editable list" class="editable-list-tab">
@@ -1279,6 +1287,9 @@ const toggleModel = ref(true);
           <div>icon-sun <i class="icon icon-sun"></i></div>
           <div>icon-ascending-arrow <i class="icon icon-ascending-arrow"></i></div>
           <div>icon-descending-arrow <i class="icon icon-descending-arrow"></i></div>
+          <div>icon-bold <i class="icon icon-bold"></i></div>
+          <div>icon-italic <i class="icon icon-italic"></i></div>
+          <div>icon-bullets <i class="icon icon-bullets"></i></div>
         </div>
       </TabPanelContent>
       <TabPanelContent name="draggable">
@@ -1376,6 +1387,15 @@ const toggleModel = ref(true);
           <SlideToggle v-model:is-toggled="toggleModel" />
         </div>
         <div>toggles are {{ toggleModel }}</div>
+      </TabPanelContent>
+      <TabPanelContent name="rich edit" class="rich">
+        <div class="actions">
+          <SimpleButton :is-primary="false" label="bold" @click="richTextEditor?.markBold()" />
+          <SimpleButton :is-primary="false" label="italic" @click="richTextEditor?.markItalic()" />
+          <SimpleButton :is-primary="false" label="list" @click="richTextEditor?.markList()" />
+        </div>
+        <RichTextEditor ref="richTextEditor" v-model:value="richText" :rows="25" />
+        <MarkdownWidget :source="richText" />
       </TabPanelContent>
     </TabPanel>
   </main>
@@ -1490,5 +1510,17 @@ main {
   flex-direction: column;
   padding: var(--spacing-8);
   gap: var(--spacing-8);
+}
+
+.rich {
+  padding: var(--spacing-8);
+
+  & .actions {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    padding-bottom: var(--spacing-8);
+    gap: var(--spacing-8);
+  }
 }
 </style>

@@ -73,16 +73,16 @@ export function saveBlob(blob: Blob, filename: string) {
  * @param interval the delay in ms between each call
  * @returns a function that when called stops the polling.
  */
-export async function poll(fn: Function, interval: number): Promise<() => void> {
+export async function poll(fn: () => void, interval: number): Promise<() => void> {
   let intervalId: number = -1;
 
   const start = () => {
-    intervalId = setInterval(fn, interval);
+    intervalId = window.setInterval(fn, interval);
   };
 
   const stop = () => {
     if (intervalId) {
-      clearInterval(intervalId);
+      window.clearInterval(intervalId);
       intervalId = -1;
     }
   };

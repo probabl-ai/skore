@@ -94,7 +94,7 @@ export const useProjectStore = defineStore("project", () => {
   /**
    * Start real time sync with the server.
    */
-  let _stopBackendPolling: Function | null = null;
+  let _stopBackendPolling: (() => void) | null = null;
   async function startBackendPolling() {
     _isCanceledCall = false;
     _stopBackendPolling = await poll(fetch, 1500);
@@ -105,7 +105,9 @@ export const useProjectStore = defineStore("project", () => {
    */
   function stopBackendPolling() {
     _isCanceledCall = true;
-    _stopBackendPolling && _stopBackendPolling();
+    if (_stopBackendPolling) {
+      _stopBackendPolling();
+    }
   }
 
   /**

@@ -43,7 +43,9 @@ function onDragStart(event: DragEvent) {
 }
 
 function onAction(action: string) {
-  emitItemAction && emitItemAction(action, props.name);
+  if (emitItemAction) {
+    emitItemAction(action, props.name);
+  }
 }
 
 function measureChildrenHeight() {
