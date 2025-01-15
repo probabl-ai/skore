@@ -301,7 +301,7 @@ def _get_cached_response_values(
     response_method : str
         The response method.
 
-    pos_label : str, default=None
+    pos_label : int, float, bool or str, default=None
         The positive label.
 
     data_source : {"test", "train", "X_y"}, default="test"
