@@ -914,19 +914,38 @@ def test_estimator_report_custom_metric_compatible_estimator(
     assert result.to_numpy()[0, 0] == 1
 
 
+@pytest.mark.parametrize(
+    "scorer, pos_label",
+    [
+        (
+            make_scorer(
+                f1_score, response_method="predict", average="macro", pos_label=1
+            ),
+            1,
+        ),
+        (
+            make_scorer(
+                f1_score, response_method="predict", average="macro", pos_label=1
+            ),
+            None,
+        ),
+        (make_scorer(f1_score, response_method="predict", average="macro"), 1),
+    ],
+)
 def test_estimator_report_report_metrics_with_scorer_binary_classification(
-    binary_classification_data,
+    binary_classification_data, scorer, pos_label
 ):
     """Check that we can pass scikit-learn scorer with different parameters to
-    the `report_metrics` method."""
+    the `report_metrics` method.
+
+    We also check that we can pass `pos_label` whether to the scorer or to the
+    `report_metrics` method or consistently to both.
+    """
     estimator, X_test, y_test = binary_classification_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
-    f1_scorer = make_scorer(
-        f1_score, response_method="predict", average="macro", pos_label=1
-    )
     result = report.metrics.report_metrics(
-        scoring=["accuracy", accuracy_score, f1_scorer],
+        scoring=["accuracy", accuracy_score, scorer],
     )
     assert result.shape == (1, 3)
     np.testing.assert_allclose(
@@ -941,6 +960,24 @@ def test_estimator_report_report_metrics_with_scorer_binary_classification(
             ]
         ],
     )
+
+
+def test_estimator_report_report_metrics_with_scorer_pos_label_error(
+    binary_classification_data,
+):
+    """Check that we raise an error when pos_label is passed both in the scorer and
+    globally conducting to a mismatch."""
+    estimator, X_test, y_test = binary_classification_data
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    f1_scorer = make_scorer(
+        f1_score, response_method="predict", average="macro", pos_label=1
+    )
+    err_msg = re.escape(
+        "`pos_label` is passed both in the scorer and to the `report_metrics` method."
+    )
+    with pytest.raises(ValueError, match=err_msg):
+        report.metrics.report_metrics(scoring=[f1_scorer], pos_label=0)
 
 
 def test_estimator_report_report_metrics_invalid_metric_type(regression_data):
