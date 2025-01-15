@@ -19,6 +19,11 @@ from skore.persistence.view.view import View
 from skore.project.create import _create, _validate_project_name
 
 
+@pytest.fixture(autouse=True)
+def monkeypatch_datetime(monkeypatch, MockDatetime):
+    monkeypatch.setattr("skore.persistence.item.item.datetime", MockDatetime)
+
+
 def test_put_string_item(in_memory_project):
     in_memory_project.put("string_item", "Hello, World!")
     assert in_memory_project.get("string_item") == "Hello, World!"
@@ -145,19 +150,19 @@ def test_put(in_memory_project):
     in_memory_project.put("key3", 3)
     in_memory_project.put("key4", 4)
 
-    assert in_memory_project.list_item_keys() == ["key1", "key2", "key3", "key4"]
+    assert in_memory_project.keys() == ["key1", "key2", "key3", "key4"]
 
 
 def test_put_kwargs(in_memory_project):
     in_memory_project.put(key="key1", value=1)
-    assert in_memory_project.list_item_keys() == ["key1"]
+    assert in_memory_project.keys() == ["key1"]
 
 
 def test_put_wrong_key_type(in_memory_project):
     with pytest.raises(TypeError):
         in_memory_project.put(key=2, value=1)
 
-    assert in_memory_project.list_item_keys() == []
+    assert in_memory_project.keys() == []
 
 
 def test_put_twice(in_memory_project):
@@ -167,39 +172,49 @@ def test_put_twice(in_memory_project):
     assert in_memory_project.get("key2") == 5
 
 
-def test_get(in_memory_project):
-    in_memory_project.put("key1", 1)
-    assert in_memory_project.get("key1") == 1
+def test_get(in_memory_project, mock_nowstr):
+    in_memory_project.put("key", 1, note="1")
+    in_memory_project.put("key", 2, note="2")
+
+    assert in_memory_project.get("key") == 2
+    assert in_memory_project.get("key", latest=True, metadata=False) == 2
+    assert in_memory_project.get("key", latest=False, metadata=False) == [1, 2]
+    assert in_memory_project.get("key", latest=False, metadata=True) == [
+        {
+            "value": 1,
+            "date": mock_nowstr,
+            "note": "1",
+        },
+        {
+            "value": 2,
+            "date": mock_nowstr,
+            "note": "2",
+        },
+    ]
+    assert in_memory_project.get("key", latest=True, metadata=True) == {
+        "value": 2,
+        "date": mock_nowstr,
+        "note": "2",
+    }
 
     with pytest.raises(KeyError):
-        in_memory_project.get("key2")
-
-
-def test_get_item_versions(in_memory_project):
-    in_memory_project.put("key", 1)
-    in_memory_project.put("key", 2)
-
-    items = in_memory_project.get_item_versions("key")
-
-    assert len(items) == 2
-    assert items[0].primitive == 1
-    assert items[1].primitive == 2
+        in_memory_project.get("<unknown>")
 
 
 def test_delete(in_memory_project):
     in_memory_project.put("key1", 1)
-    in_memory_project.delete_item("key1")
+    in_memory_project.delete("key1")
 
-    assert in_memory_project.list_item_keys() == []
+    assert in_memory_project.keys() == []
 
     with pytest.raises(KeyError):
-        in_memory_project.delete_item("key2")
+        in_memory_project.delete("key2")
 
 
 def test_keys(in_memory_project):
     in_memory_project.put("key1", 1)
     in_memory_project.put("key2", 2)
-    assert in_memory_project.list_item_keys() == ["key1", "key2"]
+    assert in_memory_project.keys() == ["key1", "key2"]
 
 
 def test_view(in_memory_project):
@@ -222,7 +237,7 @@ def test_put_several_complex(in_memory_project):
     in_memory_project.put("a", int)
     in_memory_project.put("b", float)
 
-    assert in_memory_project.list_item_keys() == ["a", "b"]
+    assert in_memory_project.keys() == ["a", "b"]
 
 
 def test_put_key_is_a_tuple(in_memory_project):
@@ -230,7 +245,7 @@ def test_put_key_is_a_tuple(in_memory_project):
     with pytest.raises(TypeError):
         in_memory_project.put(("a", "foo"), ("b", "bar"))
 
-    assert in_memory_project.list_item_keys() == []
+    assert in_memory_project.keys() == []
 
 
 def test_put_key_is_a_set(in_memory_project):
@@ -238,7 +253,7 @@ def test_put_key_is_a_set(in_memory_project):
     with pytest.raises(TypeError):
         in_memory_project.put(set(), "hello")
 
-    assert in_memory_project.list_item_keys() == []
+    assert in_memory_project.keys() == []
 
 
 def test_put_wrong_key_and_value_raise(in_memory_project):

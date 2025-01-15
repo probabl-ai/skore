@@ -73,17 +73,14 @@ my_project.put("my_int", 16)
 # We retrieve the history of the ``my_int`` item:
 
 # %%
-item_histories = my_project.get_item_versions("my_int")  # TO CHANGE /!\
+history = my_project.get("my_int", latest=False, metadata=True)
 
 # %%
 # We can print the first history (first iteration) of this item:
 
 # %%
-passed_item = item_histories[0]
-print(passed_item)
-print(passed_item.primitive)
-print(passed_item.created_at)
-print(passed_item.updated_at)
+
+print(history[0])
 
 # %%
 # Let us construct a dataframe with the values and last updated times:
@@ -92,13 +89,13 @@ print(passed_item.updated_at)
 import numpy as np
 import pandas as pd
 
-list_primitive, list_created_at, list_updated_at = zip(
-    *[(elem.primitive, elem.created_at, elem.updated_at) for elem in item_histories]
+list_value, list_created_at, list_updated_at = zip(
+    *[(version["value"], history[0]["date"], version["date"]) for version in history]
 )
 
 df_track = pd.DataFrame(
     {
-        "primitive": list_primitive,
+        "value": list_value,
         "created_at": list_created_at,
         "updated_at": list_updated_at,
     }
@@ -111,9 +108,9 @@ df_track
 #   :language: python
 #
 # Notice that the ``created_at`` dates are the same for all iterations because they
-# correspond to the same item, but the ``updated_at`` dates are spaced by 0.1 second
-# (approximately) as we used :python:`time.sleep(0.1)` between each
-# :func:`~skore.Project.put`.
+# correspond to the date of the first version of the item, but the ``updated_at`` dates
+# are spaced by 0.1 second (approximately) as we used :python:`time.sleep(0.1)` between
+# each :func:`~skore.Project.put`.
 
 # %%
 # We can now track the value of the item over time:
@@ -124,7 +121,7 @@ import plotly.express as px
 fig = px.line(
     df_track,
     x="iteration_number",
-    y="primitive",
+    y="value",
     hover_data=df_track.columns,
     markers=True,
 )

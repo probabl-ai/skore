@@ -49,12 +49,15 @@ def __item_as_serializable(name: str, item: Item) -> SerializableItem:
 def __project_as_serializable(project: Project) -> SerializableProject:
     items = {
         key: [
-            __item_as_serializable(key, item) for item in project.get_item_versions(key)
+            __item_as_serializable(key, item)
+            for item in project.item_repository.get_item_versions(key)
         ]
-        for key in project.list_item_keys()
+        for key in project.item_repository.keys()
     }
 
-    views = {key: project.get_view(key).layout for key in project.list_view_keys()}
+    views = {
+        key: project.get_view(key).layout for key in project.view_repository.keys()
+    }
 
     return SerializableProject(
         items=items,
@@ -112,8 +115,8 @@ async def get_activity(
     return sorted(
         (
             __item_as_serializable(key, version)
-            for key in project.list_item_keys()
-            for version in project.get_item_versions(key)
+            for key in project.item_repository.keys()
+            for version in project.item_repository.get_item_versions(key)
             if datetime.fromisoformat(version.updated_at) > after
         ),
         key=operator.attrgetter("updated_at"),

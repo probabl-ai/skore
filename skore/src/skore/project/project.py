@@ -9,7 +9,6 @@ from skore.persistence.item import item_to_object, object_to_item
 
 if TYPE_CHECKING:
     from skore.persistence import (
-        Item,
         ItemRepository,
         View,
         ViewRepository,
@@ -118,55 +117,57 @@ class Project:
             ),
         )
 
-    def get(self, key: str) -> Any:
-        """Get the value corresponding to ``key`` from the Project.
+    def get(self, key, *, latest=True, metadata=False):
+        """Get the value associated to ``key`` from the Project.
 
         Parameters
         ----------
         key : str
             The key corresponding to the item to get.
+        latest : boolean, optional
+            Get the latest value or all the values associated to ``key``, default True.
+        metadata : boolean, optional
+            Get the metadata in addition of the value, default False.
+
+        Returns
+        -------
+        value : any
+            Value associated to ``key``, when latest=True and metadata=False.
+        value_and_metadata : dict
+            Value associated to ``key`` with its metadata, when latest=True and metadata=True.
+        list_of_values : list[any]
+            Values associated to ``key``, ordered by date, when latest=False.
+        list_of_values_and_metadata : list[dict]
+            Values associated to ``key`` with their metadata, ordered by date, when
+            latest=False and metadata=False.
 
         Raises
         ------
         KeyError
-            If the key does not correspond to any item.
+            If the key is not in the project.
         """
-        return item_to_object(self.item_repository.get_item(key))
+        if not metadata:
 
-    def get_item_versions(self, key: str) -> list[Item]:
-        """
-        Get all the versions of an item associated with ``key`` from the Project.
+            def dto(item):
+                return item_to_object(item)
 
-        The list is ordered from oldest to newest :func:`~skore.Project.put` date.
+        else:
 
-        Parameters
-        ----------
-        key : str
-            The key corresponding to the item to get.
+            def dto(item):
+                return {
+                    "value": item_to_object(item),
+                    "date": item.updated_at,
+                    "note": item.note,
+                }
 
-        Returns
-        -------
-        list[Item]
-            The list of items corresponding to ``key``.
+        if latest:
+            return dto(self.item_repository.get_item(key))
+        return list(map(dto, self.item_repository.get_item_versions(key)))
 
-        Raises
-        ------
-        KeyError
-            If the key does not correspond to any item.
-        """
-        return self.item_repository.get_item_versions(key)
-
-    def list_item_keys(self) -> list[str]:
-        """List all item keys in the Project.
-
-        Returns
-        -------
-        list[str]
-            The list of item keys. The list is empty if there is no item.
-        """
+    def keys(self) -> list[str]:
         return self.item_repository.keys()
 
-    def delete_item(self, key: str):
+    def delete(self, key: str):
         """Delete the item corresponding to ``key`` from the Project.
 
         Parameters

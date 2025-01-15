@@ -33,7 +33,7 @@ def test_get_items(client, in_memory_project):
     in_memory_project.put("test", "version_1")
     in_memory_project.put("test", "version_2")
 
-    items = in_memory_project.get_item_versions("test")
+    items = in_memory_project.item_repository.get_item_versions("test")
 
     response = client.get("/api/project/items")
     assert response.status_code == 200
