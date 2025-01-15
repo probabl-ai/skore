@@ -125,7 +125,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         progress = self._progress_info["current_progress"]
         main_task = self._progress_info["current_task"]
 
-        total_estimators = len(self._parent.estimator_reports)
+        total_estimators = len(self._parent.estimator_reports_)
         progress.update(main_task, total=total_estimators)
 
         if cache_key in self._parent._cache:
@@ -140,7 +140,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 joblib.delayed(getattr(report.metrics, report_metric_name))(
                     data_source=data_source, **metric_kwargs
                 )
-                for report in self._parent.estimator_reports
+                for report in self._parent.estimator_reports_
             )
             results = []
             for result in generator:
@@ -157,7 +157,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 if isinstance(aggregate, str):
                     aggregate = [aggregate]
                 results = results.aggregate(func=aggregate, axis=0)
-                results = pd.concat([results], keys=[self._parent.estimator_name])
+                results = pd.concat([results], keys=[self._parent.estimator_name_])
 
             self._parent._cache[cache_key] = results
         return results
@@ -740,7 +740,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
 
         progress = self._progress_info["current_progress"]
         main_task = self._progress_info["current_task"]
-        total_estimators = len(self._parent.estimator_reports)
+        total_estimators = len(self._parent.estimator_reports_)
         progress.update(main_task, total=total_estimators)
 
         if cache_key in self._parent._cache:
@@ -748,7 +748,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
             display.plot(**display_plot_kwargs)
         else:
             y_true, y_pred = [], []
-            for report in self._parent.estimator_reports:
+            for report in self._parent.estimator_reports_:
                 X, y, _ = report.metrics._get_X_y_and_data_source_hash(
                     data_source=data_source
                 )
@@ -757,7 +757,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
                     _get_cached_response_values(
                         cache=report._cache,
                         estimator_hash=report._hash,
-                        estimator=report.estimator,
+                        estimator=report._estimator,
                         X=X,
                         response_method=response_method,
                         data_source=data_source,
@@ -770,8 +770,8 @@ class _PlotMetricsAccessor(_BaseAccessor):
             display = display_class._from_predictions(
                 y_true,
                 y_pred,
-                estimator=self._parent.estimator_reports[0].estimator,
-                estimator_name=self._parent.estimator_name,
+                estimator=self._parent.estimator_reports_[0]._estimator,
+                estimator_name=self._parent.estimator_name_,
                 ml_task=self._parent._ml_task,
                 data_source=data_source,
                 **display_kwargs,

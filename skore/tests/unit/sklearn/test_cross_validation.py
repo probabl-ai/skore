@@ -103,10 +103,10 @@ def test_generate_estimator_report(binary_classification_data):
     )
 
     assert isinstance(report, EstimatorReport)
-    assert report.estimator is not estimator
-    assert isinstance(report.estimator, RandomForestClassifier)
+    assert report.estimator_ is not estimator
+    assert isinstance(report.estimator_, RandomForestClassifier)
     try:
-        check_is_fitted(report.estimator)
+        check_is_fitted(report.estimator_)
     except NotFittedError as exc:
         raise AssertionError("The estimator in the report should be fitted.") from exc
     np.testing.assert_allclose(report.X_train, X[train_indices])
@@ -131,21 +131,21 @@ def test_cross_validation_report_attributes(fixture_name, request, cv, n_jobs):
     estimator, X, y = request.getfixturevalue(fixture_name)
     report = CrossValidationReport(estimator, X, y, cv=cv, n_jobs=n_jobs)
     assert isinstance(report, CrossValidationReport)
-    assert isinstance(report.estimator_reports, list)
-    for estimator_report in report.estimator_reports:
+    assert isinstance(report.estimator_reports_, list)
+    for estimator_report in report.estimator_reports_:
         assert isinstance(estimator_report, EstimatorReport)
     assert report.X is X
     assert report.y is y
     assert report.n_jobs == n_jobs
-    assert len(report.estimator_reports) == cv
+    assert len(report.estimator_reports_) == cv
     if isinstance(estimator, Pipeline):
-        assert report.estimator_name == estimator[-1].__class__.__name__
+        assert report.estimator_name_ == estimator[-1].__class__.__name__
     else:
-        assert report.estimator_name == estimator.__class__.__name__
+        assert report.estimator_name_ == estimator.__class__.__name__
 
     err_msg = "attribute is immutable"
     with pytest.raises(AttributeError, match=err_msg):
-        report.estimator = LinearRegression()
+        report.estimator_ = LinearRegression()
     with pytest.raises(AttributeError, match=err_msg):
         report.X = X
     with pytest.raises(AttributeError, match=err_msg):
@@ -193,12 +193,12 @@ def test_estimator_report_cache_predictions(
     # underlying estimator reports
     assert report._cache == {}
 
-    for estimator_report in report.estimator_reports:
+    for estimator_report in report.estimator_reports_:
         assert len(estimator_report._cache) == expected_n_keys
 
     report.clear_cache()
     assert report._cache == {}
-    for estimator_report in report.estimator_reports:
+    for estimator_report in report.estimator_reports_:
         assert estimator_report._cache == {}
 
 
@@ -636,12 +636,12 @@ def test_estimator_report_report_metrics_with_scorer(regression_data):
 
     expected_result = [
         [
-            r2_score(est_rep.y_test, est_rep.estimator.predict(est_rep.X_test)),
+            r2_score(est_rep.y_test, est_rep.estimator_.predict(est_rep.X_test)),
             median_absolute_error(
-                est_rep.y_test, est_rep.estimator.predict(est_rep.X_test)
+                est_rep.y_test, est_rep.estimator_.predict(est_rep.X_test)
             ),
         ]
-        for est_rep in report.estimator_reports
+        for est_rep in report.estimator_reports_
     ]
     np.testing.assert_allclose(
         result.to_numpy(),

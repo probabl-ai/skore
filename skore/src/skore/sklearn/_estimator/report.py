@@ -54,9 +54,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     estimator_name_ : str
         The name of the estimator.
 
-    metrics : _MetricsAccessor
-        Accessor for metrics-related operations.
-
     Examples
     --------
     >>> from sklearn.datasets import make_classification

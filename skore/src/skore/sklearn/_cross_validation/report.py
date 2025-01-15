@@ -63,6 +63,17 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         parameter is used to parallelize the computation.
         ``None`` means 1 unless in a :obj:`joblib.parallel_backend` context.
         ``-1`` means using all processors.
+
+    Attributes
+    ----------
+    estimator_ : estimator object
+        The cloned or copied estimator.
+
+    estimator_name_ : str
+        The name of the estimator.
+
+    estimator_reports_ : list of EstimatorReport
+        The estimator reports for each split.
     """
 
     _ACCESSOR_CONFIG = {
@@ -87,18 +98,20 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         self._cv = check_cv(cv, y, classifier=is_classifier(estimator))
         self.n_jobs = n_jobs
 
-        self.estimator_reports = self._fit_estimator_reports()
+        self.estimator_reports_ = self._fit_estimator_reports()
 
         self._rng = np.random.default_rng(time.time_ns())
         self._hash = self._rng.integers(
             low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
         )
         self._cache = {}
-        self._ml_task = _find_ml_task(y, estimator=self.estimator_reports[0].estimator)
+        self._ml_task = _find_ml_task(
+            y, estimator=self.estimator_reports_[0]._estimator
+        )
 
     @progress_decorator(
         description=lambda self: (
-            f"Processing cross-validation\nfor {self.estimator_name}"
+            f"Processing cross-validation\nfor {self.estimator_name_}"
         )
     )
     def _fit_estimator_reports(self):
@@ -140,7 +153,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
     def clear_cache(self):
         """Clear the cache."""
-        for report in self.estimator_reports:
+        for report in self.estimator_reports_:
             report.clear_cache()
         self._cache = {}
 
@@ -164,10 +177,10 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         progress = self._progress_info["current_progress"]
         main_task = self._progress_info["current_task"]
 
-        total_estimators = len(self.estimator_reports)
+        total_estimators = len(self.estimator_reports_)
         progress.update(main_task, total=total_estimators)
 
-        for estimator_report in self.estimator_reports:
+        for estimator_report in self.estimator_reports_:
             # Pass the progress manager to child tasks
             estimator_report._parent_progress = progress
             estimator_report.cache_predictions(
@@ -176,22 +189,22 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             progress.update(main_task, advance=1, refresh=True)
 
     @property
-    def estimator(self):
+    def estimator_(self):
         return self._estimator
 
-    @estimator.setter
-    def estimator(self, value):
+    @estimator_.setter
+    def estimator_(self, value):
         raise AttributeError(
             "The estimator attribute is immutable. "
             f"Call the constructor of {self.__class__.__name__} to create a new report."
         )
 
     @property
-    def estimator_name(self):
-        if isinstance(self.estimator, Pipeline):
-            name = self.estimator[-1].__class__.__name__
+    def estimator_name_(self):
+        if isinstance(self._estimator, Pipeline):
+            name = self._estimator[-1].__class__.__name__
         else:
-            name = self.estimator.__class__.__name__
+            name = self._estimator.__class__.__name__
         return name
 
     @property
@@ -223,7 +236,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     def _get_help_panel_title(self):
         return (
             f"[bold cyan]Tools to diagnose estimator "
-            f"{self.estimator_name}[/bold cyan]"
+            f"{self.estimator_name_}[/bold cyan]"
         )
 
     def _get_help_legend(self):
