@@ -9,6 +9,7 @@ import ProjectViewCard from "@/components/ProjectViewCard.vue";
 import SimpleButton from "@/components/SimpleButton.vue";
 import { useProjectStore } from "@/stores/project";
 import { useToastsStore } from "@/stores/toasts";
+import ItemNote from "@/views/project/ItemNote.vue";
 import ProjectItemList from "@/views/project/ProjectItemList.vue";
 import ProjectViewNavigator from "@/views/project/ProjectViewNavigator.vue";
 
@@ -110,6 +111,7 @@ onBeforeUnmount(() => {
                 @card-removed="onCardRemoved(name)"
                 @update-selected="projectStore.setCurrentItemUpdateIndex(name, $event)"
               >
+                <ItemNote :item="{ name, mediaType, data, createdAt, updatedAt }" />
                 <MediaWidgetSelector :item="{ name, mediaType, data, createdAt, updatedAt }" />
               </ProjectViewCard>
             </template>
@@ -224,6 +226,10 @@ main {
           min-height: calc(100dvh - var(--editor-height) - var(--spacing-24) * 2);
           gap: var(--spacing-24);
         }
+
+        & .item-note {
+          margin-bottom: var(--spacing-16);
+        }
       }
     }
   }
@@ -234,6 +240,7 @@ main {
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    color: var(--color-text-secondary);
   }
 }
 </style>

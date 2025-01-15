@@ -1394,7 +1394,9 @@ const richText = ref(
           <SimpleButton :is-primary="false" label="italic" @click="richTextEditor?.markItalic()" />
           <SimpleButton :is-primary="false" label="list" @click="richTextEditor?.markList()" />
         </div>
-        <RichTextEditor ref="richTextEditor" v-model:value="richText" :rows="25" />
+        <div style="height: 200px">
+          <RichTextEditor ref="richTextEditor" v-model:value="richText" />
+        </div>
         <MarkdownWidget :source="richText" />
       </TabPanelContent>
     </TabPanel>

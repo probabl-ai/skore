@@ -2,14 +2,6 @@
 import { ref, useTemplateRef } from "vue";
 
 const model = defineModel<string>("value");
-const props = withDefaults(
-  defineProps<{
-    rows?: number;
-  }>(),
-  {
-    rows: 4,
-  }
-);
 
 const textarea = useTemplateRef<HTMLTextAreaElement>("textarea");
 const selectionStart = ref(-1);
@@ -57,28 +49,29 @@ function markList() {
   }
 }
 
-defineExpose({ markBold, markItalic, markList });
+function focus() {
+  textarea.value?.focus();
+}
+
+defineExpose({ markBold, markItalic, markList, focus });
 </script>
 
 <template>
   <div class="rich-text-editor">
-    <textarea
-      ref="textarea"
-      v-model="model"
-      v-bind="$attrs"
-      :rows="props.rows"
-      @mouseup="updateSelections"
-    ></textarea>
+    <textarea ref="textarea" v-model="model" v-bind="$attrs" @mouseup="updateSelections"></textarea>
   </div>
 </template>
 
 <style lang="css" scoped>
 .rich-text-editor {
+  width: 100%;
+  height: 100%;
+
   & textarea {
     width: 100%;
+    height: 100%;
     border: var(--stroke-width-md) solid var(--color-stroke-background-primary);
     border-radius: var(--radius-xs);
-    background-color: var(--color-background-secondary);
     color: var(--color-text-secondary);
     font-family: GeistMono, monospace;
     resize: none;
