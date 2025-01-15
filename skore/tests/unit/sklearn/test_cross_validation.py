@@ -132,3 +132,53 @@ def test_cross_validation_report_attributes(binary_classification_data, cv, n_jo
         report.X = X
     with pytest.raises(AttributeError, match=err_msg):
         report.y = y
+
+
+def test_cross_validation_report_help(capsys, binary_classification_data):
+    """Check that the help method writes to the console."""
+    estimator, X, y = binary_classification_data
+    report = CrossValidationReport(estimator, X, y)
+
+    report.help()
+    captured = capsys.readouterr()
+    assert f"Tools to diagnose estimator {estimator.__class__.__name__}" in captured.out
+
+
+def test_cross_validation_report_repr(binary_classification_data):
+    """Check that __repr__ returns a string starting with the expected prefix."""
+    estimator, X, y = binary_classification_data
+    report = CrossValidationReport(estimator, X, y)
+
+    repr_str = repr(report)
+    assert "skore.CrossValidationReport" in repr_str
+    assert "reporter.help()" in repr_str
+
+
+@pytest.mark.parametrize(
+    "fixture_name, expected_n_keys",
+    [
+        ("binary_classification_data", 6),
+        ("binary_classification_data_svc", 6),
+        ("multiclass_classification_data", 8),
+        ("regression_data", 2),
+    ],
+)
+@pytest.mark.parametrize("n_jobs", [1, 2])
+def test_estimator_report_cache_predictions(
+    request, fixture_name, expected_n_keys, n_jobs
+):
+    """Check that calling cache_predictions fills the cache."""
+    estimator, X, y = request.getfixturevalue(fixture_name)
+    report = CrossValidationReport(estimator, X, y, cv=2, n_jobs=n_jobs)
+    report.cache_predictions(n_jobs=n_jobs)
+    # no effect on the actual cache of the cross-validation report but only on the
+    # underlying estimator reports
+    assert report._cache == {}
+
+    for estimator_report in report.estimator_reports:
+        assert len(estimator_report._cache) == expected_n_keys
+
+    report.clear_cache()
+    assert report._cache == {}
+    for estimator_report in report.estimator_reports:
+        assert estimator_report._cache == {}
