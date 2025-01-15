@@ -46,7 +46,8 @@ def _get_cached_response_values(
 
 class _BaseReport(_HelpMixin):
     _ACCESSOR_CONFIG: dict[str, dict[str, str]]
-    estimator_name: str
+    estimator_: BaseEstimator
+    estimator_name_: str
     _X_test: Optional[np.ndarray]
     _y_test: Optional[np.ndarray]
     _X_train: Optional[np.ndarray]

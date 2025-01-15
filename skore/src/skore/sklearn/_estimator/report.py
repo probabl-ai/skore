@@ -48,6 +48,12 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     Attributes
     ----------
+    estimator_ : estimator object
+        The cloned or copied estimator.
+
+    estimator_name_ : str
+        The name of the estimator.
+
     metrics : _MetricsAccessor
         Accessor for metrics-related operations.
 
@@ -247,11 +253,11 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             progress.update(task, advance=1, refresh=True)
 
     @property
-    def estimator(self):
+    def estimator_(self):
         return self._estimator
 
-    @estimator.setter
-    def estimator(self, value):
+    @estimator_.setter
+    def estimator_(self, value):
         raise AttributeError(
             "The estimator attribute is immutable. "
             f"Call the constructor of {self.__class__.__name__} to create a new report."
@@ -298,7 +304,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self._initialize_state()
 
     @property
-    def estimator_name(self):
+    def estimator_name_(self):
         if isinstance(self._estimator, Pipeline):
             name = self._estimator[-1].__class__.__name__
         else:
@@ -312,7 +318,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     def _get_help_panel_title(self):
         return (
             f"[bold cyan]Tools to diagnose estimator "
-            f"{self.estimator_name}[/bold cyan]"
+            f"{self.estimator_name_}[/bold cyan]"
         )
 
     def _get_help_legend(self):

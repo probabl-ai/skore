@@ -227,7 +227,7 @@ class _BaseAccessor(_HelpMixin):
             The hash of the data source. None when we are able to track the data, and
             thus relying on X_train, y_train, X_test, y_test.
         """
-        is_cluster = is_clusterer(self._parent.estimator)
+        is_cluster = is_clusterer(self._parent.estimator_)
         if data_source == "test":
             if not (X is None or y is None):
                 raise ValueError("X and y must be None when data_source is test.")

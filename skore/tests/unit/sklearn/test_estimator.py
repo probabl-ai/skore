@@ -113,7 +113,7 @@ def test_check_supported_estimator():
 
     class MockParent:
         def __init__(self, estimator):
-            self.estimator = estimator
+            self.estimator_ = estimator
 
     class MockAccessor:
         def __init__(self, parent):
@@ -170,8 +170,8 @@ def test_estimator_report_from_unfitted_estimator(fit):
         y_test=y_test,
     )
 
-    check_is_fitted(report.estimator)
-    assert report.estimator is not estimator  # the estimator should be cloned
+    check_is_fitted(report.estimator_)
+    assert report.estimator_ is not estimator  # the estimator should be cloned
 
     assert report.X_train is X_train
     assert report.y_train is y_train
@@ -180,7 +180,7 @@ def test_estimator_report_from_unfitted_estimator(fit):
 
     err_msg = "attribute is immutable"
     with pytest.raises(AttributeError, match=err_msg):
-        report.estimator = LinearRegression()
+        report.estimator_ = LinearRegression()
     with pytest.raises(AttributeError, match=err_msg):
         report.X_train = X_train
     with pytest.raises(AttributeError, match=err_msg):
@@ -194,8 +194,8 @@ def test_estimator_report_from_fitted_estimator(binary_classification_data, fit)
     estimator, X, y = binary_classification_data
     report = EstimatorReport(estimator, fit=fit, X_test=X, y_test=y)
 
-    check_is_fitted(report.estimator)
-    assert isinstance(report.estimator, RandomForestClassifier)
+    check_is_fitted(report.estimator_)
+    assert isinstance(report.estimator_, RandomForestClassifier)
     assert report.X_train is None
     assert report.y_train is None
     assert report.X_test is X
@@ -203,7 +203,7 @@ def test_estimator_report_from_fitted_estimator(binary_classification_data, fit)
 
     err_msg = "attribute is immutable"
     with pytest.raises(AttributeError, match=err_msg):
-        report.estimator = LinearRegression()
+        report.estimator_ = LinearRegression()
     with pytest.raises(AttributeError, match=err_msg):
         report.X_train = X
     with pytest.raises(AttributeError, match=err_msg):
@@ -217,9 +217,9 @@ def test_estimator_report_from_fitted_pipeline(binary_classification_data_pipeli
     estimator, X, y = binary_classification_data_pipeline
     report = EstimatorReport(estimator, X_test=X, y_test=y)
 
-    check_is_fitted(report.estimator)
-    assert isinstance(report.estimator, Pipeline)
-    assert report.estimator_name == estimator[-1].__class__.__name__
+    check_is_fitted(report.estimator_)
+    assert isinstance(report.estimator_, Pipeline)
+    assert report.estimator_name_ == estimator[-1].__class__.__name__
     assert report.X_train is None
     assert report.y_train is None
     assert report.X_test is X
@@ -1141,9 +1141,9 @@ def test_estimator_has_side_effects(prefit_estimator):
         y_test=y_test,
     )
 
-    predictions_before = report.estimator.predict_proba(X_test)
+    predictions_before = report.estimator_.predict_proba(X_test)
     estimator.fit(X_test, y_test)
-    predictions_after = report.estimator.predict_proba(X_test)
+    predictions_after = report.estimator_.predict_proba(X_test)
     np.testing.assert_array_equal(predictions_before, predictions_after)
 
 
