@@ -10,6 +10,7 @@ export interface PresentableItem {
   data: any;
   createdAt: Date;
   updatedAt: Date;
+  note?: string;
 }
 
 /**

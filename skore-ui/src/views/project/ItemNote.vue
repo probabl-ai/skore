@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, useTemplateRef } from "vue";
+import { ref, useTemplateRef, watch } from "vue";
 
 import MarkdownWidget from "@/components/MarkdownWidget.vue";
 import RichTextEditor from "@/components/RichTextEditor.vue";
@@ -11,7 +11,11 @@ const props = defineProps<{ item: PresentableItem }>();
 const isEditing = ref(false);
 const editor = useTemplateRef<InstanceType<typeof RichTextEditor>>("editor");
 
-const richText = ref("hahaha **hohoho** *hihihi*" + props.item.name);
+const richText = ref(`${props.item.note ?? ""}`);
+
+watch(richText, () => {
+  console.log("model updated");
+});
 </script>
 
 <template>

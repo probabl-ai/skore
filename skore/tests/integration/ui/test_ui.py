@@ -46,6 +46,7 @@ def test_get_items(client, in_memory_project):
                     "value": item.primitive,
                     "created_at": item.created_at,
                     "updated_at": item.updated_at,
+                    "note": item.note,
                 }
                 for item in items
             ],
@@ -285,6 +286,7 @@ def test_serialize_cross_validation_item(
         },
         "updated_at": mock_nowstr,
         "created_at": mock_nowstr,
+        "note": None,
     }
     actual = project["items"]["cv_mocked"][0]
     assert expected == actual
@@ -328,3 +330,23 @@ def test_activity_feed(monkeypatch, client, in_memory_project):
         ("5", 5),
         ("4", 5),
     ]
+
+
+def test_set_note(client, in_memory_project):
+    for i in range(3):
+        in_memory_project.put("notted", i)
+
+    for i in range(3):
+        response = client.put(
+            "/api/project/note",
+            json={
+                "key": "notted",
+                "message": f"note{i}",
+                "version": i,
+            },
+        )
+        assert response.status_code == 201
+
+    for i in range(3):
+        note = in_memory_project.get_note("notted", version=i)
+        assert note == f"note{i}"
