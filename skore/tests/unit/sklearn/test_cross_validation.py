@@ -280,6 +280,12 @@ def _check_results_single_metric(report, metric, expected_n_splits, expected_nb_
     split_names = result.index.get_level_values(1).unique()
     assert list(split_names) == stats
 
+    stats = "mean"
+    result = getattr(report.metrics, metric)(aggregate=stats)
+    # check that the index contains the expected split names
+    split_names = result.index.get_level_values(1).unique()
+    assert list(split_names) == [stats]
+
 
 def _check_results_report_metric(
     report, params, expected_n_splits, expected_metrics, expected_nb_stats
@@ -304,6 +310,12 @@ def _check_results_report_metric(
     # check that the index contains the expected split names
     split_names = result.index.get_level_values(1).unique()
     assert list(split_names) == stats
+
+    stats = "mean"
+    result = report.metrics.report_metrics(aggregate=stats, **params)
+    # check that the index contains the expected split names
+    split_names = result.index.get_level_values(1).unique()
+    assert list(split_names) == [stats]
 
 
 def _check_metrics_names(result, expected_metrics, expected_nb_stats):
@@ -551,3 +563,15 @@ def test_cross_validation_report_report_metrics_overwrite_scoring_names(
         else result.columns.tolist()
     )
     assert result_columns == expected_columns
+
+
+@pytest.mark.parametrize("scoring", ["public_metric", "_private_metric"])
+def test_cross_validation_report_report_metrics_error_scoring_strings(
+    regression_data, scoring
+):
+    """Check that we raise an error if a scoring string is not a valid metric."""
+    estimator, X, y = regression_data
+    report = CrossValidationReport(estimator, X, y, cv=2)
+    err_msg = re.escape(f"Invalid metric: {scoring!r}.")
+    with pytest.raises(ValueError, match=err_msg):
+        report.metrics.report_metrics(scoring=[scoring])
