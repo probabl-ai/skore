@@ -115,14 +115,12 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             # we need to enforce the order of the parameter for a specific metric
             # to make sure that we hit the cache in a consistent way
             ordered_metric_kwargs = sorted(metric_kwargs.keys())
-            cache_key += tuple(
-                (
-                    joblib.hash(metric_kwargs[key])
-                    if isinstance(metric_kwargs[key], np.ndarray)
-                    else metric_kwargs[key]
-                )
-                for key in ordered_metric_kwargs
-            )
+
+            for key in ordered_metric_kwargs:
+                if isinstance(metric_kwargs[key], (np.ndarray, list, dict)):
+                    cache_key += (joblib.hash(metric_kwargs[key]),)
+                else:
+                    cache_key += (metric_kwargs[key],)
 
         progress = self._progress_info["current_progress"]
         main_task = self._progress_info["current_task"]

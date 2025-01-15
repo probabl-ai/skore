@@ -490,3 +490,24 @@ def test_cross_validation_report_report_metrics_regression(regression_data):
         expected_metrics=expected_metrics,
         expected_nb_stats=len(expected_metrics),
     )
+
+
+def test_cross_validation_report_report_metrics_scoring_kwargs(
+    regression_multioutput_data, multiclass_classification_data
+):
+    """Check the behaviour of the `report_metrics` method with scoring kwargs."""
+    estimator, X, y = regression_multioutput_data
+    report = CrossValidationReport(estimator, X, y, cv=2)
+    assert hasattr(report.metrics, "report_metrics")
+    result = report.metrics.report_metrics(scoring_kwargs={"multioutput": "raw_values"})
+    assert result.shape == (2, 4)
+    assert isinstance(result.columns, pd.MultiIndex)
+    assert result.columns.names == ["Metric", "Output"]
+
+    estimator, X, y = multiclass_classification_data
+    report = CrossValidationReport(estimator, X, y, cv=2)
+    assert hasattr(report.metrics, "report_metrics")
+    result = report.metrics.report_metrics(scoring_kwargs={"average": None})
+    assert result.shape == (2, 10)
+    assert isinstance(result.columns, pd.MultiIndex)
+    assert result.columns.names == ["Metric", "Class label"]
