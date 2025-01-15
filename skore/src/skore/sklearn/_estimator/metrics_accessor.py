@@ -210,7 +210,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 else:
                     metric_fn = partial(self._custom_metric, metric_function=metric)
                     if scoring_kwargs is None:
-                        metrics_kwargs = {"data_source_hash": data_source_hash}
+                        metrics_kwargs = {}
                     else:
                         # check if we should pass any parameters specific to the metric
                         # callable
@@ -548,6 +548,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         `data_source_hash` is either an `int` when we already computed the hash
         and are able to pass it around or `None` and thus trigger its computation
         in the underlying process.
+
+        `metric_name` allows to overwrite the default name of the metric in the report.
         """
         if self._parent._ml_task == "binary-classification" and pos_label is not None:
             # if `pos_label` is specified by our user, then we can safely report only
@@ -676,6 +678,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         `data_source_hash` is either an `int` when we already computed the hash
         and are able to pass it around or `None` and thus trigger its computation
         in the underlying process.
+
+        `metric_name` allows to overwrite the default name of the metric in the report.
         """
         if self._parent._ml_task == "binary-classification" and pos_label is not None:
             # if `pos_label` is specified by our user, then we can safely report only
@@ -767,6 +771,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         `data_source_hash` is either an `int` when we already computed the hash
         and are able to pass it around or `None` and thus trigger its computation
         in the underlying process.
+
+        `metric_name` allows to overwrite the default name of the metric in the report.
         """
         # The Brier score in scikit-learn request `pos_label` to ensure that the
         # integral encoding of `y_true` corresponds to the probabilities of the
