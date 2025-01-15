@@ -115,18 +115,29 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Metric              Precision (↗︎)  Recall (↗︎)  ROC AUC (↗︎)  Brier score (↘︎)
         LogisticRegression        0.98...     0.93...      0.99...          0.03...
         """
+        if data_source == "X_y":
+            # optimization of the hash computation to avoid recomputing it
+            # FIXME: we are still recomputing the hash for all the metrics that we
+            # support in the report because we don't call `_compute_metric_scores`
+            # here. We should fix it.
+            X, y, data_source_hash = self._get_X_y_and_data_source_hash(
+                data_source=data_source, X=X, y=y
+            )
+        else:
+            data_source_hash = None
+
         if scoring is None:
             # Equivalent to _get_scorers_to_add
             if self._parent._ml_task == "binary-classification":
-                scoring = ["precision", "recall", "roc_auc"]
+                scoring = ["_precision", "_recall", "_roc_auc"]
                 if hasattr(self._parent._estimator, "predict_proba"):
-                    scoring.append("brier_score")
+                    scoring.append("_brier_score")
             elif self._parent._ml_task == "multiclass-classification":
-                scoring = ["precision", "recall"]
+                scoring = ["_precision", "_recall"]
                 if hasattr(self._parent._estimator, "predict_proba"):
-                    scoring += ["roc_auc", "log_loss"]
+                    scoring += ["_roc_auc", "_log_loss"]
             else:
-                scoring = ["r2", "rmse"]
+                scoring = ["_r2", "_rmse"]
 
         scores = []
 
@@ -136,18 +147,36 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             if isinstance(metric, _BaseScorer):
                 # scorers have the advantage to have scoped defined kwargs
                 metric_fn = partial(
-                    self.custom_metric,
+                    self._custom_metric,
                     metric_function=metric._score_func,
                     response_method=metric._response_method,
                 )
                 # forward the additional parameters specific to the scorer
                 metrics_kwargs = {**metric._kwargs}
+                metrics_kwargs["data_source_hash"] = data_source_hash
+                metrics_params = inspect.signature(metric._score_func).parameters
+                if "pos_label" in metrics_params:
+                    metrics_kwargs["pos_label"] = pos_label
             elif isinstance(metric, str) or callable(metric):
                 if isinstance(metric, str):
+                    err_msg = (
+                        f"Invalid metric: {metric!r}. Please use a valid metric"
+                        " from the list of supported metrics: "
+                        f"{list(self._SCORE_OR_LOSS_ICONS.keys())}"
+                    )
+                    if (
+                        metric.startswith("_")
+                        and metric[1:] not in self._SCORE_OR_LOSS_ICONS
+                    ):
+                        raise ValueError(err_msg)
+                    if not metric.startswith("_"):
+                        if metric not in self._SCORE_OR_LOSS_ICONS:
+                            raise ValueError(err_msg)
+                        metric = f"_{metric}"
                     metric_fn = getattr(self, metric)
-                    metrics_kwargs = {}
+                    metrics_kwargs = {"data_source_hash": data_source_hash}
                 else:
-                    metric_fn = partial(self.custom_metric, metric_function=metric)
+                    metric_fn = partial(self._custom_metric, metric_function=metric)
                     if scoring_kwargs is None:
                         metrics_kwargs = {}
                     else:
@@ -159,6 +188,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                             for param in metric_callable_params
                             if param in scoring_kwargs
                         }
+                    metrics_kwargs["data_source_hash"] = data_source_hash
                 metrics_params = inspect.signature(metric_fn).parameters
                 if scoring_kwargs is not None:
                     for param in metrics_params:
@@ -172,7 +202,12 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 )
 
             scores.append(
-                metric_fn(data_source=data_source, X=X, y=y, **metrics_kwargs)
+                metric_fn(
+                    data_source=data_source,
+                    X=X,
+                    y=y,
+                    **metrics_kwargs,
+                )
             )
 
         has_multilevel = any(
@@ -205,25 +240,17 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         y_true,
         *,
         data_source="test",
+        data_source_hash=None,
         response_method,
         pos_label=None,
         metric_name=None,
         **metric_kwargs,
     ):
-        X, y_true, data_source_hash = self._get_X_y_and_data_source_hash(
-            data_source=data_source, X=X, y=y_true
-        )
+        if data_source_hash is None:
+            X, y_true, data_source_hash = self._get_X_y_and_data_source_hash(
+                data_source=data_source, X=X, y=y_true
+            )
 
-        y_pred = _get_cached_response_values(
-            cache=self._parent._cache,
-            estimator_hash=self._parent._hash,
-            estimator=self._parent.estimator,
-            X=X,
-            response_method=response_method,
-            pos_label=pos_label,
-            data_source=data_source,
-            data_source_hash=data_source_hash,
-        )
         cache_key = (self._parent._hash, metric_fn.__name__, data_source)
         if data_source_hash:
             cache_key += (data_source_hash,)
@@ -251,6 +278,17 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             kwargs = {**metric_kwargs}
             if "pos_label" in metric_params:
                 kwargs.update(pos_label=pos_label)
+
+            y_pred = _get_cached_response_values(
+                cache=self._parent._cache,
+                estimator_hash=self._parent._hash,
+                estimator=self._parent.estimator,
+                X=X,
+                response_method=response_method,
+                pos_label=pos_label,
+                data_source=data_source,
+                data_source_hash=data_source_hash,
+            )
 
             score = metric_fn(y_true, y_pred, **kwargs)
             self._parent._cache[cache_key] = score
@@ -283,9 +321,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                     names=["Metric", "Output"],
                 )
                 score = score.reshape(1, -1)
-        else:
-            # FIXME: clusterer would fall here.
-            columns = None
+        else:  # unknown task - try our best
+            columns = [metric_name] if score.shape[0] == 1 else None
         return pd.DataFrame(score, columns=columns, index=[self._parent.estimator_name])
 
     @available_if(
@@ -339,11 +376,21 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Metric              Accuracy (↗︎)
         LogisticRegression       0.95...
         """
+        return self._accuracy(data_source=data_source, data_source_hash=None, X=X, y=y)
+
+    def _accuracy(self, *, data_source="test", data_source_hash=None, X=None, y=None):
+        """Private interface of `accuracy` to be able to pass `data_source_hash`.
+
+        `data_source_hash` is either an `int` when we already computed the hash
+        and are able to pass it around or `None` and thus trigger its computation
+        in the underlying process.
+        """
         return self._compute_metric_scores(
             metrics.accuracy_score,
             X=X,
             y_true=y,
             data_source=data_source,
+            data_source_hash=data_source_hash,
             response_method="predict",
             metric_name=f"Accuracy {self._SCORE_OR_LOSS_ICONS['accuracy']}",
         )
@@ -429,6 +476,31 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Metric              Precision (↗︎)
         LogisticRegression        0.98...
         """
+        return self._precision(
+            data_source=data_source,
+            data_source_hash=None,
+            X=X,
+            y=y,
+            average=average,
+            pos_label=pos_label,
+        )
+
+    def _precision(
+        self,
+        *,
+        data_source="test",
+        data_source_hash=None,
+        X=None,
+        y=None,
+        average=None,
+        pos_label=None,
+    ):
+        """Private interface of `precision` to be able to pass `data_source_hash`.
+
+        `data_source_hash` is either an `int` when we already computed the hash
+        and are able to pass it around or `None` and thus trigger its computation
+        in the underlying process.
+        """
         if self._parent._ml_task == "binary-classification" and pos_label is not None:
             # if `pos_label` is specified by our user, then we can safely report only
             # the statistics of the positive class
@@ -439,6 +511,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             X=X,
             y_true=y,
             data_source=data_source,
+            data_source_hash=data_source_hash,
             response_method="predict",
             pos_label=pos_label,
             metric_name=f"Precision {self._SCORE_OR_LOSS_ICONS['precision']}",
@@ -527,6 +600,31 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Metric              Recall (↗︎)
         LogisticRegression     0.93...
         """
+        return self._recall(
+            data_source=data_source,
+            data_source_hash=None,
+            X=X,
+            y=y,
+            average=average,
+            pos_label=pos_label,
+        )
+
+    def _recall(
+        self,
+        *,
+        data_source="test",
+        data_source_hash=None,
+        X=None,
+        y=None,
+        average=None,
+        pos_label=None,
+    ):
+        """Private interface of `recall` to be able to pass `data_source_hash`.
+
+        `data_source_hash` is either an `int` when we already computed the hash
+        and are able to pass it around or `None` and thus trigger its computation
+        in the underlying process.
+        """
         if self._parent._ml_task == "binary-classification" and pos_label is not None:
             # if `pos_label` is specified by our user, then we can safely report only
             # the statistics of the positive class
@@ -537,6 +635,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             X=X,
             y_true=y,
             data_source=data_source,
+            data_source_hash=data_source_hash,
             response_method="predict",
             pos_label=pos_label,
             metric_name=f"Recall {self._SCORE_OR_LOSS_ICONS['recall']}",
@@ -592,6 +691,22 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Metric              Brier score (↘︎)
         LogisticRegression          0.03...
         """
+        return self._brier_score(
+            data_source=data_source,
+            data_source_hash=None,
+            X=X,
+            y=y,
+        )
+
+    def _brier_score(
+        self, *, data_source="test", data_source_hash=None, X=None, y=None
+    ):
+        """Private interface of `brier_score` to be able to pass `data_source_hash`.
+
+        `data_source_hash` is either an `int` when we already computed the hash
+        and are able to pass it around or `None` and thus trigger its computation
+        in the underlying process.
+        """
         # The Brier score in scikit-learn request `pos_label` to ensure that the
         # integral encoding of `y_true` corresponds to the probabilities of the
         # `pos_label`. Since we get the predictions with `get_response_method`, we
@@ -601,6 +716,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             X=X,
             y_true=y,
             data_source=data_source,
+            data_source_hash=data_source_hash,
             response_method="predict_proba",
             metric_name=f"Brier score {self._SCORE_OR_LOSS_ICONS['brier_score']}",
             pos_label=self._parent._estimator.classes_[-1],
@@ -693,11 +809,37 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Metric              ROC AUC (↗︎)
         LogisticRegression      0.99...
         """
+        return self._roc_auc(
+            data_source=data_source,
+            data_source_hash=None,
+            X=X,
+            y=y,
+            average=average,
+            multi_class=multi_class,
+        )
+
+    def _roc_auc(
+        self,
+        *,
+        data_source="test",
+        data_source_hash=None,
+        X=None,
+        y=None,
+        average=None,
+        multi_class="ovr",
+    ):
+        """Private interface of `roc_auc` to be able to pass `data_source_hash`.
+
+        `data_source_hash` is either an `int` when we already computed the hash
+        and are able to pass it around or `None` and thus trigger its computation
+        in the underlying process.
+        """
         return self._compute_metric_scores(
             metrics.roc_auc_score,
             X=X,
             y_true=y,
             data_source=data_source,
+            data_source_hash=data_source_hash,
             response_method=["predict_proba", "decision_function"],
             metric_name=f"ROC AUC {self._SCORE_OR_LOSS_ICONS['roc_auc']}",
             average=average,
@@ -748,11 +890,33 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Metric              Log loss (↘︎)
         LogisticRegression       0.10...
         """
+        return self._log_loss(
+            data_source=data_source,
+            data_source_hash=None,
+            X=X,
+            y=y,
+        )
+
+    def _log_loss(
+        self,
+        *,
+        data_source="test",
+        data_source_hash=None,
+        X=None,
+        y=None,
+    ):
+        """Private interface of `log_loss` to be able to pass `data_source_hash`.
+
+        `data_source_hash` is either an `int` when we already computed the hash
+        and are able to pass it around or `None` and thus trigger its computation
+        in the underlying process.
+        """
         return self._compute_metric_scores(
             metrics.log_loss,
             X=X,
             y_true=y,
             data_source=data_source,
+            data_source_hash=data_source_hash,
             response_method="predict_proba",
             metric_name=f"Log loss {self._SCORE_OR_LOSS_ICONS['log_loss']}",
         )
@@ -763,6 +927,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         Parameters
         ----------
+        data_source : {"test", "train", "X_y"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the reporter.
+            - "train" : use the train set provided when creating the reporter.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
             set provided when creating the reporter.
@@ -807,11 +978,35 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Metric  R² (↗︎)
         Ridge   0.35...
         """
+        return self._r2(
+            data_source=data_source,
+            data_source_hash=None,
+            X=X,
+            y=y,
+            multioutput=multioutput,
+        )
+
+    def _r2(
+        self,
+        *,
+        data_source="test",
+        data_source_hash=None,
+        X=None,
+        y=None,
+        multioutput="raw_values",
+    ):
+        """Private interface of `r2` to be able to pass `data_source_hash`.
+
+        `data_source_hash` is either an `int` when we already computed the hash
+        and are able to pass it around or `None` and thus trigger its computation
+        in the underlying process.
+        """
         return self._compute_metric_scores(
             metrics.r2_score,
             X=X,
             y_true=y,
             data_source=data_source,
+            data_source_hash=data_source_hash,
             response_method="predict",
             metric_name=f"R² {self._SCORE_OR_LOSS_ICONS['r2']}",
             multioutput=multioutput,
@@ -823,6 +1018,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         Parameters
         ----------
+        data_source : {"test", "train", "X_y"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the reporter.
+            - "train" : use the train set provided when creating the reporter.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
             set provided when creating the reporter.
@@ -867,11 +1069,35 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Metric  RMSE (↘︎)
         Ridge   56.5...
         """
+        return self._rmse(
+            data_source=data_source,
+            data_source_hash=None,
+            X=X,
+            y=y,
+            multioutput=multioutput,
+        )
+
+    def _rmse(
+        self,
+        *,
+        data_source="test",
+        data_source_hash=None,
+        X=None,
+        y=None,
+        multioutput="raw_values",
+    ):
+        """Private interface of `rmse` to be able to pass `data_source_hash`.
+
+        `data_source_hash` is either an `int` when we already computed the hash
+        and are able to pass it around or `None` and thus trigger its computation
+        in the underlying process.
+        """
         return self._compute_metric_scores(
             metrics.root_mean_squared_error,
             X=X,
             y_true=y,
             data_source=data_source,
+            data_source_hash=data_source_hash,
             response_method="predict",
             metric_name=f"RMSE {self._SCORE_OR_LOSS_ICONS['rmse']}",
             multioutput=multioutput,
@@ -913,6 +1139,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         metric_name : str, default=None
             The name of the metric. If not provided, it will be inferred from the
             metric function.
+
+        data_source : {"test", "train", "X_y"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the reporter.
+            - "train" : use the train set provided when creating the reporter.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
 
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
@@ -956,11 +1189,41 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Metric        MAE (↗︎)
         Ridge   44.9...
         """
+        return self._custom_metric(
+            data_source=data_source,
+            data_source_hash=None,
+            X=X,
+            y=y,
+            metric_function=metric_function,
+            response_method=response_method,
+            metric_name=metric_name,
+            **kwargs,
+        )
+
+    def _custom_metric(
+        self,
+        *,
+        data_source="test",
+        data_source_hash=None,
+        X=None,
+        y=None,
+        metric_function=None,
+        response_method=None,
+        metric_name=None,
+        **kwargs,
+    ):
+        """Private interface of `custom_metric` to be able to pass `data_source_hash`.
+
+        `data_source_hash` is either an `int` when we already computed the hash
+        and are able to pass it around or `None` and thus trigger its computation
+        in the underlying process.
+        """
         return self._compute_metric_scores(
             metric_function,
             X=X,
             y_true=y,
             data_source=data_source,
+            data_source_hash=data_source_hash,
             response_method=response_method,
             metric_name=metric_name,
             **kwargs,
