@@ -75,7 +75,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             Used to overwrite the default scoring names in the report. It should be of
             the same length as the `scoring` parameter.
 
-        pos_label : int, default=None
+        pos_label : int, float, bool or str, default=None
             The positive class.
 
         scoring_kwargs : dict, default=None
@@ -240,7 +240,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 only the statistics of the positive class (i.e. equivalent to
                 `average="binary"`).
 
-        pos_label : int, default=None
+        pos_label : int, float, bool or str, default=None
             The positive class.
 
         aggregate : {"mean", "std"} or list of such str, default=None
@@ -308,7 +308,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 only the statistics of the positive class (i.e. equivalent to
                 `average="binary"`).
 
-        pos_label : int, default=None
+        pos_label : int, float, bool or str, default=None
             The positive class.
 
         aggregate : {"mean", "std"} or list of such str, default=None
@@ -797,7 +797,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
             - "test" : use the test set provided when creating the reporter.
             - "train" : use the train set provided when creating the reporter.
 
-        pos_label : str, default=None
+        pos_label : int, float, bool or str, default=None
             The positive class.
 
         ax : matplotlib.axes.Axes, default=None
@@ -835,7 +835,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
             - "test" : use the test set provided when creating the reporter.
             - "train" : use the train set provided when creating the reporter.
 
-        pos_label : str, default=None
+        pos_label : int, float, bool or str, default=None
             The positive class.
 
         ax : matplotlib.axes.Axes, default=None
