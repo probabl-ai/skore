@@ -28,7 +28,7 @@ def test_display_help(pyplot, capsys, plot_func, estimator, dataset):
 
     display.help()
     captured = capsys.readouterr()
-    assert f"📊 {display.__class__.__name__}" in captured.out
+    assert f"{display.__class__.__name__}" in captured.out
 
 
 @pytest.mark.parametrize(
@@ -52,7 +52,8 @@ def test_display_repr(pyplot, plot_func, estimator, dataset):
     display = getattr(report.metrics.plot, plot_func)()
 
     repr_str = repr(display)
-    assert f"📊 {display.__class__.__name__}" in repr_str
+    assert f"{display.__class__.__name__}" in repr_str
+    assert "display.help()" in repr_str
 
 
 @pytest.mark.parametrize(

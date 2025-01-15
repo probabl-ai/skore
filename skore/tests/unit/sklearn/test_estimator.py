@@ -274,9 +274,7 @@ def test_estimator_report_help(capsys, binary_classification_data):
 
     report.help()
     captured = capsys.readouterr()
-    assert (
-        f"📓 Tools to diagnose estimator {estimator.__class__.__name__}" in captured.out
-    )
+    assert f"Tools to diagnose estimator {estimator.__class__.__name__}" in captured.out
 
 
 def test_estimator_report_repr(binary_classification_data):
@@ -336,7 +334,7 @@ def test_estimator_report_plot_help(capsys, binary_classification_data):
 
     report.metrics.plot.help()
     captured = capsys.readouterr()
-    assert "🎨 Available plot methods" in captured.out
+    assert "Available plot methods" in captured.out
 
 
 def test_estimator_report_plot_repr(binary_classification_data):
@@ -476,7 +474,7 @@ def test_estimator_report_metrics_help(capsys, binary_classification_data):
 
     report.metrics.help()
     captured = capsys.readouterr()
-    assert "📏 Available metrics methods" in captured.out
+    assert "Available metrics methods" in captured.out
 
 
 def test_estimator_report_metrics_repr(binary_classification_data):
