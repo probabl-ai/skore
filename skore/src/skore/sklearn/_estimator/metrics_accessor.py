@@ -412,15 +412,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         """
         return self._accuracy(data_source=data_source, data_source_hash=None, X=X, y=y)
 
-    def _accuracy(self, *, data_source="test", data_source_hash=None, X=None, y=None):
-        """Private interface of `accuracy` to be able to pass `data_source_hash`.
-
-        `data_source_hash` is either an `int` when we already computed the hash
-        and are able to pass it around or `None` and thus trigger its computation
-        in the underlying process.
-        """
-        return self._accuracy(data_source=data_source, data_source_hash=None, X=X, y=y)
-
     def _accuracy(
         self,
         *,
@@ -531,31 +522,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> reporter.metrics.precision(pos_label=1)
         Metric              Precision (↗︎)
         LogisticRegression        0.98...
-        """
-        return self._precision(
-            data_source=data_source,
-            data_source_hash=None,
-            X=X,
-            y=y,
-            average=average,
-            pos_label=pos_label,
-        )
-
-    def _precision(
-        self,
-        *,
-        data_source="test",
-        data_source_hash=None,
-        X=None,
-        y=None,
-        average=None,
-        pos_label=None,
-    ):
-        """Private interface of `precision` to be able to pass `data_source_hash`.
-
-        `data_source_hash` is either an `int` when we already computed the hash
-        and are able to pass it around or `None` and thus trigger its computation
-        in the underlying process.
         """
         return self._precision(
             data_source=data_source,
@@ -703,31 +669,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source_hash=None,
         X=None,
         y=None,
-        average=None,
-        pos_label=None,
-    ):
-        """Private interface of `recall` to be able to pass `data_source_hash`.
-
-        `data_source_hash` is either an `int` when we already computed the hash
-        and are able to pass it around or `None` and thus trigger its computation
-        in the underlying process.
-        """
-        return self._recall(
-            data_source=data_source,
-            data_source_hash=None,
-            X=X,
-            y=y,
-            average=average,
-            pos_label=pos_label,
-        )
-
-    def _recall(
-        self,
-        *,
-        data_source="test",
-        data_source_hash=None,
-        X=None,
-        y=None,
         metric_name=None,
         average=None,
         pos_label=None,
@@ -808,22 +749,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> reporter.metrics.brier_score()
         Metric              Brier score (↘︎)
         LogisticRegression          0.03...
-        """
-        return self._brier_score(
-            data_source=data_source,
-            data_source_hash=None,
-            X=X,
-            y=y,
-        )
-
-    def _brier_score(
-        self, *, data_source="test", data_source_hash=None, X=None, y=None
-    ):
-        """Private interface of `brier_score` to be able to pass `data_source_hash`.
-
-        `data_source_hash` is either an `int` when we already computed the hash
-        and are able to pass it around or `None` and thus trigger its computation
-        in the underlying process.
         """
         return self._brier_score(
             data_source=data_source,
@@ -970,31 +895,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source_hash=None,
         X=None,
         y=None,
-        average=None,
-        multi_class="ovr",
-    ):
-        """Private interface of `roc_auc` to be able to pass `data_source_hash`.
-
-        `data_source_hash` is either an `int` when we already computed the hash
-        and are able to pass it around or `None` and thus trigger its computation
-        in the underlying process.
-        """
-        return self._roc_auc(
-            data_source=data_source,
-            data_source_hash=None,
-            X=X,
-            y=y,
-            average=average,
-            multi_class=multi_class,
-        )
-
-    def _roc_auc(
-        self,
-        *,
-        data_source="test",
-        data_source_hash=None,
-        X=None,
-        y=None,
         metric_name=None,
         average=None,
         multi_class="ovr",
@@ -1065,27 +965,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> reporter.metrics.log_loss()
         Metric              Log loss (↘︎)
         LogisticRegression       0.10...
-        """
-        return self._log_loss(
-            data_source=data_source,
-            data_source_hash=None,
-            X=X,
-            y=y,
-        )
-
-    def _log_loss(
-        self,
-        *,
-        data_source="test",
-        data_source_hash=None,
-        X=None,
-        y=None,
-    ):
-        """Private interface of `log_loss` to be able to pass `data_source_hash`.
-
-        `data_source_hash` is either an `int` when we already computed the hash
-        and are able to pass it around or `None` and thus trigger its computation
-        in the underlying process.
         """
         return self._log_loss(
             data_source=data_source,
@@ -1196,29 +1075,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source_hash=None,
         X=None,
         y=None,
-        multioutput="raw_values",
-    ):
-        """Private interface of `r2` to be able to pass `data_source_hash`.
-
-        `data_source_hash` is either an `int` when we already computed the hash
-        and are able to pass it around or `None` and thus trigger its computation
-        in the underlying process.
-        """
-        return self._r2(
-            data_source=data_source,
-            data_source_hash=None,
-            X=X,
-            y=y,
-            multioutput=multioutput,
-        )
-
-    def _r2(
-        self,
-        *,
-        data_source="test",
-        data_source_hash=None,
-        X=None,
-        y=None,
         metric_name=None,
         multioutput="raw_values",
     ):
@@ -1300,29 +1156,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> reporter.metrics.rmse()
         Metric  RMSE (↘︎)
         Ridge   56.5...
-        """
-        return self._rmse(
-            data_source=data_source,
-            data_source_hash=None,
-            X=X,
-            y=y,
-            multioutput=multioutput,
-        )
-
-    def _rmse(
-        self,
-        *,
-        data_source="test",
-        data_source_hash=None,
-        X=None,
-        y=None,
-        multioutput="raw_values",
-    ):
-        """Private interface of `rmse` to be able to pass `data_source_hash`.
-
-        `data_source_hash` is either an `int` when we already computed the hash
-        and are able to pass it around or `None` and thus trigger its computation
-        in the underlying process.
         """
         return self._rmse(
             data_source=data_source,
@@ -1449,35 +1282,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ... )
         Metric        MAE (↗︎)
         Ridge   44.9...
-        """
-        return self._custom_metric(
-            data_source=data_source,
-            data_source_hash=None,
-            X=X,
-            y=y,
-            metric_function=metric_function,
-            response_method=response_method,
-            metric_name=metric_name,
-            **kwargs,
-        )
-
-    def _custom_metric(
-        self,
-        *,
-        data_source="test",
-        data_source_hash=None,
-        X=None,
-        y=None,
-        metric_function=None,
-        response_method=None,
-        metric_name=None,
-        **kwargs,
-    ):
-        """Private interface of `custom_metric` to be able to pass `data_source_hash`.
-
-        `data_source_hash` is either an `int` when we already computed the hash
-        and are able to pass it around or `None` and thus trigger its computation
-        in the underlying process.
         """
         return self._custom_metric(
             data_source=data_source,
