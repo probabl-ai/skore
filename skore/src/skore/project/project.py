@@ -10,7 +10,6 @@ from skore.persistence.item import item_to_object, object_to_item
 if TYPE_CHECKING:
     from skore.persistence import (
         ItemRepository,
-        View,
         ViewRepository,
     )
 
@@ -181,55 +180,6 @@ class Project:
             If the key does not correspond to any item.
         """
         self.item_repository.delete_item(key)
-
-    def put_view(self, key: str, view: View):
-        """Add a view to the Project."""
-        self.view_repository.put_view(key, view)
-
-    def get_view(self, key: str) -> View:
-        """Get the view corresponding to ``key`` from the Project.
-
-        Parameters
-        ----------
-        key : str
-            The key of the item to get.
-
-        Returns
-        -------
-        View
-            The view corresponding to ``key``.
-
-        Raises
-        ------
-        KeyError
-            If the key does not correspond to any view.
-        """
-        return self.view_repository.get_view(key)
-
-    def delete_view(self, key: str):
-        """Delete the view corresponding to ``key`` from the Project.
-
-        Parameters
-        ----------
-        key : str
-            The key corresponding to the view to delete.
-
-        Raises
-        ------
-        KeyError
-            If the key does not correspond to any view.
-        """
-        return self.view_repository.delete_view(key)
-
-    def list_view_keys(self) -> list[str]:
-        """List all view keys in the Project.
-
-        Returns
-        -------
-        list[str]
-            The list of view keys. The list is empty if there is no view.
-        """
-        return self.view_repository.keys()
 
     def set_note(self, key: str, message: str, *, version=-1):
         """Attach a note to key ``key``.

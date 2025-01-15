@@ -143,7 +143,7 @@ def _create(
             ) from e
 
         p = _load(project_directory)
-        p.put_view("default", View(layout=[]))
+        p.view_repository.put_view("default", View(layout=[]))
 
         console.rule("[bold cyan]skore[/bold cyan]")
         console.print(f"Project file '{project_directory}' was successfully created.")

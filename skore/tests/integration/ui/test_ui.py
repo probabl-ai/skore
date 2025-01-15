@@ -60,7 +60,7 @@ def test_put_view_layout(client):
 
 
 def test_delete_view(client, in_memory_project):
-    in_memory_project.put_view("hello", View(layout=[]))
+    in_memory_project.view_repository.put_view("hello", View(layout=[]))
     response = client.delete("/api/project/views?key=hello")
     assert response.status_code == 202
 

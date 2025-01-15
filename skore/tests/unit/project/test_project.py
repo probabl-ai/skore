@@ -15,7 +15,6 @@ from skore.exceptions import (
     InvalidProjectNameError,
     ProjectCreationError,
 )
-from skore.persistence.view.view import View
 from skore.project.create import _create, _validate_project_name
 
 
@@ -215,22 +214,6 @@ def test_keys(in_memory_project):
     in_memory_project.put("key1", 1)
     in_memory_project.put("key2", 2)
     assert in_memory_project.keys() == ["key1", "key2"]
-
-
-def test_view(in_memory_project):
-    layout = ["key1", "key2"]
-
-    view = View(layout=layout)
-
-    in_memory_project.put_view("view", view)
-    assert in_memory_project.get_view("view") == view
-
-
-def test_list_view_keys(in_memory_project):
-    view = View(layout=[])
-
-    in_memory_project.put_view("view", view)
-    assert in_memory_project.list_view_keys() == ["view"]
 
 
 def test_put_several_complex(in_memory_project):
