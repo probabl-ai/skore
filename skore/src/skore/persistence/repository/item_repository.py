@@ -6,6 +6,7 @@ storing, retrieving, and deleting items in a storage system.
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from typing import TYPE_CHECKING, Union
 
 import skore.persistence.item
@@ -129,9 +130,20 @@ class ItemRepository:
         Returns
         -------
         list[str]
-            A list of all keys in the storage.
+            A list of all keys.
         """
         return list(self.storage.keys())
+
+    def __iter__(self) -> Iterator[str]:
+        """
+        Yield the keys of items stored in the repository.
+
+        Returns
+        -------
+        Iterator[str]
+            An iterator yielding all keys.
+        """
+        yield from self.storage
 
     def set_item_note(self, key: str, message: str, *, version=-1):
         """Attach a note to key ``key``.

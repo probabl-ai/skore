@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 
 from skore.persistence.item import item_to_object, object_to_item
@@ -133,7 +134,8 @@ class Project:
         value : any
             Value associated to ``key``, when latest=True and metadata=False.
         value_and_metadata : dict
-            Value associated to ``key`` with its metadata, when latest=True and metadata=True.
+            Value associated to ``key`` with its metadata, when latest=True and
+            metadata=True.
         list_of_values : list[any]
             Values associated to ``key``, ordered by date, when latest=False.
         list_of_values_and_metadata : list[dict]
@@ -164,7 +166,26 @@ class Project:
         return list(map(dto, self.item_repository.get_item_versions(key)))
 
     def keys(self) -> list[str]:
+        """
+        Get all keys of items stored in the project.
+
+        Returns
+        -------
+        list[str]
+            A list of all keys.
+        """
         return self.item_repository.keys()
+
+    def __iter__(self) -> Iterator[str]:
+        """
+        Yield the keys of items stored in the project.
+
+        Returns
+        -------
+        Iterator[str]
+            An iterator yielding all keys.
+        """
+        yield from self.item_repository
 
     def delete(self, key: str):
         """Delete the item corresponding to ``key`` from the Project.
