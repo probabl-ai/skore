@@ -281,11 +281,45 @@ def test_cross_validation_report_metrics_binary_classification(
     """Check the behaviour of the metrics methods available for binary
     classification.
     """
-    estimator, X, y = binary_classification_data
-    report = CrossValidationReport(estimator, X, y, cv=2)
+    estimator, X, y, cv = binary_classification_data, 2
+    report = CrossValidationReport(estimator, X, y, cv=cv)
+    assert hasattr(report.metrics, metric)
+    result = getattr(report.metrics, metric)()
+    assert result.shape[0] == cv
+    assert isinstance(result, pd.DataFrame)
+    # check that we hit the cache
+    result_with_cache = getattr(report.metrics, metric)()
+    pd.testing.assert_frame_equal(result, result_with_cache)
+
+    # check that something was written to the cache
+    assert report._cache != {}
+    report.clear_cache()
+
+    _check_results_report_metrics(result, [metric], nb_stats)
+
+
+@pytest.mark.parametrize(
+    "metric, nb_stats",
+    [
+        ("accuracy", 1),
+        ("precision", 3),
+        ("recall", 3),
+        ("roc_auc", 3),
+        ("log_loss", 1),
+    ],
+)
+def test_cross_validation_report_metrics_multiclass_classification(
+    multiclass_classification_data, metric, nb_stats
+):
+    """Check the behaviour of the metrics methods available for multiclass
+    classification.
+    """
+    estimator, X, y, cv = multiclass_classification_data, 2
+    report = CrossValidationReport(estimator, X, y, cv=cv)
     assert hasattr(report.metrics, metric)
     result = getattr(report.metrics, metric)()
     assert isinstance(result, pd.DataFrame)
+    assert result.shape[0] == cv
     # check that we hit the cache
     result_with_cache = getattr(report.metrics, metric)()
     pd.testing.assert_frame_equal(result, result_with_cache)
