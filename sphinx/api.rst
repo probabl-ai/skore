@@ -20,7 +20,6 @@ These functions and classes are meant for managing a Project.
     :caption: Managing a project
 
     Project
-    item.primitive_item.PrimitiveItem
     open
 
 Get assistance when developing ML/DS projects
@@ -35,7 +34,6 @@ These functions and classes enhance scikit-learn's ones.
 
     train_test_split
     CrossValidationReporter
-    item.cross_validation_item.CrossValidationItem
 
 Report for a single estimator
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

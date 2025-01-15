@@ -71,20 +71,20 @@ my_project.get("my_int")
 #   see :ref:`example_tracking_items`.
 
 # %%
-# By using the :func:`~skore.Project.delete_item` method, we can also delete an object
+# By using the :func:`~skore.Project.delete` method, we can also delete an object
 # so that our skore UI does not become cluttered:
 
 # %%
 my_project.put("my_int_2", 10)
 
 # %%
-my_project.delete_item("my_int_2")
+my_project.delete("my_int_2")
 
 # %%
 # We can display all the keys in our project:
 
 # %%
-my_project.list_item_keys()
+my_project.keys()
 
 # %%
 # Storing strings and texts
@@ -127,7 +127,7 @@ def my_func(x):
 my_project.put(
     "my_string_3",
     "<p><h1>Title</h1> <b>bold</b>, <i>italic</i>, etc.</p>",
-    display_as="html",
+    display_as="HTML",
 )
 
 # %%
