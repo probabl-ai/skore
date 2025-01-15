@@ -5,7 +5,6 @@ from itertools import product
 
 import joblib
 import numpy as np
-from rich.progress import track
 from sklearn.base import clone
 from sklearn.exceptions import NotFittedError
 from sklearn.pipeline import Pipeline
@@ -15,6 +14,7 @@ from skore.externals._pandas_accessors import DirNamesMixin
 from skore.externals._sklearn_compat import is_clusterer
 from skore.sklearn._base import _BaseReport, _get_cached_response_values
 from skore.sklearn.find_ml_task import _find_ml_task
+from skore.utils._progress_bar import progress_decorator
 
 
 class EstimatorReport(_BaseReport, DirNamesMixin):
@@ -101,6 +101,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         X_test=None,
         y_test=None,
     ):
+        self._parent_progress = None  # used to display progress bar
+
         if fit == "auto":
             try:
                 check_is_fitted(estimator)
@@ -162,6 +164,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         """
         self._cache = {}
 
+    @progress_decorator(description="Caching predictions")
     def cache_predictions(self, response_methods="auto", n_jobs=None):
         """Cache estimator's predictions.
 
@@ -232,13 +235,12 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             )
         )
         # trigger the computation
-        list(
-            track(
-                generator,
-                total=len(response_methods) * len(pos_labels) * len(data_sources),
-                description="Caching predictions",
-            )
-        )
+        progress = self._progress_info["current_progress"]
+        task = self._progress_info["current_task"]
+        total_iterations = len(response_methods) * len(pos_labels) * len(data_sources)
+        progress.update(task, total=total_iterations)
+        for _ in generator:
+            progress.update(task, advance=1, refresh=True)
 
     @property
     def estimator(self):
