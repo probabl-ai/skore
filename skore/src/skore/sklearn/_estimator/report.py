@@ -222,7 +222,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             data_sources += [("train", self._X_train)]
 
         parallel = joblib.Parallel(
-            n_jobs=n_jobs, return_as="generator_unordered", require="sharedmem"
+            n_jobs=n_jobs, return_as="generator", require="sharedmem"
         )
         generator = parallel(
             joblib.delayed(_get_cached_response_values)(

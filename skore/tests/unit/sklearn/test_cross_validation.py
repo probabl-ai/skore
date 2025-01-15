@@ -8,6 +8,7 @@ from sklearn.datasets import make_classification, make_regression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.exceptions import NotFittedError
 from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.metrics import make_scorer, median_absolute_error, r2_score
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
@@ -575,3 +576,34 @@ def test_cross_validation_report_report_metrics_error_scoring_strings(
     err_msg = re.escape(f"Invalid metric: {scoring!r}.")
     with pytest.raises(ValueError, match=err_msg):
         report.metrics.report_metrics(scoring=[scoring])
+
+
+def test_estimator_report_report_metrics_with_scorer(regression_data):
+    """Check that we can pass scikit-learn scorer with different parameters to
+    the `report_metrics` method."""
+    estimator, X, y = regression_data
+    report = CrossValidationReport(estimator, X, y, cv=2)
+
+    median_absolute_error_scorer = make_scorer(
+        median_absolute_error, response_method="predict"
+    )
+
+    result = report.metrics.report_metrics(
+        scoring=[r2_score, median_absolute_error_scorer],
+        scoring_kwargs={"response_method": "predict"},  # only dispatched to r2_score
+    )
+    assert result.shape == (2, 2)
+
+    expected_result = [
+        [
+            r2_score(est_rep.y_test, est_rep.estimator.predict(est_rep.X_test)),
+            median_absolute_error(
+                est_rep.y_test, est_rep.estimator.predict(est_rep.X_test)
+            ),
+        ]
+        for est_rep in report.estimator_reports
+    ]
+    np.testing.assert_allclose(
+        result.to_numpy(),
+        expected_result,
+    )

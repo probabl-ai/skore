@@ -118,7 +118,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         n_splits = self._cv.get_n_splits(self._X, self._y)
         progress.update(task, total=n_splits)
 
-        parallel = joblib.Parallel(n_jobs=self.n_jobs, return_as="generator_unordered")
+        parallel = joblib.Parallel(n_jobs=self.n_jobs, return_as="generator")
         # do not split the data to take advantage of the memory mapping
         generator = parallel(
             joblib.delayed(_generate_estimator_report)(
