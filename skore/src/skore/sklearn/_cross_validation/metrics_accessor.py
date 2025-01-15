@@ -128,7 +128,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             results = self._parent._cache[cache_key]
         else:
             parallel = joblib.Parallel(
-                n_jobs=self._parent._n_jobs,
+                n_jobs=self._parent.n_jobs,
                 return_as="generator",
                 require="sharedmem",
             )

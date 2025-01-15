@@ -1,4 +1,7 @@
+import re
+
 import numpy as np
+import pandas as pd
 import pytest
 from sklearn.base import clone
 from sklearn.datasets import make_classification, make_regression
@@ -232,3 +235,63 @@ def test_estimator_report_metrics_repr(binary_classification_data):
     repr_str = repr(report.metrics)
     assert "skore.CrossValidationReport.metrics" in repr_str
     assert "reporter.metrics.help()" in repr_str
+
+
+def _normalize_metric_name(column):
+    """Helper to normalize the metric name present in a pandas column that could be
+    a multi-index or single-index."""
+    # if we have a multi-index, then the metric name is on level 0
+    s = column[0] if isinstance(column, tuple) else column
+    # Remove spaces and underscores
+    return re.sub(r"[^a-zA-Z]", "", s.lower())
+
+
+def _check_results_report_metrics(result, expected_metrics, expected_nb_stats):
+    assert isinstance(result, pd.DataFrame)
+    assert len(result.columns) == expected_nb_stats
+
+    normalized_expected = {
+        _normalize_metric_name(metric) for metric in expected_metrics
+    }
+    for column in result.columns:
+        normalized_column = _normalize_metric_name(column)
+        matches = [
+            metric for metric in normalized_expected if metric == normalized_column
+        ]
+        assert len(matches) == 1, (
+            f"No match found for column '{column}' in expected metrics: "
+            f" {expected_metrics}"
+        )
+
+
+@pytest.mark.parametrize(
+    "metric, nb_stats",
+    [
+        ("accuracy", 1),
+        ("precision", 2),
+        ("recall", 2),
+        ("brier_score", 1),
+        ("roc_auc", 1),
+        ("log_loss", 1),
+    ],
+)
+def test_cross_validation_report_metrics_binary_classification(
+    binary_classification_data, metric, nb_stats
+):
+    """Check the behaviour of the metrics methods available for binary
+    classification.
+    """
+    estimator, X, y = binary_classification_data
+    report = CrossValidationReport(estimator, X, y, cv=2)
+    assert hasattr(report.metrics, metric)
+    result = getattr(report.metrics, metric)()
+    assert isinstance(result, pd.DataFrame)
+    # check that we hit the cache
+    result_with_cache = getattr(report.metrics, metric)()
+    pd.testing.assert_frame_equal(result, result_with_cache)
+
+    # check that something was written to the cache
+    assert report._cache != {}
+    report.clear_cache()
+
+    _check_results_report_metrics(result, [metric], nb_stats)
