@@ -246,6 +246,34 @@ def _normalize_metric_name(column):
     return re.sub(r"[^a-zA-Z]", "", s.lower())
 
 
+def _check_results_single_metric(report, metric, expected_n_splits, expected_nb_stats):
+    assert hasattr(report.metrics, metric)
+    result = getattr(report.metrics, metric)()
+    assert isinstance(result, pd.DataFrame)
+    assert result.shape[0] == expected_n_splits
+    # check that we hit the cache
+    result_with_cache = getattr(report.metrics, metric)()
+    pd.testing.assert_frame_equal(result, result_with_cache)
+
+    # check that the index contains the expected split names
+    split_names = result.index.get_level_values(1).unique()
+    expected_split_names = [f"Split #{i}" for i in range(expected_n_splits)]
+    assert list(split_names) == expected_split_names
+
+    # check that something was written to the cache
+    assert report._cache != {}
+    report.clear_cache()
+
+    _check_results_report_metrics(result, [metric], expected_nb_stats)
+
+    # check the aggregate parameter
+    stats = ["mean", "std"]
+    result = getattr(report.metrics, metric)(aggregate=stats)
+    # check that the index contains the expected split names
+    split_names = result.index.get_level_values(1).unique()
+    assert list(split_names) == stats
+
+
 def _check_results_report_metrics(result, expected_metrics, expected_nb_stats):
     assert isinstance(result, pd.DataFrame)
     assert len(result.columns) == expected_nb_stats
@@ -281,21 +309,9 @@ def test_cross_validation_report_metrics_binary_classification(
     """Check the behaviour of the metrics methods available for binary
     classification.
     """
-    estimator, X, y, cv = binary_classification_data, 2
+    (estimator, X, y), cv = binary_classification_data, 2
     report = CrossValidationReport(estimator, X, y, cv=cv)
-    assert hasattr(report.metrics, metric)
-    result = getattr(report.metrics, metric)()
-    assert result.shape[0] == cv
-    assert isinstance(result, pd.DataFrame)
-    # check that we hit the cache
-    result_with_cache = getattr(report.metrics, metric)()
-    pd.testing.assert_frame_equal(result, result_with_cache)
-
-    # check that something was written to the cache
-    assert report._cache != {}
-    report.clear_cache()
-
-    _check_results_report_metrics(result, [metric], nb_stats)
+    _check_results_single_metric(report, metric, cv, nb_stats)
 
 
 @pytest.mark.parametrize(
@@ -314,18 +330,24 @@ def test_cross_validation_report_metrics_multiclass_classification(
     """Check the behaviour of the metrics methods available for multiclass
     classification.
     """
-    estimator, X, y, cv = multiclass_classification_data, 2
+    (estimator, X, y), cv = multiclass_classification_data, 2
     report = CrossValidationReport(estimator, X, y, cv=cv)
-    assert hasattr(report.metrics, metric)
-    result = getattr(report.metrics, metric)()
-    assert isinstance(result, pd.DataFrame)
-    assert result.shape[0] == cv
-    # check that we hit the cache
-    result_with_cache = getattr(report.metrics, metric)()
-    pd.testing.assert_frame_equal(result, result_with_cache)
+    _check_results_single_metric(report, metric, cv, nb_stats)
 
-    # check that something was written to the cache
-    assert report._cache != {}
-    report.clear_cache()
 
-    _check_results_report_metrics(result, [metric], nb_stats)
+@pytest.mark.parametrize("metric, nb_stats", [("r2", 1), ("rmse", 1)])
+def test_cross_validation_report_metrics_regression(regression_data, metric, nb_stats):
+    """Check the behaviour of the metrics methods available for regression."""
+    (estimator, X, y), cv = regression_data, 2
+    report = CrossValidationReport(estimator, X, y, cv=cv)
+    _check_results_single_metric(report, metric, cv, nb_stats)
+
+
+@pytest.mark.parametrize("metric, nb_stats", [("r2", 2), ("rmse", 2)])
+def test_cross_validation_report_metrics_regression_multioutput(
+    regression_multioutput_data, metric, nb_stats
+):
+    """Check the behaviour of the metrics methods available for regression."""
+    (estimator, X, y), cv = regression_multioutput_data, 2
+    report = CrossValidationReport(estimator, X, y, cv=cv)
+    _check_results_single_metric(report, metric, cv, nb_stats)
