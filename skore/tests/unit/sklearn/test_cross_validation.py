@@ -8,7 +8,13 @@ from sklearn.datasets import make_classification, make_regression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.exceptions import NotFittedError
 from sklearn.linear_model import LinearRegression, LogisticRegression
-from sklearn.metrics import make_scorer, median_absolute_error, r2_score
+from sklearn.metrics import (
+    accuracy_score,
+    f1_score,
+    make_scorer,
+    median_absolute_error,
+    r2_score,
+)
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
@@ -607,3 +613,67 @@ def test_estimator_report_report_metrics_with_scorer(regression_data):
         result.to_numpy(),
         expected_result,
     )
+
+
+@pytest.mark.parametrize(
+    "scorer, pos_label",
+    [
+        (
+            make_scorer(
+                f1_score, response_method="predict", average="macro", pos_label=1
+            ),
+            1,
+        ),
+        (
+            make_scorer(
+                f1_score, response_method="predict", average="macro", pos_label=1
+            ),
+            None,
+        ),
+        (make_scorer(f1_score, response_method="predict", average="macro"), 1),
+    ],
+)
+def test_cross_validation_report_report_metrics_with_scorer_binary_classification(
+    binary_classification_data, scorer, pos_label
+):
+    """Check that we can pass scikit-learn scorer with different parameters to
+    the `report_metrics` method.
+
+    We also check that we can pass `pos_label` whether to the scorer or to the
+    `report_metrics` method or consistently to both.
+    """
+    estimator, X, y = binary_classification_data
+    report = CrossValidationReport(estimator, X, y, cv=2)
+
+    result = report.metrics.report_metrics(
+        scoring=["accuracy", accuracy_score, scorer],
+    )
+    assert result.shape == (2, 3)
+
+
+def test_cross_validation_report_report_metrics_with_scorer_pos_label_error(
+    binary_classification_data,
+):
+    """Check that we raise an error when pos_label is passed both in the scorer and
+    globally conducting to a mismatch."""
+    estimator, X, y = binary_classification_data
+    report = CrossValidationReport(estimator, X, y, cv=2)
+
+    f1_scorer = make_scorer(
+        f1_score, response_method="predict", average="macro", pos_label=1
+    )
+    err_msg = re.escape(
+        "`pos_label` is passed both in the scorer and to the `report_metrics` method."
+    )
+    with pytest.raises(ValueError, match=err_msg):
+        report.metrics.report_metrics(scoring=[f1_scorer], pos_label=0)
+
+
+def test_cross_validation_report_report_metrics_invalid_metric_type(regression_data):
+    """Check that we raise the expected error message if an invalid metric is passed."""
+    estimator, X, y = regression_data
+    report = CrossValidationReport(estimator, X, y, cv=2)
+
+    err_msg = re.escape("Invalid type of metric: <class 'int'> for 1")
+    with pytest.raises(ValueError, match=err_msg):
+        report.metrics.report_metrics(scoring=[1])
