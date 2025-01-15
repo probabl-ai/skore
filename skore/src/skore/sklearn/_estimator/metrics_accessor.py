@@ -156,7 +156,16 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 metrics_kwargs["data_source_hash"] = data_source_hash
                 metrics_params = inspect.signature(metric._score_func).parameters
                 if "pos_label" in metrics_params:
-                    metrics_kwargs["pos_label"] = pos_label
+                    if pos_label is not None and "pos_label" in metrics_kwargs:
+                        if pos_label != metrics_kwargs["pos_label"]:
+                            raise ValueError(
+                                "`pos_label` is passed both in the scorer and to the "
+                                "`report_metrics` method. Please provide a consistent "
+                                "`pos_label` or only pass it whether in the scorer or "
+                                "to the `report_metrics` method."
+                            )
+                    elif pos_label is not None:
+                        metrics_kwargs["pos_label"] = pos_label
             elif isinstance(metric, str) or callable(metric):
                 if isinstance(metric, str):
                     err_msg = (
