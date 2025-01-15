@@ -138,7 +138,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     # For the validation set, we allow it and we invalidate the cache.
 
     def clear_cache(self):
-        """Clean the cache.
+        """Clear the cache.
 
         Examples
         --------
