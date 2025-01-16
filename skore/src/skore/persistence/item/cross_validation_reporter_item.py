@@ -259,7 +259,7 @@ class CrossValidationReporterItem(Item):
         params_as_str = _params_to_str(estimator_info)
         estimator_params_as_str = f"{doc_link}\n{params_as_str}"
 
-        #
+        # Serialize cross-validation settings
         cv = self.reporter.cv
         cv_info: dict[str, str] = {}
         if isinstance(cv, int):
@@ -276,7 +276,7 @@ class CrossValidationReporterItem(Item):
 
         cv_params_as_str = ", ".join(f"{k}: *{v}*" for k, v in cv_info.items())
 
-        #
+        # Construct the final representation
         value = {
             "scalar_results": scalar_results,
             "tabular_results": tabular_results,
