@@ -180,7 +180,9 @@ class ItemRepository:
             raise TypeError(f"Message should be a string; got {type(message)}")
 
         try:
-            self.storage[key][version]["item"]["note"] = message
+            old = self.storage[key]
+            old[version]["item"]["note"] = message
+            self.storage[key] = old
         except IndexError as e:
             raise KeyError((key, version)) from e
 
@@ -202,7 +204,7 @@ class ItemRepository:
         Raises
         ------
         KeyError
-            If no note is attached to the ``(key, version)`` couple.
+            If the ``(key, version)`` couple does not exist.
         """
         try:
             return self.storage[key][version]["item"]["note"]
@@ -223,9 +225,11 @@ class ItemRepository:
         Raises
         ------
         KeyError
-            If no note is attached to the ``(key, version)`` couple.
+            If the ``(key, version)`` couple does not exist.
         """
         try:
-            self.storage[key][version]["item"]["note"] = None
+            old = self.storage[key]
+            old[version]["item"]["note"] = None
+            self.storage[key] = old
         except IndexError as e:
             raise KeyError((key, version)) from e
