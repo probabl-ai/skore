@@ -220,6 +220,8 @@ def test_roc_curve_display_roc_curve_kwargs_binary_classification(
 def test_roc_curve_display_roc_curve_kwargs_multiclass_classification(
     pyplot, multiclass_classification_data
 ):
+    """Check that we can pass keyword arguments to the ROC curve plot for
+    multiclass classification."""
     estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
@@ -245,6 +247,8 @@ def test_roc_curve_display_roc_curve_kwargs_multiclass_classification(
 def test_roc_curve_display_cross_validation_binary_classification(
     pyplot, binary_classification_data_no_split
 ):
+    """Check the attributes and default plotting behaviour of the ROC curve plot with
+    binary data."""
     (estimator, X, y), cv = binary_classification_data_no_split, 3
 
     report = CrossValidationReport(estimator, X=X, y=y, cv=cv)
@@ -340,3 +344,34 @@ def test_roc_curve_display_cross_validation_multiclass_classification(
     assert display.ax_.get_adjustable() == "box"
     assert display.ax_.get_aspect() in ("equal", 1.0)
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
+
+
+def test_roc_curve_display_cross_validation_binary_classification_kwargs(
+    pyplot, binary_classification_data_no_split
+):
+    """Check that we can pass keyword arguments to the ROC curve plot for
+    cross-validation."""
+    (estimator, X, y), cv = binary_classification_data_no_split, 3
+
+    report = CrossValidationReport(estimator, X=X, y=y, cv=cv)
+    display = report.metrics.plot.roc()
+    display.plot(
+        roc_curve_kwargs=[{"color": "red"}, {"color": "blue"}, {"color": "green"}]
+    )
+    assert display.lines_[0].get_color() == "red"
+    assert display.lines_[1].get_color() == "blue"
+    assert display.lines_[2].get_color() == "green"
+
+
+def test_roc_curve_display_cross_validation_binary_classification_kwargs_error(
+    pyplot, binary_classification_data_no_split
+):
+    """Check that we raise a proper error message when passing an inappropriate
+    value for the `roc_curve_kwargs` argument."""
+    (estimator, X, y), cv = binary_classification_data_no_split, 3
+
+    report = CrossValidationReport(estimator, X=X, y=y, cv=cv)
+    display = report.metrics.plot.roc()
+    err_msg = "You intend to plot ROC curves from a cross-validation of binary problem."
+    with pytest.raises(ValueError, match=err_msg):
+        display.plot(roc_curve_kwargs=[{"color": "red"}])
