@@ -317,7 +317,7 @@ operational_decision_cost_scorer = make_scorer(
     metric_name="Operational Decision Cost",
     amount=amount,
 )
-reporter.metrics.report_metrics(scoring=[f1_scorer, operational_decision_cost_scorer])
+reporter.metrics.report_metrics(scoring=[f1_scorer, operational_decision_cost_scorer], pos_label="allowed")
 
 # %%
 #
