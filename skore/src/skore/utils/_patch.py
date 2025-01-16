@@ -2,11 +2,11 @@ import os
 
 from rich import jupyter
 
-original_display = jupyter.display
+_original_render_segments = jupyter._render_segments
 
 
-def patched_display(segments, text):
-    """Patched version of rich.jupyter.display that includes VS Code styling.
+def patched_render_segments(segments):
+    """Patched version of rich.jupyter._render_segments that includes VS Code styling.
 
     This is to make sure that the CSS style exposed by jupyter notebook and used
     by ipywidgets is applied to rich output.
@@ -16,13 +16,9 @@ def patched_display(segments, text):
     https://github.com/microsoft/vscode-jupyter/issues/7161
 
     """
-    # Call the original display function first
-    original_display(segments, text)
-
+    html = _original_render_segments(segments)
     # Apply VS Code styling if we're in VS Code
     if "VSCODE_PID" in os.environ:
-        from IPython.display import HTML, display
-
         css = """
         <style>
         .cell-output-ipywidget-background {
@@ -34,9 +30,11 @@ def patched_display(segments, text):
         }
         </style>
         """
-        display(HTML(css))
+        html += css
+
+    return html
 
 
 def setup_jupyter_display():
     """Configure the jupyter display to work properly in VS Code."""
-    jupyter.display = patched_display
+    jupyter._render_segments = patched_render_segments

@@ -25,6 +25,7 @@ class SerializableItem:
     value: Any
     updated_at: str
     created_at: str
+    note: str
 
 
 @dataclass
@@ -43,6 +44,7 @@ def __item_as_serializable(name: str, item: Item) -> SerializableItem:
         value=d.get("value"),
         updated_at=d.get("updated_at"),
         created_at=d.get("created_at"),
+        note=d.get("note"),
     )
 
 
@@ -119,3 +121,20 @@ async def get_activity(
         key=operator.attrgetter("updated_at"),
         reverse=True,
     )
+
+
+@dataclass
+class NotePayload:
+    """Represent a note and the wanted item to attach to."""
+
+    key: str
+    message: str
+    version: int = -1
+
+
+@router.put("/note", status_code=status.HTTP_201_CREATED)
+async def set_note(request: Request, payload: NotePayload):
+    """Add a note to the given item."""
+    project = request.app.state.project
+    project.set_note(key=payload.key, message=payload.message, version=payload.version)
+    return __project_as_serializable(project)
