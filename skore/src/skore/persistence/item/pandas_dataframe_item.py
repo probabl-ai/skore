@@ -6,7 +6,6 @@ which represents a pandas DataFrame item.
 
 from __future__ import annotations
 
-from functools import cached_property
 from typing import TYPE_CHECKING, Union
 
 from .item import Item, ItemTypeError
@@ -54,7 +53,7 @@ class PandasDataFrameItem(Item):
         self.index_json = index_json
         self.dataframe_json = dataframe_json
 
-    @cached_property
+    @property
     def dataframe(self) -> pandas.DataFrame:
         """
         The pandas DataFrame from the persistence.

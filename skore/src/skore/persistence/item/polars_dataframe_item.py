@@ -6,7 +6,6 @@ which represents a polars DataFrame item.
 
 from __future__ import annotations
 
-from functools import cached_property
 from typing import TYPE_CHECKING, Union
 
 from .item import Item, ItemTypeError
@@ -52,7 +51,7 @@ class PolarsDataFrameItem(Item):
 
         self.dataframe_json = dataframe_json
 
-    @cached_property
+    @property
     def dataframe(self) -> polars.DataFrame:
         """
         The polars DataFrame from the persistence.

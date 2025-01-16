@@ -5,7 +5,6 @@ This module defines the NumpyArrayItem class, which represents a NumPy array ite
 
 from __future__ import annotations
 
-from functools import cached_property
 from json import dumps, loads
 from typing import TYPE_CHECKING, Union
 
@@ -47,7 +46,7 @@ class NumpyArrayItem(Item):
 
         self.array_json = array_json
 
-    @cached_property
+    @property
     def array(self) -> numpy.ndarray:
         """
         The numpy array from the persistence.

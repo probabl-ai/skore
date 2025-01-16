@@ -53,7 +53,7 @@ def test_get_items(client, in_memory_project):
                 {
                     "name": "test",
                     "media_type": "text/markdown",
-                    "value": item.primitive,
+                    "value": item.media,
                     "created_at": item.created_at,
                     "updated_at": item.updated_at,
                 }

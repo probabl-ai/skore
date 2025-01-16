@@ -6,7 +6,6 @@ which represents a pandas Series item.
 
 from __future__ import annotations
 
-from functools import cached_property
 from typing import TYPE_CHECKING, Union
 
 from .item import Item, ItemTypeError
@@ -54,7 +53,7 @@ class PandasSeriesItem(Item):
         self.index_json = index_json
         self.series_json = series_json
 
-    @cached_property
+    @property
     def series(self) -> pandas.Series:
         """
         The pandas Series from the persistence.

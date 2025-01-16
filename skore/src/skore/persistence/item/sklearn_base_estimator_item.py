@@ -6,7 +6,6 @@ which represents a scikit-learn BaseEstimator item.
 
 from __future__ import annotations
 
-from functools import cached_property
 from typing import TYPE_CHECKING, Union
 
 from .item import Item, ItemTypeError
@@ -56,7 +55,7 @@ class SklearnBaseEstimatorItem(Item):
         self.estimator_skops = estimator_skops
         self.estimator_skops_untrusted_types = estimator_skops_untrusted_types
 
-    @cached_property
+    @property
     def estimator(self) -> sklearn.base.BaseEstimator:
         """
         Convert the stored skops object to a scikit-learn BaseEstimator.
@@ -123,14 +122,9 @@ class SklearnBaseEstimatorItem(Item):
             data=estimator_skops
         )
 
-        instance = cls(
+        return cls(
             estimator_html_repr=estimator_html_repr,
             estimator_skops=estimator_skops,
             estimator_skops_untrusted_types=estimator_skops_untrusted_types,
             **kwargs,
         )
-
-        # add estimator as cached property
-        instance.estimator = estimator
-
-        return instance

@@ -6,7 +6,6 @@ which represents a polars Series item.
 
 from __future__ import annotations
 
-from functools import cached_property
 from typing import TYPE_CHECKING, Union
 
 from .item import Item, ItemTypeError
@@ -48,7 +47,7 @@ class PolarsSeriesItem(Item):
 
         self.series_json = series_json
 
-    @cached_property
+    @property
     def series(self) -> polars.Series:
         """
         The polars Series from the persistence.

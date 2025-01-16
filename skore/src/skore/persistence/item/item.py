@@ -5,7 +5,6 @@ from __future__ import annotations
 import inspect
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
-from functools import cached_property
 from pathlib import Path
 from typing import Any, Optional
 from uuid import uuid4
@@ -71,7 +70,7 @@ class Item(ABC):
             A new instance of the Item.
         """
 
-    @cached_property
+    @property
     def __parameters__(self) -> dict[str, Any]:
         """
         Get the parameters of the Item instance.
