@@ -4,7 +4,6 @@ import { nextTick, ref, useTemplateRef, watch } from "vue";
 import MarkdownWidget from "@/components/MarkdownWidget.vue";
 import RichTextEditor from "@/components/RichTextEditor.vue";
 import SimpleButton from "@/components/SimpleButton.vue";
-import { debounce } from "@/services/utils";
 import { useProjectStore } from "@/stores/project";
 
 const props = defineProps<{ name: string; note: string | null }>();
@@ -14,23 +13,17 @@ const editor = useTemplateRef<InstanceType<typeof RichTextEditor>>("editor");
 const isEditing = ref(false);
 const innerNote = ref(`${props.note !== null ? props.note : ""}`);
 
-const debouncedSetNote = debounce(
-  () => {
-    projectStore.setNoteOnItem(props.name, innerNote.value);
-  },
-  500,
-  true
-);
-
 function onEdit() {
+  projectStore.stopBackendPolling();
   isEditing.value = true;
   nextTick(() => {
     editor.value?.focus();
   });
 }
 
-function onEditionEnd() {
-  debouncedSetNote();
+async function onEditionEnd() {
+  await projectStore.setNoteOnItem(props.name, innerNote.value);
+  projectStore.startBackendPolling();
   isEditing.value = false;
 }
 
@@ -39,8 +32,8 @@ function onClear() {
   onEditionEnd();
 }
 
-watch(innerNote, () => {
-  debouncedSetNote();
+watch(innerNote, async () => {
+  await projectStore.setNoteOnItem(props.name, innerNote.value);
 });
 
 watch(

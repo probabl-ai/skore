@@ -332,9 +332,7 @@ export const useProjectStore = defineStore("project", () => {
    */
   async function setNoteOnItem(key: string, message: string) {
     const updateIndex = getCurrentItemUpdateIndex(key);
-    stopBackendPolling();
     await setNote(key, message, updateIndex);
-    await startBackendPolling();
   }
 
   /**
