@@ -256,7 +256,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
                         )
                     else:  # data_source in (None, "X_y")
                         default_line_kwargs["label"] = (
-                            f"{str(class_).title()} AUC = {roc_auc:0.2f}"
+                            f"{str(class_).title()} - AUC = {roc_auc:0.2f}"
                         )
 
                     line_kwargs = _validate_style_kwargs(

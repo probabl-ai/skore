@@ -132,7 +132,9 @@ def test_roc_curve_display_multiclass_classification(
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
 
 
-def test_roc_curve_display_data_source(pyplot, binary_classification_data):
+def test_roc_curve_display_data_source_binary_classification(
+    pyplot, binary_classification_data
+):
     """Check that we can pass the `data_source` argument to the ROC curve plot."""
     estimator, X_train, X_test, y_train, y_test = binary_classification_data
     report = EstimatorReport(
@@ -143,6 +145,28 @@ def test_roc_curve_display_data_source(pyplot, binary_classification_data):
 
     display = report.metrics.plot.roc(data_source="X_y", X=X_train, y=y_train)
     assert display.lines_[0].get_label() == "AUC = 1.00"
+
+
+def test_roc_curve_display_data_source_multiclass_classification(
+    pyplot, multiclass_classification_data
+):
+    """Check that we can pass the `data_source` argument to the ROC curve plot."""
+    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.plot.roc(data_source="train")
+    for class_label in estimator.classes_:
+        assert display.lines_[class_label].get_label() == (
+            f"{str(class_label).title()} - train set "
+            f"(AUC = {display.roc_auc[class_label][0]:0.2f})"
+        )
+
+    display = report.metrics.plot.roc(data_source="X_y", X=X_train, y=y_train)
+    for class_label in estimator.classes_:
+        assert display.lines_[class_label].get_label() == (
+            f"{str(class_label).title()} - AUC = 1.00"
+        )
 
 
 def test_roc_curve_display_plot_error_wrong_roc_curve_kwargs(
@@ -175,8 +199,9 @@ def test_roc_curve_display_plot_error_wrong_roc_curve_kwargs(
         display.plot(roc_curve_kwargs={})
 
 
-def test_roc_curve_display_roc_curve_kwargs(
-    pyplot, binary_classification_data, multiclass_classification_data
+@pytest.mark.parametrize("roc_curve_kwargs", [[{"color": "red"}], {"color": "red"}])
+def test_roc_curve_display_roc_curve_kwargs_binary_classification(
+    pyplot, binary_classification_data, roc_curve_kwargs
 ):
     """Check that we can pass keyword arguments to the ROC curve plot."""
     estimator, X_train, X_test, y_train, y_test = binary_classification_data
@@ -185,12 +210,16 @@ def test_roc_curve_display_roc_curve_kwargs(
     )
     display = report.metrics.plot.roc()
     display.plot(
-        roc_curve_kwargs={"color": "red"}, chance_level_kwargs={"color": "blue"}
+        roc_curve_kwargs=roc_curve_kwargs, chance_level_kwargs={"color": "blue"}
     )
 
     assert display.lines_[0].get_color() == "red"
     assert display.chance_level_.get_color() == "blue"
 
+
+def test_roc_curve_display_roc_curve_kwargs_multiclass_classification(
+    pyplot, multiclass_classification_data
+):
     estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
