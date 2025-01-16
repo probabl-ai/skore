@@ -23,6 +23,11 @@ const debouncedSetNote = debounce(
   true
 );
 
+function onEditorBlurred() {
+  debouncedSetNote();
+  isEditing.value = false;
+}
+
 watch(richText, () => {
   debouncedSetNote();
 });
@@ -30,7 +35,7 @@ watch(richText, () => {
 
 <template>
   <div class="item-note">
-    <div class="header" @click="isEditing = false">
+    <div class="header">
       <div>Note</div>
       <Transition name="fade">
         <div class="edit-actions" v-if="isEditing">
@@ -41,7 +46,14 @@ watch(richText, () => {
       </Transition>
     </div>
     <div class="editor" v-if="isEditing">
-      <RichTextEditor ref="editor" v-model:value="richText" :rows="1" />
+      <RichTextEditor
+        ref="editor"
+        v-model:value="richText"
+        :rows="4"
+        @keyup.esc="onEditorBlurred"
+        @keydown.shift.enter="onEditorBlurred"
+        @keydown.meta.enter="onEditorBlurred"
+      />
     </div>
     <div
       class="preview"
