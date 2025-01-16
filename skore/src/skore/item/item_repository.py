@@ -204,7 +204,7 @@ class ItemRepository:
         Raises
         ------
         KeyError
-            If no note is attached to the ``(key, version)`` couple.
+            If the ``(key, version)`` couple does not exist.
         """
         try:
             return self.storage[key][version]["item"]["note"]
@@ -225,7 +225,7 @@ class ItemRepository:
         Raises
         ------
         KeyError
-            If no note is attached to the ``(key, version)`` couple.
+            If the ``(key, version)`` couple does not exist.
         """
         try:
             old = self.storage[key]
