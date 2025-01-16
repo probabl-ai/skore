@@ -188,19 +188,17 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
                 elif isinstance(roc_curve_kwargs, list):
                     if len(roc_curve_kwargs) != len(self.fpr[self.pos_label]):
                         raise ValueError(
-                            "You intend to plot ROC curves from a cross-validation "
-                            "of binary problem. We expect `roc_curve_kwargs` to be a "
-                            "list of dictionaries with the same length as the number "
-                            "of ROC curves. Got "
+                            "You intend to plot multiple ROC curves. We expect "
+                            "`roc_curve_kwargs` to be a list of dictionaries with the "
+                            "same length as the number of ROC curves. Got "
                             f"{len(roc_curve_kwargs)} instead of "
                             f"{len(self.fpr)}."
                         )
                 else:
                     raise ValueError(
-                        "You intend to plot ROC curves from a cross-validation "
-                        "of binary problem. We expect `roc_curve_kwargs` to be a "
-                        f"list of dictionaries of {len(self.fpr)} elements. Got "
-                        f"{roc_curve_kwargs!r} instead."
+                        "You intend to plot multiple ROC curves. We expect "
+                        "`roc_curve_kwargs` to be a list of dictionaries of "
+                        f"{len(self.fpr)} elements. Got {roc_curve_kwargs!r} instead."
                     )
 
                 for split_idx in range(len(self.fpr[self.pos_label])):

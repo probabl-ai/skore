@@ -363,18 +363,20 @@ def test_roc_curve_display_cross_validation_binary_classification_kwargs(
     assert display.lines_[2].get_color() == "green"
 
 
-def test_roc_curve_display_cross_validation_binary_classification_kwargs_error(
-    pyplot, binary_classification_data_no_split
+@pytest.mark.parametrize(
+    "fixture_name",
+    ["binary_classification_data_no_split", "multiclass_classification_data_no_split"],
+)
+@pytest.mark.parametrize("roc_curve_kwargs", [[{"color": "red"}], "unknown"])
+def test_roc_curve_display_cross_validation_multiple_roc_curve_kwargs_error(
+    pyplot, fixture_name, request, roc_curve_kwargs
 ):
     """Check that we raise a proper error message when passing an inappropriate
     value for the `roc_curve_kwargs` argument."""
-    (estimator, X, y), cv = binary_classification_data_no_split, 3
+    (estimator, X, y), cv = request.getfixturevalue(fixture_name), 3
 
     report = CrossValidationReport(estimator, X=X, y=y, cv=cv)
     display = report.metrics.plot.roc()
-    err_msg = "You intend to plot ROC curves from a cross-validation of binary problem."
+    err_msg = "You intend to plot multiple ROC curves"
     with pytest.raises(ValueError, match=err_msg):
-        display.plot(roc_curve_kwargs=[{"color": "red"}])
-
-    with pytest.raises(ValueError, match=err_msg):
-        display.plot(roc_curve_kwargs="unknown")
+        display.plot(roc_curve_kwargs=roc_curve_kwargs)
