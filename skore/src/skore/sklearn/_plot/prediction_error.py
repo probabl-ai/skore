@@ -70,7 +70,6 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         *,
         estimator_name=None,
         kind="residual_vs_predicted",
-        density_type="kde",
         scatter_kwargs=None,
         line_kwargs=None,
         despine=True,
@@ -98,9 +97,6 @@ class PredictionErrorDisplay(HelpDisplayMixin):
             - "residual_vs_predicted" draws the residuals, i.e. difference
               between observed and predicted values, (y-axis) vs. the predicted
               values (x-axis).
-
-        density_type : {"kde", "histogram"}, default="kde"
-            The type of density to plot.
 
         scatter_kwargs : dict, default=None
             Dictionary with keywords passed to the `matplotlib.pyplot.scatter`

@@ -4,7 +4,7 @@ import pytest
 from sklearn.datasets import make_regression
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
-from skore import EstimatorReport
+from skore import CrossValidationReport, EstimatorReport
 from skore.sklearn._plot import PredictionErrorDisplay
 
 
@@ -13,6 +13,12 @@ def regression_data():
     X, y = make_regression(random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
     return LinearRegression().fit(X_train, y_train), X_train, X_test, y_train, y_test
+
+
+@pytest.fixture
+def regression_data_no_split():
+    X, y = make_regression(random_state=42)
+    return LinearRegression(), X, y
 
 
 @pytest.mark.parametrize(
@@ -35,14 +41,15 @@ def test_prediction_error_display_raise_error(pyplot, params, err_msg, regressio
         report.metrics.plot.prediction_error(**params)
 
 
-def test_prediction_error_display_regression(pyplot, regression_data):
+@pytest.mark.parametrize("subsample", [None, 1_000])
+def test_prediction_error_display_regression(pyplot, regression_data, subsample):
     """Check the attributes and default plotting behaviour of the prediction error plot
     with regression data."""
     estimator, X_train, X_test, y_train, y_test = regression_data
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = report.metrics.plot.prediction_error()
+    display = report.metrics.plot.prediction_error(subsample=subsample)
     assert isinstance(display, PredictionErrorDisplay)
 
     # check the structure of the attributes
@@ -62,6 +69,37 @@ def test_prediction_error_display_regression(pyplot, regression_data):
     legend = display.ax_.get_legend()
     assert legend.get_title().get_text() == estimator.__class__.__name__
     assert len(legend.get_texts()) == 2
+
+    assert display.ax_.get_xlabel() == "Predicted values"
+    assert display.ax_.get_ylabel() == "Residuals (actual - predicted)"
+
+
+def test_prediction_error_cross_validation_display_regression(
+    pyplot, regression_data_no_split
+):
+    """Check the attributes and default plotting behaviour of the prediction error plot
+    with cross-validation data."""
+    (estimator, X, y), cv = regression_data_no_split, 3
+    report = CrossValidationReport(estimator, X=X, y=y, cv=cv)
+    display = report.metrics.plot.prediction_error()
+    assert isinstance(display, PredictionErrorDisplay)
+
+    # check the structure of the attributes
+    assert isinstance(display.y_true, list)
+    assert isinstance(display.y_pred, list)
+    assert len(display.y_true) == len(display.y_pred) == cv
+    assert display.data_source == "test"
+
+    assert isinstance(display.line_, mpl.lines.Line2D)
+    assert display.line_.get_label() == "Perfect predictions"
+    assert display.line_.get_color() == "black"
+
+    assert isinstance(display.scatter_, mpl.collections.PathCollection)
+
+    assert isinstance(display.ax_, mpl.axes.Axes)
+    legend = display.ax_.get_legend()
+    assert legend.get_title().get_text() == estimator.__class__.__name__
+    assert len(legend.get_texts()) == 4
 
     assert display.ax_.get_xlabel() == "Predicted values"
     assert display.ax_.get_ylabel() == "Residuals (actual - predicted)"
@@ -92,6 +130,36 @@ def test_prediction_error_display_regression_kind(pyplot, regression_data):
 
     assert display.ax_.get_xlim() == display.ax_.get_ylim()
     assert display.ax_.get_aspect() in ("equal", 1.0)
+
+
+def test_prediction_error_cross_validation_display_regression_kind(
+    pyplot, regression_data_no_split
+):
+    """Check the attributes when switching to the "actual_vs_predicted" kind."""
+    (estimator, X, y), cv = regression_data_no_split, 3
+    report = CrossValidationReport(estimator, X=X, y=y, cv=cv)
+    display = report.metrics.plot.prediction_error(kind="actual_vs_predicted")
+    assert isinstance(display, PredictionErrorDisplay)
+
+    # check the structure of the attributes
+    assert isinstance(display.y_true, list)
+    assert isinstance(display.y_pred, list)
+    assert len(display.y_true) == len(display.y_pred) == cv
+    assert display.data_source == "test"
+
+    assert isinstance(display.line_, mpl.lines.Line2D)
+    assert display.line_.get_label() == "Perfect predictions"
+    assert display.line_.get_color() == "black"
+
+    assert isinstance(display.scatter_, mpl.collections.PathCollection)
+
+    assert isinstance(display.ax_, mpl.axes.Axes)
+    legend = display.ax_.get_legend()
+    assert legend.get_title().get_text() == estimator.__class__.__name__
+    assert len(legend.get_texts()) == 4
+
+    assert display.ax_.get_xlabel() == "Predicted values"
+    assert display.ax_.get_ylabel() == "Actual values"
 
 
 def test_prediction_error_display_data_source(pyplot, regression_data):
