@@ -187,9 +187,21 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
                     pr_curve_kwargs = [{}] * len(self.precision[self.pos_label])
                 elif isinstance(pr_curve_kwargs, list):
                     if len(pr_curve_kwargs) != len(self.precision[self.pos_label]):
-                        raise ValueError
+                        raise ValueError(
+                            "You intend to plot multiple precision-recall curves. We "
+                            "expect `pr_curve_kwargs` to be a list of dictionaries "
+                            "with the same length as the number of precision-recall "
+                            "curves. Got "
+                            f"{len(pr_curve_kwargs)} instead of "
+                            f"{len(self.precision)}."
+                        )
                 else:
-                    raise ValueError
+                    raise ValueError(
+                        "You intend to plot multiple precision-recall curves. We "
+                        "expect `pr_curve_kwargs` to be a list of dictionaries of "
+                        f"{len(self.precision)} elements. Got {pr_curve_kwargs!r} "
+                        "instead."
+                    )
 
                 for split_idx in range(len(self.precision[self.pos_label])):
                     precision = self.precision[self.pos_label][split_idx]
@@ -285,8 +297,8 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
                         if split_idx == 0:
                             default_line_kwargs["label"] = (
                                 f"{str(class_).title()} - {self.data_source} set"
-                                f" (AP = {np.mean(average_precision):0.2f} +/- "
-                                f"{np.std(average_precision):0.2f})"
+                                f" (AP = {np.mean(average_precision_class):0.2f} +/- "
+                                f"{np.std(average_precision_class):0.2f})"
                             )
                         else:
                             default_line_kwargs["label"] = None
