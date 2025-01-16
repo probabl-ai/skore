@@ -3,7 +3,7 @@ from sklearn.pipeline import Pipeline
 
 def _check_supported_estimator(supported_estimators):
     def check(accessor):
-        estimator = accessor._parent.estimator
+        estimator = accessor._parent.estimator_
         if isinstance(estimator, Pipeline):
             estimator = estimator.steps[-1][1]
         supported_estimator = isinstance(estimator, supported_estimators)

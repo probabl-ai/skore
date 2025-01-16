@@ -186,7 +186,7 @@ class MockReport:
         self._y_test = y_test
 
     @property
-    def estimator(self):
+    def estimator_(self):
         return self._estimator
 
     @property
