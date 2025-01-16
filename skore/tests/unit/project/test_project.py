@@ -115,11 +115,12 @@ def test_put_mpl_figure(in_memory_project, monkeypatch):
     assert isinstance(in_memory_project.get("mpl_figure"), bytes)
 
 
-def test_put_vega_chart(in_memory_project):
-    # Add an Altair chart
-    altair_chart = altair.Chart().mark_point()
-    in_memory_project.put("vega_chart", altair_chart)
-    assert isinstance(in_memory_project.get("vega_chart"), bytes)
+def test_put_altair_chart(in_memory_project):
+    chart = altair.Chart().mark_point()
+
+    in_memory_project.put("chart", chart)
+
+    assert in_memory_project.get("chart") == chart
 
 
 def test_put_pillow_image(in_memory_project):

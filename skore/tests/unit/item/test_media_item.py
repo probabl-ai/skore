@@ -1,4 +1,3 @@
-import altair
 import matplotlib.pyplot
 import pytest
 from skore.persistence.item import ItemTypeError, MediaItem
@@ -28,18 +27,6 @@ class TestMediaItem:
         assert item.media_bytes == b"<content>"
         assert item.media_encoding == "utf-8"
         assert item.media_type == "text/markdown"
-        assert item.created_at == mock_nowstr
-        assert item.updated_at == mock_nowstr
-
-    def test_factory_altair(self, mock_nowstr):
-        chart = altair.Chart().mark_point()
-        chart_bytes = chart.to_json().encode("utf-8")
-
-        item = MediaItem.factory(chart)
-
-        assert item.media_bytes == chart_bytes
-        assert item.media_encoding == "utf-8"
-        assert item.media_type == "application/vnd.vega.v5+json"
         assert item.created_at == mock_nowstr
         assert item.updated_at == mock_nowstr
 

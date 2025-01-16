@@ -13,7 +13,6 @@ from typing import TYPE_CHECKING, Any, Union
 from .item import Item, ItemTypeError
 
 if TYPE_CHECKING:
-    from altair.vegalite.v5.schema.core import TopLevelSpec as Altair
     from matplotlib.figure import Figure as Matplotlib
 
 
@@ -113,8 +112,6 @@ class MediaItem(Item):
             return cls.factory_bytes(media, *args, **kwargs)
         if lazy_is_instance(media, "builtins.str"):
             return cls.factory_str(media, *args, **kwargs)
-        if lazy_is_instance(media, "altair.vegalite.v5.schema.core.TopLevelSpec"):
-            return cls.factory_altair(media, *args, **kwargs)
         if lazy_is_instance(media, "matplotlib.figure.Figure"):
             return cls.factory_matplotlib(media, *args, **kwargs)
 
@@ -173,29 +170,6 @@ class MediaItem(Item):
             media_bytes=media_bytes,
             media_encoding="utf-8",
             media_type=media_type,
-        )
-
-    @classmethod
-    def factory_altair(cls, media: Altair) -> MediaItem:
-        """
-        Create a new MediaItem instance from an Altair chart.
-
-        Parameters
-        ----------
-        media : Altair
-            The Altair chart to store.
-
-        Returns
-        -------
-        MediaItem
-            A new MediaItem instance.
-        """
-        media_bytes = media.to_json().encode("utf-8")
-
-        return cls(
-            media_bytes=media_bytes,
-            media_encoding="utf-8",
-            media_type="application/vnd.vega.v5+json",
         )
 
     @classmethod

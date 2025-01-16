@@ -3,6 +3,7 @@ import datetime
 import io
 import json
 
+import altair
 import numpy
 import pandas
 import plotly
@@ -135,6 +136,37 @@ def test_serialize_sklearn_estimator(client, in_memory_project):
     assert response.status_code == 200
     project = response.json()
     assert project["items"]["estimator"][0]["value"] is not None
+
+
+def test_serialize_altair_item(
+    client,
+    in_memory_project,
+    monkeypatch_datetime,
+    mock_nowstr,
+):
+    chart = altair.Chart().mark_point()
+    chart_str = chart.to_json()
+    chart_bytes = chart_str.encode("utf-8")
+    chart_bytes_b64 = base64.b64encode(chart_bytes).decode()
+
+    in_memory_project.put("chart", chart)
+    response = client.get("/api/project/items")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "views": {},
+        "items": {
+            "chart": [
+                {
+                    "name": "chart",
+                    "media_type": "application/vnd.vega.v5+json;base64",
+                    "value": chart_bytes_b64,
+                    "updated_at": mock_nowstr,
+                    "created_at": mock_nowstr,
+                }
+            ]
+        },
+    }
 
 
 def test_serialize_pillow_item(

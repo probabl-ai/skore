@@ -6,6 +6,7 @@ from contextlib import suppress
 from typing import Any, Literal, Optional
 
 from . import skrub_table_report_item as SkrubTableReportItem
+from .altair_chart_item import AltairChartItem
 from .cross_validation_reporter_item import CrossValidationReporterItem
 from .item import Item, ItemTypeError
 from .media_item import MediaItem, MediaType
@@ -43,17 +44,18 @@ def object_to_item(
     else:
         for cls in (
             PrimitiveItem,
+            AltairChartItem,
+            CrossValidationReporterItem,
+            MediaItem,
+            NumpyArrayItem,
             PandasDataFrameItem,
             PandasSeriesItem,
-            PolarsDataFrameItem,
-            PolarsSeriesItem,
-            NumpyArrayItem,
-            SklearnBaseEstimatorItem,
-            MediaItem,
-            SkrubTableReportItem,
-            CrossValidationReporterItem,
             PillowImageItem,
             PlotlyFigureItem,
+            PolarsDataFrameItem,
+            PolarsSeriesItem,
+            SklearnBaseEstimatorItem,
+            SkrubTableReportItem,
         ):
             with suppress(ImportError, ItemTypeError):
                 # ImportError:
@@ -101,6 +103,8 @@ def item_to_object(item: Item) -> Any:
         return item.image
     elif isinstance(item, PlotlyFigureItem):
         return item.figure
+    elif isinstance(item, AltairChartItem):
+        return item.chart
     elif isinstance(item, PickleItem):
         return item.object
     else:
@@ -108,6 +112,7 @@ def item_to_object(item: Item) -> Any:
 
 
 __all__ = [
+    "AltairChartItem",
     "CrossValidationReporterItem",
     "Item",
     "MediaItem",
