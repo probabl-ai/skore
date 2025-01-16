@@ -111,7 +111,7 @@ onBeforeUnmount(() => {
                 @card-removed="onCardRemoved(name)"
                 @update-selected="projectStore.setCurrentItemUpdateIndex(name, $event)"
               >
-                <ItemNote :item="{ name, mediaType, data, createdAt, updatedAt, note }" />
+                <ItemNote :name="name" :note="note" />
                 <MediaWidgetSelector :item="{ name, mediaType, data, createdAt, updatedAt }" />
               </ProjectViewCard>
             </template>

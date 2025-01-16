@@ -4,20 +4,19 @@ import { nextTick, ref, useTemplateRef, watch } from "vue";
 import MarkdownWidget from "@/components/MarkdownWidget.vue";
 import RichTextEditor from "@/components/RichTextEditor.vue";
 import SimpleButton from "@/components/SimpleButton.vue";
-import type { PresentableItem } from "@/models";
 import { debounce } from "@/services/utils";
 import { useProjectStore } from "@/stores/project";
 
-const props = defineProps<{ item: PresentableItem }>();
+const props = defineProps<{ name: string; note: string | null }>();
 
 const projectStore = useProjectStore();
-const isEditing = ref(false);
 const editor = useTemplateRef<InstanceType<typeof RichTextEditor>>("editor");
+const isEditing = ref(false);
+const innerNote = ref(`${props.note !== null ? props.note : ""}`);
 
-const richText = ref(`${props.item.note ?? ""}`);
 const debouncedSetNote = debounce(
   () => {
-    projectStore.setNoteOnItem(props.item.name, richText.value);
+    projectStore.setNoteOnItem(props.name, innerNote.value);
   },
   500,
   true
@@ -36,13 +35,20 @@ function onEditionEnd() {
 }
 
 function onClear() {
-  richText.value = "";
+  innerNote.value = "";
   onEditionEnd();
 }
 
-watch(richText, () => {
+watch(innerNote, () => {
   debouncedSetNote();
 });
+
+watch(
+  () => props.note,
+  (newNote) => {
+    innerNote.value = `${newNote !== null ? newNote : ""}`;
+  }
+);
 </script>
 
 <template>
@@ -52,7 +58,7 @@ watch(richText, () => {
         <div>Note</div>
         <Transition name="fade">
           <SimpleButton
-            v-if="isEditing && richText && richText.length > 0"
+            v-if="isEditing && innerNote && innerNote.length > 0"
             label="clear"
             class="clear"
             :is-inline="true"
@@ -71,7 +77,7 @@ watch(richText, () => {
     <div class="editor" v-if="isEditing">
       <RichTextEditor
         ref="editor"
-        v-model:value="richText"
+        v-model:value="innerNote"
         :rows="4"
         @keyup.esc="onEditionEnd"
         @keydown.shift.enter="onEditionEnd"
@@ -79,8 +85,8 @@ watch(richText, () => {
       />
     </div>
     <div class="preview" v-if="!isEditing" @click="onEdit">
-      <MarkdownWidget :source="richText" v-if="richText && richText.length > 0" />
-      <div class="placeholder" v-else>Click to annotate {{ props.item.name }}.</div>
+      <MarkdownWidget :source="innerNote" v-if="innerNote && innerNote.length > 0" />
+      <div class="placeholder" v-else>Click to annotate {{ props.name }}.</div>
     </div>
   </div>
 </template>
