@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, useTemplateRef, watch } from "vue";
+import { nextTick, ref, useTemplateRef, watch } from "vue";
 
 import MarkdownWidget from "@/components/MarkdownWidget.vue";
 import RichTextEditor from "@/components/RichTextEditor.vue";
@@ -23,9 +23,21 @@ const debouncedSetNote = debounce(
   true
 );
 
-function onEditorBlurred() {
+function onEdit() {
+  isEditing.value = true;
+  nextTick(() => {
+    editor.value?.focus();
+  });
+}
+
+function onEditionEnd() {
   debouncedSetNote();
   isEditing.value = false;
+}
+
+function onClear() {
+  richText.value = "";
+  onEditionEnd();
 }
 
 watch(richText, () => {
@@ -36,7 +48,18 @@ watch(richText, () => {
 <template>
   <div class="item-note">
     <div class="header">
-      <div>Note</div>
+      <div class="info">
+        <div>Note</div>
+        <Transition name="fade">
+          <SimpleButton
+            v-if="isEditing && richText && richText.length > 0"
+            label="clear"
+            class="clear"
+            :is-inline="true"
+            @click="onClear"
+          />
+        </Transition>
+      </div>
       <Transition name="fade">
         <div class="edit-actions" v-if="isEditing">
           <SimpleButton :is-inline="true" icon="icon-bold" @click="editor?.markBold()" />
@@ -50,19 +73,12 @@ watch(richText, () => {
         ref="editor"
         v-model:value="richText"
         :rows="4"
-        @keyup.esc="onEditorBlurred"
-        @keydown.shift.enter="onEditorBlurred"
-        @keydown.meta.enter="onEditorBlurred"
+        @keyup.esc="onEditionEnd"
+        @keydown.shift.enter="onEditionEnd"
+        @keydown.meta.enter="onEditionEnd"
       />
     </div>
-    <div
-      class="preview"
-      v-if="!isEditing"
-      @click="
-        isEditing = true;
-        editor?.focus();
-      "
-    >
+    <div class="preview" v-if="!isEditing" @click="onEdit">
       <MarkdownWidget :source="richText" v-if="richText && richText.length > 0" />
       <div class="placeholder" v-else>Click to annotate {{ props.item.name }}.</div>
     </div>
@@ -82,6 +98,17 @@ watch(richText, () => {
     padding: var(--spacing-8);
     border-bottom: solid var(--stroke-width-md) var(--color-stroke-background-primary);
     background-color: var(--color-background-secondary);
+
+    .info {
+      display: flex;
+      gap: var(--spacing-8);
+
+      .clear {
+        padding: 0;
+        color: var(--color-text-danger);
+        font-size: var(--font-size-xs);
+      }
+    }
 
     .edit-actions {
       display: flex;
