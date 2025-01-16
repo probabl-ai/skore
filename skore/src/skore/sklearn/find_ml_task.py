@@ -40,10 +40,11 @@ def _find_ml_task(y, estimator=None) -> MLTask:
     # Discrete values, not sequential
     >>> _find_ml_task(numpy.array([1, 5, 9]))
     'regression'
+
     # Discrete values, not sequential, containing 0
     >>> _find_ml_task(numpy.array([0, 1, 5, 9]))
     'regression'
-    
+
     # Discrete sequential values, containing 0
     >>> _find_ml_task(numpy.array([0, 1, 2]))
     'multiclass-classification'
