@@ -115,7 +115,6 @@ doctest_optionflags = ["ELLIPSIS", "NORMALIZE_WHITESPACE"]
 
 [tool.coverage.run]
 branch = true
-parallel = true
 source = ["skore"]
 
 [tool.coverage.report]
