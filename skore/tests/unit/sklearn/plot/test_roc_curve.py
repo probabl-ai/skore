@@ -3,7 +3,7 @@ import pytest
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
-from skore import EstimatorReport
+from skore import CrossValidationReport, EstimatorReport
 from skore.sklearn._plot import RocCurveDisplay
 from skore.sklearn._plot.utils import sample_mpl_colormap
 
@@ -20,6 +20,18 @@ def multiclass_classification_data():
     X, y = make_classification(n_classes=3, n_clusters_per_class=1, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
     return LogisticRegression().fit(X_train, y_train), X_train, X_test, y_train, y_test
+
+
+@pytest.fixture
+def binary_classification_data_no_split():
+    X, y = make_classification(random_state=42)
+    return LogisticRegression(), X, y
+
+
+@pytest.fixture
+def multiclass_classification_data_no_split():
+    X, y = make_classification(n_classes=3, n_clusters_per_class=1, random_state=42)
+    return LogisticRegression(), X, y
 
 
 def test_roc_curve_display_binary_classification(pyplot, binary_classification_data):
@@ -198,3 +210,50 @@ def test_roc_curve_display_roc_curve_kwargs(
     display.plot(despine=False)
     assert display.ax_.spines["top"].get_visible()
     assert display.ax_.spines["right"].get_visible()
+
+
+def test_roc_curve_display_cross_validation_binary_classification(
+    pyplot, binary_classification_data_no_split
+):
+    (estimator, X, y), cv = binary_classification_data_no_split, 3
+
+    report = CrossValidationReport(estimator, X=X, y=y, cv=cv)
+    display = report.metrics.plot.roc()
+    assert isinstance(display, RocCurveDisplay)
+
+    pos_label = report.estimator_reports_[0].estimator_.classes_[1]
+    for attr_name in ("fpr", "tpr", "roc_auc"):
+        assert isinstance(getattr(display, attr_name), dict)
+        assert len(getattr(display, attr_name)) == 1
+
+        attr = getattr(display, attr_name)
+        assert list(attr.keys()) == [pos_label]
+        assert list(attr.keys()) == [display.pos_label]
+        assert isinstance(attr[pos_label], list)
+        assert len(attr[pos_label]) == cv
+
+    assert isinstance(display.lines_, list)
+    assert len(display.lines_) == cv
+    expected_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
+    for split_idx, line in enumerate(display.lines_):
+        assert isinstance(line, mpl.lines.Line2D)
+        assert line.get_label() == (
+            f"Test set - fold #{split_idx + 1} "
+            f"(AUC = {display.roc_auc[pos_label][split_idx]:0.2f})"
+        )
+        assert mpl.colors.to_rgba(line.get_color()) == expected_colors[split_idx]
+
+    assert isinstance(display.chance_level_, mpl.lines.Line2D)
+    assert display.chance_level_.get_label() == "Chance level (AUC = 0.5)"
+    assert display.chance_level_.get_color() == "k"
+
+    assert isinstance(display.ax_, mpl.axes.Axes)
+    legend = display.ax_.get_legend()
+    assert legend.get_title().get_text() == estimator.__class__.__name__
+    assert len(legend.get_texts()) == 4
+
+    assert display.ax_.get_xlabel() == "False Positive Rate\n(Positive label: 1)"
+    assert display.ax_.get_ylabel() == "True Positive Rate\n(Positive label: 1)"
+    assert display.ax_.get_adjustable() == "box"
+    assert display.ax_.get_aspect() in ("equal", 1.0)
+    assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
