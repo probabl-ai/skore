@@ -63,7 +63,8 @@ watch(richText, () => {
         editor?.focus();
       "
     >
-      <MarkdownWidget :source="richText" />
+      <MarkdownWidget :source="richText" v-if="richText && richText.length > 0" />
+      <div class="placeholder" v-else>Click to annotate {{ props.item.name }}.</div>
     </div>
   </div>
 </template>
@@ -91,6 +92,12 @@ watch(richText, () => {
 
   .preview {
     padding: var(--spacing-8);
+
+    .placeholder {
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-xs);
+      font-style: italic;
+    }
   }
 }
 </style>
