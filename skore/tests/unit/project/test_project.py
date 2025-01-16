@@ -3,6 +3,7 @@ import numpy
 import numpy.testing
 import pandas
 import pandas.testing
+import plotly
 import polars
 import polars.testing
 import pytest
@@ -121,7 +122,7 @@ def test_put_vega_chart(in_memory_project):
     assert isinstance(in_memory_project.get("vega_chart"), bytes)
 
 
-def test_put_pil_image(in_memory_project):
+def test_put_pillow_image(in_memory_project):
     image1 = Image.new("RGB", (100, 100), color="red")
     image2 = Image.new("RGBA", (150, 150), color="blue")
 
@@ -130,6 +131,15 @@ def test_put_pil_image(in_memory_project):
 
     assert in_memory_project.get("image1") == image1
     assert in_memory_project.get("image2") == image2
+
+
+def test_put_plotly_figure(in_memory_project):
+    bar = plotly.graph_objects.Bar(x=[1, 2, 3], y=[1, 3, 2])
+    figure = plotly.graph_objects.Figure(data=[bar])
+
+    in_memory_project.put("figure", figure)
+
+    assert in_memory_project.get("figure") == figure
 
 
 def test_put_rf_model(in_memory_project, monkeypatch):

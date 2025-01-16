@@ -172,6 +172,38 @@ def test_serialize_pillow_item(
     }
 
 
+def test_serialize_plotly_item(
+    client,
+    in_memory_project,
+    monkeypatch_datetime,
+    mock_nowstr,
+):
+    bar = plotly.graph_objects.Bar(x=[1, 2, 3], y=[1, 3, 2])
+    figure = plotly.graph_objects.Figure(data=[bar])
+    figure_str = plotly.io.to_json(figure, engine="json")
+    figure_bytes = figure_str.encode("utf-8")
+    figure_bytes_b64 = base64.b64encode(figure_bytes).decode()
+
+    in_memory_project.put("figure", figure)
+    response = client.get("/api/project/items")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "views": {},
+        "items": {
+            "figure": [
+                {
+                    "name": "figure",
+                    "media_type": "application/vnd.plotly.v1+json;base64",
+                    "value": figure_bytes_b64,
+                    "updated_at": mock_nowstr,
+                    "created_at": mock_nowstr,
+                }
+            ]
+        },
+    }
+
+
 def test_serialize_media_item(client, in_memory_project): ...
 
 

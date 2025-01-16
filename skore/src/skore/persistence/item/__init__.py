@@ -14,6 +14,7 @@ from .pandas_dataframe_item import PandasDataFrameItem
 from .pandas_series_item import PandasSeriesItem
 from .pickle_item import PickleItem
 from .pillow_image_item import PillowImageItem
+from .plotly_figure_item import PlotlyFigureItem
 from .polars_dataframe_item import PolarsDataFrameItem
 from .polars_series_item import PolarsSeriesItem
 from .primitive_item import PrimitiveItem
@@ -52,6 +53,7 @@ def object_to_item(
             SkrubTableReportItem,
             CrossValidationReporterItem,
             PillowImageItem,
+            PlotlyFigureItem,
         ):
             with suppress(ImportError, ItemTypeError):
                 # ImportError:
@@ -74,6 +76,8 @@ def object_to_item(
     # `note` attribute dynamically.
     item.note = note
 
+    # -> to change in each class
+
     return item
 
 
@@ -95,6 +99,8 @@ def item_to_object(item: Item) -> Any:
         return item.media_bytes
     elif isinstance(item, PillowImageItem):
         return item.image
+    elif isinstance(item, PlotlyFigureItem):
+        return item.figure
     elif isinstance(item, PickleItem):
         return item.object
     else:
@@ -110,6 +116,7 @@ __all__ = [
     "PandasSeriesItem",
     "PickleItem",
     "PillowImageItem",
+    "PlotlyFigureItem",
     "PolarsDataFrameItem",
     "PolarsSeriesItem",
     "PrimitiveItem",
