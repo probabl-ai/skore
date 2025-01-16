@@ -24,11 +24,13 @@ class TestAltairChartItem:
 
     def test_chart(self):
         chart = altair.Chart().mark_point()
+        chart_str = chart.to_json()
         item1 = AltairChartItem.factory(chart)
-        item2 = AltairChartItem(chart.to_json())
+        item2 = AltairChartItem(chart_str)
 
-        assert item1.chart == chart
-        assert item2.chart == chart
+        # Altair strict equality doesn't work
+        assert item1.chart.to_json() == chart_str
+        assert item2.chart.to_json() == chart_str
 
     def test_as_serializable_dict(self, mock_nowstr):
         chart = altair.Chart().mark_point()

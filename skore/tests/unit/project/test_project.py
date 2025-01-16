@@ -120,7 +120,8 @@ def test_put_altair_chart(in_memory_project):
 
     in_memory_project.put("chart", chart)
 
-    assert in_memory_project.get("chart") == chart
+    # Altair strict equality doesn't work
+    assert in_memory_project.get("chart").to_json() == chart.to_json()
 
 
 def test_put_pillow_image(in_memory_project):
