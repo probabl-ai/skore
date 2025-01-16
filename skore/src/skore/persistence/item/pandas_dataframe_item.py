@@ -94,7 +94,7 @@ class PandasDataFrameItem(Item):
         return d
 
     @classmethod
-    def factory(cls, dataframe: pandas.DataFrame) -> PandasDataFrameItem:
+    def factory(cls, dataframe: pandas.DataFrame, /, **kwargs) -> PandasDataFrameItem:
         """
         Create a new PandasDataFrameItem instance from a pandas DataFrame.
 
@@ -145,4 +145,5 @@ class PandasDataFrameItem(Item):
         return cls(
             index_json=index.to_json(orient=PandasDataFrameItem.ORIENT),
             dataframe_json=dataframe.to_json(orient=PandasDataFrameItem.ORIENT),
+            **kwargs,
         )

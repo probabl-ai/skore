@@ -87,7 +87,7 @@ class PolarsDataFrameItem(Item):
         return d
 
     @classmethod
-    def factory(cls, dataframe: polars.DataFrame) -> PolarsDataFrameItem:
+    def factory(cls, dataframe: polars.DataFrame, /, **kwargs) -> PolarsDataFrameItem:
         """
         Create a new PolarsDataFrameItem instance from a polars DataFrame.
 
@@ -115,4 +115,4 @@ class PolarsDataFrameItem(Item):
         except Exception as e:
             raise PolarsToJSONError("Conversion to JSON failed") from e
 
-        return cls(dataframe_json=dataframe_json)
+        return cls(dataframe_json=dataframe_json, **kwargs)

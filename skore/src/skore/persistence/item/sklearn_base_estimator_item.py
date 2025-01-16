@@ -88,7 +88,12 @@ class SklearnBaseEstimatorItem(Item):
         return d
 
     @classmethod
-    def factory(cls, estimator: sklearn.base.BaseEstimator) -> SklearnBaseEstimatorItem:
+    def factory(
+        cls,
+        estimator: sklearn.base.BaseEstimator,
+        /,
+        **kwargs,
+    ) -> SklearnBaseEstimatorItem:
         """
         Create a SklearnBaseEstimatorItem instance from a scikit-learn BaseEstimator.
 
@@ -122,6 +127,7 @@ class SklearnBaseEstimatorItem(Item):
             estimator_html_repr=estimator_html_repr,
             estimator_skops=estimator_skops,
             estimator_skops_untrusted_types=estimator_skops_untrusted_types,
+            **kwargs,
         )
 
         # add estimator as cached property

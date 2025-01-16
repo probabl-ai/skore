@@ -99,7 +99,7 @@ class PandasSeriesItem(Item):
         return d
 
     @classmethod
-    def factory(cls, series: pandas.Series) -> PandasSeriesItem:
+    def factory(cls, series: pandas.Series, /, **kwargs) -> PandasSeriesItem:
         """
         Create a new PandasSeriesItem instance from a pandas Series.
 
@@ -137,4 +137,5 @@ class PandasSeriesItem(Item):
         return cls(
             index_json=index.to_json(orient=PandasSeriesItem.ORIENT),
             series_json=series.to_json(orient=PandasSeriesItem.ORIENT),
+            **kwargs,
         )

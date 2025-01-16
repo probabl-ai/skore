@@ -82,7 +82,7 @@ class PolarsSeriesItem(Item):
         return d
 
     @classmethod
-    def factory(cls, series: polars.Series) -> PolarsSeriesItem:
+    def factory(cls, series: polars.Series, /, **kwargs) -> PolarsSeriesItem:
         """
         Create a new PolarsSeriesItem instance from a polars Series.
 
@@ -101,4 +101,4 @@ class PolarsSeriesItem(Item):
         if not isinstance(series, polars.Series):
             raise ItemTypeError(f"Type '{series.__class__}' is not supported.")
 
-        return cls(series_json=series.to_frame().write_json())
+        return cls(series_json=series.to_frame().write_json(), **kwargs)

@@ -1,5 +1,5 @@
 import pytest
-from skore.persistence.item import ItemTypeError, MediaItem
+from skore.persistence.item import ItemTypeError, MediaItem, MediaType
 
 
 class TestMediaItem:
@@ -11,32 +11,26 @@ class TestMediaItem:
         with pytest.raises(ItemTypeError):
             MediaItem.factory(None)
 
-    def test_factory_bytes(self, mock_nowstr):
-        item = MediaItem.factory(b"<content>")
+        with pytest.raises(ValueError):
+            MediaItem.factory("<content>", "application/octet-stream")
 
-        assert item.media_bytes == b"<content>"
-        assert item.media_encoding == "utf-8"
-        assert item.media_type == "application/octet-stream"
+    @pytest.mark.parametrize("media_type", [enum.value for enum in MediaType])
+    def test_factory(self, mock_nowstr, media_type):
+        item = MediaItem.factory("<content>", media_type)
+
+        assert item.media == "<content>"
+        assert item.media_type == media_type
         assert item.created_at == mock_nowstr
         assert item.updated_at == mock_nowstr
 
-    def test_factory_str(self, mock_nowstr):
-        item = MediaItem.factory("<content>")
+    @pytest.mark.parametrize("media_type", [enum.value for enum in MediaType])
+    def test_as_serializable_dict(self, mock_nowstr, media_type):
+        item = MediaItem.factory("<content>", media_type)
 
-        assert item.media_bytes == b"<content>"
-        assert item.media_encoding == "utf-8"
-        assert item.media_type == "text/markdown"
-        assert item.created_at == mock_nowstr
-        assert item.updated_at == mock_nowstr
-
-    def test_get_serializable_dict(self, mock_nowstr):
-        item = MediaItem.factory("<content>")
-
-        serializable = item.as_serializable_dict()
-        assert serializable == {
+        assert item.as_serializable_dict() == {
             "updated_at": mock_nowstr,
             "created_at": mock_nowstr,
             "note": None,
-            "media_type": "text/markdown",
-            "value": "<content>",
+            "media_type": media_type,
+            "value": b"<content>",
         }

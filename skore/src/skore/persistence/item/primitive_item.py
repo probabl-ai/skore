@@ -86,7 +86,7 @@ class PrimitiveItem(Item):
         return d
 
     @classmethod
-    def factory(cls, primitive: Primitive) -> PrimitiveItem:
+    def factory(cls, primitive: Primitive, /, **kwargs) -> PrimitiveItem:
         """
         Create a new PrimitiveItem with the current timestamp.
 
@@ -100,7 +100,7 @@ class PrimitiveItem(Item):
         PrimitiveItem
             A new PrimitiveItem instance.
         """
-        if not is_primitive(primitive):
+        if isinstance(primitive, str) or not is_primitive(primitive):
             raise ItemTypeError(f"Type '{primitive.__class__}' is not supported.")
 
-        return cls(primitive=primitive)
+        return cls(primitive=primitive, **kwargs)

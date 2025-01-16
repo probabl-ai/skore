@@ -5,9 +5,8 @@ This module defines the MediaItem class, used to persist media.
 
 from __future__ import annotations
 
-import base64
 from enum import Enum
-from typing import Any, Union
+from typing import Any, Optional
 
 from .item import Item, ItemTypeError
 
@@ -28,30 +27,23 @@ class MediaType(Enum):
 
 
 class MediaItem(Item):
-    """
-    A class to represent a media item.
-
-    This class encapsulates various types of media along with metadata.
-    """
+    """A class used to persist media."""
 
     def __init__(
         self,
-        media_bytes: bytes,
-        media_encoding: str,
+        media: str,
         media_type: str,
-        created_at: Union[str, None] = None,
-        updated_at: Union[str, None] = None,
-        note: Union[str, None] = None,
+        created_at: Optional[str] = None,
+        updated_at: Optional[str] = None,
+        note: Optional[str] = None,
     ):
         """
         Initialize a MediaItem.
 
         Parameters
         ----------
-        media_bytes : bytes
-            The raw bytes of the media content.
-        media_encoding : str
-            The encoding of the media content.
+        media : str
+            The media content.
         media_type : str
             The MIME type of the media content.
         created_at : str, optional
@@ -63,105 +55,43 @@ class MediaItem(Item):
         """
         super().__init__(created_at, updated_at, note)
 
-        self.media_bytes = media_bytes
-        self.media_encoding = media_encoding
+        self.media = media
         self.media_type = media_type
 
-    def as_serializable_dict(self):
-        """Return item as a JSONable dict to export to frontend."""
-        if "text" in self.media_type:
-            value = self.media_bytes.decode(encoding=self.media_encoding)
-            media_type = f"{self.media_type}"
-        else:
-            value = base64.b64encode(self.media_bytes).decode()
-            media_type = f"{self.media_type};base64"
-
-        return super().as_serializable_dict() | {
-            "media_type": media_type,
-            "value": value,
-        }
-
     @classmethod
-    def factory(cls, media, *args, **kwargs):
-        """
-        Create a new MediaItem instance.
-
-        This is a generic factory method that dispatches to specific
-        factory methods based on the type of media provided.
-
-        Parameters
-        ----------
-        media : Any
-            The media content to store.
-
-        Raises
-        ------
-        NotImplementedError
-            If the type of media is not supported.
-
-        Returns
-        -------
-        MediaItem
-            A new MediaItem instance.
-        """
-        if lazy_is_instance(media, "builtins.bytes"):
-            return cls.factory_bytes(media, *args, **kwargs)
-        if lazy_is_instance(media, "builtins.str"):
-            return cls.factory_str(media, *args, **kwargs)
-
-        raise ItemTypeError(f"Type '{media.__class__}' is not supported.")
-
-    @classmethod
-    def factory_bytes(
+    def factory(
         cls,
-        media: bytes,
-        media_encoding: str = "utf-8",
-        media_type: str = "application/octet-stream",
+        media: str,
+        /,
+        media_type: Optional[str] = "text/markdown",
+        **kwargs,
     ) -> MediaItem:
-        """
-        Create a new MediaItem instance from bytes.
-
-        Parameters
-        ----------
-        media : bytes
-            The raw bytes of the media content.
-        media_encoding : str, optional
-            The encoding of the media content, by default "utf-8".
-        media_type : str, optional
-            The MIME type of the media content, by default "application/octet-stream".
-
-        Returns
-        -------
-        MediaItem
-            A new MediaItem instance.
-        """
-        return cls(
-            media_bytes=media,
-            media_encoding=media_encoding,
-            media_type=media_type,
-        )
-
-    @classmethod
-    def factory_str(cls, media: str, media_type: str = "text/markdown") -> MediaItem:
         """
         Create a new MediaItem instance from a string.
 
         Parameters
         ----------
         media : str
-            The string content to store.
-        media_type : str, optional
-            The MIME type of the media content, by default "text/markdown".
+            The media content.
+        media_type : str
+            The MIME type of the media content.
 
         Returns
         -------
         MediaItem
             A new MediaItem instance.
         """
-        media_bytes = media.encode("utf-8")
+        if not isinstance(media, str):
+            raise ItemTypeError(f"Type '{media.__class__}' is not supported.")
 
-        return cls(
-            media_bytes=media_bytes,
-            media_encoding="utf-8",
-            media_type=media_type,
-        )
+        if media_type not in MediaType:
+            raise ValueError(f"MIME type '{media_type}' is not supported.")
+
+        return cls(media, media_type, **kwargs)
+
+    def as_serializable_dict(self):
+        """Return item as a JSONable dict to export to frontend."""
+        return super().as_serializable_dict() | {
+            "media_type": self.media_type,
+            "value": self.media.encode("utf-8"),
+        }

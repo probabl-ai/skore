@@ -6,7 +6,6 @@ class TestPrimitiveItem:
     @pytest.mark.parametrize(
         "primitive",
         [
-            "a",
             0,
             1.1,
             True,
@@ -28,10 +27,12 @@ class TestPrimitiveItem:
         with pytest.raises(ItemTypeError):
             PrimitiveItem.factory(None)
 
+        with pytest.raises(ItemTypeError):
+            PrimitiveItem.factory("<content>")
+
     @pytest.mark.parametrize(
         "primitive",
         [
-            "a",
             0,
             1.1,
             True,

@@ -31,6 +31,9 @@ def object_to_item(
     display_as: Optional[Literal["HTML", "MARKDOWN", "SVG"]] = None,
 ) -> Item:
     """Transform an object into an Item."""
+    if not isinstance(note, (type(None), str)):
+        raise TypeError(f"`note` must be a string (found '{type(note)}')")
+
     if display_as is not None:
         if not isinstance(object, str):
             raise TypeError("`object` must be a str if `display_as` is specified")
@@ -38,51 +41,34 @@ def object_to_item(
         if display_as not in MediaType.__members__:
             raise ValueError(f"`display_as` must be in {list(MediaType.__members__)}")
 
-        item = MediaItem.factory_str(
-            media=object,
-            media_type=MediaType[display_as].value,
-        )
-    else:
-        for cls in (
-            PrimitiveItem,
-            AltairChartItem,
-            CrossValidationReporterItem,
-            MediaItem,
-            NumpyArrayItem,
-            PandasDataFrameItem,
-            PandasSeriesItem,
-            PillowImageItem,
-            PlotlyFigureItem,
-            PolarsDataFrameItem,
-            PolarsSeriesItem,
-            SklearnBaseEstimatorItem,
-            SkrubTableReportItem,
-            MatplotlibFigureItem,
-        ):
-            with suppress(ImportError, ItemTypeError):
-                # ImportError:
-                #     The factories are responsible to import third-party libraries in a
-                #     lazy way. If library is missing, an ImportError exception will
-                #     automatically be thrown.
-                # ItemTypeError:
-                #     The factories are responsible for checking that parameters are of
-                #     the correct type. If not, they throw a ItemTypeError exception.
-                item = cls.factory(object)
-                break
-        else:
-            item = PickleItem.factory(object)
+        return MediaItem.factory(object, MediaType[display_as].value, note=note)
 
-    if not isinstance(note, (type(None), str)):
-        raise TypeError(f"`note` must be a string (found '{type(note)}')")
-
-    # Since the item classes are now private, and to avoid having to pass the `note`
-    # parameter in the factories of each item class, we define the content of the
-    # `note` attribute dynamically.
-    item.note = note
-
-    # -> to change in each class
-
-    return item
+    for cls in (
+        AltairChartItem,
+        CrossValidationReporterItem,
+        MatplotlibFigureItem,
+        MediaItem,
+        NumpyArrayItem,
+        PandasDataFrameItem,
+        PandasSeriesItem,
+        PillowImageItem,
+        PlotlyFigureItem,
+        PolarsDataFrameItem,
+        PolarsSeriesItem,
+        PrimitiveItem,
+        SklearnBaseEstimatorItem,
+        SkrubTableReportItem,
+    ):
+        with suppress(ImportError, ItemTypeError):
+            # ImportError:
+            #     The factories are responsible to import third-party libraries in a
+            #     lazy way. If library is missing, an ImportError exception will
+            #     automatically be thrown.
+            # ItemTypeError:
+            #     The factories are responsible for checking that parameters are of
+            #     the correct type. If not, they throw a ItemTypeError exception.
+            return cls.factory(object, note=note)
+    return PickleItem.factory(object, note=note)
 
 
 def item_to_object(item: Item) -> Any:
@@ -100,7 +86,7 @@ def item_to_object(item: Item) -> Any:
     elif isinstance(item, CrossValidationReporterItem):
         return item.reporter
     elif isinstance(item, MediaItem):
-        return item.media_bytes
+        return item.media
     elif isinstance(item, PillowImageItem):
         return item.image
     elif isinstance(item, PlotlyFigureItem):

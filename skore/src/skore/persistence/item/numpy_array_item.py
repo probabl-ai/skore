@@ -76,7 +76,7 @@ class NumpyArrayItem(Item):
         return d
 
     @classmethod
-    def factory(cls, array: numpy.ndarray) -> NumpyArrayItem:
+    def factory(cls, array: numpy.ndarray, /, **kwargs) -> NumpyArrayItem:
         """
         Create a new NumpyArrayItem instance from a NumPy array.
 
@@ -95,4 +95,4 @@ class NumpyArrayItem(Item):
         if not isinstance(array, numpy.ndarray):
             raise ItemTypeError(f"Type '{array.__class__}' is not supported.")
 
-        return cls(array_json=dumps(array.tolist()))
+        return cls(array_json=dumps(array.tolist()), **kwargs)
