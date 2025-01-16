@@ -38,12 +38,30 @@ function markItalic() {
   replaceSelectedTextWith(`*${selectedText}*`);
 }
 
+function getLineIndicesFromBounds(text: string, start: number, end: number): [number, number] {
+  // Get text before selection start
+  const textBeforeStart = text.substring(0, start);
+  // Start line is number of newlines before selection
+  const startLine = textBeforeStart.split("\n").length - 1;
+
+  // Get text from start to end of selection
+  const selectionText = text.substring(start, end);
+  // End line is start line plus newlines in selection
+  const endLine = startLine + selectionText.split("\n").length - 1;
+
+  return [startLine, endLine];
+}
+
 function markList() {
   if (model.value) {
     const lines = model.value.split("\n");
-    const textBeforeSelection = model.value.substring(0, selectionStart);
-    const selectedLineIndex = textBeforeSelection.split("\n").length - 1;
-    const list = lines.map((l, i) => (i === selectedLineIndex ? `- ${l}` : l));
+    const [startLine, endLine] = getLineIndicesFromBounds(
+      model.value,
+      selectionStart,
+      selectionEnd
+    );
+
+    const list = lines.map((l, i) => (i >= startLine && i <= endLine ? `- ${l}` : l));
     model.value = list.join("\n");
   }
 }
