@@ -62,3 +62,10 @@ def test_find_ml_task_with_estimator(X, y, estimator, expected_task, should_fit)
 )
 def test_find_ml_task_without_estimator(target, expected_task):
     assert _find_ml_task(target) == expected_task
+
+
+def test_find_ml_task_unfitted_estimator():
+    from sklearn.dummy import DummyClassifier
+
+    estimator = DummyClassifier()
+    assert _find_ml_task(None, estimator) == "unsupported"
