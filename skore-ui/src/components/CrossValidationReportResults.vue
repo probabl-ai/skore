@@ -3,6 +3,7 @@ import Simplebar from "simplebar-vue";
 import { computed, ref, useTemplateRef } from "vue";
 
 import DropdownButton from "@/components/DropdownButton.vue";
+import DropdownButtonItem from "@/components/DropdownButtonItem.vue";
 import FloatingTooltip from "@/components/FloatingTooltip.vue";
 import MetricFavorability from "@/components/MetricFavorability.vue";
 import StaticRange from "@/components/StaticRange.vue";

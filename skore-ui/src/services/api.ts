@@ -72,3 +72,24 @@ export async function fetchActivityFeed(after?: string): Promise<ActivityFeedDto
   }
   return null;
 }
+
+export async function setNote(
+  key: string,
+  message: string,
+  version: number = -1
+): Promise<ProjectDto | null> {
+  try {
+    const r = await fetch(`${BASE_URL}/project/note`, {
+      method: "PUT",
+      body: JSON.stringify({ key, message, version }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    checkResponseStatus(r, 201);
+    return await r.json();
+  } catch (error) {
+    reportError(getErrorMessage(error));
+  }
+  return null;
+}

@@ -9,7 +9,7 @@ import vueDevTools from "vite-plugin-vue-devtools";
 
 const base64Loader: Plugin = {
   name: "base64-loader",
-  transform(_: any, id: string) {
+  transform(_: string, id: string) {
     const [path, query] = id.split("?");
     if (query != "base64") return null;
 
@@ -32,9 +32,6 @@ export default defineConfig({
     postcss: {
       plugins: [autoprefixer, postcssNesting],
     },
-  },
-  test: {
-    setupFiles: ["./vitest.setup.ts"],
   },
   build: {
     assetsInlineLimit(filePath) {

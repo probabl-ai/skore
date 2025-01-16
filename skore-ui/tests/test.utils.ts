@@ -24,6 +24,7 @@ export function createFetchResponse(data: object, status = 200) {
  */
 export async function mountSuspense(
   component: new () => ComponentPublicInstance,
+
   options: any = {}
 ) {
   const suspensedComponent = defineComponent({

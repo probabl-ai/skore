@@ -62,6 +62,7 @@ const { floatingStyles } = useFloating(reference, floating, {
     border-radius: var(--radius-xs);
     background-color: var(--color-background-primary);
     box-shadow: 0 4px 18.2px -2px var(--color-shadow);
+    color: var(--color-text-secondary);
   }
 }
 </style>
