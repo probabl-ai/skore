@@ -1,4 +1,5 @@
 import matplotlib as mpl
+import numpy as np
 import pytest
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
@@ -221,6 +222,7 @@ def test_roc_curve_display_cross_validation_binary_classification(
     display = report.metrics.plot.roc()
     assert isinstance(display, RocCurveDisplay)
 
+    # check the structure of the attributes
     pos_label = report.estimator_reports_[0].estimator_.classes_[1]
     for attr_name in ("fpr", "tpr", "roc_auc"):
         assert isinstance(getattr(display, attr_name), dict)
@@ -254,6 +256,58 @@ def test_roc_curve_display_cross_validation_binary_classification(
 
     assert display.ax_.get_xlabel() == "False Positive Rate\n(Positive label: 1)"
     assert display.ax_.get_ylabel() == "True Positive Rate\n(Positive label: 1)"
+    assert display.ax_.get_adjustable() == "box"
+    assert display.ax_.get_aspect() in ("equal", 1.0)
+    assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
+
+
+def test_roc_curve_display_cross_validation_multiclass_classification(
+    pyplot, multiclass_classification_data_no_split
+):
+    """Check the attributes and default plotting behaviour of the ROC curve plot with
+    multiclass data."""
+    (estimator, X, y), cv = multiclass_classification_data_no_split, 3
+    report = CrossValidationReport(estimator, X=X, y=y, cv=cv)
+    display = report.metrics.plot.roc()
+    assert isinstance(display, RocCurveDisplay)
+
+    # check the structure of the attributes
+    class_labels = report.estimator_reports_[0].estimator_.classes_
+    for attr_name in ("fpr", "tpr", "roc_auc"):
+        assert isinstance(getattr(display, attr_name), dict)
+        assert len(getattr(display, attr_name)) == len(class_labels)
+
+        attr = getattr(display, attr_name)
+        for class_label in class_labels:
+            assert isinstance(attr[class_label], list)
+            assert len(attr[class_label]) == cv
+
+    assert isinstance(display.lines_, list)
+    assert len(display.lines_) == len(class_labels) * cv
+    default_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
+    for class_label, expected_color in zip(class_labels, default_colors):
+        for split_idx in range(cv):
+            roc_curve_mpl = display.lines_[class_label * cv + split_idx]
+            assert isinstance(roc_curve_mpl, mpl.lines.Line2D)
+            if split_idx == 0:
+                assert roc_curve_mpl.get_label() == (
+                    f"{str(class_label).title()} - test set "
+                    f"(AUC = {np.mean(display.roc_auc[class_label]):0.2f}"
+                    f" +/- {np.std(display.roc_auc[class_label]):0.2f})"
+                )
+            assert roc_curve_mpl.get_color() == expected_color
+
+    assert isinstance(display.chance_level_, mpl.lines.Line2D)
+    assert display.chance_level_.get_label() == "Chance level (AUC = 0.5)"
+    assert display.chance_level_.get_color() == "k"
+
+    assert isinstance(display.ax_, mpl.axes.Axes)
+    legend = display.ax_.get_legend()
+    assert legend.get_title().get_text() == estimator.__class__.__name__
+    assert len(legend.get_texts()) == 4
+
+    assert display.ax_.get_xlabel() == "False Positive Rate"
+    assert display.ax_.get_ylabel() == "True Positive Rate"
     assert display.ax_.get_adjustable() == "box"
     assert display.ax_.get_aspect() in ("equal", 1.0)
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)

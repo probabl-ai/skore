@@ -269,7 +269,8 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
                     for split_idx in range(len(fpr_class)):
                         fpr = fpr_class[split_idx]
                         tpr = tpr_class[split_idx]
-                        roc_auc = roc_auc_class[split_idx]
+                        roc_auc_mean = np.mean(roc_auc_class)
+                        roc_auc_std = np.std(roc_auc_class)
 
                         default_line_kwargs = {
                             "color": class_colors[class_idx],
@@ -278,8 +279,8 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
                         if split_idx == 0:
                             default_line_kwargs["label"] = (
                                 f"{str(class_).title()} - {self.data_source} set"
-                                f" (AUC = {np.mean(roc_auc):0.2f} +/- "
-                                f"{np.std(roc_auc):0.2f})"
+                                f" (AUC = {roc_auc_mean:0.2f} +/- "
+                                f"{roc_auc_std:0.2f})"
                             )
                         else:
                             default_line_kwargs["label"] = None
