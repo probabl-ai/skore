@@ -74,18 +74,6 @@ reporter = EstimatorReport(
 reporter
 
 # %%
-reporter.clear_cache()
-
-# %%
-reporter._cache
-
-# %%
-reporter.cache_predictions(n_jobs=-1)
-
-# %%
-reporter._cache
-
-# %%
 #
 # Once the reporter is created, we get some information regarding the available tools
 # allowing us to get some insights from our specific model on the specific task.
@@ -93,9 +81,6 @@ reporter._cache
 # You can get a similar information if you call the :meth:`~skore.EstimatorReport.help`
 # method.
 reporter.help()
-
-# %%
-reporter.cache_predictions()
 
 # %%
 #
