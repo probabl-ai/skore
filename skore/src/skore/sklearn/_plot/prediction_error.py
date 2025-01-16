@@ -56,6 +56,26 @@ class PredictionErrorDisplay(HelpDisplayMixin):
 
     figure_ : matplotlib Figure
         Figure containing the scatter and lines.
+
+    Examples
+    --------
+    >>> from sklearn.datasets import load_diabetes
+    >>> from sklearn.linear_model import Ridge
+    >>> from sklearn.model_selection import train_test_split
+    >>> from skore import EstimatorReport
+    >>> X_train, X_test, y_train, y_test = train_test_split(
+    ...     *load_diabetes(return_X_y=True), random_state=0
+    ... )
+    >>> classifier = Ridge()
+    >>> reporter = EstimatorReport(
+    ...     classifier,
+    ...     X_train=X_train,
+    ...     y_train=y_train,
+    ...     X_test=X_test,
+    ...     y_test=y_test,
+    ... )
+    >>> display = reporter.metrics.plot.prediction_error()
+    >>> display.plot(kind="actual_vs_predicted")
     """
 
     def __init__(self, *, y_true, y_pred, estimator_name, data_source=None):
@@ -113,6 +133,26 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         -------
         display : PredictionErrorDisplay
             Object that stores computed values.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_diabetes
+        >>> from sklearn.linear_model import Ridge
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_diabetes(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = Ridge()
+        >>> reporter = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> display = reporter.metrics.plot.prediction_error()
+        >>> display.plot(kind="actual_vs_predicted")
         """
         expected_kind = ("actual_vs_predicted", "residual_vs_predicted")
         if kind not in expected_kind:
