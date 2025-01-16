@@ -346,8 +346,15 @@ def test_roc_curve_display_cross_validation_multiclass_classification(
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
 
 
+@pytest.mark.parametrize(
+    "roc_curve_kwargs",
+    [
+        [{"color": "red"}, {"color": "blue"}, {"color": "green"}],
+        {"color": "red"},
+    ],
+)
 def test_roc_curve_display_cross_validation_binary_classification_kwargs(
-    pyplot, binary_classification_data_no_split
+    pyplot, binary_classification_data_no_split, roc_curve_kwargs
 ):
     """Check that we can pass keyword arguments to the ROC curve plot for
     cross-validation."""
@@ -355,12 +362,14 @@ def test_roc_curve_display_cross_validation_binary_classification_kwargs(
 
     report = CrossValidationReport(estimator, X=X, y=y, cv=cv)
     display = report.metrics.plot.roc()
-    display.plot(
-        roc_curve_kwargs=[{"color": "red"}, {"color": "blue"}, {"color": "green"}]
-    )
-    assert display.lines_[0].get_color() == "red"
-    assert display.lines_[1].get_color() == "blue"
-    assert display.lines_[2].get_color() == "green"
+    display.plot(roc_curve_kwargs=roc_curve_kwargs)
+    if isinstance(roc_curve_kwargs, list):
+        assert display.lines_[0].get_color() == "red"
+        assert display.lines_[1].get_color() == "blue"
+        assert display.lines_[2].get_color() == "green"
+    else:
+        for line in display.lines_:
+            assert line.get_color() == "red"
 
 
 @pytest.mark.parametrize(
