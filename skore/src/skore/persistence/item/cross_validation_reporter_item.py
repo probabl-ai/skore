@@ -187,7 +187,12 @@ class CrossValidationReporterItem(Item):
         self.reporter_bytes = reporter_bytes
 
     @classmethod
-    def factory(cls, reporter: CrossValidationReporter) -> CrossValidationReporterItem:
+    def factory(
+        cls,
+        reporter: CrossValidationReporter,
+        /,
+        **kwargs,
+    ) -> CrossValidationReporterItem:
         """
         Create a CrossValidationReporterItem instance from a CrossValidationReporter.
 
@@ -203,7 +208,7 @@ class CrossValidationReporterItem(Item):
         if not isinstance(reporter, CrossValidationReporter):
             raise ItemTypeError(f"Type '{reporter.__class__}' is not supported.")
 
-        return cls(pickle.dumps(reporter))
+        return cls(pickle.dumps(reporter), **kwargs)
 
     @property
     def reporter(self) -> CrossValidationReporter:

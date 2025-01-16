@@ -7,13 +7,9 @@ from __future__ import annotations
 
 import base64
 from enum import Enum
-from io import BytesIO
-from typing import TYPE_CHECKING, Any, Union
+from typing import Any, Union
 
 from .item import Item, ItemTypeError
-
-if TYPE_CHECKING:
-    from matplotlib.figure import Figure as Matplotlib
 
 
 def lazy_is_instance(object: Any, cls_fullname: str) -> bool:
@@ -112,8 +108,6 @@ class MediaItem(Item):
             return cls.factory_bytes(media, *args, **kwargs)
         if lazy_is_instance(media, "builtins.str"):
             return cls.factory_str(media, *args, **kwargs)
-        if lazy_is_instance(media, "matplotlib.figure.Figure"):
-            return cls.factory_matplotlib(media, *args, **kwargs)
 
         raise ItemTypeError(f"Type '{media.__class__}' is not supported.")
 
@@ -171,28 +165,3 @@ class MediaItem(Item):
             media_encoding="utf-8",
             media_type=media_type,
         )
-
-    @classmethod
-    def factory_matplotlib(cls, media: Matplotlib) -> MediaItem:
-        """
-        Create a new MediaItem instance from a Matplotlib figure.
-
-        Parameters
-        ----------
-        media : Matplotlib
-            The Matplotlib figure to store.
-
-        Returns
-        -------
-        MediaItem
-            A new MediaItem instance.
-        """
-        with BytesIO() as stream:
-            media.savefig(stream, format="svg", bbox_inches="tight")
-            media_bytes = stream.getvalue()
-
-            return cls(
-                media_bytes=media_bytes,
-                media_encoding="utf-8",
-                media_type="image/svg+xml",
-            )

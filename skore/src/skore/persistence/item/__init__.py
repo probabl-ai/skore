@@ -9,6 +9,7 @@ from . import skrub_table_report_item as SkrubTableReportItem
 from .altair_chart_item import AltairChartItem
 from .cross_validation_reporter_item import CrossValidationReporterItem
 from .item import Item, ItemTypeError
+from .matplotlib_figure_item import MatplotlibFigureItem
 from .media_item import MediaItem, MediaType
 from .numpy_array_item import NumpyArrayItem
 from .pandas_dataframe_item import PandasDataFrameItem
@@ -56,6 +57,7 @@ def object_to_item(
             PolarsSeriesItem,
             SklearnBaseEstimatorItem,
             SkrubTableReportItem,
+            MatplotlibFigureItem,
         ):
             with suppress(ImportError, ItemTypeError):
                 # ImportError:
@@ -105,6 +107,8 @@ def item_to_object(item: Item) -> Any:
         return item.figure
     elif isinstance(item, AltairChartItem):
         return item.chart
+    elif isinstance(item, MatplotlibFigureItem):
+        return item.figure
     elif isinstance(item, PickleItem):
         return item.object
     else:
@@ -115,6 +119,7 @@ __all__ = [
     "AltairChartItem",
     "CrossValidationReporterItem",
     "Item",
+    "MatplotlibFigureItem",
     "MediaItem",
     "NumpyArrayItem",
     "PandasDataFrameItem",

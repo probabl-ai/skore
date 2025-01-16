@@ -4,6 +4,7 @@ import io
 import json
 
 import altair
+import matplotlib.figure
 import numpy
 import pandas
 import plotly
@@ -136,6 +137,45 @@ def test_serialize_sklearn_estimator(client, in_memory_project):
     assert response.status_code == 200
     project = response.json()
     assert project["items"]["estimator"][0]["value"] is not None
+
+
+class FakeFigure(matplotlib.figure.Figure):
+    def savefig(self, stream, *args, **kwargs):
+        stream.write(b"<figure>")
+
+
+def test_serialize_matplotlib_item(
+    client,
+    in_memory_project,
+    monkeypatch_datetime,
+    mock_nowstr,
+):
+    figure = FakeFigure()
+
+    with io.BytesIO() as stream:
+        figure.savefig(stream, format="svg", bbox_inches="tight")
+
+        figure_bytes = stream.getvalue()
+        figure_bytes_b64 = base64.b64encode(figure_bytes).decode()
+
+    in_memory_project.put("figure", figure)
+    response = client.get("/api/project/items")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "views": {},
+        "items": {
+            "figure": [
+                {
+                    "name": "figure",
+                    "media_type": "image/svg+xml;base64",
+                    "value": figure_bytes_b64,
+                    "updated_at": mock_nowstr,
+                    "created_at": mock_nowstr,
+                }
+            ]
+        },
+    }
 
 
 def test_serialize_altair_item(

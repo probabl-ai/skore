@@ -34,7 +34,7 @@ class PickleItem(Item):
         Parameters
         ----------
         pickle_bytes : bytes
-            The raw bytes of the object pickle representation.
+            The raw bytes of the object pickled representation.
         created_at : str, optional
             The creation timestamp in ISO format.
         updated_at : str, optional

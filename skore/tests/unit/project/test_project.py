@@ -7,7 +7,8 @@ import plotly
 import polars
 import polars.testing
 import pytest
-from matplotlib import pyplot as plt
+from matplotlib.pyplot import subplots
+from matplotlib.testing.compare import compare_images
 from PIL import Image
 from sklearn.ensemble import RandomForestClassifier
 from skore.exceptions import (
@@ -102,17 +103,19 @@ def test_put_numpy_array(in_memory_project):
     numpy.testing.assert_array_equal(in_memory_project.get("numpy_array"), arr)
 
 
-def test_put_mpl_figure(in_memory_project, monkeypatch):
-    # Add a Matplotlib figure
-    def savefig(*args, **kwargs):
-        return ""
+def test_put_matplotlib_figure(in_memory_project, monkeypatch, tmp_path):
+    figure, ax = subplots()
+    ax.plot([1, 2, 3, 4], [1, 4, 2, 3])
 
-    monkeypatch.setattr("matplotlib.figure.Figure.savefig", savefig)
-    fig, ax = plt.subplots()
-    ax.plot([1, 2, 3, 4])
+    in_memory_project.put("figure", figure)
 
-    in_memory_project.put("mpl_figure", fig)  # MediaItem (SVG)
-    assert isinstance(in_memory_project.get("mpl_figure"), bytes)
+    # matplotlib being not consistent (`xlink:href` are different between two calls)
+    # we can't compare figures directly
+
+    figure.savefig(tmp_path / "figure.png")
+    in_memory_project.get("figure").savefig(tmp_path / "item.png")
+
+    assert not compare_images(tmp_path / "figure.png", tmp_path / "item.png", 0)
 
 
 def test_put_altair_chart(in_memory_project):
