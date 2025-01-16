@@ -1,5 +1,3 @@
-from io import BytesIO
-
 import altair
 import numpy
 import numpy.testing
@@ -124,14 +122,14 @@ def test_put_vega_chart(in_memory_project):
 
 
 def test_put_pil_image(in_memory_project):
-    # Add a PIL Image
-    pil_image = Image.new("RGB", (100, 100), color="red")
-    with BytesIO() as output:
-        # FIXME: Not JPEG!
-        pil_image.save(output, format="jpeg")
+    image1 = Image.new("RGB", (100, 100), color="red")
+    image2 = Image.new("RGBA", (150, 150), color="blue")
 
-    in_memory_project.put("pil_image", pil_image)  # MediaItem (PNG)
-    assert isinstance(in_memory_project.get("pil_image"), bytes)
+    in_memory_project.put("image1", image1)
+    in_memory_project.put("image2", image2)
+
+    assert in_memory_project.get("image1") == image1
+    assert in_memory_project.get("image2") == image2
 
 
 def test_put_rf_model(in_memory_project, monkeypatch):

@@ -1,6 +1,6 @@
 """MediaItem.
 
-This module defines the MediaItem class, which represents media items.
+This module defines the MediaItem class, used to persist media.
 """
 
 from __future__ import annotations
@@ -15,12 +15,11 @@ from .item import Item, ItemTypeError
 if TYPE_CHECKING:
     from altair.vegalite.v5.schema.core import TopLevelSpec as Altair
     from matplotlib.figure import Figure as Matplotlib
-    from PIL.Image import Image as Pillow
     from plotly.basedatatypes import BaseFigure as Plotly
 
 
 def lazy_is_instance(object: Any, cls_fullname: str) -> bool:
-    """Return True if object is an instance of a class named `cls_fullname`."""
+    """Return True if object is an instance of `cls_fullname`."""
     return cls_fullname in {
         f"{cls.__module__}.{cls.__name__}" for cls in object.__class__.__mro__
     }
@@ -65,8 +64,8 @@ class MediaItem(Item):
             The creation timestamp in ISO format.
         updated_at : str, optional
             The last update timestamp in ISO format.
-        note : Union[str, None]
-            An optional note.
+        note : str, optional
+            A note.
         """
         super().__init__(created_at, updated_at, note)
 
@@ -75,12 +74,7 @@ class MediaItem(Item):
         self.media_type = media_type
 
     def as_serializable_dict(self):
-        """Get a serializable dict from the item.
-
-        Derived class must call their super implementation
-        and merge the result with their output.
-        """
-        d = super().as_serializable_dict()
+        """Return item as a JSONable dict to export to frontend."""
         if "text" in self.media_type:
             value = self.media_bytes.decode(encoding=self.media_encoding)
             media_type = f"{self.media_type}"
@@ -88,13 +82,10 @@ class MediaItem(Item):
             value = base64.b64encode(self.media_bytes).decode()
             media_type = f"{self.media_type};base64"
 
-        d.update(
-            {
-                "media_type": media_type,
-                "value": value,
-            }
-        )
-        return d
+        return super().as_serializable_dict() | {
+            "media_type": media_type,
+            "value": value,
+        }
 
     @classmethod
     def factory(cls, media, *args, **kwargs):
@@ -127,8 +118,6 @@ class MediaItem(Item):
             return cls.factory_altair(media, *args, **kwargs)
         if lazy_is_instance(media, "matplotlib.figure.Figure"):
             return cls.factory_matplotlib(media, *args, **kwargs)
-        if lazy_is_instance(media, "PIL.Image.Image"):
-            return cls.factory_pillow(media, *args, **kwargs)
         if lazy_is_instance(media, "plotly.basedatatypes.BaseFigure"):
             return cls.factory_plotly(media, *args, **kwargs)
 
@@ -235,31 +224,6 @@ class MediaItem(Item):
                 media_bytes=media_bytes,
                 media_encoding="utf-8",
                 media_type="image/svg+xml",
-            )
-
-    @classmethod
-    def factory_pillow(cls, media: Pillow) -> MediaItem:
-        """
-        Create a new MediaItem instance from a Pillow image.
-
-        Parameters
-        ----------
-        media : Pillow
-            The Pillow image to store.
-
-        Returns
-        -------
-        MediaItem
-            A new MediaItem instance.
-        """
-        with BytesIO() as stream:
-            media.save(stream, format="png")
-            media_bytes = stream.getvalue()
-
-            return cls(
-                media_bytes=media_bytes,
-                media_encoding="utf-8",
-                media_type="image/png",
             )
 
     @classmethod

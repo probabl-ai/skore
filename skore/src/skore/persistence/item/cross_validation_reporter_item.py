@@ -14,7 +14,6 @@ import json
 import pickle
 import re
 import statistics
-from functools import cached_property
 from typing import TYPE_CHECKING, Literal, Optional, TypedDict
 
 import numpy
@@ -204,14 +203,9 @@ class CrossValidationReporterItem(Item):
         if not isinstance(reporter, CrossValidationReporter):
             raise ItemTypeError(f"Type '{reporter.__class__}' is not supported.")
 
-        instance = cls(pickle.dumps(reporter))
+        return cls(pickle.dumps(reporter))
 
-        # add reporter as cached property
-        instance.reporter = reporter
-
-        return instance
-
-    @cached_property
+    @property
     def reporter(self) -> CrossValidationReporter:
         """The CrossValidationReporter from the persistence."""
         return pickle.loads(self.reporter_bytes)

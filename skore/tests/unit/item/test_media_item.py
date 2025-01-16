@@ -1,8 +1,5 @@
-import io
-
 import altair
 import matplotlib.pyplot
-import PIL as pillow
 import plotly.graph_objects as go
 import pytest
 from skore.persistence.item import ItemTypeError, MediaItem
@@ -59,21 +56,6 @@ class TestMediaItem:
         assert isinstance(item.media_bytes, bytes)
         assert item.media_encoding == "utf-8"
         assert item.media_type == "image/svg+xml"
-        assert item.created_at == mock_nowstr
-        assert item.updated_at == mock_nowstr
-
-    def test_factory_pillow(self, mock_nowstr):
-        image = pillow.Image.new("RGB", (100, 100), color="red")
-
-        with io.BytesIO() as stream:
-            image.save(stream, format="png")
-            image_bytes = stream.getvalue()
-
-        item = MediaItem.factory(image)
-
-        assert item.media_bytes == image_bytes
-        assert item.media_encoding == "utf-8"
-        assert item.media_type == "image/png"
         assert item.created_at == mock_nowstr
         assert item.updated_at == mock_nowstr
 

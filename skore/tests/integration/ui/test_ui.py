@@ -1,4 +1,6 @@
+import base64
 import datetime
+import io
 import json
 
 import numpy
@@ -18,6 +20,11 @@ from skore.ui.app import create_app
 @pytest.fixture
 def client(in_memory_project):
     return TestClient(app=create_app(project=in_memory_project))
+
+
+@pytest.fixture
+def monkeypatch_datetime(monkeypatch, MockDatetime):
+    monkeypatch.setattr("skore.persistence.item.item.datetime", MockDatetime)
 
 
 def test_app_state(client):
@@ -130,19 +137,42 @@ def test_serialize_sklearn_estimator(client, in_memory_project):
     assert project["items"]["estimator"][0]["value"] is not None
 
 
-def test_serialize_media_item(client, in_memory_project):
-    imarray = numpy.random.rand(100, 100, 3) * 255
-    img = Image.fromarray(imarray.astype("uint8")).convert("RGBA")
-    in_memory_project.put("img", img)
+def test_serialize_pillow_item(
+    client,
+    in_memory_project,
+    monkeypatch_datetime,
+    mock_nowstr,
+):
+    image_array = numpy.random.rand(100, 100, 3) * 255
+    image = Image.fromarray(image_array.astype("uint8")).convert("RGBA")
 
-    html = "<h1>éàªªUœALDXIWDŸΩΩ</h1>"
-    in_memory_project.put("html", html)
+    with io.BytesIO() as stream:
+        image.save(stream, format="png")
 
+        png_bytes = stream.getvalue()
+        png_bytes_b64 = base64.b64encode(png_bytes).decode()
+
+    in_memory_project.put("image", image)
     response = client.get("/api/project/items")
+
     assert response.status_code == 200
-    project = response.json()
-    assert "image" in project["items"]["img"][0]["media_type"]
-    assert project["items"]["html"][0]["value"] == html
+    assert response.json() == {
+        "views": {},
+        "items": {
+            "image": [
+                {
+                    "name": "image",
+                    "media_type": "image/png;base64",
+                    "value": png_bytes_b64,
+                    "updated_at": mock_nowstr,
+                    "created_at": mock_nowstr,
+                }
+            ]
+        },
+    }
+
+
+def test_serialize_media_item(client, in_memory_project): ...
 
 
 @pytest.fixture

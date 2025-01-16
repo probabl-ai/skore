@@ -13,6 +13,7 @@ from .numpy_array_item import NumpyArrayItem
 from .pandas_dataframe_item import PandasDataFrameItem
 from .pandas_series_item import PandasSeriesItem
 from .pickle_item import PickleItem
+from .pillow_image_item import PillowImageItem
 from .polars_dataframe_item import PolarsDataFrameItem
 from .polars_series_item import PolarsSeriesItem
 from .primitive_item import PrimitiveItem
@@ -50,6 +51,7 @@ def object_to_item(
             MediaItem,
             SkrubTableReportItem,
             CrossValidationReporterItem,
+            PillowImageItem,
         ):
             with suppress(ImportError, ItemTypeError):
                 # ImportError:
@@ -91,6 +93,8 @@ def item_to_object(item: Item) -> Any:
         return item.reporter
     elif isinstance(item, MediaItem):
         return item.media_bytes
+    elif isinstance(item, PillowImageItem):
+        return item.image
     elif isinstance(item, PickleItem):
         return item.object
     else:
@@ -105,6 +109,7 @@ __all__ = [
     "PandasDataFrameItem",
     "PandasSeriesItem",
     "PickleItem",
+    "PillowImageItem",
     "PolarsDataFrameItem",
     "PolarsSeriesItem",
     "PrimitiveItem",

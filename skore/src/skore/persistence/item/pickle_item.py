@@ -6,7 +6,6 @@ be otherwise.
 
 from __future__ import annotations
 
-from functools import cached_property
 from pickle import dumps, loads
 from typing import Any, Optional
 
@@ -47,7 +46,7 @@ class PickleItem(Item):
 
         self.pickle_bytes = pickle_bytes
 
-    @cached_property
+    @property
     def object(self) -> Any:
         """The object from the persistence."""
         return loads(self.pickle_bytes)
