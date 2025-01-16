@@ -99,7 +99,7 @@ onBeforeUnmount(() => {
             @drop="onItemDrop($event)"
             @dragover.prevent
           >
-            <template #item="{ name, mediaType, data, createdAt, updatedAt, updates }">
+            <template #item="{ name, mediaType, data, createdAt, updatedAt, updates, note }">
               <ProjectViewCard
                 :key="name"
                 :title="name"
@@ -111,7 +111,7 @@ onBeforeUnmount(() => {
                 @card-removed="onCardRemoved(name)"
                 @update-selected="projectStore.setCurrentItemUpdateIndex(name, $event)"
               >
-                <ItemNote :item="{ name, mediaType, data, createdAt, updatedAt }" />
+                <ItemNote :item="{ name, mediaType, data, createdAt, updatedAt, note }" />
                 <MediaWidgetSelector :item="{ name, mediaType, data, createdAt, updatedAt }" />
               </ProjectViewCard>
             </template>

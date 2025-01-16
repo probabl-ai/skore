@@ -44,5 +44,6 @@ export function deserializeProjectItemDto(dto: ProjectItemDto): PresentableItem 
     data,
     createdAt,
     updatedAt,
+    note: dto.note,
   };
 }
