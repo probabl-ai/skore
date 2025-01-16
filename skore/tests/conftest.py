@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 
 import pytest
+import skore
 from skore.item.item_repository import ItemRepository
 from skore.persistence.in_memory_storage import InMemoryStorage
 from skore.project import Project
@@ -44,6 +45,12 @@ def in_memory_project():
         item_repository=item_repository,
         view_repository=view_repository,
     )
+
+
+@pytest.fixture
+def on_disk_project(tmp_path):
+    project = skore.open(tmp_path / "project")
+    return project
 
 
 @pytest.fixture(scope="function")
