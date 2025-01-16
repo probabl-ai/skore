@@ -375,3 +375,6 @@ def test_roc_curve_display_cross_validation_binary_classification_kwargs_error(
     err_msg = "You intend to plot ROC curves from a cross-validation of binary problem."
     with pytest.raises(ValueError, match=err_msg):
         display.plot(roc_curve_kwargs=[{"color": "red"}])
+
+    with pytest.raises(ValueError, match=err_msg):
+        display.plot(roc_curve_kwargs="unknown")

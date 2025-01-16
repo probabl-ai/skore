@@ -196,7 +196,12 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
                             f"{len(self.fpr)}."
                         )
                 else:
-                    raise ValueError
+                    raise ValueError(
+                        "You intend to plot ROC curves from a cross-validation "
+                        "of binary problem. We expect `roc_curve_kwargs` to be a "
+                        f"list of dictionaries of {len(self.fpr)} elements. Got "
+                        f"{roc_curve_kwargs!r} instead."
+                    )
 
                 for split_idx in range(len(self.fpr[self.pos_label])):
                     fpr = self.fpr[self.pos_label][split_idx]
