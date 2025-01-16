@@ -88,6 +88,23 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         -------
         pd.DataFrame
             The statistics for the metrics.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import CrossValidationReport
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv=2)
+        Processing cross-validation ...
+        >>> reporter.metrics.report_metrics(
+        ...     scoring=["precision", "recall"], pos_label=1, aggregate=["mean", "std"]
+        ... )
+        Compute metric for each split ...
+        Metric                   Precision (↗︎)  Recall (↗︎)
+        LogisticRegression mean        0.94...     0.96...
+                           std         0.02...     0.02...
         """
         return self._compute_metric_scores(
             report_metric_name="report_metrics",
@@ -185,6 +202,21 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         -------
         pd.DataFrame
             The accuracy score.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import CrossValidationReport
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv=2)
+        Processing cross-validation ...
+        >>> reporter.metrics.accuracy()
+        Compute metric for each split ...
+        Metric                       Accuracy (↗︎)
+        LogisticRegression Split #0       0.94...
+                           Split #1       0.94...
         """
         return self._compute_metric_scores(
             report_metric_name="accuracy",
@@ -250,6 +282,22 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         -------
         pd.DataFrame
             The precision score.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import CrossValidationReport
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv=2)
+        Processing cross-validation ...
+        >>> reporter.metrics.precision()
+        Compute metric for each split ...
+        Metric                      Precision (↗︎)
+        Class label                              0         1
+        LogisticRegression Split #0       0.96...   0.93...
+                           Split #1       0.90...   0.96...
         """
         return self._compute_metric_scores(
             report_metric_name="precision",
@@ -318,6 +366,22 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         -------
         pd.DataFrame
             The recall score.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import CrossValidationReport
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv=2)
+        Processing cross-validation ...
+        >>> reporter.metrics.recall()
+        Compute metric for each split ...
+        Metric                      Recall (↗︎)
+        Class label                           0        1
+        LogisticRegression Split #0    0.87...   0.98...
+                           Split #1    0.94...   0.94...
         """
         return self._compute_metric_scores(
             report_metric_name="recall",
@@ -348,6 +412,21 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         -------
         pd.DataFrame
             The Brier score.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import CrossValidationReport
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv=2)
+        Processing cross-validation ...
+        >>> reporter.metrics.brier_score()
+        Compute metric for each split ...
+        Metric                       Brier score (↘︎)
+        LogisticRegression Split #0          0.04...
+                           Split #1          0.04...
         """
         return self._compute_metric_scores(
             report_metric_name="brier_score",
@@ -419,6 +498,21 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         -------
         pd.DataFrame
             The ROC AUC score.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import CrossValidationReport
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv=2)
+        Processing cross-validation ...
+        >>> reporter.metrics.roc_auc()
+        Compute metric for each split ...
+        Metric                       ROC AUC (↗︎)
+        LogisticRegression Split #0      0.99...
+                           Split #1      0.98...
         """
         return self._compute_metric_scores(
             report_metric_name="roc_auc",
@@ -451,6 +545,21 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         -------
         pd.DataFrame
             The log-loss.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import CrossValidationReport
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv=2)
+        Processing cross-validation ...
+        >>> reporter.metrics.log_loss()
+        Compute metric for each split ...
+        Metric                       Log loss (↘︎)
+        LogisticRegression Split #0       0.12...
+                           Split #1       0.17...
         """
         return self._compute_metric_scores(
             report_metric_name="log_loss",
@@ -493,6 +602,21 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         -------
         pd.DataFrame
             The R² score.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_diabetes
+        >>> from sklearn.linear_model import Ridge
+        >>> from skore import CrossValidationReport
+        >>> X, y = load_diabetes(return_X_y=True)
+        >>> regressor = Ridge()
+        >>> reporter = CrossValidationReport(regressor, X=X, y=y, cv=2)
+        Processing cross-validation ...
+        >>> reporter.metrics.r2()
+        Compute metric for each split ...
+        Metric           R² (↗︎)
+        Ridge Split #0  0.36...
+              Split #1  0.39...
         """
         return self._compute_metric_scores(
             report_metric_name="r2",
@@ -536,6 +660,21 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         -------
         pd.DataFrame
             The root mean squared error.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_diabetes
+        >>> from sklearn.linear_model import Ridge
+        >>> from skore import CrossValidationReport
+        >>> X, y = load_diabetes(return_X_y=True)
+        >>> regressor = Ridge()
+        >>> reporter = CrossValidationReport(regressor, X=X, y=y, cv=2)
+        Processing cross-validation ...
+        >>> reporter.metrics.rmse()
+        Compute metric for each split ...
+        Metric          RMSE (↘︎)
+        Ridge Split #0  59.9...
+              Split #1  61.4...
         """
         return self._compute_metric_scores(
             report_metric_name="rmse",
@@ -596,6 +735,26 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         -------
         pd.DataFrame
             The custom metric.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_diabetes
+        >>> from sklearn.linear_model import Ridge
+        >>> from sklearn.metrics import mean_absolute_error
+        >>> from skore import CrossValidationReport
+        >>> X, y = load_diabetes(return_X_y=True)
+        >>> regressor = Ridge()
+        >>> reporter = CrossValidationReport(regressor, X=X, y=y, cv=2)
+        Processing cross-validation ...
+        >>> reporter.metrics.custom_metric(
+        ...     metric_function=mean_absolute_error,
+        ...     response_method="predict",
+        ...     metric_name="MAE (↗︎)",
+        ... )
+        Compute metric for each split ...
+        Metric           MAE (↗︎)
+        Ridge Split #0  50.1...
+              Split #1  52.6...
         """
         return self._compute_metric_scores(
             report_metric_name="custom_metric",
@@ -807,6 +966,19 @@ class _PlotMetricsAccessor(_BaseAccessor):
         -------
         RocCurveDisplay
             The ROC curve display.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import CrossValidationReport
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv=2)
+        Processing cross-validation ...
+        >>> display = reporter.metrics.plot.roc()
+        Computing predictions for display ...
+        >>> display.plot(roc_curve_kwargs={"color": "tab:red"})
         """
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
@@ -845,6 +1017,19 @@ class _PlotMetricsAccessor(_BaseAccessor):
         -------
         PrecisionRecallCurveDisplay
             The precision-recall curve display.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import CrossValidationReport
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv=2)
+        Processing cross-validation ...
+        >>> display = reporter.metrics.plot.precision_recall()
+        Computing predictions for display ...
+        >>> display.plot()
         """
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
@@ -907,6 +1092,21 @@ class _PlotMetricsAccessor(_BaseAccessor):
         -------
         PredictionErrorDisplay
             The prediction error display.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_diabetes
+        >>> from sklearn.linear_model import Ridge
+        >>> from skore import CrossValidationReport
+        >>> X, y = load_diabetes(return_X_y=True)
+        >>> regressor = Ridge()
+        >>> reporter = CrossValidationReport(regressor, X=X, y=y, cv=2)
+        Processing cross-validation ...
+        >>> display = reporter.metrics.plot.prediction_error(
+        ...     kind="actual_vs_predicted"
+        ... )
+        Computing predictions for display ...
+        >>> display.plot(line_kwargs={"color": "tab:red"})
         """
         display_kwargs = {"subsample": subsample, "random_state": random_state}
         display_plot_kwargs = {"ax": ax, "kind": kind}

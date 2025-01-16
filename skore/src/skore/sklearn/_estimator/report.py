@@ -54,6 +54,11 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     estimator_name_ : str
         The name of the estimator.
 
+    See Also
+    --------
+    skore.sklearn.cross_validation.report.CrossValidationReport :
+        Report for cross-validation results.
+
     Examples
     --------
     >>> from sklearn.datasets import make_classification
