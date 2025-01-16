@@ -51,7 +51,7 @@ class PillowImageItem(Item):
         self.image_size = image_size
 
     @classmethod
-    def factory(cls, image: PIL.Image.Image) -> PillowImageItem:
+    def factory(cls, image: PIL.Image.Image, /, **kwargs) -> PillowImageItem:
         """
         Create a new PillowImageItem instance from a Pillow image.
 
@@ -72,6 +72,7 @@ class PillowImageItem(Item):
             image_bytes=image.tobytes(),
             image_mode=image.mode,
             image_size=image.size,
+            **kwargs,
         )
 
     @property

@@ -52,7 +52,7 @@ class PickleItem(Item):
         return loads(self.pickle_bytes)
 
     @classmethod
-    def factory(cls, object: Any) -> PickleItem:
+    def factory(cls, object: Any, /, **kwargs) -> PickleItem:
         """
         Create a new PickleItem with any object.
 
@@ -66,7 +66,7 @@ class PickleItem(Item):
         PickleItem
             A new PickleItem instance.
         """
-        return cls(dumps(object))
+        return cls(dumps(object), **kwargs)
 
     def as_serializable_dict(self):
         """Get a JSON serializable representation of the item."""
