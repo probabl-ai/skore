@@ -5,16 +5,26 @@ import MarkdownWidget from "@/components/MarkdownWidget.vue";
 import RichTextEditor from "@/components/RichTextEditor.vue";
 import SimpleButton from "@/components/SimpleButton.vue";
 import type { PresentableItem } from "@/models";
+import { debounce } from "@/services/utils";
+import { useProjectStore } from "@/stores/project";
 
 const props = defineProps<{ item: PresentableItem }>();
 
+const projectStore = useProjectStore();
 const isEditing = ref(false);
 const editor = useTemplateRef<InstanceType<typeof RichTextEditor>>("editor");
 
 const richText = ref(`${props.item.note ?? ""}`);
+const debouncedSetNote = debounce(
+  () => {
+    projectStore.setNoteOnItem(props.item.name, richText.value);
+  },
+  500,
+  true
+);
 
 watch(richText, () => {
-  console.log("model updated");
+  debouncedSetNote();
 });
 </script>
 

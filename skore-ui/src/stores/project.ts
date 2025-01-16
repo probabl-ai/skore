@@ -3,7 +3,7 @@ import { ref, shallowRef, watch } from "vue";
 
 import { type LayoutDto, type ProjectDto, type ProjectItemDto } from "@/dto";
 import { deserializeProjectItemDto, type PresentableItem } from "@/models";
-import { deleteView as deleteViewApi, fetchProject, putView } from "@/services/api";
+import { deleteView as deleteViewApi, fetchProject, putView, setNote } from "@/services/api";
 import { poll } from "@/services/utils";
 
 export interface TreeNode {
@@ -328,6 +328,16 @@ export const useProjectStore = defineStore("project", () => {
   }
 
   /**
+   * Set a note on a currently displayed note
+   */
+  async function setNoteOnItem(key: string, message: string) {
+    const updateIndex = getCurrentItemUpdateIndex(key);
+    stopBackendPolling();
+    await setNote(key, message, updateIndex);
+    await startBackendPolling();
+  }
+
+  /**
    * Get the items in the current view as a presentable list.
    * @returns a list of items with their metadata
    */
@@ -415,6 +425,7 @@ export const useProjectStore = defineStore("project", () => {
     renameView,
     setCurrentItemUpdateIndex,
     getCurrentItemUpdateIndex,
+    setNoteOnItem,
     startBackendPolling,
     stopBackendPolling,
   };

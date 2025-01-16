@@ -164,7 +164,11 @@ export function generateRandomId() {
  * @param immediate if true the function will be called immediately
  * @returns the debounced function
  */
-export function debounce(func: Function, wait: number, immediate: boolean) {
+export function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  wait: number,
+  immediate: boolean
+): (...args: Parameters<T>) => void {
   let timeout: ReturnType<typeof setTimeout> | null = null;
   return function (this: any, ...args: any[]) {
     if (timeout) clearTimeout(timeout);
