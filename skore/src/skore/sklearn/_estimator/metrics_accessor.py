@@ -316,7 +316,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             y_pred = _get_cached_response_values(
                 cache=self._parent._cache,
                 estimator_hash=self._parent._hash,
-                estimator=self._parent.estimator,
+                estimator=self._parent.estimator_,
                 X=X,
                 response_method=response_method,
                 pos_label=pos_label,
@@ -357,7 +357,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 score = score.reshape(1, -1)
         else:  # unknown task - try our best
             columns = [metric_name] if score.shape[0] == 1 else None
-        return pd.DataFrame(score, columns=columns, index=[self._parent.estimator_name])
+        return pd.DataFrame(
+            score, columns=columns, index=[self._parent.estimator_name_]
+        )
 
     @available_if(
         _check_supported_ml_task(
@@ -1472,7 +1474,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
             y_pred = _get_cached_response_values(
                 cache=self._parent._cache,
                 estimator_hash=self._parent._hash,
-                estimator=self._parent.estimator,
+                estimator=self._parent.estimator_,
                 X=X,
                 response_method=response_method,
                 data_source=data_source,
@@ -1483,8 +1485,8 @@ class _PlotMetricsAccessor(_BaseAccessor):
             display = display_class._from_predictions(
                 y,
                 y_pred,
-                estimator=self._parent.estimator,
-                estimator_name=self._parent.estimator_name,
+                estimator=self._parent.estimator_,
+                estimator_name=self._parent.estimator_name_,
                 ml_task=self._parent._ml_task,
                 data_source=data_source,
                 **display_kwargs,
