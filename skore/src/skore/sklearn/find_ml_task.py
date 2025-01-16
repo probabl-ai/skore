@@ -71,6 +71,9 @@ def _find_ml_task(y, estimator=None) -> MLTask:
                     if estimator.classes_.size > 2:
                         return "multiclass-classification"
             else:  # fallback on the target
+                if y is None:
+                    return "unsupported"
+
                 target_type = type_of_target(y)
                 if target_type == "binary":
                     return "binary-classification"
