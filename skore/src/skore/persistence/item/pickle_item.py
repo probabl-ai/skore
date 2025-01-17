@@ -6,9 +6,11 @@ be otherwise.
 
 from __future__ import annotations
 
-from pickle import dumps, loads
+from io import BytesIO
 from traceback import format_exception
 from typing import Any, Optional
+
+import joblib
 
 from .item import Item
 
@@ -47,11 +49,6 @@ class PickleItem(Item):
 
         self.pickle_bytes = pickle_bytes
 
-    @property
-    def object(self) -> Any:
-        """The object from the persistence."""
-        return loads(self.pickle_bytes)
-
     @classmethod
     def factory(cls, object: Any, /, **kwargs) -> PickleItem:
         """
@@ -67,7 +64,16 @@ class PickleItem(Item):
         PickleItem
             A new PickleItem instance.
         """
-        return cls(dumps(object), **kwargs)
+        with BytesIO() as stream:
+            joblib.dump(object, stream)
+
+            return cls(stream.getvalue(), **kwargs)
+
+    @property
+    def object(self) -> Any:
+        """The object from the persistence."""
+        with BytesIO(self.pickle_bytes) as stream:
+            return joblib.load(stream)
 
     def as_serializable_dict(self):
         """Get a JSON serializable representation of the item."""

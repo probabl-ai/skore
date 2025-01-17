@@ -1,5 +1,6 @@
-import pickle
+import io
 
+import joblib
 import pytest
 from skore.persistence.item import PickleItem
 
@@ -13,14 +14,24 @@ class TestPickleItem:
     def test_factory(self, mock_nowstr, object):
         item = PickleItem.factory(object)
 
-        assert item.pickle_bytes == pickle.dumps(object)
+        with io.BytesIO() as stream:
+            joblib.dump(object, stream)
+
+            object_bytes = stream.getvalue()
+
+        assert item.pickle_bytes == object_bytes
         assert item.created_at == mock_nowstr
         assert item.updated_at == mock_nowstr
 
     def test_object(self, mock_nowstr):
+        with io.BytesIO() as stream:
+            joblib.dump(int, stream)
+
+            int_bytes = stream.getvalue()
+
         item1 = PickleItem.factory(int)
         item2 = PickleItem(
-            pickle_bytes=pickle.dumps(int),
+            pickle_bytes=int_bytes,
             created_at=mock_nowstr,
             updated_at=mock_nowstr,
         )

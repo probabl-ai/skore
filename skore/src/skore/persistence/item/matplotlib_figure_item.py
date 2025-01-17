@@ -7,8 +7,9 @@ from __future__ import annotations
 
 from base64 import b64encode
 from io import BytesIO
-from pickle import dumps, loads
 from typing import TYPE_CHECKING, Optional
+
+import joblib
 
 from .item import Item, ItemTypeError
 from .media_item import lazy_is_instance
@@ -63,12 +64,16 @@ class MatplotlibFigureItem(Item):
         if not lazy_is_instance(figure, "matplotlib.figure.Figure"):
             raise ItemTypeError(f"Type '{figure.__class__}' is not supported.")
 
-        return cls(dumps(figure), **kwargs)
+        with BytesIO() as stream:
+            joblib.dump(figure, stream)
+
+            return cls(stream.getvalue(), **kwargs)
 
     @property
     def figure(self) -> Figure:
         """The figure from the persistence."""
-        return loads(self.figure_bytes)
+        with BytesIO(self.figure_bytes) as stream:
+            return joblib.load(stream)
 
     def as_serializable_dict(self) -> dict:
         """Return item as a JSONable dict to export to frontend."""

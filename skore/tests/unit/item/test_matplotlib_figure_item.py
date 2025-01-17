@@ -1,7 +1,7 @@
 import base64
 import io
-import pickle
 
+import joblib
 import pytest
 from matplotlib.figure import Figure
 from matplotlib.pyplot import subplots
@@ -29,7 +29,8 @@ class TestMatplotlibFigureItem:
         # we can't compare figure bytes directly
 
         figure.savefig(tmp_path / "figure.png")
-        pickle.loads(item.figure_bytes).savefig(tmp_path / "item.png")
+        with io.BytesIO(item.figure_bytes) as stream:
+            joblib.load(stream).savefig(tmp_path / "item.png")
 
         assert not compare_images(tmp_path / "figure.png", tmp_path / "item.png", 0)
         assert item.created_at == mock_nowstr
@@ -43,8 +44,13 @@ class TestMatplotlibFigureItem:
         figure, ax = subplots()
         ax.plot([1, 2, 3, 4], [1, 4, 2, 3])
 
+        with io.BytesIO() as stream:
+            joblib.dump(figure, stream)
+
+            figure_bytes = stream.getvalue()
+
         item1 = MatplotlibFigureItem.factory(figure)
-        item2 = MatplotlibFigureItem(pickle.dumps(figure))
+        item2 = MatplotlibFigureItem(figure_bytes)
 
         figure.savefig(tmp_path / "figure.png")
         item1.figure.savefig(tmp_path / "item1.png")

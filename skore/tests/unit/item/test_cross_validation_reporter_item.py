@@ -1,6 +1,7 @@
-from dataclasses import dataclass
-from pickle import dumps
+import dataclasses
+import io
 
+import joblib
 import numpy
 import plotly.graph_objects
 import pytest
@@ -25,7 +26,7 @@ class FakeEstimatorNoGetParams:
     pass
 
 
-@dataclass
+@dataclasses.dataclass
 class FakeCrossValidationReporter(CrossValidationReporter):
     _cv_results = {
         "test_score": numpy.array([1, 2, 3]),
@@ -42,7 +43,7 @@ class FakeCrossValidationReporter(CrossValidationReporter):
     cv = StratifiedKFold(n_splits=5)
 
 
-@dataclass
+@dataclasses.dataclass
 class FakeCrossValidationReporterNoGetParams(CrossValidationReporter):
     _cv_results = {
         "test_score": numpy.array([1, 2, 3]),
@@ -84,15 +85,26 @@ class TestCrossValidationReporterItem:
     def test_factory(self, mock_nowstr, reporter):
         item = CrossValidationReporterItem.factory(reporter)
 
-        assert item.reporter_bytes == dumps(reporter)
+        with io.BytesIO() as stream:
+            joblib.dump(reporter, stream)
+
+            reporter_bytes = stream.getvalue()
+
+        assert item.reporter_bytes == reporter_bytes
         assert item.created_at == mock_nowstr
         assert item.updated_at == mock_nowstr
 
     def test_reporter(self, mock_nowstr):
         reporter = FakeCrossValidationReporter()
+
+        with io.BytesIO() as stream:
+            joblib.dump(reporter, stream)
+
+            reporter_bytes = stream.getvalue()
+
         item1 = CrossValidationReporterItem.factory(reporter)
         item2 = CrossValidationReporterItem(
-            reporter_bytes=dumps(reporter),
+            reporter_bytes=reporter_bytes,
             created_at=mock_nowstr,
             updated_at=mock_nowstr,
         )

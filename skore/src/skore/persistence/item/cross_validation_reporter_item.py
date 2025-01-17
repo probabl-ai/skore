@@ -9,12 +9,13 @@ from __future__ import annotations
 import contextlib
 import dataclasses
 import importlib
+import io
 import json
-import pickle
 import re
 import statistics
 from typing import TYPE_CHECKING, Literal, Optional, TypedDict
 
+import joblib
 import numpy
 import plotly.graph_objects
 import plotly.io
@@ -157,7 +158,7 @@ class CrossValidationReporterItem(Item):
         Parameters
         ----------
         reporter_bytes : bytes
-            The raw bytes of the reporter pickle representation.
+            The raw bytes of the reporter pickled representation.
         created_at : str, optional
             The creation timestamp in ISO format.
         updated_at : str, optional
@@ -191,12 +192,16 @@ class CrossValidationReporterItem(Item):
         if not isinstance(reporter, CrossValidationReporter):
             raise ItemTypeError(f"Type '{reporter.__class__}' is not supported.")
 
-        return cls(pickle.dumps(reporter), **kwargs)
+        with io.BytesIO() as stream:
+            joblib.dump(reporter, stream)
+
+            return cls(stream.getvalue(), **kwargs)
 
     @property
     def reporter(self) -> CrossValidationReporter:
         """The CrossValidationReporter from the persistence."""
-        return pickle.loads(self.reporter_bytes)
+        with io.BytesIO(self.reporter_bytes) as stream:
+            return joblib.load(stream)
 
     def as_serializable_dict(self):
         """Get a serializable dict from the item."""
