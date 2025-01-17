@@ -53,14 +53,17 @@ html_js_files = [
 ]
 
 # list of examples in explicit order
-examples_ordered = [
+subsections_order = [
     "../examples/getting_started",
+    "../examples/model_evaluation",
+]
+sub_examples_ordered = [
     "../examples/getting_started/plot_quick_start",
     "../examples/getting_started/plot_skore_product_tour",
     "../examples/getting_started/plot_working_with_projects",
     "../examples/getting_started/plot_tracking_items",
-    "../examples/model_evaluation",
-    "../examples/model_evaluation/plot_train_test_split"
+    "../examples/model_evaluation/plot_train_test_split",
+    "../examples/model_evaluation/plot_estimator_report",
     "../examples/model_evaluation/plot_cross_validate",
 ]
 
@@ -76,15 +79,16 @@ def reset_mpl(gallery_conf, fname):
 sphinx_gallery_conf = {
     "examples_dirs": "../examples",  # path to example scripts
     "gallery_dirs": "auto_examples",  # path to gallery generated output
-    "subsection_order": ExplicitOrder(examples_ordered),
-    "within_subsection_order": "FileNameSortKey",  # See https://sphinx-gallery.github.io/stable/configuration.html#sorting-gallery-examples for alternatives
+    "subsection_order": ExplicitOrder(subsections_order),  # sorting gallery subsections,
+    # see https://sphinx-gallery.github.io/stable/configuration.html#sub-gallery-order
+    "within_subsection_order": "ExampleTitleSortKey",  # See https://sphinx-gallery.github.io/stable/configuration.html#sorting-gallery-examples for alternatives
     "show_memory": False,
     "write_computation_times": False,
     "reference_url": {
         # The module you locally document uses None
         "skore": None,
     },
-    "backreferences_dir": "generated",
+    # "backreferences_dir": "generated",
     "doc_module": "skore",
     "default_thumb_file": "./_static/images/Logo_Skore_Light@2x.svg",
     "reset_modules": (reset_mpl, "seaborn"),
