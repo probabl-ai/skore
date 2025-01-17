@@ -203,6 +203,6 @@ linkcode_resolve = make_linkcode_resolve(
     (
         "https://github.com/probabl-ai/"
         "skore/blob/{revision}/"
-        "{package}/{path}#L{lineno}"
+        "{package}/src/skore/{path}#L{lineno}"
     ),
 )
