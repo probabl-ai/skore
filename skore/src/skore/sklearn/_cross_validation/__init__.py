@@ -7,12 +7,10 @@ from skore.sklearn._cross_validation.report import (
     CrossValidationReport,
 )
 
-
-# add the plot accessor to the metrics accessor
-_register_accessor("plot", CrossValidationReport)(_PlotMetricsAccessor)
-
 # add the metrics accessor to the estimator report
 _register_accessor("metrics", CrossValidationReport)(_MetricsAccessor)
 
+# add the plot accessor to the metrics accessor
+_register_accessor("plot", _MetricsAccessor)(_PlotMetricsAccessor)
 
 __all__ = ["CrossValidationReport"]
