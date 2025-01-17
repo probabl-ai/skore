@@ -272,7 +272,7 @@ class Project:
         """
         return self.view_repository.keys()
 
-    def set_note(self, key: str, message: str, *, version=-1):
+    def set_note(self, key: str, note: str, *, version=-1):
         """Attach a note to key ``key``.
 
         Parameters
@@ -280,8 +280,8 @@ class Project:
         key : str
             The key of the item to annotate.
             May be qualified with a version number through the ``version`` argument.
-        message : str
-            The message to be attached.
+        note : str
+            The note to be attached.
         version : int, default=-1
             The version of the key to annotate. Default is the latest version.
 
@@ -290,19 +290,17 @@ class Project:
         KeyError
             If the ``(key, version)`` couple does not exist.
         TypeError
-            If ``key`` or ``message`` is not a string.
+            If ``key`` or ``note`` is not a string.
 
         Examples
         --------
         # Annotate latest version of key "key"
-        >>> project.set_note("key", "message")  # doctest: +SKIP
+        >>> project.set_note("key", "note")  # doctest: +SKIP
 
         # Annotate first version of key "key"
-        >>> project.set_note("key", "message", version=0)  # doctest: +SKIP
+        >>> project.set_note("key", "note", version=0)  # doctest: +SKIP
         """
-        return self.item_repository.set_item_note(
-            key=key, message=message, version=version
-        )
+        return self.item_repository.set_item_note(key=key, note=note, version=version)
 
     def get_note(self, key: str, *, version=-1) -> Union[str, None]:
         """Retrieve a note previously attached to key ``key``.
