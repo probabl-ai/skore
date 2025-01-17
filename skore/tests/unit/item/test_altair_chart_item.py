@@ -36,7 +36,7 @@ class TestAltairChartItem:
         chart = altair.Chart().mark_point()
         chart_str = chart.to_json()
         chart_bytes = chart_str.encode("utf-8")
-        chart_bytes_b64 = base64.b64encode(chart_bytes).decode()
+        chart_b64_str = base64.b64encode(chart_bytes).decode()
 
         item = AltairChartItem.factory(chart)
 
@@ -45,5 +45,5 @@ class TestAltairChartItem:
             "created_at": mock_nowstr,
             "note": None,
             "media_type": "application/vnd.vega.v5+json;base64",
-            "value": chart_bytes_b64,
+            "value": chart_b64_str,
         }

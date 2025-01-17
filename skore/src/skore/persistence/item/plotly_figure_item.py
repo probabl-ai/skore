@@ -76,9 +76,9 @@ class PlotlyFigureItem(Item):
         import base64
 
         figure_bytes = self.figure_str.encode("utf-8")
-        figure_bytes_b64 = base64.b64encode(figure_bytes).decode()
+        figure_b64_str = base64.b64encode(figure_bytes).decode()
 
         return super().as_serializable_dict() | {
             "media_type": "application/vnd.plotly.v1+json;base64",
-            "value": figure_bytes_b64,
+            "value": figure_b64_str,
         }

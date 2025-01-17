@@ -38,7 +38,7 @@ class TestPlotlyFigureItem:
         figure = plotly.graph_objects.Figure(data=[bar])
         figure_str = plotly.io.to_json(figure, engine="json")
         figure_bytes = figure_str.encode("utf-8")
-        figure_bytes_b64 = base64.b64encode(figure_bytes).decode()
+        figure_b64_str = base64.b64encode(figure_bytes).decode()
 
         item = PlotlyFigureItem.factory(figure)
 
@@ -47,5 +47,5 @@ class TestPlotlyFigureItem:
             "created_at": mock_nowstr,
             "note": None,
             "media_type": "application/vnd.plotly.v1+json;base64",
-            "value": figure_bytes_b64,
+            "value": figure_b64_str,
         }

@@ -76,9 +76,9 @@ class MatplotlibFigureItem(Item):
             self.figure.savefig(stream, format="svg", bbox_inches="tight")
 
             figure_bytes = stream.getvalue()
-            figure_bytes_b64 = b64encode(figure_bytes).decode()
+            figure_b64_str = b64encode(figure_bytes).decode()
 
             return super().as_serializable_dict() | {
                 "media_type": "image/svg+xml;base64",
-                "value": figure_bytes_b64,
+                "value": figure_b64_str,
             }

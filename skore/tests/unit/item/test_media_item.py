@@ -32,5 +32,5 @@ class TestMediaItem:
             "created_at": mock_nowstr,
             "note": None,
             "media_type": media_type,
-            "value": b"<content>",
+            "value": "<content>",
         }

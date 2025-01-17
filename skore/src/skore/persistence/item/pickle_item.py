@@ -72,5 +72,5 @@ class PickleItem(Item):
         """Get a JSON serializable representation of the item."""
         return super().as_serializable_dict() | {
             "media_type": "text/markdown",
-            "value": repr(self.object).encode("utf-8"),
+            "value": f"```python\n{repr(self.object)}\n```",
         }

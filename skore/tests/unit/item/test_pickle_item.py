@@ -37,5 +37,5 @@ class TestPickleItem:
             "created_at": mock_nowstr,
             "note": None,
             "media_type": "text/markdown",
-            "value": repr(int).encode("utf-8"),
+            "value": "```python\n<class 'int'>\n```",
         }

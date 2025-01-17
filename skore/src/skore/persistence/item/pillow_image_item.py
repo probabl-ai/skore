@@ -95,9 +95,9 @@ class PillowImageItem(Item):
             self.image.save(stream, format="png")
 
             png_bytes = stream.getvalue()
-            png_bytes_b64 = base64.b64encode(png_bytes).decode()
+            png_b64_str = base64.b64encode(png_bytes).decode()
 
         return super().as_serializable_dict() | {
             "media_type": "image/png;base64",
-            "value": png_bytes_b64,
+            "value": png_b64_str,
         }

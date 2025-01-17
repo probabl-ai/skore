@@ -156,7 +156,7 @@ def test_serialize_matplotlib_item(
         figure.savefig(stream, format="svg", bbox_inches="tight")
 
         figure_bytes = stream.getvalue()
-        figure_bytes_b64 = base64.b64encode(figure_bytes).decode()
+        figure_b64_str = base64.b64encode(figure_bytes).decode()
 
     in_memory_project.put("figure", figure)
     response = client.get("/api/project/items")
@@ -169,7 +169,7 @@ def test_serialize_matplotlib_item(
                 {
                     "name": "figure",
                     "media_type": "image/svg+xml;base64",
-                    "value": figure_bytes_b64,
+                    "value": figure_b64_str,
                     "updated_at": mock_nowstr,
                     "created_at": mock_nowstr,
                 }
@@ -187,7 +187,7 @@ def test_serialize_altair_item(
     chart = altair.Chart().mark_point()
     chart_str = chart.to_json()
     chart_bytes = chart_str.encode("utf-8")
-    chart_bytes_b64 = base64.b64encode(chart_bytes).decode()
+    chart_b64_str = base64.b64encode(chart_bytes).decode()
 
     in_memory_project.put("chart", chart)
     response = client.get("/api/project/items")
@@ -200,7 +200,7 @@ def test_serialize_altair_item(
                 {
                     "name": "chart",
                     "media_type": "application/vnd.vega.v5+json;base64",
-                    "value": chart_bytes_b64,
+                    "value": chart_b64_str,
                     "updated_at": mock_nowstr,
                     "created_at": mock_nowstr,
                 }
@@ -222,7 +222,7 @@ def test_serialize_pillow_item(
         image.save(stream, format="png")
 
         png_bytes = stream.getvalue()
-        png_bytes_b64 = base64.b64encode(png_bytes).decode()
+        png_b64_str = base64.b64encode(png_bytes).decode()
 
     in_memory_project.put("image", image)
     response = client.get("/api/project/items")
@@ -235,7 +235,7 @@ def test_serialize_pillow_item(
                 {
                     "name": "image",
                     "media_type": "image/png;base64",
-                    "value": png_bytes_b64,
+                    "value": png_b64_str,
                     "updated_at": mock_nowstr,
                     "created_at": mock_nowstr,
                 }
@@ -254,7 +254,7 @@ def test_serialize_plotly_item(
     figure = plotly.graph_objects.Figure(data=[bar])
     figure_str = plotly.io.to_json(figure, engine="json")
     figure_bytes = figure_str.encode("utf-8")
-    figure_bytes_b64 = base64.b64encode(figure_bytes).decode()
+    figure_b64_str = base64.b64encode(figure_bytes).decode()
 
     in_memory_project.put("figure", figure)
     response = client.get("/api/project/items")
@@ -267,7 +267,7 @@ def test_serialize_plotly_item(
                 {
                     "name": "figure",
                     "media_type": "application/vnd.plotly.v1+json;base64",
-                    "value": figure_bytes_b64,
+                    "value": figure_b64_str,
                     "updated_at": mock_nowstr,
                     "created_at": mock_nowstr,
                 }
@@ -491,7 +491,7 @@ def test_get_items_with_pickle_item(
                     "updated_at": mock_nowstr,
                     "name": "pickle",
                     "media_type": "text/markdown",
-                    "value": "<class 'object'>",
+                    "value": "```python\n<class 'object'>\n```",
                 },
             ],
         },

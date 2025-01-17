@@ -60,7 +60,7 @@ class TestMatplotlibFigureItem:
             figure.savefig(stream, format="svg", bbox_inches="tight")
 
             figure_bytes = stream.getvalue()
-            figure_bytes_b64 = base64.b64encode(figure_bytes).decode()
+            figure_b64_str = base64.b64encode(figure_bytes).decode()
 
         item = MatplotlibFigureItem.factory(figure)
 
@@ -69,5 +69,5 @@ class TestMatplotlibFigureItem:
             "created_at": mock_nowstr,
             "note": None,
             "media_type": "image/svg+xml;base64",
-            "value": figure_bytes_b64,
+            "value": figure_b64_str,
         }

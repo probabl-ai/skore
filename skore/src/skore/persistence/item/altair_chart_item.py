@@ -74,9 +74,9 @@ class AltairChartItem(Item):
         import base64
 
         chart_bytes = self.chart_str.encode("utf-8")
-        chart_bytes_b64 = base64.b64encode(chart_bytes).decode()
+        chart_b64_str = base64.b64encode(chart_bytes).decode()
 
         return super().as_serializable_dict() | {
             "media_type": "application/vnd.vega.v5+json;base64",
-            "value": chart_bytes_b64,
+            "value": chart_b64_str,
         }

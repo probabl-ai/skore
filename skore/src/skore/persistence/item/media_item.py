@@ -93,5 +93,5 @@ class MediaItem(Item):
         """Return item as a JSONable dict to export to frontend."""
         return super().as_serializable_dict() | {
             "media_type": self.media_type,
-            "value": self.media.encode("utf-8"),
+            "value": self.media,
         }

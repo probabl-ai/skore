@@ -45,12 +45,12 @@ class TestPillowImageItem:
             image.save(stream, format="png")
 
             png_bytes = stream.getvalue()
-            png_bytes_b64 = base64.b64encode(png_bytes).decode()
+            png_b64_str = base64.b64encode(png_bytes).decode()
 
         assert item.as_serializable_dict() == {
             "updated_at": mock_nowstr,
             "created_at": mock_nowstr,
             "note": None,
             "media_type": "image/png;base64",
-            "value": png_bytes_b64,
+            "value": png_b64_str,
         }
