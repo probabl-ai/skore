@@ -127,6 +127,11 @@ jobs:
           # Install `skore` without its dependencies, which are present in the venv
           wheel=(dist/*.whl); python -m pip install --force-reinstall --no-deps "${wheel}"
 
+      - name: Show dependencies versions
+        working-directory: skore/
+        run: |
+          python -c "import skore; skore.show_versions()"
+
       - name: Test without coverage
         if: ${{ ! matrix.coverage }}
         timeout-minutes: 10
