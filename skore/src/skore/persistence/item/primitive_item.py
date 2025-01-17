@@ -70,21 +70,6 @@ class PrimitiveItem(Item):
 
         self.primitive = primitive
 
-    def as_serializable_dict(self):
-        """Get a serializable dict from the item.
-
-        Derived class must call their super implementation
-        and merge the result with their output.
-        """
-        d = super().as_serializable_dict()
-        d.update(
-            {
-                "media_type": "text/markdown",
-                "value": self.primitive,
-            }
-        )
-        return d
-
     @classmethod
     def factory(cls, primitive: Primitive, /, **kwargs) -> PrimitiveItem:
         """
@@ -104,3 +89,10 @@ class PrimitiveItem(Item):
             raise ItemTypeError(f"Type '{primitive.__class__}' is not supported.")
 
         return cls(primitive=primitive, **kwargs)
+
+    def as_serializable_dict(self):
+        """Convert item to a JSON-serializable dict to used by frontend."""
+        return super().as_serializable_dict() | {
+            "media_type": "text/markdown",
+            "value": self.primitive,
+        }

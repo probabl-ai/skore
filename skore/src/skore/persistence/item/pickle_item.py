@@ -17,9 +17,8 @@ from .item import Item
 
 class PickleItem(Item):
     """
-    A class to represent any object item.
+    An item used to persist objects that cannot be otherwise, using binary protocols.
 
-    This class is generally used to persist objects that cannot be otherwise.
     It encapsulates the object with its pickle representaton, its creation and update
     timestamps.
     """
@@ -52,7 +51,7 @@ class PickleItem(Item):
     @classmethod
     def factory(cls, object: Any, /, **kwargs) -> PickleItem:
         """
-        Create a new PickleItem with any object.
+        Create a new PickleItem from ``object``.
 
         Parameters
         ----------
@@ -76,11 +75,11 @@ class PickleItem(Item):
             return joblib.load(stream)
 
     def as_serializable_dict(self):
-        """Get a JSON serializable representation of the item."""
+        """Convert item to a JSON-serializable dict to used by frontend."""
         try:
             object = self.object
         except Exception as e:
-            value = "UnpicklingError"
+            value = "Item cannot be displayed"
             traceback = "".join(format_exception(None, e, e.__traceback__))
             note = "".join(
                 (

@@ -36,10 +36,12 @@ def object_to_item(
 
     if display_as is not None:
         if not isinstance(object, str):
-            raise TypeError("`object` must be a str if `display_as` is specified")
+            raise TypeError("`object` must be a string if `display_as` is specified")
 
         if display_as not in MediaType.__members__:
-            raise ValueError(f"`display_as` must be in {list(MediaType.__members__)}")
+            raise ValueError(
+                f"`display_as` must be one of {', '.join(MediaType.__members__)}"
+            )
 
         return MediaItem.factory(object, MediaType[display_as].value, note=note)
 

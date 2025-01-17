@@ -93,7 +93,7 @@ class Project:
             The value to associate with ``key`` in the Project.
         note : str, optional
             A note to attach with the item.
-        display_as : str, optional
+        display_as : {"HTML", "MARKDOWN", "SVG"}, optional
             Used in combination with a string value, it customizes the way the value is
             displayed in the interface.
 
@@ -124,10 +124,11 @@ class Project:
         ----------
         key : str
             The key corresponding to the item to get.
-        latest : boolean, optional
-            Get the latest value or all the values associated to ``key``, default True.
-        metadata : boolean, optional
-            Get the metadata in addition of the value, default False.
+        latest : boolean, default=True
+            If True, get the latest value, otherwise get all the values associated to
+            ``key``.
+        metadata : boolean, default=False
+            If True, get the metadata in addition to the value.
 
         Returns
         -------

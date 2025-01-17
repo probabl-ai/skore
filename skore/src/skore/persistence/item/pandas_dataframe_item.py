@@ -77,21 +77,6 @@ class PandasDataFrameItem(Item):
 
             return dataframe
 
-    def as_serializable_dict(self):
-        """Get a serializable dict from the item.
-
-        Derived class must call their super implementation
-        and merge the result with their output.
-        """
-        d = super().as_serializable_dict()
-        d.update(
-            {
-                "media_type": "application/vnd.dataframe",
-                "value": self.dataframe.fillna("NaN").to_dict(orient="tight"),
-            }
-        )
-        return d
-
     @classmethod
     def factory(cls, dataframe: pandas.DataFrame, /, **kwargs) -> PandasDataFrameItem:
         """
@@ -146,3 +131,10 @@ class PandasDataFrameItem(Item):
             dataframe_json=dataframe.to_json(orient=PandasDataFrameItem.ORIENT),
             **kwargs,
         )
+
+    def as_serializable_dict(self):
+        """Convert item to a JSON-serializable dict to used by frontend."""
+        return super().as_serializable_dict() | {
+            "media_type": "application/vnd.dataframe",
+            "value": self.dataframe.fillna("NaN").to_dict(orient="tight"),
+        }

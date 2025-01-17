@@ -71,21 +71,6 @@ class SklearnBaseEstimatorItem(Item):
             self.estimator_skops, trusted=self.estimator_skops_untrusted_types
         )
 
-    def as_serializable_dict(self):
-        """Get a serializable dict from the item.
-
-        Derived class must call their super implementation
-        and merge the result with their output.
-        """
-        d = super().as_serializable_dict()
-        d.update(
-            {
-                "value": self.estimator_html_repr,
-                "media_type": "application/vnd.sklearn.estimator+html",
-            }
-        )
-        return d
-
     @classmethod
     def factory(
         cls,
@@ -128,3 +113,10 @@ class SklearnBaseEstimatorItem(Item):
             estimator_skops_untrusted_types=estimator_skops_untrusted_types,
             **kwargs,
         )
+
+    def as_serializable_dict(self):
+        """Convert item to a JSON-serializable dict to used by frontend."""
+        return super().as_serializable_dict() | {
+            "value": self.estimator_html_repr,
+            "media_type": "application/vnd.sklearn.estimator+html",
+        }

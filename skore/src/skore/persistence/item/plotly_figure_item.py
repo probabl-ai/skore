@@ -11,7 +11,7 @@ from .item import Item, ItemTypeError
 from .media_item import lazy_is_instance
 
 if TYPE_CHECKING:
-    import plotly.basedatatypes as plotly
+    import plotly.basedatatypes
 
 
 class PlotlyFigureItem(Item):
@@ -43,7 +43,12 @@ class PlotlyFigureItem(Item):
         self.figure_str = figure_str
 
     @classmethod
-    def factory(cls, figure: plotly.BaseFigure, /, **kwargs) -> PlotlyFigureItem:
+    def factory(
+        cls,
+        figure: plotly.basedatatypes.BaseFigure,
+        /,
+        **kwargs,
+    ) -> PlotlyFigureItem:
         """
         Create a new PlotlyFigureItem instance from a Plotly figure.
 
@@ -65,14 +70,14 @@ class PlotlyFigureItem(Item):
         return cls(plotly.io.to_json(figure, engine="json"), **kwargs)
 
     @property
-    def figure(self) -> plotly.BaseFigure:
+    def figure(self) -> plotly.basedatatypes.BaseFigure:
         """The figure from the persistence."""
         import plotly.io
 
         return plotly.io.from_json(self.figure_str)
 
     def as_serializable_dict(self):
-        """Return item as a JSONable dict to export to frontend."""
+        """Convert item to a JSON-serializable dict to used by frontend."""
         import base64
 
         figure_bytes = self.figure_str.encode("utf-8")

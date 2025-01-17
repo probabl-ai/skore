@@ -575,7 +575,7 @@ def test_get_items_with_pickle_item_and_unpickling_error(
                     "updated_at": mock_nowstr,
                     "name": "pickle",
                     "media_type": "text/markdown",
-                    "value": "UnpicklingError",
+                    "value": "Item cannot be displayed",
                 },
             ],
         },

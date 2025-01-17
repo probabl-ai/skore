@@ -32,7 +32,7 @@ class TestMatplotlibFigureItem:
         with io.BytesIO(item.figure_bytes) as stream:
             joblib.load(stream).savefig(tmp_path / "item.png")
 
-        assert not compare_images(tmp_path / "figure.png", tmp_path / "item.png", 0)
+        assert compare_images(tmp_path / "figure.png", tmp_path / "item.png", 0) is None
         assert item.created_at == mock_nowstr
         assert item.updated_at == mock_nowstr
 
@@ -56,8 +56,12 @@ class TestMatplotlibFigureItem:
         item1.figure.savefig(tmp_path / "item1.png")
         item2.figure.savefig(tmp_path / "item2.png")
 
-        assert not compare_images(tmp_path / "figure.png", tmp_path / "item1.png", 0)
-        assert not compare_images(tmp_path / "figure.png", tmp_path / "item2.png", 0)
+        assert (
+            compare_images(tmp_path / "figure.png", tmp_path / "item1.png", 0) is None
+        )
+        assert (
+            compare_images(tmp_path / "figure.png", tmp_path / "item2.png", 0) is None
+        )
 
     def test_as_serializable_dict(self, mock_nowstr):
         figure = FakeFigure()

@@ -117,10 +117,10 @@ class Item(ABC):
         return template.render(**context)
 
     def as_serializable_dict(self):
-        """Get a serializable dict from the item.
+        """Convert item to a JSON-serializable dict to used by frontend.
 
-        Derived class must call their super implementation
-        and merge the result with their output.
+        Derived class must call their super implementation and merge the result with
+        their output.
         """
         return {
             "updated_at": self.updated_at,

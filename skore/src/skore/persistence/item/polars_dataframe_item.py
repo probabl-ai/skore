@@ -68,23 +68,6 @@ class PolarsDataFrameItem(Item):
             dataframe = polars.read_json(df_stream)
             return dataframe
 
-    def as_serializable_dict(self):
-        """Get a serializable dict from the item.
-
-        Derived class must call their super implementation
-        and merge the result with their output.
-        """
-        d = super().as_serializable_dict()
-        d.update(
-            {
-                "value": self.dataframe.to_pandas()
-                .fillna("NaN")
-                .to_dict(orient="tight"),
-                "media_type": "application/vnd.dataframe",
-            }
-        )
-        return d
-
     @classmethod
     def factory(cls, dataframe: polars.DataFrame, /, **kwargs) -> PolarsDataFrameItem:
         """
@@ -115,3 +98,10 @@ class PolarsDataFrameItem(Item):
             raise PolarsToJSONError("Conversion to JSON failed") from e
 
         return cls(dataframe_json=dataframe_json, **kwargs)
+
+    def as_serializable_dict(self):
+        """Convert item to a JSON-serializable dict to used by frontend."""
+        return super().as_serializable_dict() | {
+            "value": self.dataframe.to_pandas().fillna("NaN").to_dict(orient="tight"),
+            "media_type": "application/vnd.dataframe",
+        }

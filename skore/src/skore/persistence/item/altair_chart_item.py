@@ -70,7 +70,7 @@ class AltairChartItem(Item):
         return altair.Chart.from_json(self.chart_str)
 
     def as_serializable_dict(self):
-        """Return item as a JSONable dict to export to frontend."""
+        """Convert item to a JSON-serializable dict to used by frontend."""
         import base64
 
         chart_bytes = self.chart_str.encode("utf-8")

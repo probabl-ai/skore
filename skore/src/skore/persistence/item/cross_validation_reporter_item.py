@@ -204,7 +204,7 @@ class CrossValidationReporterItem(Item):
             return joblib.load(stream)
 
     def as_serializable_dict(self):
-        """Get a serializable dict from the item."""
+        """Convert item to a JSON-serializable dict to used by frontend."""
         # Get tabular results (the cv results in a dataframe-like structure)
         cv_results = {
             key: value.tolist()

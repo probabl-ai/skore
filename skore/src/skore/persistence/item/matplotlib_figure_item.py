@@ -76,7 +76,7 @@ class MatplotlibFigureItem(Item):
             return joblib.load(stream)
 
     def as_serializable_dict(self) -> dict:
-        """Return item as a JSONable dict to export to frontend."""
+        """Convert item to a JSON-serializable dict to used by frontend."""
         with BytesIO() as stream:
             self.figure.savefig(stream, format="svg", bbox_inches="tight")
 

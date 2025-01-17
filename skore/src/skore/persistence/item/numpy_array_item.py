@@ -59,21 +59,6 @@ class NumpyArrayItem(Item):
 
         return numpy.asarray(loads(self.array_json))
 
-    def as_serializable_dict(self):
-        """Get a serializable dict from the item.
-
-        Derived class must call their super implementation
-        and merge the result with their output.
-        """
-        d = super().as_serializable_dict()
-        d.update(
-            {
-                "media_type": "text/markdown",
-                "value": self.array.tolist(),
-            }
-        )
-        return d
-
     @classmethod
     def factory(cls, array: numpy.ndarray, /, **kwargs) -> NumpyArrayItem:
         """
@@ -95,3 +80,10 @@ class NumpyArrayItem(Item):
             raise ItemTypeError(f"Type '{array.__class__}' is not supported.")
 
         return cls(array_json=dumps(array.tolist()), **kwargs)
+
+    def as_serializable_dict(self):
+        """Convert item to a JSON-serializable dict to used by frontend."""
+        return super().as_serializable_dict() | {
+            "media_type": "text/markdown",
+            "value": self.array.tolist(),
+        }

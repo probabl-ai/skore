@@ -19,7 +19,7 @@ def lazy_is_instance(object: Any, cls_fullname: str) -> bool:
 
 
 class MediaType(Enum):
-    """Enum used to map aliases and media types."""
+    """A media type of a string."""
 
     HTML = "text/html"
     MARKDOWN = "text/markdown"
@@ -63,7 +63,7 @@ class MediaItem(Item):
         cls,
         media: str,
         /,
-        media_type: Optional[str] = "text/markdown",
+        media_type: Optional[str] = MediaType.MARKDOWN.value,
         **kwargs,
     ) -> MediaItem:
         """
@@ -90,7 +90,7 @@ class MediaItem(Item):
         return cls(media, media_type, **kwargs)
 
     def as_serializable_dict(self):
-        """Return item as a JSONable dict to export to frontend."""
+        """Convert item to a JSON-serializable dict to used by frontend."""
         return super().as_serializable_dict() | {
             "media_type": self.media_type,
             "value": self.media,

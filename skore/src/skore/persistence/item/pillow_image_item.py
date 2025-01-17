@@ -87,7 +87,7 @@ class PillowImageItem(Item):
         )
 
     def as_serializable_dict(self):
-        """Return item as a JSONable dict to export to frontend."""
+        """Convert item to a JSON-serializable dict to used by frontend."""
         import base64
         import io
 

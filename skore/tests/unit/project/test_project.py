@@ -115,7 +115,7 @@ def test_put_matplotlib_figure(in_memory_project, monkeypatch, tmp_path):
     figure.savefig(tmp_path / "figure.png")
     in_memory_project.get("figure").savefig(tmp_path / "item.png")
 
-    assert not compare_images(tmp_path / "figure.png", tmp_path / "item.png", 0)
+    assert compare_images(tmp_path / "figure.png", tmp_path / "item.png", 0) is None
 
 
 def test_put_altair_chart(in_memory_project):
