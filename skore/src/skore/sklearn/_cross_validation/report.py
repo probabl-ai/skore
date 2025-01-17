@@ -52,7 +52,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         other cases, :class:`KFold` is used. These splitters are instantiated
         with `shuffle=False` so the splits will be the same across calls.
 
-        Refer :ref:`User Guide <cross_validation>` for the various
+        Refer to scikit-learn's :ref:`User Guide <cross_validation>` for the various
         cross-validation strategies that can be used here.
 
     n_jobs : int, default=None
