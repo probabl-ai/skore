@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import contextlib
 import dataclasses
-import hashlib
 import importlib
 import json
 import pickle
@@ -45,22 +44,6 @@ HUMANIZED_PLOT_NAMES = {
     "scores": "Scores",
     "timing": "Timings",
 }
-
-
-def _hash_numpy(arr: numpy.ndarray) -> str:
-    """Compute a hash string from a numpy array.
-
-    Parameters
-    ----------
-    arr : numpy array
-        The numpy array whose hash will be computed.
-
-    Returns
-    -------
-    hash : str
-        A hash corresponding to the input array.
-    """
-    return hashlib.sha256(bytes(memoryview(arr))).hexdigest()
 
 
 def _metric_title(metric):
