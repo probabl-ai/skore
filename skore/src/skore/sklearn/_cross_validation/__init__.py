@@ -8,21 +8,11 @@ from skore.sklearn._cross_validation.report import (
 )
 
 
-def register_cross_validation_report_accessor(name):
-    """Register an accessor for the EstimatorReport class."""
-    return _register_accessor(name, CrossValidationReport)
-
-
-def register_cross_validation_report_metrics_accessor(name):
-    """Register an accessor for the EstimatorReport class."""
-    return _register_accessor(name, _MetricsAccessor)
-
-
 # add the plot accessor to the metrics accessor
-register_cross_validation_report_metrics_accessor("plot")(_PlotMetricsAccessor)
+_register_accessor("plot", CrossValidationReport)(_PlotMetricsAccessor)
 
 # add the metrics accessor to the estimator report
-register_cross_validation_report_accessor("metrics")(_MetricsAccessor)
+_register_accessor("metrics", CrossValidationReport)(_MetricsAccessor)
 
 
 __all__ = ["CrossValidationReport"]
