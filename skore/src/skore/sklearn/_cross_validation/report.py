@@ -44,7 +44,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         Possible inputs for `cv_splitter` are:
 
         - int, to specify the number of folds in a `(Stratified)KFold`,
-        - a scikit-learn:term:`CV splitter`,
+        - a scikit-learn :term:`CV splitter`,
         - An iterable yielding (train, test) splits as arrays of indices.
 
         For int/None inputs, if the estimator is a classifier and ``y`` is
