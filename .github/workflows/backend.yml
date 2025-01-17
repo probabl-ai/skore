@@ -107,7 +107,7 @@ jobs:
           python -m pip install --upgrade "scikit-learn ==${{ matrix.scikit-learn }}.*"
 
           # Install `skore` and its dependencies
-          python -m pip install --upgrade ".[test]"
+          python -m pip install --upgrade --upgrade-strategy=eager ".[test]"
 
           # Uninstall the `skore` package itself
           python -m pip uninstall -y "skore"
