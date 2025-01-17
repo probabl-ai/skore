@@ -276,7 +276,56 @@ def test_serialize_plotly_item(
     }
 
 
-def test_serialize_media_item(client, in_memory_project): ...
+def test_serialize_primitive_item(
+    client,
+    in_memory_project,
+    monkeypatch_datetime,
+    mock_nowstr,
+):
+    in_memory_project.put("primitive", [1, 2, [3, 4]])
+    response = client.get("/api/project/items")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "views": {},
+        "items": {
+            "primitive": [
+                {
+                    "name": "primitive",
+                    "media_type": "text/markdown",
+                    "value": [1, 2, [3, 4]],
+                    "updated_at": mock_nowstr,
+                    "created_at": mock_nowstr,
+                }
+            ]
+        },
+    }
+
+
+def test_serialize_media_item(
+    client,
+    in_memory_project,
+    monkeypatch_datetime,
+    mock_nowstr,
+):
+    in_memory_project.put("media", "<media>", display_as="HTML")
+    response = client.get("/api/project/items")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "views": {},
+        "items": {
+            "media": [
+                {
+                    "name": "media",
+                    "media_type": "text/html",
+                    "value": "<media>",
+                    "updated_at": mock_nowstr,
+                    "created_at": mock_nowstr,
+                }
+            ]
+        },
+    }
 
 
 @pytest.fixture
