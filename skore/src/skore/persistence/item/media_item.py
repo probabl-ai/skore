@@ -84,7 +84,11 @@ class MediaItem(Item):
         if not isinstance(media, str):
             raise ItemTypeError(f"Type '{media.__class__}' is not supported.")
 
-        if media_type not in MediaType:
+        # | Before Python 3.12, a TypeError is raised if a non-Enum-member is used in a
+        # | containment check.
+        #
+        # https://docs.python.org/3.12/library/enum.html#enum.EnumType.__contains__
+        if media_type not in MediaType._value2member_map_:
             raise ValueError(f"MIME type '{media_type}' is not supported.")
 
         return cls(media, media_type, **kwargs)
