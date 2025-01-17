@@ -49,17 +49,17 @@ jobs:
       matrix:
         os: ["ubuntu-latest", "windows-latest"]
         python: ["3.9", "3.10", "3.11", "3.12"]
-        scikit-learn: ["1.6"]
+        scikit-learn: ["1.6.1"]
         include:
           - os: "ubuntu-latest"
             python: "3.12"
-            scikit-learn: "1.4"
+            scikit-learn: "1.4.2"
           - os: "ubuntu-latest"
             python: "3.12"
-            scikit-learn: "1.5"
+            scikit-learn: "1.5.2"
           - os: "ubuntu-latest"
             python: "3.12"
-            scikit-learn: "1.6"
+            scikit-learn: "1.6.1"
             coverage: true
     runs-on: ${{ matrix.os }}
     steps:
