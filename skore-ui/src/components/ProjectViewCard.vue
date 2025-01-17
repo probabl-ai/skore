@@ -156,6 +156,7 @@ onBeforeUnmount(() => {
     & .actions {
       display: flex;
       flex-direction: row;
+      align-items: center;
       gap: var(--spacing-4);
       opacity: 0;
       transition: opacity var(--animation-duration) var(--animation-easing);
