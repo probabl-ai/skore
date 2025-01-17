@@ -1,4 +1,7 @@
-# This file is copied from https://github.com/scikit-learn-contrib/imbalanced-learn/blob/master/doc/sphinxext/github_link.py
+"""Link docs with GitHub lines.
+
+This file is copied from https://github.com/scikit-learn-contrib/imbalanced-learn/blob/master/doc/sphinxext/github_link.py
+"""
 
 import inspect
 import os
