@@ -21,13 +21,10 @@ function exponential(x: number) {
   if (typeof x !== "number") {
     return x;
   }
-  const expoForm = x.toExponential(2);
-  const expo = expoForm.split("e")[1];
-  if (Math.abs(parseInt(expo)) < 2) {
-    return x.toFixed(2);
-  } else {
-    return expoForm;
+  if (x >= 0.1 && x <= 999) {
+    return x.toFixed(4);
   }
+  return x.toExponential(2);
 }
 
 function isNameTooltipEnabled(index: number) {
