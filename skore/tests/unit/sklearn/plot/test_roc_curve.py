@@ -251,7 +251,7 @@ def test_roc_curve_display_cross_validation_binary_classification(
     binary data."""
     (estimator, X, y), cv = binary_classification_data_no_split, 3
 
-    report = CrossValidationReport(estimator, X=X, y=y, cv=cv)
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
     display = report.metrics.plot.roc()
     assert isinstance(display, RocCurveDisplay)
 
@@ -300,7 +300,7 @@ def test_roc_curve_display_cross_validation_multiclass_classification(
     """Check the attributes and default plotting behaviour of the ROC curve plot with
     multiclass data."""
     (estimator, X, y), cv = multiclass_classification_data_no_split, 3
-    report = CrossValidationReport(estimator, X=X, y=y, cv=cv)
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
     display = report.metrics.plot.roc()
     assert isinstance(display, RocCurveDisplay)
 
@@ -360,7 +360,7 @@ def test_roc_curve_display_cross_validation_binary_classification_kwargs(
     cross-validation."""
     (estimator, X, y), cv = binary_classification_data_no_split, 3
 
-    report = CrossValidationReport(estimator, X=X, y=y, cv=cv)
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
     display = report.metrics.plot.roc()
     display.plot(roc_curve_kwargs=roc_curve_kwargs)
     if isinstance(roc_curve_kwargs, list):
@@ -384,7 +384,7 @@ def test_roc_curve_display_cross_validation_multiple_roc_curve_kwargs_error(
     value for the `roc_curve_kwargs` argument."""
     (estimator, X, y), cv = request.getfixturevalue(fixture_name), 3
 
-    report = CrossValidationReport(estimator, X=X, y=y, cv=cv)
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
     display = report.metrics.plot.roc()
     err_msg = "You intend to plot multiple ROC curves"
     with pytest.raises(ValueError, match=err_msg):

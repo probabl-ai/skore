@@ -96,7 +96,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from skore import CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv=2)
+        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         Processing cross-validation ...
         >>> reporter.metrics.report_metrics(
         ...     scoring=["precision", "recall"], pos_label=1, aggregate=["mean", "std"]
@@ -210,7 +210,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from skore import CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv=2)
+        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         Processing cross-validation ...
         >>> reporter.metrics.accuracy()
         Compute metric for each split ...
@@ -290,7 +290,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from skore import CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv=2)
+        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         Processing cross-validation ...
         >>> reporter.metrics.precision()
         Compute metric for each split ...
@@ -374,7 +374,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from skore import CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv=2)
+        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         Processing cross-validation ...
         >>> reporter.metrics.recall()
         Compute metric for each split ...
@@ -420,7 +420,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from skore import CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv=2)
+        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         Processing cross-validation ...
         >>> reporter.metrics.brier_score()
         Compute metric for each split ...
@@ -506,7 +506,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from skore import CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv=2)
+        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         Processing cross-validation ...
         >>> reporter.metrics.roc_auc()
         Compute metric for each split ...
@@ -553,7 +553,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from skore import CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv=2)
+        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         Processing cross-validation ...
         >>> reporter.metrics.log_loss()
         Compute metric for each split ...
@@ -610,7 +610,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from skore import CrossValidationReport
         >>> X, y = load_diabetes(return_X_y=True)
         >>> regressor = Ridge()
-        >>> reporter = CrossValidationReport(regressor, X=X, y=y, cv=2)
+        >>> reporter = CrossValidationReport(regressor, X=X, y=y, cv_splitter=2)
         Processing cross-validation ...
         >>> reporter.metrics.r2()
         Compute metric for each split ...
@@ -668,7 +668,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from skore import CrossValidationReport
         >>> X, y = load_diabetes(return_X_y=True)
         >>> regressor = Ridge()
-        >>> reporter = CrossValidationReport(regressor, X=X, y=y, cv=2)
+        >>> reporter = CrossValidationReport(regressor, X=X, y=y, cv_splitter=2)
         Processing cross-validation ...
         >>> reporter.metrics.rmse()
         Compute metric for each split ...
@@ -744,7 +744,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from skore import CrossValidationReport
         >>> X, y = load_diabetes(return_X_y=True)
         >>> regressor = Ridge()
-        >>> reporter = CrossValidationReport(regressor, X=X, y=y, cv=2)
+        >>> reporter = CrossValidationReport(regressor, X=X, y=y, cv_splitter=2)
         Processing cross-validation ...
         >>> reporter.metrics.custom_metric(
         ...     metric_function=mean_absolute_error,
@@ -974,7 +974,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
         >>> from skore import CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv=2)
+        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         Processing cross-validation ...
         >>> display = reporter.metrics.plot.roc()
         Computing predictions for display ...
@@ -1025,7 +1025,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
         >>> from skore import CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv=2)
+        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         Processing cross-validation ...
         >>> display = reporter.metrics.plot.precision_recall()
         Computing predictions for display ...
@@ -1100,7 +1100,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
         >>> from skore import CrossValidationReport
         >>> X, y = load_diabetes(return_X_y=True)
         >>> regressor = Ridge()
-        >>> reporter = CrossValidationReport(regressor, X=X, y=y, cv=2)
+        >>> reporter = CrossValidationReport(regressor, X=X, y=y, cv_splitter=2)
         Processing cross-validation ...
         >>> display = reporter.metrics.plot.prediction_error(
         ...     kind="actual_vs_predicted"

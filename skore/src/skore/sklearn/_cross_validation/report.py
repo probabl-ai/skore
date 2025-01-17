@@ -39,13 +39,12 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     y : array-like of shape (n_samples,) or (n_samples, n_outputs), default=None
         The target variable to try to predict in the case of supervised learning.
 
-    cv : int, cross-validation generator or an iterable, default=None
+    cv_splitter : int, cross-validation generator or an iterable, default=5
         Determines the cross-validation splitting strategy.
-        Possible inputs for cv are:
+        Possible inputs for `cv_splitter` are:
 
-        - None, to use the default 5-fold cross validation,
         - int, to specify the number of folds in a `(Stratified)KFold`,
-        - :term:`CV splitter`,
+        - a scikit-learn:term:`CV splitter`,
         - An iterable yielding (train, test) splits as arrays of indices.
 
         For int/None inputs, if the estimator is a classifier and ``y`` is
@@ -88,7 +87,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     >>> X, y = make_classification(random_state=42)
     >>> estimator = LogisticRegression()
     >>> from skore import CrossValidationReport
-    >>> report = CrossValidationReport(estimator, X=X, y=y, cv=2)
+    >>> report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=2)
     Processing cross-validation ...
     """
 
@@ -101,7 +100,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         estimator,
         X,
         y=None,
-        cv=None,
+        cv_splitter=None,
         n_jobs=None,
     ):
         self._parent_progress = None  # used for the different progress bars
@@ -111,7 +110,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         # those attributes
         self._X = X
         self._y = y
-        self._cv = check_cv(cv, y, classifier=is_classifier(estimator))
+        self._cv_splitter = check_cv(
+            cv_splitter, y, classifier=is_classifier(estimator)
+        )
         self.n_jobs = n_jobs
 
         self.estimator_reports_ = self._fit_estimator_reports()
@@ -144,7 +145,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         progress = self._progress_info["current_progress"]
         task = self._progress_info["current_task"]
 
-        n_splits = self._cv.get_n_splits(self._X, self._y)
+        n_splits = self._cv_splitter.get_n_splits(self._X, self._y)
         progress.update(task, total=n_splits)
 
         parallel = joblib.Parallel(n_jobs=self.n_jobs, return_as="generator")
@@ -157,7 +158,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 train_indices,
                 test_indices,
             )
-            for train_indices, test_indices in self._cv.split(self._X, self._y)
+            for train_indices, test_indices in self._cv_splitter.split(self._X, self._y)
         )
 
         estimator_reports = []
@@ -177,7 +178,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         >>> from skore import CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv=2)
+        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         Processing cross-validation ...
         >>> reporter.cache_predictions()
         Cross-validation predictions ...
@@ -212,7 +213,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         >>> from skore import CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv=2)
+        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         Processing cross-validation ...
         >>> reporter.cache_predictions()
         Cross-validation predictions ...

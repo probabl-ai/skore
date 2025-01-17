@@ -88,7 +88,7 @@ def test_precision_recall_curve_cross_validation_display_binary_classification(
     precision-recall curve plot with binary data.
     """
     (estimator, X, y), cv = binary_classification_data_no_split, 3
-    report = CrossValidationReport(estimator, X=X, y=y, cv=cv)
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
     display = report.metrics.plot.precision_recall()
     assert isinstance(display, PrecisionRecallCurveDisplay)
 
@@ -198,7 +198,7 @@ def test_precision_recall_curve_cross_validation_display_multiclass_classificati
     curve plot with multiclass data.
     """
     (estimator, X, y), cv = multiclass_classification_data_no_split, 3
-    report = CrossValidationReport(estimator, X=X, y=y, cv=cv)
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
     display = report.metrics.plot.precision_recall()
     assert isinstance(display, PrecisionRecallCurveDisplay)
 
@@ -314,7 +314,7 @@ def test_pr_curve_display_cross_validation_multiple_roc_curve_kwargs_error(
     value for the `pr_curve_kwargs` argument."""
     (estimator, X, y), cv = request.getfixturevalue(fixture_name), 3
 
-    report = CrossValidationReport(estimator, X=X, y=y, cv=cv)
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
     display = report.metrics.plot.precision_recall()
     err_msg = "You intend to plot multiple precision-recall curves"
     with pytest.raises(ValueError, match=err_msg):

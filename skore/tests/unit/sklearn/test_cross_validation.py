@@ -129,7 +129,7 @@ def test_generate_estimator_report(binary_classification_data):
 def test_cross_validation_report_attributes(fixture_name, request, cv, n_jobs):
     """Test the attributes of the cross-validation report."""
     estimator, X, y = request.getfixturevalue(fixture_name)
-    report = CrossValidationReport(estimator, X, y, cv=cv, n_jobs=n_jobs)
+    report = CrossValidationReport(estimator, X, y, cv_splitter=cv, n_jobs=n_jobs)
     assert isinstance(report, CrossValidationReport)
     assert isinstance(report.estimator_reports_, list)
     for estimator_report in report.estimator_reports_:
@@ -187,7 +187,7 @@ def test_estimator_report_cache_predictions(
 ):
     """Check that calling cache_predictions fills the cache."""
     estimator, X, y = request.getfixturevalue(fixture_name)
-    report = CrossValidationReport(estimator, X, y, cv=2, n_jobs=n_jobs)
+    report = CrossValidationReport(estimator, X, y, cv_splitter=2, n_jobs=n_jobs)
     report.cache_predictions(n_jobs=n_jobs)
     # no effect on the actual cache of the cross-validation report but only on the
     # underlying estimator reports
@@ -210,7 +210,7 @@ def test_estimator_report_cache_predictions(
 def test_cross_validation_report_plot_help(capsys, binary_classification_data):
     """Check that the help method writes to the console."""
     estimator, X, y = binary_classification_data
-    report = CrossValidationReport(estimator, X, y, cv=2)
+    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
 
     report.metrics.plot.help()
     captured = capsys.readouterr()
@@ -220,7 +220,7 @@ def test_cross_validation_report_plot_help(capsys, binary_classification_data):
 def test_cross_validation_report_plot_repr(binary_classification_data):
     """Check that __repr__ returns a string starting with the expected prefix."""
     estimator, X, y = binary_classification_data
-    report = CrossValidationReport(estimator, X, y, cv=2)
+    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
 
     repr_str = repr(report.metrics.plot)
     assert "skore.CrossValidationReport.metrics.plot" in repr_str
@@ -230,7 +230,7 @@ def test_cross_validation_report_plot_repr(binary_classification_data):
 def test_cross_validation_report_plot_roc(binary_classification_data):
     """Check that the ROC plot method works."""
     estimator, X, y = binary_classification_data
-    report = CrossValidationReport(estimator, X, y, cv=2)
+    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
     assert isinstance(report.metrics.plot.roc(), RocCurveDisplay)
 
 
@@ -240,7 +240,7 @@ def test_cross_validation_report_display_binary_classification(
 ):
     """General behaviour of the function creating display on binary classification."""
     estimator, X, y = binary_classification_data
-    report = CrossValidationReport(estimator, X, y, cv=2)
+    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
     assert hasattr(report.metrics.plot, display)
     display_first_call = getattr(report.metrics.plot, display)()
     assert report._cache != {}
@@ -252,7 +252,7 @@ def test_cross_validation_report_display_binary_classification(
 def test_cross_validation_report_display_regression(pyplot, regression_data, display):
     """General behaviour of the function creating display on regression."""
     estimator, X, y = regression_data
-    report = CrossValidationReport(estimator, X, y, cv=2)
+    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
     assert hasattr(report.metrics.plot, display)
     display_first_call = getattr(report.metrics.plot, display)()
     assert report._cache != {}
@@ -268,7 +268,7 @@ def test_cross_validation_report_display_regression(pyplot, regression_data, dis
 def test_estimator_report_metrics_help(capsys, binary_classification_data):
     """Check that the help method writes to the console."""
     estimator, X, y = binary_classification_data
-    report = CrossValidationReport(estimator, X, y, cv=2)
+    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
 
     report.metrics.help()
     captured = capsys.readouterr()
@@ -278,7 +278,7 @@ def test_estimator_report_metrics_help(capsys, binary_classification_data):
 def test_estimator_report_metrics_repr(binary_classification_data):
     """Check that __repr__ returns a string starting with the expected prefix."""
     estimator, X, y = binary_classification_data
-    report = CrossValidationReport(estimator, X, y, cv=2)
+    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
 
     repr_str = repr(report.metrics)
     assert "skore.CrossValidationReport.metrics" in repr_str
@@ -395,7 +395,7 @@ def test_cross_validation_report_metrics_binary_classification(
     classification.
     """
     (estimator, X, y), cv = binary_classification_data, 2
-    report = CrossValidationReport(estimator, X, y, cv=cv)
+    report = CrossValidationReport(estimator, X, y, cv_splitter=cv)
     _check_results_single_metric(report, metric, cv, nb_stats)
 
 
@@ -416,7 +416,7 @@ def test_cross_validation_report_metrics_multiclass_classification(
     classification.
     """
     (estimator, X, y), cv = multiclass_classification_data, 2
-    report = CrossValidationReport(estimator, X, y, cv=cv)
+    report = CrossValidationReport(estimator, X, y, cv_splitter=cv)
     _check_results_single_metric(report, metric, cv, nb_stats)
 
 
@@ -424,7 +424,7 @@ def test_cross_validation_report_metrics_multiclass_classification(
 def test_cross_validation_report_metrics_regression(regression_data, metric, nb_stats):
     """Check the behaviour of the metrics methods available for regression."""
     (estimator, X, y), cv = regression_data, 2
-    report = CrossValidationReport(estimator, X, y, cv=cv)
+    report = CrossValidationReport(estimator, X, y, cv_splitter=cv)
     _check_results_single_metric(report, metric, cv, nb_stats)
 
 
@@ -434,7 +434,7 @@ def test_cross_validation_report_metrics_regression_multioutput(
 ):
     """Check the behaviour of the metrics methods available for regression."""
     (estimator, X, y), cv = regression_multioutput_data, 2
-    report = CrossValidationReport(estimator, X, y, cv=cv)
+    report = CrossValidationReport(estimator, X, y, cv_splitter=cv)
     _check_results_single_metric(report, metric, cv, nb_stats)
 
 
@@ -450,7 +450,7 @@ def test_cross_validation_report_report_metrics_binary(
     RandomForestClassifier that does.
     """
     estimator, X, y = binary_classification_data
-    report = CrossValidationReport(estimator, X, y, cv=2)
+    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
     expected_metrics = ("precision", "recall", "roc_auc", "brier_score")
     # depending on `pos_label`, we report a stats for each class or not for
     # precision and recall
@@ -468,7 +468,7 @@ def test_cross_validation_report_report_metrics_binary(
     target_names = np.array(["neg", "pos"], dtype=object)
     pos_label_name = target_names[pos_label] if pos_label is not None else pos_label
     y = target_names[y]
-    report = CrossValidationReport(estimator, X, y, cv=2)
+    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
     expected_metrics = ("precision", "recall", "roc_auc", "brier_score")
     # depending on `pos_label`, we report a stats for each class or not for
     # precision and recall
@@ -482,7 +482,7 @@ def test_cross_validation_report_report_metrics_binary(
     )
 
     estimator, X, y = binary_classification_data_svc
-    report = CrossValidationReport(estimator, X, y, cv=2)
+    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
     expected_metrics = ("precision", "recall", "roc_auc")
     # depending on `pos_label`, we report a stats for each class or not for
     # precision and recall
@@ -503,7 +503,7 @@ def test_cross_validation_report_report_metrics_multiclass(
     classification.
     """
     estimator, X, y = multiclass_classification_data
-    report = CrossValidationReport(estimator, X, y, cv=2)
+    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
     expected_metrics = ("precision", "recall", "roc_auc", "log_loss")
     # since we are not averaging by default, we report 3 statistics for
     # precision, recall and roc_auc
@@ -517,7 +517,7 @@ def test_cross_validation_report_report_metrics_multiclass(
     )
 
     estimator, X, y = multiclass_classification_data_svc
-    report = CrossValidationReport(estimator, X, y, cv=2)
+    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
     expected_metrics = ("precision", "recall")
     # since we are not averaging by default, we report 3 statistics for
     # precision and recall
@@ -534,7 +534,7 @@ def test_cross_validation_report_report_metrics_multiclass(
 def test_cross_validation_report_report_metrics_regression(regression_data):
     """Check the behaviour of the `report_metrics` method with regression."""
     estimator, X, y = regression_data
-    report = CrossValidationReport(estimator, X, y, cv=2)
+    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
     expected_metrics = ("r2", "rmse")
     _check_results_report_metric(
         report,
@@ -550,7 +550,7 @@ def test_cross_validation_report_report_metrics_scoring_kwargs(
 ):
     """Check the behaviour of the `report_metrics` method with scoring kwargs."""
     estimator, X, y = regression_multioutput_data
-    report = CrossValidationReport(estimator, X, y, cv=2)
+    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
     assert hasattr(report.metrics, "report_metrics")
     result = report.metrics.report_metrics(scoring_kwargs={"multioutput": "raw_values"})
     assert result.shape == (2, 4)
@@ -558,7 +558,7 @@ def test_cross_validation_report_report_metrics_scoring_kwargs(
     assert result.columns.names == ["Metric", "Output"]
 
     estimator, X, y = multiclass_classification_data
-    report = CrossValidationReport(estimator, X, y, cv=2)
+    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
     assert hasattr(report.metrics, "report_metrics")
     result = report.metrics.report_metrics(scoring_kwargs={"average": None})
     assert result.shape == (2, 10)
@@ -593,7 +593,7 @@ def test_cross_validation_report_report_metrics_overwrite_scoring_names(
 ):
     """Test that we can overwrite the scoring names in report_metrics."""
     estimator, X, y = request.getfixturevalue(fixture_name)
-    report = CrossValidationReport(estimator, X, y, cv=2)
+    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
     result = report.metrics.report_metrics(scoring_names=scoring_names)
     assert result.shape == (2, len(expected_columns))
 
@@ -612,7 +612,7 @@ def test_cross_validation_report_report_metrics_error_scoring_strings(
 ):
     """Check that we raise an error if a scoring string is not a valid metric."""
     estimator, X, y = regression_data
-    report = CrossValidationReport(estimator, X, y, cv=2)
+    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
     err_msg = re.escape(f"Invalid metric: {scoring!r}.")
     with pytest.raises(ValueError, match=err_msg):
         report.metrics.report_metrics(scoring=[scoring])
@@ -622,7 +622,7 @@ def test_estimator_report_report_metrics_with_scorer(regression_data):
     """Check that we can pass scikit-learn scorer with different parameters to
     the `report_metrics` method."""
     estimator, X, y = regression_data
-    report = CrossValidationReport(estimator, X, y, cv=2)
+    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
 
     median_absolute_error_scorer = make_scorer(
         median_absolute_error, response_method="predict"
@@ -677,7 +677,7 @@ def test_cross_validation_report_report_metrics_with_scorer_binary_classificatio
     `report_metrics` method or consistently to both.
     """
     estimator, X, y = binary_classification_data
-    report = CrossValidationReport(estimator, X, y, cv=2)
+    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
 
     result = report.metrics.report_metrics(
         scoring=["accuracy", accuracy_score, scorer],
@@ -691,7 +691,7 @@ def test_cross_validation_report_report_metrics_with_scorer_pos_label_error(
     """Check that we raise an error when pos_label is passed both in the scorer and
     globally conducting to a mismatch."""
     estimator, X, y = binary_classification_data
-    report = CrossValidationReport(estimator, X, y, cv=2)
+    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
 
     f1_scorer = make_scorer(
         f1_score, response_method="predict", average="macro", pos_label=1
@@ -706,7 +706,7 @@ def test_cross_validation_report_report_metrics_with_scorer_pos_label_error(
 def test_cross_validation_report_report_metrics_invalid_metric_type(regression_data):
     """Check that we raise the expected error message if an invalid metric is passed."""
     estimator, X, y = regression_data
-    report = CrossValidationReport(estimator, X, y, cv=2)
+    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
 
     err_msg = re.escape("Invalid type of metric: <class 'int'> for 1")
     with pytest.raises(ValueError, match=err_msg):
@@ -716,7 +716,7 @@ def test_cross_validation_report_report_metrics_invalid_metric_type(regression_d
 def test_cross_validation_report_custom_metric(binary_classification_data):
     """Check that we can compute a custom metric."""
     estimator, X, y = binary_classification_data
-    report = CrossValidationReport(estimator, X, y, cv=2)
+    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
 
     result = report.metrics.custom_metric(
         metric_function=accuracy_score,

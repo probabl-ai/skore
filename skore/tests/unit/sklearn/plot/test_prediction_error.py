@@ -80,7 +80,7 @@ def test_prediction_error_cross_validation_display_regression(
     """Check the attributes and default plotting behaviour of the prediction error plot
     with cross-validation data."""
     (estimator, X, y), cv = regression_data_no_split, 3
-    report = CrossValidationReport(estimator, X=X, y=y, cv=cv)
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
     display = report.metrics.plot.prediction_error()
     assert isinstance(display, PredictionErrorDisplay)
 
@@ -137,7 +137,7 @@ def test_prediction_error_cross_validation_display_regression_kind(
 ):
     """Check the attributes when switching to the "actual_vs_predicted" kind."""
     (estimator, X, y), cv = regression_data_no_split, 3
-    report = CrossValidationReport(estimator, X=X, y=y, cv=cv)
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
     display = report.metrics.plot.prediction_error(kind="actual_vs_predicted")
     assert isinstance(display, PredictionErrorDisplay)
 
