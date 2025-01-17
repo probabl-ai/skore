@@ -66,8 +66,8 @@ class HelpDisplayMixin:
         return Panel(
             self._create_help_tree(),
             title=(
-                f"[bold cyan]📊 {self.__class__.__name__} for {self.estimator_name}"
-                "[/bold cyan]"
+                f"[bold cyan]{self.__class__.__name__} for "
+                f"{self.estimator_name}[/bold cyan]"
             ),
             border_style="orange1",
             expand=False,
@@ -82,7 +82,14 @@ class HelpDisplayMixin:
     def __repr__(self):
         """Return a string representation using rich."""
         console = Console(file=StringIO(), force_terminal=False)
-        console.print(self._create_help_panel())
+        console.print(
+            Panel(
+                "Get guidance using the display.help() method",
+                title=f"[cyan]{self.__class__.__name__}[/cyan]",
+                border_style="orange1",
+                expand=False,
+            )
+        )
         return console.file.getvalue()
 
 

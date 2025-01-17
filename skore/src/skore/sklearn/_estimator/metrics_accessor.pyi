@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import PrecisionRecallDisplay, RocCurveDisplay
 
-from skore.sklearn._estimator.base import _BaseAccessor
+from skore.sklearn._base import _BaseAccessor
 from skore.sklearn._plot import PredictionErrorDisplay
 
 class _PlotMetricsAccessor(_BaseAccessor):

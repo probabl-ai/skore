@@ -7,7 +7,6 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 import os
-import sphinx_autosummary_accessors
 from sphinx_gallery.sorting import ExplicitOrder
 
 project = "skore"
@@ -65,6 +64,14 @@ examples_ordered = [
     "../examples/model_evaluation/plot_cross_validate",
 ]
 
+
+# https://sphinx-gallery.github.io/stable/advanced.html#resetting-before-each-example
+def reset_mpl(gallery_conf, fname):
+    import matplotlib
+
+    matplotlib.rcParams["figure.dpi"] = 200
+
+
 # sphinx_gallery options
 sphinx_gallery_conf = {
     "examples_dirs": "../examples",  # path to example scripts
@@ -80,6 +87,7 @@ sphinx_gallery_conf = {
     "backreferences_dir": "generated",
     "doc_module": "skore",
     "default_thumb_file": "./_static/images/Logo_Skore_Light@2x.svg",
+    "reset_modules": (reset_mpl, "seaborn"),
 }
 
 # intersphinx configuration
@@ -134,30 +142,10 @@ html_theme_options = {
             "url": "https://discord.gg/scBZerAGwW",
             "icon": "fa-brands fa-discord",
         },
-        {
-            "name": "YouTube",
-            "url": "https://www.youtube.com/@probabl_ai",
-            "icon": "fa-brands fa-youtube",
-        },
-        {
-            "name": "LinkedIn",
-            "url": "https://www.linkedin.com/company/probabl/",
-            "icon": "fa-brands fa-linkedin-in",
-        },
-        {
-            "name": "Bluesky",
-            "url": "https://bsky.app/profile/probabl.ai",
-            "icon": "fa-brands fa-bluesky",
-        },
-        {
-            "name": "X (ex-Twitter)",
-            "url": "https://x.com/probabl_ai",
-            "icon": "fa-brands fa-x-twitter",
-        },
     ],
     "switcher": {
         "json_url": "https://skore.probabl.ai/versions.json",
-        "version_match": version,
+        "version_match": release,
     },
     "check_switcher": True,
     "show_version_warning_banner": True,

@@ -1,26 +1,23 @@
 import copy
-import inspect
 import time
 import warnings
 from itertools import product
 
 import joblib
 import numpy as np
-from rich.progress import track
-from rich.tree import Tree
 from sklearn.base import clone
 from sklearn.exceptions import NotFittedError
 from sklearn.pipeline import Pipeline
-from sklearn.utils._response import _check_response_method, _get_response_values
 from sklearn.utils.validation import check_is_fitted
 
 from skore.externals._pandas_accessors import DirNamesMixin
 from skore.externals._sklearn_compat import is_clusterer
-from skore.sklearn._estimator.base import _BaseAccessor, _HelpMixin
+from skore.sklearn._base import _BaseReport, _get_cached_response_values
 from skore.sklearn.find_ml_task import _find_ml_task
+from skore.utils._progress_bar import progress_decorator
 
 
-class EstimatorReport(_HelpMixin, DirNamesMixin):
+class EstimatorReport(_BaseReport, DirNamesMixin):
     """Report for a fitted estimator.
 
     This class provides a set of tools to quickly validate and inspect a scikit-learn
@@ -51,6 +48,12 @@ class EstimatorReport(_HelpMixin, DirNamesMixin):
 
     Attributes
     ----------
+    estimator_ : estimator object
+        The cloned or copied estimator.
+
+    estimator_name_ : str
+        The name of the estimator.
+
     metrics : _MetricsAccessor
         Accessor for metrics-related operations.
 
@@ -67,10 +70,7 @@ class EstimatorReport(_HelpMixin, DirNamesMixin):
     """
 
     _ACCESSOR_CONFIG = {
-        "metrics": {"icon": "📏", "name": "metrics"},
-        # Add other accessors as they're implemented
-        # "inspection": {"icon": "🔍", "name": "inspection"},
-        # "linting": {"icon": "✔️", "name": "linting"},
+        "metrics": {"name": "metrics"},
     }
 
     @staticmethod
@@ -107,6 +107,8 @@ class EstimatorReport(_HelpMixin, DirNamesMixin):
         X_test=None,
         y_test=None,
     ):
+        self._parent_progress = None  # used to display progress bar
+
         if fit == "auto":
             try:
                 check_is_fitted(estimator)
@@ -140,12 +142,37 @@ class EstimatorReport(_HelpMixin, DirNamesMixin):
     # For the moment, we do not allow to alter the estimator and the training data.
     # For the validation set, we allow it and we invalidate the cache.
 
-    def clean_cache(self):
-        """Clean the cache."""
+    def clear_cache(self):
+        """Clear the cache.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_breast_cancer(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> reporter.cache_predictions()
+        Caching predictions ...
+        >>> reporter.clear_cache()
+        >>> reporter._cache
+        {}
+        """
         self._cache = {}
 
+    @progress_decorator(description="Caching predictions")
     def cache_predictions(self, response_methods="auto", n_jobs=None):
-        """Force caching of estimator's predictions.
+        """Cache estimator's predictions.
 
         Parameters
         ----------
@@ -158,29 +185,50 @@ class EstimatorReport(_HelpMixin, DirNamesMixin):
         n_jobs : int or None, default=None
             The number of jobs to run in parallel. None means 1 unless in a
             joblib.parallel_backend context. -1 means using all processors.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_breast_cancer(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> reporter.cache_predictions()
+        Caching predictions ...
+        >>> reporter._cache
+        {...}
         """
         if self._ml_task in ("binary-classification", "multiclass-classification"):
             if response_methods == "auto":
-                response_methods = ("predict",)
+                response_methods = ["predict"]
                 if hasattr(self._estimator, "predict_proba"):
-                    response_methods = ("predict_proba",)
+                    response_methods += ["predict_proba"]
                 if hasattr(self._estimator, "decision_function"):
-                    response_methods = ("decision_function",)
+                    response_methods += ["decision_function"]
             pos_labels = self._estimator.classes_
         else:
             if response_methods == "auto":
-                response_methods = ("predict",)
+                response_methods = ["predict"]
             pos_labels = [None]
 
-        data_sources = ("test",)
-        Xs = (self._X_test,)
+        data_sources = [("test", self._X_test)]
         if self._X_train is not None:
-            data_sources = ("train",)
-            Xs = (self._X_train,)
+            data_sources += [("train", self._X_train)]
 
         parallel = joblib.Parallel(n_jobs=n_jobs, return_as="generator_unordered")
         generator = parallel(
-            joblib.delayed(self._get_cached_response_values)(
+            joblib.delayed(_get_cached_response_values)(
+                cache=self._cache,
                 estimator_hash=self._hash,
                 estimator=self._estimator,
                 X=X,
@@ -188,25 +236,24 @@ class EstimatorReport(_HelpMixin, DirNamesMixin):
                 pos_label=pos_label,
                 data_source=data_source,
             )
-            for response_method, pos_label, data_source, X in product(
-                response_methods, pos_labels, data_sources, Xs
+            for response_method, pos_label, (data_source, X) in product(
+                response_methods, pos_labels, data_sources
             )
         )
         # trigger the computation
-        list(
-            track(
-                generator,
-                total=len(response_methods) * len(pos_labels) * len(data_sources),
-                description="Caching predictions",
-            )
-        )
+        progress = self._progress_info["current_progress"]
+        task = self._progress_info["current_task"]
+        total_iterations = len(response_methods) * len(pos_labels) * len(data_sources)
+        progress.update(task, total=total_iterations)
+        for _ in generator:
+            progress.update(task, advance=1, refresh=True)
 
     @property
-    def estimator(self):
+    def estimator_(self):
         return self._estimator
 
-    @estimator.setter
-    def estimator(self, value):
+    @estimator_.setter
+    def estimator_(self, value):
         raise AttributeError(
             "The estimator attribute is immutable. "
             f"Call the constructor of {self.__class__.__name__} to create a new report."
@@ -220,7 +267,7 @@ class EstimatorReport(_HelpMixin, DirNamesMixin):
     def X_train(self, value):
         raise AttributeError(
             "The X_train attribute is immutable. "
-            "Please use the `from_unfitted_estimator` method to create a new report."
+            f"Call the constructor of {self.__class__.__name__} to create a new report."
         )
 
     @property
@@ -231,7 +278,7 @@ class EstimatorReport(_HelpMixin, DirNamesMixin):
     def y_train(self, value):
         raise AttributeError(
             "The y_train attribute is immutable. "
-            "Please use the `from_unfitted_estimator` method to create a new report."
+            f"Call the constructor of {self.__class__.__name__} to create a new report."
         )
 
     @property
@@ -253,179 +300,15 @@ class EstimatorReport(_HelpMixin, DirNamesMixin):
         self._initialize_state()
 
     @property
-    def estimator_name(self):
+    def estimator_name_(self):
         if isinstance(self._estimator, Pipeline):
             name = self._estimator[-1].__class__.__name__
         else:
             name = self._estimator.__class__.__name__
         return name
 
-    def _get_cached_response_values(
-        self,
-        *,
-        estimator_hash,
-        estimator,
-        X,
-        response_method,
-        pos_label=None,
-        data_source="test",
-        data_source_hash=None,
-    ):
-        """Compute or load from local cache the response values.
-
-        Parameters
-        ----------
-        estimator_hash : int
-            A hash associated with the estimator such that we can retrieve the data from
-            the cache.
-
-        estimator : estimator object
-            The estimator.
-
-        X : {array-like, sparse matrix} of shape (n_samples, n_features)
-            The data.
-
-        response_method : str
-            The response method.
-
-        pos_label : str, default=None
-            The positive label.
-
-        data_source : {"test", "train", "X_y"}, default="test"
-            The data source to use.
-
-            - "test" : use the test set provided when creating the reporter.
-            - "train" : use the train set provided when creating the reporter.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
-
-        data_source_hash : int or None
-            The hash of the data source when `data_source` is "X_y".
-
-        Returns
-        -------
-        array-like of shape (n_samples,) or (n_samples, n_outputs)
-            The response values.
-        """
-        prediction_method = _check_response_method(estimator, response_method).__name__
-        if prediction_method in ("predict_proba", "decision_function"):
-            # pos_label is only important in classification and with probabilities
-            # and decision functions
-            cache_key = (estimator_hash, pos_label, prediction_method, data_source)
-        else:
-            cache_key = (estimator_hash, prediction_method, data_source)
-
-        if data_source == "X_y":
-            data_source_hash = joblib.hash(X)
-            cache_key += (data_source_hash,)
-
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-
-        predictions, _ = _get_response_values(
-            estimator,
-            X=X,
-            response_method=prediction_method,
-            pos_label=pos_label,
-            return_response_method_used=False,
+    def __repr__(self):
+        """Return a string representation using rich."""
+        return self._rich_repr(
+            class_name="skore.EstimatorReport", help_method_name="reporter.help()"
         )
-        self._cache[cache_key] = predictions
-
-        return predictions
-
-    ####################################################################################
-    # Methods related to the help tree
-    ####################################################################################
-
-    def _get_help_panel_title(self):
-        return (
-            f"[bold cyan]📓 Tools to diagnose estimator "
-            f"{self.estimator_name}[/bold cyan]"
-        )
-
-    def _get_help_legend(self):
-        return (
-            "[cyan](↗︎)[/cyan] higher is better [orange1](↘︎)[/orange1] lower is better"
-        )
-
-    def _get_attributes_for_help(self):
-        """Get the public attributes to display in help."""
-        attributes = []
-        xy_attributes = []
-
-        for name in dir(self):
-            # Skip private attributes, callables, and accessors
-            if (
-                name.startswith("_")
-                or callable(getattr(self, name))
-                or isinstance(getattr(self, name), _BaseAccessor)
-            ):
-                continue
-
-            # Group X and y attributes separately
-            value = getattr(self, name)
-            if name.startswith(("X_", "y_")):
-                if value is not None:  # Only include non-None X/y attributes
-                    xy_attributes.append(name)
-            else:
-                attributes.append(name)
-
-        # Sort X/y attributes to keep them grouped
-        xy_attributes.sort()
-        attributes.sort()
-
-        # Return X/y attributes first, followed by other attributes
-        return xy_attributes + attributes
-
-    def _create_help_tree(self):
-        """Create a rich Tree with the available tools and accessor methods."""
-        tree = Tree("reporter")
-
-        # Add accessor methods first
-        for accessor_attr, config in self._ACCESSOR_CONFIG.items():
-            accessor = getattr(self, accessor_attr)
-            branch = tree.add(
-                f"[bold cyan].{config['name']} {config['icon']}[/bold cyan]"
-            )
-
-            # Add main accessor methods first
-            methods = accessor._get_methods_for_help()
-            methods = accessor._sort_methods_for_help(methods)
-
-            # Add methods
-            for name, method in methods:
-                displayed_name = accessor._format_method_name(name)
-                description = accessor._get_method_description(method)
-                branch.add(f".{displayed_name} - {description}")
-
-            # Add sub-accessors after main methods
-            for sub_attr, sub_obj in inspect.getmembers(accessor):
-                if isinstance(sub_obj, _BaseAccessor) and not sub_attr.startswith("_"):
-                    sub_branch = branch.add(
-                        f"[bold cyan].{sub_attr} {sub_obj._icon}[/bold cyan]"
-                    )
-
-                    # Add sub-accessor methods
-                    sub_methods = sub_obj._get_methods_for_help()
-                    sub_methods = sub_obj._sort_methods_for_help(sub_methods)
-
-                    for name, method in sub_methods:
-                        displayed_name = sub_obj._format_method_name(name)
-                        description = sub_obj._get_method_description(method)
-                        sub_branch.add(f".{displayed_name.ljust(25)} - {description}")
-
-        # Add base methods
-        base_methods = self._get_methods_for_help()
-        base_methods = self._sort_methods_for_help(base_methods)
-
-        for name, method in base_methods:
-            description = self._get_method_description(method)
-            tree.add(f".{name}(...)".ljust(34) + f" - {description}")
-
-        # Add attributes section
-        attributes = self._get_attributes_for_help()
-        if attributes:
-            attr_branch = tree.add("[bold cyan]Attributes[/bold cyan]")
-            for attr in attributes:
-                attr_branch.add(f".{attr}")
-
-        return tree

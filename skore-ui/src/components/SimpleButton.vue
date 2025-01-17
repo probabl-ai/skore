@@ -46,6 +46,7 @@ onBeforeMount(() => {
 <style scoped>
 .button {
   display: inline-flex;
+  flex: 0 0 fit-content;
   flex-direction: row;
   align-items: center;
   justify-content: center;
@@ -73,7 +74,6 @@ onBeforeMount(() => {
     padding: 0 var(--spacing-4);
     border: var(--stroke-width-md) solid var(--color-stroke-background-primary);
     border-radius: var(--radius-xs);
-    margin: 0 auto;
     background: var(--color-background-secondary);
   }
 

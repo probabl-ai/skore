@@ -5,7 +5,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 const props = defineProps<Toast>();
 const toastsStore = useToastsStore();
 let durationTimer = -1;
-let animationPlayState = ref("paused");
+const animationPlayState = ref("paused");
 
 const icon = computed(() => {
   switch (props.type) {

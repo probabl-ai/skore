@@ -9,7 +9,7 @@ from sklearn.metrics._scorer import _BaseScorer
 from sklearn.utils.metaestimators import available_if
 
 from skore.externals._pandas_accessors import DirNamesMixin
-from skore.sklearn._estimator.base import _BaseAccessor
+from skore.sklearn._base import _BaseAccessor, _get_cached_response_values
 from skore.sklearn._plot import (
     PrecisionRecallCurveDisplay,
     PredictionErrorDisplay,
@@ -42,7 +42,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     }
 
     def __init__(self, parent):
-        super().__init__(parent, icon="📏")
+        super().__init__(parent)
 
     # TODO: should build on the `add_scorers` function
     def report_metrics(
@@ -52,6 +52,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         X=None,
         y=None,
         scoring=None,
+        scoring_names=None,
         pos_label=None,
         scoring_kwargs=None,
     ):
@@ -83,7 +84,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             same parameter name with different values), you can use scikit-learn scorers
             as provided by :func:`sklearn.metrics.make_scorer`.
 
-        pos_label : int, default=None
+        scoring_names : list of str, default=None
+            Used to overwrite the default scoring names in the report. It should be of
+            the same length as the `scoring` parameter.
+
+        pos_label : int, float, bool or str, default=None
             The positive class.
 
         scoring_kwargs : dict, default=None
@@ -93,40 +98,117 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         -------
         pd.DataFrame
             The statistics for the metrics.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_breast_cancer(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> reporter.metrics.report_metrics(pos_label=1)
+        Metric              Precision (↗︎)  Recall (↗︎)  ROC AUC (↗︎)  Brier score (↘︎)
+        LogisticRegression        0.98...     0.93...      0.99...          0.03...
         """
+        if data_source == "X_y":
+            # optimization of the hash computation to avoid recomputing it
+            # FIXME: we are still recomputing the hash for all the metrics that we
+            # support in the report because we don't call `_compute_metric_scores`
+            # here. We should fix it.
+            X, y, data_source_hash = self._get_X_y_and_data_source_hash(
+                data_source=data_source, X=X, y=y
+            )
+        else:
+            data_source_hash = None
+
+        scoring_was_none = scoring is None
         if scoring is None:
             # Equivalent to _get_scorers_to_add
             if self._parent._ml_task == "binary-classification":
-                scoring = ["precision", "recall", "roc_auc"]
+                scoring = ["_precision", "_recall", "_roc_auc"]
                 if hasattr(self._parent._estimator, "predict_proba"):
-                    scoring.append("brier_score")
+                    scoring.append("_brier_score")
             elif self._parent._ml_task == "multiclass-classification":
-                scoring = ["precision", "recall"]
+                scoring = ["_precision", "_recall"]
                 if hasattr(self._parent._estimator, "predict_proba"):
-                    scoring += ["roc_auc", "log_loss"]
+                    scoring += ["_roc_auc", "_log_loss"]
             else:
-                scoring = ["r2", "rmse"]
+                scoring = ["_r2", "_rmse"]
+
+        if scoring_names is not None and len(scoring_names) != len(scoring):
+            if scoring_was_none:
+                # we raise a better error message since we decide the default scores
+                raise ValueError(
+                    "The `scoring_names` parameter should be of the same length as "
+                    "the `scoring` parameter. In your case, `scoring` was set to None "
+                    f"and you are using our default scores that are {len(scoring)}. "
+                    "The list is the following: {scoring}."
+                )
+            else:
+                raise ValueError(
+                    "The `scoring_names` parameter should be of the same length as "
+                    f"the `scoring` parameter. Got {len(scoring_names)} names for "
+                    f"{len(scoring)} scoring functions."
+                )
+        elif scoring_names is None:
+            scoring_names = [None] * len(scoring)
 
         scores = []
-
-        for metric in scoring:
+        for metric_name, metric in zip(scoring_names, scoring):
             # NOTE: we have to check specifically for `_BaseScorer` first because this
             # is also a callable but it has a special private API that we can leverage
             if isinstance(metric, _BaseScorer):
                 # scorers have the advantage to have scoped defined kwargs
                 metric_fn = partial(
-                    self.custom_metric,
+                    self._custom_metric,
                     metric_function=metric._score_func,
                     response_method=metric._response_method,
                 )
                 # forward the additional parameters specific to the scorer
                 metrics_kwargs = {**metric._kwargs}
+                metrics_kwargs["data_source_hash"] = data_source_hash
+                metrics_params = inspect.signature(metric._score_func).parameters
+                if "pos_label" in metrics_params:
+                    if pos_label is not None and "pos_label" in metrics_kwargs:
+                        if pos_label != metrics_kwargs["pos_label"]:
+                            raise ValueError(
+                                "`pos_label` is passed both in the scorer and to the "
+                                "`report_metrics` method. Please provide a consistent "
+                                "`pos_label` or only pass it whether in the scorer or "
+                                "to the `report_metrics` method."
+                            )
+                    elif pos_label is not None:
+                        metrics_kwargs["pos_label"] = pos_label
             elif isinstance(metric, str) or callable(metric):
                 if isinstance(metric, str):
+                    err_msg = (
+                        f"Invalid metric: {metric!r}. Please use a valid metric"
+                        " from the list of supported metrics: "
+                        f"{list(self._SCORE_OR_LOSS_ICONS.keys())}"
+                    )
+                    if (
+                        metric.startswith("_")
+                        and metric[1:] not in self._SCORE_OR_LOSS_ICONS
+                    ):
+                        raise ValueError(err_msg)
+                    if not metric.startswith("_"):
+                        if metric not in self._SCORE_OR_LOSS_ICONS:
+                            raise ValueError(err_msg)
+                        metric = f"_{metric}"
                     metric_fn = getattr(self, metric)
-                    metrics_kwargs = {}
+                    metrics_kwargs = {"data_source_hash": data_source_hash}
                 else:
-                    metric_fn = partial(self.custom_metric, metric_function=metric)
+                    metric_fn = partial(self._custom_metric, metric_function=metric)
                     if scoring_kwargs is None:
                         metrics_kwargs = {}
                     else:
@@ -138,6 +220,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                             for param in metric_callable_params
                             if param in scoring_kwargs
                         }
+                    metrics_kwargs["data_source_hash"] = data_source_hash
                 metrics_params = inspect.signature(metric_fn).parameters
                 if scoring_kwargs is not None:
                     for param in metrics_params:
@@ -150,8 +233,15 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                     f"Invalid type of metric: {type(metric)} for {metric!r}"
                 )
 
+            if metric_name is not None:
+                metrics_kwargs["metric_name"] = metric_name
             scores.append(
-                metric_fn(data_source=data_source, X=X, y=y, **metrics_kwargs)
+                metric_fn(
+                    data_source=data_source,
+                    X=X,
+                    y=y,
+                    **metrics_kwargs,
+                )
             )
 
         has_multilevel = any(
@@ -184,24 +274,17 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         y_true,
         *,
         data_source="test",
+        data_source_hash=None,
         response_method,
         pos_label=None,
         metric_name=None,
         **metric_kwargs,
     ):
-        X, y_true, data_source_hash = self._get_X_y_and_data_source_hash(
-            data_source=data_source, X=X, y=y_true
-        )
+        if data_source_hash is None:
+            X, y_true, data_source_hash = self._get_X_y_and_data_source_hash(
+                data_source=data_source, X=X, y=y_true
+            )
 
-        y_pred = self._parent._get_cached_response_values(
-            estimator_hash=self._parent._hash,
-            estimator=self._parent.estimator,
-            X=X,
-            response_method=response_method,
-            pos_label=pos_label,
-            data_source=data_source,
-            data_source_hash=data_source_hash,
-        )
         cache_key = (self._parent._hash, metric_fn.__name__, data_source)
         if data_source_hash:
             cache_key += (data_source_hash,)
@@ -229,6 +312,17 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             kwargs = {**metric_kwargs}
             if "pos_label" in metric_params:
                 kwargs.update(pos_label=pos_label)
+
+            y_pred = _get_cached_response_values(
+                cache=self._parent._cache,
+                estimator_hash=self._parent._hash,
+                estimator=self._parent.estimator_,
+                X=X,
+                response_method=response_method,
+                pos_label=pos_label,
+                data_source=data_source,
+                data_source_hash=data_source_hash,
+            )
 
             score = metric_fn(y_true, y_pred, **kwargs)
             self._parent._cache[cache_key] = score
@@ -261,10 +355,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                     names=["Metric", "Output"],
                 )
                 score = score.reshape(1, -1)
-        else:
-            # FIXME: clusterer would fall here.
-            columns = None
-        return pd.DataFrame(score, columns=columns, index=[self._parent.estimator_name])
+        else:  # unknown task - try our best
+            columns = [metric_name] if score.shape[0] == 1 else None
+        return pd.DataFrame(
+            score, columns=columns, index=[self._parent.estimator_name_]
+        )
 
     @available_if(
         _check_supported_ml_task(
@@ -295,14 +390,58 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         -------
         pd.DataFrame
             The accuracy score.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_breast_cancer(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> reporter.metrics.accuracy()
+        Metric              Accuracy (↗︎)
+        LogisticRegression       0.95...
         """
+        return self._accuracy(data_source=data_source, data_source_hash=None, X=X, y=y)
+
+    def _accuracy(
+        self,
+        *,
+        data_source="test",
+        data_source_hash=None,
+        X=None,
+        y=None,
+        metric_name=None,
+    ):
+        """Private interface of `accuracy` to be able to pass `data_source_hash`.
+
+        `data_source_hash` is either an `int` when we already computed the hash
+        and are able to pass it around or `None` and thus trigger its computation
+        in the underlying process.
+
+        `metric_name` allows to overwrite the default name of the metric in the report.
+        """
+        if metric_name is None:
+            metric_name = f"Accuracy {self._SCORE_OR_LOSS_ICONS['accuracy']}"
+
         return self._compute_metric_scores(
             metrics.accuracy_score,
             X=X,
             y_true=y,
             data_source=data_source,
+            data_source_hash=data_source_hash,
             response_method="predict",
-            metric_name=f"Accuracy {self._SCORE_OR_LOSS_ICONS['accuracy']}",
+            metric_name=metric_name,
         )
 
     @available_if(
@@ -357,27 +496,80 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 only the statistics of the positive class (i.e. equivalent to
                 `average="binary"`).
 
-        pos_label : int, default=None
+        pos_label : int, float, bool or str, default=None
             The positive class.
 
         Returns
         -------
         pd.DataFrame
             The precision score.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_breast_cancer(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> reporter.metrics.precision(pos_label=1)
+        Metric              Precision (↗︎)
+        LogisticRegression        0.98...
+        """
+        return self._precision(
+            data_source=data_source,
+            data_source_hash=None,
+            X=X,
+            y=y,
+            average=average,
+            pos_label=pos_label,
+        )
+
+    def _precision(
+        self,
+        *,
+        data_source="test",
+        data_source_hash=None,
+        X=None,
+        y=None,
+        metric_name=None,
+        average=None,
+        pos_label=None,
+    ):
+        """Private interface of `precision` to be able to pass `data_source_hash`.
+
+        `data_source_hash` is either an `int` when we already computed the hash
+        and are able to pass it around or `None` and thus trigger its computation
+        in the underlying process.
+
+        `metric_name` allows to overwrite the default name of the metric in the report.
         """
         if self._parent._ml_task == "binary-classification" and pos_label is not None:
             # if `pos_label` is specified by our user, then we can safely report only
             # the statistics of the positive class
             average = "binary"
 
+        if metric_name is None:
+            metric_name = f"Precision {self._SCORE_OR_LOSS_ICONS['precision']}"
+
         return self._compute_metric_scores(
             metrics.precision_score,
             X=X,
             y_true=y,
             data_source=data_source,
+            data_source_hash=data_source_hash,
             response_method="predict",
             pos_label=pos_label,
-            metric_name=f"Precision {self._SCORE_OR_LOSS_ICONS['precision']}",
+            metric_name=metric_name,
             average=average,
         )
 
@@ -434,27 +626,80 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 only the statistics of the positive class (i.e. equivalent to
                 `average="binary"`).
 
-        pos_label : int, default=None
+        pos_label : int, float, bool or str, default=None
             The positive class.
 
         Returns
         -------
         pd.DataFrame
             The recall score.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_breast_cancer(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> reporter.metrics.recall(pos_label=1)
+        Metric              Recall (↗︎)
+        LogisticRegression     0.93...
+        """
+        return self._recall(
+            data_source=data_source,
+            data_source_hash=None,
+            X=X,
+            y=y,
+            average=average,
+            pos_label=pos_label,
+        )
+
+    def _recall(
+        self,
+        *,
+        data_source="test",
+        data_source_hash=None,
+        X=None,
+        y=None,
+        metric_name=None,
+        average=None,
+        pos_label=None,
+    ):
+        """Private interface of `recall` to be able to pass `data_source_hash`.
+
+        `data_source_hash` is either an `int` when we already computed the hash
+        and are able to pass it around or `None` and thus trigger its computation
+        in the underlying process.
+
+        `metric_name` allows to overwrite the default name of the metric in the report.
         """
         if self._parent._ml_task == "binary-classification" and pos_label is not None:
             # if `pos_label` is specified by our user, then we can safely report only
             # the statistics of the positive class
             average = "binary"
 
+        if metric_name is None:
+            metric_name = f"Recall {self._SCORE_OR_LOSS_ICONS['recall']}"
+
         return self._compute_metric_scores(
             metrics.recall_score,
             X=X,
             y_true=y,
             data_source=data_source,
+            data_source_hash=data_source_hash,
             response_method="predict",
             pos_label=pos_label,
-            metric_name=f"Recall {self._SCORE_OR_LOSS_ICONS['recall']}",
+            metric_name=metric_name,
             average=average,
         )
 
@@ -485,18 +730,67 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         -------
         pd.DataFrame
             The Brier score.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_breast_cancer(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> reporter.metrics.brier_score()
+        Metric              Brier score (↘︎)
+        LogisticRegression          0.03...
+        """
+        return self._brier_score(
+            data_source=data_source,
+            data_source_hash=None,
+            X=X,
+            y=y,
+        )
+
+    def _brier_score(
+        self,
+        *,
+        data_source="test",
+        data_source_hash=None,
+        X=None,
+        y=None,
+        metric_name=None,
+    ):
+        """Private interface of `brier_score` to be able to pass `data_source_hash`.
+
+        `data_source_hash` is either an `int` when we already computed the hash
+        and are able to pass it around or `None` and thus trigger its computation
+        in the underlying process.
+
+        `metric_name` allows to overwrite the default name of the metric in the report.
         """
         # The Brier score in scikit-learn request `pos_label` to ensure that the
         # integral encoding of `y_true` corresponds to the probabilities of the
         # `pos_label`. Since we get the predictions with `get_response_method`, we
         # can pass any `pos_label`, they will lead to the same result.
+        if metric_name is None:
+            metric_name = f"Brier score {self._SCORE_OR_LOSS_ICONS['brier_score']}"
+
         return self._compute_metric_scores(
             metrics.brier_score_loss,
             X=X,
             y_true=y,
             data_source=data_source,
+            data_source_hash=data_source_hash,
             response_method="predict_proba",
-            metric_name=f"Brier score {self._SCORE_OR_LOSS_ICONS['brier_score']}",
+            metric_name=metric_name,
             pos_label=self._parent._estimator.classes_[-1],
         )
 
@@ -565,14 +859,67 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         -------
         pd.DataFrame
             The ROC AUC score.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_breast_cancer(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> reporter.metrics.roc_auc()
+        Metric              ROC AUC (↗︎)
+        LogisticRegression      0.99...
         """
+        return self._roc_auc(
+            data_source=data_source,
+            data_source_hash=None,
+            X=X,
+            y=y,
+            average=average,
+            multi_class=multi_class,
+        )
+
+    def _roc_auc(
+        self,
+        *,
+        data_source="test",
+        data_source_hash=None,
+        X=None,
+        y=None,
+        metric_name=None,
+        average=None,
+        multi_class="ovr",
+    ):
+        """Private interface of `roc_auc` to be able to pass `data_source_hash`.
+
+        `data_source_hash` is either an `int` when we already computed the hash
+        and are able to pass it around or `None` and thus trigger its computation
+        in the underlying process.
+
+        `metric_name` allows to overwrite the default name of the metric in the report.
+        """
+        if metric_name is None:
+            metric_name = f"ROC AUC {self._SCORE_OR_LOSS_ICONS['roc_auc']}"
+
         return self._compute_metric_scores(
             metrics.roc_auc_score,
             X=X,
             y_true=y,
             data_source=data_source,
+            data_source_hash=data_source_hash,
             response_method=["predict_proba", "decision_function"],
-            metric_name=f"ROC AUC {self._SCORE_OR_LOSS_ICONS['roc_auc']}",
+            metric_name=metric_name,
             average=average,
             multi_class=multi_class,
         )
@@ -599,14 +946,63 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         -------
         pd.DataFrame
             The log-loss.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_breast_cancer(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> reporter.metrics.log_loss()
+        Metric              Log loss (↘︎)
+        LogisticRegression       0.10...
         """
+        return self._log_loss(
+            data_source=data_source,
+            data_source_hash=None,
+            X=X,
+            y=y,
+        )
+
+    def _log_loss(
+        self,
+        *,
+        data_source="test",
+        data_source_hash=None,
+        X=None,
+        y=None,
+        metric_name=None,
+    ):
+        """Private interface of `log_loss` to be able to pass `data_source_hash`.
+
+        `data_source_hash` is either an `int` when we already computed the hash
+        and are able to pass it around or `None` and thus trigger its computation
+        in the underlying process.
+
+        `metric_name` allows to overwrite the default name of the metric in the report.
+        """
+        if metric_name is None:
+            metric_name = f"Log loss {self._SCORE_OR_LOSS_ICONS['log_loss']}"
+
         return self._compute_metric_scores(
             metrics.log_loss,
             X=X,
             y_true=y,
             data_source=data_source,
+            data_source_hash=data_source_hash,
             response_method="predict_proba",
-            metric_name=f"Log loss {self._SCORE_OR_LOSS_ICONS['log_loss']}",
+            metric_name=metric_name,
         )
 
     @available_if(_check_supported_ml_task(supported_ml_tasks=["regression"]))
@@ -615,6 +1011,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         Parameters
         ----------
+        data_source : {"test", "train", "X_y"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the reporter.
+            - "train" : use the train set provided when creating the reporter.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
             set provided when creating the reporter.
@@ -637,14 +1040,65 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         -------
         pd.DataFrame
             The R² score.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_diabetes
+        >>> from sklearn.linear_model import Ridge
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_diabetes(return_X_y=True), random_state=0
+        ... )
+        >>> regressor = Ridge()
+        >>> reporter = EstimatorReport(
+        ...     regressor,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> reporter.metrics.r2()
+        Metric  R² (↗︎)
+        Ridge   0.35...
         """
+        return self._r2(
+            data_source=data_source,
+            data_source_hash=None,
+            X=X,
+            y=y,
+            multioutput=multioutput,
+        )
+
+    def _r2(
+        self,
+        *,
+        data_source="test",
+        data_source_hash=None,
+        X=None,
+        y=None,
+        metric_name=None,
+        multioutput="raw_values",
+    ):
+        """Private interface of `r2` to be able to pass `data_source_hash`.
+
+        `data_source_hash` is either an `int` when we already computed the hash
+        and are able to pass it around or `None` and thus trigger its computation
+        in the underlying process.
+
+        `metric_name` allows to overwrite the default name of the metric in the report.
+        """
+        if metric_name is None:
+            metric_name = f"R² {self._SCORE_OR_LOSS_ICONS['r2']}"
+
         return self._compute_metric_scores(
             metrics.r2_score,
             X=X,
             y_true=y,
             data_source=data_source,
+            data_source_hash=data_source_hash,
             response_method="predict",
-            metric_name=f"R² {self._SCORE_OR_LOSS_ICONS['r2']}",
+            metric_name=metric_name,
             multioutput=multioutput,
         )
 
@@ -654,6 +1108,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         Parameters
         ----------
+        data_source : {"test", "train", "X_y"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the reporter.
+            - "train" : use the train set provided when creating the reporter.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
             set provided when creating the reporter.
@@ -676,14 +1137,65 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         -------
         pd.DataFrame
             The root mean squared error.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_diabetes
+        >>> from sklearn.linear_model import Ridge
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_diabetes(return_X_y=True), random_state=0
+        ... )
+        >>> regressor = Ridge()
+        >>> reporter = EstimatorReport(
+        ...     regressor,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> reporter.metrics.rmse()
+        Metric  RMSE (↘︎)
+        Ridge   56.5...
         """
+        return self._rmse(
+            data_source=data_source,
+            data_source_hash=None,
+            X=X,
+            y=y,
+            multioutput=multioutput,
+        )
+
+    def _rmse(
+        self,
+        *,
+        data_source="test",
+        data_source_hash=None,
+        X=None,
+        y=None,
+        metric_name=None,
+        multioutput="raw_values",
+    ):
+        """Private interface of `rmse` to be able to pass `data_source_hash`.
+
+        `data_source_hash` is either an `int` when we already computed the hash
+        and are able to pass it around or `None` and thus trigger its computation
+        in the underlying process.
+
+        `metric_name` allows to overwrite the default name of the metric in the report.
+        """
+        if metric_name is None:
+            metric_name = f"RMSE {self._SCORE_OR_LOSS_ICONS['rmse']}"
+
         return self._compute_metric_scores(
             metrics.root_mean_squared_error,
             X=X,
             y_true=y,
             data_source=data_source,
+            data_source_hash=data_source_hash,
             response_method="predict",
-            metric_name=f"RMSE {self._SCORE_OR_LOSS_ICONS['rmse']}",
+            metric_name=metric_name,
             multioutput=multioutput,
         )
 
@@ -724,6 +1236,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             The name of the metric. If not provided, it will be inferred from the
             metric function.
 
+        data_source : {"test", "train", "X_y"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the reporter.
+            - "train" : use the train set provided when creating the reporter.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
             set provided when creating the reporter.
@@ -739,12 +1258,68 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         -------
         pd.DataFrame
             The custom metric.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_diabetes
+        >>> from sklearn.linear_model import Ridge
+        >>> from sklearn.metrics import mean_absolute_error
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_diabetes(return_X_y=True), random_state=0
+        ... )
+        >>> regressor = Ridge()
+        >>> reporter = EstimatorReport(
+        ...     regressor,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> reporter.metrics.custom_metric(
+        ...     metric_function=mean_absolute_error,
+        ...     response_method="predict",
+        ...     metric_name="MAE (↗︎)",
+        ... )
+        Metric        MAE (↗︎)
+        Ridge   44.9...
+        """
+        return self._custom_metric(
+            data_source=data_source,
+            data_source_hash=None,
+            X=X,
+            y=y,
+            metric_function=metric_function,
+            response_method=response_method,
+            metric_name=metric_name,
+            **kwargs,
+        )
+
+    def _custom_metric(
+        self,
+        *,
+        data_source="test",
+        data_source_hash=None,
+        X=None,
+        y=None,
+        metric_function=None,
+        response_method=None,
+        metric_name=None,
+        **kwargs,
+    ):
+        """Private interface of `custom_metric` to be able to pass `data_source_hash`.
+
+        `data_source_hash` is either an `int` when we already computed the hash
+        and are able to pass it around or `None` and thus trigger its computation
+        in the underlying process.
         """
         return self._compute_metric_scores(
             metric_function,
             X=X,
             y_true=y,
             data_source=data_source,
+            data_source_hash=data_source_hash,
             response_method=response_method,
             metric_name=metric_name,
             **kwargs,
@@ -796,7 +1371,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         tree = super()._create_help_tree()
 
         # Add plot methods in a separate branch
-        plot_branch = tree.add("[bold cyan].plot 🎨[/bold cyan]")
+        plot_branch = tree.add("[bold cyan].plot[/bold cyan]")
         plot_methods = self.plot._get_methods_for_help()
         plot_methods = self.plot._sort_methods_for_help(plot_methods)
 
@@ -808,7 +1383,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         return tree
 
     def _get_help_panel_title(self):
-        return f"[bold cyan]{self._icon} Available metrics methods[/bold cyan]"
+        return "[bold cyan]Available metrics methods[/bold cyan]"
 
     def _get_help_legend(self):
         return (
@@ -817,6 +1392,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
     def _get_help_tree_title(self):
         return "[bold cyan]reporter.metrics[/bold cyan]"
+
+    def __repr__(self):
+        """Return a string representation using rich."""
+        return self._rich_repr(
+            class_name="skore.EstimatorReport.metrics",
+            help_method_name="reporter.metrics.help()",
+        )
 
 
 ########################################################################################
@@ -829,7 +1411,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
     """Plotting methods for the metrics accessor."""
 
     def __init__(self, parent):
-        super().__init__(parent._parent, icon="🎨")
+        super().__init__(parent._parent)
         self._metrics_parent = parent
 
     def _get_display(
@@ -889,9 +1471,10 @@ class _PlotMetricsAccessor(_BaseAccessor):
             display = self._parent._cache[cache_key]
             display.plot(**display_plot_kwargs)
         else:
-            y_pred = self._parent._get_cached_response_values(
+            y_pred = _get_cached_response_values(
+                cache=self._parent._cache,
                 estimator_hash=self._parent._hash,
-                estimator=self._parent.estimator,
+                estimator=self._parent.estimator_,
                 X=X,
                 response_method=response_method,
                 data_source=data_source,
@@ -902,8 +1485,8 @@ class _PlotMetricsAccessor(_BaseAccessor):
             display = display_class._from_predictions(
                 y,
                 y_pred,
-                estimator=self._parent.estimator,
-                estimator_name=self._parent.estimator_name,
+                estimator=self._parent.estimator_,
+                estimator_name=self._parent.estimator_name_,
                 ml_task=self._parent._ml_task,
                 data_source=data_source,
                 **display_kwargs,
@@ -938,7 +1521,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
             New target on which to compute the metric. By default, we use the target
             provided when creating the reporter.
 
-        pos_label : str, default=None
+        pos_label : int, float, bool or str, default=None
             The positive class.
 
         ax : matplotlib.axes.Axes, default=None
@@ -948,6 +1531,26 @@ class _PlotMetricsAccessor(_BaseAccessor):
         -------
         RocCurveDisplay
             The ROC curve display.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_breast_cancer(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> display = reporter.metrics.plot.roc()
+        >>> display.plot(roc_curve_kwargs={"color": "tab:red"})
         """
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
@@ -995,7 +1598,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
             New target on which to compute the metric. By default, we use the target
             provided when creating the reporter.
 
-        pos_label : str, default=None
+        pos_label : int, float, bool or str, default=None
             The positive class.
 
         ax : matplotlib.axes.Axes, default=None
@@ -1005,6 +1608,26 @@ class _PlotMetricsAccessor(_BaseAccessor):
         -------
         PrecisionRecallCurveDisplay
             The precision-recall curve display.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_breast_cancer(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> display = reporter.metrics.plot.precision_recall()
+        >>> display.plot(pr_curve_kwargs={"color": "tab:red"})
         """
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
@@ -1076,6 +1699,28 @@ class _PlotMetricsAccessor(_BaseAccessor):
         -------
         PredictionErrorDisplay
             The prediction error display.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_diabetes
+        >>> from sklearn.linear_model import Ridge
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_diabetes(return_X_y=True), random_state=0
+        ... )
+        >>> regressor = Ridge()
+        >>> reporter = EstimatorReport(
+        ...     regressor,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> display = reporter.metrics.plot.prediction_error(
+        ...     kind="actual_vs_predicted"
+        ... )
+        >>> display.plot(line_kwargs={"color": "tab:red"})
         """
         display_kwargs = {"kind": kind, "subsample": subsample}
         display_plot_kwargs = {"ax": ax}
@@ -1090,7 +1735,14 @@ class _PlotMetricsAccessor(_BaseAccessor):
         )
 
     def _get_help_panel_title(self):
-        return f"[bold cyan]{self._icon} Available plot methods[/bold cyan]"
+        return "[bold cyan]Available plot methods[/bold cyan]"
 
     def _get_help_tree_title(self):
         return "[bold cyan]reporter.metrics.plot[/bold cyan]"
+
+    def __repr__(self):
+        """Return a string representation using rich."""
+        return self._rich_repr(
+            class_name="skore.EstimatorReport.metrics.plot",
+            help_method_name="reporter.metrics.plot.help()",
+        )

@@ -96,6 +96,7 @@ class TestMediaItem:
         assert serializable == {
             "updated_at": mock_nowstr,
             "created_at": mock_nowstr,
+            "note": None,
             "media_type": "text/markdown",
             "value": "<content>",
         }

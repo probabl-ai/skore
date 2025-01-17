@@ -1,8 +1,9 @@
-from typing import Any, Literal, Optional
+from typing import Any, Literal, Optional, Union
 
 import numpy as np
 from rich.panel import Panel
 from rich.tree import Tree
+from sklearn.base import BaseEstimator
 
 class _HelpMixin:
     def _get_methods_for_help(self) -> list[tuple[str, Any]]: ...
@@ -19,9 +20,8 @@ class _HelpMixin:
 
 class _BaseAccessor(_HelpMixin):
     _parent: Any
-    _icon: str
 
-    def __init__(self, parent: Any, icon: str) -> None: ...
+    def __init__(self, parent: Any) -> None: ...
     def _get_help_panel_title(self) -> str: ...
     def _create_help_tree(self) -> Tree: ...
     def _get_X_y_and_data_source_hash(
@@ -31,3 +31,29 @@ class _BaseAccessor(_HelpMixin):
         X: Optional[np.ndarray] = None,
         y: Optional[np.ndarray] = None,
     ) -> tuple[Optional[np.ndarray], Optional[np.ndarray], Optional[str]]: ...
+
+def _get_cached_response_values(
+    *,
+    cache: dict,
+    estimator_hash: int,
+    estimator: BaseEstimator,
+    X: np.ndarray,
+    response_method: Union[str, list[str]],
+    pos_label: Optional[Union[str, int]] = None,
+    data_source: Literal["test", "train", "X_y"] = "test",
+    data_source_hash: Optional[str] = None,
+) -> np.ndarray: ...
+
+class _BaseReport(_HelpMixin):
+    _ACCESSOR_CONFIG: dict[str, dict[str, str]]
+    estimator_: BaseEstimator
+    estimator_name_: str
+    _X_test: Optional[np.ndarray]
+    _y_test: Optional[np.ndarray]
+    _X_train: Optional[np.ndarray]
+    _y_train: Optional[np.ndarray]
+
+    def _get_help_panel_title(self) -> str: ...
+    def _get_help_legend(self) -> str: ...
+    def _get_attributes_for_help(self) -> list[str]: ...
+    def _create_help_tree(self) -> Tree: ...
