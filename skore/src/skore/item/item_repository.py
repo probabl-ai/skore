@@ -154,7 +154,7 @@ class ItemRepository:
         """
         return list(self.storage.keys())
 
-    def set_item_note(self, key: str, message: str, *, version=-1):
+    def set_item_note(self, key: str, note: str, *, version=-1):
         """Attach a note to key ``key``.
 
         Parameters
@@ -162,8 +162,8 @@ class ItemRepository:
         key : str
             The key of the item to annotate.
             May be qualified with a version number through the ``version`` argument.
-        message : str
-            The message to be attached.
+        note : str
+            The note to be attached.
         version : int, default=-1
             The version of the key to annotate. Default is the latest version.
 
@@ -172,16 +172,16 @@ class ItemRepository:
         KeyError
             If the ``(key, version)`` couple does not exist.
         TypeError
-            If ``key`` or ``message`` is not a string.
+            If ``key`` or ``note`` is not a string.
         """
         if not isinstance(key, str):
             raise TypeError(f"Key should be a string; got {type(key)}")
-        if not isinstance(message, str):
-            raise TypeError(f"Message should be a string; got {type(message)}")
+        if not isinstance(note, str):
+            raise TypeError(f"Note should be a string; got {type(note)}")
 
         try:
             old = self.storage[key]
-            old[version]["item"]["note"] = message
+            old[version]["item"]["note"] = note
             self.storage[key] = old
         except IndexError as e:
             raise KeyError((key, version)) from e

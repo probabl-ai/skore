@@ -15,18 +15,18 @@ class TestNotes:
         project = request.getfixturevalue(project_fixture)
 
         project.put("key", "hello")
-        project.set_note("key", "message")
-        assert project.get_note("key") == "message"
+        project.set_note("key", "note")
+        assert project.get_note("key") == "note"
 
     def test_set_note_version(self, project_fixture, request):
-        """By default, `set_note` only attaches a message to the latest version
+        """By default, `set_note` only attaches a note to the latest version
         of a key."""
         project = request.getfixturevalue(project_fixture)
 
         project.put("key", "hello")
         project.put("key", "goodbye")
-        project.set_note("key", "message")
-        assert project.get_note("key", version=-1) == "message"
+        project.set_note("key", "note")
+        assert project.get_note("key", version=-1) == "note"
         assert project.get_note("key", version=0) is None
 
     def test_set_note_no_key(self, project_fixture, request):
@@ -41,7 +41,7 @@ class TestNotes:
             project.set_note("key", "hello", version=10)
 
     def test_set_note_not_strings(self, project_fixture, request):
-        """If key or message is not a string, raise a TypeError."""
+        """If key or note is not a string, raise a TypeError."""
         project = request.getfixturevalue(project_fixture)
 
         with pytest.raises(TypeError):
@@ -54,7 +54,7 @@ class TestNotes:
         project = request.getfixturevalue(project_fixture)
 
         project.put("key", "hello")
-        project.set_note("key", "message")
+        project.set_note("key", "note")
         project.delete_note("key")
         assert project.get_note("key") is None
 
