@@ -153,12 +153,14 @@ onMounted(() => {
 
     .label {
       display: flex;
+      overflow: hidden;
       height: var(--label-height);
       flex: 1;
       flex-direction: row;
       align-items: center;
       cursor: pointer;
       transition: background-color var(--animation-duration) var(--animation-easing);
+      white-space: nowrap;
 
       & .children-indicator {
         color: var(--color-text-secondary);
@@ -170,8 +172,10 @@ onMounted(() => {
       }
 
       & .text {
+        overflow: hidden;
         border-radius: var(--radius-xs);
         color: var(--color-text-primary);
+        text-overflow: ellipsis;
       }
 
       &.has-children {
