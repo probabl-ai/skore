@@ -136,5 +136,5 @@ class NotePayload:
 async def set_note(request: Request, payload: NotePayload):
     """Add a note to the given item."""
     project = request.app.state.project
-    project.set_note(key=payload.key, message=payload.message, version=payload.version)
+    project.set_note(key=payload.key, note=payload.message, version=payload.version)
     return __project_as_serializable(project)
