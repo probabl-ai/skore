@@ -10,7 +10,14 @@ from sklearn.cluster import KMeans
 from sklearn.datasets import make_classification, make_regression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
-from sklearn.metrics import make_scorer, median_absolute_error, r2_score, rand_score
+from sklearn.metrics import (
+    accuracy_score,
+    f1_score,
+    make_scorer,
+    median_absolute_error,
+    r2_score,
+    rand_score,
+)
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -106,7 +113,7 @@ def test_check_supported_estimator():
 
     class MockParent:
         def __init__(self, estimator):
-            self.estimator = estimator
+            self.estimator_ = estimator
 
     class MockAccessor:
         def __init__(self, parent):
@@ -163,8 +170,8 @@ def test_estimator_report_from_unfitted_estimator(fit):
         y_test=y_test,
     )
 
-    check_is_fitted(report.estimator)
-    assert report.estimator is not estimator  # the estimator should be cloned
+    check_is_fitted(report.estimator_)
+    assert report.estimator_ is not estimator  # the estimator should be cloned
 
     assert report.X_train is X_train
     assert report.y_train is y_train
@@ -173,7 +180,7 @@ def test_estimator_report_from_unfitted_estimator(fit):
 
     err_msg = "attribute is immutable"
     with pytest.raises(AttributeError, match=err_msg):
-        report.estimator = LinearRegression()
+        report.estimator_ = LinearRegression()
     with pytest.raises(AttributeError, match=err_msg):
         report.X_train = X_train
     with pytest.raises(AttributeError, match=err_msg):
@@ -187,8 +194,8 @@ def test_estimator_report_from_fitted_estimator(binary_classification_data, fit)
     estimator, X, y = binary_classification_data
     report = EstimatorReport(estimator, fit=fit, X_test=X, y_test=y)
 
-    check_is_fitted(report.estimator)
-    assert isinstance(report.estimator, RandomForestClassifier)
+    check_is_fitted(report.estimator_)
+    assert isinstance(report.estimator_, RandomForestClassifier)
     assert report.X_train is None
     assert report.y_train is None
     assert report.X_test is X
@@ -196,7 +203,7 @@ def test_estimator_report_from_fitted_estimator(binary_classification_data, fit)
 
     err_msg = "attribute is immutable"
     with pytest.raises(AttributeError, match=err_msg):
-        report.estimator = LinearRegression()
+        report.estimator_ = LinearRegression()
     with pytest.raises(AttributeError, match=err_msg):
         report.X_train = X
     with pytest.raises(AttributeError, match=err_msg):
@@ -210,9 +217,9 @@ def test_estimator_report_from_fitted_pipeline(binary_classification_data_pipeli
     estimator, X, y = binary_classification_data_pipeline
     report = EstimatorReport(estimator, X_test=X, y_test=y)
 
-    check_is_fitted(report.estimator)
-    assert isinstance(report.estimator, Pipeline)
-    assert report.estimator_name == estimator[-1].__class__.__name__
+    check_is_fitted(report.estimator_)
+    assert isinstance(report.estimator_, Pipeline)
+    assert report.estimator_name_ == estimator[-1].__class__.__name__
     assert report.X_train is None
     assert report.y_train is None
     assert report.X_test is X
@@ -274,9 +281,7 @@ def test_estimator_report_help(capsys, binary_classification_data):
 
     report.help()
     captured = capsys.readouterr()
-    assert (
-        f"📓 Tools to diagnose estimator {estimator.__class__.__name__}" in captured.out
-    )
+    assert f"Tools to diagnose estimator {estimator.__class__.__name__}" in captured.out
 
 
 def test_estimator_report_repr(binary_classification_data):
@@ -285,7 +290,8 @@ def test_estimator_report_repr(binary_classification_data):
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
     repr_str = repr(report)
-    assert f"📓 Tools to diagnose estimator {estimator.__class__.__name__}" in repr_str
+    assert "skore.EstimatorReport" in repr_str
+    assert "reporter.help()" in repr_str
 
 
 @pytest.mark.parametrize(
@@ -335,7 +341,7 @@ def test_estimator_report_plot_help(capsys, binary_classification_data):
 
     report.metrics.plot.help()
     captured = capsys.readouterr()
-    assert "🎨 Available plot methods" in captured.out
+    assert "Available plot methods" in captured.out
 
 
 def test_estimator_report_plot_repr(binary_classification_data):
@@ -344,7 +350,8 @@ def test_estimator_report_plot_repr(binary_classification_data):
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
     repr_str = repr(report.metrics.plot)
-    assert "🎨 Available plot methods" in repr_str
+    assert "skore.EstimatorReport.metrics.plot" in repr_str
+    assert "reporter.metrics.plot.help()" in repr_str
 
 
 def test_estimator_report_plot_roc(binary_classification_data):
@@ -474,7 +481,7 @@ def test_estimator_report_metrics_help(capsys, binary_classification_data):
 
     report.metrics.help()
     captured = capsys.readouterr()
-    assert "📏 Available metrics methods" in captured.out
+    assert "Available metrics methods" in captured.out
 
 
 def test_estimator_report_metrics_repr(binary_classification_data):
@@ -483,7 +490,8 @@ def test_estimator_report_metrics_repr(binary_classification_data):
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
     repr_str = repr(report.metrics)
-    assert "📏 Available metrics methods" in repr_str
+    assert "skore.EstimatorReport.metrics" in repr_str
+    assert "reporter.metrics.help()" in repr_str
 
 
 @pytest.mark.parametrize(
@@ -506,7 +514,7 @@ def test_estimator_report_metrics_binary_classification(
 
     # check that something was written to the cache
     assert report._cache != {}
-    report.clean_cache()
+    report.clear_cache()
 
     # check that passing using data outside from the report works and that we they
     # don't come from the cache
@@ -532,7 +540,7 @@ def test_estimator_report_metrics_regression(regression_data, metric):
 
     # check that something was written to the cache
     assert report._cache != {}
-    report.clean_cache()
+    report.clear_cache()
 
     # check that passing using data outside from the report works and that we they
     # don't come from the cache
@@ -572,8 +580,13 @@ def _check_results_report_metrics(result, expected_metrics, expected_nb_stats):
 
 
 @pytest.mark.parametrize("pos_label, nb_stats", [(None, 2), (1, 1)])
+@pytest.mark.parametrize("data_source", ["test", "X_y"])
 def test_estimator_report_report_metrics_binary(
-    binary_classification_data, binary_classification_data_svc, pos_label, nb_stats
+    binary_classification_data,
+    binary_classification_data_svc,
+    pos_label,
+    nb_stats,
+    data_source,
 ):
     """Check the behaviour of the `report_metrics` method with binary
     classification. We test both with an SVC that does not support `predict_proba` and a
@@ -581,7 +594,10 @@ def test_estimator_report_report_metrics_binary(
     """
     estimator, X_test, y_test = binary_classification_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    result = report.metrics.report_metrics(pos_label=pos_label)
+    kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
+    result = report.metrics.report_metrics(
+        pos_label=pos_label, data_source=data_source, **kwargs
+    )
     expected_metrics = ("precision", "recall", "roc_auc", "brier_score")
     # depending on `pos_label`, we report a stats for each class or not for
     # precision and recall
@@ -595,7 +611,10 @@ def test_estimator_report_report_metrics_binary(
     y_test = target_names[y_test]
     estimator = clone(estimator).fit(X_test, y_test)
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    result = report.metrics.report_metrics(pos_label=pos_label_name)
+    kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
+    result = report.metrics.report_metrics(
+        pos_label=pos_label_name, data_source=data_source, **kwargs
+    )
     expected_metrics = ("precision", "recall", "roc_auc", "brier_score")
     # depending on `pos_label`, we report a stats for each class or not for
     # precision and recall
@@ -604,7 +623,10 @@ def test_estimator_report_report_metrics_binary(
 
     estimator, X_test, y_test = binary_classification_data_svc
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    result = report.metrics.report_metrics(pos_label=pos_label)
+    kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
+    result = report.metrics.report_metrics(
+        pos_label=pos_label, data_source=data_source, **kwargs
+    )
     expected_metrics = ("precision", "recall", "roc_auc")
     # depending on `pos_label`, we report a stats for each class or not for
     # precision and recall
@@ -612,15 +634,17 @@ def test_estimator_report_report_metrics_binary(
     _check_results_report_metrics(result, expected_metrics, expected_nb_stats)
 
 
+@pytest.mark.parametrize("data_source", ["test", "X_y"])
 def test_estimator_report_report_metrics_multiclass(
-    multiclass_classification_data, multiclass_classification_data_svc
+    multiclass_classification_data, multiclass_classification_data_svc, data_source
 ):
     """Check the behaviour of the `report_metrics` method with multiclass
     classification.
     """
     estimator, X_test, y_test = multiclass_classification_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    result = report.metrics.report_metrics()
+    kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
+    result = report.metrics.report_metrics(data_source=data_source, **kwargs)
     expected_metrics = ("precision", "recall", "roc_auc", "log_loss")
     # since we are not averaging by default, we report 3 statistics for
     # precision, recall and roc_auc
@@ -629,7 +653,8 @@ def test_estimator_report_report_metrics_multiclass(
 
     estimator, X_test, y_test = multiclass_classification_data_svc
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    result = report.metrics.report_metrics()
+    kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
+    result = report.metrics.report_metrics(data_source=data_source, **kwargs)
     expected_metrics = ("precision", "recall")
     # since we are not averaging by default, we report 3 statistics for
     # precision and recall
@@ -637,11 +662,13 @@ def test_estimator_report_report_metrics_multiclass(
     _check_results_report_metrics(result, expected_metrics, expected_nb_stats)
 
 
-def test_estimator_report_report_metrics_regression(regression_data):
+@pytest.mark.parametrize("data_source", ["test", "X_y"])
+def test_estimator_report_report_metrics_regression(regression_data, data_source):
     """Check the behaviour of the `report_metrics` method with regression."""
     estimator, X_test, y_test = regression_data
+    kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    result = report.metrics.report_metrics()
+    result = report.metrics.report_metrics(data_source=data_source, **kwargs)
     expected_metrics = ("r2", "rmse")
     _check_results_report_metrics(result, expected_metrics, len(expected_metrics))
 
@@ -665,6 +692,46 @@ def test_estimator_report_report_metrics_scoring_kwargs(
     assert result.shape == (1, 10)
     assert isinstance(result.columns, pd.MultiIndex)
     assert result.columns.names == ["Metric", "Class label"]
+
+
+@pytest.mark.parametrize(
+    "fixture_name, scoring_names, expected_columns",
+    [
+        ("regression_data", ["R2", "RMSE"], ["R2", "RMSE"]),
+        (
+            "multiclass_classification_data",
+            ["Precision", "Recall", "ROC AUC", "Log Loss"],
+            [
+                "Precision",
+                "Precision",
+                "Precision",
+                "Recall",
+                "Recall",
+                "Recall",
+                "ROC AUC",
+                "ROC AUC",
+                "ROC AUC",
+                "Log Loss",
+            ],
+        ),
+    ],
+)
+def test_estimator_report_report_metrics_overwrite_scoring_names(
+    request, fixture_name, scoring_names, expected_columns
+):
+    """Test that we can overwrite the scoring names in report_metrics."""
+    estimator, X_test, y_test = request.getfixturevalue(fixture_name)
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    result = report.metrics.report_metrics(scoring_names=scoring_names)
+    assert result.shape == (1, len(expected_columns))
+
+    # Get level 0 names if MultiIndex, otherwise get column names
+    result_columns = (
+        result.columns.get_level_values(0).tolist()
+        if isinstance(result.columns, pd.MultiIndex)
+        else result.columns.tolist()
+    )
+    assert result_columns == expected_columns
 
 
 def test_estimator_report_interaction_cache_metrics(regression_multioutput_data):
@@ -750,6 +817,18 @@ def test_estimator_report_custom_metric(regression_data):
     assert result.to_numpy()[0, 0] == pytest.approx(
         custom_metric(y_test, estimator.predict(X_test), threshold)
     )
+
+
+@pytest.mark.parametrize("scoring", ["public_metric", "_private_metric"])
+def test_estimator_report_report_metrics_error_scoring_strings(
+    regression_data, scoring
+):
+    """Check that we raise an error if a scoring string is not a valid metric."""
+    estimator, X_test, y_test = regression_data
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    err_msg = re.escape(f"Invalid metric: {scoring!r}.")
+    with pytest.raises(ValueError, match=err_msg):
+        report.metrics.report_metrics(scoring=[scoring])
 
 
 def test_estimator_report_custom_function_kwargs_numpy_array(regression_data):
@@ -842,6 +921,103 @@ def test_estimator_report_report_metrics_with_scorer(regression_data):
             ]
         ],
     )
+
+
+def test_estimator_report_custom_metric_compatible_estimator(
+    binary_classification_data,
+):
+    """Check that the estimator report still works if an estimator has a compatible
+    scikit-learn API.
+    """
+    _, X_test, y_test = binary_classification_data
+
+    class CompatibleEstimator:
+        """Estimator exposing only a predict method but it should be enough for the
+        reporters.
+        """
+
+        def fit(self, X, y):
+            self.fitted_ = True
+            return self
+
+        def predict(self, X):
+            return np.ones(X.shape[0])
+
+    estimator = CompatibleEstimator()
+    report = EstimatorReport(estimator, fit=False, X_test=X_test, y_test=y_test)
+    result = report.metrics.custom_metric(
+        metric_function=lambda y_true, y_pred: 1,
+        metric_name="Custom Metric",
+        response_method="predict",
+    )
+    assert result.columns.tolist() == ["Custom Metric"]
+    assert result.to_numpy()[0, 0] == 1
+
+
+@pytest.mark.parametrize(
+    "scorer, pos_label",
+    [
+        (
+            make_scorer(
+                f1_score, response_method="predict", average="macro", pos_label=1
+            ),
+            1,
+        ),
+        (
+            make_scorer(
+                f1_score, response_method="predict", average="macro", pos_label=1
+            ),
+            None,
+        ),
+        (make_scorer(f1_score, response_method="predict", average="macro"), 1),
+    ],
+)
+def test_estimator_report_report_metrics_with_scorer_binary_classification(
+    binary_classification_data, scorer, pos_label
+):
+    """Check that we can pass scikit-learn scorer with different parameters to
+    the `report_metrics` method.
+
+    We also check that we can pass `pos_label` whether to the scorer or to the
+    `report_metrics` method or consistently to both.
+    """
+    estimator, X_test, y_test = binary_classification_data
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    result = report.metrics.report_metrics(
+        scoring=["accuracy", accuracy_score, scorer],
+    )
+    assert result.shape == (1, 3)
+    np.testing.assert_allclose(
+        result.to_numpy(),
+        [
+            [
+                accuracy_score(y_test, estimator.predict(X_test)),
+                accuracy_score(y_test, estimator.predict(X_test)),
+                f1_score(
+                    y_test, estimator.predict(X_test), average="macro", pos_label=1
+                ),
+            ]
+        ],
+    )
+
+
+def test_estimator_report_report_metrics_with_scorer_pos_label_error(
+    binary_classification_data,
+):
+    """Check that we raise an error when pos_label is passed both in the scorer and
+    globally conducting to a mismatch."""
+    estimator, X_test, y_test = binary_classification_data
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    f1_scorer = make_scorer(
+        f1_score, response_method="predict", average="macro", pos_label=1
+    )
+    err_msg = re.escape(
+        "`pos_label` is passed both in the scorer and to the `report_metrics` method."
+    )
+    with pytest.raises(ValueError, match=err_msg):
+        report.metrics.report_metrics(scoring=[f1_scorer], pos_label=0)
 
 
 def test_estimator_report_report_metrics_invalid_metric_type(regression_data):
@@ -964,9 +1140,9 @@ def test_estimator_has_side_effects(prefit_estimator):
         y_test=y_test,
     )
 
-    predictions_before = report.estimator.predict_proba(X_test)
+    predictions_before = report.estimator_.predict_proba(X_test)
     estimator.fit(X_test, y_test)
-    predictions_after = report.estimator.predict_proba(X_test)
+    predictions_after = report.estimator_.predict_proba(X_test)
     np.testing.assert_array_equal(predictions_before, predictions_after)
 
 

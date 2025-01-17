@@ -6,13 +6,14 @@ import { setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const epoch = new Date("1970-01-01T00:00:00Z").toISOString();
-function makeFakeViewItem(name: string) {
+function makeFakeViewItem(name: string, note: string = "") {
   return {
     name,
     media_type: "text/markdown",
     value: "",
     updated_at: epoch,
     created_at: epoch,
+    note,
   } as ProjectItemDto;
 }
 

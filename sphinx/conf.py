@@ -60,7 +60,7 @@ examples_ordered = [
     "../examples/getting_started/plot_working_with_projects",
     "../examples/getting_started/plot_tracking_items",
     "../examples/model_evaluation",
-    "../examples/model_evaluation/plot_train_test_split"
+    "../examples/model_evaluation/plot_train_test_split",
     "../examples/model_evaluation/plot_cross_validate",
 ]
 
@@ -141,26 +141,6 @@ html_theme_options = {
             "name": "Discord",
             "url": "https://discord.gg/scBZerAGwW",
             "icon": "fa-brands fa-discord",
-        },
-        {
-            "name": "YouTube",
-            "url": "https://www.youtube.com/@probabl_ai",
-            "icon": "fa-brands fa-youtube",
-        },
-        {
-            "name": "LinkedIn",
-            "url": "https://www.linkedin.com/company/probabl/",
-            "icon": "fa-brands fa-linkedin-in",
-        },
-        {
-            "name": "Bluesky",
-            "url": "https://bsky.app/profile/probabl.ai",
-            "icon": "fa-brands fa-bluesky",
-        },
-        {
-            "name": "X (ex-Twitter)",
-            "url": "https://x.com/probabl_ai",
-            "icon": "fa-brands fa-x-twitter",
         },
     ],
     "switcher": {

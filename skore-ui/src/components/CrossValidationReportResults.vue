@@ -3,6 +3,7 @@ import Simplebar from "simplebar-vue";
 import { computed, ref, useTemplateRef } from "vue";
 
 import DropdownButton from "@/components/DropdownButton.vue";
+import DropdownButtonItem from "@/components/DropdownButtonItem.vue";
 import FloatingTooltip from "@/components/FloatingTooltip.vue";
 import MetricFavorability from "@/components/MetricFavorability.vue";
 import StaticRange from "@/components/StaticRange.vue";
@@ -20,13 +21,10 @@ function exponential(x: number) {
   if (typeof x !== "number") {
     return x;
   }
-  const expoForm = x.toExponential(2);
-  const expo = expoForm.split("e")[1];
-  if (Math.abs(parseInt(expo)) < 2) {
-    return x.toFixed(2);
-  } else {
-    return expoForm;
+  if (x >= 0.1 && x <= 999) {
+    return x.toFixed(4);
   }
+  return x.toExponential(2);
 }
 
 function isNameTooltipEnabled(index: number) {

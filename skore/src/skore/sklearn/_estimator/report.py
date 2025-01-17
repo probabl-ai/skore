@@ -5,7 +5,6 @@ from itertools import product
 
 import joblib
 import numpy as np
-from rich.progress import track
 from sklearn.base import clone
 from sklearn.exceptions import NotFittedError
 from sklearn.pipeline import Pipeline
@@ -15,6 +14,7 @@ from skore.externals._pandas_accessors import DirNamesMixin
 from skore.externals._sklearn_compat import is_clusterer
 from skore.sklearn._base import _BaseReport, _get_cached_response_values
 from skore.sklearn.find_ml_task import _find_ml_task
+from skore.utils._progress_bar import progress_decorator
 
 
 class EstimatorReport(_BaseReport, DirNamesMixin):
@@ -48,6 +48,12 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     Attributes
     ----------
+    estimator_ : estimator object
+        The cloned or copied estimator.
+
+    estimator_name_ : str
+        The name of the estimator.
+
     metrics : _MetricsAccessor
         Accessor for metrics-related operations.
 
@@ -64,10 +70,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     """
 
     _ACCESSOR_CONFIG = {
-        "metrics": {"icon": ":straight_ruler:", "name": "metrics"},
-        # Add other accessors as they're implemented
-        # "inspection": {"icon": ":magnifying_glass:", "name": "inspection"},
-        # "linting": {"icon": ":check:", "name": "linting"},
+        "metrics": {"name": "metrics"},
     }
 
     @staticmethod
@@ -104,6 +107,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         X_test=None,
         y_test=None,
     ):
+        self._parent_progress = None  # used to display progress bar
+
         if fit == "auto":
             try:
                 check_is_fitted(estimator)
@@ -137,12 +142,37 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     # For the moment, we do not allow to alter the estimator and the training data.
     # For the validation set, we allow it and we invalidate the cache.
 
-    def clean_cache(self):
-        """Clean the cache."""
+    def clear_cache(self):
+        """Clear the cache.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_breast_cancer(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> reporter.cache_predictions()
+        Caching predictions ...
+        >>> reporter.clear_cache()
+        >>> reporter._cache
+        {}
+        """
         self._cache = {}
 
+    @progress_decorator(description="Caching predictions")
     def cache_predictions(self, response_methods="auto", n_jobs=None):
-        """Force caching of estimator's predictions.
+        """Cache estimator's predictions.
 
         Parameters
         ----------
@@ -155,6 +185,28 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         n_jobs : int or None, default=None
             The number of jobs to run in parallel. None means 1 unless in a
             joblib.parallel_backend context. -1 means using all processors.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_breast_cancer(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> reporter.cache_predictions()
+        Caching predictions ...
+        >>> reporter._cache
+        {...}
         """
         if self._ml_task in ("binary-classification", "multiclass-classification"):
             if response_methods == "auto":
@@ -189,20 +241,19 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             )
         )
         # trigger the computation
-        list(
-            track(
-                generator,
-                total=len(response_methods) * len(pos_labels) * len(data_sources),
-                description="Caching predictions",
-            )
-        )
+        progress = self._progress_info["current_progress"]
+        task = self._progress_info["current_task"]
+        total_iterations = len(response_methods) * len(pos_labels) * len(data_sources)
+        progress.update(task, total=total_iterations)
+        for _ in generator:
+            progress.update(task, advance=1, refresh=True)
 
     @property
-    def estimator(self):
+    def estimator_(self):
         return self._estimator
 
-    @estimator.setter
-    def estimator(self, value):
+    @estimator_.setter
+    def estimator_(self, value):
         raise AttributeError(
             "The estimator attribute is immutable. "
             f"Call the constructor of {self.__class__.__name__} to create a new report."
@@ -249,9 +300,15 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self._initialize_state()
 
     @property
-    def estimator_name(self):
+    def estimator_name_(self):
         if isinstance(self._estimator, Pipeline):
             name = self._estimator[-1].__class__.__name__
         else:
             name = self._estimator.__class__.__name__
         return name
+
+    def __repr__(self):
+        """Return a string representation using rich."""
+        return self._rich_repr(
+            class_name="skore.EstimatorReport", help_method_name="reporter.help()"
+        )

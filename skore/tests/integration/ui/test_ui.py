@@ -56,6 +56,7 @@ def test_get_items(client, in_memory_project):
                     "value": item.media,
                     "created_at": item.created_at,
                     "updated_at": item.updated_at,
+                    "note": None,
                 }
                 for item in items
             ],
@@ -172,6 +173,7 @@ def test_serialize_matplotlib_item(
                     "value": figure_b64_str,
                     "updated_at": mock_nowstr,
                     "created_at": mock_nowstr,
+                    "note": None,
                 }
             ]
         },
@@ -203,6 +205,7 @@ def test_serialize_altair_item(
                     "value": chart_b64_str,
                     "updated_at": mock_nowstr,
                     "created_at": mock_nowstr,
+                    "note": None,
                 }
             ]
         },
@@ -238,6 +241,7 @@ def test_serialize_pillow_item(
                     "value": png_b64_str,
                     "updated_at": mock_nowstr,
                     "created_at": mock_nowstr,
+                    "note": None,
                 }
             ]
         },
@@ -270,6 +274,7 @@ def test_serialize_plotly_item(
                     "value": figure_b64_str,
                     "updated_at": mock_nowstr,
                     "created_at": mock_nowstr,
+                    "note": None,
                 }
             ]
         },
@@ -296,6 +301,7 @@ def test_serialize_primitive_item(
                     "value": [1, 2, [3, 4]],
                     "updated_at": mock_nowstr,
                     "created_at": mock_nowstr,
+                    "note": None,
                 }
             ]
         },
@@ -322,6 +328,7 @@ def test_serialize_media_item(
                     "value": "<media>",
                     "updated_at": mock_nowstr,
                     "created_at": mock_nowstr,
+                    "note": None,
                 }
             ]
         },
@@ -474,6 +481,7 @@ def test_serialize_cross_validation_reporter_item(
         },
         "updated_at": mock_nowstr,
         "created_at": mock_nowstr,
+        "note": None,
     }
     actual = project["items"]["cv"][0]
     assert expected == actual
@@ -533,6 +541,7 @@ def test_get_items_with_pickle_item(
 
     assert response.status_code == 200
     assert response.json() == {
+        "views": {},
         "items": {
             "pickle": [
                 {
@@ -541,10 +550,10 @@ def test_get_items_with_pickle_item(
                     "name": "pickle",
                     "media_type": "text/markdown",
                     "value": "```python\n<class 'object'>\n```",
+                    "note": None,
                 },
             ],
         },
-        "views": {},
     }
 
 
@@ -563,11 +572,16 @@ def test_get_items_with_pickle_item_and_unpickling_error(
     monkeypatch.delattr(
         "skore.persistence.item.cross_validation_reporter_item.CrossValidationReporterItem"
     )
+    monkeypatch.setattr(
+        "skore.persistence.item.pickle_item.format_exception",
+        lambda *args, **kwargs: "<traceback>",
+    )
 
     response = client.get("/api/project/items")
 
     assert response.status_code == 200
     assert response.json() == {
+        "views": {},
         "items": {
             "pickle": [
                 {
@@ -576,8 +590,30 @@ def test_get_items_with_pickle_item_and_unpickling_error(
                     "name": "pickle",
                     "media_type": "text/markdown",
                     "value": "Item cannot be displayed",
+                    "note": (
+                        "\n\nUnpicklingError with complete traceback:\n\n<traceback>"
+                    ),
                 },
             ],
         },
-        "views": {},
     }
+
+
+def test_set_note(client, in_memory_project):
+    for i in range(3):
+        in_memory_project.put("notted", i)
+
+    for i in range(3):
+        response = client.put(
+            "/api/project/note",
+            json={
+                "key": "notted",
+                "message": f"note{i}",
+                "version": i,
+            },
+        )
+        assert response.status_code == 201
+
+    for i in range(3):
+        note = in_memory_project.get_note("notted", version=i)
+        assert note == f"note{i}"

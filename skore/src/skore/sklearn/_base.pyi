@@ -20,9 +20,8 @@ class _HelpMixin:
 
 class _BaseAccessor(_HelpMixin):
     _parent: Any
-    _icon: str
 
-    def __init__(self, parent: Any, icon: str) -> None: ...
+    def __init__(self, parent: Any) -> None: ...
     def _get_help_panel_title(self) -> str: ...
     def _create_help_tree(self) -> Tree: ...
     def _get_X_y_and_data_source_hash(
@@ -47,7 +46,8 @@ def _get_cached_response_values(
 
 class _BaseReport(_HelpMixin):
     _ACCESSOR_CONFIG: dict[str, dict[str, str]]
-    estimator_name: str
+    estimator_: BaseEstimator
+    estimator_name_: str
     _X_test: Optional[np.ndarray]
     _y_test: Optional[np.ndarray]
     _X_train: Optional[np.ndarray]

@@ -3,7 +3,7 @@ import { ref, shallowRef, watch } from "vue";
 
 import { type LayoutDto, type ProjectDto, type ProjectItemDto } from "@/dto";
 import { deserializeProjectItemDto, type PresentableItem } from "@/models";
-import { deleteView as deleteViewApi, fetchProject, putView } from "@/services/api";
+import { deleteView as deleteViewApi, fetchProject, putView, setNote } from "@/services/api";
 import { poll } from "@/services/utils";
 
 export interface TreeNode {
@@ -94,7 +94,7 @@ export const useProjectStore = defineStore("project", () => {
   /**
    * Start real time sync with the server.
    */
-  let _stopBackendPolling: Function | null = null;
+  let _stopBackendPolling: (() => void) | null = null;
   async function startBackendPolling() {
     _isCanceledCall = false;
     _stopBackendPolling = await poll(fetch, 1500);
@@ -105,7 +105,9 @@ export const useProjectStore = defineStore("project", () => {
    */
   function stopBackendPolling() {
     _isCanceledCall = true;
-    _stopBackendPolling && _stopBackendPolling();
+    if (_stopBackendPolling) {
+      _stopBackendPolling();
+    }
   }
 
   /**
@@ -326,6 +328,14 @@ export const useProjectStore = defineStore("project", () => {
   }
 
   /**
+   * Set a note on a currently displayed note
+   */
+  async function setNoteOnItem(key: string, message: string) {
+    const updateIndex = getCurrentItemUpdateIndex(key);
+    await setNote(key, message, updateIndex);
+  }
+
+  /**
    * Get the items in the current view as a presentable list.
    * @returns a list of items with their metadata
    */
@@ -413,6 +423,7 @@ export const useProjectStore = defineStore("project", () => {
     renameView,
     setCurrentItemUpdateIndex,
     getCurrentItemUpdateIndex,
+    setNoteOnItem,
     startBackendPolling,
     stopBackendPolling,
   };

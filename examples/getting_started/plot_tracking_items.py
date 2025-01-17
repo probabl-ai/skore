@@ -44,8 +44,10 @@ my_project = skore.open(temp_dir_path / "my_project")
 import time
 
 my_project.put("my_int", 4)
+
 time.sleep(0.1)
 my_project.put("my_int", 9)
+
 time.sleep(0.1)
 my_project.put("my_int", 16)
 
@@ -76,7 +78,7 @@ my_project.put("my_int", 16)
 history = my_project.get("my_int", latest=False, metadata=True)
 
 # %%
-# We can print the first history (first iteration) of this item:
+# We can print the details of the first version of this item:
 
 # %%
 
@@ -100,7 +102,7 @@ df_track = pd.DataFrame(
         "updated_at": list_updated_at,
     }
 )
-df_track.insert(0, "iteration_number", np.arange(len(df_track)))
+df_track.insert(0, "version_number", np.arange(len(df_track)))
 df_track
 
 # %%
@@ -120,7 +122,7 @@ import plotly.express as px
 
 fig = px.line(
     df_track,
-    x="iteration_number",
+    x="version_number",
     y="value",
     hover_data=df_track.columns,
     markers=True,
@@ -134,8 +136,8 @@ fig
 #   example.
 
 # %%
-# Here, we focused on `how` to use skore's tracking of history of items.
-# But `why` track items?
+# Here, we focused on *how* to use skore's tracking of history of items.
+# But *why* track items?
 #
 # * We could track some items such as machine learning scores over time to better
 #   understand which feature engineering works best.

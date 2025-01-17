@@ -9,6 +9,7 @@ export interface ProjectItemDto {
   value: any;
   updated_at: string;
   created_at: string;
+  note?: string;
 }
 
 /**

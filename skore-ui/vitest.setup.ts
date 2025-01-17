@@ -3,8 +3,8 @@ import "vitest-canvas-mock";
 
 vi.hoisted(() => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  (global.window as any).getComputedStyle = (e) => {
-    return {};
+  global.window.getComputedStyle = (e) => {
+    return {} as CSSStyleDeclaration;
   };
 
   // required because plotly depends on URL.createObjectURL

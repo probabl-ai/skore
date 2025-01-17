@@ -145,7 +145,7 @@ class ItemRepository:
         """
         yield from self.storage
 
-    def set_item_note(self, key: str, message: str, *, version=-1):
+    def set_item_note(self, key: str, note: str, *, version=-1):
         """Attach a note to key ``key``.
 
         Parameters
@@ -153,8 +153,8 @@ class ItemRepository:
         key : str
             The key of the item to annotate.
             May be qualified with a version number through the ``version`` argument.
-        message : str
-            The message to be attached.
+        note : str
+            The note to be attached.
         version : int, default=-1
             The version of the key to annotate. Default is the latest version.
 
@@ -163,15 +163,17 @@ class ItemRepository:
         KeyError
             If the ``(key, version)`` couple does not exist.
         TypeError
-            If ``key`` or ``message`` is not a string.
+            If ``key`` or ``note`` is not a string.
         """
         if not isinstance(key, str):
             raise TypeError(f"Key should be a string; got {type(key)}")
-        if not isinstance(message, str):
-            raise TypeError(f"Message should be a string; got {type(message)}")
+        if not isinstance(note, str):
+            raise TypeError(f"Note should be a string; got {type(note)}")
 
         try:
-            self.storage[key][version]["item"]["note"] = message
+            old = self.storage[key]
+            old[version]["item"]["note"] = note
+            self.storage[key] = old
         except IndexError as e:
             raise KeyError((key, version)) from e
 
@@ -193,7 +195,7 @@ class ItemRepository:
         Raises
         ------
         KeyError
-            If no note is attached to the ``(key, version)`` couple.
+            If the ``(key, version)`` couple does not exist.
         """
         try:
             return self.storage[key][version]["item"]["note"]
@@ -214,9 +216,11 @@ class ItemRepository:
         Raises
         ------
         KeyError
-            If no note is attached to the ``(key, version)`` couple.
+            If the ``(key, version)`` couple does not exist.
         """
         try:
-            self.storage[key][version]["item"]["note"] = None
+            old = self.storage[key]
+            old[version]["item"]["note"] = None
+            self.storage[key] = old
         except IndexError as e:
             raise KeyError((key, version)) from e
