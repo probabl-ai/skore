@@ -57,16 +57,6 @@ subsections_order = [
     "../examples/getting_started",
     "../examples/model_evaluation",
 ]
-sub_examples_ordered = [
-    "../examples/getting_started/plot_quick_start",
-    "../examples/getting_started/plot_skore_product_tour",
-    "../examples/getting_started/plot_working_with_projects",
-    "../examples/getting_started/plot_tracking_items",
-    "../examples/model_evaluation/plot_train_test_split",
-    "../examples/model_evaluation/plot_estimator_report",
-    "../examples/model_evaluation/plot_cross_validate",
-]
-
 
 # https://sphinx-gallery.github.io/stable/advanced.html#resetting-before-each-example
 def reset_mpl(gallery_conf, fname):
