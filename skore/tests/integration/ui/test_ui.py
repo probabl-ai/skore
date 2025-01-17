@@ -546,3 +546,38 @@ def test_get_items_with_pickle_item(
         },
         "views": {},
     }
+
+
+def test_get_items_with_pickle_item_and_unpickling_error(
+    monkeypatch,
+    MockDatetime,
+    mock_nowstr,
+    client,
+    in_memory_project,
+):
+    import skore.persistence.item
+
+    monkeypatch.setattr("skore.persistence.item.item.datetime", MockDatetime)
+    in_memory_project.put("pickle", skore.persistence.item.CrossValidationReporterItem)
+
+    monkeypatch.delattr(
+        "skore.persistence.item.cross_validation_reporter_item.CrossValidationReporterItem"
+    )
+
+    response = client.get("/api/project/items")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "items": {
+            "pickle": [
+                {
+                    "created_at": mock_nowstr,
+                    "updated_at": mock_nowstr,
+                    "name": "pickle",
+                    "media_type": "text/markdown",
+                    "value": "UnpicklingError",
+                },
+            ],
+        },
+        "views": {},
+    }

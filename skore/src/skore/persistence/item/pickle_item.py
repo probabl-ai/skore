@@ -7,6 +7,7 @@ be otherwise.
 from __future__ import annotations
 
 from pickle import dumps, loads
+from traceback import format_exception
 from typing import Any, Optional
 
 from .item import Item
@@ -70,7 +71,26 @@ class PickleItem(Item):
 
     def as_serializable_dict(self):
         """Get a JSON serializable representation of the item."""
+        try:
+            object = self.object
+        except Exception as e:
+            value = "UnpicklingError"
+            traceback = "".join(format_exception(None, e, e.__traceback__))
+            note = "".join(
+                (
+                    (self.note or ""),
+                    "\n\n",
+                    "UnpicklingError with complete traceback:",
+                    "\n\n",
+                    traceback,
+                )
+            )
+        else:
+            value = f"```python\n{repr(object)}\n```"
+            note = self.note
+
         return super().as_serializable_dict() | {
             "media_type": "text/markdown",
-            "value": f"```python\n{repr(self.object)}\n```",
+            "value": value,
+            "note": note,
         }
