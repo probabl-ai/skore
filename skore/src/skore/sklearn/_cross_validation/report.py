@@ -31,7 +31,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     Parameters
     ----------
     estimator : estimator object
-        Estimator to make report from.
+        Estimator to make the cross-validation report from.
 
     X : {array-like, sparse matrix} of shape (n_samples, n_features)
         The data to fit. Can be for example a list, or an array.
