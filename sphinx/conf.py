@@ -68,7 +68,7 @@ examples_ordered = [
     "../examples/getting_started/plot_working_with_projects",
     "../examples/getting_started/plot_tracking_items",
     "../examples/model_evaluation",
-    "../examples/model_evaluation/plot_train_test_split"
+    "../examples/model_evaluation/plot_train_test_split",
     "../examples/model_evaluation/plot_cross_validate",
 ]
 
