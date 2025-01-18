@@ -175,9 +175,9 @@ def test_cross_validation_report_repr(binary_classification_data):
 @pytest.mark.parametrize(
     "fixture_name, expected_n_keys",
     [
-        ("binary_classification_data", 6),
-        ("binary_classification_data_svc", 6),
-        ("multiclass_classification_data", 8),
+        ("binary_classification_data", 8),
+        ("binary_classification_data_svc", 8),
+        ("multiclass_classification_data", 10),
         ("regression_data", 2),
     ],
 )
