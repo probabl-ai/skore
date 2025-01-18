@@ -219,7 +219,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                     response_methods += ["predict_proba"]
                 if hasattr(self._estimator, "decision_function"):
                     response_methods += ["decision_function"]
-            pos_labels = self._estimator.classes_
+            pos_labels = self._estimator.classes_.tolist() + [None]
         else:
             if response_methods == "auto":
                 response_methods = ["predict"]
