@@ -1,4 +1,4 @@
-"""Load project helper."""
+"""Helpers to create, load, and launch projects."""
 
 import asyncio
 import re
