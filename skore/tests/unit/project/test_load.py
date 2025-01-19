@@ -2,7 +2,7 @@ import os
 
 import pytest
 from skore.project import Project
-from skore.project.load import _load
+from skore.project._manage import _load
 
 
 @pytest.fixture

@@ -71,9 +71,11 @@ class Project:
 
     def __init__(
         self,
+        name: str,
         item_repository: ItemRepository,
         view_repository: ViewRepository,
     ):
+        self.name = name
         self.item_repository = item_repository
         self.view_repository = view_repository
 

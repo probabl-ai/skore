@@ -15,7 +15,7 @@ from skore.exceptions import (
     InvalidProjectNameError,
     ProjectCreationError,
 )
-from skore.project.create import _create, _validate_project_name
+from skore.project._manage import _create, _validate_project_name
 from skore.view.view import View
 
 

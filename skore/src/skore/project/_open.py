@@ -1,10 +1,7 @@
-"""Command to open a Project."""
-
 from pathlib import Path
 from typing import Union
 
-from skore.project.create import _create
-from skore.project.load import _load
+from skore.project._manage import _create, _launch, _load
 from skore.project.project import Project
 
 
@@ -13,8 +10,11 @@ def open(
     *,
     create: bool = True,
     overwrite: bool = False,
+    serve: bool = True,
+    port: int | None = None,
+    verbose: bool = False,
 ) -> Project:
-    """Open a project given a project name or path.
+    """Open a project given a project name or path and launch skore UI.
 
     This function :
         - opens the project if it already exists,
@@ -31,6 +31,13 @@ def open(
     overwrite: bool, default=False
         Overwrite the project file if it already exists and ``create`` is ``True``.
         Has no effect otherwise.
+    serve: bool, default=True
+        Whether to launch the skore UI.
+    port: int | None, default=None
+        Port at which to bind the UI server. If ``None``, the server will be bound to
+        an available port.
+    verbose : bool, default=False
+        Whether or not to display info logs to the user.
 
     Returns
     -------
@@ -46,11 +53,15 @@ def open(
     """
     if create and not overwrite:
         try:
-            return _load(project_path)
+            project = _load(project_path)
         except FileNotFoundError:
-            return _create(project_path, overwrite=overwrite)
+            project = _create(project_path, overwrite=overwrite, verbose=verbose)
+    elif not create:
+        project = _load(project_path)
+    else:
+        project = _create(project_path, overwrite=overwrite, verbose=verbose)
 
-    if not create:
-        return _load(project_path)
+    if serve:
+        _launch(project, port=port, verbose=verbose)
 
-    return _create(project_path, overwrite=overwrite)
+    return project
