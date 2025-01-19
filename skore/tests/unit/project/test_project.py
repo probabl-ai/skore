@@ -11,11 +11,6 @@ import pytest
 from matplotlib import pyplot as plt
 from PIL import Image
 from sklearn.ensemble import RandomForestClassifier
-from skore.exceptions import (
-    InvalidProjectNameError,
-    ProjectCreationError,
-)
-from skore.project._create import _create, _validate_project_name
 from skore.view.view import View
 
 
@@ -238,58 +233,3 @@ def test_put_wrong_key_and_value_raise(in_memory_project):
     """When `on_error` is "raise", raise the first error that occurs."""
     with pytest.raises(TypeError):
         in_memory_project.put(0, (lambda: "unsupported object"))
-
-
-test_cases = [
-    (
-        "a" * 250,
-        (False, InvalidProjectNameError()),
-    ),
-    (
-        "%",
-        (False, InvalidProjectNameError()),
-    ),
-    (
-        "hello world",
-        (False, InvalidProjectNameError()),
-    ),
-]
-
-
-@pytest.mark.parametrize("project_name,expected", test_cases)
-def test_validate_project_name(project_name, expected):
-    result, exception = _validate_project_name(project_name)
-    expected_result, expected_exception = expected
-    assert result == expected_result
-    assert type(exception) is type(expected_exception)
-
-
-@pytest.mark.parametrize("project_name", ["hello", "hello.skore"])
-def test_create_project(project_name, tmp_path):
-    _create(tmp_path / project_name)
-    assert (tmp_path / "hello.skore").exists()
-
-
-# TODO: If using fixtures in test cases is possible, join this with
-# `test_create_project`
-def test_create_project_absolute_path(tmp_path):
-    _create(tmp_path / "hello")
-    assert (tmp_path / "hello.skore").exists()
-
-
-def test_create_project_fails_if_file_exists(tmp_path):
-    _create(tmp_path / "hello")
-    assert (tmp_path / "hello.skore").exists()
-    with pytest.raises(FileExistsError):
-        _create(tmp_path / "hello")
-
-
-def test_create_project_fails_if_permission_denied(tmp_path):
-    with pytest.raises(ProjectCreationError):
-        _create("/")
-
-
-@pytest.mark.parametrize("project_name", ["hello.txt", "%%%", "COM1"])
-def test_create_project_fails_if_invalid_name(project_name, tmp_path):
-    with pytest.raises(ProjectCreationError):
-        _create(tmp_path / project_name)
