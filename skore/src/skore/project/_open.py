@@ -1,3 +1,5 @@
+"""Helper to open a project."""
+
 from pathlib import Path
 from typing import Union
 
