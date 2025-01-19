@@ -31,7 +31,7 @@ def mock_server_manager(monkeypatch):
             self.start_params = {"port": port, "open_browser": False}
 
     mock_manager = MockServerManager()
-    monkeypatch.setattr("skore.project._manage.ServerManager", mock_manager)
+    monkeypatch.setattr("skore.project._launch.ServerManager", mock_manager)
     return mock_manager
 
 
