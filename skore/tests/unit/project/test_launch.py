@@ -37,17 +37,31 @@ def test_launch(capsys, tmp_path):
     try:
         _launch(skore_project, port=8000, open_browser=False, verbose=True)
 
-        time.sleep(0.1)  # let the server start
+        time.sleep(0.5)  # let the server start
         assert skore_project._server_manager is not None
-        assert skore_project._server_manager is ServerManager.get_instance()
+        server_manager = skore_project._server_manager
+        assert server_manager is ServerManager.get_instance()
         assert "Running skore UI" in capsys.readouterr().out
 
-        _launch(skore_project, port=8000, open_browser=False, verbose=True)
+        # Force server shutdown
+        server_manager._server_running = True  # ensure it's marked as running
+        server_manager.shutdown()
+        time.sleep(0.5)  # let the shutdown complete
 
-        time.sleep(0.1)
+        # Check shutdown output
+        output = capsys.readouterr().out
+        assert "Server that was running at http://localhost:8000" in output
+        assert not server_manager._server_running
+        assert server_manager._loop is None
+
+        # Try launching again
+        _launch(skore_project, port=8000, open_browser=False, verbose=True)
+        time.sleep(0.5)
+        _launch(skore_project, port=8000, open_browser=False, verbose=True)
+        time.sleep(0.5)
         assert skore_project._server_manager is ServerManager.get_instance()
         assert "Server is already running" in capsys.readouterr().out
     finally:
         skore_project.shutdown_web_ui()
-        time.sleep(0.1)  # let the server shutdown
+        time.sleep(0.5)  # let the server shutdown
         assert "Server that was running" in capsys.readouterr().out
