@@ -1,5 +1,5 @@
-Use cases
----------
+End-to-end data science use cases
+---------------------------------
 
 These examples show `skore` in action on real use case. We aimed at showing `skore`
 ability to:
