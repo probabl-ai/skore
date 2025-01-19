@@ -87,7 +87,7 @@ async def run_server(project: Project, port: int, open_browser: bool, console: C
     await server.serve()
 
 
-def launch(
+def _launch(
     project: Project,
     port: int | None = None,
     open_browser: bool = True,

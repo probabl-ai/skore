@@ -10,7 +10,7 @@ from skore.exceptions import (
     ProjectCreationError,
     ProjectPermissionError,
 )
-from skore.project._load import load
+from skore.project._load import _load
 from skore.project.project import Project, logger
 from skore.utils._logger import logger_context
 from skore.view.view import View
@@ -57,7 +57,7 @@ def _validate_project_name(project_name: str) -> tuple[bool, Optional[Exception]
     return True, None
 
 
-def create(
+def _create(
     project_name: Union[str, Path],
     overwrite: bool = False,
     verbose: bool = False,
@@ -143,7 +143,7 @@ def create(
                 f"Unable to create project file '{views_dir}'."
             ) from e
 
-        p = load(project_directory)
+        p = _load(project_directory)
         p.put_view("default", View(layout=[]))
 
         console.rule("[bold cyan]skore[/bold cyan]")

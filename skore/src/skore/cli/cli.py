@@ -5,9 +5,9 @@ from importlib.metadata import version
 
 from skore.cli.color_format import ColorArgumentParser
 from skore.project import open
-from skore.project._create import create
-from skore.project._launch import launch
-from skore.project._load import load
+from skore.project._create import _create
+from skore.project._launch import _launch
+from skore.project._load import _load
 
 
 def cli(args: list[str]):
@@ -108,14 +108,14 @@ def cli(args: list[str]):
     parsed_args: argparse.Namespace = parser.parse_args(args)
 
     if parsed_args.subcommand == "create":
-        create(
+        _create(
             project_name=parsed_args.project_name,
             overwrite=parsed_args.overwrite,
             verbose=parsed_args.verbose,
         )
     elif parsed_args.subcommand == "launch":
-        launch(
-            project=load(project_name=parsed_args.project_name),
+        _launch(
+            project=_load(project_name=parsed_args.project_name),
             port=parsed_args.port,
             open_browser=parsed_args.open_browser,
             verbose=parsed_args.verbose,

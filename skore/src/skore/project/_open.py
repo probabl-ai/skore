@@ -52,22 +52,22 @@ def open(
     ProjectCreationError
         If project creation fails for some reason (e.g. if the project path is invalid)
     """
-    from skore.project._create import create
-    from skore.project._launch import launch
-    from skore.project._load import load
+    from skore.project._create import _create
+    from skore.project._launch import _launch
+    from skore.project._load import _load
 
     try:
-        project = load(project_path)
+        project = _load(project_path)
         if overwrite:
             # let _create handle the overwrite flag
-            project = create(project_path, overwrite=overwrite, verbose=verbose)
+            project = _create(project_path, overwrite=overwrite, verbose=verbose)
     except FileNotFoundError:
         if create:
-            project = create(project_path, overwrite=overwrite, verbose=verbose)
+            project = _create(project_path, overwrite=overwrite, verbose=verbose)
         else:
             raise
 
     if serve:
-        launch(project, port=port, verbose=verbose)
+        _launch(project, port=port, verbose=verbose)
 
     return project

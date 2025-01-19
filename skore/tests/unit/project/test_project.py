@@ -15,7 +15,7 @@ from skore.exceptions import (
     InvalidProjectNameError,
     ProjectCreationError,
 )
-from skore.project._create import _validate_project_name, create
+from skore.project._create import _create, _validate_project_name
 from skore.view.view import View
 
 
@@ -266,30 +266,30 @@ def test_validate_project_name(project_name, expected):
 
 @pytest.mark.parametrize("project_name", ["hello", "hello.skore"])
 def test_create_project(project_name, tmp_path):
-    create(tmp_path / project_name)
+    _create(tmp_path / project_name)
     assert (tmp_path / "hello.skore").exists()
 
 
 # TODO: If using fixtures in test cases is possible, join this with
 # `test_create_project`
 def test_create_project_absolute_path(tmp_path):
-    create(tmp_path / "hello")
+    _create(tmp_path / "hello")
     assert (tmp_path / "hello.skore").exists()
 
 
 def test_create_project_fails_if_file_exists(tmp_path):
-    create(tmp_path / "hello")
+    _create(tmp_path / "hello")
     assert (tmp_path / "hello.skore").exists()
     with pytest.raises(FileExistsError):
-        create(tmp_path / "hello")
+        _create(tmp_path / "hello")
 
 
 def test_create_project_fails_if_permission_denied(tmp_path):
     with pytest.raises(ProjectCreationError):
-        create("/")
+        _create("/")
 
 
 @pytest.mark.parametrize("project_name", ["hello.txt", "%%%", "COM1"])
 def test_create_project_fails_if_invalid_name(project_name, tmp_path):
     with pytest.raises(ProjectCreationError):
-        create(tmp_path / project_name)
+        _create(tmp_path / project_name)
