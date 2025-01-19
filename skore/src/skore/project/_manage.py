@@ -255,6 +255,10 @@ class ServerManager:
                 console.print("Closing skore UI")
             finally:
                 loop.close()
+                console.print(
+                    f"Server that was running at http://localhost:{self._port} has "
+                    "been closed"
+                )
 
         self._executor = ThreadPoolExecutor(max_workers=1)
         self._executor.submit(run_in_thread)

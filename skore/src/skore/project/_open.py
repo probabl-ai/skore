@@ -51,15 +51,16 @@ def open(
     ProjectCreationError
         If project creation fails for some reason (e.g. if the project path is invalid)
     """
-    if create and not overwrite:
-        try:
-            project = _load(project_path)
-        except FileNotFoundError:
-            project = _create(project_path, overwrite=overwrite, verbose=verbose)
-    elif not create:
+    try:
         project = _load(project_path)
-    else:
-        project = _create(project_path, overwrite=overwrite, verbose=verbose)
+        if overwrite:
+            # let _create handle the overwrite flag
+            project = _create(project_path, overwrite=overwrite, verbose=verbose)
+    except FileNotFoundError:
+        if create:
+            project = _create(project_path, overwrite=overwrite, verbose=verbose)
+        else:
+            raise
 
     if serve:
         _launch(project, port=port, verbose=verbose)

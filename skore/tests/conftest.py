@@ -50,7 +50,7 @@ def in_memory_project():
 
 @pytest.fixture
 def on_disk_project(tmp_path):
-    project = skore.open(tmp_path / "project")
+    project = skore.open(tmp_path / "project", serve=False)
     return project
 
 

@@ -76,8 +76,9 @@ def cli(args: list[str]):
     )
     parser_open.add_argument(
         "--create",
-        action="store_true",
-        help="create a new project if it does not exist",
+        action=argparse.BooleanOptionalAction,
+        help=("create a new project if it does not exist " "(default: %(default)s)"),
+        default=True,
     )
     parser_open.add_argument(
         "--overwrite",
