@@ -3,15 +3,15 @@
 Cache mechanism
 ===============
 
-In this example, we dive into some internal details of :class:`~skore.EstimatorReport`
-and :class:`~skore.CrossValidationReport` regarding their ability to cache critical
-information to speed-up long computations.
+This example shows how :class:`~skore.EstimatorReport` and
+:class:`~skore.CrossValidationReport` use caching to speed up computations.
 """
 
 # %%
 #
-# We start by loading a dataset using the `skrub` library. The task in this case is
-# to predict whether a company made a payment to a physician.
+# First, we load a dataset from `skrub`. Our goal is to predict if a company paid a
+# physician. The ultimate goal is to detect potential conflict of interest when it comes
+# to the actual problem that we want to solve.
 from skrub.datasets import fetch_open_payments
 
 dataset = fetch_open_payments()
@@ -25,9 +25,9 @@ TableReport(df)
 
 # %%
 #
-# We observe that the dataset contains more than 70,000 records and only contains
-# categorical features, some where categories are not well-defined. To handle this
-# issue, we use `skrub` to define a baseline predictive model.
+# The dataset has over 70,000 records with only categorical features. Some categories
+# are not well-defined. We use `skrub` to create a simple predictive model that handles
+# this.
 from skrub import tabular_learner
 
 model = tabular_learner("classifier")
@@ -35,18 +35,16 @@ model
 
 # %%
 #
-# This model handles numerical, categorical, date and time, and missing values out of
-# the box. We now train the model on part of the dataset.
+# This model handles all types of data: numbers, categories, dates, and missing values.
+# Let's train it on part of our dataset.
 from skore import train_test_split
 
 X_train, X_test, y_train, y_test = train_test_split(df, y, random_state=42)
 
 # %%
 #
-# Now, we focus on the :class:`~skore.EstimatorReport` class and more specifically
-# its ability to cache some information to speed-up long computations related to the
-# prediction of the model. Let's first train the model by passing the training data
-# to the :class:`~skore.EstimatorReport` class.
+# Let's explore how :class:`~skore.EstimatorReport` uses caching to speed up
+# predictions. We start by training the model:
 from skore import EstimatorReport
 
 reporter = EstimatorReport(
@@ -56,8 +54,7 @@ reporter.help()
 
 # %%
 #
-# Now, that the model is trained, we can use our `reporter`. For instance, we can
-# start by computing on the metric on the test set.
+# Let's compute the accuracy on our test set and measure how long it takes:
 import time
 
 start = time.time()
@@ -70,8 +67,7 @@ print(f"Time taken: {end - start:.2f} seconds")
 
 # %%
 #
-# To compute the accuracy, the `reporter` is calling the following scikit-learn
-# code (or really similar code) under the hood.
+# For comparison, here's how scikit-learn computes the same accuracy score:
 from sklearn.metrics import accuracy_score
 
 start = time.time()
@@ -84,9 +80,8 @@ print(f"Time taken: {end - start:.2f} seconds")
 
 # %%
 #
-# We observe that the time taken to compute the accuracy with both approaches is
-# close which make sense. Let's call again the computation of the accuracy with the
-# `reporter` object.
+# Both approaches take similar time. Now watch what happens when we compute accuracy
+# again:
 start = time.time()
 result = reporter.metrics.accuracy()
 end = time.time()
@@ -97,33 +92,14 @@ print(f"Time taken: {end - start:.2f} seconds")
 
 # %%
 #
-# Surprisingly, the second call to the `reporter.metrics.accuracy()` method was
-# instantenaous. The reason is that the `reporter` stored internal information allowing
-# to avoid re-computing the accuracy from scratch. We can check the internal
-# `_cache` attribute of the `reporter` to see what is stored.
+# The second calculation is instant! This happens because the reporter saves previous
+# calculations in its cache. Let's look inside the cache:
 reporter._cache
 
 # %%
 #
-# We observe 2 keys in the `_cache` attribute. We can try to decrypt the content of
-# each key.
-list(reporter._cache.keys())[0]
-
-# %%
-#
-# While the first number in the tuple, might be cryptic, the second and third values
-# are easier to understand: the second value corresponds to the type of predictions
-# that we needed to compute the accuracy. The third value is associated with the source
-# of data for which we need the predictions. Finally, the first value is a hash related
-# to when the `reporter` was created.
-reporter._hash
-
-# %%
-#
-# So from, the information in the cache, we expect that if we compute a new metric
-# requiring the same type of predictions, then it will be loaded from the cache.
-# Only the cost of to compute the metric will be paid. Let's take the example of the
-# precision metric.
+# The cache stores predictions by type and data source. This means metrics that use
+# the same type of predictions will be faster. Let's try the precision metric:
 start = time.time()
 result = reporter.metrics.precision()
 end = time.time()
@@ -133,26 +109,18 @@ result
 print(f"Time taken: {end - start:.2f} seconds")
 
 # %%
+# We observe that it takes only a few milliseconds to compute the precision because we
+# don't need to re-compute the predictions and only have to compute the precision
+# metric itself. Since the predictions are the bottleneck in terms of time, we observe
+# an interesting speedup.
 #
-# It took less time than computing the accuracy but we still have to pay the cost of
-# computing the metric. Now, we can check what has been added to the cache.
-reporter._cache
-
-# %%
-#
-# We observe that the cache now contains information related to the precision metric.
-# So we now see that the `reporter` is adding information if necessary at each call
-# of a metric. We expose the :meth:`~skore.EstimatorReport.cache_predictions` to
-# precompute all predictions at once instead of doing it on-the-fly. This method also
-# allows parallel computation of the predictions.
+# We can pre-compute all predictions at once using parallel processing:
 reporter.cache_predictions(n_jobs=2)
 
 # %%
 #
-# Now, so now we stored all type of possible predictions for the given estimator and
-# all provided data sources at initialization (i.e. `train` and `test` sets). It means
-# that we are not going to pay the cost of computing the predictions at each call of
-# any metric. Let's check the `log_loss` metric on the train set.
+# Now all possible predictions are stored. Any metric calculation will be much faster,
+# even on different data (like the training set):
 start = time.time()
 result = reporter.metrics.log_loss(data_source="train")
 end = time.time()
@@ -162,3 +130,105 @@ result
 print(f"Time taken: {end - start:.2f} seconds")
 
 # %%
+#
+# The reporter can also work with external data. We use `data_source="X_y"` to indicate
+# that we want to pass those external data.
+start = time.time()
+result = reporter.metrics.log_loss(data_source="X_y", X=X_test, y=y_test)
+end = time.time()
+result
+
+# %%
+print(f"Time taken: {end - start:.2f} seconds")
+
+# %%
+#
+# The first calculation is slower than when using the internal train or test sets
+# because it needs to compute a hash of the new data for later retrieval. Let's
+# calculate it again:
+start = time.time()
+result = reporter.metrics.log_loss(data_source="X_y", X=X_test, y=y_test)
+end = time.time()
+result
+
+# %%
+print(f"Time taken: {end - start:.2f} seconds")
+
+# %%
+#
+# Much faster! The remaining time is related to the hash computation. Let's compute the
+# ROC AUC on the same data:
+start = time.time()
+result = reporter.metrics.roc_auc(data_source="X_y", X=X_test, y=y_test)
+end = time.time()
+result
+
+# %%
+print(f"Time taken: {end - start:.2f} seconds")
+
+# %%
+# We observe that the computation is already efficient because it boils down to two
+# computations: the hash of the data and the ROC-AUC metric. We save a lot of time
+# because we don't need to re-compute the predictions.
+#
+# The cache also speeds up plots. Let's create a ROC curve:
+start = time.time()
+display = reporter.metrics.plot.roc(pos_label="allowed")
+end = time.time()
+
+# %%
+print(f"Time taken: {end - start:.2f} seconds")
+
+# %%
+#
+# The second plot is instant because it uses cached data:
+start = time.time()
+display = reporter.metrics.plot.roc(pos_label="allowed")
+end = time.time()
+
+# %%
+print(f"Time taken: {end - start:.2f} seconds")
+
+# %%
+#
+# We only use the cache to retrieve the `display` object and not directly the matplotlib
+# figure. It means that you can still customize the cached plot before displaying it:
+display.plot(roc_curve_kwargs={"color": "tab:orange"})
+
+# %%
+#
+# Be aware that you can clear the cache if you want to:
+reporter.clear_cache()
+reporter._cache
+
+# %%
+#
+# It means that nothing is stored anymore in the cache.
+#
+# :class:`~skore.CrossValidationReport` uses the same caching system for each fold
+# in cross-validation by leveraging the previous :class:`~skore.EstimatorReport`:
+from skore import CrossValidationReport
+
+reporter = CrossValidationReport(model, X=df, y=y, cv_splitter=5, n_jobs=2)
+reporter.help()
+
+# %%
+#
+# We can pre-compute all predictions at once using parallel processing:
+reporter.cache_predictions(n_jobs=2)
+
+# %%
+#
+# Now all possible predictions are stored. Any metric calculation will be much faster,
+# even on different data as we show for the :class:`~skore.EstimatorReport`.
+start = time.time()
+result = reporter.metrics.report_metrics(aggregate=["mean", "std"])
+end = time.time()
+result
+
+# %%
+print(f"Time taken: {end - start:.2f} seconds")
+
+# %%
+#
+# So we observe the same type of behaviour as we previously exposed.
