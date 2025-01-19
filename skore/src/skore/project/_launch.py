@@ -5,6 +5,7 @@ import socket
 import webbrowser
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
+from typing import Union
 
 import uvicorn
 from fastapi import FastAPI
@@ -35,7 +36,7 @@ class ServerManager:
     def start_server(
         self,
         project: Project,
-        port: int | None = None,
+        port: Union[int, None] = None,
         open_browser: bool = True,
     ):
         from skore import console
@@ -89,7 +90,7 @@ async def run_server(project: Project, port: int, open_browser: bool, console: C
 
 def _launch(
     project: Project,
-    port: int | None = None,
+    port: Union[int, None] = None,
     open_browser: bool = True,
     verbose: bool = False,
 ):

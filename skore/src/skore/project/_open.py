@@ -12,7 +12,7 @@ def open(
     create: bool = True,
     overwrite: bool = False,
     serve: bool = True,
-    port: int | None = None,
+    port: Union[int, None] = None,
     verbose: bool = False,
 ) -> Project:
     """Open a project given a project name or path and launch skore UI.
@@ -34,7 +34,7 @@ def open(
         Has no effect otherwise.
     serve: bool, default=True
         Whether to launch the skore UI.
-    port: int | None, default=None
+    port: int, default=None
         Port at which to bind the UI server. If ``None``, the server will be bound to
         an available port.
     verbose : bool, default=False
