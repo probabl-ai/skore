@@ -69,6 +69,8 @@ class Project:
       However some of these libraries support importing this raw data.
     """
 
+    _server_manager = None
+
     def __init__(
         self,
         name: str,
@@ -361,3 +363,10 @@ class Project:
         >>> project.delete_note("key", version=0)  # doctest: +SKIP
         """
         return self.item_repository.delete_item_note(key=key, version=version)
+
+    def shutdown_web_ui(self):
+        """Shutdown the web UI server if it is running."""
+        if self._server_manager is not None:
+            self._server_manager.shutdown()
+        else:
+            raise RuntimeError("UI server is not running")
