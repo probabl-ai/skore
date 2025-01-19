@@ -89,5 +89,4 @@ def test_cli_open_no_serve(tmp_path, mock_server_manager):
 
     cli(["open", str(project_path), "--create", "--no-serve"])
 
-    # Verify server was not started
     assert mock_server_manager.start_params is None
