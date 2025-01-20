@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from "vue";
+import { nextTick, onBeforeUnmount, ref, useTemplateRef, watch } from "vue";
 
 import MarkdownWidget from "@/components/MarkdownWidget.vue";
 import RichTextEditor from "@/components/RichTextEditor.vue";
@@ -17,15 +17,21 @@ const innerNote = ref(`${props.note !== null ? props.note : ""}`);
 function onEdit() {
   projectStore.stopBackendPolling();
   isEditing.value = true;
+  document.addEventListener("click", onClickOutside);
   nextTick(() => {
     editor.value?.focus();
   });
 }
 
 async function onEditionEnd() {
-  await projectStore.setNoteOnItem(props.name, innerNote.value.trimEnd());
-  projectStore.startBackendPolling();
-  isEditing.value = false;
+  if (isEditing.value) {
+    document.removeEventListener("click", onClickOutside);
+    await projectStore.setNoteOnItem(props.name, innerNote.value.trimEnd());
+    isEditing.value = false;
+    nextTick(() => {
+      projectStore.startBackendPolling();
+    });
+  }
 }
 
 async function onClear() {
@@ -34,12 +40,14 @@ async function onClear() {
 }
 
 async function onClickOutside(e: Event) {
-  const clicked = e.target as Node;
-  if (el.value && document.body.contains(clicked)) {
-    // is it a click outside ?
-    const isOutside = !el.value.contains(clicked);
-    if (isOutside) {
-      await onEditionEnd();
+  if (isEditing.value) {
+    const clicked = e.target as Node;
+    if (el.value && document.body.contains(clicked)) {
+      // is it a click outside ?
+      const isOutside = !el.value.contains(clicked);
+      if (isOutside) {
+        await onEditionEnd();
+      }
     }
   }
 }
@@ -54,10 +62,6 @@ watch(
     innerNote.value = `${newNote !== null ? newNote : ""}`;
   }
 );
-
-onMounted(() => {
-  document.addEventListener("click", onClickOutside);
-});
 
 onBeforeUnmount(() => {
   document.removeEventListener("click", onClickOutside);
