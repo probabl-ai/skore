@@ -79,7 +79,7 @@ class RichColorHelpFormatter(HelpFormatter):
 
         # Color the subcommands in cyan
         help_text = re.sub(
-            r"(?<=\s)(launch|create|quickstart)(?=\s+)",
+            r"(?<=\s)(launch|create|open)(?=\s+)",
             r"[cyan bold]\1[/cyan bold]",
             help_text,
         )

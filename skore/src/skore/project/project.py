@@ -69,11 +69,15 @@ class Project:
       However some of these libraries support importing this raw data.
     """
 
+    _server_manager = None
+
     def __init__(
         self,
+        name: str,
         item_repository: ItemRepository,
         view_repository: ViewRepository,
     ):
+        self.name = name
         self.item_repository = item_repository
         self.view_repository = view_repository
 
@@ -359,3 +363,10 @@ class Project:
         >>> project.delete_note("key", version=0)  # doctest: +SKIP
         """
         return self.item_repository.delete_item_note(key=key, version=version)
+
+    def shutdown_web_ui(self):
+        """Shutdown the web UI server if it is running."""
+        if self._server_manager is not None:
+            self._server_manager.shutdown()
+        else:
+            raise RuntimeError("UI server is not running")

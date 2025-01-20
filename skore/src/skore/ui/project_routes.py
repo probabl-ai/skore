@@ -110,7 +110,7 @@ async def get_activity(
     The activity is composed of all the items and their versions created after the
     datetime `after`, sorted from newest to oldest.
     """
-    project = request.app.state.project
+    project: Project = request.app.state.project
     return sorted(
         (
             __item_as_serializable(key, version)

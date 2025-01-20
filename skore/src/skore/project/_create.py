@@ -1,4 +1,4 @@
-"""Create project helper."""
+"""Helper to create a project."""
 
 import re
 import shutil
@@ -10,7 +10,7 @@ from skore.exceptions import (
     ProjectCreationError,
     ProjectPermissionError,
 )
-from skore.project.load import _load
+from skore.project._load import _load
 from skore.project.project import Project, logger
 from skore.utils._logger import logger_context
 from skore.view.view import View
@@ -69,15 +69,16 @@ def _create(
     project_name : Path-like
         Name of the project to be created, or a relative or absolute path. If relative,
         will be interpreted as relative to the current working directory.
-    overwrite : bool
+    overwrite : bool, default=False
         If ``True``, overwrite an existing project with the same name.
         If ``False``, raise an error if a project with the same name already exists.
-    verbose : bool
+    verbose : bool, default=False
         Whether or not to display info logs to the user.
 
     Returns
     -------
-    The created project
+    Project
+        The created project
     """
     from skore import console  # avoid circular import
 

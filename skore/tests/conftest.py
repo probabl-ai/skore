@@ -42,6 +42,7 @@ def in_memory_project():
     item_repository = ItemRepository(storage=InMemoryStorage())
     view_repository = ViewRepository(storage=InMemoryStorage())
     return Project(
+        name="in_memory_project.skore",
         item_repository=item_repository,
         view_repository=view_repository,
     )
@@ -49,7 +50,7 @@ def in_memory_project():
 
 @pytest.fixture
 def on_disk_project(tmp_path):
-    project = skore.open(tmp_path / "project")
+    project = skore.open(tmp_path / "project", serve=False)
     return project
 
 

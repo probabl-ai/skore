@@ -1,16 +1,13 @@
-"""Load project helper."""
+"""Helper to load a project."""
 
 from pathlib import Path
 from typing import Union
 
+from skore.exceptions import ProjectLoadError
 from skore.item import ItemRepository
 from skore.persistence.disk_cache_storage import DirectoryDoesNotExist, DiskCacheStorage
 from skore.project.project import Project
 from skore.view.view_repository import ViewRepository
-
-
-class ProjectLoadError(Exception):
-    """Failed to load project."""
 
 
 def _load(project_name: Union[str, Path]) -> Project:
@@ -21,6 +18,16 @@ def _load(project_name: Union[str, Path]) -> Project:
     - Checks that the file ends with the ".skore" extension,
     - If not provided, it will be automatically appended,
     - If project name is an absolute path, keeps that path.
+
+    Parameters
+    ----------
+    project_name : Path-like
+        Name of the project to be created, or a relative or absolute path.
+
+    Returns
+    -------
+    Project
+        The loaded Project instance.
     """
     path = Path(project_name).resolve()
 
@@ -37,6 +44,7 @@ def _load(project_name: Union[str, Path]) -> Project:
         view_storage = DiskCacheStorage(directory=Path(path) / "views")
         view_repository = ViewRepository(storage=view_storage)
         project = Project(
+            name=path.name,
             item_repository=item_repository,
             view_repository=view_repository,
         )

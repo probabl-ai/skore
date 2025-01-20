@@ -1,10 +1,8 @@
-"""Command to open a Project."""
+"""Helper to open a project."""
 
 from pathlib import Path
 from typing import Union
 
-from skore.project.create import _create
-from skore.project.load import _load
 from skore.project.project import Project
 
 
@@ -13,8 +11,11 @@ def open(
     *,
     create: bool = True,
     overwrite: bool = False,
+    serve: bool = True,
+    port: Union[int, None] = None,
+    verbose: bool = False,
 ) -> Project:
-    """Open a project given a project name or path.
+    """Open a project given a project name or path and launch skore UI.
 
     This function :
         - opens the project if it already exists,
@@ -31,6 +32,13 @@ def open(
     overwrite: bool, default=False
         Overwrite the project file if it already exists and ``create`` is ``True``.
         Has no effect otherwise.
+    serve: bool, default=True
+        Whether to launch the skore UI.
+    port: int, default=None
+        Port at which to bind the UI server. If ``None``, the server will be bound to
+        an available port.
+    verbose : bool, default=False
+        Whether or not to display info logs to the user.
 
     Returns
     -------
@@ -44,13 +52,22 @@ def open(
     ProjectCreationError
         If project creation fails for some reason (e.g. if the project path is invalid)
     """
-    if create and not overwrite:
-        try:
-            return _load(project_path)
-        except FileNotFoundError:
-            return _create(project_path, overwrite=overwrite)
+    from skore.project._create import _create
+    from skore.project._launch import _launch
+    from skore.project._load import _load
 
-    if not create:
-        return _load(project_path)
+    try:
+        project = _load(project_path)
+        if overwrite:
+            # let _create handle the overwrite flag
+            project = _create(project_path, overwrite=overwrite, verbose=verbose)
+    except FileNotFoundError:
+        if create:
+            project = _create(project_path, overwrite=overwrite, verbose=verbose)
+        else:
+            raise
 
-    return _create(project_path, overwrite=overwrite)
+    if serve:
+        _launch(project, port=port, verbose=verbose)
+
+    return project

@@ -18,3 +18,7 @@ class ProjectCreationError(Exception):
 
 class ProjectPermissionError(Exception):
     """Permissions in the directory do not allow creating a file."""
+
+
+class ProjectLoadError(Exception):
+    """Failed to load project."""

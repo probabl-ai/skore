@@ -33,21 +33,21 @@ def project_changed(project_path, modified=True):
 def test_open_relative_path(tmp_project_path):
     """If passed a relative path, `open` operates in the current working directory."""
     os.chdir(tmp_project_path.parent)
-    p = open(tmp_project_path.name, create=False)
+    p = open(tmp_project_path.name, create=False, serve=False)
     assert isinstance(p, Project)
 
 
 def test_open_default(tmp_project_path):
     """If a project already exists, `open` loads it."""
     with project_changed(tmp_project_path, modified=False):
-        p = open(tmp_project_path)
+        p = open(tmp_project_path, serve=False)
         assert isinstance(p, Project)
 
 
 def test_open_default_no_project(tmp_path):
     """If no project exists, `open` creates it."""
     with project_changed(tmp_path, modified=False):
-        p = open(tmp_path)
+        p = open(tmp_path, serve=False)
         assert isinstance(p, Project)
 
 
@@ -55,39 +55,39 @@ def test_open_project_exists_create_true_overwrite_true(tmp_project_path):
     """If the project exists, and `create` and `overwrite` are set to `True`,
     `open` overwrites it with a new one."""
     with project_changed(tmp_project_path):
-        open(tmp_project_path, create=True, overwrite=True)
+        open(tmp_project_path, create=True, overwrite=True, serve=False)
 
 
 def test_open_project_exists_create_true_overwrite_false(tmp_project_path):
     with project_changed(tmp_project_path, modified=False):
-        open(tmp_project_path, create=True, overwrite=False)
+        open(tmp_project_path, create=True, overwrite=False, serve=False)
 
 
 def test_open_project_exists_create_false_overwrite_true(tmp_project_path):
-    p = open(tmp_project_path, create=False, overwrite=True)
+    p = open(tmp_project_path, create=False, overwrite=True, serve=False)
     assert isinstance(p, Project)
 
 
 def test_open_project_exists_create_false_overwrite_false(tmp_project_path):
-    p = open(tmp_project_path, create=False, overwrite=False)
+    p = open(tmp_project_path, create=False, overwrite=False, serve=False)
     assert isinstance(p, Project)
 
 
 def test_open_no_project_create_true_overwrite_true(tmp_path):
-    p = open(tmp_path, create=True, overwrite=True)
+    p = open(tmp_path, create=True, overwrite=True, serve=False)
     assert isinstance(p, Project)
 
 
 def test_open_no_project_create_true_overwrite_false(tmp_path):
-    p = open(tmp_path, create=True, overwrite=False)
+    p = open(tmp_path, create=True, overwrite=False, serve=False)
     assert isinstance(p, Project)
 
 
 def test_open_no_project_create_false_overwrite_true(tmp_path):
     with pytest.raises(FileNotFoundError):
-        open(tmp_path, create=False, overwrite=True)
+        open(tmp_path, create=False, overwrite=True, serve=False)
 
 
 def test_open_no_project_create_false_overwrite_false(tmp_path):
     with pytest.raises(FileNotFoundError):
-        open(tmp_path, create=False, overwrite=False)
+        open(tmp_path, create=False, overwrite=False, serve=False)
