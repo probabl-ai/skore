@@ -109,7 +109,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         X_test=None,
         y_test=None,
     ):
-        self._parent_progress = None  # used to display progress bar
+        # used to know if a parent launch a progress bar manager
+        self._parent_progress = None
 
         if fit == "auto":
             try:
@@ -128,8 +129,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self._y_train = y_train
         self._X_test = X_test
         self._y_test = y_test
-
-        self._parent_progress = None
 
         self._initialize_state()
 

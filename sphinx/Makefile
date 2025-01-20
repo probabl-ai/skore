@@ -3,6 +3,7 @@
 
 export SPHINX_VERSION ?= dev
 export SPHINX_RELEASE ?= 0.0.0+dev
+export SPHINX_DOMAIN ?= skore.probabl.ai
 
 # You can set these variables from the command line, and also
 # from the environment for the first two.

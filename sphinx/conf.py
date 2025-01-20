@@ -21,6 +21,7 @@ copyright = "2024, Probabl"
 author = "Probabl"
 version = os.environ["SPHINX_VERSION"]
 release = os.environ["SPHINX_RELEASE"]
+domain = os.environ["SPHINX_DOMAIN"]
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -66,6 +67,7 @@ subsections_order = [
     "../examples/model_evaluation",
 ]
 
+
 # Augment the dpi of matplotlib figures in Sphinx examples
 # https://sphinx-gallery.github.io/stable/advanced.html#resetting-before-each-example
 def reset_mpl(gallery_conf, fname):
@@ -78,7 +80,7 @@ def reset_mpl(gallery_conf, fname):
 sphinx_gallery_conf = {
     "examples_dirs": "../examples",  # path to example scripts
     "gallery_dirs": "auto_examples",  # path to gallery generated output
-    "subsection_order": ExplicitOrder(subsections_order),  # sorting gallery subsections,
+    "subsection_order": ExplicitOrder(subsections_order),  # sorting gallery subsections
     # see https://sphinx-gallery.github.io/stable/configuration.html#sub-gallery-order
     "within_subsection_order": "ExampleTitleSortKey",  # See https://sphinx-gallery.github.io/stable/configuration.html#sorting-gallery-examples for alternatives
     "show_memory": False,
@@ -147,7 +149,7 @@ html_theme_options = {
         },
     ],
     "switcher": {
-        "json_url": "https://skore.probabl.ai/versions.json",
+        "json_url": f"https://{domain}/versions.json",
         "version_match": release,
     },
     "check_switcher": True,
@@ -160,7 +162,7 @@ html_theme_options = {
 # Plausible Analytics
 html_theme_options["analytics"] = {
     # The domain you'd like to use for this analytics instance
-    "plausible_analytics_domain": "skore.probabl.ai",
+    "plausible_analytics_domain": domain,
     # The analytics script that is served by Plausible
     "plausible_analytics_url": "https://plausible.io/js/script.js",
 }

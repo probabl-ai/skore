@@ -87,17 +87,24 @@ class Project:
             ),
         )
 
-    def get(self, key, *, latest=True, metadata=False):
+    def get(
+        self,
+        key: str,
+        *,
+        version: Optional[Union[Literal[-1, "all"], int]] = -1,
+        metadata: bool = False,
+    ):
         """Get the value associated to ``key`` from the Project.
 
         Parameters
         ----------
         key : str
             The key corresponding to the item to get.
-        latest : boolean, default=True
-            If True, get the latest value, otherwise get all the values associated to
-            ``key``.
-        metadata : boolean, default=False
+        version : Union[Literal[-1, "all"], int], default=-1
+            If -1, get the latest value associated to ``key``.
+            If "all", get all the values associated to ``key``.
+            If instance of int, get the nth value associated to ``key``.
+        metadata : bool, default=False
             If True, get the metadata in addition to the value.
 
         Returns
@@ -132,9 +139,14 @@ class Project:
                     "note": item.note,
                 }
 
-        if latest:
+        if version == -1:
             return dto(self.item_repository.get_item(key))
-        return list(map(dto, self.item_repository.get_item_versions(key)))
+        if version == "all":
+            return list(map(dto, self.item_repository.get_item_versions(key)))
+        if isinstance(version, int):
+            return dto(self.item_repository.get_item_versions(key)[version])
+
+        raise ValueError('`version` should be -1, "all", or an integer')
 
     def keys(self) -> list[str]:
         """

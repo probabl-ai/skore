@@ -1,5 +1,4 @@
 import pytest
-from rich.progress import Progress
 from skore.utils._progress_bar import progress_decorator
 
 
@@ -17,23 +16,18 @@ def test_standalone_progress():
             task = self._progress_info["current_task"]
             progress.update(task, total=iterations)
 
-            for _ in range(iterations):
+            for i in range(iterations):
                 progress.update(task, advance=1)
+                self._standalone_n_calls = i
             return "done"
 
     task = StandaloneTask()
     result = task.run()
 
     assert result == "done"
-    assert task._progress_info is not None
-    assert isinstance(task._progress_info["current_progress"], Progress)
+    assert task._standalone_n_calls == 4
+    assert task._progress_info is None
     assert task._parent_progress is None
-    assert (
-        task._progress_info["current_progress"]
-        .tasks[task._progress_info["current_task"]]
-        .completed
-        == 5
-    )
 
 
 def test_nested_progress():
@@ -50,15 +44,17 @@ def test_nested_progress():
             task = self._progress_info["current_task"]
             progress.update(task, total=iterations)
 
-            child = ChildTask(self._progress_info["current_progress"])
-            for _ in range(iterations):
-                child.run()
+            self._child = ChildTask()
+            for i in range(iterations):
+                self._child._parent_progress = progress
+                self._child.run()
                 progress.update(task, advance=1)
+                self._parent_n_calls = i
             return "done"
 
     class ChildTask:
-        def __init__(self, parent_progress):
-            self._parent_progress = parent_progress
+        def __init__(self):
+            self._parent_progress = None
             self._progress_info = None
 
         @progress_decorator("Child Task")
@@ -67,22 +63,21 @@ def test_nested_progress():
             task = self._progress_info["current_task"]
             progress.update(task, total=iterations)
 
-            for _ in range(iterations):
+            for i in range(iterations):
                 progress.update(task, advance=1)
+                self._child_n_calls = i
             return "done"
 
     parent = ParentTask()
     result = parent.run()
 
     assert result == "done"
-    assert parent._progress_info is not None
-    assert isinstance(parent._progress_info["current_progress"], Progress)
-    assert (
-        parent._progress_info["current_progress"]
-        .tasks[parent._progress_info["current_task"]]
-        .completed
-        == 3
-    )
+    assert parent._progress_info is None
+    assert parent._parent_progress is None
+    assert parent._parent_n_calls == 2
+    assert parent._child._child_n_calls == 1
+    assert parent._child._parent_progress is None
+    assert parent._child._progress_info is None
 
 
 def test_dynamic_description():
@@ -101,27 +96,18 @@ def test_dynamic_description():
             task = self._progress_info["current_task"]
             progress.update(task, total=iterations)
 
-            for _ in range(iterations):
+            for i in range(iterations):
                 progress.update(task, advance=1)
+                self._dynamic_n_calls = i
             return self.name
 
     task = DynamicTask("test_task")
     result = task.run()
 
     assert result == "test_task"
-    assert task._progress_info is not None
-    assert (
-        task._progress_info["current_progress"]
-        .tasks[task._progress_info["current_task"]]
-        .description
-        == "Processing test_task"
-    )
-    assert (
-        task._progress_info["current_progress"]
-        .tasks[task._progress_info["current_task"]]
-        .completed
-        == 4
-    )
+    assert task._progress_info is None
+    assert task._parent_progress is None
+    assert task._dynamic_n_calls == 3
 
 
 def test_exception_handling():
@@ -146,10 +132,5 @@ def test_exception_handling():
         task.run()
 
     # Verify progress bar was cleaned up
-    assert task._progress_info is not None
-    assert (
-        task._progress_info["current_progress"]
-        .tasks[task._progress_info["current_task"]]
-        .completed
-        == 1
-    )
+    assert task._progress_info is None
+    assert task._parent_progress is None

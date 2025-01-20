@@ -110,6 +110,7 @@ jobs:
         with:
           SPHINX_VERSION: ${{ needs.sphinx-version.outputs.SPHINX_VERSION }}
           SPHINX_RELEASE: ${{ needs.sphinx-version.outputs.SPHINX_RELEASE }}
+          SPHINX_DOMAIN: ${{ vars.DOCUMENTATION_DOMAIN }}
       - uses: actions/upload-artifact@v4
         with:
           name: sphinx-html-artifact
@@ -163,9 +164,9 @@ jobs:
             import operator
             import json
 
-            url = os.environ["URL"]
             version = os.environ["SPHINX_VERSION"]
             release = os.environ["SPHINX_RELEASE"]
+            url = os.environ["SPHINX_URL"]
 
             # Retrieve history
             response = requests.get(f"{url}/versions.json")
@@ -208,9 +209,9 @@ jobs:
                   """
               )
         env:
-          URL: ${{ vars.DOCUMENTATION_URL }}
           SPHINX_VERSION: ${{ needs.sphinx-version.outputs.SPHINX_VERSION }}
           SPHINX_RELEASE: ${{ needs.sphinx-version.outputs.SPHINX_RELEASE }}
+          SPHINX_URL: https://${{ vars.DOCUMENTATION_DOMAIN }}
       - uses: ./.github/actions/sphinx/deploy
         with:
           CONFIGURATION: ${{ secrets.RCLONE_CONFIG_DOCS }}

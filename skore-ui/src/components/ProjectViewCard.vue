@@ -56,7 +56,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="card" ref="root">
-    <div class="header">
+    <div class="header" data-drag-image-selector>
       <div class="titles">
         <div class="title">{{ props.title }}</div>
         <div class="subtitle" v-if="props.subtitle">
