@@ -5,6 +5,8 @@ inputs:
     required: true
   SPHINX_RELEASE:
     required: true
+  SPHINX_DOMAIN:
+    required: true
 
 runs:
   using: composite
@@ -19,4 +21,5 @@ runs:
       run: >
         SPHINX_VERSION=${{ inputs.SPHINX_VERSION }}
         SPHINX_RELEASE=${{ inputs.SPHINX_RELEASE }}
+        SPHINX_DOMAIN=${{ inputs.SPHINX_DOMAIN }}
         make html
