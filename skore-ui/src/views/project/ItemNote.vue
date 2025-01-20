@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, ref, useTemplateRef, watch } from "vue";
+import { nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from "vue";
 
 import MarkdownWidget from "@/components/MarkdownWidget.vue";
 import RichTextEditor from "@/components/RichTextEditor.vue";
@@ -9,6 +9,7 @@ import { useProjectStore } from "@/stores/project";
 const props = defineProps<{ name: string; note: string | null }>();
 
 const projectStore = useProjectStore();
+const el = useTemplateRef<HTMLDivElement>("el");
 const editor = useTemplateRef<InstanceType<typeof RichTextEditor>>("editor");
 const isEditing = ref(false);
 const innerNote = ref(`${props.note !== null ? props.note : ""}`);
@@ -22,14 +23,25 @@ function onEdit() {
 }
 
 async function onEditionEnd() {
-  await projectStore.setNoteOnItem(props.name, innerNote.value);
+  await projectStore.setNoteOnItem(props.name, innerNote.value.trimEnd());
   projectStore.startBackendPolling();
   isEditing.value = false;
 }
 
-function onClear() {
+async function onClear() {
   innerNote.value = "";
-  onEditionEnd();
+  await onEditionEnd();
+}
+
+async function onClickOutside(e: Event) {
+  const clicked = e.target as Node;
+  if (el.value && document.body.contains(clicked)) {
+    // is it a click outside ?
+    const isOutside = !el.value.contains(clicked);
+    if (isOutside) {
+      await onEditionEnd();
+    }
+  }
 }
 
 watch(innerNote, async () => {
@@ -42,10 +54,18 @@ watch(
     innerNote.value = `${newNote !== null ? newNote : ""}`;
   }
 );
+
+onMounted(() => {
+  document.addEventListener("click", onClickOutside);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener("click", onClickOutside);
+});
 </script>
 
 <template>
-  <div class="item-note">
+  <div class="item-note" ref="el">
     <div class="header">
       <div class="info">
         <div>Note</div>
