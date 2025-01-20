@@ -17,17 +17,24 @@ const innerNote = ref(`${props.note !== null ? props.note : ""}`);
 function onEdit() {
   projectStore.stopBackendPolling();
   isEditing.value = true;
+  // start to listen for click outside of this component
   document.addEventListener("click", onClickOutside);
+  // actually wait for the editor to be open to focus it
   nextTick(() => {
     editor.value?.focus();
   });
 }
 
 async function onEditionEnd() {
+  // if there is multiple instances of the component in the page
+  // this function may be called multiple times
+  // so guard this call
   if (isEditing.value) {
+    // stop listening to outside click
     document.removeEventListener("click", onClickOutside);
     await projectStore.setNoteOnItem(props.name, innerNote.value.trimEnd());
     isEditing.value = false;
+    // actually wait for the editor to be closed to resatrt backend polling
     nextTick(() => {
       projectStore.startBackendPolling();
     });
@@ -64,6 +71,7 @@ watch(
 );
 
 onBeforeUnmount(() => {
+  // avoid event listener leak in case the component is unmounted in edit mode
   document.removeEventListener("click", onClickOutside);
 });
 </script>

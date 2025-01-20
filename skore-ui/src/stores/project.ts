@@ -96,8 +96,11 @@ export const useProjectStore = defineStore("project", () => {
    */
   let _stopBackendPolling: (() => void) | null = null;
   async function startBackendPolling() {
-    _isCanceledCall = false;
-    _stopBackendPolling = await poll(fetch, 1500);
+    // ensure that there is only one polling running
+    if (_stopBackendPolling === null) {
+      _isCanceledCall = false;
+      _stopBackendPolling = await poll(fetch, 1500);
+    }
   }
 
   /**
@@ -107,6 +110,7 @@ export const useProjectStore = defineStore("project", () => {
     _isCanceledCall = true;
     if (_stopBackendPolling) {
       _stopBackendPolling();
+      _stopBackendPolling = null;
     }
   }
 
