@@ -137,7 +137,7 @@ function isNameTooltipEnabled(index: number) {
     border-bottom: solid var(--stroke-width-md) var(--color-stroke-background-primary);
     background-color: var(--color-stroke-background-primary);
     gap: 1px;
-    grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+    grid-template-columns: repeat(var(--nb-scalar-columns, 2), 1fr);
 
     &:last-child {
       border-right: none;
@@ -202,8 +202,11 @@ function isNameTooltipEnabled(index: number) {
       padding: var(--spacing-16) var(--spacing-10);
 
       & .name {
+        overflow: hidden;
         color: var(--color-text-primary);
         font-size: var(--font-size-sm);
+        text-overflow: ellipsis;
+        white-space: nowrap;
 
         & .icon {
           color: var(--color-text-branding);
@@ -212,8 +215,15 @@ function isNameTooltipEnabled(index: number) {
       }
 
       & .dropdown {
+        flex: 0 1 40%;
+
         & button {
           padding: var(--spacing-6) var(--spacing-10);
+
+          & .label {
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
         }
       }
     }
@@ -299,6 +309,18 @@ function isNameTooltipEnabled(index: number) {
         }
       }
     }
+  }
+}
+
+@media screen and (width >= 801px) {
+  .cross-validation-report-result {
+    --nb-scalar-columns: 3;
+  }
+}
+
+@media screen and (width >= 1025px) {
+  .cross-validation-report-result {
+    --nb-scalar-columns: 5;
   }
 }
 </style>

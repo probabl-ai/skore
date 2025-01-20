@@ -1,4 +1,4 @@
-from skore.persistence.in_memory_storage import InMemoryStorage
+from skore.persistence.storage import InMemoryStorage
 
 
 def test_in_memory_storage():

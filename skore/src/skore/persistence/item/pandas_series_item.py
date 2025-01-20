@@ -6,10 +6,9 @@ which represents a pandas Series item.
 
 from __future__ import annotations
 
-from functools import cached_property
 from typing import TYPE_CHECKING, Union
 
-from skore.item.item import Item, ItemTypeError
+from .item import Item, ItemTypeError
 
 if TYPE_CHECKING:
     import pandas
@@ -54,7 +53,7 @@ class PandasSeriesItem(Item):
         self.index_json = index_json
         self.series_json = series_json
 
-    @cached_property
+    @property
     def series(self) -> pandas.Series:
         """
         The pandas Series from the persistence.
@@ -83,23 +82,8 @@ class PandasSeriesItem(Item):
 
             return series
 
-    def as_serializable_dict(self):
-        """Get a serializable dict from the item.
-
-        Derived class must call their super implementation
-        and merge the result with their output.
-        """
-        d = super().as_serializable_dict()
-        d.update(
-            {
-                "value": self.series.fillna("NaN").to_list(),
-                "media_type": "text/markdown",
-            }
-        )
-        return d
-
     @classmethod
-    def factory(cls, series: pandas.Series) -> PandasSeriesItem:
+    def factory(cls, series: pandas.Series, /, **kwargs) -> PandasSeriesItem:
         """
         Create a new PandasSeriesItem instance from a pandas Series.
 
@@ -137,4 +121,12 @@ class PandasSeriesItem(Item):
         return cls(
             index_json=index.to_json(orient=PandasSeriesItem.ORIENT),
             series_json=series.to_json(orient=PandasSeriesItem.ORIENT),
+            **kwargs,
         )
+
+    def as_serializable_dict(self):
+        """Convert item to a JSON-serializable dict to used by frontend."""
+        return super().as_serializable_dict() | {
+            "value": self.series.fillna("NaN").to_list(),
+            "media_type": "text/markdown",
+        }

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -65,11 +66,22 @@ class ViewRepository:
 
     def keys(self) -> list[str]:
         """
-        Get all keys of items stored in the repository.
+        Get all keys of views stored in the repository.
 
         Returns
         -------
         list[str]
-            A list of all keys in the storage.
+            A list of all keys.
         """
         return list(self.storage.keys())
+
+    def __iter__(self) -> Iterator[str]:
+        """
+        Yield the keys of views stored in the repository.
+
+        Returns
+        -------
+        Iterator[str]
+            An iterator yielding all keys.
+        """
+        yield from self.storage

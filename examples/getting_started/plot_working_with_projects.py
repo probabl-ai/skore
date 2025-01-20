@@ -71,20 +71,20 @@ my_project.get("my_int")
 #   see :ref:`example_tracking_items`.
 
 # %%
-# By using the :func:`~skore.Project.delete_item` method, we can also delete an object
+# By using the :func:`~skore.Project.delete` method, we can also delete an object
 # so that our skore UI does not become cluttered:
 
 # %%
 my_project.put("my_int_2", 10)
 
 # %%
-my_project.delete_item("my_int_2")
+my_project.delete("my_int_2")
 
 # %%
 # We can display all the keys in our project:
 
 # %%
-my_project.list_item_keys()
+my_project.keys()
 
 # %%
 # Storing strings and texts
@@ -119,25 +119,19 @@ def my_func(x):
 )
 
 # %%
-# Moreover, we can also explicitly tell skore the media type of an object, for example
-# in HTML:
+# Moreover, we can also explicitly tell skore the way we want to display an object, for
+# example in HTML:
 
 # %%
-from skore.item import MediaItem
 
-my_project.put_item(
+my_project.put(
     "my_string_3",
-    MediaItem.factory(
-        "<p><h1>Title</h1> <b>bold</b>, <i>italic</i>, etc.</p>", media_type="text/html"
-    ),
+    "<p><h1>Title</h1> <b>bold</b>, <i>italic</i>, etc.</p>",
+    display_as="HTML",
 )
 
 # %%
-# .. note::
-#   We used :func:`~skore.Project.put_item` instead of :func:`~skore.Project.put`.
-
-# %%
-# Note that the media type is only used for the UI, and not in this notebook at hand:
+# Note that the `display_as` is only used for the UI, and not in this notebook at hand:
 
 # %%
 my_project.get("my_string_3")

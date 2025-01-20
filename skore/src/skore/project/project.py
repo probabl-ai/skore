@@ -1,24 +1,19 @@
 """Define a Project."""
 
-import logging
-from typing import Any, Optional, Union
+from __future__ import annotations
 
-from skore.item import (
-    CrossValidationItem,
-    Item,
-    ItemRepository,
-    MediaItem,
-    NumpyArrayItem,
-    PandasDataFrameItem,
-    PandasSeriesItem,
-    PolarsDataFrameItem,
-    PolarsSeriesItem,
-    PrimitiveItem,
-    SklearnBaseEstimatorItem,
-    object_to_item,
-)
-from skore.view.view import View
-from skore.view.view_repository import ViewRepository
+import logging
+from collections.abc import Iterator
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union
+
+from skore.persistence.item import item_to_object, object_to_item
+
+if TYPE_CHECKING:
+    from skore.persistence import (
+        ItemRepository,
+        ViewRepository,
+    )
+
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())  # Default to no output
@@ -33,40 +28,10 @@ class Project:
     respectively to insert a key-value pair into the Project and to recover the value
     associated with a key.
 
-    There is no guarantee of getting back the exact same object that was put in,
-    because ``skore`` strives to save information independently of the environment
-    (so that it can be recovered in spite of version changes).
-    Similarly, ``put`` raises an exception if the type of the inserted value is not
-    supported.
-    For example, this is the case for custom-made classes:
-
-    .. code-block:: python
-
-        class A:
-            pass
-
-        p.put('hello', A())
-        # NotImplementedError: Type '<class '__main__.A'>' is not supported.
-
-    However, when possible, ``get`` will return an object as close as possible to
-    what was ``put`` in. Here is a summary of what types of data are supported and to
-    what extent:
-
-    * JSON-serializable ("primitive") values, like Python ints, floats, and strings,
-      as well as tuples, lists and dicts of primitive values, are fully supported:
-
-        .. code-block:: python
-
-            project.put("my-key", {1: 'a', 'b': ('2', [3.5, 4])})
-            project.get("my-key")
-            # {1: 'a', 'b': ('2', [3.5, 4])}
-
-    * numpy arrays, pandas DataFrames and Series, and polars DataFrames and Series are
-      fully supported.
-
-    * matplotlib Figures, plotly Figures, pillow Images and altair Charts are supported
-      by ``put``, but ``get`` will only recover the raw data.
-      However some of these libraries support importing this raw data.
+    You can add any type of objects. In some cases, especially on classes you defined,
+    the persistency is based on the pickle representation. You must therefore ensure
+    that the call to :func:`~skore.Project.get` is made in the same environment as
+    :func:`~skore.Project.put`.
     """
 
     def __init__(
@@ -77,7 +42,14 @@ class Project:
         self.item_repository = item_repository
         self.view_repository = view_repository
 
-    def put(self, key: str, value: Any, *, note: Optional[str] = None):
+    def put(
+        self,
+        key: str,
+        value: Any,
+        *,
+        note: Optional[str] = None,
+        display_as: Optional[Literal["HTML", "MARKDOWN", "SVG"]] = None,
+    ):
         """Add a key-value pair to the Project.
 
         If an item with the same key already exists, its value is replaced by the new
@@ -89,8 +61,11 @@ class Project:
             The key to associate with ``value`` in the Project.
         value : Any
             The value to associate with ``key`` in the Project.
-        note : str or None, optional
+        note : str, optional
             A note to attach with the item.
+        display_as : {"HTML", "MARKDOWN", "SVG"}, optional
+            Used in combination with a string value, it customizes the way the value is
+            displayed in the interface.
 
         Raises
         ------
@@ -103,112 +78,87 @@ class Project:
         if not isinstance(key, str):
             raise TypeError(f"Key must be a string (found '{type(key)}')")
 
-        item = object_to_item(value)
+        self.item_repository.put_item(
+            key,
+            object_to_item(
+                value,
+                note=note,
+                display_as=display_as,
+            ),
+        )
 
-        if note is not None:
-            if not isinstance(note, str):
-                raise TypeError(f"Note must be a string (found '{type(note)}')")
-            item.note = note
-
-        self.item_repository.put_item(key, item)
-
-    def put_item(self, key: str, item: Item):
-        """Add an Item to the Project."""
-        if not isinstance(key, str):
-            raise TypeError(f"Key must be a string (found '{type(key)}')")
-
-        self.item_repository.put_item(key, item)
-
-    def get(self, key: str) -> Any:
-        """Get the value corresponding to ``key`` from the Project.
+    def get(self, key, *, latest=True, metadata=False):
+        """Get the value associated to ``key`` from the Project.
 
         Parameters
         ----------
         key : str
             The key corresponding to the item to get.
+        latest : boolean, default=True
+            If True, get the latest value, otherwise get all the values associated to
+            ``key``.
+        metadata : boolean, default=False
+            If True, get the metadata in addition to the value.
+
+        Returns
+        -------
+        value : any
+            Value associated to ``key``, when latest=True and metadata=False.
+        value_and_metadata : dict
+            Value associated to ``key`` with its metadata, when latest=True and
+            metadata=True.
+        list_of_values : list[any]
+            Values associated to ``key``, ordered by date, when latest=False.
+        list_of_values_and_metadata : list[dict]
+            Values associated to ``key`` with their metadata, ordered by date, when
+            latest=False and metadata=False.
 
         Raises
         ------
         KeyError
-            If the key does not correspond to any item.
+            If the key is not in the project.
         """
-        item = self.get_item(key)
+        if not metadata:
 
-        if isinstance(item, PrimitiveItem):
-            return item.primitive
-        elif isinstance(item, NumpyArrayItem):
-            return item.array
-        elif isinstance(item, PandasDataFrameItem):
-            return item.dataframe
-        elif isinstance(item, PandasSeriesItem):
-            return item.series
-        elif isinstance(item, PolarsDataFrameItem):
-            return item.dataframe
-        elif isinstance(item, PolarsSeriesItem):
-            return item.series
-        elif isinstance(item, SklearnBaseEstimatorItem):
-            return item.estimator
-        elif isinstance(item, CrossValidationItem):
-            return item.cv_results_serialized
-        elif isinstance(item, MediaItem):
-            return item.media_bytes
+            def dto(item):
+                return item_to_object(item)
+
         else:
-            raise ValueError(f"Item {item} is not a known item type.")
 
-    def get_item(self, key: str) -> Item:
-        """Get the item corresponding to ``key`` from the Project.
+            def dto(item):
+                return {
+                    "value": item_to_object(item),
+                    "date": item.updated_at,
+                    "note": item.note,
+                }
 
-        Parameters
-        ----------
-        key : str
-            The key corresponding to the item to get.
+        if latest:
+            return dto(self.item_repository.get_item(key))
+        return list(map(dto, self.item_repository.get_item_versions(key)))
 
-        Returns
-        -------
-        item : Item
-            The Item corresponding to ``key``.
-
-        Raises
-        ------
-        KeyError
-            If the key does not correspond to any item.
+    def keys(self) -> list[str]:
         """
-        return self.item_repository.get_item(key)
-
-    def get_item_versions(self, key: str) -> list[Item]:
-        """
-        Get all the versions of an item associated with ``key`` from the Project.
-
-        The list is ordered from oldest to newest :func:`~skore.Project.put` date.
-
-        Parameters
-        ----------
-        key : str
-            The key corresponding to the item to get.
-
-        Returns
-        -------
-        list[Item]
-            The list of items corresponding to ``key``.
-
-        Raises
-        ------
-        KeyError
-            If the key does not correspond to any item.
-        """
-        return self.item_repository.get_item_versions(key)
-
-    def list_item_keys(self) -> list[str]:
-        """List all item keys in the Project.
+        Get all keys of items stored in the project.
 
         Returns
         -------
         list[str]
-            The list of item keys. The list is empty if there is no item.
+            A list of all keys.
         """
         return self.item_repository.keys()
 
-    def delete_item(self, key: str):
+    def __iter__(self) -> Iterator[str]:
+        """
+        Yield the keys of items stored in the project.
+
+        Returns
+        -------
+        Iterator[str]
+            An iterator yielding all keys.
+        """
+        yield from self.item_repository
+
+    def delete(self, key: str):
         """Delete the item corresponding to ``key`` from the Project.
 
         Parameters
@@ -222,55 +172,6 @@ class Project:
             If the key does not correspond to any item.
         """
         self.item_repository.delete_item(key)
-
-    def put_view(self, key: str, view: View):
-        """Add a view to the Project."""
-        self.view_repository.put_view(key, view)
-
-    def get_view(self, key: str) -> View:
-        """Get the view corresponding to ``key`` from the Project.
-
-        Parameters
-        ----------
-        key : str
-            The key of the item to get.
-
-        Returns
-        -------
-        View
-            The view corresponding to ``key``.
-
-        Raises
-        ------
-        KeyError
-            If the key does not correspond to any view.
-        """
-        return self.view_repository.get_view(key)
-
-    def delete_view(self, key: str):
-        """Delete the view corresponding to ``key`` from the Project.
-
-        Parameters
-        ----------
-        key : str
-            The key corresponding to the view to delete.
-
-        Raises
-        ------
-        KeyError
-            If the key does not correspond to any view.
-        """
-        return self.view_repository.delete_view(key)
-
-    def list_view_keys(self) -> list[str]:
-        """List all view keys in the Project.
-
-        Returns
-        -------
-        list[str]
-            The list of view keys. The list is empty if there is no view.
-        """
-        return self.view_repository.keys()
 
     def set_note(self, key: str, note: str, *, version=-1):
         """Attach a note to key ``key``.
