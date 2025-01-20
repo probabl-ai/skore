@@ -1397,7 +1397,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         """Return a string representation using rich."""
         return self._rich_repr(
             class_name="skore.EstimatorReport.metrics",
-            help_method_name="reporter.metrics.help()",
+            help_method_name="report.metrics.help()",
         )
 
 
@@ -1748,5 +1748,5 @@ class _PlotMetricsAccessor(_BaseAccessor):
         """Return a string representation using rich."""
         return self._rich_repr(
             class_name="skore.EstimatorReport.metrics.plot",
-            help_method_name="reporter.metrics.plot.help()",
+            help_method_name="report.metrics.plot.help()",
         )

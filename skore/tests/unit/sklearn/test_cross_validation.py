@@ -237,7 +237,7 @@ def test_cross_validation_report_plot_repr(binary_classification_data):
 
     repr_str = repr(report.metrics.plot)
     assert "skore.CrossValidationReport.metrics.plot" in repr_str
-    assert "reporter.metrics.plot.help()" in repr_str
+    assert "report.metrics.plot.help()" in repr_str
 
 
 def test_cross_validation_report_plot_roc(binary_classification_data):
@@ -295,7 +295,7 @@ def test_cross_validation_report_metrics_repr(binary_classification_data):
 
     repr_str = repr(report.metrics)
     assert "skore.CrossValidationReport.metrics" in repr_str
-    assert "reporter.metrics.help()" in repr_str
+    assert "report.metrics.help()" in repr_str
 
 
 def _normalize_metric_name(column):

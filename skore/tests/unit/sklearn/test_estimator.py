@@ -364,7 +364,7 @@ def test_estimator_report_plot_repr(binary_classification_data):
 
     repr_str = repr(report.metrics.plot)
     assert "skore.EstimatorReport.metrics.plot" in repr_str
-    assert "reporter.metrics.plot.help()" in repr_str
+    assert "report.metrics.plot.help()" in repr_str
 
 
 def test_estimator_report_plot_roc(binary_classification_data):
@@ -504,7 +504,7 @@ def test_estimator_report_metrics_repr(binary_classification_data):
 
     repr_str = repr(report.metrics)
     assert "skore.EstimatorReport.metrics" in repr_str
-    assert "reporter.metrics.help()" in repr_str
+    assert "report.metrics.help()" in repr_str
 
 
 @pytest.mark.parametrize(
