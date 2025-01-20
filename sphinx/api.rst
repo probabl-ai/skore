@@ -19,8 +19,10 @@ These functions and classes are meant for managing a Project.
     :template: base.rst
     :caption: Managing a project
 
-    Project
     open
+    Project
+    Project.put
+    Project.get
 
 Get assistance when developing ML/DS projects
 ---------------------------------------------
