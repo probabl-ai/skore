@@ -1315,7 +1315,7 @@ const richText = ref(
           >
             <template #item="{ name: id, color, content }">
               <div :style="{ backgroundColor: color, color: 'white' }">
-                <span>ID: {{ id }}</span>
+                <div data-drag-image-selector :style="{ backgroundColor: color }">ID: {{ id }}</div>
                 <ul>
                   <li v-for="(c, i) in content" :key="i">{{ c }}</li>
                 </ul>
@@ -1483,7 +1483,7 @@ main {
 }
 
 .draggable-list-container {
-  max-height: 80vh;
+  max-height: 60vh;
   margin-top: 10px;
 }
 
