@@ -204,7 +204,7 @@ def test_cross_validation_report_cache_predictions(
 
 
 def test_cross_validation_report_pickle(tmp_path, binary_classification_data):
-    """Check that we can pickle an estimator report.
+    """Check that we can pickle an cross-validation report.
 
     In particular, the progress bar from rich are pickable, therefore we trigger
     the progress bar to be able to test that the progress bar is pickable.
