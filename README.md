@@ -6,7 +6,7 @@
   </picture>
   <h3>the scikit-learn sidekick</h3>
 
-Elevate ML Development with Tracking and Built-in Recommended Practices \
+Elevate ML Development with Built-in Recommended Practices \
 [Documentation](https://skore.probabl.ai) — [Community](https://discord.probabl.ai)
 
 </div>
@@ -24,9 +24,8 @@ Skore is just at the beginning of its journey, but we’re shipping fast! Freque
 
 ## Key features
 
-- **Track and Visualize Results**: Capture your intermediate ML/DS results without the overhead, while gaining deeper insights through intuitive visualizations of your experiments.
-- **Elevate Model Development**: Avoid common pitfalls and follow recommended practices with automatic guidance and insights.
-    - Enhancing key scikit-learn features with `skore.CrossValidationReporter` and `skore.train_test_split()`.
+- **Diagnose**: Catch methodological errors before they impact your models with **smart alerts** that analyze both code execution and data patterns in real-time.
+- **Evaluate**: Uncover actionable insights through **automated reports** surfacing relevant metrics. Explore faster with our intelligent caching system.
 
 ![GIF: short demo of skore](https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_12_skore_demo_comp.gif)
 
