@@ -5,11 +5,10 @@ This module defines the NumpyArrayItem class, which represents a NumPy array ite
 
 from __future__ import annotations
 
-from functools import cached_property
 from json import dumps, loads
 from typing import TYPE_CHECKING, Union
 
-from skore.item.item import Item, ItemTypeError
+from .item import Item, ItemTypeError
 
 if TYPE_CHECKING:
     import numpy
@@ -47,7 +46,7 @@ class NumpyArrayItem(Item):
 
         self.array_json = array_json
 
-    @cached_property
+    @property
     def array(self) -> numpy.ndarray:
         """
         The numpy array from the persistence.
@@ -60,23 +59,8 @@ class NumpyArrayItem(Item):
 
         return numpy.asarray(loads(self.array_json))
 
-    def as_serializable_dict(self):
-        """Get a serializable dict from the item.
-
-        Derived class must call their super implementation
-        and merge the result with their output.
-        """
-        d = super().as_serializable_dict()
-        d.update(
-            {
-                "media_type": "text/markdown",
-                "value": self.array.tolist(),
-            }
-        )
-        return d
-
     @classmethod
-    def factory(cls, array: numpy.ndarray) -> NumpyArrayItem:
+    def factory(cls, array: numpy.ndarray, /, **kwargs) -> NumpyArrayItem:
         """
         Create a new NumpyArrayItem instance from a NumPy array.
 
@@ -95,4 +79,11 @@ class NumpyArrayItem(Item):
         if not isinstance(array, numpy.ndarray):
             raise ItemTypeError(f"Type '{array.__class__}' is not supported.")
 
-        return cls(array_json=dumps(array.tolist()))
+        return cls(array_json=dumps(array.tolist()), **kwargs)
+
+    def as_serializable_dict(self):
+        """Convert item to a JSON-serializable dict to used by frontend."""
+        return super().as_serializable_dict() | {
+            "media_type": "text/markdown",
+            "value": self.array.tolist(),
+        }

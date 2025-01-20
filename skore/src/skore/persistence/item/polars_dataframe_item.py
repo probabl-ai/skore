@@ -6,10 +6,9 @@ which represents a polars DataFrame item.
 
 from __future__ import annotations
 
-from functools import cached_property
 from typing import TYPE_CHECKING, Union
 
-from skore.item.item import Item, ItemTypeError
+from .item import Item, ItemTypeError
 
 if TYPE_CHECKING:
     import polars
@@ -52,7 +51,7 @@ class PolarsDataFrameItem(Item):
 
         self.dataframe_json = dataframe_json
 
-    @cached_property
+    @property
     def dataframe(self) -> polars.DataFrame:
         """
         The polars DataFrame from the persistence.
@@ -69,25 +68,8 @@ class PolarsDataFrameItem(Item):
             dataframe = polars.read_json(df_stream)
             return dataframe
 
-    def as_serializable_dict(self):
-        """Get a serializable dict from the item.
-
-        Derived class must call their super implementation
-        and merge the result with their output.
-        """
-        d = super().as_serializable_dict()
-        d.update(
-            {
-                "value": self.dataframe.to_pandas()
-                .fillna("NaN")
-                .to_dict(orient="tight"),
-                "media_type": "application/vnd.dataframe",
-            }
-        )
-        return d
-
     @classmethod
-    def factory(cls, dataframe: polars.DataFrame) -> PolarsDataFrameItem:
+    def factory(cls, dataframe: polars.DataFrame, /, **kwargs) -> PolarsDataFrameItem:
         """
         Create a new PolarsDataFrameItem instance from a polars DataFrame.
 
@@ -115,4 +97,11 @@ class PolarsDataFrameItem(Item):
         except Exception as e:
             raise PolarsToJSONError("Conversion to JSON failed") from e
 
-        return cls(dataframe_json=dataframe_json)
+        return cls(dataframe_json=dataframe_json, **kwargs)
+
+    def as_serializable_dict(self):
+        """Convert item to a JSON-serializable dict to used by frontend."""
+        return super().as_serializable_dict() | {
+            "value": self.dataframe.to_pandas().fillna("NaN").to_dict(orient="tight"),
+            "media_type": "application/vnd.dataframe",
+        }
