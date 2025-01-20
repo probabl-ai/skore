@@ -54,8 +54,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     estimator_name_ : str
         The name of the estimator.
 
-    metrics : _MetricsAccessor
-        Accessor for metrics-related operations.
+    See Also
+    --------
+    skore.sklearn.cross_validation.report.CrossValidationReport
+        Report of cross-validation results.
 
     Examples
     --------
@@ -126,6 +128,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self._y_train = y_train
         self._X_test = X_test
         self._y_test = y_test
+
+        self._parent_progress = None
 
         self._initialize_state()
 
@@ -225,7 +229,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         if self._X_train is not None:
             data_sources += [("train", self._X_train)]
 
-        parallel = joblib.Parallel(n_jobs=n_jobs, return_as="generator_unordered")
+        parallel = joblib.Parallel(
+            n_jobs=n_jobs, return_as="generator", require="sharedmem"
+        )
         generator = parallel(
             joblib.delayed(_get_cached_response_values)(
                 cache=self._cache,
@@ -306,6 +312,21 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         else:
             name = self._estimator.__class__.__name__
         return name
+
+    ####################################################################################
+    # Methods related to the help and repr
+    ####################################################################################
+
+    def _get_help_panel_title(self):
+        return (
+            f"[bold cyan]Tools to diagnose estimator "
+            f"{self.estimator_name_}[/bold cyan]"
+        )
+
+    def _get_help_legend(self):
+        return (
+            "[cyan](↗︎)[/cyan] higher is better [orange1](↘︎)[/orange1] lower is better"
+        )
 
     def __repr__(self):
         """Return a string representation using rich."""

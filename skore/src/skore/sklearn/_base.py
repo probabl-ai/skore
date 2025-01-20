@@ -85,16 +85,13 @@ class _HelpMixin:
 
 
 class _BaseReport(_HelpMixin):
+    """Base class for all reports."""
+
     def _get_help_panel_title(self):
-        return (
-            f"[bold cyan]Tools to diagnose estimator "
-            f"{self.estimator_name_}[/bold cyan]"
-        )
+        return ""
 
     def _get_help_legend(self):
-        return (
-            "[cyan](↗︎)[/cyan] higher is better [orange1](↘︎)[/orange1] lower is better"
-        )
+        return ""
 
     def _get_attributes_for_help(self):
         """Get the public attributes to display in help."""
@@ -112,7 +109,7 @@ class _BaseReport(_HelpMixin):
 
             # Group X and y attributes separately
             value = getattr(self, name)
-            if name.startswith(("X_", "y_")):
+            if name.startswith(("X", "y")):
                 if value is not None:  # Only include non-None X/y attributes
                     xy_attributes.append(name)
             else:
@@ -304,11 +301,12 @@ def _get_cached_response_values(
     response_method : str
         The response method.
 
-    pos_label : str, default=None
+    pos_label : int, float, bool or str, default=None
         The positive label.
 
     data_source : {"test", "train", "X_y"}, default="test"
         The data source to use.
+
         - "test" : use the test set provided when creating the reporter.
         - "train" : use the train set provided when creating the reporter.
         - "X_y" : use the provided `X` and `y` to compute the metric.

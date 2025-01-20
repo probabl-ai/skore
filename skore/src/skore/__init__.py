@@ -6,12 +6,18 @@ from rich.console import Console
 from rich.theme import Theme
 
 from skore.project import Project, open
-from skore.sklearn import CrossValidationReporter, EstimatorReport, train_test_split
+from skore.sklearn import (
+    CrossValidationReport,
+    CrossValidationReporter,
+    EstimatorReport,
+    train_test_split,
+)
 from skore.utils._patch import setup_jupyter_display
 from skore.utils._show_versions import show_versions
 
 __all__ = [
     "CrossValidationReporter",
+    "CrossValidationReport",
     "EstimatorReport",
     "open",
     "Project",
@@ -34,4 +40,4 @@ skore_console_theme = Theme(
     }
 )
 
-console = Console(theme=skore_console_theme, width=79)
+console = Console(theme=skore_console_theme, width=88)
