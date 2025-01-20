@@ -2,7 +2,7 @@ import os
 import shutil
 from pathlib import Path
 
-from skore.persistence.disk_cache_storage import DiskCacheStorage
+from skore.persistence.storage import DiskCacheStorage
 
 
 def test_disk_storage(tmp_path: Path):

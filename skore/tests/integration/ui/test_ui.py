@@ -1,7 +1,13 @@
+import base64
 import datetime
+import io
+import json
 
+import altair
+import matplotlib.figure
 import numpy
 import pandas
+import plotly
 import polars
 import pytest
 from fastapi.testclient import TestClient
@@ -9,14 +15,18 @@ from PIL import Image
 from sklearn.linear_model import Lasso
 from sklearn.model_selection import KFold
 from skore import CrossValidationReporter
-from skore.item.media_item import MediaItem
+from skore.persistence.view.view import View
 from skore.ui.app import create_app
-from skore.view.view import View
 
 
 @pytest.fixture
 def client(in_memory_project):
     return TestClient(app=create_app(project=in_memory_project))
+
+
+@pytest.fixture
+def monkeypatch_datetime(monkeypatch, MockDatetime):
+    monkeypatch.setattr("skore.persistence.item.item.datetime", MockDatetime)
 
 
 def test_app_state(client):
@@ -32,7 +42,7 @@ def test_get_items(client, in_memory_project):
     in_memory_project.put("test", "version_1")
     in_memory_project.put("test", "version_2")
 
-    items = in_memory_project.get_item_versions("test")
+    items = in_memory_project.item_repository.get_item_versions("test")
 
     response = client.get("/api/project/items")
     assert response.status_code == 200
@@ -43,10 +53,10 @@ def test_get_items(client, in_memory_project):
                 {
                     "name": "test",
                     "media_type": "text/markdown",
-                    "value": item.primitive,
+                    "value": item.media,
                     "created_at": item.created_at,
                     "updated_at": item.updated_at,
-                    "note": item.note,
+                    "note": None,
                 }
                 for item in items
             ],
@@ -60,7 +70,7 @@ def test_put_view_layout(client):
 
 
 def test_delete_view(client, in_memory_project):
-    in_memory_project.put_view("hello", View(layout=[]))
+    in_memory_project.view_repository.put_view("hello", View(layout=[]))
     response = client.delete("/api/project/views?key=hello")
     assert response.status_code == 202
 
@@ -130,23 +140,199 @@ def test_serialize_sklearn_estimator(client, in_memory_project):
     assert project["items"]["estimator"][0]["value"] is not None
 
 
-def test_serialize_media_item(client, in_memory_project):
-    imarray = numpy.random.rand(100, 100, 3) * 255
-    img = Image.fromarray(imarray.astype("uint8")).convert("RGBA")
-    in_memory_project.put("img", img)
+class FakeFigure(matplotlib.figure.Figure):
+    def savefig(self, stream, *args, **kwargs):
+        stream.write(b"<figure>")
 
-    html = "<h1>éàªªUœALDXIWDŸΩΩ</h1>"
-    in_memory_project.put("html", html)
-    in_memory_project.put_item(
-        "media html", MediaItem.factory_str(html, media_type="text/html")
-    )
 
+def test_serialize_matplotlib_item(
+    client,
+    in_memory_project,
+    monkeypatch_datetime,
+    mock_nowstr,
+):
+    figure = FakeFigure()
+
+    with io.BytesIO() as stream:
+        figure.savefig(stream, format="svg", bbox_inches="tight")
+
+        figure_bytes = stream.getvalue()
+        figure_b64_str = base64.b64encode(figure_bytes).decode()
+
+    in_memory_project.put("figure", figure)
     response = client.get("/api/project/items")
+
     assert response.status_code == 200
-    project = response.json()
-    assert "image" in project["items"]["img"][0]["media_type"]
-    assert project["items"]["html"][0]["value"] == html
-    assert project["items"]["media html"][0]["value"] == html
+    assert response.json() == {
+        "views": {},
+        "items": {
+            "figure": [
+                {
+                    "name": "figure",
+                    "media_type": "image/svg+xml;base64",
+                    "value": figure_b64_str,
+                    "updated_at": mock_nowstr,
+                    "created_at": mock_nowstr,
+                    "note": None,
+                }
+            ]
+        },
+    }
+
+
+def test_serialize_altair_item(
+    client,
+    in_memory_project,
+    monkeypatch_datetime,
+    mock_nowstr,
+):
+    chart = altair.Chart().mark_point()
+    chart_str = chart.to_json()
+    chart_bytes = chart_str.encode("utf-8")
+    chart_b64_str = base64.b64encode(chart_bytes).decode()
+
+    in_memory_project.put("chart", chart)
+    response = client.get("/api/project/items")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "views": {},
+        "items": {
+            "chart": [
+                {
+                    "name": "chart",
+                    "media_type": "application/vnd.vega.v5+json;base64",
+                    "value": chart_b64_str,
+                    "updated_at": mock_nowstr,
+                    "created_at": mock_nowstr,
+                    "note": None,
+                }
+            ]
+        },
+    }
+
+
+def test_serialize_pillow_item(
+    client,
+    in_memory_project,
+    monkeypatch_datetime,
+    mock_nowstr,
+):
+    image_array = numpy.random.rand(100, 100, 3) * 255
+    image = Image.fromarray(image_array.astype("uint8")).convert("RGBA")
+
+    with io.BytesIO() as stream:
+        image.save(stream, format="png")
+
+        png_bytes = stream.getvalue()
+        png_b64_str = base64.b64encode(png_bytes).decode()
+
+    in_memory_project.put("image", image)
+    response = client.get("/api/project/items")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "views": {},
+        "items": {
+            "image": [
+                {
+                    "name": "image",
+                    "media_type": "image/png;base64",
+                    "value": png_b64_str,
+                    "updated_at": mock_nowstr,
+                    "created_at": mock_nowstr,
+                    "note": None,
+                }
+            ]
+        },
+    }
+
+
+def test_serialize_plotly_item(
+    client,
+    in_memory_project,
+    monkeypatch_datetime,
+    mock_nowstr,
+):
+    bar = plotly.graph_objects.Bar(x=[1, 2, 3], y=[1, 3, 2])
+    figure = plotly.graph_objects.Figure(data=[bar])
+    figure_str = plotly.io.to_json(figure, engine="json")
+    figure_bytes = figure_str.encode("utf-8")
+    figure_b64_str = base64.b64encode(figure_bytes).decode()
+
+    in_memory_project.put("figure", figure)
+    response = client.get("/api/project/items")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "views": {},
+        "items": {
+            "figure": [
+                {
+                    "name": "figure",
+                    "media_type": "application/vnd.plotly.v1+json;base64",
+                    "value": figure_b64_str,
+                    "updated_at": mock_nowstr,
+                    "created_at": mock_nowstr,
+                    "note": None,
+                }
+            ]
+        },
+    }
+
+
+def test_serialize_primitive_item(
+    client,
+    in_memory_project,
+    monkeypatch_datetime,
+    mock_nowstr,
+):
+    in_memory_project.put("primitive", [1, 2, [3, 4]])
+    response = client.get("/api/project/items")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "views": {},
+        "items": {
+            "primitive": [
+                {
+                    "name": "primitive",
+                    "media_type": "text/markdown",
+                    "value": [1, 2, [3, 4]],
+                    "updated_at": mock_nowstr,
+                    "created_at": mock_nowstr,
+                    "note": None,
+                }
+            ]
+        },
+    }
+
+
+def test_serialize_media_item(
+    client,
+    in_memory_project,
+    monkeypatch_datetime,
+    mock_nowstr,
+):
+    in_memory_project.put("media", "<media>", display_as="HTML")
+    response = client.get("/api/project/items")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "views": {},
+        "items": {
+            "media": [
+                {
+                    "name": "media",
+                    "media_type": "text/html",
+                    "value": "<media>",
+                    "updated_at": mock_nowstr,
+                    "created_at": mock_nowstr,
+                    "note": None,
+                }
+            ]
+        },
+    }
 
 
 @pytest.fixture
@@ -171,7 +357,7 @@ def fake_cross_validate(monkeypatch):
     monkeypatch.setattr("sklearn.model_selection.cross_validate", _fake_cross_validate)
 
 
-def test_serialize_cross_validation_item(
+def test_serialize_cross_validation_reporter_item(
     client,
     in_memory_project,
     monkeypatch,
@@ -179,9 +365,14 @@ def test_serialize_cross_validation_item(
     mock_nowstr,
     fake_cross_validate,
 ):
-    monkeypatch.setattr("skore.item.item.datetime", MockDatetime)
+    monkeypatch.setattr("skore.persistence.item.item.datetime", MockDatetime)
     monkeypatch.setattr(
-        "skore.item.cross_validation_item.CrossValidationItem.plots", {}
+        "skore.sklearn.cross_validation.cross_validation_reporter.plot_cross_validation_compare_scores",
+        lambda _: {},
+    )
+    monkeypatch.setattr(
+        "skore.sklearn.cross_validation.cross_validation_reporter.plot_cross_validation_timing",
+        lambda _: {},
     )
 
     def prepare_cv():
@@ -197,17 +388,12 @@ def test_serialize_cross_validation_item(
     reporter = CrossValidationReporter(model, X, y, cv=KFold(3))
     in_memory_project.put("cv", reporter)
 
-    # Mock the item to make the plot empty
-    item = in_memory_project.get_item("cv")
-    item.plots_bytes = {"compare_scores": b"{}"}
-    in_memory_project.put_item("cv_mocked", item)
-
     response = client.get("/api/project/items")
     assert response.status_code == 200
 
     project = response.json()
     expected = {
-        "name": "cv_mocked",
+        "name": "cv",
         "media_type": "application/vnd.skore.cross_validation+json",
         "value": {
             "scalar_results": [
@@ -248,7 +434,16 @@ def test_serialize_cross_validation_item(
                     ],
                 }
             ],
-            "plots": [{"name": "compare_scores", "value": {}}],
+            "plots": [
+                {
+                    "name": "Scores",
+                    "value": json.loads(plotly.io.to_json({}, engine="json")),
+                },
+                {
+                    "name": "Timings",
+                    "value": json.loads(plotly.io.to_json({}, engine="json")),
+                },
+            ],
             "sections": [
                 {
                     "title": "Model",
@@ -288,7 +483,7 @@ def test_serialize_cross_validation_item(
         "created_at": mock_nowstr,
         "note": None,
     }
-    actual = project["items"]["cv_mocked"][0]
+    actual = project["items"]["cv"][0]
     assert expected == actual
 
 
@@ -304,7 +499,7 @@ def test_activity_feed(monkeypatch, client, in_memory_project):
             MockDatetime.NOW += MockDatetime.TIMEDELTA
             return MockDatetime.NOW
 
-    monkeypatch.setattr("skore.item.item.datetime", MockDatetime)
+    monkeypatch.setattr("skore.persistence.item.item.datetime", MockDatetime)
 
     for i in range(5):
         in_memory_project.put(str(i), i)
@@ -330,6 +525,78 @@ def test_activity_feed(monkeypatch, client, in_memory_project):
         ("5", 5),
         ("4", 5),
     ]
+
+
+def test_get_items_with_pickle_item(
+    monkeypatch,
+    MockDatetime,
+    mock_nowstr,
+    client,
+    in_memory_project,
+):
+    monkeypatch.setattr("skore.persistence.item.item.datetime", MockDatetime)
+    in_memory_project.put("pickle", object)
+
+    response = client.get("/api/project/items")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "views": {},
+        "items": {
+            "pickle": [
+                {
+                    "created_at": mock_nowstr,
+                    "updated_at": mock_nowstr,
+                    "name": "pickle",
+                    "media_type": "text/markdown",
+                    "value": "```python\n<class 'object'>\n```",
+                    "note": None,
+                },
+            ],
+        },
+    }
+
+
+def test_get_items_with_pickle_item_and_unpickling_error(
+    monkeypatch,
+    MockDatetime,
+    mock_nowstr,
+    client,
+    in_memory_project,
+):
+    import skore.persistence.item
+
+    monkeypatch.setattr("skore.persistence.item.item.datetime", MockDatetime)
+    in_memory_project.put("pickle", skore.persistence.item.CrossValidationReporterItem)
+
+    monkeypatch.delattr(
+        "skore.persistence.item.cross_validation_reporter_item.CrossValidationReporterItem"
+    )
+    monkeypatch.setattr(
+        "skore.persistence.item.pickle_item.format_exception",
+        lambda *args, **kwargs: "<traceback>",
+    )
+
+    response = client.get("/api/project/items")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "views": {},
+        "items": {
+            "pickle": [
+                {
+                    "created_at": mock_nowstr,
+                    "updated_at": mock_nowstr,
+                    "name": "pickle",
+                    "media_type": "text/markdown",
+                    "value": "Item cannot be displayed",
+                    "note": (
+                        "\n\nUnpicklingError with complete traceback:\n\n<traceback>"
+                    ),
+                },
+            ],
+        },
+    }
 
 
 def test_set_note(client, in_memory_project):

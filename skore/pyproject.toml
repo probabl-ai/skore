@@ -7,9 +7,10 @@ maintainers = [{ name = "skore developers", email = "skore@signal.probabl.ai" }]
 dependencies = [
   "diskcache",
   "fastapi",
+  "joblib",
+  "matplotlib",
   "numpy",
   "pandas",
-  "matplotlib",
   "plotly>=5,<6",
   "pyarrow",
   "rich",

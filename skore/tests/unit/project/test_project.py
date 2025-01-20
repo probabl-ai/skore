@@ -1,14 +1,14 @@
-from io import BytesIO
-
 import altair
 import numpy
 import numpy.testing
 import pandas
 import pandas.testing
+import plotly
 import polars
 import polars.testing
 import pytest
-from matplotlib import pyplot as plt
+from matplotlib.pyplot import subplots
+from matplotlib.testing.compare import compare_images
 from PIL import Image
 from sklearn.ensemble import RandomForestClassifier
 from skore.exceptions import (
@@ -16,7 +16,11 @@ from skore.exceptions import (
     ProjectCreationError,
 )
 from skore.project.create import _create, _validate_project_name
-from skore.view.view import View
+
+
+@pytest.fixture(autouse=True)
+def monkeypatch_datetime(monkeypatch, MockDatetime):
+    monkeypatch.setattr("skore.persistence.item.item.datetime", MockDatetime)
 
 
 def test_put_string_item(in_memory_project):
@@ -99,35 +103,48 @@ def test_put_numpy_array(in_memory_project):
     numpy.testing.assert_array_equal(in_memory_project.get("numpy_array"), arr)
 
 
-def test_put_mpl_figure(in_memory_project, monkeypatch):
-    # Add a Matplotlib figure
-    def savefig(*args, **kwargs):
-        return ""
+def test_put_matplotlib_figure(in_memory_project, monkeypatch, tmp_path):
+    figure, ax = subplots()
+    ax.plot([1, 2, 3, 4], [1, 4, 2, 3])
 
-    monkeypatch.setattr("matplotlib.figure.Figure.savefig", savefig)
-    fig, ax = plt.subplots()
-    ax.plot([1, 2, 3, 4])
+    in_memory_project.put("figure", figure)
 
-    in_memory_project.put("mpl_figure", fig)  # MediaItem (SVG)
-    assert isinstance(in_memory_project.get("mpl_figure"), bytes)
+    # matplotlib being not consistent (`xlink:href` are different between two calls)
+    # we can't compare figures directly
 
+    figure.savefig(tmp_path / "figure.png")
+    in_memory_project.get("figure").savefig(tmp_path / "item.png")
 
-def test_put_vega_chart(in_memory_project):
-    # Add an Altair chart
-    altair_chart = altair.Chart().mark_point()
-    in_memory_project.put("vega_chart", altair_chart)
-    assert isinstance(in_memory_project.get("vega_chart"), bytes)
+    assert compare_images(tmp_path / "figure.png", tmp_path / "item.png", 0) is None
 
 
-def test_put_pil_image(in_memory_project):
-    # Add a PIL Image
-    pil_image = Image.new("RGB", (100, 100), color="red")
-    with BytesIO() as output:
-        # FIXME: Not JPEG!
-        pil_image.save(output, format="jpeg")
+def test_put_altair_chart(in_memory_project):
+    chart = altair.Chart().mark_point()
 
-    in_memory_project.put("pil_image", pil_image)  # MediaItem (PNG)
-    assert isinstance(in_memory_project.get("pil_image"), bytes)
+    in_memory_project.put("chart", chart)
+
+    # Altair strict equality doesn't work
+    assert in_memory_project.get("chart").to_json() == chart.to_json()
+
+
+def test_put_pillow_image(in_memory_project):
+    image1 = Image.new("RGB", (100, 100), color="red")
+    image2 = Image.new("RGBA", (150, 150), color="blue")
+
+    in_memory_project.put("image1", image1)
+    in_memory_project.put("image2", image2)
+
+    assert in_memory_project.get("image1") == image1
+    assert in_memory_project.get("image2") == image2
+
+
+def test_put_plotly_figure(in_memory_project):
+    bar = plotly.graph_objects.Bar(x=[1, 2, 3], y=[1, 3, 2])
+    figure = plotly.graph_objects.Figure(data=[bar])
+
+    in_memory_project.put("figure", figure)
+
+    assert in_memory_project.get("figure") == figure
 
 
 def test_put_rf_model(in_memory_project, monkeypatch):
@@ -145,19 +162,19 @@ def test_put(in_memory_project):
     in_memory_project.put("key3", 3)
     in_memory_project.put("key4", 4)
 
-    assert in_memory_project.list_item_keys() == ["key1", "key2", "key3", "key4"]
+    assert in_memory_project.keys() == ["key1", "key2", "key3", "key4"]
 
 
 def test_put_kwargs(in_memory_project):
     in_memory_project.put(key="key1", value=1)
-    assert in_memory_project.list_item_keys() == ["key1"]
+    assert in_memory_project.keys() == ["key1"]
 
 
 def test_put_wrong_key_type(in_memory_project):
     with pytest.raises(TypeError):
         in_memory_project.put(key=2, value=1)
 
-    assert in_memory_project.list_item_keys() == []
+    assert in_memory_project.keys() == []
 
 
 def test_put_twice(in_memory_project):
@@ -167,55 +184,56 @@ def test_put_twice(in_memory_project):
     assert in_memory_project.get("key2") == 5
 
 
-def test_get(in_memory_project):
-    in_memory_project.put("key1", 1)
-    assert in_memory_project.get("key1") == 1
+def test_get(in_memory_project, mock_nowstr):
+    in_memory_project.put("key", 1, note="1")
+    in_memory_project.put("key", 2, note="2")
+
+    assert in_memory_project.get("key") == 2
+    assert in_memory_project.get("key", latest=True, metadata=False) == 2
+    assert in_memory_project.get("key", latest=False, metadata=False) == [1, 2]
+    assert in_memory_project.get("key", latest=False, metadata=True) == [
+        {
+            "value": 1,
+            "date": mock_nowstr,
+            "note": "1",
+        },
+        {
+            "value": 2,
+            "date": mock_nowstr,
+            "note": "2",
+        },
+    ]
+    assert in_memory_project.get("key", latest=True, metadata=True) == {
+        "value": 2,
+        "date": mock_nowstr,
+        "note": "2",
+    }
 
     with pytest.raises(KeyError):
-        in_memory_project.get("key2")
-
-
-def test_get_item_versions(in_memory_project):
-    in_memory_project.put("key", 1)
-    in_memory_project.put("key", 2)
-
-    items = in_memory_project.get_item_versions("key")
-
-    assert len(items) == 2
-    assert items[0].primitive == 1
-    assert items[1].primitive == 2
+        in_memory_project.get("<unknown>")
 
 
 def test_delete(in_memory_project):
     in_memory_project.put("key1", 1)
-    in_memory_project.delete_item("key1")
+    in_memory_project.delete("key1")
 
-    assert in_memory_project.list_item_keys() == []
+    assert in_memory_project.keys() == []
 
     with pytest.raises(KeyError):
-        in_memory_project.delete_item("key2")
+        in_memory_project.delete("key2")
 
 
 def test_keys(in_memory_project):
     in_memory_project.put("key1", 1)
     in_memory_project.put("key2", 2)
-    assert in_memory_project.list_item_keys() == ["key1", "key2"]
+    assert in_memory_project.keys() == ["key1", "key2"]
 
 
-def test_view(in_memory_project):
-    layout = ["key1", "key2"]
+def test_put_several_complex(in_memory_project):
+    in_memory_project.put("a", int)
+    in_memory_project.put("b", float)
 
-    view = View(layout=layout)
-
-    in_memory_project.put_view("view", view)
-    assert in_memory_project.get_view("view") == view
-
-
-def test_list_view_keys(in_memory_project):
-    view = View(layout=[])
-
-    in_memory_project.put_view("view", view)
-    assert in_memory_project.list_view_keys() == ["view"]
+    assert in_memory_project.keys() == ["a", "b"]
 
 
 def test_put_key_is_a_tuple(in_memory_project):
@@ -223,7 +241,7 @@ def test_put_key_is_a_tuple(in_memory_project):
     with pytest.raises(TypeError):
         in_memory_project.put(("a", "foo"), ("b", "bar"))
 
-    assert in_memory_project.list_item_keys() == []
+    assert in_memory_project.keys() == []
 
 
 def test_put_key_is_a_set(in_memory_project):
@@ -231,7 +249,7 @@ def test_put_key_is_a_set(in_memory_project):
     with pytest.raises(TypeError):
         in_memory_project.put(set(), "hello")
 
-    assert in_memory_project.list_item_keys() == []
+    assert in_memory_project.keys() == []
 
 
 def test_put_wrong_key_and_value_raise(in_memory_project):

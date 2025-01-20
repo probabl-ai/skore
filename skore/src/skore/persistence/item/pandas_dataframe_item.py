@@ -6,10 +6,9 @@ which represents a pandas DataFrame item.
 
 from __future__ import annotations
 
-from functools import cached_property
 from typing import TYPE_CHECKING, Union
 
-from skore.item.item import Item, ItemTypeError
+from .item import Item, ItemTypeError
 
 if TYPE_CHECKING:
     import pandas
@@ -54,7 +53,7 @@ class PandasDataFrameItem(Item):
         self.index_json = index_json
         self.dataframe_json = dataframe_json
 
-    @cached_property
+    @property
     def dataframe(self) -> pandas.DataFrame:
         """
         The pandas DataFrame from the persistence.
@@ -78,23 +77,8 @@ class PandasDataFrameItem(Item):
 
             return dataframe
 
-    def as_serializable_dict(self):
-        """Get a serializable dict from the item.
-
-        Derived class must call their super implementation
-        and merge the result with their output.
-        """
-        d = super().as_serializable_dict()
-        d.update(
-            {
-                "media_type": "application/vnd.dataframe",
-                "value": self.dataframe.fillna("NaN").to_dict(orient="tight"),
-            }
-        )
-        return d
-
     @classmethod
-    def factory(cls, dataframe: pandas.DataFrame) -> PandasDataFrameItem:
+    def factory(cls, dataframe: pandas.DataFrame, /, **kwargs) -> PandasDataFrameItem:
         """
         Create a new PandasDataFrameItem instance from a pandas DataFrame.
 
@@ -145,4 +129,12 @@ class PandasDataFrameItem(Item):
         return cls(
             index_json=index.to_json(orient=PandasDataFrameItem.ORIENT),
             dataframe_json=dataframe.to_json(orient=PandasDataFrameItem.ORIENT),
+            **kwargs,
         )
+
+    def as_serializable_dict(self):
+        """Convert item to a JSON-serializable dict to used by frontend."""
+        return super().as_serializable_dict() | {
+            "media_type": "application/vnd.dataframe",
+            "value": self.dataframe.fillna("NaN").to_dict(orient="tight"),
+        }

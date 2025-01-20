@@ -4,14 +4,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from skore.item.item import ItemTypeError
-from skore.item.media_item import MediaItem
+from .item import ItemTypeError
+from .media_item import MediaItem
 
 if TYPE_CHECKING:
     from skrub import TableReport
 
 
-def factory(table_report: TableReport) -> MediaItem:
+def factory(table_report: TableReport, /, **kwargs) -> MediaItem:
     """
     Create a new MediaItem instance from a skrub TableReport.
 
@@ -28,4 +28,4 @@ def factory(table_report: TableReport) -> MediaItem:
     if not hasattr(table_report, "html_snippet"):
         raise ItemTypeError(f"Type '{table_report.__class__}' is not supported.")
 
-    return MediaItem.factory_str(table_report.html_snippet(), media_type="text/html")
+    return MediaItem.factory(table_report.html_snippet(), "text/html", **kwargs)

@@ -6,10 +6,9 @@ which represents a polars Series item.
 
 from __future__ import annotations
 
-from functools import cached_property
 from typing import TYPE_CHECKING, Union
 
-from skore.item.item import Item, ItemTypeError
+from .item import Item, ItemTypeError
 
 if TYPE_CHECKING:
     import polars
@@ -48,7 +47,7 @@ class PolarsSeriesItem(Item):
 
         self.series_json = series_json
 
-    @cached_property
+    @property
     def series(self) -> polars.Series:
         """
         The polars Series from the persistence.
@@ -66,23 +65,8 @@ class PolarsSeriesItem(Item):
 
             return series
 
-    def as_serializable_dict(self):
-        """Get a serializable dict from the item.
-
-        Derived class must call their super implementation
-        and merge the result with their output.
-        """
-        d = super().as_serializable_dict()
-        d.update(
-            {
-                "value": self.series.to_list(),
-                "media_type": "text/markdown",
-            }
-        )
-        return d
-
     @classmethod
-    def factory(cls, series: polars.Series) -> PolarsSeriesItem:
+    def factory(cls, series: polars.Series, /, **kwargs) -> PolarsSeriesItem:
         """
         Create a new PolarsSeriesItem instance from a polars Series.
 
@@ -101,4 +85,11 @@ class PolarsSeriesItem(Item):
         if not isinstance(series, polars.Series):
             raise ItemTypeError(f"Type '{series.__class__}' is not supported.")
 
-        return cls(series_json=series.to_frame().write_json())
+        return cls(series_json=series.to_frame().write_json(), **kwargs)
+
+    def as_serializable_dict(self):
+        """Convert item to a JSON-serializable dict to used by frontend."""
+        return super().as_serializable_dict() | {
+            "value": self.series.to_list(),
+            "media_type": "text/markdown",
+        }

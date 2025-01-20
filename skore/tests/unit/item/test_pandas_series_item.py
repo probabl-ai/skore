@@ -2,13 +2,13 @@ import numpy as np
 import pytest
 from pandas import Index, MultiIndex, Series
 from pandas.testing import assert_series_equal
-from skore.item import ItemTypeError, PandasSeriesItem
+from skore.persistence.item import ItemTypeError, PandasSeriesItem
 
 
 class TestPandasSeriesItem:
     @pytest.fixture(autouse=True)
     def monkeypatch_datetime(self, monkeypatch, MockDatetime):
-        monkeypatch.setattr("skore.item.item.datetime", MockDatetime)
+        monkeypatch.setattr("skore.persistence.item.item.datetime", MockDatetime)
 
     def test_factory_exception(self):
         with pytest.raises(ItemTypeError):

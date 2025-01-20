@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from skore.item.item import Item, ItemTypeError
+from .item import Item, ItemTypeError
 
 if TYPE_CHECKING:
     from typing import Union
@@ -70,23 +70,8 @@ class PrimitiveItem(Item):
 
         self.primitive = primitive
 
-    def as_serializable_dict(self):
-        """Get a serializable dict from the item.
-
-        Derived class must call their super implementation
-        and merge the result with their output.
-        """
-        d = super().as_serializable_dict()
-        d.update(
-            {
-                "media_type": "text/markdown",
-                "value": self.primitive,
-            }
-        )
-        return d
-
     @classmethod
-    def factory(cls, primitive: Primitive) -> PrimitiveItem:
+    def factory(cls, primitive: Primitive, /, **kwargs) -> PrimitiveItem:
         """
         Create a new PrimitiveItem with the current timestamp.
 
@@ -100,7 +85,14 @@ class PrimitiveItem(Item):
         PrimitiveItem
             A new PrimitiveItem instance.
         """
-        if not is_primitive(primitive):
+        if isinstance(primitive, str) or not is_primitive(primitive):
             raise ItemTypeError(f"Type '{primitive.__class__}' is not supported.")
 
-        return cls(primitive=primitive)
+        return cls(primitive=primitive, **kwargs)
+
+    def as_serializable_dict(self):
+        """Convert item to a JSON-serializable dict to used by frontend."""
+        return super().as_serializable_dict() | {
+            "media_type": "text/markdown",
+            "value": self.primitive,
+        }

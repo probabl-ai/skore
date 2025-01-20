@@ -1,7 +1,7 @@
 import pytest
-from skore.persistence.in_memory_storage import InMemoryStorage
-from skore.view.view import View
-from skore.view.view_repository import ViewRepository
+from skore.persistence.repository import ViewRepository
+from skore.persistence.storage import InMemoryStorage
+from skore.persistence.view.view import View
 
 
 @pytest.fixture

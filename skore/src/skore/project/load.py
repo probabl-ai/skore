@@ -3,10 +3,12 @@
 from pathlib import Path
 from typing import Union
 
-from skore.item import ItemRepository
-from skore.persistence.disk_cache_storage import DirectoryDoesNotExist, DiskCacheStorage
+from skore.persistence.repository import ItemRepository, ViewRepository
+from skore.persistence.storage.disk_cache_storage import (
+    DirectoryDoesNotExist,
+    DiskCacheStorage,
+)
 from skore.project.project import Project
-from skore.view.view_repository import ViewRepository
 
 
 class ProjectLoadError(Exception):

@@ -155,15 +155,16 @@ reporter = skore.CrossValidationReporter(lasso, X, y, cv=5)
 reporter.plots.scores
 
 # %%
-# We can also access the plot after we have stored the ``CrossValidationReporter``:
-my_project.put("cross_validation_regression", reporter)
-cv_item = my_project.get_item("cross_validation_regression")
-cv_item.plots["Scores"]
+# We can put the reporter in the project, and retrieve it as is:
+my_project.put("cross_validation_reporter", reporter)
+
+reporter = my_project.get("cross_validation_reporter")
+reporter.plots.scores
 
 # %%
 # .. note::
 #
-#   If we put a cross-validation item in a skore project, we get some nice
+#   If we put a cross-validation reporter in a skore project, we get some nice
 #   information in the UI:
 #
 #   .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_12_skore_demo_comp.gif
