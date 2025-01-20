@@ -1,5 +1,7 @@
-from collections import Counter
+from collections import defaultdict
 
+import matplotlib.pyplot as plt
+import numpy as np
 from sklearn.metrics import average_precision_score, precision_recall_curve
 from sklearn.preprocessing import LabelBinarizer
 
@@ -8,6 +10,7 @@ from skore.sklearn._plot.utils import (
     _ClassifierCurveDisplayMixin,
     _despine_matplotlib_axis,
     _validate_style_kwargs,
+    sample_mpl_colormap,
 )
 
 
@@ -53,16 +56,6 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
             - the value is a list of `float`, each `float` being the average
               precision.
 
-    prevalence : dict of list of float
-        The prevalence of the positive label. The structure is:
-
-        - for binary classification:
-            - the key is the positive label.
-            - the value is a list of `float`, each `float` being the prevalence.
-        - for multiclass classification:
-            - the key is the class of interest in an OvR fashion.
-            - the value is a list of `float`, each `float` being the prevalence.
-
     estimator_name : str
         Name of the estimator.
 
@@ -86,6 +79,26 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
 
     chance_levels_ : matplotlib Artist or None
         The chance level line. It is `None` if the chance level is not plotted.
+
+    Examples
+    --------
+    >>> from sklearn.datasets import load_breast_cancer
+    >>> from sklearn.linear_model import LogisticRegression
+    >>> from sklearn.model_selection import train_test_split
+    >>> from skore import EstimatorReport
+    >>> X_train, X_test, y_train, y_test = train_test_split(
+    ...     *load_breast_cancer(return_X_y=True), random_state=0
+    ... )
+    >>> classifier = LogisticRegression(max_iter=10_000)
+    >>> reporter = EstimatorReport(
+    ...     classifier,
+    ...     X_train=X_train,
+    ...     y_train=y_train,
+    ...     X_test=X_test,
+    ...     y_test=y_test,
+    ... )
+    >>> display = reporter.metrics.plot.precision_recall()
+    >>> display.plot(pr_curve_kwargs={"color": "tab:red"})
     """
 
     def __init__(
@@ -94,7 +107,6 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
         recall,
         *,
         average_precision,
-        prevalence,
         estimator_name,
         pos_label=None,
         data_source=None,
@@ -102,7 +114,6 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
         self.precision = precision
         self.recall = recall
         self.average_precision = average_precision
-        self.prevalence = prevalence
         self.estimator_name = estimator_name
         self.pos_label = pos_label
         self.data_source = data_source
@@ -113,8 +124,6 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
         *,
         estimator_name=None,
         pr_curve_kwargs=None,
-        plot_chance_level=False,
-        chance_level_kwargs=None,
         despine=True,
     ):
         """Plot visualization.
@@ -131,18 +140,9 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
             Name of the estimator used to plot the precision-recall curve. If
             `None`, we use the inferred name from the estimator.
 
-        plot_chance_level : bool, default=True
-            Whether to plot the chance level. The chance level is the prevalence
-            of the positive label computed from the data passed during
-            :meth:`from_estimator` or :meth:`from_predictions` call.
-
         pr_curve_kwargs : dict or list of dict, default=None
             Keyword arguments to be passed to matplotlib's `plot` for rendering
             the precision-recall curve(s).
-
-        chance_level_kwargs : dict or list of dict, default=None
-            Keyword arguments to be passed to matplotlib's `plot` for rendering
-            the chance level line.
 
         despine : bool, default=True
             Whether to remove the top and right spines from the plot.
@@ -162,6 +162,26 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
         You can change this style by passing the keyword argument
         `drawstyle="default"`. However, the curve will not be strictly
         consistent with the reported average precision.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_breast_cancer(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> display = reporter.metrics.plot.precision_recall()
+        >>> display.plot(pr_curve_kwargs={"color": "tab:red"})
         """
         self.ax_, self.figure_, estimator_name = self._validate_plot_params(
             ax=ax, estimator_name=estimator_name
@@ -186,18 +206,14 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
                 precision = self.precision[self.pos_label][0]
                 recall = self.recall[self.pos_label][0]
                 average_precision = self.average_precision[self.pos_label][0]
-                prevalence = self.prevalence[self.pos_label][0]
 
                 default_line_kwargs = {"drawstyle": "steps-post"}
-                if average_precision is not None and self.data_source in (
-                    "train",
-                    "test",
-                ):
+                if self.data_source in ("train", "test"):
                     default_line_kwargs["label"] = (
                         f"{self.data_source.title()} set "
                         f"(AP = {average_precision:0.2f})"
                     )
-                elif average_precision is not None:  # data_source in (None, "X_y")
+                else:  # data_source in (None, "X_y")
                     default_line_kwargs["label"] = f"AP = {average_precision:0.2f}"
 
                 line_kwargs = _validate_style_kwargs(
@@ -206,40 +222,47 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
 
                 (line_,) = self.ax_.plot(recall, precision, **line_kwargs)
                 self.lines_.append(line_)
-
-                if plot_chance_level:
-                    default_chance_level_line_kwargs = {
-                        "label": f"Chance level (AP = {prevalence:0.2f})",
-                        "color": "k",
-                        "linestyle": "--",
-                    }
-
-                    if chance_level_kwargs is None:
-                        chance_level_kwargs = {}
-                    elif isinstance(chance_level_kwargs, list):
-                        if len(chance_level_kwargs) > 1:
-                            raise ValueError(
-                                "You intend to plot a single chance level line and "
-                                "provide multiple chance level line keyword "
-                                "arguments. Provide a single dictionary or a list "
-                                "with a single dictionary."
-                            )
-                        chance_level_kwargs = chance_level_kwargs[0]
-
-                    chance_level_line_kwargs = _validate_style_kwargs(
-                        default_chance_level_line_kwargs, chance_level_kwargs
-                    )
-
-                    (chance_level_,) = self.ax_.plot(
-                        (0, 1), (prevalence, prevalence), **chance_level_line_kwargs
-                    )
-                    self.chance_levels_.append(chance_level_)
-                else:
-                    self.chance_levels_ = None
             else:  # cross-validation
-                raise NotImplementedError(
-                    "We don't support yet cross-validation"
-                )  # pragma: no cover
+                if pr_curve_kwargs is None:
+                    pr_curve_kwargs = [{}] * len(self.precision[self.pos_label])
+                elif isinstance(pr_curve_kwargs, list):
+                    if len(pr_curve_kwargs) != len(self.precision[self.pos_label]):
+                        raise ValueError(
+                            "You intend to plot multiple precision-recall curves. We "
+                            "expect `pr_curve_kwargs` to be a list of dictionaries "
+                            "with the same length as the number of precision-recall "
+                            "curves. Got "
+                            f"{len(pr_curve_kwargs)} instead of "
+                            f"{len(self.precision)}."
+                        )
+                else:
+                    raise ValueError(
+                        "You intend to plot multiple precision-recall curves. We "
+                        "expect `pr_curve_kwargs` to be a list of dictionaries of "
+                        f"{len(self.precision)} elements. Got {pr_curve_kwargs!r} "
+                        "instead."
+                    )
+
+                for split_idx in range(len(self.precision[self.pos_label])):
+                    precision = self.precision[self.pos_label][split_idx]
+                    recall = self.recall[self.pos_label][split_idx]
+                    average_precision = self.average_precision[self.pos_label][
+                        split_idx
+                    ]
+
+                    default_line_kwargs = {
+                        "drawstyle": "steps-post",
+                        "label": (
+                            f"{self.data_source.title()} set - fold #{split_idx + 1} "
+                            f"(AP = {average_precision:0.2f})"
+                        ),
+                    }
+                    line_kwargs = _validate_style_kwargs(
+                        default_line_kwargs, pr_curve_kwargs[split_idx]
+                    )
+
+                    (line_,) = self.ax_.plot(recall, precision, **line_kwargs)
+                    self.lines_.append(line_)
 
             info_pos_label = (
                 f"\n(Positive label: {self.pos_label})"
@@ -248,6 +271,9 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
             )
         else:  # multiclass-classification
             info_pos_label = None  # irrelevant for multiclass
+            class_colors = sample_mpl_colormap(
+                plt.cm.tab10, 10 if len(self.precision) < 10 else len(self.precision)
+            )
             if pr_curve_kwargs is None:
                 pr_curve_kwargs = [{}] * len(self.precision)
             elif isinstance(pr_curve_kwargs, list):
@@ -267,50 +293,27 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
                     f"{len(self.precision)} elements. Got {pr_curve_kwargs!r} instead."
                 )
 
-            if plot_chance_level:
-                if chance_level_kwargs is None:
-                    chance_level_kwargs = [{}] * len(self.precision)
-                elif isinstance(chance_level_kwargs, list):
-                    if len(chance_level_kwargs) != len(self.precision):
-                        raise ValueError(
-                            "You intend to plot multiple precision-recall curves. We "
-                            "expect `chance_level_kwargs` to be a list of dictionaries "
-                            "with the same length as the number of precision-recall "
-                            "curves. Got "
-                            f"{len(chance_level_kwargs)} instead of "
-                            f"{len(self.precision)}."
-                        )
-                else:
-                    raise ValueError(
-                        "You intend to plot multiple precision-recall curves. We "
-                        "expect `chance_level_kwargs` to be a list of dictionaries of "
-                        f"{len(self.precision)} elements. Got {chance_level_kwargs!r} "
-                        "instead."
-                    )
-
             for class_idx, class_ in enumerate(self.precision):
                 precision_class = self.precision[class_]
                 recall_class = self.recall[class_]
                 average_precision_class = self.average_precision[class_]
-                prevalence_class = self.prevalence[class_]
                 pr_curve_kwargs_class = pr_curve_kwargs[class_idx]
 
                 if len(precision_class) == 1:  # single-split
                     precision = precision_class[0]
                     recall = recall_class[0]
                     average_precision = average_precision_class[0]
-                    prevalence = prevalence_class[0]
 
-                    default_line_kwargs = {"drawstyle": "steps-post"}
-                    if average_precision is not None and self.data_source in (
-                        "train",
-                        "test",
-                    ):
+                    default_line_kwargs = {
+                        "drawstyle": "steps-post",
+                        "color": class_colors[class_idx],
+                    }
+                    if self.data_source in ("train", "test"):
                         default_line_kwargs["label"] = (
                             f"{str(class_).title()} - {self.data_source} set "
                             f"(AP = {average_precision:0.2f})"
                         )
-                    elif average_precision is not None:  # data_source in (None, "X_y")
+                    else:  # data_source in (None, "X_y")
                         default_line_kwargs["label"] = (
                             f"{str(class_).title()} AP = {average_precision:0.2f}"
                         )
@@ -321,33 +324,29 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
 
                     (line_,) = self.ax_.plot(recall, precision, **line_kwargs)
                     self.lines_.append(line_)
-
-                    if plot_chance_level:
-                        chance_level_kwargs_class = chance_level_kwargs[class_idx]
-
-                        default_chance_level_line_kwargs = {
-                            "label": (
-                                f"Chance level - {str(class_).title()} "
-                                f"(AP = {prevalence:0.2f})"
-                            ),
-                            "color": "k",
-                            "linestyle": "--",
-                        }
-
-                        chance_level_line_kwargs = _validate_style_kwargs(
-                            default_chance_level_line_kwargs, chance_level_kwargs_class
-                        )
-
-                        (chance_level_,) = self.ax_.plot(
-                            (0, 1), (prevalence, prevalence), **chance_level_line_kwargs
-                        )
-                        self.chance_levels_.append(chance_level_)
-                    else:
-                        self.chance_levels_ = None
                 else:  # cross-validation
-                    raise NotImplementedError(
-                        "We don't support yet cross-validation"
-                    )  # pragma: no cover
+                    for split_idx in range(len(precision_class)):
+                        precision = precision_class[split_idx]
+                        recall = recall_class[split_idx]
+                        average_precision = average_precision_class[split_idx]
+
+                        default_line_kwargs = {
+                            "color": class_colors[class_idx],
+                            "alpha": 0.3,
+                        }
+                        if split_idx == 0:
+                            default_line_kwargs["label"] = (
+                                f"{str(class_).title()} - {self.data_source} set"
+                                f" (AP = {np.mean(average_precision_class):0.2f} +/- "
+                                f"{np.std(average_precision_class):0.2f})"
+                            )
+                        else:
+                            default_line_kwargs["label"] = None
+
+                        line_kwargs = _validate_style_kwargs(default_line_kwargs, {})
+
+                        (line_,) = self.ax_.plot(recall, precision, **line_kwargs)
+                        self.lines_.append(line_)
 
         xlabel = "Recall"
         ylabel = "Precision"
@@ -382,8 +381,6 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
         drop_intermediate=False,
         ax=None,
         pr_curve_kwargs=None,
-        plot_chance_level=False,
-        chance_level_kwargs=None,
         despine=True,
     ):
         """Plot precision-recall curve given binary class predictions.
@@ -426,15 +423,6 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
             Keyword arguments to be passed to matplotlib's `plot` for rendering
             the precision-recall curve(s).
 
-        plot_chance_level : bool, default=False
-            Whether to plot the chance level. The chance level is the prevalence
-            of the positive label computed from the data passed during
-            :meth:`from_estimator` or :meth:`from_predictions` call.
-
-        chance_level_kwargs : dict or list of dict, default=None
-            Keyword arguments to be passed to matplotlib's `plot` for rendering
-            the chance level line.
-
         despine : bool, default=True
             Whether to remove the top and right spines from the plot.
 
@@ -450,50 +438,47 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
         )
 
         if ml_task == "binary-classification":
-            precision, recall, _ = precision_recall_curve(
-                y_true,
-                y_pred,
-                pos_label=pos_label_validated,
-                drop_intermediate=drop_intermediate,
-            )
-            average_precision = average_precision_score(
-                y_true, y_pred, pos_label=pos_label_validated
-            )
-
-            class_count = Counter(y_true)
-            prevalence = class_count[pos_label_validated] / sum(class_count.values())
-
-            precision = {pos_label_validated: [precision]}
-            recall = {pos_label_validated: [recall]}
-            average_precision = {pos_label_validated: [average_precision]}
-            prevalence = {pos_label_validated: [prevalence]}
-        else:  # multiclass-classification
-            precision, recall, average_precision, prevalence = {}, {}, {}, {}
-            label_binarizer = LabelBinarizer().fit(estimator.classes_)
-            y_true_onehot = label_binarizer.transform(y_true)
-            for class_idx, class_ in enumerate(estimator.classes_):
-                precision_class, recall_class, _ = precision_recall_curve(
-                    y_true_onehot[:, class_idx],
-                    y_pred[:, class_idx],
-                    pos_label=None,
+            precision, recall = defaultdict(list), defaultdict(list)
+            average_precision = defaultdict(list)
+            for y_true_i, y_pred_i in zip(y_true, y_pred):
+                precision_i, recall_i, _ = precision_recall_curve(
+                    y_true_i,
+                    y_pred_i,
+                    pos_label=pos_label_validated,
                     drop_intermediate=drop_intermediate,
                 )
-                average_precision_class = average_precision_score(
-                    y_true_onehot[:, class_idx], y_pred[:, class_idx]
+                average_precision_i = average_precision_score(
+                    y_true_i, y_pred_i, pos_label=pos_label_validated
                 )
-                class_count = Counter(y_true)
-                prevalence_class = class_count[class_] / sum(class_count.values())
 
-                precision[class_] = [precision_class]
-                recall[class_] = [recall_class]
-                average_precision[class_] = [average_precision_class]
-                prevalence[class_] = [prevalence_class]
+                precision[pos_label_validated].append(precision_i)
+                recall[pos_label_validated].append(recall_i)
+                average_precision[pos_label_validated].append(average_precision_i)
+        else:  # multiclass-classification
+            precision, recall = defaultdict(list), defaultdict(list)
+            average_precision = defaultdict(list)
+            for y_true_i, y_pred_i in zip(y_true, y_pred):
+                label_binarizer = LabelBinarizer().fit(estimator.classes_)
+                y_true_onehot_i = label_binarizer.transform(y_true_i)
+                for class_idx, class_ in enumerate(estimator.classes_):
+                    precision_class_i, recall_class_i, _ = precision_recall_curve(
+                        y_true_onehot_i[:, class_idx],
+                        y_pred_i[:, class_idx],
+                        pos_label=None,
+                        drop_intermediate=drop_intermediate,
+                    )
+                    average_precision_class_i = average_precision_score(
+                        y_true_onehot_i[:, class_idx], y_pred_i[:, class_idx]
+                    )
+
+                    precision[class_].append(precision_class_i)
+                    recall[class_].append(recall_class_i)
+                    average_precision[class_].append(average_precision_class_i)
 
         viz = cls(
             precision=precision,
             recall=recall,
             average_precision=average_precision,
-            prevalence=prevalence,
             estimator_name=estimator_name,
             pos_label=pos_label_validated,
             data_source=data_source,
@@ -503,8 +488,6 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
             ax=ax,
             estimator_name=estimator_name,
             pr_curve_kwargs=pr_curve_kwargs,
-            plot_chance_level=plot_chance_level,
-            chance_level_kwargs=chance_level_kwargs,
             despine=despine,
         )
 
