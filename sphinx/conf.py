@@ -66,6 +66,7 @@ subsections_order = [
     "../examples/model_evaluation",
 ]
 
+# Augment the dpi of matplotlib figures in Sphinx examples
 # https://sphinx-gallery.github.io/stable/advanced.html#resetting-before-each-example
 def reset_mpl(gallery_conf, fname):
     import matplotlib
@@ -86,7 +87,7 @@ sphinx_gallery_conf = {
         # The module you locally document uses None
         "skore": None,
     },
-    # "backreferences_dir": "generated",
+    "backreferences_dir": "generated",
     "doc_module": "skore",
     "default_thumb_file": "./_static/images/Logo_Skore_Light@2x.svg",
     "reset_modules": (reset_mpl, "seaborn"),
