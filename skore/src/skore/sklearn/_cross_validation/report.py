@@ -103,7 +103,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         cv_splitter=None,
         n_jobs=None,
     ):
-        self._parent_progress = None  # used for the different progress bars
+        # used to know if a parent launch a progress bar manager
+        self._parent_progress = None
+
         self._estimator = clone(estimator)
 
         # private storage to be able to invalidate the cache when the user alters
