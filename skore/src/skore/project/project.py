@@ -28,40 +28,10 @@ class Project:
     respectively to insert a key-value pair into the Project and to recover the value
     associated with a key.
 
-    There is no guarantee of getting back the exact same object that was put in,
-    because ``skore`` strives to save information independently of the environment
-    (so that it can be recovered in spite of version changes).
-    Similarly, ``put`` raises an exception if the type of the inserted value is not
-    supported.
-    For example, this is the case for custom-made classes:
-
-    .. code-block:: python
-
-        class A:
-            pass
-
-        p.put('hello', A())
-        # NotImplementedError: Type '<class '__main__.A'>' is not supported.
-
-    However, when possible, ``get`` will return an object as close as possible to
-    what was ``put`` in. Here is a summary of what types of data are supported and to
-    what extent:
-
-    * JSON-serializable ("primitive") values, like Python ints, floats, and strings,
-      as well as tuples, lists and dicts of primitive values, are fully supported:
-
-        .. code-block:: python
-
-            project.put("my-key", {1: 'a', 'b': ('2', [3.5, 4])})
-            project.get("my-key")
-            # {1: 'a', 'b': ('2', [3.5, 4])}
-
-    * numpy arrays, pandas DataFrames and Series, and polars DataFrames and Series are
-      fully supported.
-
-    * matplotlib Figures, plotly Figures, pillow Images and altair Charts are supported
-      by ``put``, but ``get`` will only recover the raw data.
-      However some of these libraries support importing this raw data.
+    You can add any type of objects. In some cases, especially on classes you defined,
+    the persistency is based on the pickle representation. You must therefore ensure
+    that the call to :func:`~skore.Project.get` is made in the same environment as
+    :func:`~skore.Project.put`.
     """
 
     def __init__(
