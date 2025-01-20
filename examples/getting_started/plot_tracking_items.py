@@ -75,7 +75,7 @@ my_project.put("my_int", 16)
 # We retrieve the history of the ``my_int`` item:
 
 # %%
-history = my_project.get("my_int", latest=False, metadata=True)
+history = my_project.get("my_int", version="all", metadata=True)
 
 # %%
 # We can print the details of the first version of this item:
