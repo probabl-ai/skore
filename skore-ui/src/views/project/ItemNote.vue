@@ -32,7 +32,8 @@ async function onEditionEnd() {
   if (isEditing.value) {
     // stop listening to outside click
     document.removeEventListener("click", onClickOutside);
-    await projectStore.setNoteOnItem(props.name, innerNote.value.trimEnd());
+    innerNote.value = innerNote.value.replace(/\n+$/g, "");
+    await projectStore.setNoteOnItem(props.name, innerNote.value);
     isEditing.value = false;
     // actually wait for the editor to be closed to resatrt backend polling
     nextTick(() => {
@@ -105,8 +106,8 @@ onBeforeUnmount(() => {
         v-model:value="innerNote"
         :rows="4"
         @keyup.esc="onEditionEnd"
-        @keydown.shift.enter="onEditionEnd"
-        @keydown.meta.enter="onEditionEnd"
+        @keydown.shift.enter.prevent="onEditionEnd"
+        @keydown.meta.enter.prevent="onEditionEnd"
       />
     </div>
     <div class="preview" v-if="!isEditing" @click="onEdit">
