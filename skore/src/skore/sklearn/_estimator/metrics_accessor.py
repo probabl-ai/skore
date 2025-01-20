@@ -1483,8 +1483,8 @@ class _PlotMetricsAccessor(_BaseAccessor):
             )
 
             display = display_class._from_predictions(
-                y,
-                y_pred,
+                [y],
+                [y_pred],
                 estimator=self._parent.estimator_,
                 estimator_name=self._parent.estimator_name_,
                 ml_task=self._parent._ml_task,
@@ -1631,7 +1631,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
         """
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
-        display_plot_kwargs = {"ax": ax, "plot_chance_level": False, "despine": True}
+        display_plot_kwargs = {"ax": ax, "despine": True}
         return self._get_display(
             X=X,
             y=y,
@@ -1652,6 +1652,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
         ax=None,
         kind="residual_vs_predicted",
         subsample=1_000,
+        random_state=None,
     ):
         """Plot the prediction error of a regression model.
 
@@ -1695,6 +1696,9 @@ class _PlotMetricsAccessor(_BaseAccessor):
             display on the scatter plot. If `None`, no subsampling will be
             applied. by default, 1,000 samples or less will be displayed.
 
+        random_state : int, default=None
+            The random state to use for the subsampling.
+
         Returns
         -------
         PredictionErrorDisplay
@@ -1722,8 +1726,8 @@ class _PlotMetricsAccessor(_BaseAccessor):
         ... )
         >>> display.plot(line_kwargs={"color": "tab:red"})
         """
-        display_kwargs = {"kind": kind, "subsample": subsample}
-        display_plot_kwargs = {"ax": ax}
+        display_kwargs = {"subsample": subsample, "random_state": random_state}
+        display_plot_kwargs = {"ax": ax, "kind": kind}
         return self._get_display(
             X=X,
             y=y,
