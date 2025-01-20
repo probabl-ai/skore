@@ -79,7 +79,7 @@ class HelpDisplayMixin:
 
         console.print(self._create_help_panel())
 
-    def __repr__(self):
+    def __str__(self):
         """Return a string representation using rich."""
         console = Console(file=StringIO(), force_terminal=False)
         console.print(
@@ -90,6 +90,12 @@ class HelpDisplayMixin:
                 expand=False,
             )
         )
+        return console.file.getvalue()
+
+    def __repr__(self):
+        """Return a string representation using rich."""
+        console = Console(file=StringIO(), force_terminal=False)
+        console.print(f"[cyan]skore.{self.__class__.__name__}(...)[/cyan]")
         return console.file.getvalue()
 
 
