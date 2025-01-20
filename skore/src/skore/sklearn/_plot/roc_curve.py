@@ -1,3 +1,7 @@
+from collections import defaultdict
+
+import matplotlib.pyplot as plt
+import numpy as np
 from sklearn.metrics import auc, roc_curve
 from sklearn.preprocessing import LabelBinarizer
 
@@ -6,6 +10,7 @@ from skore.sklearn._plot.utils import (
     _ClassifierCurveDisplayMixin,
     _despine_matplotlib_axis,
     _validate_style_kwargs,
+    sample_mpl_colormap,
 )
 
 
@@ -75,6 +80,26 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
 
     chance_level_ : matplotlib line
         The chance level line.
+
+    Examples
+    --------
+    >>> from sklearn.datasets import load_breast_cancer
+    >>> from sklearn.linear_model import LogisticRegression
+    >>> from sklearn.model_selection import train_test_split
+    >>> from skore import EstimatorReport
+    >>> X_train, X_test, y_train, y_test = train_test_split(
+    ...     *load_breast_cancer(return_X_y=True), random_state=0
+    ... )
+    >>> classifier = LogisticRegression(max_iter=10_000)
+    >>> reporter = EstimatorReport(
+    ...     classifier,
+    ...     X_train=X_train,
+    ...     y_train=y_train,
+    ...     X_test=X_test,
+    ...     y_test=y_test,
+    ... )
+    >>> display = reporter.metrics.plot.roc()
+    >>> display.plot(roc_curve_kwargs={"color": "tab:red"})
     """
 
     def __init__(
@@ -136,6 +161,26 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         -------
         display : :class:`~sklearn.metrics.RocCurveDisplay`
             Object that stores computed values.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_breast_cancer(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> reporter = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> display = reporter.metrics.plot.roc()
+        >>> display.plot(roc_curve_kwargs={"color": "tab:red"})
         """
         self.ax_, self.figure_, estimator_name = self._validate_plot_params(
             ax=ax, estimator_name=estimator_name
@@ -160,11 +205,11 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
                 roc_auc = self.roc_auc[self.pos_label][0]
 
                 default_line_kwargs = {}
-                if roc_auc is not None and self.data_source in ("train", "test"):
+                if self.data_source in ("train", "test"):
                     default_line_kwargs["label"] = (
                         f"{self.data_source.title()} set (AUC = {roc_auc:0.2f})"
                     )
-                elif roc_auc is not None:  # data_source in (None, "X_y")
+                else:  # data_source in (None, "X_y")
                     default_line_kwargs["label"] = f"AUC = {roc_auc:0.2f}"
 
                 line_kwargs = _validate_style_kwargs(
@@ -174,9 +219,45 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
                 (line_,) = self.ax_.plot(fpr, tpr, **line_kwargs)
                 self.lines_.append(line_)
             else:  # cross-validation
-                raise NotImplementedError(
-                    "We don't support yet cross-validation"
-                )  # pragma: no cover
+                if roc_curve_kwargs is None:
+                    roc_curve_kwargs = [{}] * len(self.fpr[self.pos_label])
+                elif isinstance(roc_curve_kwargs, dict):
+                    roc_curve_kwargs = [roc_curve_kwargs] * len(
+                        self.fpr[self.pos_label]
+                    )
+                elif isinstance(roc_curve_kwargs, list):
+                    if len(roc_curve_kwargs) != len(self.fpr[self.pos_label]):
+                        raise ValueError(
+                            "You intend to plot multiple ROC curves. We expect "
+                            "`roc_curve_kwargs` to be a list of dictionaries with the "
+                            "same length as the number of ROC curves. Got "
+                            f"{len(roc_curve_kwargs)} instead of "
+                            f"{len(self.fpr)}."
+                        )
+                else:
+                    raise ValueError(
+                        "You intend to plot multiple ROC curves. We expect "
+                        "`roc_curve_kwargs` to be a list of dictionaries of "
+                        f"{len(self.fpr)} elements. Got {roc_curve_kwargs!r} instead."
+                    )
+
+                for split_idx in range(len(self.fpr[self.pos_label])):
+                    fpr = self.fpr[self.pos_label][split_idx]
+                    tpr = self.tpr[self.pos_label][split_idx]
+                    roc_auc = self.roc_auc[self.pos_label][split_idx]
+
+                    default_line_kwargs = {
+                        "label": (
+                            f"{self.data_source.title()} set - fold #{split_idx + 1} "
+                            f"(AUC = {roc_auc:0.2f})"
+                        )
+                    }
+                    line_kwargs = _validate_style_kwargs(
+                        default_line_kwargs, roc_curve_kwargs[split_idx]
+                    )
+
+                    (line_,) = self.ax_.plot(fpr, tpr, **line_kwargs)
+                    self.lines_.append(line_)
 
             info_pos_label = (
                 f"\n(Positive label: {self.pos_label})"
@@ -185,6 +266,9 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
             )
         else:  # multiclass-classification
             info_pos_label = None  # irrelevant for multiclass
+            class_colors = sample_mpl_colormap(
+                plt.cm.tab10, 10 if len(self.fpr) < 10 else len(self.fpr)
+            )
             if roc_curve_kwargs is None:
                 roc_curve_kwargs = [{}] * len(self.fpr)
             elif isinstance(roc_curve_kwargs, list):
@@ -214,15 +298,15 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
                     tpr = tpr_class[0]
                     roc_auc = roc_auc_class[0]
 
-                    default_line_kwargs = {}
-                    if roc_auc is not None and self.data_source in ("train", "test"):
+                    default_line_kwargs = {"color": class_colors[class_idx]}
+                    if self.data_source in ("train", "test"):
                         default_line_kwargs["label"] = (
                             f"{str(class_).title()} - {self.data_source} "
                             f"set (AUC = {roc_auc:0.2f})"
                         )
-                    elif roc_auc is not None:  # data_source in (None, "X_y")
+                    else:  # data_source in (None, "X_y")
                         default_line_kwargs["label"] = (
-                            f"{str(class_).title()} AUC = {roc_auc:0.2f}"
+                            f"{str(class_).title()} - AUC = {roc_auc:0.2f}"
                         )
 
                     line_kwargs = _validate_style_kwargs(
@@ -232,9 +316,29 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
                     (line_,) = self.ax_.plot(fpr, tpr, **line_kwargs)
                     self.lines_.append(line_)
                 else:  # cross-validation
-                    raise NotImplementedError(
-                        "We don't support yet cross-validation"
-                    )  # pragma: no cover
+                    for split_idx in range(len(fpr_class)):
+                        fpr = fpr_class[split_idx]
+                        tpr = tpr_class[split_idx]
+                        roc_auc_mean = np.mean(roc_auc_class)
+                        roc_auc_std = np.std(roc_auc_class)
+
+                        default_line_kwargs = {
+                            "color": class_colors[class_idx],
+                            "alpha": 0.3,
+                        }
+                        if split_idx == 0:
+                            default_line_kwargs["label"] = (
+                                f"{str(class_).title()} - {self.data_source} set"
+                                f" (AUC = {roc_auc_mean:0.2f} +/- "
+                                f"{roc_auc_std:0.2f})"
+                            )
+                        else:
+                            default_line_kwargs["label"] = None
+
+                        line_kwargs = _validate_style_kwargs(default_line_kwargs, {})
+
+                        (line_,) = self.ax_.plot(fpr, tpr, **line_kwargs)
+                        self.lines_.append(line_)
 
         default_chance_level_line_kw = {
             "label": "Chance level (AUC = 0.5)",
@@ -295,10 +399,10 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
 
         Parameters
         ----------
-        y_true : array-like of shape (n_samples,)
+        y_true : list of array-like of shape (n_samples,)
             True binary labels in binary classification.
 
-        y_pred : array-like of shape (n_samples,)
+        y_pred : list of array-like of shape (n_samples,)
             Target scores, can either be probability estimates of the positive class,
             confidence values, or non-thresholded measure of decisions (as returned by
             “decision_function” on some classifiers).
@@ -350,33 +454,36 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         )
 
         if ml_task == "binary-classification":
-            fpr, tpr, _ = roc_curve(
-                y_true,
-                y_pred,
-                pos_label=pos_label,
-                drop_intermediate=drop_intermediate,
-            )
-            roc_auc = auc(fpr, tpr)
-            fpr = {pos_label_validated: [fpr]}
-            tpr = {pos_label_validated: [tpr]}
-            roc_auc = {pos_label_validated: [roc_auc]}
-        else:  # multiclass-classification
-            # OvR fashion to collect fpr, tpr, and roc_auc
-            fpr, tpr, roc_auc = {}, {}, {}
-            label_binarizer = LabelBinarizer().fit(estimator.classes_)
-            y_true_onehot = label_binarizer.transform(y_true)
-            for class_idx, class_ in enumerate(estimator.classes_):
-                fpr_class, tpr_class, _ = roc_curve(
-                    y_true_onehot[:, class_idx],
-                    y_pred[:, class_idx],
-                    pos_label=None,
+            fpr, tpr, roc_auc = defaultdict(list), defaultdict(list), defaultdict(list)
+            for y_true_i, y_pred_i in zip(y_true, y_pred):
+                fpr_i, tpr_i, _ = roc_curve(
+                    y_true_i,
+                    y_pred_i,
+                    pos_label=pos_label,
                     drop_intermediate=drop_intermediate,
                 )
-                roc_auc_class = auc(fpr_class, tpr_class)
+                roc_auc_i = auc(fpr_i, tpr_i)
+                fpr[pos_label_validated].append(fpr_i)
+                tpr[pos_label_validated].append(tpr_i)
+                roc_auc[pos_label_validated].append(roc_auc_i)
+        else:  # multiclass-classification
+            # OvR fashion to collect fpr, tpr, and roc_auc
+            fpr, tpr, roc_auc = defaultdict(list), defaultdict(list), defaultdict(list)
+            for y_true_i, y_pred_i in zip(y_true, y_pred):
+                label_binarizer = LabelBinarizer().fit(estimator.classes_)
+                y_true_onehot_i = label_binarizer.transform(y_true_i)
+                for class_idx, class_ in enumerate(estimator.classes_):
+                    fpr_class_i, tpr_class_i, _ = roc_curve(
+                        y_true_onehot_i[:, class_idx],
+                        y_pred_i[:, class_idx],
+                        pos_label=None,
+                        drop_intermediate=drop_intermediate,
+                    )
+                    roc_auc_class_i = auc(fpr_class_i, tpr_class_i)
 
-                fpr[class_] = [fpr_class]
-                tpr[class_] = [tpr_class]
-                roc_auc[class_] = [roc_auc_class]
+                    fpr[class_].append(fpr_class_i)
+                    tpr[class_].append(tpr_class_i)
+                    roc_auc[class_].append(roc_auc_class_i)
 
         viz = cls(
             fpr=fpr,
