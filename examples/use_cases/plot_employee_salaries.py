@@ -36,8 +36,8 @@ y
 import numpy as np
 from sklearn.preprocessing import OneHotEncoder, SplineTransformer
 from skrub import DatetimeEncoder, ToDatetime, DropCols
-from sklearn.compose import ColumnTransformer
-from sklearn.pipeline import Pipeline
+from sklearn.compose import make_column_transformer
+from sklearn.pipeline import make_pipeline
 from sklearn.linear_model import RidgeCV
 
 
@@ -64,63 +64,27 @@ categorical_features = [
 ]
 datetime_features = "date_first_hired"
 
-feature_engineering_date = Pipeline(
-    steps=[
-        (
-            "date_encoding",
-            Pipeline(
-                steps=[
-                    ("to_datetime", ToDatetime()),
-                    (
-                        "datetime_encoder",
-                        DatetimeEncoder(
-                            resolution="day", add_weekday=True, add_total_seconds=False
-                        ),
-                    ),
-                    ("drop_year", DropCols("date_first_hired_year")),
-                ]
-            ),
-        ),
-        (
-            "date_engineering",
-            ColumnTransformer(
-                transformers=[
-                    (
-                        "date_month",
-                        periodic_spline_transformer(12, n_splines=6),
-                        ["date_first_hired_month"],
-                    ),
-                    (
-                        "date_day",
-                        periodic_spline_transformer(31, n_splines=15),
-                        ["date_first_hired_day"],
-                    ),
-                    (
-                        "date_weekday",
-                        periodic_spline_transformer(7, n_splines=3),
-                        ["date_first_hired_weekday"],
-                    ),
-                ]
-            ),
-        ),
-    ]
+date_encoder = make_pipeline(
+    ToDatetime(),
+    DatetimeEncoder(resolution="day", add_weekday=True, add_total_seconds=False),
+    DropCols("date_first_hired_year"),
 )
-preprocessing = ColumnTransformer(
-    transformers=[
-        ("date_engineering", feature_engineering_date, datetime_features),
-        (
-            "categorical",
-            OneHotEncoder(drop="if_binary", handle_unknown="ignore"),
-            categorical_features,
-        ),
-    ]
+
+date_engineering = make_column_transformer(
+    (periodic_spline_transformer(12, n_splines=6), ["date_first_hired_month"]),
+    (periodic_spline_transformer(31, n_splines=15), ["date_first_hired_day"]),
+    (periodic_spline_transformer(7, n_splines=3), ["date_first_hired_weekday"]),
 )
-linear_model = Pipeline(
-    steps=[
-        ("preprocessing", preprocessing),
-        ("linear_model", RidgeCV(alphas=np.logspace(-3, 3, 100))),
-    ]
+
+feature_engineering_date = make_pipeline(date_encoder, date_engineering)
+
+preprocessing = make_column_transformer(
+    (feature_engineering_date, datetime_features),
+    (OneHotEncoder(drop="if_binary", handle_unknown="ignore"), categorical_features),
 )
+
+# %%
+linear_model = make_pipeline(preprocessing, RidgeCV(alphas=np.logspace(-3, 3, 100)))
 linear_model
 
 # %%
@@ -132,15 +96,10 @@ linear_model_report = CrossValidationReport(
 linear_model_report.help()
 
 # %%
-for report in linear_model_report.estimator_reports_:
-    report._parent_progress = None
-    report._progress_info = None
-
-# %%
-project.put("linear_model_report", linear_model_report.estimator_reports_[0])
-
-# %%
 linear_model_report.cache_predictions(n_jobs=3)
+
+# %%
+project.put("linear_model_report", linear_model_report)
 
 # %%
 linear_model_report.metrics.report_metrics(aggregate=["mean", "std"])
@@ -150,7 +109,7 @@ from skrub import TableVectorizer, TextEncoder
 from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.pipeline import make_pipeline
 
-model = make_pipeline(
+hgbdt_model = make_pipeline(
     TableVectorizer(high_cardinality=TextEncoder()),
     HistGradientBoostingRegressor(),
 )
@@ -158,13 +117,46 @@ model = make_pipeline(
 # %%
 from skore import CrossValidationReport
 
-report = CrossValidationReport(model, X=df, y=y, cv_splitter=10, n_jobs=3)
-report.help()
+hgbdt_model_report = CrossValidationReport(
+    estimator=hgbdt_model, X=df, y=y, cv_splitter=10, n_jobs=3
+)
+hgbdt_model_report.help()
 
 # %%
-report.metrics.report_metrics()
+hgbdt_model_report.cache_predictions(n_jobs=3)
 
 # %%
-report.metrics.report_metrics(aggregate=["mean", "std"])
+project.put("hgbdt_model_report", hgbdt_model_report)
 
 # %%
+hgbdt_model_report.metrics.report_metrics(aggregate=["mean", "std"])
+
+# %%
+import pandas as pd
+
+results = pd.concat(
+    [
+        linear_model_report.metrics.report_metrics(aggregate=["mean", "std"]),
+        hgbdt_model_report.metrics.report_metrics(aggregate=["mean", "std"]),
+    ]
+)
+results
+
+# %%
+import matplotlib.pyplot as plt
+
+fig, axs = plt.subplots(ncols=2, nrows=5, figsize=(12, 25))
+for split_idx, (ax, estimator_report) in enumerate(
+    zip(axs.flatten(), linear_model_report.estimator_reports_)
+):
+    estimator_report.metrics.plot.prediction_error(kind="actual_vs_predicted", ax=ax)
+    ax.set_title(f"Split #{split_idx + 1}")
+    ax.legend(loc="lower right")
+plt.tight_layout()
+
+# %%
+reloading_report = project.get("linear_model_report")
+reloading_report.help()
+
+# %%
+reloading_report.metrics.report_metrics(aggregate=["mean", "std"])
