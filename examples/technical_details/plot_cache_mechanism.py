@@ -47,10 +47,10 @@ X_train, X_test, y_train, y_test = train_test_split(df, y, random_state=42)
 # predictions. We start by training the model:
 from skore import EstimatorReport
 
-reporter = EstimatorReport(
+report = EstimatorReport(
     model, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
 )
-reporter.help()
+report.help()
 
 # %%
 #
@@ -58,7 +58,7 @@ reporter.help()
 import time
 
 start = time.time()
-result = reporter.metrics.accuracy()
+result = report.metrics.accuracy()
 end = time.time()
 result
 
@@ -71,7 +71,7 @@ print(f"Time taken: {end - start:.2f} seconds")
 from sklearn.metrics import accuracy_score
 
 start = time.time()
-result = accuracy_score(reporter.y_test, reporter.estimator_.predict(reporter.X_test))
+result = accuracy_score(report.y_test, report.estimator_.predict(report.X_test))
 end = time.time()
 result
 
@@ -83,7 +83,7 @@ print(f"Time taken: {end - start:.2f} seconds")
 # Both approaches take similar time. Now watch what happens when we compute accuracy
 # again:
 start = time.time()
-result = reporter.metrics.accuracy()
+result = report.metrics.accuracy()
 end = time.time()
 result
 
@@ -92,16 +92,16 @@ print(f"Time taken: {end - start:.2f} seconds")
 
 # %%
 #
-# The second calculation is instant! This happens because the reporter saves previous
+# The second calculation is instant! This happens because the report saves previous
 # calculations in its cache. Let's look inside the cache:
-reporter._cache
+report._cache
 
 # %%
 #
 # The cache stores predictions by type and data source. This means metrics that use
 # the same type of predictions will be faster. Let's try the precision metric:
 start = time.time()
-result = reporter.metrics.precision()
+result = report.metrics.precision()
 end = time.time()
 result
 
@@ -115,14 +115,14 @@ print(f"Time taken: {end - start:.2f} seconds")
 # an interesting speedup.
 #
 # We can pre-compute all predictions at once using parallel processing:
-reporter.cache_predictions(n_jobs=2)
+report.cache_predictions(n_jobs=2)
 
 # %%
 #
 # Now all possible predictions are stored. Any metric calculation will be much faster,
 # even on different data (like the training set):
 start = time.time()
-result = reporter.metrics.log_loss(data_source="train")
+result = report.metrics.log_loss(data_source="train")
 end = time.time()
 result
 
@@ -131,10 +131,10 @@ print(f"Time taken: {end - start:.2f} seconds")
 
 # %%
 #
-# The reporter can also work with external data. We use `data_source="X_y"` to indicate
+# The report can also work with external data. We use `data_source="X_y"` to indicate
 # that we want to pass those external data.
 start = time.time()
-result = reporter.metrics.log_loss(data_source="X_y", X=X_test, y=y_test)
+result = report.metrics.log_loss(data_source="X_y", X=X_test, y=y_test)
 end = time.time()
 result
 
@@ -147,7 +147,7 @@ print(f"Time taken: {end - start:.2f} seconds")
 # because it needs to compute a hash of the new data for later retrieval. Let's
 # calculate it again:
 start = time.time()
-result = reporter.metrics.log_loss(data_source="X_y", X=X_test, y=y_test)
+result = report.metrics.log_loss(data_source="X_y", X=X_test, y=y_test)
 end = time.time()
 result
 
@@ -159,7 +159,7 @@ print(f"Time taken: {end - start:.2f} seconds")
 # Much faster! The remaining time is related to the hash computation. Let's compute the
 # ROC AUC on the same data:
 start = time.time()
-result = reporter.metrics.roc_auc(data_source="X_y", X=X_test, y=y_test)
+result = report.metrics.roc_auc(data_source="X_y", X=X_test, y=y_test)
 end = time.time()
 result
 
@@ -173,7 +173,7 @@ print(f"Time taken: {end - start:.2f} seconds")
 #
 # The cache also speeds up plots. Let's create a ROC curve:
 start = time.time()
-display = reporter.metrics.plot.roc(pos_label="allowed")
+display = report.metrics.plot.roc(pos_label="allowed")
 end = time.time()
 
 # %%
@@ -183,7 +183,7 @@ print(f"Time taken: {end - start:.2f} seconds")
 #
 # The second plot is instant because it uses cached data:
 start = time.time()
-display = reporter.metrics.plot.roc(pos_label="allowed")
+display = report.metrics.plot.roc(pos_label="allowed")
 end = time.time()
 
 # %%
@@ -198,8 +198,8 @@ display.plot(roc_curve_kwargs={"color": "tab:orange"})
 # %%
 #
 # Be aware that you can clear the cache if you want to:
-reporter.clear_cache()
-reporter._cache
+report.clear_cache()
+report._cache
 
 # %%
 #
@@ -209,20 +209,20 @@ reporter._cache
 # in cross-validation by leveraging the previous :class:`~skore.EstimatorReport`:
 from skore import CrossValidationReport
 
-reporter = CrossValidationReport(model, X=df, y=y, cv_splitter=5, n_jobs=2)
-reporter.help()
+report = CrossValidationReport(model, X=df, y=y, cv_splitter=5, n_jobs=2)
+report.help()
 
 # %%
 #
 # We can pre-compute all predictions at once using parallel processing:
-reporter.cache_predictions(n_jobs=2)
+report.cache_predictions(n_jobs=2)
 
 # %%
 #
 # Now all possible predictions are stored. Any metric calculation will be much faster,
 # even on different data as we show for the :class:`~skore.EstimatorReport`.
 start = time.time()
-result = reporter.metrics.report_metrics(aggregate=["mean", "std"])
+result = report.metrics.report_metrics(aggregate=["mean", "std"])
 end = time.time()
 result
 
