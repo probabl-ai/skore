@@ -24,7 +24,6 @@ const movingItemHeight = ref(0);
 const movingItemY = ref(0);
 const container = useTemplateRef("container");
 let draggable: Interactable;
-let direction: "up" | "down" | "none" = "none";
 let autoScrollContainer: HTMLElement = document.body;
 
 function topDropIndicatorStyles() {
@@ -35,20 +34,6 @@ function topDropIndicatorStyles() {
     };
   }
   return {};
-}
-
-function dropIndicatorStyles(index: number) {
-  const y = dropIndicatorPosition.value === index ? movingItemHeight.value : 0;
-  if (direction === "up") {
-    return {
-      marginTop: `calc(var(--spacing-16) + ${y}px)`,
-    };
-  } else if (direction === "down") {
-    return {
-      marginTop: `var(--spacing-16)`,
-      marginBottom: `${y}px`,
-    };
-  }
 }
 
 function capturedStyles() {
@@ -150,18 +135,18 @@ onMounted(() => {
         const content = event.target.parentElement.querySelector(".content");
         if (content && container.value) {
           const parentBounds = container.value.getBoundingClientRect();
-          const bounds = content.getBoundingClientRect();
+          // does the content want to have only a part of it visible when draggin ?
+          const dragImageElement = content.querySelector("[data-drag-image-selector]");
+          const toRasterize = dragImageElement ?? content;
+          const bounds = toRasterize.getBoundingClientRect();
 
-          movingItemAsPngData.value = await toPng(content);
+          movingItemAsPngData.value = await toPng(toRasterize);
           movingItemIndex.value = parseInt(event.target.dataset.index);
           movingItemY.value = bounds.top - parentBounds.top;
           movingItemHeight.value = bounds.height;
         }
       },
       move(event) {
-        // set direction
-        direction = event.dy >= 0 ? "down" : "up";
-
         // move the rasterized copy
         const paddingTop = parseInt(getComputedStyle(autoScrollContainer!).paddingTop);
         const containerY = autoScrollContainer?.getBoundingClientRect().y ?? 0;
@@ -190,7 +175,6 @@ onMounted(() => {
         dropIndicatorPosition.value = null;
         movingItemAsPngData.value = "";
         movingItemHeight.value = 0;
-        direction = "none";
       },
     },
   });
@@ -228,11 +212,7 @@ onBeforeUnmount(() => {
             <slot name="item" v-bind="item"></slot>
           </DynamicContentRasterizer>
         </div>
-        <div
-          class="drop-indicator bottom"
-          :class="{ visible: dropIndicatorPosition === index }"
-          :style="dropIndicatorStyles(index)"
-        />
+        <div class="drop-indicator bottom" :class="{ visible: dropIndicatorPosition === index }" />
       </div>
     </div>
     <div class="captured" v-if="movingItemAsPngData.length > 0" :style="capturedStyles()">
