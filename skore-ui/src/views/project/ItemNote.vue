@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, ref, useTemplateRef, watch } from "vue";
+import { nextTick, onBeforeUnmount, ref, useTemplateRef, watch } from "vue";
 
 import MarkdownWidget from "@/components/MarkdownWidget.vue";
 import RichTextEditor from "@/components/RichTextEditor.vue";
@@ -9,6 +9,7 @@ import { useProjectStore } from "@/stores/project";
 const props = defineProps<{ name: string; note: string | null }>();
 
 const projectStore = useProjectStore();
+const el = useTemplateRef<HTMLDivElement>("el");
 const editor = useTemplateRef<InstanceType<typeof RichTextEditor>>("editor");
 const isEditing = ref(false);
 const innerNote = ref(`${props.note !== null ? props.note : ""}`);
@@ -16,20 +17,46 @@ const innerNote = ref(`${props.note !== null ? props.note : ""}`);
 function onEdit() {
   projectStore.stopBackendPolling();
   isEditing.value = true;
+  // start to listen for click outside of this component
+  document.addEventListener("click", onClickOutside);
+  // actually wait for the editor to be open to focus it
   nextTick(() => {
     editor.value?.focus();
   });
 }
 
 async function onEditionEnd() {
-  await projectStore.setNoteOnItem(props.name, innerNote.value);
-  projectStore.startBackendPolling();
-  isEditing.value = false;
+  // if there is multiple instances of the component in the page
+  // this function may be called multiple times
+  // so guard this call
+  if (isEditing.value) {
+    // stop listening to outside click
+    document.removeEventListener("click", onClickOutside);
+    await projectStore.setNoteOnItem(props.name, innerNote.value.trimEnd());
+    isEditing.value = false;
+    // actually wait for the editor to be closed to resatrt backend polling
+    nextTick(() => {
+      projectStore.startBackendPolling();
+    });
+  }
 }
 
-function onClear() {
+async function onClear() {
   innerNote.value = "";
-  onEditionEnd();
+  await onEditionEnd();
+}
+
+async function onClickOutside(e: Event) {
+  if (isEditing.value) {
+    const clicked = e.target as Node;
+    if (el.value && document.body.contains(clicked)) {
+      // is it a click outside ?
+      const isOutside = !el.value.contains(clicked);
+      if (isOutside) {
+        await onEditionEnd();
+      }
+    }
+  }
 }
 
 watch(innerNote, async () => {
@@ -42,10 +69,15 @@ watch(
     innerNote.value = `${newNote !== null ? newNote : ""}`;
   }
 );
+
+onBeforeUnmount(() => {
+  // avoid event listener leak in case the component is unmounted in edit mode
+  document.removeEventListener("click", onClickOutside);
+});
 </script>
 
 <template>
-  <div class="item-note">
+  <div class="item-note" ref="el">
     <div class="header">
       <div class="info">
         <div>Note</div>
