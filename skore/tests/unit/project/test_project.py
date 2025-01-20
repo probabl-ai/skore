@@ -188,10 +188,14 @@ def test_get(in_memory_project, mock_nowstr):
     in_memory_project.put("key", 1, note="1")
     in_memory_project.put("key", 2, note="2")
 
-    assert in_memory_project.get("key") == 2
-    assert in_memory_project.get("key", latest=True, metadata=False) == 2
-    assert in_memory_project.get("key", latest=False, metadata=False) == [1, 2]
-    assert in_memory_project.get("key", latest=False, metadata=True) == [
+    assert in_memory_project.get("key", metadata=False) == 2
+    assert in_memory_project.get("key", metadata=True) == {
+        "value": 2,
+        "date": mock_nowstr,
+        "note": "2",
+    }
+    assert in_memory_project.get("key", version="all", metadata=False) == [1, 2]
+    assert in_memory_project.get("key", version="all", metadata=True) == [
         {
             "value": 1,
             "date": mock_nowstr,
@@ -203,14 +207,18 @@ def test_get(in_memory_project, mock_nowstr):
             "note": "2",
         },
     ]
-    assert in_memory_project.get("key", latest=True, metadata=True) == {
-        "value": 2,
+    assert in_memory_project.get("key", version=0, metadata=False) == 1
+    assert in_memory_project.get("key", version=0, metadata=True) == {
+        "value": 1,
         "date": mock_nowstr,
-        "note": "2",
+        "note": "1",
     }
 
     with pytest.raises(KeyError):
         in_memory_project.get("<unknown>")
+
+    with pytest.raises(ValueError):
+        in_memory_project.get("key", version=None)
 
 
 def test_delete(in_memory_project):
