@@ -291,7 +291,7 @@ def test_estimator_report_repr(binary_classification_data):
 
     repr_str = repr(report)
     assert "skore.EstimatorReport" in repr_str
-    assert "reporter.help()" in repr_str
+    assert "help()" in repr_str
 
 
 @pytest.mark.parametrize(
