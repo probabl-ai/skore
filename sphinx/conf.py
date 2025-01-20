@@ -6,8 +6,15 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
+import sys
 import os
 from sphinx_gallery.sorting import ExplicitOrder
+
+# If extensions (or modules to document with autodoc) are in another directory,
+# add these directories to sys.path here. If the directory is relative to the
+# documentation root, use os.path.abspath to make it absolute, like shown here.
+sys.path.insert(0, os.path.abspath("sphinxext"))
+from github_link import make_linkcode_resolve  # noqa
 
 project = "skore"
 copyright = "2024, Probabl"
@@ -23,6 +30,7 @@ extensions = [
     "sphinx.ext.autosummary",
     "sphinx.ext.githubpages",
     "sphinx.ext.intersphinx",
+    "sphinx.ext.linkcode",
     "sphinx_design",
     "sphinx_gallery.gen_gallery",
     "sphinx_copybutton",
@@ -172,3 +180,20 @@ html_sidebars = {
 # Sphinx-Copybutton configuration
 copybutton_prompt_text = r">>> |\.\.\. |\$ "
 copybutton_prompt_is_regexp = True
+
+# -- Options for github link for what's new -----------------------------------
+
+# Config for sphinx_issues
+issues_uri = "https://github.com/probabl-ai/skore/issues/{issue}"
+issues_github_path = "probabl-ai/skore"
+issues_user_uri = "https://github.com/{user}"
+
+# The following is used by sphinx.ext.linkcode to provide links to github
+linkcode_resolve = make_linkcode_resolve(
+    "skore",
+    (
+        "https://github.com/probabl-ai/"
+        "skore/blob/{revision}/"
+        "{package}/src/skore/{path}#L{lineno}"
+    ),
+)
