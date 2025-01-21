@@ -40,9 +40,9 @@ These functions and classes enhance scikit-learn's ones.
 Report for a single estimator
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The class :class:`EstimatorReport` provides a reporter allowing to inspect and
+The class :class:`EstimatorReport` provides a report allowing to inspect and
 evaluate a scikit-learn estimator in an interactive way. The functionalities of the
-reporter are accessible through accessors.
+report are accessible through accessors.
 
 .. autosummary::
     :toctree: generated/
@@ -95,9 +95,9 @@ performance metric representations.
 Cross-validation report for an estimator
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The class :class:`CrossValidationReport` provides a reporter allowing to inspect and
+The class :class:`CrossValidationReport` provides a report allowing to inspect and
 evaluate a scikit-learn estimator through cross-validation in an interactive way. The
-functionalities of the reporter are accessible through accessors.
+functionalities of the report are accessible through accessors.
 
 .. autosummary::
     :toctree: generated/
