@@ -68,6 +68,9 @@ def progress_decorator(description):
                             task, completed=progress.tasks[task].total, refresh=True
                         )
                     progress.stop()
+                # clean up to make object pickable
+                self_obj._parent_progress = None
+                self_obj._progress_info = None
 
         return wrapper
 

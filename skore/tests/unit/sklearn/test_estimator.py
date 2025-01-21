@@ -330,6 +330,18 @@ def test_estimator_report_cache_predictions(
     assert report._cache.keys() == stored_cache.keys()
 
 
+def test_estimator_report_pickle(tmp_path, binary_classification_data):
+    """Check that we can pickle an estimator report.
+
+    In particular, the progress bar from rich are pickable, therefore we trigger
+    the progress bar to be able to test that the progress bar is pickable.
+    """
+    estimator, X_test, y_test = binary_classification_data
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    report.cache_predictions()
+    joblib.dump(report, tmp_path / "report.joblib")
+
+
 ########################################################################################
 # Check the plot methods
 ########################################################################################
