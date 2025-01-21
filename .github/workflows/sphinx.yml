@@ -107,6 +107,7 @@ jobs:
           python-version: '3.12'
           cache: 'pip'
       - uses: ./.github/actions/sphinx/build
+        timeout-minutes: 10
         with:
           SPHINX_VERSION: ${{ needs.sphinx-version.outputs.SPHINX_VERSION }}
           SPHINX_RELEASE: ${{ needs.sphinx-version.outputs.SPHINX_RELEASE }}
