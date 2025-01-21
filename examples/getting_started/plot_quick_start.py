@@ -23,20 +23,19 @@ my_project = skore.open("quick_start", overwrite=True)
 # Evaluate your model using skore's :class:`~skore.CrossValidationReport`:
 
 # %%
-from sklearn.datasets import load_iris
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
+from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 
 from skore import CrossValidationReport
 
-X, y = load_iris(return_X_y=True)
-clf_pipeline = Pipeline([("scaler", StandardScaler()), ("clf", LogisticRegression())])
+X, y = make_classification(n_classes=2, n_samples=100_000, n_informative=4)
+clf = LogisticRegression()
 
-cv_report = CrossValidationReport(clf_pipeline, X, y)
+cv_report = CrossValidationReport(clf, X, y)
 
 # %%
-# Display the help tree to see all the insights that are available to you:
+# Display the help tree to see all the insights that are available to you given that
+# you are doing binary classification:
 
 # %%
 cv_report.help()
