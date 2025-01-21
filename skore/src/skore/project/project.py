@@ -272,3 +272,11 @@ class Project:
         >>> project.delete_note("key", version=0)  # doctest: +SKIP
         """
         return self.item_repository.delete_item_note(key=key, version=version)
+
+    def clear(self):
+        """Delete all the contents of the project."""
+        # delete all the items
+        for item_key in self.keys():
+            self.delete(item_key)
+        for view_key in self.view_repository:
+            self.view_repository.delete_view(view_key)

@@ -266,6 +266,13 @@ def test_put_wrong_key_and_value_raise(in_memory_project):
         in_memory_project.put(0, (lambda: "unsupported object"))
 
 
+def test_clear(in_memory_project):
+    in_memory_project.put("an int", 1)
+    in_memory_project.put("a str", "some text here to have fun")
+    in_memory_project.clear()
+    assert len(in_memory_project.keys()) == 0
+
+
 test_cases = [
     (
         "a" * 250,
