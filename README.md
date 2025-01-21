@@ -73,12 +73,18 @@ You can find information on the latest version [here](https://anaconda.org/conda
 
     # Display the help tree to see all the insights that are available to you
     cv_report.help()
+    ```
 
+    ```python
     # Display the report metrics that was computed for you:
     df_cv_report_metrics = cv_report.metrics.report_metrics()
+    df_cv_report_metrics
+    ```
 
+    ```python
     # Display the ROC curve that was generated for you:
     roc_plot = cv_report.metrics.plot.roc()
+    roc_plot
     ```
 
 3. Store the results in the skore project for safe-keeping:
