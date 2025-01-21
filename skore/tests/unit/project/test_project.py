@@ -15,6 +15,7 @@ from skore.exceptions import (
     InvalidProjectNameError,
     ProjectCreationError,
 )
+from skore.persistence.view.view import View
 from skore.project.create import _create, _validate_project_name
 
 
@@ -267,10 +268,16 @@ def test_put_wrong_key_and_value_raise(in_memory_project):
 
 
 def test_clear(in_memory_project):
-    in_memory_project.put("an int", 1)
+    in_memory_project.put("key1", 1)
+    in_memory_project.put("key1", 2)
     in_memory_project.put("a str", "some text here to have fun")
+    in_memory_project.view_repository.put_view(
+        "default_test_", View(layout=["key1", "key2"])
+    )
     in_memory_project.clear()
     assert len(in_memory_project.keys()) == 0
+    assert len(in_memory_project.view_repository.keys()) == 1
+    assert in_memory_project.view_repository.keys()[0] == "default"
 
 
 test_cases = [

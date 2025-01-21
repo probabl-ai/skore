@@ -7,6 +7,7 @@ from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 
 from skore.persistence.item import item_to_object, object_to_item
+from skore.persistence.view.view import View
 
 if TYPE_CHECKING:
     from skore.persistence import (
@@ -280,3 +281,5 @@ class Project:
             self.delete(item_key)
         for view_key in self.view_repository:
             self.view_repository.delete_view(view_key)
+            # recreate default view
+            self.view_repository.put_view("default", View(layout=[]))
