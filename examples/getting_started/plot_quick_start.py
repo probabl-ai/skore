@@ -17,7 +17,7 @@ my_project = skore.open("quick_start", overwrite=True)
 # %%
 # This will create a skore project directory named ``quick_start.skore`` in your
 # current working directory and overwrite any pre-existing project with the
-# same path.
+# same path (which you might not want to do that depending on your use case).
 
 # %%
 # Evaluate your model using skore's :class:`~skore.CrossValidationReporter`:
@@ -40,23 +40,12 @@ reporter = skore.CrossValidationReporter(clf_pipeline, X, y, cv=5)
 my_project.put("cv_reporter", reporter)
 
 # %%
-# Display results in your notebook:
+# Display some results in your notebook:
 
 # %%
-reporter.plots.scores
+reporter.plots.timing
 
 # %%
-# Finally, from your shell (in the same directory), start the UI:
-#
-# .. code-block:: bash
-#
-#   $ skore launch "quick_start"
-#
-# This will open skore-ui in a browser window.
-#
-# .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_12_skore_demo_comp.gif
-#   :alt: Getting started with ``skore`` demo
-#
 # .. admonition:: What's next?
 #
 #    For a more in-depth guide, see our :ref:`example_skore_product_tour` page!
