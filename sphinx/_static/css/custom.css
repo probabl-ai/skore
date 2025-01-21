@@ -53,6 +53,11 @@ div.docutils.container.index-box {
   display: none;
 }
 
+/* Make left sidebar thinner to avoid cropping things in main pane */
+.bd-sidebar-primary {
+    width: 20%;
+}
+
 /* sphinx-gallery */
 
 /* add padding to images */
