@@ -35,7 +35,6 @@ These functions and classes enhance scikit-learn's ones.
     :caption: ML Assistance
 
     train_test_split
-    CrossValidationReporter
 
 Report for a single estimator
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -146,3 +145,15 @@ get the common performance metric representations.
     CrossValidationReport.metrics.plot.precision_recall
     CrossValidationReport.metrics.plot.prediction_error
     CrossValidationReport.metrics.plot.roc
+
+Deprecated
+----------
+
+These functions and classes are deprecated.
+
+.. autosummary::
+    :toctree: generated/
+    :template: base.rst
+    :caption: Deprecated
+
+    CrossValidationReporter
