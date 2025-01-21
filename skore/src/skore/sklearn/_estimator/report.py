@@ -158,17 +158,17 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         ...     *load_breast_cancer(return_X_y=True), random_state=0
         ... )
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> reporter = EstimatorReport(
+        >>> report = EstimatorReport(
         ...     classifier,
         ...     X_train=X_train,
         ...     y_train=y_train,
         ...     X_test=X_test,
         ...     y_test=y_test,
         ... )
-        >>> reporter.cache_predictions()
+        >>> report.cache_predictions()
         Caching predictions ...
-        >>> reporter.clear_cache()
-        >>> reporter._cache
+        >>> report.clear_cache()
+        >>> report._cache
         {}
         """
         self._cache = {}
@@ -199,16 +199,16 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         ...     *load_breast_cancer(return_X_y=True), random_state=0
         ... )
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> reporter = EstimatorReport(
+        >>> report = EstimatorReport(
         ...     classifier,
         ...     X_train=X_train,
         ...     y_train=y_train,
         ...     X_test=X_test,
         ...     y_test=y_test,
         ... )
-        >>> reporter.cache_predictions()
+        >>> report.cache_predictions()
         Caching predictions ...
-        >>> reporter._cache
+        >>> report._cache
         {...}
         """
         if self._ml_task in ("binary-classification", "multiclass-classification"):

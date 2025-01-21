@@ -124,7 +124,7 @@ class _BaseReport(_HelpMixin):
 
     def _create_help_tree(self):
         """Create a rich Tree with the available tools and accessor methods."""
-        tree = Tree("reporter")
+        tree = Tree("report")
 
         # Add accessor methods first
         for accessor_attr, config in self._ACCESSOR_CONFIG.items():
@@ -205,8 +205,8 @@ class _BaseAccessor(_HelpMixin):
         data_source : {"test", "train", "X_y"}, default="test"
             The data source to use.
 
-            - "test" : use the test set provided when creating the reporter.
-            - "train" : use the train set provided when creating the reporter.
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
 
         X : array-like of shape (n_samples, n_features) or None, default=None
@@ -237,8 +237,8 @@ class _BaseAccessor(_HelpMixin):
                 missing_data = "X_test" if is_cluster else "X_test and y_test"
                 raise ValueError(
                     f"No {data_source} data (i.e. {missing_data}) were provided "
-                    f"when creating the reporter. Please provide the {data_source} "
-                    "data either when creating the reporter or by setting data_source "
+                    f"when creating the report. Please provide the {data_source} "
+                    "data either when creating the report or by setting data_source "
                     "to 'X_y' and providing X and y."
                 )
             return self._parent._X_test, self._parent._y_test, None
@@ -251,8 +251,8 @@ class _BaseAccessor(_HelpMixin):
                 missing_data = "X_train" if is_cluster else "X_train and y_train"
                 raise ValueError(
                     f"No {data_source} data (i.e. {missing_data}) were provided "
-                    f"when creating the reporter. Please provide the {data_source} "
-                    "data either when creating the reporter or by setting data_source "
+                    f"when creating the report. Please provide the {data_source} "
+                    "data either when creating the report or by setting data_source "
                     "to 'X_y' and providing X and y."
                 )
             return self._parent._X_train, self._parent._y_train, None
@@ -307,8 +307,8 @@ def _get_cached_response_values(
     data_source : {"test", "train", "X_y"}, default="test"
         The data source to use.
 
-        - "test" : use the test set provided when creating the reporter.
-        - "train" : use the train set provided when creating the reporter.
+        - "test" : use the test set provided when creating the report.
+        - "train" : use the train set provided when creating the report.
         - "X_y" : use the provided `X` and `y` to compute the metric.
 
     data_source_hash : int or None
