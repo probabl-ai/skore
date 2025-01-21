@@ -14,8 +14,8 @@ Skore product tour
 # %%
 # This getting started guide illustrates how to use skore and why:
 #
-# #.    Track and visualize your ML/DS results using skore's :class:`~skore.Project`
-#       (for storage) and UI (dashboard).
+# #.    Track your ML/DS results using skore's :class:`~skore.Project`
+#       (for storage).
 #
 # #.    Machine learning diagnostics: get assistance when developing your ML/DS
 #       projects to avoid common pitfalls and follow recommended practices.
@@ -24,15 +24,15 @@ Skore product tour
 #         and :func:`skore.train_test_split`.
 
 # %%
-# Track and visualize: skore project and UI
-# =========================================
+# Track and visualize: skore project
+# ==================================
 #
 # A key feature of skore is its :class:`~skore.Project` that allows to store
-# items of many types then visualize them in a dashboard called the skore UI.
+# items of many types.
 
 # %%
-# Setup: creating and loading a skore project, and launching the skore UI
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# Setup: creating and loading a skore project
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 # %%
 # .. note::
@@ -69,14 +69,6 @@ import skore
 my_project = skore.open(temp_dir_path / "my_project")
 
 # %%
-# Then, *from our shell* (in the same directory), we can start the UI locally:
-#
-# .. code-block:: bash
-#
-#     $ skore launch "my_project"
-#
-# This will automatically open a browser at the UI's location.
-#
 # Now that the project exists, we can write some Python code (in the same
 # directory) to add (:func:`~skore.Project.put`) some useful items in it,
 # with a key-value convention:
@@ -142,7 +134,7 @@ plt.show()
 # %%
 #
 # Finally, we store these relevant items in our skore project, so that we
-# can visualize them later, in the skore UI for example:
+# can visualize them later:
 
 # %%
 my_project.put("my_gs_cv", gs_cv)
@@ -155,29 +147,6 @@ my_project.put("my_fig", fig)
 #   For more information about the functionalities and the different types
 #   of items that we can store in a skore :class:`~skore.Project`,
 #   see :ref:`example_working_with_projects`.
-
-# %%
-# Skore UI: visualizing items
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-#
-# The skore UI is a very efficient tool to track and visualize the items stored in your
-# project, such as grid search or cross-validation results.
-#
-# #.  On the top menu, by default, you can observe that you are in a *View* called
-#     ``default``. You can rename this view or create another one.
-#     For example, you can have a specific view for data preprocessing and another one
-#     for model interpretation.
-#
-# #.  On the left, by default, you are in the *Activity feed*.
-#
-# #.  You also have an *Items* section on the left, you can add stored items to this
-#     view, either by clicking on ``+`` or by dragging an item to the right.
-#
-# #.  Once in the *Items* section, in the skore UI on the right, you can drag-and-drop
-#     items to re-order them, remove items, etc.
-#
-# .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_12_skore_demo_comp.gif
-#   :alt: Getting started with ``skore`` demo
 
 # %%
 # Tracking the history of items
@@ -200,15 +169,7 @@ my_project.put("my_fig", fig)
 #     my_project.put("my_int", 16)
 #
 # Skore does not overwrite items with the same name (key value), instead it stores
-# their history so that, from the skore UI, we have an activity feed functionality:
-#
-# .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_12_skore_activity_feed.png
-#   :alt: Activity feed on the skore UI
-#
-# Moreover, in the items tab, we can visualize the different histories of an item:
-#
-# .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_12_skore_tracking_comp.gif
-#   :alt: Tracking the history of an item from the skore UI
+# their history so that nothing is lost.
 #
 # These tracking functionalities are very useful to:
 #

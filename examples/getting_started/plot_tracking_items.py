@@ -52,26 +52,6 @@ time.sleep(0.1)
 my_project.put("my_int", 16)
 
 # %%
-# .. note::
-#
-#   We could launch the skore dashboard with:
-#
-#   .. code-block:: bash
-#
-#       skore launch "my_project"
-#
-#   and, from the skore UI, we could see an activity feed:
-#
-#   .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_12_skore_activity_feed.png
-#       :alt: Activity feed on the skore UI
-#
-#   Moreover, in the items tab, we could also visualize the different histories of the
-#   ``my_int`` item:
-#
-#   .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_12_skore_tracking_comp.gif
-#       :alt: Tracking the history of an item from the skore UI
-
-# %%
 # We retrieve the history of the ``my_int`` item:
 
 # %%

@@ -167,15 +167,6 @@ reporter = my_project.get("cross_validation_reporter")
 reporter.plots.scores
 
 # %%
-# .. note::
-#
-#   If we put a cross-validation reporter in a skore project, we get some nice
-#   information in the UI:
-#
-#   .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_12_skore_demo_comp.gif
-#       :alt: Getting started with ``skore`` demo
-
-# %%
 # Cleanup the project
 # -------------------
 #
