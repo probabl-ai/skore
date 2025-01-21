@@ -35,38 +35,13 @@ Skore product tour
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 # %%
-# .. note::
-#
-#   If we do not wish for our skore project to be stored in a *temporary* folder, we
-#   can simply create and load the project in the current directory with:
-#
-#   .. code-block:: python
-#
-#     import skore
-#
-#     my_project = skore.open("my_project")
-#
-#   This would create a skore project directory named ``my_project.skore`` in our
+#   Let's start by creating a skore project directory named ``my_project.skore`` in our
 #   current directory.
-
-# %%
-# Here, we start by creating a temporary directory to store our project so that we can
-# easily clean it after executing this example:
-
-# %%
-import tempfile
-from pathlib import Path
-
-temp_dir = tempfile.TemporaryDirectory(prefix="skore_example_")
-temp_dir_path = Path(temp_dir.name)
-
-# %%
-# Then, we create and load the skore project from this temporary directory:
 
 # %%
 import skore
 
-my_project = skore.open(temp_dir_path / "my_project")
+my_project = skore.open("my_project", create=True)
 
 # %%
 # Now that the project exists, we can write some Python code (in the same
@@ -288,7 +263,7 @@ X_train, X_test, y_train, y_test = skore.train_test_split(
 # Cleanup the project
 # -------------------
 #
-# Removing the temporary directory:
+# Let's clean the skore project to avoid conflict with other examples.
 
 # %%
-temp_dir.cleanup()
+my_project.clear()
