@@ -26,7 +26,7 @@ def _generate_estimator_report(estimator, X, y, train_indices, test_indices):
 
 
 class CrossValidationReport(_BaseReport, DirNamesMixin):
-    """Reporter for cross-validation results.
+    """Report for cross-validation results.
 
     Parameters
     ----------
@@ -180,14 +180,14 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         >>> from skore import CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
+        >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         Processing cross-validation ...
-        >>> reporter.cache_predictions()
+        >>> report.cache_predictions()
         Cross-validation predictions ...
         Caching predictions ...
         Caching predictions ...
-        >>> reporter.clear_cache()
-        >>> reporter._cache
+        >>> report.clear_cache()
+        >>> report._cache
         {}
         """
         for report in self.estimator_reports_:
@@ -215,13 +215,13 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         >>> from skore import CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
+        >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         Processing cross-validation ...
-        >>> reporter.cache_predictions()
+        >>> report.cache_predictions()
         Cross-validation predictions ...
         Caching predictions ...
         Caching predictions ...
-        >>> reporter._cache
+        >>> report._cache
         {...}
         """
         if n_jobs is None:
@@ -300,5 +300,5 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     def __repr__(self):
         """Return a string representation using rich."""
         return self._rich_repr(
-            class_name="skore.CrossValidationReport", help_method_name="reporter.help()"
+            class_name="skore.CrossValidationReport", help_method_name="help()"
         )

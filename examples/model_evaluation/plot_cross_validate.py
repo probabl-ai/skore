@@ -7,6 +7,11 @@ Cross-validation
 
 This example illustrates the motivation and the use of skore's
 :class:`skore.CrossValidationReporter` to get assistance when developing ML/DS projects.
+
+.. warning ::
+
+    **Deprecation Notice**:
+    :class:`skore.CrossValidationReporter` is deprecated in favor of :class:`skore.CrossValidationReport`.
 """
 
 # %%
