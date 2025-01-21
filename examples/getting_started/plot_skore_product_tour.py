@@ -1,9 +1,9 @@
 """
-.. _example_skore_product_tour:
+.. _example_skore_getting_started:
 
-==================
-Skore product tour
-==================
+======================
+Skore: getting started
+======================
 """
 
 # %%
