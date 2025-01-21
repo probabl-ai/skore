@@ -1,5 +1,6 @@
 import re
 
+import joblib
 import numpy as np
 import pandas as pd
 import pytest
@@ -169,7 +170,7 @@ def test_cross_validation_report_repr(binary_classification_data):
 
     repr_str = repr(report)
     assert "skore.CrossValidationReport" in repr_str
-    assert "reporter.help()" in repr_str
+    assert "help()" in repr_str
 
 
 @pytest.mark.parametrize(
@@ -182,7 +183,7 @@ def test_cross_validation_report_repr(binary_classification_data):
     ],
 )
 @pytest.mark.parametrize("n_jobs", [None, 1, 2])
-def test_estimator_report_cache_predictions(
+def test_cross_validation_report_cache_predictions(
     request, fixture_name, expected_n_keys, n_jobs
 ):
     """Check that calling cache_predictions fills the cache."""
@@ -200,6 +201,18 @@ def test_estimator_report_cache_predictions(
     assert report._cache == {}
     for estimator_report in report.estimator_reports_:
         assert estimator_report._cache == {}
+
+
+def test_cross_validation_report_pickle(tmp_path, binary_classification_data):
+    """Check that we can pickle an cross-validation report.
+
+    In particular, the progress bar from rich are pickable, therefore we trigger
+    the progress bar to be able to test that the progress bar is pickable.
+    """
+    estimator, X, y = binary_classification_data
+    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
+    report.cache_predictions()
+    joblib.dump(report, tmp_path / "report.joblib")
 
 
 ########################################################################################
@@ -224,7 +237,7 @@ def test_cross_validation_report_plot_repr(binary_classification_data):
 
     repr_str = repr(report.metrics.plot)
     assert "skore.CrossValidationReport.metrics.plot" in repr_str
-    assert "reporter.metrics.plot.help()" in repr_str
+    assert "report.metrics.plot.help()" in repr_str
 
 
 def test_cross_validation_report_plot_roc(binary_classification_data):
@@ -265,7 +278,7 @@ def test_cross_validation_report_display_regression(pyplot, regression_data, dis
 ########################################################################################
 
 
-def test_estimator_report_metrics_help(capsys, binary_classification_data):
+def test_cross_validation_report_metrics_help(capsys, binary_classification_data):
     """Check that the help method writes to the console."""
     estimator, X, y = binary_classification_data
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
@@ -275,14 +288,14 @@ def test_estimator_report_metrics_help(capsys, binary_classification_data):
     assert "Available metrics methods" in captured.out
 
 
-def test_estimator_report_metrics_repr(binary_classification_data):
+def test_cross_validation_report_metrics_repr(binary_classification_data):
     """Check that __repr__ returns a string starting with the expected prefix."""
     estimator, X, y = binary_classification_data
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
 
     repr_str = repr(report.metrics)
     assert "skore.CrossValidationReport.metrics" in repr_str
-    assert "reporter.metrics.help()" in repr_str
+    assert "report.metrics.help()" in repr_str
 
 
 def _normalize_metric_name(column):
@@ -618,7 +631,7 @@ def test_cross_validation_report_report_metrics_error_scoring_strings(
         report.metrics.report_metrics(scoring=[scoring])
 
 
-def test_estimator_report_report_metrics_with_scorer(regression_data):
+def test_cross_validation_report_report_metrics_with_scorer(regression_data):
     """Check that we can pass scikit-learn scorer with different parameters to
     the `report_metrics` method."""
     estimator, X, y = regression_data

@@ -67,14 +67,14 @@ class PredictionErrorDisplay(HelpDisplayMixin):
     ...     *load_diabetes(return_X_y=True), random_state=0
     ... )
     >>> classifier = Ridge()
-    >>> reporter = EstimatorReport(
+    >>> report = EstimatorReport(
     ...     classifier,
     ...     X_train=X_train,
     ...     y_train=y_train,
     ...     X_test=X_test,
     ...     y_test=y_test,
     ... )
-    >>> display = reporter.metrics.plot.prediction_error()
+    >>> display = report.metrics.plot.prediction_error()
     >>> display.plot(kind="actual_vs_predicted")
     """
 
@@ -144,14 +144,14 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         ...     *load_diabetes(return_X_y=True), random_state=0
         ... )
         >>> classifier = Ridge()
-        >>> reporter = EstimatorReport(
+        >>> report = EstimatorReport(
         ...     classifier,
         ...     X_train=X_train,
         ...     y_train=y_train,
         ...     X_test=X_test,
         ...     y_test=y_test,
         ... )
-        >>> display = reporter.metrics.plot.prediction_error()
+        >>> display = report.metrics.plot.prediction_error()
         >>> display.plot(kind="actual_vs_predicted")
         """
         expected_kind = ("actual_vs_predicted", "residual_vs_predicted")

@@ -43,8 +43,4 @@ Key features
    -  :class:`skore.CrossValidationReport`: get a report for your cross-validation 
       results
 
-.. image:: /_static/images/2024_12_12_skore_demo_comp.gif
-   :alt: Getting started with skore demo
-
 .. currentmodule:: skore
-

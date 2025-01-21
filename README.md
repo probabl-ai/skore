@@ -27,8 +27,6 @@ Skore is just at the beginning of its journey, but we’re shipping fast! Freque
 - **Diagnose**: Catch methodological errors before they impact your models with **smart alerts** that analyze both code execution and data patterns in real-time.
 - **Evaluate**: Uncover actionable insights through **automated reports** surfacing relevant metrics. Explore faster with our intelligent caching system.
 
-![GIF: short demo of skore](https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_12_skore_demo_comp.gif)
-
 ## 🚀 Quick start
 
 ### Installation
@@ -82,15 +80,6 @@ You can find information on the latest version [here](https://anaconda.org/conda
     # Display a plot result in your notebook
     reporter.plots.scores
     ```
-
-3. Finally, from your shell (in the same directory), start the UI:
-    ```bash
-    skore launch "my_project"
-    ```
-    This will open skore-ui in a browser window.
-
-You will automatically be able to visualize some key metrics (although you might have forgotten to specify all of them):
-![Cross-validation screenshot](https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_12_skore_cross_val_clf.png)
 
 Also check out `skore.train_test_split()` that enhances scikit-learn. Learn more in our [documentation](https://skore.probabl.ai).
 

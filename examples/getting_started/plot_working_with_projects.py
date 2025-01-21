@@ -71,8 +71,7 @@ my_project.get("my_int")
 #   see :ref:`example_tracking_items`.
 
 # %%
-# By using the :func:`~skore.Project.delete` method, we can also delete an object
-# so that our skore UI does not become cluttered:
+# By using the :func:`~skore.Project.delete` method, we can also delete an object:
 
 # %%
 my_project.put("my_int_2", 10)
