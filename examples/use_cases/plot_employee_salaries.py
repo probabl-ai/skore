@@ -27,18 +27,18 @@ table_report = TableReport(df)
 table_report
 
 # %%
-project.put("df_report", table_report)
+project.put("Input data summary", table_report)
 
 # %%
 y
 
 # %%
 import numpy as np
-from sklearn.preprocessing import OneHotEncoder, SplineTransformer
-from skrub import DatetimeEncoder, ToDatetime, DropCols
 from sklearn.compose import make_column_transformer
 from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import OneHotEncoder, SplineTransformer
 from sklearn.linear_model import RidgeCV
+from skrub import DatetimeEncoder, ToDatetime, DropCols
 
 
 def periodic_spline_transformer(period, n_splines=None, degree=3):
@@ -83,33 +83,36 @@ preprocessing = make_column_transformer(
     (OneHotEncoder(drop="if_binary", handle_unknown="ignore"), categorical_features),
 )
 
-# %%
-linear_model = make_pipeline(preprocessing, RidgeCV(alphas=np.logspace(-3, 3, 100)))
-linear_model
+model = make_pipeline(preprocessing, RidgeCV(alphas=np.logspace(-3, 3, 100)))
+model
 
 # %%
 from skore import CrossValidationReport
 
-linear_model_report = CrossValidationReport(
-    estimator=linear_model, X=df, y=y, cv_splitter=10, n_jobs=3
-)
-linear_model_report.help()
+report = CrossValidationReport(estimator=model, X=df, y=y, cv_splitter=5)
+report.help()
 
 # %%
-linear_model_report.cache_predictions(n_jobs=3)
+import warnings
+
+with warnings.catch_warnings():
+    # catch the warnings raised by the OneHotEncoder for seeing unknown categories
+    # at transform time
+    warnings.simplefilter(action="ignore", category=UserWarning)
+    report.cache_predictions(n_jobs=3)
 
 # %%
-project.put("linear_model_report", linear_model_report)
+project.put("Linear model report", report)
 
 # %%
-linear_model_report.metrics.report_metrics(aggregate=["mean", "std"])
+report.metrics.report_metrics(aggregate=["mean", "std"])
 
 # %%
 from skrub import TableVectorizer, TextEncoder
 from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.pipeline import make_pipeline
 
-hgbdt_model = make_pipeline(
+model = make_pipeline(
     TableVectorizer(high_cardinality=TextEncoder()),
     HistGradientBoostingRegressor(),
 )
@@ -117,19 +120,21 @@ hgbdt_model = make_pipeline(
 # %%
 from skore import CrossValidationReport
 
-hgbdt_model_report = CrossValidationReport(
-    estimator=hgbdt_model, X=df, y=y, cv_splitter=10, n_jobs=3
-)
-hgbdt_model_report.help()
+report = CrossValidationReport(estimator=model, X=df, y=y, cv_splitter=5, n_jobs=3)
+report.help()
 
 # %%
-hgbdt_model_report.cache_predictions(n_jobs=3)
+report.cache_predictions(n_jobs=3)
 
 # %%
-project.put("hgbdt_model_report", hgbdt_model_report)
+project.put("HGBDT model report", report)
 
 # %%
-hgbdt_model_report.metrics.report_metrics(aggregate=["mean", "std"])
+report.metrics.report_metrics(aggregate=["mean", "std"])
+
+# %%
+linear_model_report = project.get("Linear model report")
+hgbdt_model_report = project.get("HGBDT model report")
 
 # %%
 import pandas as pd
@@ -143,20 +148,45 @@ results = pd.concat(
 results
 
 # %%
+from sklearn.metrics import mean_absolute_error
+
+scoring = ["r2", "rmse", mean_absolute_error]
+scoring_kwargs = {"response_method": "predict"}
+scoring_names = ["R2", "RMSE", "MAE"]
+results = pd.concat(
+    [
+        linear_model_report.metrics.report_metrics(
+            scoring=scoring,
+            scoring_kwargs=scoring_kwargs,
+            scoring_names=scoring_names,
+            aggregate=["mean", "std"],
+        ),
+        hgbdt_model_report.metrics.report_metrics(
+            scoring=scoring,
+            scoring_kwargs=scoring_kwargs,
+            scoring_names=scoring_names,
+            aggregate=["mean", "std"],
+        ),
+    ]
+)
+results
+
+
+# %%
+from itertools import zip_longest
 import matplotlib.pyplot as plt
 
-fig, axs = plt.subplots(ncols=2, nrows=5, figsize=(12, 25))
+fig, axs = plt.subplots(ncols=2, nrows=3, figsize=(12, 18))
 for split_idx, (ax, estimator_report) in enumerate(
-    zip(axs.flatten(), linear_model_report.estimator_reports_)
+    zip_longest(axs.flatten(), linear_model_report.estimator_reports_)
 ):
+    if estimator_report is None:
+        ax.axis("off")
+        continue
     estimator_report.metrics.plot.prediction_error(kind="actual_vs_predicted", ax=ax)
     ax.set_title(f"Split #{split_idx + 1}")
     ax.legend(loc="lower right")
 plt.tight_layout()
 
 # %%
-reloading_report = project.get("linear_model_report")
-reloading_report.help()
-
-# %%
-reloading_report.metrics.report_metrics(aggregate=["mean", "std"])
+temp_dir.cleanup()
