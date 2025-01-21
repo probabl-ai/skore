@@ -1,7 +1,6 @@
 """Alias top level function and class of the project submodule."""
 
-from .open import open
-from .project import Project
+from .project import Project, open
 
 __all__ = [
     "open",
