@@ -48,13 +48,3 @@ Key features
 
 .. currentmodule:: skore
 
-|
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Contents:
-
-   install
-   auto_examples/index
-   api
-   contributing_link
