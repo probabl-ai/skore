@@ -91,14 +91,14 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
     ...     *load_breast_cancer(return_X_y=True), random_state=0
     ... )
     >>> classifier = LogisticRegression(max_iter=10_000)
-    >>> reporter = EstimatorReport(
+    >>> report = EstimatorReport(
     ...     classifier,
     ...     X_train=X_train,
     ...     y_train=y_train,
     ...     X_test=X_test,
     ...     y_test=y_test,
     ... )
-    >>> display = reporter.metrics.plot.roc()
+    >>> display = report.metrics.plot.roc()
     >>> display.plot(roc_curve_kwargs={"color": "tab:red"})
     """
 
@@ -172,14 +172,14 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         ...     *load_breast_cancer(return_X_y=True), random_state=0
         ... )
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> reporter = EstimatorReport(
+        >>> report = EstimatorReport(
         ...     classifier,
         ...     X_train=X_train,
         ...     y_train=y_train,
         ...     X_test=X_test,
         ...     y_test=y_test,
         ... )
-        >>> display = reporter.metrics.plot.roc()
+        >>> display = report.metrics.plot.roc()
         >>> display.plot(roc_curve_kwargs={"color": "tab:red"})
         """
         self.ax_, self.figure_, estimator_name = self._validate_plot_params(

@@ -291,7 +291,7 @@ def test_estimator_report_repr(binary_classification_data):
 
     repr_str = repr(report)
     assert "skore.EstimatorReport" in repr_str
-    assert "reporter.help()" in repr_str
+    assert "help()" in repr_str
 
 
 @pytest.mark.parametrize(
@@ -364,7 +364,7 @@ def test_estimator_report_plot_repr(binary_classification_data):
 
     repr_str = repr(report.metrics.plot)
     assert "skore.EstimatorReport.metrics.plot" in repr_str
-    assert "reporter.metrics.plot.help()" in repr_str
+    assert "report.metrics.plot.help()" in repr_str
 
 
 def test_estimator_report_plot_roc(binary_classification_data):
@@ -504,7 +504,7 @@ def test_estimator_report_metrics_repr(binary_classification_data):
 
     repr_str = repr(report.metrics)
     assert "skore.EstimatorReport.metrics" in repr_str
-    assert "reporter.metrics.help()" in repr_str
+    assert "report.metrics.help()" in repr_str
 
 
 @pytest.mark.parametrize(
@@ -946,7 +946,7 @@ def test_estimator_report_custom_metric_compatible_estimator(
 
     class CompatibleEstimator:
         """Estimator exposing only a predict method but it should be enough for the
-        reporters.
+        reports.
         """
 
         def fit(self, X, y):
@@ -1060,8 +1060,8 @@ def test_estimator_report_get_X_y_and_data_source_hash_error():
     for data_source in ("train", "test"):
         err_msg = re.escape(
             f"No {data_source} data (i.e. X_{data_source} and y_{data_source}) were "
-            f"provided when creating the reporter. Please provide the {data_source} "
-            "data either when creating the reporter or by setting data_source to "
+            f"provided when creating the report. Please provide the {data_source} "
+            "data either when creating the report or by setting data_source to "
             "'X_y' and providing X and y."
         )
         with pytest.raises(ValueError, match=err_msg):
@@ -1094,8 +1094,8 @@ def test_estimator_report_get_X_y_and_data_source_hash_error():
     for data_source in ("train", "test"):
         err_msg = re.escape(
             f"No {data_source} data (i.e. X_{data_source}) were provided when "
-            f"creating the reporter. Please provide the {data_source} data either "
-            f"when creating the reporter or by setting data_source to 'X_y' and "
+            f"creating the report. Please provide the {data_source} data either "
+            f"when creating the report or by setting data_source to 'X_y' and "
             f"providing X and y."
         )
         with pytest.raises(ValueError, match=err_msg):

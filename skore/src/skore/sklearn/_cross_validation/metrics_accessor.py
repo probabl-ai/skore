@@ -59,12 +59,12 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source : {"test", "train"}, default="test"
             The data source to use.
 
-            - "test" : use the test set provided when creating the reporter.
-            - "train" : use the train set provided when creating the reporter.
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
 
         scoring : list of str, callable, or scorer, default=None
             The metrics to report. You can get the possible list of string by calling
-            `reporter.metrics.help()`. When passing a callable, it should take as
+            `report.metrics.help()`. When passing a callable, it should take as
             arguments `y_true`, `y_pred` as the two first arguments. Additional
             arguments can be passed as keyword arguments and will be forwarded with
             `scoring_kwargs`. If the callable API is too restrictive (e.g. need to pass
@@ -96,9 +96,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from skore import CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
+        >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         Processing cross-validation ...
-        >>> reporter.metrics.report_metrics(
+        >>> report.metrics.report_metrics(
         ...     scoring=["precision", "recall"], pos_label=1, aggregate=["mean", "std"]
         ... )
         Compute metric for each split ...
@@ -192,8 +192,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source : {"test", "train"}, default="test"
             The data source to use.
 
-            - "test" : use the test set provided when creating the reporter.
-            - "train" : use the train set provided when creating the reporter.
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
 
         aggregate : {"mean", "std"} or list of such str, default=None
             Function to aggregate the scores across the cross-validation splits.
@@ -210,9 +210,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from skore import CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
+        >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         Processing cross-validation ...
-        >>> reporter.metrics.accuracy()
+        >>> report.metrics.accuracy()
         Compute metric for each split ...
         Metric                       Accuracy (↗︎)
         LogisticRegression Split #0       0.94...
@@ -244,8 +244,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source : {"test", "train"}, default="test"
             The data source to use.
 
-            - "test" : use the test set provided when creating the reporter.
-            - "train" : use the train set provided when creating the reporter.
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
 
         average : {"binary","macro", "micro", "weighted", "samples"} or None, \
                 default=None
@@ -290,9 +290,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from skore import CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
+        >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         Processing cross-validation ...
-        >>> reporter.metrics.precision()
+        >>> report.metrics.precision()
         Compute metric for each split ...
         Metric                      Precision (↗︎)
         Class label                              0         1
@@ -327,8 +327,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source : {"test", "train"}, default="test"
             The data source to use.
 
-            - "test" : use the test set provided when creating the reporter.
-            - "train" : use the train set provided when creating the reporter.
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
 
         average : {"binary","macro", "micro", "weighted", "samples"} or None, \
                 default=None
@@ -374,9 +374,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from skore import CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
+        >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         Processing cross-validation ...
-        >>> reporter.metrics.recall()
+        >>> report.metrics.recall()
         Compute metric for each split ...
         Metric                      Recall (↗︎)
         Class label                           0        1
@@ -402,8 +402,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source : {"test", "train"}, default="test"
             The data source to use.
 
-            - "test" : use the test set provided when creating the reporter.
-            - "train" : use the train set provided when creating the reporter.
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
 
         aggregate : {"mean", "std"} or list of such str, default=None
             Function to aggregate the scores across the cross-validation splits.
@@ -420,9 +420,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from skore import CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
+        >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         Processing cross-validation ...
-        >>> reporter.metrics.brier_score()
+        >>> report.metrics.brier_score()
         Compute metric for each split ...
         Metric                       Brier score (↘︎)
         LogisticRegression Split #0          0.04...
@@ -454,8 +454,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source : {"test", "train"}, default="test"
             The data source to use.
 
-            - "test" : use the test set provided when creating the reporter.
-            - "train" : use the train set provided when creating the reporter.
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
 
         average : {"auto", "macro", "micro", "weighted", "samples"}, \
                 default=None
@@ -506,9 +506,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from skore import CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
+        >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         Processing cross-validation ...
-        >>> reporter.metrics.roc_auc()
+        >>> report.metrics.roc_auc()
         Compute metric for each split ...
         Metric                       ROC AUC (↗︎)
         LogisticRegression Split #0      0.99...
@@ -535,8 +535,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source : {"test", "train"}, default="test"
             The data source to use.
 
-            - "test" : use the test set provided when creating the reporter.
-            - "train" : use the train set provided when creating the reporter.
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
 
         aggregate : {"mean", "std"} or list of such str, default=None
             Function to aggregate the scores across the cross-validation splits.
@@ -553,9 +553,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from skore import CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
+        >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         Processing cross-validation ...
-        >>> reporter.metrics.log_loss()
+        >>> report.metrics.log_loss()
         Compute metric for each split ...
         Metric                       Log loss (↘︎)
         LogisticRegression Split #0       0.1...
@@ -582,8 +582,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source : {"test", "train"}, default="test"
             The data source to use.
 
-            - "test" : use the test set provided when creating the reporter.
-            - "train" : use the train set provided when creating the reporter.
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
 
         multioutput : {"raw_values", "uniform_average"} or array-like of shape \
                 (n_outputs,), default="raw_values"
@@ -610,9 +610,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from skore import CrossValidationReport
         >>> X, y = load_diabetes(return_X_y=True)
         >>> regressor = Ridge()
-        >>> reporter = CrossValidationReport(regressor, X=X, y=y, cv_splitter=2)
+        >>> report = CrossValidationReport(regressor, X=X, y=y, cv_splitter=2)
         Processing cross-validation ...
-        >>> reporter.metrics.r2()
+        >>> report.metrics.r2()
         Compute metric for each split ...
         Metric           R² (↗︎)
         Ridge Split #0  0.36...
@@ -640,8 +640,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source : {"test", "train"}, default="test"
             The data source to use.
 
-            - "test" : use the test set provided when creating the reporter.
-            - "train" : use the train set provided when creating the reporter.
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
 
         multioutput : {"raw_values", "uniform_average"} or array-like of shape \
                 (n_outputs,), default="raw_values"
@@ -668,9 +668,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from skore import CrossValidationReport
         >>> X, y = load_diabetes(return_X_y=True)
         >>> regressor = Ridge()
-        >>> reporter = CrossValidationReport(regressor, X=X, y=y, cv_splitter=2)
+        >>> report = CrossValidationReport(regressor, X=X, y=y, cv_splitter=2)
         Processing cross-validation ...
-        >>> reporter.metrics.rmse()
+        >>> report.metrics.rmse()
         Compute metric for each split ...
         Metric          RMSE (↘︎)
         Ridge Split #0  59.9...
@@ -722,8 +722,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source : {"test", "train"}, default="test"
             The data source to use.
 
-            - "test" : use the test set provided when creating the reporter.
-            - "train" : use the train set provided when creating the reporter.
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
 
         aggregate : {"mean", "std"} or list of such str, default=None
             Function to aggregate the scores across the cross-validation splits.
@@ -744,9 +744,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from skore import CrossValidationReport
         >>> X, y = load_diabetes(return_X_y=True)
         >>> regressor = Ridge()
-        >>> reporter = CrossValidationReport(regressor, X=X, y=y, cv_splitter=2)
+        >>> report = CrossValidationReport(regressor, X=X, y=y, cv_splitter=2)
         Processing cross-validation ...
-        >>> reporter.metrics.custom_metric(
+        >>> report.metrics.custom_metric(
         ...     metric_function=mean_absolute_error,
         ...     response_method="predict",
         ...     metric_name="MAE (↗︎)",
@@ -832,13 +832,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         )
 
     def _get_help_tree_title(self):
-        return "[bold cyan]reporter.metrics[/bold cyan]"
+        return "[bold cyan]report.metrics[/bold cyan]"
 
     def __repr__(self):
         """Return a string representation using rich."""
         return self._rich_repr(
             class_name="skore.CrossValidationReport.metrics",
-            help_method_name="reporter.metrics.help()",
+            help_method_name="report.metrics.help()",
         )
 
 
@@ -873,8 +873,8 @@ class _PlotMetricsAccessor(_BaseAccessor):
         data_source : {"test", "train"}, default="test"
             The data source to use.
 
-            - "test" : use the test set provided when creating the reporter.
-            - "train" : use the train set provided when creating the reporter.
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
 
         response_method : str
             The response method.
@@ -953,8 +953,8 @@ class _PlotMetricsAccessor(_BaseAccessor):
         data_source : {"test", "train"}, default="test"
             The data source to use.
 
-            - "test" : use the test set provided when creating the reporter.
-            - "train" : use the train set provided when creating the reporter.
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
 
         pos_label : int, float, bool or str, default=None
             The positive class.
@@ -974,9 +974,9 @@ class _PlotMetricsAccessor(_BaseAccessor):
         >>> from skore import CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
+        >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         Processing cross-validation ...
-        >>> display = reporter.metrics.plot.roc()
+        >>> display = report.metrics.plot.roc()
         Computing predictions for display ...
         >>> display.plot(roc_curve_kwargs={"color": "tab:red"})
         """
@@ -1004,8 +1004,8 @@ class _PlotMetricsAccessor(_BaseAccessor):
         data_source : {"test", "train", "X_y"}, default="test"
             The data source to use.
 
-            - "test" : use the test set provided when creating the reporter.
-            - "train" : use the train set provided when creating the reporter.
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
 
         pos_label : int, float, bool or str, default=None
             The positive class.
@@ -1025,9 +1025,9 @@ class _PlotMetricsAccessor(_BaseAccessor):
         >>> from skore import CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> reporter = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
+        >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         Processing cross-validation ...
-        >>> display = reporter.metrics.plot.precision_recall()
+        >>> display = report.metrics.plot.precision_recall()
         Computing predictions for display ...
         >>> display.plot()
         """
@@ -1061,8 +1061,8 @@ class _PlotMetricsAccessor(_BaseAccessor):
         data_source : {"test", "train"}, default="test"
             The data source to use.
 
-            - "test" : use the test set provided when creating the reporter.
-            - "train" : use the train set provided when creating the reporter.
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
 
         ax : matplotlib axes, default=None
             Axes object to plot on. If `None`, a new figure and axes is
@@ -1100,9 +1100,9 @@ class _PlotMetricsAccessor(_BaseAccessor):
         >>> from skore import CrossValidationReport
         >>> X, y = load_diabetes(return_X_y=True)
         >>> regressor = Ridge()
-        >>> reporter = CrossValidationReport(regressor, X=X, y=y, cv_splitter=2)
+        >>> report = CrossValidationReport(regressor, X=X, y=y, cv_splitter=2)
         Processing cross-validation ...
-        >>> display = reporter.metrics.plot.prediction_error(
+        >>> display = report.metrics.plot.prediction_error(
         ...     kind="actual_vs_predicted"
         ... )
         Computing predictions for display ...
@@ -1122,11 +1122,11 @@ class _PlotMetricsAccessor(_BaseAccessor):
         return "[bold cyan]Available plot methods[/bold cyan]"
 
     def _get_help_tree_title(self):
-        return "[bold cyan]reporter.metrics.plot[/bold cyan]"
+        return "[bold cyan]report.metrics.plot[/bold cyan]"
 
     def __repr__(self):
         """Return a string representation using rich."""
         return self._rich_repr(
             class_name="skore.CrossValidationReport.metrics.plot",
-            help_method_name="reporter.metrics.plot.help()",
+            help_method_name="report.metrics.plot.help()",
         )

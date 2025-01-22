@@ -63,21 +63,21 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source : {"test", "train", "X_y"}, default="test"
             The data source to use.
 
-            - "test" : use the test set provided when creating the reporter.
-            - "train" : use the train set provided when creating the reporter.
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
 
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
-            set provided when creating the reporter.
+            set provided when creating the report.
 
         y : array-like of shape (n_samples,), default=None
             New target on which to compute the metric. By default, we use the target
-            provided when creating the reporter.
+            provided when creating the report.
 
         scoring : list of str, callable, or scorer, default=None
             The metrics to report. You can get the possible list of string by calling
-            `reporter.metrics.help()`. When passing a callable, it should take as
+            `report.metrics.help()`. When passing a callable, it should take as
             arguments `y_true`, `y_pred` as the two first arguments. Additional
             arguments can be passed as keyword arguments and will be forwarded with
             `scoring_kwargs`. If the callable API is too restrictive (e.g. need to pass
@@ -109,14 +109,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     *load_breast_cancer(return_X_y=True), random_state=0
         ... )
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> reporter = EstimatorReport(
+        >>> report = EstimatorReport(
         ...     classifier,
         ...     X_train=X_train,
         ...     y_train=y_train,
         ...     X_test=X_test,
         ...     y_test=y_test,
         ... )
-        >>> reporter.metrics.report_metrics(pos_label=1)
+        >>> report.metrics.report_metrics(pos_label=1)
         Metric              Precision (↗︎)  Recall (↗︎)  ROC AUC (↗︎)  Brier score (↘︎)
         LogisticRegression        0.98...     0.93...      0.99...          0.03...
         """
@@ -374,17 +374,17 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source : {"test", "train", "X_y"}, default="test"
             The data source to use.
 
-            - "test" : use the test set provided when creating the reporter.
-            - "train" : use the train set provided when creating the reporter.
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
 
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
-            set provided when creating the reporter.
+            set provided when creating the report.
 
         y : array-like of shape (n_samples,), default=None
             New target on which to compute the metric. By default, we use the target
-            provided when creating the reporter.
+            provided when creating the report.
 
         Returns
         -------
@@ -401,14 +401,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     *load_breast_cancer(return_X_y=True), random_state=0
         ... )
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> reporter = EstimatorReport(
+        >>> report = EstimatorReport(
         ...     classifier,
         ...     X_train=X_train,
         ...     y_train=y_train,
         ...     X_test=X_test,
         ...     y_test=y_test,
         ... )
-        >>> reporter.metrics.accuracy()
+        >>> report.metrics.accuracy()
         Metric              Accuracy (↗︎)
         LogisticRegression       0.95...
         """
@@ -459,17 +459,17 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source : {"test", "train", "X_y"}, default="test"
             The data source to use.
 
-            - "test" : use the test set provided when creating the reporter.
-            - "train" : use the train set provided when creating the reporter.
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
 
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
-            set provided when creating the reporter.
+            set provided when creating the report.
 
         y : array-like of shape (n_samples,), default=None
             New target on which to compute the metric. By default, we use the target
-            provided when creating the reporter.
+            provided when creating the report.
 
         average : {"binary","macro", "micro", "weighted", "samples"} or None, \
                 default=None
@@ -514,14 +514,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     *load_breast_cancer(return_X_y=True), random_state=0
         ... )
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> reporter = EstimatorReport(
+        >>> report = EstimatorReport(
         ...     classifier,
         ...     X_train=X_train,
         ...     y_train=y_train,
         ...     X_test=X_test,
         ...     y_test=y_test,
         ... )
-        >>> reporter.metrics.precision(pos_label=1)
+        >>> report.metrics.precision(pos_label=1)
         Metric              Precision (↗︎)
         LogisticRegression        0.98...
         """
@@ -588,17 +588,17 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source : {"test", "train", "X_y"}, default="test"
             The data source to use.
 
-            - "test" : use the test set provided when creating the reporter.
-            - "train" : use the train set provided when creating the reporter.
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
 
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
-            set provided when creating the reporter.
+            set provided when creating the report.
 
         y : array-like of shape (n_samples,), default=None
             New target on which to compute the metric. By default, we use the target
-            provided when creating the reporter.
+            provided when creating the report.
 
         average : {"binary","macro", "micro", "weighted", "samples"} or None, \
                 default=None
@@ -644,14 +644,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     *load_breast_cancer(return_X_y=True), random_state=0
         ... )
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> reporter = EstimatorReport(
+        >>> report = EstimatorReport(
         ...     classifier,
         ...     X_train=X_train,
         ...     y_train=y_train,
         ...     X_test=X_test,
         ...     y_test=y_test,
         ... )
-        >>> reporter.metrics.recall(pos_label=1)
+        >>> report.metrics.recall(pos_label=1)
         Metric              Recall (↗︎)
         LogisticRegression     0.93...
         """
@@ -714,17 +714,17 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source : {"test", "train", "X_y"}, default="test"
             The data source to use.
 
-            - "test" : use the test set provided when creating the reporter.
-            - "train" : use the train set provided when creating the reporter.
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
 
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
-            set provided when creating the reporter.
+            set provided when creating the report.
 
         y : array-like of shape (n_samples,), default=None
             New target on which to compute the metric. By default, we use the target
-            provided when creating the reporter.
+            provided when creating the report.
 
         Returns
         -------
@@ -741,14 +741,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     *load_breast_cancer(return_X_y=True), random_state=0
         ... )
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> reporter = EstimatorReport(
+        >>> report = EstimatorReport(
         ...     classifier,
         ...     X_train=X_train,
         ...     y_train=y_train,
         ...     X_test=X_test,
         ...     y_test=y_test,
         ... )
-        >>> reporter.metrics.brier_score()
+        >>> report.metrics.brier_score()
         Metric              Brier score (↘︎)
         LogisticRegression          0.03...
         """
@@ -809,17 +809,17 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source : {"test", "train", "X_y"}, default="test"
             The data source to use.
 
-            - "test" : use the test set provided when creating the reporter.
-            - "train" : use the train set provided when creating the reporter.
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
 
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
-            set provided when creating the reporter.
+            set provided when creating the report.
 
         y : array-like of shape (n_samples,), default=None
             New target on which to compute the metric. By default, we use the target
-            provided when creating the reporter.
+            provided when creating the report.
 
         average : {"auto", "macro", "micro", "weighted", "samples"}, \
                 default=None
@@ -870,14 +870,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     *load_breast_cancer(return_X_y=True), random_state=0
         ... )
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> reporter = EstimatorReport(
+        >>> report = EstimatorReport(
         ...     classifier,
         ...     X_train=X_train,
         ...     y_train=y_train,
         ...     X_test=X_test,
         ...     y_test=y_test,
         ... )
-        >>> reporter.metrics.roc_auc()
+        >>> report.metrics.roc_auc()
         Metric              ROC AUC (↗︎)
         LogisticRegression      0.99...
         """
@@ -936,11 +936,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ----------
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
-            set provided when creating the reporter.
+            set provided when creating the report.
 
         y : array-like of shape (n_samples,), default=None
             New target on which to compute the metric. By default, we use the target
-            provided when creating the reporter.
+            provided when creating the report.
 
         Returns
         -------
@@ -957,14 +957,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     *load_breast_cancer(return_X_y=True), random_state=0
         ... )
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> reporter = EstimatorReport(
+        >>> report = EstimatorReport(
         ...     classifier,
         ...     X_train=X_train,
         ...     y_train=y_train,
         ...     X_test=X_test,
         ...     y_test=y_test,
         ... )
-        >>> reporter.metrics.log_loss()
+        >>> report.metrics.log_loss()
         Metric              Log loss (↘︎)
         LogisticRegression       0.10...
         """
@@ -1014,17 +1014,17 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source : {"test", "train", "X_y"}, default="test"
             The data source to use.
 
-            - "test" : use the test set provided when creating the reporter.
-            - "train" : use the train set provided when creating the reporter.
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
 
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
-            set provided when creating the reporter.
+            set provided when creating the report.
 
         y : array-like of shape (n_samples,), default=None
             New target on which to compute the metric. By default, we use the target
-            provided when creating the reporter.
+            provided when creating the report.
 
         multioutput : {"raw_values", "uniform_average"} or array-like of shape \
                 (n_outputs,), default="raw_values"
@@ -1051,14 +1051,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     *load_diabetes(return_X_y=True), random_state=0
         ... )
         >>> regressor = Ridge()
-        >>> reporter = EstimatorReport(
+        >>> report = EstimatorReport(
         ...     regressor,
         ...     X_train=X_train,
         ...     y_train=y_train,
         ...     X_test=X_test,
         ...     y_test=y_test,
         ... )
-        >>> reporter.metrics.r2()
+        >>> report.metrics.r2()
         Metric  R² (↗︎)
         Ridge   0.35...
         """
@@ -1111,17 +1111,17 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source : {"test", "train", "X_y"}, default="test"
             The data source to use.
 
-            - "test" : use the test set provided when creating the reporter.
-            - "train" : use the train set provided when creating the reporter.
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
 
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
-            set provided when creating the reporter.
+            set provided when creating the report.
 
         y : array-like of shape (n_samples,), default=None
             New target on which to compute the metric. By default, we use the target
-            provided when creating the reporter.
+            provided when creating the report.
 
         multioutput : {"raw_values", "uniform_average"} or array-like of shape \
                 (n_outputs,), default="raw_values"
@@ -1148,14 +1148,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     *load_diabetes(return_X_y=True), random_state=0
         ... )
         >>> regressor = Ridge()
-        >>> reporter = EstimatorReport(
+        >>> report = EstimatorReport(
         ...     regressor,
         ...     X_train=X_train,
         ...     y_train=y_train,
         ...     X_test=X_test,
         ...     y_test=y_test,
         ... )
-        >>> reporter.metrics.rmse()
+        >>> report.metrics.rmse()
         Metric  RMSE (↘︎)
         Ridge   56.5...
         """
@@ -1239,17 +1239,17 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source : {"test", "train", "X_y"}, default="test"
             The data source to use.
 
-            - "test" : use the test set provided when creating the reporter.
-            - "train" : use the train set provided when creating the reporter.
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
 
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
-            set provided when creating the reporter.
+            set provided when creating the report.
 
         y : array-like of shape (n_samples,), default=None
             New target on which to compute the metric. By default, we use the target
-            provided when creating the reporter.
+            provided when creating the report.
 
         **kwargs : dict
             Any additional keyword arguments to be passed to the metric function.
@@ -1270,14 +1270,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     *load_diabetes(return_X_y=True), random_state=0
         ... )
         >>> regressor = Ridge()
-        >>> reporter = EstimatorReport(
+        >>> report = EstimatorReport(
         ...     regressor,
         ...     X_train=X_train,
         ...     y_train=y_train,
         ...     X_test=X_test,
         ...     y_test=y_test,
         ... )
-        >>> reporter.metrics.custom_metric(
+        >>> report.metrics.custom_metric(
         ...     metric_function=mean_absolute_error,
         ...     response_method="predict",
         ...     metric_name="MAE (↗︎)",
@@ -1391,13 +1391,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         )
 
     def _get_help_tree_title(self):
-        return "[bold cyan]reporter.metrics[/bold cyan]"
+        return "[bold cyan]report.metrics[/bold cyan]"
 
     def __repr__(self):
         """Return a string representation using rich."""
         return self._rich_repr(
             class_name="skore.EstimatorReport.metrics",
-            help_method_name="reporter.metrics.help()",
+            help_method_name="report.metrics.help()",
         )
 
 
@@ -1438,8 +1438,8 @@ class _PlotMetricsAccessor(_BaseAccessor):
         data_source : {"test", "train", "X_y"}, default="test"
             The data source to use.
 
-            - "test" : use the test set provided when creating the reporter.
-            - "train" : use the train set provided when creating the reporter.
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
 
         response_method : str
@@ -1509,17 +1509,17 @@ class _PlotMetricsAccessor(_BaseAccessor):
         data_source : {"test", "train", "X_y"}, default="test"
             The data source to use.
 
-            - "test" : use the test set provided when creating the reporter.
-            - "train" : use the train set provided when creating the reporter.
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
 
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
-            set provided when creating the reporter.
+            set provided when creating the report.
 
         y : array-like of shape (n_samples,), default=None
             New target on which to compute the metric. By default, we use the target
-            provided when creating the reporter.
+            provided when creating the report.
 
         pos_label : int, float, bool or str, default=None
             The positive class.
@@ -1542,14 +1542,14 @@ class _PlotMetricsAccessor(_BaseAccessor):
         ...     *load_breast_cancer(return_X_y=True), random_state=0
         ... )
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> reporter = EstimatorReport(
+        >>> report = EstimatorReport(
         ...     classifier,
         ...     X_train=X_train,
         ...     y_train=y_train,
         ...     X_test=X_test,
         ...     y_test=y_test,
         ... )
-        >>> display = reporter.metrics.plot.roc()
+        >>> display = report.metrics.plot.roc()
         >>> display.plot(roc_curve_kwargs={"color": "tab:red"})
         """
         response_method = ("predict_proba", "decision_function")
@@ -1586,17 +1586,17 @@ class _PlotMetricsAccessor(_BaseAccessor):
         data_source : {"test", "train", "X_y"}, default="test"
             The data source to use.
 
-            - "test" : use the test set provided when creating the reporter.
-            - "train" : use the train set provided when creating the reporter.
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
 
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
-            set provided when creating the reporter.
+            set provided when creating the report.
 
         y : array-like of shape (n_samples,), default=None
             New target on which to compute the metric. By default, we use the target
-            provided when creating the reporter.
+            provided when creating the report.
 
         pos_label : int, float, bool or str, default=None
             The positive class.
@@ -1619,14 +1619,14 @@ class _PlotMetricsAccessor(_BaseAccessor):
         ...     *load_breast_cancer(return_X_y=True), random_state=0
         ... )
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> reporter = EstimatorReport(
+        >>> report = EstimatorReport(
         ...     classifier,
         ...     X_train=X_train,
         ...     y_train=y_train,
         ...     X_test=X_test,
         ...     y_test=y_test,
         ... )
-        >>> display = reporter.metrics.plot.precision_recall()
+        >>> display = report.metrics.plot.precision_recall()
         >>> display.plot(pr_curve_kwargs={"color": "tab:red"})
         """
         response_method = ("predict_proba", "decision_function")
@@ -1663,17 +1663,17 @@ class _PlotMetricsAccessor(_BaseAccessor):
         data_source : {"test", "train", "X_y"}, default="test"
             The data source to use.
 
-            - "test" : use the test set provided when creating the reporter.
-            - "train" : use the train set provided when creating the reporter.
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
 
         X : array-like of shape (n_samples, n_features), default=None
             New data on which to compute the metric. By default, we use the validation
-            set provided when creating the reporter.
+            set provided when creating the report.
 
         y : array-like of shape (n_samples,), default=None
             New target on which to compute the metric. By default, we use the target
-            provided when creating the reporter.
+            provided when creating the report.
 
         ax : matplotlib axes, default=None
             Axes object to plot on. If `None`, a new figure and axes is
@@ -1714,14 +1714,14 @@ class _PlotMetricsAccessor(_BaseAccessor):
         ...     *load_diabetes(return_X_y=True), random_state=0
         ... )
         >>> regressor = Ridge()
-        >>> reporter = EstimatorReport(
+        >>> report = EstimatorReport(
         ...     regressor,
         ...     X_train=X_train,
         ...     y_train=y_train,
         ...     X_test=X_test,
         ...     y_test=y_test,
         ... )
-        >>> display = reporter.metrics.plot.prediction_error(
+        >>> display = report.metrics.plot.prediction_error(
         ...     kind="actual_vs_predicted"
         ... )
         >>> display.plot(line_kwargs={"color": "tab:red"})
@@ -1742,11 +1742,11 @@ class _PlotMetricsAccessor(_BaseAccessor):
         return "[bold cyan]Available plot methods[/bold cyan]"
 
     def _get_help_tree_title(self):
-        return "[bold cyan]reporter.metrics.plot[/bold cyan]"
+        return "[bold cyan]report.metrics.plot[/bold cyan]"
 
     def __repr__(self):
         """Return a string representation using rich."""
         return self._rich_repr(
             class_name="skore.EstimatorReport.metrics.plot",
-            help_method_name="reporter.metrics.plot.help()",
+            help_method_name="report.metrics.plot.help()",
         )

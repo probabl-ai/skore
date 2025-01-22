@@ -14,23 +14,12 @@ for example tracking some ML metrics over time.
 # ======================================
 
 # %%
-# We start by creating a temporary directory to store our project so that we can
-# easily clean it after executing this example:
-
-# %%
-import tempfile
-from pathlib import Path
-
-temp_dir = tempfile.TemporaryDirectory(prefix="skore_example_")
-temp_dir_path = Path(temp_dir.name)
-
-# %%
-# We create and load the skore project from this temporary directory:
+# We create and load the skore project in the current directory:
 
 # %%
 import skore
 
-my_project = skore.open(temp_dir_path / "my_project")
+my_project = skore.open("my_project", create=True)
 
 # %%
 # Tracking an integer
@@ -50,26 +39,6 @@ my_project.put("my_int", 9)
 
 time.sleep(0.1)
 my_project.put("my_int", 16)
-
-# %%
-# .. note::
-#
-#   We could launch the skore dashboard with:
-#
-#   .. code-block:: bash
-#
-#       skore launch "my_project"
-#
-#   and, from the skore UI, we could see an activity feed:
-#
-#   .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_12_skore_activity_feed.png
-#       :alt: Activity feed on the skore UI
-#
-#   Moreover, in the items tab, we could also visualize the different histories of the
-#   ``my_int`` item:
-#
-#   .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_12_skore_tracking_comp.gif
-#       :alt: Tracking the history of an item from the skore UI
 
 # %%
 # We retrieve the history of the ``my_int`` item:
@@ -150,7 +119,7 @@ fig
 # Cleanup the project
 # -------------------
 #
-# Removing the temporary directory:
+# Let's clear the skore project (to avoid any conflict with other documentation examples).
 
 # %%
-temp_dir.cleanup()
+my_project.clear()

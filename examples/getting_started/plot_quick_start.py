@@ -12,51 +12,69 @@ Quick start
 # %%
 import skore
 
-my_project = skore.open("quick_start", overwrite=True)
+my_project = skore.open("my_project", create=True)
 
 # %%
 # This will create a skore project directory named ``quick_start.skore`` in your
-# current working directory and overwrite any pre-existing project with the
-# same path.
+# current working directory. Note that `overwrite=True` will overwrite any pre-existing
+# project with the same path (which you might not want to do that depending on your use
+# case).
 
 # %%
-# Evaluate your model using skore's :class:`~skore.CrossValidationReporter`:
+# Evaluate your model using skore's :class:`~skore.CrossValidationReport`:
 
 # %%
-from sklearn.datasets import load_iris
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
+from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 
-X, y = load_iris(return_X_y=True)
-clf_pipeline = Pipeline([("scaler", StandardScaler()), ("clf", LogisticRegression())])
+from skore import CrossValidationReport
 
-reporter = skore.CrossValidationReporter(clf_pipeline, X, y, cv=5)
+X, y = make_classification(n_classes=2, n_samples=100_000, n_informative=4)
+clf = LogisticRegression()
 
-# %%
-# Store the results in the skore project:
-
-# %%
-my_project.put("cv_reporter", reporter)
+cv_report = CrossValidationReport(clf, X, y)
 
 # %%
-# Display results in your notebook:
+# Display the help tree to see all the insights that are available to you (given that
+# you are doing binary classification):
 
 # %%
-reporter.plots.scores
+cv_report.help()
 
 # %%
-# Finally, from your shell (in the same directory), start the UI:
-#
-# .. code-block:: bash
-#
-#   $ skore launch "quick_start"
-#
-# This will open skore-ui in a browser window.
-#
-# .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_12_skore_demo_comp.gif
-#   :alt: Getting started with ``skore`` demo
-#
+# Display the report metrics that was computed for you:
+
+# %%
+df_cv_report_metrics = cv_report.metrics.report_metrics()
+df_cv_report_metrics
+
+# %%
+# Display the ROC curve that was generated for you:
+
+# %%
+import matplotlib.pyplot as plt
+
+roc_plot = cv_report.metrics.plot.roc()
+roc_plot
+plt.tight_layout()
+
+# %%
+# Store the results in the skore project for safe-keeping:
+
+# %%
+my_project.put("df_cv_report_metrics", df_cv_report_metrics)
+my_project.put("roc_plot", roc_plot)
+
+# %%
 # .. admonition:: What's next?
 #
-#    For a more in-depth guide, see our :ref:`example_skore_product_tour` page!
+#    For a more in-depth guide, see our :ref:`example_skore_getting_started` page!
+
+# %%
+# Cleanup the project
+# -------------------
+#
+# Let's clear the skore project (to avoid any conflict with other documentation examples).
+
+# %%
+my_project.clear()

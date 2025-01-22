@@ -35,14 +35,13 @@ These functions and classes enhance scikit-learn's ones.
     :caption: ML Assistance
 
     train_test_split
-    CrossValidationReporter
 
 Report for a single estimator
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The class :class:`EstimatorReport` provides a reporter allowing to inspect and
+The class :class:`EstimatorReport` provides a report allowing to inspect and
 evaluate a scikit-learn estimator in an interactive way. The functionalities of the
-reporter are accessible through accessors.
+report are accessible through accessors.
 
 .. autosummary::
     :toctree: generated/
@@ -95,9 +94,9 @@ performance metric representations.
 Cross-validation report for an estimator
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The class :class:`CrossValidationReport` provides a reporter allowing to inspect and
+The class :class:`CrossValidationReport` provides a report allowing to inspect and
 evaluate a scikit-learn estimator through cross-validation in an interactive way. The
-functionalities of the reporter are accessible through accessors.
+functionalities of the report are accessible through accessors.
 
 .. autosummary::
     :toctree: generated/
@@ -146,3 +145,15 @@ get the common performance metric representations.
     CrossValidationReport.metrics.plot.precision_recall
     CrossValidationReport.metrics.plot.prediction_error
     CrossValidationReport.metrics.plot.roc
+
+Deprecated
+----------
+
+These functions and classes are deprecated.
+
+.. autosummary::
+    :toctree: generated/
+    :template: base.rst
+    :caption: Deprecated
+
+    CrossValidationReporter

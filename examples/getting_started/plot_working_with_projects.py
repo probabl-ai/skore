@@ -14,23 +14,12 @@ of items that we can store in a skore :class:`~skore.Project`.
 # ======================================
 
 # %%
-# We start by creating a temporary directory to store our project so that we can
-# easily clean it after executing this example:
-
-# %%
-import tempfile
-from pathlib import Path
-
-temp_dir = tempfile.TemporaryDirectory(prefix="skore_example_")
-temp_dir_path = Path(temp_dir.name)
-
-# %%
-# We create and load the skore project from this temporary directory:
+# We create and load the skore project from the current directory:
 
 # %%
 import skore
 
-my_project = skore.open(temp_dir_path / "my_project")
+my_project = skore.open("my_project", create=True)
 
 # %%
 # Storing integers
@@ -71,8 +60,7 @@ my_project.get("my_int")
 #   see :ref:`example_tracking_items`.
 
 # %%
-# By using the :func:`~skore.Project.delete` method, we can also delete an object
-# so that our skore UI does not become cluttered:
+# By using the :func:`~skore.Project.delete` method, we can also delete an object:
 
 # %%
 my_project.put("my_int_2", 10)
@@ -370,7 +358,7 @@ my_pipeline
 # Cleanup the project
 # -------------------
 #
-# Removing the temporary directory:
+# Let's clean the skore project to avoid conflict with other examples.
 
 # %%
-temp_dir.cleanup()
+my_project.clear()
