@@ -12,7 +12,7 @@ Quick start
 # %%
 import skore
 
-my_project = skore.open("quick_start", overwrite=True)
+my_project = skore.open("my_project", create=True)
 
 # %%
 # This will create a skore project directory named ``quick_start.skore`` in your
@@ -69,3 +69,12 @@ my_project.put("roc_plot", roc_plot)
 # .. admonition:: What's next?
 #
 #    For a more in-depth guide, see our :ref:`example_skore_getting_started` page!
+
+# %%
+# Cleanup the project
+# -------------------
+#
+# Let's clean the skore project to avoid conflict with other examples.
+
+# %%
+my_project.clear()
