@@ -9,6 +9,14 @@ This example shows how :class:`~skore.EstimatorReport` and
 
 # %%
 #
+# We set some environment variables to avoid some spurious warnings related to
+# parallelism.
+import os
+
+os.environ["POLARS_ALLOW_FORKING_THREAD"] = "1"
+
+# %%
+#
 # First, we load a dataset from `skrub`. Our goal is to predict if a company paid a
 # physician. The ultimate goal is to detect potential conflict of interest when it comes
 # to the actual problem that we want to solve.
