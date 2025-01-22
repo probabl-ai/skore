@@ -10,7 +10,7 @@ quickly get insights from any scikit-learn estimator.
 """
 
 # %%
-# First, we load a dataset from skrub. Our goal is to predict if a company paid a physician. The ultimate goal is to 
+# First, we load a dataset from skrub. Our goal is to predict if a company paid a physician. The ultimate goal is to
 # detect potential conflict of interest when it comes to the actual problem that we want to solve.
 
 # %%
