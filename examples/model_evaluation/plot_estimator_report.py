@@ -1,4 +1,6 @@
 """
+.. _example_estimator_report:
+
 ============================================
 Get insights from any scikit-learn estimator
 ============================================

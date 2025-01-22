@@ -1,15 +1,10 @@
 """
-.. _example_skore_product_tour:
+.. _example_skore_getting_started:
 
-==================
-Skore product tour
-==================
+======================
+Skore: getting started
+======================
 """
-
-# %%
-# .. admonition:: Where to start?
-#
-#    See our :ref:`example_quick_start` page!
 
 # %%
 # This getting started guide illustrates how to use skore and why:
@@ -20,12 +15,16 @@ Skore product tour
 # #.    Machine learning diagnostics: get assistance when developing your ML/DS
 #       projects to avoid common pitfalls and follow recommended practices.
 #
-#       * Enhancing key scikit-learn features with :class:`skore.CrossValidationReporter`
-#         and :func:`skore.train_test_split`.
+#       *   :class:`skore.EstimatorReport`: get an insightful report for your estimator
+#
+#       *   :class:`skore.CrossValidationReport`: get an insightful report for your
+#           cross-validation results
+#
+#       *   :func:`skore.train_test_split`: get diagnostics when splitting your data
 
 # %%
-# Track and visualize: skore project
-# ==================================
+# Tracking: skore project
+# =======================
 #
 # A key feature of skore is its :class:`~skore.Project` that allows to store
 # items of many types.
@@ -35,38 +34,13 @@ Skore product tour
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 # %%
-# .. note::
-#
-#   If we do not wish for our skore project to be stored in a *temporary* folder, we
-#   can simply create and load the project in the current directory with:
-#
-#   .. code-block:: python
-#
-#     import skore
-#
-#     my_project = skore.open("my_project")
-#
-#   This would create a skore project directory named ``my_project.skore`` in our
+#   Let's start by creating a skore project directory named ``my_project.skore`` in our
 #   current directory.
-
-# %%
-# Here, we start by creating a temporary directory to store our project so that we can
-# easily clean it after executing this example:
-
-# %%
-import tempfile
-from pathlib import Path
-
-temp_dir = tempfile.TemporaryDirectory(prefix="skore_example_")
-temp_dir_path = Path(temp_dir.name)
-
-# %%
-# Then, we create and load the skore project from this temporary directory:
 
 # %%
 import skore
 
-my_project = skore.open(temp_dir_path / "my_project")
+my_project = skore.open("my_project", create=True)
 
 # %%
 # Now that the project exists, we can write some Python code (in the same
@@ -153,73 +127,133 @@ my_project.put("my_fig", fig)
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 # %%
-# Suppose we store several integer values for a same item called ``my_int``, each storage
-# being separated by 0.1 second:
+# Suppose we store several values for a same item called ``my_key_metric``:
 #
 # .. code-block:: python
 #
-#     import time
+#     my_project.put("my_key_metric", 4)
 #
-#     my_project.put("my_int", 4)
+#     my_project.put("my_key_metric", 9)
 #
-#     time.sleep(0.1)
-#     my_project.put("my_int", 9)
+#     my_project.put("my_key_metric", 16)
 #
-#     time.sleep(0.1)
-#     my_project.put("my_int", 16)
-#
-# Skore does not overwrite items with the same name (key value), instead it stores
+# Skore does not overwrite items with the same name (key): instead, it stores
 # their history so that nothing is lost.
 #
 # These tracking functionalities are very useful to:
 #
 # * never lose some key machine learning metrics,
 # * and observe the evolution over time / runs.
-#
+
+# %%
 # .. seealso::
 #
 #   For more information about the tracking of items using their history,
 #   see :ref:`example_tracking_items`.
 
 # %%
-# Machine learning diagnostics: enhancing scikit-learn functions
-# ==============================================================
+# Machine learning diagnostics and evaluation
+# ===========================================
 #
-# Skore wraps some key scikit-learn functions to automatically provide
-# diagnostics and checks when using them, as a way to facilitate good practices
+# Skore re-implements or wraps some key scikit-learn class / functions to automatically
+# provide diagnostics and checks when using them, as a way to facilitate good practices
 # and avoid common pitfalls.
+
+# %%
+# Model evaluation with skore
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+# In order to assist its users when programming, skore has implemented a
+# :class:`skore.EstimatorReport` class.
+#
+# Let us load some synthetic data and get the estimator report for a
+# :class:`~sklearn.linear_model.LogisticRegression`:
+
+# %%
+from sklearn.datasets import make_classification
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+
+from skore import EstimatorReport
+
+X, y = make_classification(n_classes=2, n_samples=100_000, n_informative=4)
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
+
+clf = LogisticRegression()
+
+est_report = EstimatorReport(
+    clf, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test
+)
+
+# %%
+# Now, we can display the help tree to see all the insights that are available to us
+# given that we are doing binary classification:
+
+# %%
+est_report.help()
+
+# %%
+# We can get the report metrics that was computed for us:
+
+# %%
+df_est_report_metrics = est_report.metrics.report_metrics()
+df_est_report_metrics
+
+# %%
+# We can also plot the ROC curve that was generated for us:
+
+# %%
+import matplotlib.pyplot as plt
+
+roc_plot = est_report.metrics.plot.roc()
+roc_plot
+plt.tight_layout()
+
+# %%
+# .. seealso::
+#
+#   For more information about the motivation and usage of
+#   :class:`skore.EstimatorReport`, see :ref:`example_estimator_report`.
+
 
 # %%
 # Cross-validation with skore
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
-# In order to assist its users when programming, skore has implemented a
-# :class:`skore.CrossValidationReporter` function that wraps scikit-learn's
-# :func:`sklearn.model_selection.cross_validate`.
-#
-# On the same previous data and a Ridge regressor (with default ``alpha`` value),
-# let us create a ``CrossValidationReporter``.
+# skore has also implemented a :class:`skore.CrossValidationReport` class that contains
+# several :class:`skore.EstimatorReport` for each fold.
 
 # %%
-from skore import CrossValidationReporter
+from skore import CrossValidationReport
 
-cv_reporter = CrossValidationReporter(Ridge(), X, y, cv=5)
-my_project.put("cv_reporter", cv_reporter)
-cv_reporter.plots.scores
+cv_report = CrossValidationReport(clf, X, y, cv_splitter=5)
 
 # %%
-# Hence:
-#
-# * we can automatically observe some key visualizations and get insights on our
-#   cross-validation,
-# * and some well-chosen metrics are automatically computed for us, without the need to
-#   manually set them.
-#
+# We display the cross-validation report helper:
+
+# %%
+cv_report.help()
+
+# %%
+# We display the metrics for each fold:
+
+# %%
+df_cv_report_metrics = cv_report.metrics.report_metrics()
+df_cv_report_metrics
+
+# %%
+# We display the ROC curves for each fold:
+
+# %%
+roc_plot = cv_report.metrics.plot.roc()
+roc_plot
+plt.tight_layout()
+
+# %%
 # .. seealso::
 #
-#   More features exist for cross-validation.
 #   For more information about the motivation and usage of
-#   :class:`skore.CrossValidationReporter`, see :ref:`example_cross_validate`.
+#   :class:`skore.CrossValidationReport`, see :ref:`example_cross_validate`.
 
 # %%
 # Train-test split with skore
@@ -288,7 +322,7 @@ X_train, X_test, y_train, y_test = skore.train_test_split(
 # Cleanup the project
 # -------------------
 #
-# Removing the temporary directory:
+# Let's clear the skore project (to avoid conflict with other documentation examples).
 
 # %%
-temp_dir.cleanup()
+my_project.clear()
