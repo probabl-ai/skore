@@ -10,8 +10,10 @@ quickly get insights from any scikit-learn estimator.
 """
 
 # %%
-#
-# TODO: we need to describe the aim of this classification problem.
+# First, we load a dataset from skrub. Our goal is to predict if a company paid a physician. The ultimate goal is to
+# detect potential conflict of interest when it comes to the actual problem that we want to solve.
+
+# %%
 from skrub.datasets import fetch_open_payments
 
 dataset = fetch_open_payments()
@@ -44,8 +46,8 @@ from skore import train_test_split
 X_train, X_test, y_train, y_test = train_test_split(df, y, random_state=42)
 
 # %%
-# TODO: we have a perfect case to show useful feature of the `train_test_split`
-# function from `skore`.
+# By the way, notice how skore's :func:`~train_test_split` automatically warns us for a
+# class imbalance.
 #
 # Now, we need to define a predictive model. Hopefully, `skrub` provides a convenient
 # function (:func:`skrub.tabular_learner`) when it comes to getting strong baseline
@@ -224,7 +226,6 @@ def operational_decision_cost(y_true, y_pred, amount):
     mask_true_negative = (y_true == neg_label) & (y_pred == neg_label)
     mask_false_positive = (y_true == neg_label) & (y_pred == pos_label)
     mask_false_negative = (y_true == pos_label) & (y_pred == neg_label)
-    # FIXME: we need to make sense of the cost sensitive part with the right naming
     fraudulent_refuse = mask_true_positive.sum() * 50
     fraudulent_accept = -amount[mask_false_negative].sum()
     legitimate_refuse = mask_false_positive.sum() * -5

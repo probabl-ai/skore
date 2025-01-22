@@ -1,4 +1,6 @@
 """
+.. _example_cache_mechanism:
+
 ===============
 Cache mechanism
 ===============

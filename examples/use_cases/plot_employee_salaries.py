@@ -1,4 +1,6 @@
 """
+.. _example_use_case_employee_salaries:
+
 ===============================
 Simplified experiment reporting
 ===============================

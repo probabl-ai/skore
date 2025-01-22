@@ -253,7 +253,7 @@ plt.tight_layout()
 # .. seealso::
 #
 #   For more information about the motivation and usage of
-#   :class:`skore.CrossValidationReport`, see :ref:`example_cross_validate`.
+#   :class:`skore.CrossValidationReport`, see :ref:`_example_use_case_employee_salaries`.
 
 # %%
 # Train-test split with skore
