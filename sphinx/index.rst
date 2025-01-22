@@ -44,3 +44,12 @@ Key features
       results
 
 .. currentmodule:: skore
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   install
+   auto_examples/index
+   api
+   contributing_link
