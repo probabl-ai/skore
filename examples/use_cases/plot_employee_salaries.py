@@ -150,7 +150,7 @@ report.help()
 #
 # We observe that the report detected that we have a regression task and provide us only
 # a subset of the metrics and plots that make sense for our problem at hand. To later
-# accelerate the computation, we cache once for all the predictions of the model. Note,
+# accelerate the computation, we cache once for all the predictions of the model. Note
 # that we don't necessarily need to cache the predictions as the report will compute
 # them on the fly if not cached and cache them for us.
 
