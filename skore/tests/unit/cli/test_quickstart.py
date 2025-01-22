@@ -4,20 +4,21 @@ from skore.cli.cli import cli
 def test_quickstart(monkeypatch, tmp_path):
     """`quickstart` passes its arguments down to `create` and `launch`."""
 
-    create_project_name = None
+    create_path = None
+    create_create = None
     create_overwrite = None
-    create_verbose = None
 
-    def fake_create(project_name, overwrite, verbose):
-        nonlocal create_project_name
-        nonlocal create_overwrite
-        nonlocal create_verbose
+    class FakeProject:
+        def __init__(self, path, create, overwrite):
+            nonlocal create_path
+            nonlocal create_create
+            nonlocal create_overwrite
 
-        create_project_name = project_name
-        create_overwrite = overwrite
-        create_verbose = verbose
+            create_path = path
+            create_create = create
+            create_overwrite = overwrite
 
-    monkeypatch.setattr("skore.cli.quickstart_command._create", fake_create)
+    monkeypatch.setattr("skore.cli.cli.Project", FakeProject)
 
     launch_project_name = None
     launch_port = None
@@ -35,7 +36,7 @@ def test_quickstart(monkeypatch, tmp_path):
         launch_open_browser = open_browser
         launch_verbose = verbose
 
-    monkeypatch.setattr("skore.cli.quickstart_command.__launch", fake_launch)
+    monkeypatch.setattr("skore.cli.cli.__launch", fake_launch)
 
     cli(
         [
@@ -49,11 +50,11 @@ def test_quickstart(monkeypatch, tmp_path):
         ]
     )
 
-    assert create_project_name == str(tmp_path / "my_project.skore")
+    assert create_path == str(tmp_path / "my_project.skore")
+    assert create_create is True
     assert create_overwrite is True
-    assert create_verbose is True
 
-    assert launch_project_name == tmp_path / "my_project.skore"
+    assert launch_project_name == str(tmp_path / "my_project.skore")
     assert launch_port == 888
     assert launch_open_browser is False
     assert launch_verbose is True

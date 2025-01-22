@@ -67,8 +67,8 @@ class Project:
             rmtree(view_storage_dirname, ignore_errors=True)
 
         if create or overwrite:
-            item_storage_dirname.mkdir(parent=True)
-            view_storage_dirname.mkdir(parent=True)
+            item_storage_dirname.mkdir(parents=True, exist_ok=True)
+            view_storage_dirname.mkdir(parents=True, exist_ok=True)
 
         self.item_repository = ItemRepository(DiskCacheStorage(item_storage_dirname))
         self.view_repository = ViewRepository(DiskCacheStorage(view_storage_dirname))

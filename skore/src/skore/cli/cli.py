@@ -3,10 +3,9 @@
 import argparse
 from importlib.metadata import version
 
+from skore import Project
 from skore.cli.color_format import ColorArgumentParser
 from skore.cli.launch_dashboard import __launch
-from skore.cli.quickstart_command import __quickstart
-from skore.project.create import _create
 
 
 def cli(args: list[str]):
@@ -100,26 +99,18 @@ def cli(args: list[str]):
 
     parsed_args: argparse.Namespace = parser.parse_args(args)
 
-    if parsed_args.subcommand == "launch":
+    if parsed_args.subcommand in ("create", "quickstart"):
+        Project(
+            path=parsed_args.project_name, create=True, overwrite=parsed_args.overwrite
+        )
+
+    if parsed_args.subcommand in ("launch", "quickstart"):
         __launch(
             project_name=parsed_args.project_name,
             port=parsed_args.port,
             open_browser=parsed_args.open_browser,
             verbose=parsed_args.verbose,
         )
-    elif parsed_args.subcommand == "create":
-        _create(
-            project_name=parsed_args.project_name,
-            overwrite=parsed_args.overwrite,
-            verbose=parsed_args.verbose,
-        )
-    elif parsed_args.subcommand == "quickstart":
-        __quickstart(
-            project_name=parsed_args.project_name,
-            overwrite=parsed_args.overwrite,
-            port=parsed_args.port,
-            open_browser=parsed_args.open_browser,
-            verbose=parsed_args.verbose,
-        )
-    else:
+
+    if parsed_args.subcommand not in ("create", "launch", "quickstart"):
         parser.print_help()

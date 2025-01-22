@@ -36,7 +36,7 @@ def MockDatetime(mock_now):
 
 
 @pytest.fixture
-def in_memory_project(monkeypatch, tmp_path):
+def in_memory_project(monkeypatch):
     monkeypatch.delattr("skore.project.Project.__init__")
 
     project = Project()
