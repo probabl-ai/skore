@@ -322,7 +322,7 @@ X_train, X_test, y_train, y_test = skore.train_test_split(
 # Cleanup the project
 # -------------------
 #
-# Let's clean the skore project to avoid conflict with other examples.
+# Let's clear the skore project (to avoid conflict with other documentation examples).
 
 # %%
 my_project.clear()
