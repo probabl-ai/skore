@@ -16,8 +16,9 @@ my_project = skore.open("quick_start", overwrite=True)
 
 # %%
 # This will create a skore project directory named ``quick_start.skore`` in your
-# current working directory and overwrite any pre-existing project with the
-# same path (which you might not want to do that depending on your use case).
+# current working directory. Note that `overwrite=True` will overwrite any pre-existing
+# project with the same path (which you might not want to do that depending on your use
+# case).
 
 # %%
 # Evaluate your model using skore's :class:`~skore.CrossValidationReport`:
@@ -34,8 +35,8 @@ clf = LogisticRegression()
 cv_report = CrossValidationReport(clf, X, y)
 
 # %%
-# Display the help tree to see all the insights that are available to you given that
-# you are doing binary classification:
+# Display the help tree to see all the insights that are available to you (given that
+# you are doing binary classification):
 
 # %%
 cv_report.help()
