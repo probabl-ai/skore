@@ -117,9 +117,6 @@ jobs:
           SPHINX_VERSION: ${{ needs.sphinx-version.outputs.SPHINX_VERSION }}
           SPHINX_RELEASE: ${{ needs.sphinx-version.outputs.SPHINX_RELEASE }}
           SPHINX_DOMAIN: ${{ vars.DOCUMENTATION_DOMAIN }}
-          # limit potential oversubscription of the CPU
-          MKL_NUM_THREADS: 2
-          OPENBLAS_NUM_THREADS: 2
         env:
           HOME: ${{ github.workspace }}
       - uses: actions/upload-artifact@v4
