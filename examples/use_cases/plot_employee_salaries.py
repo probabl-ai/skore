@@ -5,7 +5,7 @@
 Simplified experiment reporting
 ===============================
 
-This example shows how to leverage `skore` for reporting model evaluation and
+This example shows how to leverage skore for reporting model evaluation and
 storing the results for further analysis.
 """
 
@@ -19,8 +19,12 @@ os.environ["POLARS_ALLOW_FORKING_THREAD"] = "1"
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
 
 # %%
+# Creating a skore project and loading some data
+# ==============================================
+
+# %%
 #
-# Let's open a `skore` project in which we will be able to store artifacts from our
+# Let's open a skore project in which we will be able to store artifacts from our
 # experiments.
 import skore
 
@@ -28,7 +32,7 @@ project = skore.open("my_project", create=True)
 
 # %%
 #
-# We use a `skrub` dataset that is non-trivial dataset.
+# We use a `skrub` dataset that is non-trivial.
 from skrub.datasets import fetch_employee_salaries
 
 datasets = fetch_employee_salaries()
@@ -36,29 +40,32 @@ df, y = datasets.X, datasets.y
 
 # %%
 #
-# Let's first have a condensed summary of the input data using
-# :class:`~skrub.TableReport`.
+# Let's first have a condensed summary of the input data using a
+# :class:`skrub.TableReport`.
 from skrub import TableReport
 
 table_report = TableReport(df)
 table_report
 
 # %%
+# From the table report, we can make a few observations:
 #
-# First, we can check that the type of data is heterogeneous: we mainly have categorical
-# features and feature related to dates.
+# * The type of data is heterogeneous: we mainly have categorical and date-related
+#   features.
 #
-# We can observe that the year related to the first hired is also present in the date.
-# Hence, we should beware of not creating twice the same feature during the feature
-# engineering.
+# * The year related to the ``date_first_hired`` column is also present in the
+#   ``date`` column.
+#   Hence, we should beware of not creating twice the same feature during the feature
+#   engineering.
 #
-# By looking at the "Associations" tab, we observe that two features are exactly holding
-# the same information: "department" and "department_name". So during our feature
-# engineering, we could potentially drop one of them if the final predictive model
-# is sensitive to the collinearity.
+# * By looking at the "Associations" tab of the table report, we observe that two
+#   features are holding the exact same information: ``department`` and
+#   ``department_name``.
+#   Hence, during our feature engineering, we could potentially drop one of them if the
+#   final predictive model is sensitive to the collinearity.
 #
-# We can store the report in the project so that we can easily retrieve it later
-# without necessarily having to reload the dataset and recomputing the report.
+# We can store the report in the skore project so that we can easily retrieve it later
+# without necessarily having to reload the dataset and recompute the report.
 project.put("Input data summary", table_report)
 
 # %%
@@ -69,8 +76,12 @@ project.put("Input data summary", table_report)
 y
 
 # %%
+# Modelling
+# =========
+
+# %%
 #
-# In a first attempt, we will define a rather complex predictive model that will use
+# In a first attempt, we define a rather complex predictive model that uses
 # a linear model as a base estimator.
 import numpy as np
 from sklearn.compose import make_column_transformer
@@ -126,35 +137,46 @@ model = make_pipeline(preprocessing, RidgeCV(alphas=np.logspace(-3, 3, 100)))
 model
 
 # %%
+# In the diagram above, we can see what how we performed our feature engineering:
 #
-# In the diagram above, we can see what we intend to do as feature engineering. For
-# categorical features, we use a `OneHotEncoder` to transform the categorical features.
-# From the previous data exploration, we could have check the unique values from the
-# "Stats" tab and observe that we have large cardinality features. In such cases,
-# one-hot encoding might not be the best choice but it is our starting point to get the
-# ball rolling.
+# * For categorical features, we use a :class:`~sklearn.preprocessing.OneHotEncoder`
+#   to transform the categorical features.
+#   From the previous data exploration using a :class:`~skrub.TableReport`, from the
+#   "Stats" tab, one may have looked at the number of unique values and observed that we
+#   have feature with a large cardinality.
+#   In such cases, one-hot encoding might not be the best choice, but this is our
+#   starting point to get the ball rolling.
 #
-# Then, we have another transformation to encode the date features. We first split the
-# date into multiple features (day, month, and year). Then, we apply a periodic spline
-# transformation to each of the date features to capture the periodicity of the data.
+# * Then, we have another transformation to encode the date features. We first split the
+#   date into multiple features (day, month, and year). Then, we apply a periodic spline
+#   transformation to each of the date features to capture the periodicity of the data.
 #
-# Finally, we fit a :class:`~sklearn.linear_model.RidgeCV` model.
+# * Finally, we fit a :class:`~sklearn.linear_model.RidgeCV` model.
+
+# %%
+# Model evaluation using :class:`skore.CrossValidationReport`
+# ============================================================
 #
-# Now, we want to evaluate this complex model via cross-validation. We would like to
-# use 5 folds. We use :class:`~skore.CrossValidationReport` to allow us to investigate
-# the performance of the model.
+# First model
+# ^^^^^^^^^^^
+#
+# Now, we want to evaluate this complex model via cross-validation (with 5 folds).
+# For that, we use skore's :class:`~skore.CrossValidationReport` to investigate th
+# performance of our model.
 from skore import CrossValidationReport
 
 report = CrossValidationReport(estimator=model, X=df, y=y, cv_splitter=5)
 report.help()
 
 # %%
+# We observe that the cross-validation report detected that we have a regression task
+# and provides us only a subset of the metrics and plots that make sense for our
+# specific problem at hand.
 #
-# We observe that the report detected that we have a regression task and provide us only
-# a subset of the metrics and plots that make sense for our problem at hand. To later
-# accelerate the computation, we cache once for all the predictions of the model. Note
-# that we don't necessarily need to cache the predictions as the report will compute
-# them on the fly if not cached and cache them for us.
+# To accelerate any future computation (e.g. a metric), we cache once and for all the
+# predictions of our model.
+# Note that we don't necessarily need to cache the predictions as the report will
+# compute them on the fly (if not cached) and cache them for us.
 
 # %%
 import warnings
@@ -167,20 +189,22 @@ with warnings.catch_warnings():
 
 # %%
 #
-# To not lose the report, let's store it in our `skore` project.
+# To not lose the this cross-validation report, let's store it in our skore project.
 project.put("Linear model report", report)
 
 # %%
-#
 # We can now have a look at the performance of the model with some standard metrics.
 report.metrics.report_metrics(aggregate=["mean", "std"])
 
 # %%
+# Second model
+# ^^^^^^^^^^^^
 #
-# So now, that we have our first baseline model, we can try an out-of-the-box model
-# using `skrub` that makes feature engineering for us. To deal with the high
-# cardinality of the categorical features, we use a :class:`~skrub.TextEncoder` that
-# use a language model and an embedding model to encode the categorical features.
+# Now that we have our first baseline model, we can try an out-of-the-box model:
+# the :class:`~skrub.TableVectorizer` that makes the feature engineering for us.
+# To deal with the high cardinality of the categorical features, we use a
+# :class:`~skrub.TextEncoder` that uses a language model and an embedding model to
+# encode the categorical features.
 #
 # Finally, we use a :class:`~sklearn.ensemble.HistGradientBoostingRegressor` as a
 # base estimator that is a rather robust model.
@@ -197,8 +221,6 @@ model
 # %%
 #
 # Let's compute the cross-validation report for this model.
-from skore import CrossValidationReport
-
 report = CrossValidationReport(estimator=model, X=df, y=y, cv_splitter=5, n_jobs=3)
 report.help()
 
@@ -209,7 +231,7 @@ report.cache_predictions(n_jobs=3)
 
 # %%
 #
-# We store the report in our `skore` project.
+# We store the report in our skore project.
 project.put("HGBDT model report", report)
 
 # %%
@@ -218,16 +240,18 @@ project.put("HGBDT model report", report)
 report.metrics.report_metrics(aggregate=["mean", "std"])
 
 # %%
+# Investigating the models
+# ^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # At this stage, I might not been careful and have already overwritten the report and
-# model from my first attempt. Hopefully, because we stored the reports in our `skore`
+# model from my first attempt. Hopefully, because we stored the reports in our skore
 # project, we can easily retrieve them. So let's retrieve the reports.
 linear_model_report = project.get("Linear model report")
 hgbdt_model_report = project.get("HGBDT model report")
 
 # %%
 #
-# Now that we retrieved the reports, I can make further comparison and build upon some
+# Now that we retrieved the reports, we can make further comparison and build upon some
 # usual pandas operations to concatenate the results.
 import pandas as pd
 
@@ -241,9 +265,11 @@ results
 
 # %%
 #
-# In addition, if I forget to compute a specific metric, I can easily add it to the
-# the report, without retraining the model and even recomputing the predictions since
-# they are cached internally in the report. It allows to save some time.
+# In addition, if I forgot to compute a specific metric
+# (e.g. :func:`~sklearn.metrics.mean_absolute_error`),
+# I can easily add it to the the report, without re-training the model and even
+# without re-computing the predictions since they are cached internally in the report.
+# This allows us to save some potentially huge computation time.
 from sklearn.metrics import mean_absolute_error
 
 scoring = ["r2", "rmse", mean_absolute_error]
@@ -269,9 +295,9 @@ results
 
 # %%
 #
-# Finally, we can even get individual :class:`~skore.EstimatorReport` from the
-# cross-validation to make further analysis. Here, we plot the actual vs predicted
-# values for each of the splits.
+# Finally, we can even get individual :class:`~skore.EstimatorReport` for each fold
+# from the cross-validation to make further analysis.
+# Here, we plot the actual vs predicted values for each fold.
 from itertools import zip_longest
 import matplotlib.pyplot as plt
 
@@ -288,6 +314,10 @@ for split_idx, (ax, estimator_report) in enumerate(
 plt.tight_layout()
 
 # %%
+# Cleanup the project
+# -------------------
 #
-# Finally, we clean up the project by removing the temporary directory.
+# Let's clear the skore project (to avoid any conflict with other documentation examples).
+
+# %%
 project.clear()
