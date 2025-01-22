@@ -279,7 +279,7 @@ class Project:
         # delete all the items
         for item_key in self.keys():
             self.delete(item_key)
-        for view_key in self.view_repository:
+        for view_key in self.view_repository.keys():  # noqa: SIM118
             self.view_repository.delete_view(view_key)
-            # recreate default view
-            self.view_repository.put_view("default", View(layout=[]))
+        # recreate default view
+        self.view_repository.put_view("default", View(layout=[]))
