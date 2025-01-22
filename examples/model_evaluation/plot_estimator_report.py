@@ -10,8 +10,8 @@ quickly get insights from any scikit-learn estimator.
 """
 
 # %%
-# Let us load a dataset about payments given by healthcare manufacturing companies to
-# medical doctors or hospitals, for a binary classification problem.
+# First, we load a dataset from skrub. Our goal is to predict if a company paid a physician. The ultimate goal is to 
+# detect potential conflict of interest when it comes to the actual problem that we want to solve.
 
 # %%
 from skrub.datasets import fetch_open_payments
