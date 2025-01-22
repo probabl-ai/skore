@@ -61,27 +61,39 @@ You can find information on the latest version [here](https://anaconda.org/conda
 
 2. Evaluate your model using `skore.CrossValidationReporter`:
     ```python
-    from sklearn.datasets import load_iris
-    from sklearn.pipeline import Pipeline
-    from sklearn.preprocessing import StandardScaler
+    from sklearn.datasets import make_classification
     from sklearn.linear_model import LogisticRegression
 
-    X, y = load_iris(return_X_y=True)
-    clf_pipeline = Pipeline([
-        ('scaler', StandardScaler()),
-        ('clf', LogisticRegression())
-    ])
+    from skore import CrossValidationReport
 
-    reporter = skore.CrossValidationReporter(clf_pipeline, X, y, cv=5)
+    X, y = make_classification(n_classes=2, n_samples=100_000, n_informative=4)
+    clf = LogisticRegression()
 
-    # Store the results in the project
-    my_project.put("cv_reporter", reporter)
+    cv_report = CrossValidationReport(clf, X, y)
 
-    # Display a plot result in your notebook
-    reporter.plots.scores
+    # Display the help tree to see all the insights that are available to you
+    cv_report.help()
     ```
 
-Also check out `skore.train_test_split()` that enhances scikit-learn. Learn more in our [documentation](https://skore.probabl.ai).
+    ```python
+    # Display the report metrics that was computed for you:
+    df_cv_report_metrics = cv_report.metrics.report_metrics()
+    df_cv_report_metrics
+    ```
+
+    ```python
+    # Display the ROC curve that was generated for you:
+    roc_plot = cv_report.metrics.plot.roc()
+    roc_plot
+    ```
+
+3. Store the results in the skore project for safe-keeping:
+    ```python
+    my_project.put("df_cv_report_metrics", df_cv_report_metrics)
+    my_project.put("roc_plot", roc_plot)
+    ```
+
+Learn more in our [documentation](https://skore.probabl.ai).
 
 
 ## Contributing
