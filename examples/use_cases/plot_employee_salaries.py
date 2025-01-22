@@ -124,7 +124,7 @@ model
 
 # %%
 #
-# In the diagram above, we can what we intend to do as feature engineering. For
+# In the diagram above, we can see what we intend to do as feature engineering. For
 # categorical features, we use a `OneHotEncoder` to transform the categorical features.
 # From the previous data exploration, we could have check the unique values from the
 # "Stats" tab and observe that we have large cardinality features. In such cases,
