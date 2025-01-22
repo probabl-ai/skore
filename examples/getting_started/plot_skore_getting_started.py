@@ -262,21 +262,7 @@ plt.tight_layout()
 # Skore has implemented a :func:`skore.train_test_split` function that wraps
 # scikit-learn's :func:`sklearn.model_selection.train_test_split`.
 #
-# For example, it can raise warnings when there is class imbalance in the data to
-# provide methodological advice:
-
-# %%
-X = np.arange(400).reshape((200, 2))
-y = [0] * 150 + [1] * 50
-
-X_train, X_test, y_train, y_test = skore.train_test_split(
-    X=X, y=y, test_size=0.2, random_state=0
-)
-
-# %%
-# In particular, there is a ``HighClassImbalanceWarning``.
-#
-# Now, let us load a dataset containing some time series data:
+# Let us load a dataset containing some time series data:
 
 # %%
 from skrub.datasets import fetch_employee_salaries
