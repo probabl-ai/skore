@@ -57,6 +57,10 @@ table_report
 # engineering, we could potentially drop one of them if the final predictive model
 # is sensitive to the collinearity.
 #
+# When looking at the "Stats" tab, we observe that the "division" and
+# "employee_position_title" are two features containing a large number of categories. It
+# something that we should consider in our feature engineering.
+#
 # We can store the report in the project so that we can easily retrieve it later
 # without necessarily having to reload the dataset and recomputing the report.
 project.put("Input data summary", table_report)
@@ -77,7 +81,7 @@ from sklearn.compose import make_column_transformer
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import OneHotEncoder, SplineTransformer
 from sklearn.linear_model import RidgeCV
-from skrub import DatetimeEncoder, ToDatetime, DropCols
+from skrub import DatetimeEncoder, ToDatetime, DropCols, GapEncoder
 
 
 def periodic_spline_transformer(period, n_splines=None, degree=3):
@@ -93,14 +97,7 @@ def periodic_spline_transformer(period, n_splines=None, degree=3):
     )
 
 
-categorical_features = [
-    "gender",
-    "department_name",
-    "division",
-    "assignment_category",
-    "employee_position_title",
-    "year_first_hired",
-]
+one_hot_features = ["gender", "department_name", "assignment_category"]
 datetime_features = "date_first_hired"
 
 date_encoder = make_pipeline(
@@ -119,7 +116,9 @@ feature_engineering_date = make_pipeline(date_encoder, date_engineering)
 
 preprocessing = make_column_transformer(
     (feature_engineering_date, datetime_features),
-    (OneHotEncoder(drop="if_binary", handle_unknown="ignore"), categorical_features),
+    (OneHotEncoder(drop="if_binary", handle_unknown="ignore"), one_hot_features),
+    (GapEncoder(n_components=100), "division"),
+    (GapEncoder(n_components=100), "employee_position_title"),
 )
 
 model = make_pipeline(preprocessing, RidgeCV(alphas=np.logspace(-3, 3, 100)))
@@ -127,12 +126,11 @@ model
 
 # %%
 #
-# In the diagram above, we can see what we intend to do as feature engineering. For
-# categorical features, we use a `OneHotEncoder` to transform the categorical features.
-# From the previous data exploration, we could have check the unique values from the
-# "Stats" tab and observe that we have large cardinality features. In such cases,
-# one-hot encoding might not be the best choice but it is our starting point to get the
-# ball rolling.
+# In the diagram above, we can see what we intend to do as feature engineering.
+# For categorical features, we use two approaches: if the number of categories is
+# relatively small, we use a `OneHotEncoder` and if the number of categories is
+# large, we use a `GapEncoder` that was designed to deal with high cardinality
+# categorical features.
 #
 # Then, we have another transformation to encode the date features. We first split the
 # date into multiple features (day, month, and year). Then, we apply a periodic spline
@@ -145,7 +143,7 @@ model
 # the performance of the model.
 from skore import CrossValidationReport
 
-report = CrossValidationReport(estimator=model, X=df, y=y, cv_splitter=5)
+report = CrossValidationReport(estimator=model, X=df, y=y, cv_splitter=5, n_jobs=3)
 report.help()
 
 # %%
@@ -180,7 +178,7 @@ report.metrics.report_metrics(aggregate=["mean", "std"])
 # So now, that we have our first baseline model, we can try an out-of-the-box model
 # using `skrub` that makes feature engineering for us. To deal with the high
 # cardinality of the categorical features, we use a :class:`~skrub.TextEncoder` that
-# use a language model and an embedding model to encode the categorical features.
+# use a language model to embed the categorical features.
 #
 # Finally, we use a :class:`~sklearn.ensemble.HistGradientBoostingRegressor` as a
 # base estimator that is a rather robust model.
