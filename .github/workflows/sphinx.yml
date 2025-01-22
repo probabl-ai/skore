@@ -106,12 +106,19 @@ jobs:
         with:
           python-version: '3.12'
           cache: 'pip'
+      - shell: bash
+        run: wget -qO- "${SKRUB_DATA_URL}" | tar -zxvf - -C "${HOME}"
+        env:
+          SKRUB_DATA_URL: https://skore.probabl.ai/f355443be646d49eab1aa76e29dfd0a8/skrub-data.tar.gz
+          HOME: ${{ github.workspace }}
       - uses: ./.github/actions/sphinx/build
         timeout-minutes: 10
         with:
           SPHINX_VERSION: ${{ needs.sphinx-version.outputs.SPHINX_VERSION }}
           SPHINX_RELEASE: ${{ needs.sphinx-version.outputs.SPHINX_RELEASE }}
           SPHINX_DOMAIN: ${{ vars.DOCUMENTATION_DOMAIN }}
+        env:
+          HOME: ${{ github.workspace }}
       - uses: actions/upload-artifact@v4
         with:
           name: sphinx-html-artifact
