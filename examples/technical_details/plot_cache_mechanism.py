@@ -36,6 +36,11 @@ from skrub import TableReport
 TableReport(df)
 
 # %%
+import pandas as pd
+
+TableReport(pd.DataFrame(y))
+
+# %%
 #
 # The dataset has over 70,000 records with only categorical features.
 # Some categories are not well defined.
@@ -77,7 +82,7 @@ report.help()
 
 # %%
 #
-# Let's compute the accuracy on our test set and measure how long it takes:
+# We compute the accuracy on our test set and measure how long it takes:
 import time
 
 start = time.time()
@@ -105,7 +110,8 @@ print(f"Time taken: {end - start:.2f} seconds")
 #
 # Both approaches take similar time.
 #
-# Now watch what happens when we compute accuracy again with our skore estimator report:
+# Now, watch what happens when we compute the accuracy again with our skore estimator
+# report:
 start = time.time()
 result = report.metrics.accuracy()
 end = time.time()
@@ -121,7 +127,6 @@ print(f"Time taken: {end - start:.2f} seconds")
 report._cache
 
 # %%
-#
 # The cache stores predictions by type and data source. This means that computing
 # metrics that use the same type of predictions will be faster.
 # Let's try the precision metric:
@@ -276,4 +281,4 @@ print(f"Time taken: {end - start:.2f} seconds")
 
 # %%
 #
-# So we observe the same type of behaviour as we previously exposed.
+# Hence, we observe the same type of behaviour as we previously exposed.
