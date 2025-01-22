@@ -1,4 +1,20 @@
+"""
+===============================
+Simplified experiment reporting
+===============================
+
+This example shows how to use leverage `skore` for reporting model evaluation and
+storing the results for further analysis.
+"""
+
 # %%
+#
+# Creating and loading the skore project
+# --------------------------------------
+#
+# We start by creating a temporary directory to store our project so that we can easily
+# clean it after executing this example. In addition, we set some environment variables
+# to avoid some spurious warnings related to parallelism.
 import os
 import tempfile
 from pathlib import Path
@@ -10,29 +26,58 @@ os.environ["POLARS_ALLOW_FORKING_THREAD"] = "1"
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
 
 # %%
+#
+# Let's open a `skore` project in which we will be able to store artifacts from our
+# experiments.
 import skore
 
 project = skore.open(temp_dir_path / "my_project")
 
 # %%
+#
+# We use a `skrub` dataset that is non-trivial dataset.
 from skrub.datasets import fetch_employee_salaries
 
 datasets = fetch_employee_salaries()
 df, y = datasets.X, datasets.y
 
 # %%
+#
+# Let's first have a condensed summary of the input data using
+# :class:`~skrub.TableReport`.
 from skrub import TableReport
 
 table_report = TableReport(df)
 table_report
 
 # %%
+#
+# First, we can check that the type of data is heterogeneous: we mainly have categorical
+# features and feature related to dates.
+#
+# We see that the year related to the first hired is also present in the date. So we
+# could take care to not create twice the same feature during the feature engineering.
+#
+# By looking at the "Associations" tab, we observe that two features are exactly holding
+# the same information: "department" and "department_name". So during our feature
+# engineering, we could potentially drop one of them if the final predictive model
+# is sensitive to the collinearity.
+#
+# We can store the report in the project so that we can easily retrieve it later
+# without necessarily having to reload the dataset and recomputing the report.
 project.put("Input data summary", table_report)
 
 # %%
+#
+# In terms of target and thus the task that we want to solve, we are interested in
+# predicting the salary of an employee given the previous features. We therefore have
+# a regression task at end.
 y
 
 # %%
+#
+# In a first attempt, we will define a rather complex predictive model that will use
+# a linear model as a base estimator.
 import numpy as np
 from sklearn.compose import make_column_transformer
 from sklearn.pipeline import make_pipeline
@@ -87,10 +132,35 @@ model = make_pipeline(preprocessing, RidgeCV(alphas=np.logspace(-3, 3, 100)))
 model
 
 # %%
+#
+# In the diagram above, we can what we intend to do as feature engineering. For
+# categorical features, we use a `OneHotEncoder` to transform the categorical features.
+# From the previous data exploration, we could have check the unique values from the
+# "Stats" tab and observe that we have large cardinality features. In such cases,
+# one-hot encoding might not be the best choice but it is our starting point to get the
+# ball rolling.
+#
+# Then, we have another transformation to encode the date features. We first split the
+# date into multiple features (day, month, and year). Then, we apply a periodic spline
+# transformation to each of the date features to capture the periodicity of the data.
+#
+# Finally, we fit a :class:`~sklearn.linear_model.RidgeCV` model.
+#
+# Now, we want to evaluate this complex model via cross-validation. We would like to
+# use 5 folds. We use :class:`~skore.CrossValidationReport` to allow us to investigate
+# the performance of the model.
 from skore import CrossValidationReport
 
 report = CrossValidationReport(estimator=model, X=df, y=y, cv_splitter=5)
 report.help()
+
+# %%
+#
+# We observe that the report detected that we have a regression task and provide us only
+# a subset of the metrics and plots that make sense for our problem at hand. To later
+# accelerate the computation, we cache once for all the predictions of the model. Note,
+# that we don't necessarily need to cache the predictions as the report will compute
+# them on the fly if not cached and cache them for us.
 
 # %%
 import warnings
@@ -102,12 +172,24 @@ with warnings.catch_warnings():
     report.cache_predictions(n_jobs=3)
 
 # %%
+#
+# To not lose the report, let's store it in our `skore` project.
 project.put("Linear model report", report)
 
 # %%
+#
+# We can now have a look at the performance of the model with some standard metrics.
 report.metrics.report_metrics(aggregate=["mean", "std"])
 
 # %%
+#
+# So now, that we have our first baseline model, we can try an out-of-the-box model
+# using `skrub` that makes feature engineering for us. To deal with the high
+# cardinality of the categorical features, we use a :class:`~skrub.TextEncoder` that
+# use a language model and an embedding model to encode the categorical features.
+#
+# Finally, we use a :class:`~sklearn.ensemble.HistGradientBoostingRegressor` as a
+# base estimator that is a rather robust model.
 from skrub import TableVectorizer, TextEncoder
 from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.pipeline import make_pipeline
@@ -116,27 +198,43 @@ model = make_pipeline(
     TableVectorizer(high_cardinality=TextEncoder()),
     HistGradientBoostingRegressor(),
 )
+model
 
 # %%
+#
+# Let's compute the cross-validation report for this model.
 from skore import CrossValidationReport
 
 report = CrossValidationReport(estimator=model, X=df, y=y, cv_splitter=5, n_jobs=3)
 report.help()
 
 # %%
+#
+# We cache the predictions for later use.
 report.cache_predictions(n_jobs=3)
 
 # %%
+#
+# We store the report in our `skore` project.
 project.put("HGBDT model report", report)
 
 # %%
+#
+# We can now have a look at the performance of the model with some standard metrics.
 report.metrics.report_metrics(aggregate=["mean", "std"])
 
 # %%
+#
+# At this stage, I might not been careful and have already overwritten the report and
+# model from my first attempt. Hopefully, because we stored the reports in our `skore`
+# project, we can easily retrieve them. So let's retrieve the reports.
 linear_model_report = project.get("Linear model report")
 hgbdt_model_report = project.get("HGBDT model report")
 
 # %%
+#
+# Now that we retrieved the reports, I can make further comparison and build upon some
+# usual pandas operations to concatenate the results.
 import pandas as pd
 
 results = pd.concat(
@@ -148,6 +246,10 @@ results = pd.concat(
 results
 
 # %%
+#
+# In addition, if I forget to compute a specific metric, I can easily add it to the
+# the report, without retraining the model and even recomputing the predictions since
+# they are cached internally in the report. It allows to save some time.
 from sklearn.metrics import mean_absolute_error
 
 scoring = ["r2", "rmse", mean_absolute_error]
@@ -171,8 +273,11 @@ results = pd.concat(
 )
 results
 
-
 # %%
+#
+# Finally, we can even get individual :class:`~skore.EstimatorReport` from the
+# cross-validation to make further analysis. Here, we plot the actual vs predicted
+# values for each of the splits.
 from itertools import zip_longest
 import matplotlib.pyplot as plt
 
@@ -189,4 +294,6 @@ for split_idx, (ax, estimator_report) in enumerate(
 plt.tight_layout()
 
 # %%
+#
+# Finally, we clean up the project by removing the temporary directory.
 temp_dir.cleanup()
