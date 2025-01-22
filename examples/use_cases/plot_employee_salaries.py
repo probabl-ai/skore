@@ -46,8 +46,9 @@ table_report
 # First, we can check that the type of data is heterogeneous: we mainly have categorical
 # features and feature related to dates.
 #
-# We see that the year related to the first hired is also present in the date. So we
-# could take care to not create twice the same feature during the feature engineering.
+# We can observe that the year related to the first hired is also present in the date.
+# Hence, we should beware of not creating twice the same feature during the feature
+# engineering.
 #
 # By looking at the "Associations" tab, we observe that two features are exactly holding
 # the same information: "department" and "department_name". So during our feature
