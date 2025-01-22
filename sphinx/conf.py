@@ -48,6 +48,8 @@ default_role = "literal"
 autosummary_generate = True  # generate stubs for all classes
 templates_path = ["_templates"]
 
+autodoc_typehints = "none"
+
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
