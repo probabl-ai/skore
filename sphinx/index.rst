@@ -47,7 +47,7 @@ Key features
 
 .. toctree::
    :maxdepth: 1
-   :caption: Contents:
+   :hidden:
 
    install
    auto_examples/index
