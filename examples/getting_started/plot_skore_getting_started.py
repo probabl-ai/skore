@@ -15,12 +15,16 @@ Skore: getting started
 # #.    Machine learning diagnostics: get assistance when developing your ML/DS
 #       projects to avoid common pitfalls and follow recommended practices.
 #
-#       * Enhancing key scikit-learn features with :class:`skore.CrossValidationReport`
-#         and :func:`skore.train_test_split`.
+#       *   :class:`skore.EstimatorReport`: get an insightful report for your estimator
+#
+#       *   :class:`skore.CrossValidationReport`: get an insightful report for your
+#           cross-validation results
+#
+#       *   :func:`skore.train_test_split`: get diagnostics when splitting your data
 
 # %%
-# Track and visualize: skore project
-# ==================================
+# Tracking: skore project
+# =======================
 #
 # A key feature of skore is its :class:`~skore.Project` that allows to store
 # items of many types.
@@ -148,26 +152,25 @@ my_project.put("my_fig", fig)
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 # %%
-# Suppose we store several integer values for a same item called ``my_int`:
+# Suppose we store several values for a same item called ``my_key_metric``:
 #
 # .. code-block:: python
 #
-#     import time
+#     my_project.put("my_key_metric", 4)
 #
-#     my_project.put("my_int", 4)
+#     my_project.put("my_key_metric", 9)
 #
-#     my_project.put("my_int", 9)
+#     my_project.put("my_key_metric", 16)
 #
-#     my_project.put("my_int", 16)
-#
-# Skore does not overwrite items with the same name (key value), instead it stores
+# Skore does not overwrite items with the same name (key): instead, it stores
 # their history so that nothing is lost.
 #
 # These tracking functionalities are very useful to:
 #
 # * never lose some key machine learning metrics,
 # * and observe the evolution over time / runs.
-#
+
+# %%
 # .. seealso::
 #
 #   For more information about the tracking of items using their history,
@@ -231,6 +234,7 @@ roc_plot = est_report.metrics.plot.roc()
 roc_plot
 plt.tight_layout()
 
+# %%
 # .. seealso::
 #
 #   For more information about the motivation and usage of
