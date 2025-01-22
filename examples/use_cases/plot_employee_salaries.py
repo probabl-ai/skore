@@ -9,18 +9,9 @@ storing the results for further analysis.
 
 # %%
 #
-# Creating and loading the skore project
-# --------------------------------------
-#
-# We start by creating a temporary directory to store our project so that we can easily
-# clean it after executing this example. In addition, we set some environment variables
-# to avoid some spurious warnings related to parallelism.
+# We set some environment variables to avoid some spurious warnings related to
+# parallelism.
 import os
-import tempfile
-from pathlib import Path
-
-temp_dir = tempfile.TemporaryDirectory(prefix="skore_example_")
-temp_dir_path = Path(temp_dir.name)
 
 os.environ["POLARS_ALLOW_FORKING_THREAD"] = "1"
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
@@ -31,7 +22,7 @@ os.environ["TOKENIZERS_PARALLELISM"] = "true"
 # experiments.
 import skore
 
-project = skore.open(temp_dir_path / "my_project")
+project = skore.open("my_project", create=True)
 
 # %%
 #
@@ -296,4 +287,4 @@ plt.tight_layout()
 # %%
 #
 # Finally, we clean up the project by removing the temporary directory.
-temp_dir.cleanup()
+project.clear()
