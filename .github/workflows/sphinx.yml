@@ -188,7 +188,7 @@ jobs:
             # Sort history, and always keep "dev" at the beginning
             history = sorted(
                 history.items(),
-                key=lambda item: float(item[0]) if item[0] != "dev" else float('inf'),
+                key=lambda item: tuple(map(float, item[0].split("."))) if item[0] != "dev" else (float('inf'), 0),
                 reverse=True
             )
 
