@@ -93,6 +93,7 @@ sphinx_gallery_conf = {
     "doc_module": "skore",
     "default_thumb_file": "./_static/images/Logo_Skore_Light@2x.svg",
     "reset_modules": (reset_mpl, "seaborn"),
+    "abort_on_example_error": True,
 }
 
 # intersphinx configuration
