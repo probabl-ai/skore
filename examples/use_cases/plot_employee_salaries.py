@@ -3,7 +3,7 @@
 Simplified experiment reporting
 ===============================
 
-This example shows how to use leverage `skore` for reporting model evaluation and
+This example shows how to leverage `skore` for reporting model evaluation and
 storing the results for further analysis.
 """
 
