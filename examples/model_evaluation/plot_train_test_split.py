@@ -12,7 +12,7 @@ This example illustrates the motivation and the use of skore's
 # %%
 # Creating and loading the skore project
 # ======================================
-# %%
+#
 # We create and load the skore project from the current directory:
 
 # %%
