@@ -265,9 +265,9 @@ results
 
 # %%
 #
-# In addition, if I forgot to compute a specific metric
+# In addition, if we forgot to compute a specific metric
 # (e.g. :func:`~sklearn.metrics.mean_absolute_error`),
-# I can easily add it to the the report, without re-training the model and even
+# we can easily add it to the the report, without re-training the model and even
 # without re-computing the predictions since they are cached internally in the report.
 # This allows us to save some potentially huge computation time.
 from sklearn.metrics import mean_absolute_error
