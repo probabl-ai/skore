@@ -9,7 +9,7 @@
          <img src="https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/Logo_Skore_Dark@2x.svg" class="logo-landing only-dark pst-js-only" alt="skore - Home"/>
       </div>
       <h1 class="hero-title">the scikit-learn sidekick</h1>
-      <p class="hero-description">Elevate ML Development with Tracking and Built-in Recommended Practices</p>
+      <p class="hero-description">Elevate ML Development with Built-in Recommended Practices</p>
    </div>
 
 .. admonition:: Where to start?
@@ -32,26 +32,22 @@ learning lifecycle.
 Key features
 ------------
 
--  **Track and Visualize Results**: Capture your intermediate ML/DS results without the
-   overhead, while gaining deeper insights through intuitive visualizations of your
-   experiments.
+-  **Diagnose**: Catch methodological errors before they impact your models with
+   **smart alerts** that analyze both code execution and data patterns in real-time.
 
--  **Elevate Model Development**: Avoid common pitfalls and follow recommended
-   practices with automatic guidance and insights.
+-  **Evaluate**: Uncover actionable insights through **automated reports** surfacing
+   relevant metrics. Explore faster with our intelligent caching system.
 
-   -  Enhancing key scikit-learn features with :class:`skore.CrossValidationReporter`
-      and :func:`skore.train_test_split`.
+   -  :class:`skore.EstimatorReport`: get a report for your estimator
 
-.. image:: /_static/images/2024_12_12_skore_demo_comp.gif
-   :alt: Getting started with skore demo
+   -  :class:`skore.CrossValidationReport`: get a report for your cross-validation 
+      results
 
 .. currentmodule:: skore
 
-|
-
 .. toctree::
    :maxdepth: 1
-   :caption: Contents:
+   :hidden:
 
    install
    auto_examples/index

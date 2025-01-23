@@ -6,7 +6,7 @@
   </picture>
   <h3>the scikit-learn sidekick</h3>
 
-Elevate ML Development with Tracking and Built-in Recommended Practices \
+Elevate ML Development with Built-in Recommended Practices \
 [Documentation](https://skore.probabl.ai) — [Community](https://discord.probabl.ai)
 
 </div>
@@ -24,11 +24,8 @@ Skore is just at the beginning of its journey, but we’re shipping fast! Freque
 
 ## Key features
 
-- **Track and Visualize Results**: Capture your intermediate ML/DS results without the overhead, while gaining deeper insights through intuitive visualizations of your experiments.
-- **Elevate Model Development**: Avoid common pitfalls and follow recommended practices with automatic guidance and insights.
-    - Enhancing key scikit-learn features with `skore.CrossValidationReporter` and `skore.train_test_split()`.
-
-![GIF: short demo of skore](https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_12_skore_demo_comp.gif)
+- **Diagnose**: Catch methodological errors before they impact your models with **smart alerts** that analyze both code execution and data patterns in real-time.
+- **Evaluate**: Uncover actionable insights through **automated reports** surfacing relevant metrics. Explore faster with our intelligent caching system.
 
 ## 🚀 Quick start
 
@@ -64,36 +61,39 @@ You can find information on the latest version [here](https://anaconda.org/conda
 
 2. Evaluate your model using `skore.CrossValidationReporter`:
     ```python
-    from sklearn.datasets import load_iris
-    from sklearn.pipeline import Pipeline
-    from sklearn.preprocessing import StandardScaler
+    from sklearn.datasets import make_classification
     from sklearn.linear_model import LogisticRegression
 
-    X, y = load_iris(return_X_y=True)
-    clf_pipeline = Pipeline([
-        ('scaler', StandardScaler()),
-        ('clf', LogisticRegression())
-    ])
+    from skore import CrossValidationReport
 
-    reporter = skore.CrossValidationReporter(clf_pipeline, X, y, cv=5)
+    X, y = make_classification(n_classes=2, n_samples=100_000, n_informative=4)
+    clf = LogisticRegression()
 
-    # Store the results in the project
-    my_project.put("cv_reporter", reporter)
+    cv_report = CrossValidationReport(clf, X, y)
 
-    # Display a plot result in your notebook
-    reporter.plots.scores
+    # Display the help tree to see all the insights that are available to you
+    cv_report.help()
     ```
 
-3. Finally, from your shell (in the same directory), start the UI:
-    ```bash
-    skore launch "my_project"
+    ```python
+    # Display the report metrics that was computed for you:
+    df_cv_report_metrics = cv_report.metrics.report_metrics()
+    df_cv_report_metrics
     ```
-    This will open skore-ui in a browser window.
 
-You will automatically be able to visualize some key metrics (although you might have forgotten to specify all of them):
-![Cross-validation screenshot](https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_12_skore_cross_val_clf.png)
+    ```python
+    # Display the ROC curve that was generated for you:
+    roc_plot = cv_report.metrics.plot.roc()
+    roc_plot
+    ```
 
-Also check out `skore.train_test_split()` that enhances scikit-learn. Learn more in our [documentation](https://skore.probabl.ai).
+3. Store the results in the skore project for safe-keeping:
+    ```python
+    my_project.put("df_cv_report_metrics", df_cv_report_metrics)
+    my_project.put("roc_plot", roc_plot)
+    ```
+
+Learn more in our [documentation](https://skore.probabl.ai).
 
 
 ## Contributing

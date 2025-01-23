@@ -12,25 +12,13 @@ This example illustrates the motivation and the use of skore's
 # %%
 # Creating and loading the skore project
 # ======================================
-
-# %%
-# We start by creating a temporary directory to store our project so that we can
-# easily clean it after executing this example:
-
-# %%
-import tempfile
-from pathlib import Path
-
-temp_dir = tempfile.TemporaryDirectory(prefix="skore_example_")
-temp_dir_path = Path(temp_dir.name)
-
-# %%
-# We create and load the skore project from this temporary directory:
+#
+# We create and load the skore project from the current directory:
 
 # %%
 import skore
 
-my_project = skore.open(temp_dir_path / "my_project")
+my_project = skore.open("my_project", create=True)
 
 # %%
 # Train-test split in scikit-learn
@@ -258,7 +246,8 @@ X_train, X_test, y_train, y_test = skore.train_test_split(
 # Cleanup the project
 # -------------------
 #
-# Removing the temporary directory:
+# Let's clear the skore project (to avoid any conflict with other documentation
+# examples).
 
 # %%
-temp_dir.cleanup()
+my_project.clear()

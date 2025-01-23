@@ -54,8 +54,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     estimator_name_ : str
         The name of the estimator.
 
-    metrics : _MetricsAccessor
-        Accessor for metrics-related operations.
+    See Also
+    --------
+    skore.sklearn.cross_validation.report.CrossValidationReport
+        Report of cross-validation results.
 
     Examples
     --------
@@ -107,7 +109,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         X_test=None,
         y_test=None,
     ):
-        self._parent_progress = None  # used to display progress bar
+        # used to know if a parent launch a progress bar manager
+        self._parent_progress = None
 
         if fit == "auto":
             try:
@@ -155,17 +158,17 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         ...     *load_breast_cancer(return_X_y=True), random_state=0
         ... )
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> reporter = EstimatorReport(
+        >>> report = EstimatorReport(
         ...     classifier,
         ...     X_train=X_train,
         ...     y_train=y_train,
         ...     X_test=X_test,
         ...     y_test=y_test,
         ... )
-        >>> reporter.cache_predictions()
+        >>> report.cache_predictions()
         Caching predictions ...
-        >>> reporter.clear_cache()
-        >>> reporter._cache
+        >>> report.clear_cache()
+        >>> report._cache
         {}
         """
         self._cache = {}
@@ -196,16 +199,16 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         ...     *load_breast_cancer(return_X_y=True), random_state=0
         ... )
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> reporter = EstimatorReport(
+        >>> report = EstimatorReport(
         ...     classifier,
         ...     X_train=X_train,
         ...     y_train=y_train,
         ...     X_test=X_test,
         ...     y_test=y_test,
         ... )
-        >>> reporter.cache_predictions()
+        >>> report.cache_predictions()
         Caching predictions ...
-        >>> reporter._cache
+        >>> report._cache
         {...}
         """
         if self._ml_task in ("binary-classification", "multiclass-classification"):
@@ -215,7 +218,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                     response_methods += ["predict_proba"]
                 if hasattr(self._estimator, "decision_function"):
                     response_methods += ["decision_function"]
-            pos_labels = self._estimator.classes_
+            pos_labels = self._estimator.classes_.tolist() + [None]
         else:
             if response_methods == "auto":
                 response_methods = ["predict"]
@@ -225,7 +228,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         if self._X_train is not None:
             data_sources += [("train", self._X_train)]
 
-        parallel = joblib.Parallel(n_jobs=n_jobs, return_as="generator_unordered")
+        parallel = joblib.Parallel(
+            n_jobs=n_jobs, return_as="generator", require="sharedmem"
+        )
         generator = parallel(
             joblib.delayed(_get_cached_response_values)(
                 cache=self._cache,
@@ -307,8 +312,23 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             name = self._estimator.__class__.__name__
         return name
 
+    ####################################################################################
+    # Methods related to the help and repr
+    ####################################################################################
+
+    def _get_help_panel_title(self):
+        return (
+            f"[bold cyan]Tools to diagnose estimator "
+            f"{self.estimator_name_}[/bold cyan]"
+        )
+
+    def _get_help_legend(self):
+        return (
+            "[cyan](↗︎)[/cyan] higher is better [orange1](↘︎)[/orange1] lower is better"
+        )
+
     def __repr__(self):
         """Return a string representation using rich."""
         return self._rich_repr(
-            class_name="skore.EstimatorReport", help_method_name="reporter.help()"
+            class_name="skore.EstimatorReport", help_method_name="help()"
         )

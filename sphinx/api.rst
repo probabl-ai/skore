@@ -19,9 +19,10 @@ These functions and classes are meant for managing a Project.
     :template: base.rst
     :caption: Managing a project
 
-    Project
-    item.primitive_item.PrimitiveItem
     open
+    Project
+    Project.put
+    Project.get
 
 Get assistance when developing ML/DS projects
 ---------------------------------------------
@@ -34,15 +35,13 @@ These functions and classes enhance scikit-learn's ones.
     :caption: ML Assistance
 
     train_test_split
-    CrossValidationReporter
-    item.cross_validation_item.CrossValidationItem
 
 Report for a single estimator
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The class :class:`EstimatorReport` provides a reporter allowing to inspect and
+The class :class:`EstimatorReport` provides a report allowing to inspect and
 evaluate a scikit-learn estimator in an interactive way. The functionalities of the
-reporter are accessible through accessors.
+report are accessible through accessors.
 
 .. autosummary::
     :toctree: generated/
@@ -91,3 +90,70 @@ performance metric representations.
     EstimatorReport.metrics.plot.precision_recall
     EstimatorReport.metrics.plot.prediction_error
     EstimatorReport.metrics.plot.roc
+
+Cross-validation report for an estimator
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The class :class:`CrossValidationReport` provides a report allowing to inspect and
+evaluate a scikit-learn estimator through cross-validation in an interactive way. The
+functionalities of the report are accessible through accessors.
+
+.. autosummary::
+    :toctree: generated/
+    :template: base.rst
+
+    CrossValidationReport
+
+.. autosummary::
+    :toctree: generated/
+    :nosignatures:
+    :template: autosummary/accessor_method.rst
+
+    CrossValidationReport.help
+
+.. autosummary::
+    :toctree: generated/
+    :nosignatures:
+    :template: autosummary/accessor.rst
+
+    CrossValidationReport.metrics
+
+Metrics
+"""""""
+
+The `metrics` accessor helps you to evaluate the statistical performance of your
+estimator during a cross-validation. In addition, we provide a sub-accessor `plot`, to
+get the common performance metric representations.
+
+.. autosummary::
+    :toctree: generated/
+    :nosignatures:
+    :template: autosummary/accessor_method.rst
+
+    CrossValidationReport.metrics.help
+    CrossValidationReport.metrics.report_metrics
+    CrossValidationReport.metrics.custom_metric
+    CrossValidationReport.metrics.accuracy
+    CrossValidationReport.metrics.brier_score
+    CrossValidationReport.metrics.log_loss
+    CrossValidationReport.metrics.precision
+    CrossValidationReport.metrics.r2
+    CrossValidationReport.metrics.recall
+    CrossValidationReport.metrics.rmse
+    CrossValidationReport.metrics.roc_auc
+    CrossValidationReport.metrics.plot.help
+    CrossValidationReport.metrics.plot.precision_recall
+    CrossValidationReport.metrics.plot.prediction_error
+    CrossValidationReport.metrics.plot.roc
+
+Deprecated
+----------
+
+These functions and classes are deprecated.
+
+.. autosummary::
+    :toctree: generated/
+    :template: base.rst
+    :caption: Deprecated
+
+    CrossValidationReporter

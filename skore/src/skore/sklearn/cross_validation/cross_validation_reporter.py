@@ -3,6 +3,11 @@
 This class implements a wrapper over scikit-learn's
 `cross_validate <https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate>`_
 function in order to enrich it with more information and enable more analysis.
+
+.. warning ::
+
+    **Deprecation Notice**:
+    This class is deprecated in favor of :class:`skore.CrossValidationReport`.
 """
 
 from dataclasses import dataclass
@@ -29,6 +34,11 @@ class CrossValidationPlots:
 
 class CrossValidationReporter:
     """Evaluate estimator by cross-validation and output UI-friendly object.
+
+    .. warning ::
+
+        **Deprecation Notice**:
+        This class is deprecated in favor of :class:`skore.CrossValidationReport`.
 
     This class wraps scikit-learn's :func:`sklearn.model_selection.cross_validate`
     function, to provide more context and facilitate the analysis.

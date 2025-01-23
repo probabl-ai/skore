@@ -1,4 +1,6 @@
 """
+.. _example_estimator_report:
+
 ============================================
 Get insights from any scikit-learn estimator
 ============================================
@@ -8,8 +10,13 @@ quickly get insights from any scikit-learn estimator.
 """
 
 # %%
+# Loading our dataset and defining our estimator
+# ==============================================
 #
-# TODO: we need to describe the aim of this classification problem.
+# First, we load a dataset from skrub. Our goal is to predict if a company paid a physician. The ultimate goal is to
+# detect potential conflict of interest when it comes to the actual problem that we want to solve.
+
+# %%
 from skrub.datasets import fetch_open_payments
 
 dataset = fetch_open_payments()
@@ -42,8 +49,8 @@ from skore import train_test_split
 X_train, X_test, y_train, y_test = train_test_split(df, y, random_state=42)
 
 # %%
-# TODO: we have a perfect case to show useful feature of the `train_test_split`
-# function from `skore`.
+# By the way, notice how skore's :func:`~skore.train_test_split` automatically warns us
+# for a class imbalance.
 #
 # Now, we need to define a predictive model. Hopefully, `skrub` provides a convenient
 # function (:func:`skrub.tabular_learner`) when it comes to getting strong baseline
@@ -58,41 +65,43 @@ estimator = tabular_learner("classifier").fit(X_train, y_train)
 estimator
 
 # %%
+# Getting insights from our estimator
+# ===================================
 #
 # Introducing the :class:`skore.EstimatorReport` class
-# ----------------------------------------------------
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # Now, we would be interested in getting some insights from our predictive model.
 # One way is to use the :class:`skore.EstimatorReport` class. This constructor will
 # detect that our estimator is already fitted and will not fit it again.
 from skore import EstimatorReport
 
-reporter = EstimatorReport(
+report = EstimatorReport(
     estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
 )
-reporter
+report
 
 # %%
 #
-# Once the reporter is created, we get some information regarding the available tools
-# allowing us to get some insights from our specific model on the specific task.
+# Once the report is created, we get some information regarding the available tools
+# allowing us to get some insights from our specific model on our specific task.
 #
-# You can get a similar information if you call the :meth:`~skore.EstimatorReport.help`
+# We can get a similar information if we call the :meth:`~skore.EstimatorReport.help`
 # method.
-reporter.help()
+report.help()
 
 # %%
 #
-# Be aware that you can access the help for each individual sub-accessor. For instance:
-reporter.metrics.help()
+# Be aware that we can access the help for each individual sub-accessor. For instance:
+report.metrics.help()
 
 # %%
-reporter.metrics.plot.help()
+report.metrics.plot.help()
 
 # %%
 #
 # Metrics computation with aggressive caching
-# -------------------------------------------
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # At this point, we might be interested to have a first look at the statistical
 # performance of our model on the validation set that we provided. We can access it
@@ -102,7 +111,7 @@ reporter.metrics.plot.help()
 import time
 
 start = time.time()
-metric_report = reporter.metrics.report_metrics(pos_label=pos_label)
+metric_report = report.metrics.report_metrics(pos_label=pos_label)
 end = time.time()
 metric_report
 
@@ -114,13 +123,13 @@ print(f"Time taken to compute the metrics: {end - start:.2f} seconds")
 # An interesting feature provided by the :class:`skore.EstimatorReport` is the
 # the caching mechanism. Indeed, when we have a large enough dataset, computing the
 # predictions for a model is not cheap anymore. For instance, on our smallish dataset,
-# it took a couple of seconds to compute the metrics. The reporter will cache the
-# predictions and if you are interested in computing a metric again or an alternative
+# it took a couple of seconds to compute the metrics. The report will cache the
+# predictions and if we are interested in computing a metric again or an alternative
 # metric that requires the same predictions, it will be faster. Let's check by
 # requesting the same metrics report again.
 
 start = time.time()
-metric_report = reporter.metrics.report_metrics(pos_label=pos_label)
+metric_report = report.metrics.report_metrics(pos_label=pos_label)
 end = time.time()
 metric_report
 
@@ -143,7 +152,7 @@ plt.tight_layout()
 # and reload them if available. So for instance, let's compute the log loss.
 
 start = time.time()
-log_loss = reporter.metrics.log_loss()
+log_loss = report.metrics.log_loss()
 end = time.time()
 log_loss
 
@@ -154,10 +163,10 @@ print(f"Time taken to compute the log loss: {end - start:.2f} seconds")
 #
 # We can show that without initial cache, it would have taken more time to compute
 # the log loss.
-reporter.clear_cache()
+report.clear_cache()
 
 start = time.time()
-log_loss = reporter.metrics.log_loss()
+log_loss = report.metrics.log_loss()
 end = time.time()
 log_loss
 
@@ -166,10 +175,10 @@ print(f"Time taken to compute the log loss: {end - start:.2f} seconds")
 
 # %%
 #
-# By default, the metrics are computed on the test set. However, if a training set
+# By default, the metrics are computed on the test set only. However, if a training set
 # is provided, we can also compute the metrics by specifying the `data_source`
 # parameter.
-reporter.metrics.log_loss(data_source="train")
+report.metrics.log_loss(data_source="train")
 
 # %%
 #
@@ -178,7 +187,7 @@ reporter.metrics.log_loss(data_source="train")
 # a `X` and `y` parameters.
 
 start = time.time()
-metric_report = reporter.metrics.report_metrics(
+metric_report = report.metrics.report_metrics(
     data_source="X_y", X=X_test, y=y_test, pos_label=pos_label
 )
 end = time.time()
@@ -195,7 +204,7 @@ print(f"Time taken to compute the metrics: {end - start:.2f} seconds")
 
 # %%
 start = time.time()
-metric_report = reporter.metrics.report_metrics(
+metric_report = report.metrics.report_metrics(
     data_source="X_y", X=X_test, y=y_test, pos_label=pos_label
 )
 end = time.time()
@@ -206,13 +215,13 @@ print(f"Time taken to compute the metrics: {end - start:.2f} seconds")
 
 # %%
 #
-# .. warning::
+# .. note::
 #     In this last example, we rely on computing the hash of the input data. Therefore,
 #     there is a trade-off: the computation of the hash is not free and it might be
 #     faster to compute the predictions instead.
 #
-# Be aware that you can also benefit from the caching mechanism with your own custom
-# metrics. We only expect that you define your own metric function to take `y_true`
+# Be aware that we can also benefit from the caching mechanism with our own custom
+# metrics. Skore only expects that we define our own metric function to take `y_true`
 # and `y_pred` as the first two positional arguments. It can take any other arguments.
 # Let's see an example.
 
@@ -222,7 +231,6 @@ def operational_decision_cost(y_true, y_pred, amount):
     mask_true_negative = (y_true == neg_label) & (y_pred == neg_label)
     mask_false_positive = (y_true == neg_label) & (y_pred == pos_label)
     mask_false_negative = (y_true == pos_label) & (y_pred == neg_label)
-    # FIXME: we need to make sense of the cost sensitive part with the right naming
     fraudulent_refuse = mask_true_positive.sum() * 50
     fraudulent_accept = -amount[mask_false_negative].sum()
     legitimate_refuse = mask_false_positive.sum() * -5
@@ -245,13 +253,13 @@ amount = rng.integers(low=100, high=1000, size=len(y_test))
 #
 # Let's make sure that a function called the `predict` method and cached the result.
 # We compute the accuracy metric to make sure that the `predict` method is called.
-reporter.metrics.accuracy()
+report.metrics.accuracy()
 
 # %%
 #
 # We can now compute the cost of our operational decision.
 start = time.time()
-cost = reporter.metrics.custom_metric(
+cost = report.metrics.custom_metric(
     metric_function=operational_decision_cost,
     metric_name="Operational Decision Cost",
     response_method="predict",
@@ -266,11 +274,11 @@ print(f"Time taken to compute the cost: {end - start:.2f} seconds")
 # %%
 #
 # Let's now clean the cache and see if it is faster.
-reporter.clear_cache()
+report.clear_cache()
 
 # %%
 start = time.time()
-cost = reporter.metrics.custom_metric(
+cost = report.metrics.custom_metric(
     metric_function=operational_decision_cost,
     metric_name="Operational Decision Cost",
     response_method="predict",
@@ -285,9 +293,9 @@ print(f"Time taken to compute the cost: {end - start:.2f} seconds")
 # %%
 #
 # We observe that caching is working as expected. It is really handy because it means
-# that you can compute some additional metrics without having to recompute the
+# that we can compute some additional metrics without having to recompute the
 # the predictions.
-reporter.metrics.report_metrics(
+report.metrics.report_metrics(
     scoring=["precision", "recall", operational_decision_cost],
     pos_label=pos_label,
     scoring_kwargs={
@@ -299,9 +307,9 @@ reporter.metrics.report_metrics(
 
 # %%
 #
-# It could happen that you are interested in providing several custom metrics which
-# does not necessarily share the same parameters. In this more complex case, we will
-# require you to provide a scorer using the :func:`sklearn.metrics.make_scorer`
+# It could happen that we are interested in providing several custom metrics which
+# does not necessarily share the same parameters. In this more complex case, skore will
+# require us to provide a scorer using the :func:`sklearn.metrics.make_scorer`
 # function.
 from sklearn.metrics import make_scorer, f1_score
 
@@ -314,30 +322,30 @@ operational_decision_cost_scorer = make_scorer(
     metric_name="Operational Decision Cost",
     amount=amount,
 )
-reporter.metrics.report_metrics(scoring=[f1_scorer, operational_decision_cost_scorer])
+report.metrics.report_metrics(scoring=[f1_scorer, operational_decision_cost_scorer])
 
 # %%
 #
 # Effortless one-liner plotting
-# -----------------------------
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # The :class:`skore.EstimatorReport` class also provides a plotting interface that
-# allows to plot *defacto* the most common plots. As for the the metrics, we only
+# allows to plot *defacto* the most common plots. As for the metrics, we only
 # provide the meaningful set of plots for the provided estimator.
-reporter.metrics.plot.help()
+report.metrics.plot.help()
 
 # %%
 #
 # Let's start by plotting the ROC curve for our binary classification task.
-display = reporter.metrics.plot.roc(pos_label=pos_label)
+display = report.metrics.plot.roc(pos_label=pos_label)
 plt.tight_layout()
 
 # %%
 #
 # The plot functionality is built upon the scikit-learn display objects. We return
-# those display (slightly modified to improve the UI) in case you want to tweak some
-# of the plot properties. You can have quick look at the available attributes and
-# methods by calling the `help` method or simply by printing the display.
+# those display (slightly modified to improve the UI) in case we want to tweak some
+# of the plot properties. We can have quick look at the available attributes and
+# methods by calling the ``help`` method or simply by printing the display.
 display
 
 # %%
@@ -357,7 +365,7 @@ plt.tight_layout()
 # performance gain we can get.
 start = time.time()
 # we already trigger the computation of the predictions in a previous call
-reporter.metrics.plot.roc(pos_label=pos_label)
+report.metrics.plot.roc(pos_label=pos_label)
 plt.tight_layout()
 end = time.time()
 
@@ -367,11 +375,11 @@ print(f"Time taken to compute the ROC curve: {end - start:.2f} seconds")
 # %%
 #
 # Now, let's clean the cache and check if we get a slowdown.
-reporter.clear_cache()
+report.clear_cache()
 
 # %%
 start = time.time()
-reporter.metrics.plot.roc(pos_label=pos_label)
+report.metrics.plot.roc(pos_label=pos_label)
 plt.tight_layout()
 end = time.time()
 

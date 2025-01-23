@@ -178,7 +178,7 @@ def test_get_cached_response_values_different_data_source_hash(
 
 class MockReport:
     def __init__(self, estimator, X_train=None, y_train=None, X_test=None, y_test=None):
-        """Mock a reporter with the minimal required attributes."""
+        """Mock a report with the minimal required attributes."""
         self._estimator = estimator
         self._X_train = X_train
         self._y_train = y_train
@@ -224,8 +224,8 @@ def test_base_accessor_get_X_y_and_data_source_hash_error():
     for data_source in ("train", "test"):
         err_msg = re.escape(
             f"No {data_source} data (i.e. X_{data_source} and y_{data_source}) were "
-            f"provided when creating the reporter. Please provide the {data_source} "
-            "data either when creating the reporter or by setting data_source to "
+            f"provided when creating the report. Please provide the {data_source} "
+            "data either when creating the report or by setting data_source to "
             "'X_y' and providing X and y."
         )
         with pytest.raises(ValueError, match=err_msg):
@@ -261,8 +261,8 @@ def test_base_accessor_get_X_y_and_data_source_hash_error():
     for data_source in ("train", "test"):
         err_msg = re.escape(
             f"No {data_source} data (i.e. X_{data_source}) were provided when "
-            f"creating the reporter. Please provide the {data_source} data either "
-            f"when creating the reporter or by setting data_source to 'X_y' and "
+            f"creating the report. Please provide the {data_source} data either "
+            f"when creating the report or by setting data_source to 'X_y' and "
             f"providing X and y."
         )
         with pytest.raises(ValueError, match=err_msg):

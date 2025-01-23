@@ -6,14 +6,22 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
+import sys
 import os
 from sphinx_gallery.sorting import ExplicitOrder
+
+# If extensions (or modules to document with autodoc) are in another directory,
+# add these directories to sys.path here. If the directory is relative to the
+# documentation root, use os.path.abspath to make it absolute, like shown here.
+sys.path.insert(0, os.path.abspath("sphinxext"))
+from github_link import make_linkcode_resolve  # noqa
 
 project = "skore"
 copyright = "2024, Probabl"
 author = "Probabl"
 version = os.environ["SPHINX_VERSION"]
 release = os.environ["SPHINX_RELEASE"]
+domain = os.environ["SPHINX_DOMAIN"]
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -23,6 +31,7 @@ extensions = [
     "sphinx.ext.autosummary",
     "sphinx.ext.githubpages",
     "sphinx.ext.intersphinx",
+    "sphinx.ext.linkcode",
     "sphinx_design",
     "sphinx_gallery.gen_gallery",
     "sphinx_copybutton",
@@ -39,6 +48,8 @@ default_role = "literal"
 autosummary_generate = True  # generate stubs for all classes
 templates_path = ["_templates"]
 
+autodoc_typehints = "none"
+
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
@@ -53,18 +64,15 @@ html_js_files = [
 ]
 
 # list of examples in explicit order
-examples_ordered = [
+subsections_order = [
     "../examples/getting_started",
-    "../examples/getting_started/plot_quick_start",
-    "../examples/getting_started/plot_skore_product_tour",
-    "../examples/getting_started/plot_working_with_projects",
-    "../examples/getting_started/plot_tracking_items",
+    "../examples/use_cases",
     "../examples/model_evaluation",
-    "../examples/model_evaluation/plot_train_test_split",
-    "../examples/model_evaluation/plot_cross_validate",
+    "../examples/technical_details",
 ]
 
 
+# Augment the dpi of matplotlib figures in Sphinx examples
 # https://sphinx-gallery.github.io/stable/advanced.html#resetting-before-each-example
 def reset_mpl(gallery_conf, fname):
     import matplotlib
@@ -76,8 +84,9 @@ def reset_mpl(gallery_conf, fname):
 sphinx_gallery_conf = {
     "examples_dirs": "../examples",  # path to example scripts
     "gallery_dirs": "auto_examples",  # path to gallery generated output
-    "subsection_order": ExplicitOrder(examples_ordered),
-    "within_subsection_order": "FileNameSortKey",  # See https://sphinx-gallery.github.io/stable/configuration.html#sorting-gallery-examples for alternatives
+    "subsection_order": ExplicitOrder(subsections_order),  # sorting gallery subsections
+    # see https://sphinx-gallery.github.io/stable/configuration.html#sub-gallery-order
+    "within_subsection_order": "ExampleTitleSortKey",  # See https://sphinx-gallery.github.io/stable/configuration.html#sorting-gallery-examples for alternatives
     "show_memory": False,
     "write_computation_times": False,
     "reference_url": {
@@ -88,6 +97,7 @@ sphinx_gallery_conf = {
     "doc_module": "skore",
     "default_thumb_file": "./_static/images/Logo_Skore_Light@2x.svg",
     "reset_modules": (reset_mpl, "seaborn"),
+    "abort_on_example_error": True,
 }
 
 # intersphinx configuration
@@ -144,7 +154,7 @@ html_theme_options = {
         },
     ],
     "switcher": {
-        "json_url": "https://skore.probabl.ai/versions.json",
+        "json_url": f"https://{domain}/versions.json",
         "version_match": release,
     },
     "check_switcher": True,
@@ -157,7 +167,7 @@ html_theme_options = {
 # Plausible Analytics
 html_theme_options["analytics"] = {
     # The domain you'd like to use for this analytics instance
-    "plausible_analytics_domain": "skore.probabl.ai",
+    "plausible_analytics_domain": domain,
     # The analytics script that is served by Plausible
     "plausible_analytics_url": "https://plausible.io/js/script.js",
 }
@@ -172,3 +182,20 @@ html_sidebars = {
 # Sphinx-Copybutton configuration
 copybutton_prompt_text = r">>> |\.\.\. |\$ "
 copybutton_prompt_is_regexp = True
+
+# -- Options for github link for what's new -----------------------------------
+
+# Config for sphinx_issues
+issues_uri = "https://github.com/probabl-ai/skore/issues/{issue}"
+issues_github_path = "probabl-ai/skore"
+issues_user_uri = "https://github.com/{user}"
+
+# The following is used by sphinx.ext.linkcode to provide links to github
+linkcode_resolve = make_linkcode_resolve(
+    "skore",
+    (
+        "https://github.com/probabl-ai/"
+        "skore/blob/{revision}/"
+        "{package}/src/skore/{path}#L{lineno}"
+    ),
+)

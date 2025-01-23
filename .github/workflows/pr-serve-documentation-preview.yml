@@ -49,5 +49,5 @@ jobs:
           number: ${{ steps.acquire-pr-context.outputs.pr-number }}
           header: documentation-preview
           message: >-
-            [Documentation preview](${{ vars.DOCUMENTATION_PREVIEW_URL }}/${{ steps.acquire-pr-context.outputs.pr-number }})
+            [Documentation preview](https://${{ vars.DOCUMENTATION_PREVIEW_DOMAIN }}/${{ steps.acquire-pr-context.outputs.pr-number }})
             @ ${{ steps.acquire-pr-context.outputs.pr-head-sha }}

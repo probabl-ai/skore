@@ -9,6 +9,7 @@ from skore.sklearn._plot.utils import (
     HelpDisplayMixin,
     _despine_matplotlib_axis,
     _validate_style_kwargs,
+    sample_mpl_colormap,
 )
 
 
@@ -25,18 +26,17 @@ class PredictionErrorDisplay(HelpDisplayMixin):
 
     Parameters
     ----------
-    ----------z
-    y_true : ndarray of shape (n_samples,)
+    y_true : list of ndarray of shape (n_samples,)
         True values.
 
-    y_pred : ndarray of shape (n_samples,)
+    y_pred : list of ndarray of shape (n_samples,)
         Prediction values.
 
     estimator_name : str
         Name of the estimator.
 
     data_source : {"train", "test", "X_y"}, default=None
-        The data source used to compute the ROC curve.
+        The data source used to display the prediction error.
 
     Attributes
     ----------
@@ -56,6 +56,26 @@ class PredictionErrorDisplay(HelpDisplayMixin):
 
     figure_ : matplotlib Figure
         Figure containing the scatter and lines.
+
+    Examples
+    --------
+    >>> from sklearn.datasets import load_diabetes
+    >>> from sklearn.linear_model import Ridge
+    >>> from sklearn.model_selection import train_test_split
+    >>> from skore import EstimatorReport
+    >>> X_train, X_test, y_train, y_test = train_test_split(
+    ...     *load_diabetes(return_X_y=True), random_state=0
+    ... )
+    >>> classifier = Ridge()
+    >>> report = EstimatorReport(
+    ...     classifier,
+    ...     X_train=X_train,
+    ...     y_train=y_train,
+    ...     X_test=X_test,
+    ...     y_test=y_test,
+    ... )
+    >>> display = report.metrics.plot.prediction_error()
+    >>> display.plot(kind="actual_vs_predicted")
     """
 
     def __init__(self, *, y_true, y_pred, estimator_name, data_source=None):
@@ -84,7 +104,7 @@ class PredictionErrorDisplay(HelpDisplayMixin):
             Axes object to plot on. If `None`, a new figure and axes is
             created.
 
-        estimator_name : str, default=None
+        estimator_name : str
             Name of the estimator used to plot the prediction error. If `None`,
             we used the inferred name from the estimator.
 
@@ -113,6 +133,26 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         -------
         display : PredictionErrorDisplay
             Object that stores computed values.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_diabetes
+        >>> from sklearn.linear_model import Ridge
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_diabetes(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = Ridge()
+        >>> report = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> display = report.metrics.plot.prediction_error()
+        >>> display.plot(kind="actual_vs_predicted")
         """
         expected_kind = ("actual_vs_predicted", "residual_vs_predicted")
         if kind not in expected_kind:
@@ -120,25 +160,15 @@ class PredictionErrorDisplay(HelpDisplayMixin):
                 f"`kind` must be one of {', '.join(expected_kind)}. "
                 f"Got {kind!r} instead."
             )
+        if kind == "actual_vs_predicted":
+            xlabel, ylabel = "Predicted values", "Actual values"
+        else:  # kind == "residual_vs_predicted"
+            xlabel, ylabel = "Predicted values", "Residuals (actual - predicted)"
 
         if scatter_kwargs is None:
             scatter_kwargs = {}
         if line_kwargs is None:
             line_kwargs = {}
-
-        default_scatter_kwargs = {"color": "tab:blue", "alpha": 0.8}
-        default_line_kwargs = {"color": "black", "alpha": 0.7, "linestyle": "--"}
-
-        scatter_kwargs = _validate_style_kwargs(default_scatter_kwargs, scatter_kwargs)
-        line_kwargs = _validate_style_kwargs(default_line_kwargs, line_kwargs)
-
-        scatter_kwargs = {**default_scatter_kwargs, **scatter_kwargs}
-        line_kwargs = {**default_line_kwargs, **line_kwargs}
-
-        if self.data_source in ("train", "test"):
-            scatter_label = f"{self.data_source.title()} set"
-        else:
-            scatter_label = "Data set"
 
         if estimator_name is None:
             estimator_name = self.estimator_name
@@ -146,47 +176,99 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         if ax is None:
             _, ax = plt.subplots()
 
+        x_range_perfect_pred = [np.inf, -np.inf]
+        y_range_perfect_pred = [np.inf, -np.inf]
+        for y_true, y_pred in zip(self.y_true, self.y_pred):
+            if kind == "actual_vs_predicted":
+                min_value = min(y_pred.min(), y_true.min())
+                max_value = max(y_pred.max(), y_true.max())
+                x_range_perfect_pred[0] = min(x_range_perfect_pred[0], min_value)
+                x_range_perfect_pred[1] = max(x_range_perfect_pred[1], max_value)
+                y_range_perfect_pred[0] = min(y_range_perfect_pred[0], min_value)
+                y_range_perfect_pred[1] = max(y_range_perfect_pred[1], max_value)
+            else:
+                residuals = y_true - y_pred
+                x_range_perfect_pred[0] = min(x_range_perfect_pred[0], y_pred.min())
+                x_range_perfect_pred[1] = max(x_range_perfect_pred[1], y_pred.max())
+                y_range_perfect_pred[0] = min(y_range_perfect_pred[0], residuals.min())
+                y_range_perfect_pred[1] = max(y_range_perfect_pred[1], residuals.max())
+
+        colors_markers = sample_mpl_colormap(
+            plt.cm.tab10, len(self.y_true) if len(self.y_true) > 10 else 10
+        )
+        for split_idx in range(len(self.y_true)):
+            y_true, y_pred = self.y_true[split_idx], self.y_pred[split_idx]
+
+            default_scatter_kwargs = {
+                "color": colors_markers[split_idx],
+                "alpha": 0.3,
+                "s": 10,
+            }
+            prediction_error_scatter_kwargs = _validate_style_kwargs(
+                default_scatter_kwargs, scatter_kwargs
+            )
+
+            if self.data_source in ("train", "test"):
+                scatter_label = f"{self.data_source.title()} set"
+            else:  # data_source == "X_y"
+                scatter_label = "Data set"
+
+            if len(self.y_true) > 1:  # cross-validation
+                scatter_label += f" - split #{split_idx + 1}"
+
+            if kind == "actual_vs_predicted":
+                self.scatter_ = ax.scatter(
+                    y_pred,
+                    y_true,
+                    label=scatter_label,
+                    **prediction_error_scatter_kwargs,
+                )
+
+            else:  # kind == "residual_vs_predicted"
+                residuals = y_true - y_pred
+                self.scatter_ = ax.scatter(
+                    y_pred,
+                    residuals,
+                    label=scatter_label,
+                    **prediction_error_scatter_kwargs,
+                )
+
+        default_line_kwargs = {
+            "color": "black",
+            "alpha": 0.7,
+            "linestyle": "--",
+            "label": "Perfect predictions",
+        }
+        perfect_line_kwargs = _validate_style_kwargs(default_line_kwargs, line_kwargs)
+
         if kind == "actual_vs_predicted":
-            max_value = max(np.max(self.y_true), np.max(self.y_pred))
-            min_value = min(np.min(self.y_true), np.min(self.y_pred))
-
-            x_range = (min_value, max_value)
-            y_range = (min_value, max_value)
-
             self.line_ = ax.plot(
-                [min_value, max_value],
-                [min_value, max_value],
-                label="Perfect predictions",
-                **line_kwargs,
+                x_range_perfect_pred, y_range_perfect_pred, **perfect_line_kwargs
             )[0]
-
-            x_data, y_data = self.y_pred, self.y_true
-            xlabel, ylabel = "Predicted values", "Actual values"
-
-            self.scatter_ = ax.scatter(
-                x_data, y_data, label=scatter_label, **scatter_kwargs
+            ax.set(
+                aspect="equal",
+                xlim=x_range_perfect_pred,
+                ylim=y_range_perfect_pred,
+                xticks=np.linspace(
+                    x_range_perfect_pred[0], x_range_perfect_pred[1], num=5
+                ),
+                yticks=np.linspace(
+                    y_range_perfect_pred[0], y_range_perfect_pred[1], num=5
+                ),
             )
-
-            # force to have a squared axis
-            ax.set_aspect("equal", adjustable="datalim")
-            ax.set_xticks(np.linspace(min_value, max_value, num=5))
-            ax.set_yticks(np.linspace(min_value, max_value, num=5))
-        else:  # kind == "residual_vs_predicted"
-            x_range = (np.min(self.y_pred), np.max(self.y_pred))
-            residuals = self.y_true - self.y_pred
-            y_range = (np.min(residuals), np.max(residuals))
-
-            self.line_ = ax.plot(
-                [np.min(self.y_pred), np.max(self.y_pred)],
-                [0, 0],
-                label="Perfect predictions",
-                **line_kwargs,
-            )[0]
-
-            self.scatter_ = ax.scatter(
-                self.y_pred, residuals, label=scatter_label, **scatter_kwargs
+        else:
+            self.line_ = ax.plot(x_range_perfect_pred, [0, 0], **perfect_line_kwargs)[0]
+            ax.set(
+                aspect="equal",
+                xlim=x_range_perfect_pred,
+                ylim=y_range_perfect_pred,
+                xticks=np.linspace(
+                    x_range_perfect_pred[0], x_range_perfect_pred[1], num=5
+                ),
+                yticks=np.linspace(
+                    y_range_perfect_pred[0], y_range_perfect_pred[1], num=5
+                ),
             )
-            xlabel, ylabel = "Predicted values", "Residuals (actual - predicted)"
 
         ax.set(xlabel=xlabel, ylabel=ylabel)
         ax.legend(title=estimator_name)
@@ -195,6 +277,8 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         self.figure_ = ax.figure
 
         if despine:
+            x_range = self.ax_.get_xlim()
+            y_range = self.ax_.get_ylim()
             _despine_matplotlib_axis(self.ax_, x_range=x_range, y_range=y_range)
 
     @classmethod
@@ -219,10 +303,10 @@ class PredictionErrorDisplay(HelpDisplayMixin):
 
         Parameters
         ----------
-        y_true : array-like of shape (n_samples,)
+        y_true : list of array-like of shape (n_samples,)
             True target values.
 
-        y_pred : array-like of shape (n_samples,)
+        y_pred : list of array-like of shape (n_samples,)
             Predicted target values.
 
         estimator : estimator instance
@@ -279,29 +363,40 @@ class PredictionErrorDisplay(HelpDisplayMixin):
             Object that stores the computed values.
         """
         random_state = check_random_state(random_state)
-
-        n_samples = len(y_true)
         if isinstance(subsample, numbers.Integral):
             if subsample <= 0:
                 raise ValueError(
                     f"When an integer, subsample={subsample} should be positive."
                 )
-        elif isinstance(subsample, numbers.Real):
-            if subsample <= 0 or subsample >= 1:
-                raise ValueError(
-                    f"When a floating-point, subsample={subsample} should"
-                    " be in the (0, 1) range."
-                )
-            subsample = int(n_samples * subsample)
+        elif isinstance(subsample, numbers.Real) and (subsample <= 0 or subsample >= 1):
+            raise ValueError(
+                f"When a floating-point, subsample={subsample} should be in the "
+                "(0, 1) range."
+            )
 
-        if subsample is not None and subsample < n_samples:
-            indices = random_state.choice(np.arange(n_samples), size=subsample)
-            y_true = _safe_indexing(y_true, indices, axis=0)
-            y_pred = _safe_indexing(y_pred, indices, axis=0)
+        y_true_display, y_pred_display = [], []
+        for y_true_i, y_pred_i in zip(y_true, y_pred):
+            n_samples = len(y_true_i)
+            if subsample is None:
+                subsample_ = n_samples
+            elif isinstance(subsample, numbers.Integral):
+                subsample_ = subsample
+            else:  # subsample is a float
+                subsample_ = int(n_samples * subsample)
+
+            # normalize subsample based on the number of splits
+            subsample_ = int(subsample_ / len(y_true))
+            if subsample_ < n_samples:
+                indices = random_state.choice(np.arange(n_samples), size=subsample_)
+                y_true_display.append(_safe_indexing(y_true_i, indices, axis=0))
+                y_pred_display.append(_safe_indexing(y_pred_i, indices, axis=0))
+            else:
+                y_true_display.append(y_true_i)
+                y_pred_display.append(y_pred_i)
 
         viz = cls(
-            y_true=y_true,
-            y_pred=y_pred,
+            y_true=y_true_display,
+            y_pred=y_pred_display,
             estimator_name=estimator_name,
             data_source=data_source,
         )

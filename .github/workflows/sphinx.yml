@@ -106,10 +106,19 @@ jobs:
         with:
           python-version: '3.12'
           cache: 'pip'
+      - shell: bash
+        run: wget -qO- "${SKRUB_DATA_URL}" | tar -zxvf - -C "${HOME}"
+        env:
+          SKRUB_DATA_URL: https://skore.probabl.ai/f355443be646d49eab1aa76e29dfd0a8/skrub-data.tar.gz
+          HOME: ${{ github.workspace }}
       - uses: ./.github/actions/sphinx/build
+        timeout-minutes: 60
         with:
           SPHINX_VERSION: ${{ needs.sphinx-version.outputs.SPHINX_VERSION }}
           SPHINX_RELEASE: ${{ needs.sphinx-version.outputs.SPHINX_RELEASE }}
+          SPHINX_DOMAIN: ${{ vars.DOCUMENTATION_DOMAIN }}
+        env:
+          HOME: ${{ github.workspace }}
       - uses: actions/upload-artifact@v4
         with:
           name: sphinx-html-artifact
@@ -163,9 +172,9 @@ jobs:
             import operator
             import json
 
-            url = os.environ["URL"]
             version = os.environ["SPHINX_VERSION"]
             release = os.environ["SPHINX_RELEASE"]
+            url = os.environ["SPHINX_URL"]
 
             # Retrieve history
             response = requests.get(f"{url}/versions.json")
@@ -179,7 +188,7 @@ jobs:
             # Sort history, and always keep "dev" at the beginning
             history = sorted(
                 history.items(),
-                key=lambda item: float(item[0]) if item[0] != "dev" else float('inf'),
+                key=lambda item: tuple(map(float, item[0].split("."))) if item[0] != "dev" else (float('inf'), 0),
                 reverse=True
             )
 
@@ -208,9 +217,9 @@ jobs:
                   """
               )
         env:
-          URL: ${{ vars.DOCUMENTATION_URL }}
           SPHINX_VERSION: ${{ needs.sphinx-version.outputs.SPHINX_VERSION }}
           SPHINX_RELEASE: ${{ needs.sphinx-version.outputs.SPHINX_RELEASE }}
+          SPHINX_URL: https://${{ vars.DOCUMENTATION_DOMAIN }}
       - uses: ./.github/actions/sphinx/deploy
         with:
           CONFIGURATION: ${{ secrets.RCLONE_CONFIG_DOCS }}

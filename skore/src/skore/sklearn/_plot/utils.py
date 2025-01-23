@@ -2,6 +2,7 @@ import inspect
 from io import StringIO
 
 import matplotlib.pyplot as plt
+import numpy as np
 from rich.console import Console
 from rich.panel import Panel
 from rich.tree import Tree
@@ -79,7 +80,7 @@ class HelpDisplayMixin:
 
         console.print(self._create_help_panel())
 
-    def __repr__(self):
+    def __str__(self):
         """Return a string representation using rich."""
         console = Console(file=StringIO(), force_terminal=False)
         console.print(
@@ -90,6 +91,12 @@ class HelpDisplayMixin:
                 expand=False,
             )
         )
+        return console.file.getvalue()
+
+    def __repr__(self):
+        """Return a string representation using rich."""
+        console = Console(file=StringIO(), force_terminal=False)
+        console.print(f"[cyan]skore.{self.__class__.__name__}(...)[/cyan]")
         return console.file.getvalue()
 
 
@@ -116,18 +123,18 @@ class _ClassifierCurveDisplayMixin:
         y_pred,
         *,
         ml_task,
-        sample_weight=None,
         pos_label=None,
     ):
-        check_consistent_length(y_true, y_pred, sample_weight)
+        for y_true_i, y_pred_i in zip(y_true, y_pred):
+            check_consistent_length(y_true_i, y_pred_i)
 
         if ml_task == "binary-classification":
-            pos_label = _check_pos_label_consistency(pos_label, y_true)
+            pos_label = _check_pos_label_consistency(pos_label, y_true[0])
 
         return pos_label
 
 
-def _despine_matplotlib_axis(ax, *, x_range=(0, 1), y_range=(0, 1)):
+def _despine_matplotlib_axis(ax, *, x_range=(0, 1), y_range=(0, 1), offset=10):
     """Despine the matplotlib axis.
 
     Parameters
@@ -138,11 +145,15 @@ def _despine_matplotlib_axis(ax, *, x_range=(0, 1), y_range=(0, 1)):
         The range of the x-axis.
     y_range : tuple of float, default=(0, 1)
         The range of the y-axis.
+    offset : float, default=10
+        The offset to add to the x-axis and y-axis.
     """
     for s in ["top", "right"]:
         ax.spines[s].set_visible(False)
     ax.spines["bottom"].set_bounds(x_range[0], x_range[1])
     ax.spines["left"].set_bounds(y_range[0], y_range[1])
+    ax.spines["left"].set_position(("outward", offset))
+    ax.spines["bottom"].set_position(("outward", offset))
 
 
 def _validate_style_kwargs(default_style_kwargs, user_style_kwargs):
@@ -205,3 +216,22 @@ def _validate_style_kwargs(default_style_kwargs, user_style_kwargs):
             valid_style_kwargs[key] = user_style_kwargs[key]
 
     return valid_style_kwargs
+
+
+def sample_mpl_colormap(cmap, n):
+    """Sample colors from a Matplotlib colormap.
+
+    Parameters
+    ----------
+    cmap : matplotlib.colors.Colormap
+        The Matplotlib colormap to sample from.
+    n : int
+        The number of colors to sample.
+
+    Returns
+    -------
+    colors : list of str
+        The sampled colors.
+    """
+    indices = np.linspace(0, 1, n)
+    return [cmap(i) for i in indices]

@@ -291,24 +291,25 @@ def test_estimator_report_repr(binary_classification_data):
 
     repr_str = repr(report)
     assert "skore.EstimatorReport" in repr_str
-    assert "reporter.help()" in repr_str
+    assert "help()" in repr_str
 
 
 @pytest.mark.parametrize(
     "fixture_name, pass_train_data, expected_n_keys",
     [
-        ("binary_classification_data", True, 6),
-        ("binary_classification_data_svc", True, 6),
-        ("multiclass_classification_data", True, 8),
+        ("binary_classification_data", True, 8),
+        ("binary_classification_data_svc", True, 8),
+        ("multiclass_classification_data", True, 10),
         ("regression_data", True, 2),
-        ("binary_classification_data", False, 3),
-        ("binary_classification_data_svc", False, 3),
-        ("multiclass_classification_data", False, 4),
+        ("binary_classification_data", False, 4),
+        ("binary_classification_data_svc", False, 4),
+        ("multiclass_classification_data", False, 5),
         ("regression_data", False, 1),
     ],
 )
+@pytest.mark.parametrize("n_jobs", [1, 2])
 def test_estimator_report_cache_predictions(
-    request, fixture_name, pass_train_data, expected_n_keys
+    request, fixture_name, pass_train_data, expected_n_keys, n_jobs
 ):
     """Check that calling cache_predictions fills the cache."""
     estimator, X_test, y_test = request.getfixturevalue(fixture_name)
@@ -320,13 +321,25 @@ def test_estimator_report_cache_predictions(
         report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
     assert report._cache == {}
-    report.cache_predictions()
+    report.cache_predictions(n_jobs=n_jobs)
     assert len(report._cache) == expected_n_keys
     assert report._cache != {}
     stored_cache = deepcopy(report._cache)
-    report.cache_predictions()
+    report.cache_predictions(n_jobs=n_jobs)
     # check that the keys are exactly the same
     assert report._cache.keys() == stored_cache.keys()
+
+
+def test_estimator_report_pickle(tmp_path, binary_classification_data):
+    """Check that we can pickle an estimator report.
+
+    In particular, the progress bar from rich are pickable, therefore we trigger
+    the progress bar to be able to test that the progress bar is pickable.
+    """
+    estimator, X_test, y_test = binary_classification_data
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    report.cache_predictions()
+    joblib.dump(report, tmp_path / "report.joblib")
 
 
 ########################################################################################
@@ -351,7 +364,7 @@ def test_estimator_report_plot_repr(binary_classification_data):
 
     repr_str = repr(report.metrics.plot)
     assert "skore.EstimatorReport.metrics.plot" in repr_str
-    assert "reporter.metrics.plot.help()" in repr_str
+    assert "report.metrics.plot.help()" in repr_str
 
 
 def test_estimator_report_plot_roc(binary_classification_data):
@@ -491,7 +504,7 @@ def test_estimator_report_metrics_repr(binary_classification_data):
 
     repr_str = repr(report.metrics)
     assert "skore.EstimatorReport.metrics" in repr_str
-    assert "reporter.metrics.help()" in repr_str
+    assert "report.metrics.help()" in repr_str
 
 
 @pytest.mark.parametrize(
@@ -933,7 +946,7 @@ def test_estimator_report_custom_metric_compatible_estimator(
 
     class CompatibleEstimator:
         """Estimator exposing only a predict method but it should be enough for the
-        reporters.
+        reports.
         """
 
         def fit(self, X, y):
@@ -1047,8 +1060,8 @@ def test_estimator_report_get_X_y_and_data_source_hash_error():
     for data_source in ("train", "test"):
         err_msg = re.escape(
             f"No {data_source} data (i.e. X_{data_source} and y_{data_source}) were "
-            f"provided when creating the reporter. Please provide the {data_source} "
-            "data either when creating the reporter or by setting data_source to "
+            f"provided when creating the report. Please provide the {data_source} "
+            "data either when creating the report or by setting data_source to "
             "'X_y' and providing X and y."
         )
         with pytest.raises(ValueError, match=err_msg):
@@ -1081,8 +1094,8 @@ def test_estimator_report_get_X_y_and_data_source_hash_error():
     for data_source in ("train", "test"):
         err_msg = re.escape(
             f"No {data_source} data (i.e. X_{data_source}) were provided when "
-            f"creating the reporter. Please provide the {data_source} data either "
-            f"when creating the reporter or by setting data_source to 'X_y' and "
+            f"creating the report. Please provide the {data_source} data either "
+            f"when creating the report or by setting data_source to 'X_y' and "
             f"providing X and y."
         )
         with pytest.raises(ValueError, match=err_msg):
