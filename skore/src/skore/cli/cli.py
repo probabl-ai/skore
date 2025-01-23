@@ -10,7 +10,7 @@ from skore.project import create
 
 
 def cli(args: list[str]):
-    """CLI for Skore."""
+    """CLI for Skore !"""
     parser = argparse.ArgumentParser(prog="skore")
 
     parser.add_argument(
