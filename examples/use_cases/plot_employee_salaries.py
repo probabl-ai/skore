@@ -32,7 +32,7 @@ project = skore.open("my_project", create=True)
 
 # %%
 #
-# We use a `skrub` dataset that is non-trivial.
+# We use a skrub dataset that is non-trivial.
 from skrub.datasets import fetch_employee_salaries
 
 datasets = fetch_employee_salaries()
@@ -161,7 +161,7 @@ model
 # ^^^^^^^^^^^
 #
 # Now, we want to evaluate this complex model via cross-validation (with 5 folds).
-# For that, we use skore's :class:`~skore.CrossValidationReport` to investigate th
+# For that, we use skore's :class:`~skore.CrossValidationReport` to investigate the
 # performance of our model.
 from skore import CrossValidationReport
 
@@ -170,10 +170,10 @@ report.help()
 
 # %%
 # We observe that the cross-validation report detected that we have a regression task
-# and provides us only a subset of the metrics and plots that make sense for our
+# and provides us with some metrics and plots that make sense for our
 # specific problem at hand.
 #
-# To accelerate any future computation (e.g. a metric), we cache once and for all the
+# To accelerate any future computation (e.g. of a metric), we cache once and for all the
 # predictions of our model.
 # Note that we don't necessarily need to cache the predictions as the report will
 # compute them on the fly (if not cached) and cache them for us.
@@ -189,7 +189,7 @@ with warnings.catch_warnings():
 
 # %%
 #
-# To not lose the this cross-validation report, let's store it in our skore project.
+# To not lose this cross-validation report, let's store it in our skore project.
 project.put("Linear model report", report)
 
 # %%
@@ -201,7 +201,7 @@ report.metrics.report_metrics(aggregate=["mean", "std"])
 # ^^^^^^^^^^^^
 #
 # Now that we have our first baseline model, we can try an out-of-the-box model:
-# the :class:`~skrub.TableVectorizer` that makes the feature engineering for us.
+# skrub's :class:`~skrub.TableVectorizer` that makes the feature engineering for us.
 # To deal with the high cardinality of the categorical features, we use a
 # :class:`~skrub.TextEncoder` that uses a language model and an embedding model to
 # encode the categorical features.
@@ -243,8 +243,8 @@ report.metrics.report_metrics(aggregate=["mean", "std"])
 # Investigating the models
 # ^^^^^^^^^^^^^^^^^^^^^^^^
 #
-# At this stage, I might not been careful and have already overwritten the report and
-# model from my first attempt. Hopefully, because we stored the reports in our skore
+# At this stage, we might not been careful and have already overwritten the report and
+# model from our first attempt. Hopefully, because we stored the reports in our skore
 # project, we can easily retrieve them. So let's retrieve the reports.
 linear_model_report = project.get("Linear model report")
 hgbdt_model_report = project.get("HGBDT model report")
@@ -267,7 +267,7 @@ results
 #
 # In addition, if we forgot to compute a specific metric
 # (e.g. :func:`~sklearn.metrics.mean_absolute_error`),
-# we can easily add it to the the report, without re-training the model and even
+# we can easily add it to the report, without re-training the model and even
 # without re-computing the predictions since they are cached internally in the report.
 # This allows us to save some potentially huge computation time.
 from sklearn.metrics import mean_absolute_error
@@ -295,7 +295,7 @@ results
 
 # %%
 #
-# Finally, we can even get individual :class:`~skore.EstimatorReport` for each fold
+# Finally, we can even get the individual :class:`~skore.EstimatorReport` for each fold
 # from the cross-validation to make further analysis.
 # Here, we plot the actual vs predicted values for each fold.
 from itertools import zip_longest
@@ -317,7 +317,8 @@ plt.tight_layout()
 # Cleanup the project
 # -------------------
 #
-# Let's clear the skore project (to avoid any conflict with other documentation examples).
+# Let's clear the skore project (to avoid any conflict with other documentation
+# examples).
 
 # %%
 project.clear()
