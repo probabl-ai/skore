@@ -368,5 +368,6 @@ class Project:
         """Shutdown the web UI server if it is running."""
         if self._server_manager is not None:
             self._server_manager.shutdown()
+            self._server_manager = None
         else:
             raise RuntimeError("UI server is not running")

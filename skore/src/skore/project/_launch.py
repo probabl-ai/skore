@@ -34,6 +34,7 @@ class ServerManager:
         self._loop = None
         self._server_thread = None
         self._server_ready = threading.Event()
+        self._cleanup_complete = threading.Event()
         self._server = None
         atexit.register(self._cleanup_server)
 
@@ -48,6 +49,9 @@ class ServerManager:
 
     def _cleanup_server(self):
         """Cleanup server resources."""
+        if not self._server_running:
+            self._cleanup_complete.set()
+            return
         self._server_running = False
         if self._loop and not self._loop.is_closed():
             with contextlib.suppress(Exception):
@@ -55,6 +59,7 @@ class ServerManager:
                     # Schedule server shutdown in the event loop
                     async def shutdown():
                         await self._server.shutdown()
+                        self._cleanup_complete.set()
 
                     self._loop.call_soon_threadsafe(
                         lambda: asyncio.create_task(shutdown())
@@ -76,6 +81,8 @@ class ServerManager:
         self._server = None
         self._server_thread = None
         self._server_ready.clear()
+        if not self._cleanup_complete.is_set():
+            self._cleanup_complete.set()
 
     async def _run_server_async(self, project, port, open_browser, console):
         """Async function to start the server and signal when it's ready."""
@@ -84,10 +91,7 @@ class ServerManager:
         async def lifespan(app: FastAPI):
             if open_browser:
                 webbrowser.open(f"http://localhost:{port}")
-            try:
-                yield
-            except asyncio.CancelledError:
-                project._server_manager = None
+            yield
 
         from skore.ui.app import create_app
 
@@ -154,7 +158,6 @@ class ServerManager:
 
         self._server_thread = threading.Thread(target=run_server_loop, daemon=True)
         self._server_thread.start()
-        project._server_manager = self
 
         # Wait for the server to be ready
         if not self._server_ready.wait(timeout):
@@ -197,4 +200,5 @@ def _launch(
 
     with logger_context(logger, verbose):
         server_manager = ServerManager.get_instance()
+        project._server_manager = server_manager
         server_manager.start_server(project, port, open_browser)
