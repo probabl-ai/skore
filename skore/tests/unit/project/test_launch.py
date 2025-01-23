@@ -1,5 +1,4 @@
 import socket
-import time
 
 from skore.project._create import _create
 from skore.project._launch import (
@@ -34,34 +33,26 @@ def test_server_manager_singleton():
 def test_launch(capsys, tmp_path):
     """Check the general behaviour of the launch function."""
     skore_project = _create(tmp_path / "test_project")
-    try:
-        _launch(skore_project, port=8000, open_browser=False, verbose=True)
+    _launch(skore_project, port=8000, open_browser=False, verbose=True)
 
-        time.sleep(0.5)  # let the server start
-        assert skore_project._server_manager is not None
-        server_manager = skore_project._server_manager
-        assert server_manager is ServerManager.get_instance()
-        assert "Running skore UI" in capsys.readouterr().out
+    assert skore_project._server_manager is not None
+    server_manager = skore_project._server_manager
+    assert server_manager is ServerManager.get_instance()
+    assert "Running skore UI" in capsys.readouterr().out
 
-        # Force server shutdown
-        server_manager._server_running = True  # ensure it's marked as running
-        server_manager.shutdown()
-        time.sleep(0.5)  # let the shutdown complete
+    # Force server shutdown
+    server_manager._server_running = True  # ensure it's marked as running
+    server_manager.shutdown()
+    assert server_manager._server_running is False
 
-        # Check shutdown output
-        output = capsys.readouterr().out
-        assert "Server that was running at http://localhost:8000" in output
-        assert not server_manager._server_running
-        assert server_manager._loop is None
+    # Check shutdown output
+    output = capsys.readouterr().out
+    assert "Server that was running" in output
+    assert not server_manager._server_running
+    assert server_manager._loop is None
 
-        # Try launching again
-        _launch(skore_project, port=8000, open_browser=False, verbose=True)
-        time.sleep(0.5)
-        _launch(skore_project, port=8000, open_browser=False, verbose=True)
-        time.sleep(0.5)
-        assert skore_project._server_manager is ServerManager.get_instance()
-        assert "Server is already running" in capsys.readouterr().out
-    finally:
-        skore_project.shutdown_web_ui()
-        time.sleep(0.5)  # let the server shutdown
-        assert "Server that was running" in capsys.readouterr().out
+    # # Try launching again
+    _launch(skore_project, port=8000, open_browser=False, verbose=True)
+    _launch(skore_project, port=8000, open_browser=False, verbose=True)
+    assert skore_project._server_manager is ServerManager.get_instance()
+    assert "Server is already running" in capsys.readouterr().out

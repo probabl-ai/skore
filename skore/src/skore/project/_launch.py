@@ -1,17 +1,17 @@
 """Helpers to create, load, and launch projects."""
 
 import asyncio
+import atexit
 import contextlib
 import socket
+import threading
 import time
 import webbrowser
-from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from typing import Union
 
 import uvicorn
 from fastapi import FastAPI
-from rich.console import Console
 
 from skore.project.project import Project, logger
 from skore.utils._logger import logger_context
@@ -26,14 +26,19 @@ def find_free_port() -> int:
 
 class ServerManager:
     _instance = None
-    _executor = None
     _port = None
     _server_running = False
 
     def __init__(self):
         self._timestamp = time.time()
         self._loop = None
-        self._server_task = None
+        self._server_thread = None
+        self._server_ready = threading.Event()
+        self._server = None
+        atexit.register(self._cleanup_server)
+
+    def __del__(self):
+        atexit.unregister(self._cleanup_server)
 
     @classmethod
     def get_instance(cls):
@@ -41,118 +46,130 @@ class ServerManager:
             cls._instance = cls()
         return cls._instance
 
+    def _cleanup_server(self):
+        """Cleanup server resources."""
+        self._server_running = False
+        if self._loop and not self._loop.is_closed():
+            with contextlib.suppress(Exception):
+                if self._server:
+                    # Schedule server shutdown in the event loop
+                    async def shutdown():
+                        await self._server.shutdown()
+
+                    self._loop.call_soon_threadsafe(
+                        lambda: asyncio.create_task(shutdown())
+                    )
+
+                for task in asyncio.all_tasks(self._loop):
+                    task.cancel()
+                self._loop.stop()
+                self._loop.close()
+
+            from skore import console
+
+            console.rule("[bold cyan]skore-UI[/bold cyan]")
+            console.print(
+                f"Server that was running at http://localhost:{self._port} has "
+                "been closed"
+            )
+        self._loop = None
+        self._server = None
+        self._server_thread = None
+        self._server_ready.clear()
+
+    async def _run_server_async(self, project, port, open_browser, console):
+        """Async function to start the server and signal when it's ready."""
+
+        @asynccontextmanager
+        async def lifespan(app: FastAPI):
+            if open_browser:
+                webbrowser.open(f"http://localhost:{port}")
+            try:
+                yield
+            except asyncio.CancelledError:
+                project._server_manager = None
+
+        from skore.ui.app import create_app
+
+        app = create_app(project=project, lifespan=lifespan)
+        server_config = uvicorn.Config(
+            app,
+            port=port,
+            log_level="error",
+            log_config={
+                "version": 1,
+                "disable_existing_loggers": True,
+                "handlers": {
+                    "default": {
+                        "class": "logging.NullHandler",
+                    }
+                },
+                "loggers": {
+                    "uvicorn": {"handlers": ["default"], "level": "ERROR"},
+                    "uvicorn.error": {"handlers": ["default"], "level": "ERROR"},
+                },
+            },
+        )
+        self._server = uvicorn.Server(server_config)
+        console.print(
+            f"Running skore UI from '{project.name}' at URL http://localhost:{port}"
+        )
+
+        # Set ready event when server is about to start
+        self._server_ready.set()
+
+        try:
+            await self._server.serve()
+        except asyncio.CancelledError:
+            await self._server.shutdown()
+        finally:
+            self._server_ready.clear()
+
     def start_server(
         self,
         project: Project,
         port: Union[int, None] = None,
         open_browser: bool = True,
+        timeout: float = 10.0,
     ):
         from skore import console
 
         console.rule("[bold cyan]skore-UI[/bold cyan]")
-        if self._executor is not None and self._server_running:
+        if self._server_running:
             console.print(f"Server is already running at http://localhost:{port}")
             return
 
-        def run_in_thread():
+        def run_server_loop():
             self._loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self._loop)
-            try:
-                self._port = port
-                self._server_running = True
-                self._loop.run_until_complete(
-                    run_server(project, port, open_browser, console)
-                )
-            except (KeyboardInterrupt, asyncio.CancelledError):
-                pass
-            finally:
-                self._server_running = False
-                try:
-                    tasks = asyncio.all_tasks(self._loop)
-                    for task in tasks:
-                        task.cancel()
-                    self._loop.run_until_complete(
-                        asyncio.gather(*tasks, return_exceptions=True)
-                    )
-                    self._loop.close()
-                except Exception:
-                    pass
-                console.rule("[bold cyan]skore-UI[/bold cyan]")
-                console.print(
-                    f"Server that was running at http://localhost:{self._port} has "
-                    "been closed"
-                )
+            self._port = port
+            self._server_running = True
 
-        self._executor = ThreadPoolExecutor(max_workers=1)
-        self._executor.submit(run_in_thread)
+            try:
+                self._loop.run_until_complete(
+                    self._run_server_async(project, port, open_browser, console)
+                )
+            except Exception:
+                self._cleanup_server()
+
+        self._server_thread = threading.Thread(target=run_server_loop, daemon=True)
+        self._server_thread.start()
         project._server_manager = self
-        self._executor.shutdown(wait=False)
+
+        # Wait for the server to be ready
+        if not self._server_ready.wait(timeout):
+            raise TimeoutError(f"Server failed to start within {timeout} seconds")
 
     def shutdown(self):
         """Shutdown the server and cleanup resources."""
-        if self._executor is not None and self._server_running:
-            if self._loop is not None:
+        if not self._server_running:
+            return
 
-                async def stop():
-                    tasks = asyncio.all_tasks(self._loop)
-                    for task in tasks:
-                        if not task.done():
-                            task.cancel()
-                    await asyncio.gather(*tasks, return_exceptions=True)
-
-                try:
-                    future = asyncio.run_coroutine_threadsafe(stop(), self._loop)
-                    future.result(timeout=0.1)
-                except Exception:
-                    pass
-
-            self._server_running = False
+        if self._loop and not self._loop.is_closed():
             with contextlib.suppress(Exception):
-                self._executor.shutdown(wait=True, cancel_futures=True)
-            self._executor = None
-            self._loop = None
+                self._loop.call_soon_threadsafe(self._loop.stop)
 
-
-async def run_server(project: Project, port: int, open_browser: bool, console: Console):
-    @asynccontextmanager
-    async def lifespan(app: FastAPI):
-        if open_browser:
-            webbrowser.open(f"http://localhost:{port}")
-        try:
-            yield
-        except asyncio.CancelledError:
-            project._server_manager = None
-
-    from skore.ui.app import create_app
-
-    app = create_app(project=project, lifespan=lifespan)
-    server_config = uvicorn.Config(
-        app,
-        port=port,
-        log_level="error",
-        log_config={
-            "version": 1,
-            "disable_existing_loggers": True,
-            "handlers": {
-                "default": {
-                    "class": "logging.NullHandler",
-                }
-            },
-            "loggers": {
-                "uvicorn": {"handlers": ["default"], "level": "ERROR"},
-                "uvicorn.error": {"handlers": ["default"], "level": "ERROR"},
-            },
-        },
-    )
-    server = uvicorn.Server(server_config)
-    console.print(
-        f"Running skore UI from '{project.name}' at URL http://localhost:{port}"
-    )
-
-    try:
-        await server.serve()
-    except asyncio.CancelledError:
-        await server.shutdown()
+        self._cleanup_server()
 
 
 def _launch(
