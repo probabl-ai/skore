@@ -7,6 +7,11 @@ Cross-validation
 
 This example illustrates the motivation and the use of skore's
 :class:`skore.CrossValidationReporter` to get assistance when developing ML/DS projects.
+
+.. warning ::
+
+    **Deprecation Notice**:
+    :class:`skore.CrossValidationReporter` is deprecated in favor of :class:`skore.CrossValidationReport`.
 """
 
 # %%
@@ -14,23 +19,12 @@ This example illustrates the motivation and the use of skore's
 # ======================================
 
 # %%
-# We start by creating a temporary directory to store our project so that we can
-# easily clean it after executing this example:
-
-# %%
-import tempfile
-from pathlib import Path
-
-temp_dir = tempfile.TemporaryDirectory(prefix="skore_example_")
-temp_dir_path = Path(temp_dir.name)
-
-# %%
-# We create and load the skore project from this temporary directory:
+# We create and load the skore project from the current directory:
 
 # %%
 import skore
 
-my_project = skore.create("my_project", working_dir=temp_dir_path)
+my_project = skore.open("my_project", create=True)
 
 # %%
 # Cross-validation in scikit-learn
@@ -155,25 +149,17 @@ reporter = skore.CrossValidationReporter(lasso, X, y, cv=5)
 reporter.plots.scores
 
 # %%
-# We can also access the plot after we have stored the ``CrossValidationReporter``:
-my_project.put("cross_validation_regression", reporter)
-cv_item = my_project.get_item("cross_validation_regression")
-cv_item.plots["Scores"]
+# We can put the reporter in the project, and retrieve it as is:
+my_project.put("cross_validation_reporter", reporter)
 
-# %%
-# .. note::
-#
-#   If we put a cross-validation item in a skore project, we get some nice
-#   information in the UI:
-#
-#   .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_12_skore_demo_comp.gif
-#       :alt: Getting started with ``skore`` demo
+reporter = my_project.get("cross_validation_reporter")
+reporter.plots.scores
 
 # %%
 # Cleanup the project
 # -------------------
 #
-# Removing the temporary directory:
+# Let's clear the skore project (to avoid any conflict with other documentation examples).
 
 # %%
-temp_dir.cleanup()
+my_project.clear()

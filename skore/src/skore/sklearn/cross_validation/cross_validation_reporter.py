@@ -3,6 +3,11 @@
 This class implements a wrapper over scikit-learn's
 `cross_validate <https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate>`_
 function in order to enrich it with more information and enable more analysis.
+
+.. warning ::
+
+    **Deprecation Notice**:
+    This class is deprecated in favor of :class:`skore.CrossValidationReport`.
 """
 
 from dataclasses import dataclass
@@ -16,7 +21,6 @@ from .cross_validation_helpers import (
     _strip_cv_results_scores,
 )
 from .plots.compare_scores_plot import plot_cross_validation_compare_scores
-from .plots.timing_normalized_plot import plot_cross_validation_timing_normalized
 from .plots.timing_plot import plot_cross_validation_timing
 
 
@@ -26,11 +30,15 @@ class CrossValidationPlots:
 
     scores: plotly.graph_objects.Figure
     timing: plotly.graph_objects.Figure
-    timing_normalized: plotly.graph_objects.Figure
 
 
 class CrossValidationReporter:
     """Evaluate estimator by cross-validation and output UI-friendly object.
+
+    .. warning ::
+
+        **Deprecation Notice**:
+        This class is deprecated in favor of :class:`skore.CrossValidationReport`.
 
     This class wraps scikit-learn's :func:`sklearn.model_selection.cross_validate`
     function, to provide more context and facilitate the analysis.
@@ -136,7 +144,9 @@ class CrossValidationReporter:
 
         # Extend scorers with other relevant scorers
         scorers_to_add = _get_scorers_to_add(self.estimator, self.y)
-        self._scorers, added_scorers = _add_scorers(self.scorers, scorers_to_add)
+        self._scorers, added_scorers = _add_scorers(
+            self.scorers, scorers_to_add, self.estimator
+        )
 
         self._cv_results = sklearn.model_selection.cross_validate(
             *args,
@@ -189,5 +199,4 @@ class CrossValidationReporter:
         return CrossValidationPlots(
             scores=plot_cross_validation_compare_scores(self._cv_results),
             timing=plot_cross_validation_timing(self._cv_results),
-            timing_normalized=plot_cross_validation_timing_normalized(self._cv_results),
         )

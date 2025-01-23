@@ -1,10 +1,17 @@
 from datetime import datetime, timezone
 
 import pytest
-from skore.item.item_repository import ItemRepository
-from skore.persistence.in_memory_storage import InMemoryStorage
+import skore
+from skore.persistence.repository import ItemRepository, ViewRepository
+from skore.persistence.storage import InMemoryStorage
 from skore.project import Project
-from skore.view.view_repository import ViewRepository
+
+
+def pytest_configure(config):
+    # Use matplotlib agg backend during the tests including doctests
+    import matplotlib
+
+    matplotlib.use("agg")
 
 
 @pytest.fixture
@@ -37,3 +44,27 @@ def in_memory_project():
         item_repository=item_repository,
         view_repository=view_repository,
     )
+
+
+@pytest.fixture
+def on_disk_project(tmp_path):
+    project = skore.open(tmp_path / "project")
+    return project
+
+
+@pytest.fixture(scope="function")
+def pyplot():
+    """Setup and teardown fixture for matplotlib.
+
+    This fixture closes the figures before and after running the functions.
+
+    Returns
+    -------
+    pyplot : module
+        The ``matplotlib.pyplot`` module.
+    """
+    from matplotlib import pyplot
+
+    pyplot.close("all")
+    yield pyplot
+    pyplot.close("all")

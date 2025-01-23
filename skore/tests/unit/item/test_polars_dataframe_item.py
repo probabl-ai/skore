@@ -2,14 +2,14 @@ import numpy as np
 import pytest
 from polars import DataFrame
 from polars.testing import assert_frame_equal
-from skore.item import ItemTypeError, PolarsDataFrameItem
-from skore.item.polars_dataframe_item import PolarsToJSONError
+from skore.persistence.item import ItemTypeError, PolarsDataFrameItem
+from skore.persistence.item.polars_dataframe_item import PolarsToJSONError
 
 
 class TestPolarsDataFrameItem:
     @pytest.fixture(autouse=True)
     def monkeypatch_datetime(self, monkeypatch, MockDatetime):
-        monkeypatch.setattr("skore.item.item.datetime", MockDatetime)
+        monkeypatch.setattr("skore.persistence.item.item.datetime", MockDatetime)
 
     def test_factory_exception(self):
         with pytest.raises(ItemTypeError):
@@ -54,6 +54,7 @@ class TestPolarsDataFrameItem:
         assert serializable == {
             "updated_at": mock_nowstr,
             "created_at": mock_nowstr,
+            "note": None,
             "media_type": "application/vnd.dataframe",
             "value": dataframe.to_pandas().fillna("NaN").to_dict(orient="tight"),
         }

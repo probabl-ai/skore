@@ -1,14 +1,16 @@
 """FastAPI factory used to create the API to interact with stores."""
 
 import sys
+from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.types import Lifespan
 
-from skore.project import Project, load
+from skore.project import Project, open
 from skore.ui.dependencies import get_static_path
 from skore.ui.project_routes import router as project_router
 
@@ -21,7 +23,7 @@ def create_app(
 
     # Give the app access to the project
     if not project:
-        project = load("project.skore")
+        project = open("project.skore")
 
     app.state.project = project
 
@@ -64,5 +66,13 @@ def create_app(
             ),
             name="static",
         )
+    else:
+
+        async def read_index(request):
+            module_path = Path(__file__).resolve().parent
+            error_template_path = module_path / "templates" / "404.html"
+            return FileResponse(error_template_path, status_code=404)
+
+        app.router.add_route("/", read_index, methods=["GET"])
 
     return app

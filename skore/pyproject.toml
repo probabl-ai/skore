@@ -1,17 +1,20 @@
 [project]
 name = "skore"
-description = "The scikit-learn Modeling Companion"
+description = "the scikit-learn sidekick"
 dynamic = ["license", "readme", "version"]
 requires-python = ">=3.9, <3.13"
 maintainers = [{ name = "skore developers", email = "skore@signal.probabl.ai" }]
 dependencies = [
   "diskcache",
   "fastapi",
+  "joblib",
+  "matplotlib",
   "numpy",
+  "pandas",
   "plotly>=5,<6",
   "pyarrow",
   "rich",
-  "scikit-learn<1.7",
+  "scikit-learn",
   "skops",
   "uvicorn",
 ]
@@ -66,8 +69,6 @@ artifacts = ["src/skore/ui/static/"]
 test = [
   "altair>=5,<6",
   "httpx",
-  "matplotlib",
-  "pandas",
   "pillow",
   "plotly",
   "polars",
@@ -78,19 +79,20 @@ test = [
   "pytest-randomly",
   "pytest-xdist",
   "ruff",
+  "scikit-learn<1.7",
   "skrub",
 ]
 
 sphinx = [
   "IPython",
   "altair",
-  "matplotlib",
   "numpydoc",
-  "pandas",
   "polars",
   "kaleido",
   "pydata-sphinx-theme",
+  "sentence-transformers",
   "sphinx",
+  "sphinx_autosummary_accessors",
   "sphinx-design",
   "sphinx-gallery",
   "sphinx-copybutton",
@@ -101,9 +103,6 @@ sphinx = [
 [tool.pytest.ini_options]
 addopts = [
   "--doctest-modules",
-  "--cov=src/",
-  "--cov=tests/",
-  "--cov-branch",
   "--import-mode=importlib",
   "--no-header",
   "--verbosity=2",
@@ -114,11 +113,15 @@ addopts = [
   "--ignore=examples",
   "--ignore=notebooks",
 ]
+doctest_optionflags = ["ELLIPSIS", "NORMALIZE_WHITESPACE"]
 
 [tool.coverage.run]
-omit = [
-  "tests/*",
-]
+branch = true
+source = ["skore"]
+
+[tool.coverage.report]
+omit = ["*/externals/*", "src/*", "tests/*"]
+show_missing = true
 
 [tool.ruff]
 src = ["skore"]

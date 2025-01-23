@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 describe("Icons", () => {
   it("Can render.", async () => {
     interface ModuleImportInterface {
-      default: any;
+      default: never;
     }
     const iconModules = import.meta.glob<ModuleImportInterface>("@/components/icons/**/*.vue");
     for (const path in iconModules) {

@@ -60,6 +60,7 @@ body[data-vscode-theme-kind="vscode-dark"],
   --color-text-branding: #f08b30;
   --color-text-button-primary: #fff;
   --color-text-logo: #fff;
+  --color-text-danger: #ff3b00;
 
   /* icons */
   --color-icon-primary: #f08b30;
@@ -75,6 +76,11 @@ body[data-vscode-theme-kind="vscode-dark"],
 
   /* shadow */
   --color-shadow: rgb(0 0 0/58%);
+
+  /* images */
+  --image-not-found: url("../images/not-found-dark.png");
+  --image-editor-placeholder: url("../images/editor-placeholder-dark.svg");
+  --image-activity-feed-placeholder: url("../images/activity-feed-placeholder-dark.svg");
 }
 
 body[data-jp-theme-light="true"],
@@ -93,6 +99,7 @@ body[data-vscode-theme-kind="vscode-light"],
   --color-text-branding: #3043f0;
   --color-text-button-primary: #fff;
   --color-text-logo: #000;
+  --color-text-danger: #ff3b00;
 
   /* icons */
   --color-icon-primary: #f08b30;
@@ -108,4 +115,9 @@ body[data-vscode-theme-kind="vscode-light"],
 
   /* shadow */
   --color-shadow: rgb(0 0 0/19%);
+
+  /* images */
+  --image-not-found: url("../images/not-found-light.png");
+  --image-editor-placeholder: url("../images/editor-placeholder-light.svg");
+  --image-activity-feed-placeholder: url("../images/activity-feed-placeholder-light.svg");
 }

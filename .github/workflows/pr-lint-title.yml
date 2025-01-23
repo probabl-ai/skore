@@ -1,0 +1,35 @@
+name: lint title in PR
+
+on:
+  pull_request:
+    types: [opened, reopened, edited, synchronize]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  lint-title:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install commitlint
+        run: |
+          npm install @commitlint/config-conventional@19.5.0
+          npm install commitlint@19.2.0
+      - name: Generate config file
+        # Here we define our custom rules for commitlint
+        # Reference of all rules: https://commitlint.js.org/reference/rules.html
+        run: |
+          tee -a .commitlintrc.yml << END
+          extends: ["@commitlint/config-conventional"]
+          rules:
+            "subject-case": [2, "always", ["sentence-case"]]
+          END
+      - name: Lint PR title
+        # Use an environment variable to avoid a security vulnerability
+        # https://stackoverflow.com/a/76679447
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: echo $PR_TITLE | npx commitlint --verbose

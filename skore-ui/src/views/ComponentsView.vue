@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Simplebar from "simplebar-vue";
 import type { VisualizationSpec } from "vega-embed";
-import { ref } from "vue";
+import { ref, useTemplateRef } from "vue";
 
 import datatable from "@/assets/fixtures/datatable.json";
 import htmlSnippet from "@/assets/fixtures/html-snippet.html?raw";
@@ -23,6 +23,7 @@ import FloatingTooltip from "@/components/FloatingTooltip.vue";
 import HtmlSnippetWidget from "@/components/HtmlSnippetWidget.vue";
 import ImageWidget from "@/components/ImageWidget.vue";
 import MarkdownWidget from "@/components/MarkdownWidget.vue";
+import RichTextEditor from "@/components/RichTextEditor.vue";
 import SectionHeader from "@/components/SectionHeader.vue";
 import SimpleButton from "@/components/SimpleButton.vue";
 import SlideToggle from "@/components/SlideToggle.vue";
@@ -245,14 +246,20 @@ const isCached = ref(false);
 
 const results: PrimaryResultsDto = {
   scalarResults: [
-    { name: "toto", value: 4.32 },
-    { name: "tata", value: 4.32 },
-    { name: "titi", value: 4.32, stddev: 1 },
-    { name: "tutu", value: 4.32 },
-    { name: "stab", value: 0.4, label: "Good" },
-    { name: "titi", value: 4.32, stddev: 1 },
-    { name: "tutu", value: 4.32 },
-    { name: "stab", value: 0.9, label: "Good", description: "your blabla is good" },
+    { name: "toto", value: 4.32, favorability: "greater_is_better" },
+    { name: "tata", value: 4.32, favorability: "greater_is_better" },
+    { name: "titi", value: 4.32, stddev: 1, favorability: "greater_is_better" },
+    { name: "tutu", value: 4.32, favorability: "greater_is_better" },
+    { name: "stab", value: 0.4, label: "Good", favorability: "greater_is_better" },
+    { name: "titi", value: 4.32, stddev: 1, favorability: "greater_is_better" },
+    { name: "tutu", value: 4.32, favorability: "greater_is_better" },
+    {
+      name: "stab",
+      value: 0.9,
+      label: "Good",
+      description: "your blabla is good",
+      favorability: "greater_is_better",
+    },
   ],
   tabularResults: [
     {
@@ -266,6 +273,9 @@ const results: PrimaryResultsDto = {
         Array.from({ length: 50 }, () => Math.random().toFixed(4)),
         Array.from({ length: 50 }, () => Math.random().toFixed(4)),
       ],
+      favorability: Array.from({ length: 50 }, (_, i) =>
+        i % 2 === 0 ? "greater_is_better" : "lower_is_better"
+      ),
     },
     {
       name: "b",
@@ -276,6 +286,7 @@ const results: PrimaryResultsDto = {
         [0.8, 0.4, 0.5, 0.6],
         [0.8, 0.4, 0.5, 0.6],
       ],
+      favorability: ["greater_is_better", "greater_is_better", "lower_is_better"],
     },
   ],
 };
@@ -998,6 +1009,11 @@ const sections: DetailSectionDto[] = [
 ];
 
 const toggleModel = ref(true);
+
+const richTextEditor = useTemplateRef<InstanceType<typeof RichTextEditor>>("richTextEditor");
+const richText = ref(
+  "I don’t ‘need’ to drink. I can quit anytime I want! Hello, little man. I will destroy you! Kids have names? You won’t have time for sleeping, soldier, not with all the bed making you’ll be doing. When the lights go out, it’s nobody’s business what goes on between two consenting adults."
+);
 </script>
 
 <template>
@@ -1193,7 +1209,9 @@ const toggleModel = ref(true);
         <div style="margin-top: 20px">last item action {{ lastAction }}</div>
         <TreeAccordion
           :nodes="fileTreeItemWithActions"
-          @item-action="(action, itemName) => (lastAction = `${action} ${itemName}`)"
+          @item-action="
+            (action: string, itemName: string) => (lastAction = `${action} ${itemName}`)
+          "
         />
       </TabPanelContent>
       <TabPanelContent name="editable list" class="editable-list-tab">
@@ -1267,6 +1285,11 @@ const toggleModel = ref(true);
           <div>icon-square-cursor <i class="icon icon-square-cursor"></i></div>
           <div>icon-moon <i class="icon icon-moon"></i></div>
           <div>icon-sun <i class="icon icon-sun"></i></div>
+          <div>icon-ascending-arrow <i class="icon icon-ascending-arrow"></i></div>
+          <div>icon-descending-arrow <i class="icon icon-descending-arrow"></i></div>
+          <div>icon-bold <i class="icon icon-bold"></i></div>
+          <div>icon-italic <i class="icon icon-italic"></i></div>
+          <div>icon-bullets <i class="icon icon-bullets"></i></div>
         </div>
       </TabPanelContent>
       <TabPanelContent name="draggable">
@@ -1292,7 +1315,7 @@ const toggleModel = ref(true);
           >
             <template #item="{ name: id, color, content }">
               <div :style="{ backgroundColor: color, color: 'white' }">
-                <span>ID: {{ id }}</span>
+                <div data-drag-image-selector :style="{ backgroundColor: color }">ID: {{ id }}</div>
                 <ul>
                   <li v-for="(c, i) in content" :key="i">{{ c }}</li>
                 </ul>
@@ -1364,6 +1387,17 @@ const toggleModel = ref(true);
           <SlideToggle v-model:is-toggled="toggleModel" />
         </div>
         <div>toggles are {{ toggleModel }}</div>
+      </TabPanelContent>
+      <TabPanelContent name="rich edit" class="rich">
+        <div class="actions">
+          <SimpleButton :is-primary="false" label="bold" @click="richTextEditor?.markBold()" />
+          <SimpleButton :is-primary="false" label="italic" @click="richTextEditor?.markItalic()" />
+          <SimpleButton :is-primary="false" label="list" @click="richTextEditor?.markList()" />
+        </div>
+        <div style="height: 200px">
+          <RichTextEditor ref="richTextEditor" v-model:value="richText" />
+        </div>
+        <MarkdownWidget :source="richText" />
       </TabPanelContent>
     </TabPanel>
   </main>
@@ -1449,7 +1483,7 @@ main {
 }
 
 .draggable-list-container {
-  max-height: 80vh;
+  max-height: 60vh;
   margin-top: 10px;
 }
 
@@ -1478,5 +1512,17 @@ main {
   flex-direction: column;
   padding: var(--spacing-8);
   gap: var(--spacing-8);
+}
+
+.rich {
+  padding: var(--spacing-8);
+
+  & .actions {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    padding-bottom: var(--spacing-8);
+    gap: var(--spacing-8);
+  }
 }
 </style>

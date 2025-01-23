@@ -9,9 +9,9 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request, status
 
-from skore.item import Item
+from skore.persistence.item import Item
+from skore.persistence.view.view import Layout, View
 from skore.project import Project
-from skore.view.view import Layout, View
 
 router = APIRouter(prefix="/project")
 
@@ -25,6 +25,7 @@ class SerializableItem:
     value: Any
     updated_at: str
     created_at: str
+    note: str
 
 
 @dataclass
@@ -43,18 +44,23 @@ def __item_as_serializable(name: str, item: Item) -> SerializableItem:
         value=d.get("value"),
         updated_at=d.get("updated_at"),
         created_at=d.get("created_at"),
+        note=d.get("note"),
     )
 
 
 def __project_as_serializable(project: Project) -> SerializableProject:
     items = {
         key: [
-            __item_as_serializable(key, item) for item in project.get_item_versions(key)
+            __item_as_serializable(key, item)
+            for item in project.item_repository.get_item_versions(key)
         ]
-        for key in project.list_item_keys()
+        for key in project.item_repository
     }
 
-    views = {key: project.get_view(key).layout for key in project.list_view_keys()}
+    views = {
+        key: project.view_repository.get_view(key).layout
+        for key in project.view_repository
+    }
 
     return SerializableProject(
         items=items,
@@ -78,7 +84,7 @@ async def put_view(request: Request, key: str, layout: Layout):
     project: Project = request.app.state.project
 
     view = View(layout=layout)
-    project.put_view(key, view)
+    project.view_repository.put_view(key, view)
 
     return __project_as_serializable(project)
 
@@ -89,7 +95,7 @@ async def delete_view(request: Request, key: str):
     project: Project = request.app.state.project
 
     try:
-        project.delete_view(key)
+        project.view_repository.delete_view(key)
     except KeyError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="View not found"
@@ -112,10 +118,27 @@ async def get_activity(
     return sorted(
         (
             __item_as_serializable(key, version)
-            for key in project.list_item_keys()
-            for version in project.get_item_versions(key)
+            for key in project.item_repository
+            for version in project.item_repository.get_item_versions(key)
             if datetime.fromisoformat(version.updated_at) > after
         ),
         key=operator.attrgetter("updated_at"),
         reverse=True,
     )
+
+
+@dataclass
+class NotePayload:
+    """Represent a note and the wanted item to attach to."""
+
+    key: str
+    message: str
+    version: int = -1
+
+
+@router.put("/note", status_code=status.HTTP_201_CREATED)
+async def set_note(request: Request, payload: NotePayload):
+    """Add a note to the given item."""
+    project = request.app.state.project
+    project.set_note(key=payload.key, note=payload.message, version=payload.version)
+    return __project_as_serializable(project)

@@ -2,9 +2,10 @@
 import Simplebar from "simplebar-vue";
 import { computed, ref, useTemplateRef } from "vue";
 
-import FloatingTooltip from "@/components//FloatingTooltip.vue";
 import DropdownButton from "@/components/DropdownButton.vue";
 import DropdownButtonItem from "@/components/DropdownButtonItem.vue";
+import FloatingTooltip from "@/components/FloatingTooltip.vue";
+import MetricFavorability from "@/components/MetricFavorability.vue";
 import StaticRange from "@/components/StaticRange.vue";
 import type { PrimaryResultsDto, TabularResultDto } from "@/dto";
 import { isElementOverflowing } from "@/services/utils";
@@ -20,13 +21,10 @@ function exponential(x: number) {
   if (typeof x !== "number") {
     return x;
   }
-  const expoForm = x.toExponential(2);
-  const [_, expo] = expoForm.split("e");
-  if (Math.abs(parseInt(expo)) < 2) {
-    return x.toFixed(2);
-  } else {
-    return expoForm;
+  if (x >= 0.1 && x <= 999) {
+    return x.toFixed(4);
   }
+  return x.toExponential(2);
 }
 
 function isNameTooltipEnabled(index: number) {
@@ -50,7 +48,10 @@ function isNameTooltipEnabled(index: number) {
         ref="scalarResultsDivs"
       >
         <FloatingTooltip placement="bottom" :enabled="isNameTooltipEnabled(i)">
-          <div class="name">{{ result.name }}</div>
+          <div class="name">
+            {{ result.name }}
+            <MetricFavorability :favorability="result.favorability" />
+          </div>
           <template #tooltipContent>
             <span class="name-tooltip">{{ result.name }}</span>
           </template>
@@ -102,7 +103,10 @@ function isNameTooltipEnabled(index: number) {
             <thead>
               <tr>
                 <th>Fold</th>
-                <th v-for="(column, i) in currentTabularResult.columns" :key="i">{{ column }}</th>
+                <th v-for="(column, i) in currentTabularResult.columns" :key="i">
+                  {{ column }}
+                  <MetricFavorability :favorability="currentTabularResult.favorability[i]" />
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -133,14 +137,13 @@ function isNameTooltipEnabled(index: number) {
     border-bottom: solid var(--stroke-width-md) var(--color-stroke-background-primary);
     background-color: var(--color-stroke-background-primary);
     gap: 1px;
-    grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+    grid-template-columns: repeat(var(--nb-scalar-columns, 2), 1fr);
 
     &:last-child {
       border-right: none;
     }
 
     & .result {
-      overflow: hidden;
       padding: var(--spacing-8) var(--spacing-10);
       background-color: var(--color-background-primary);
 
@@ -181,10 +184,17 @@ function isNameTooltipEnabled(index: number) {
           font-size: var(--font-size-xs);
         }
       }
+
+      & .icon {
+        color: var(--color-icon-tertiary);
+        vertical-align: middle;
+      }
     }
   }
 
   & .tabular-results {
+    max-width: 100%;
+
     & .header {
       display: flex;
       align-items: center;
@@ -192,8 +202,11 @@ function isNameTooltipEnabled(index: number) {
       padding: var(--spacing-16) var(--spacing-10);
 
       & .name {
+        overflow: hidden;
         color: var(--color-text-primary);
         font-size: var(--font-size-sm);
+        text-overflow: ellipsis;
+        white-space: nowrap;
 
         & .icon {
           color: var(--color-text-branding);
@@ -202,69 +215,44 @@ function isNameTooltipEnabled(index: number) {
       }
 
       & .dropdown {
+        flex: 0 1 40%;
+
         & button {
           padding: var(--spacing-6) var(--spacing-10);
+
+          & .label {
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
         }
       }
     }
 
-    & table {
-      --fold-column-width: 70px;
+    & .result {
+      overflow: hidden;
+      max-width: 100%;
 
-      width: 100%;
-      border-collapse: collapse;
-      text-align: right;
+      & table {
+        --fold-column-width: 70px;
 
-      & thead tr th {
-        padding: var(--spacing-6) var(--spacing-10);
-        border: solid var(--stroke-width-md) var(--color-stroke-background-primary);
-        border-bottom-color: var(--color-background-primary);
-        background-color: var(--color-background-secondary);
-        color: var(--color-text-primary);
-        font-weight: var(--font-weight-medium);
+        min-width: 100%;
+        border-collapse: collapse;
+        text-align: right;
 
-        &:first-child {
-          position: sticky;
-          left: 0;
-          width: var(--fold-column-width);
-          border-left: none;
-          text-align: center;
-        }
-
-        &:last-child {
-          border-right: none;
-        }
-      }
-
-      & tbody tr {
-        position: relative;
-        color: var(--color-text-primary);
-        font-weight: var(--font-weight-regular);
-
-        & td {
+        & thead tr th {
           padding: var(--spacing-6) var(--spacing-10);
           border: solid var(--stroke-width-md) var(--color-stroke-background-primary);
+          border-bottom-color: var(--color-background-primary);
+          background-color: var(--color-background-secondary);
+          color: var(--color-text-primary);
+          font-weight: var(--font-weight-medium);
 
           &:first-child {
             position: sticky;
-            z-index: 2;
             left: 0;
             width: var(--fold-column-width);
-            border-bottom-color: var(--color-background-primary);
             border-left: none;
-            background-color: var(--color-background-secondary);
-            font-weight: var(--font-weight-medium);
-            text-align: left;
-
-            &::after {
-              position: absolute;
-              top: 0;
-              right: -3px;
-              width: 3px;
-              height: 100%;
-              background: linear-gradient(to right, var(--color-background-secondary), transparent);
-              content: " ";
-            }
+            text-align: center;
           }
 
           &:last-child {
@@ -272,14 +260,67 @@ function isNameTooltipEnabled(index: number) {
           }
         }
 
-        &:last-child {
+        & tbody tr {
+          position: relative;
+          color: var(--color-text-primary);
+          font-weight: var(--font-weight-regular);
+
           & td {
-            border-bottom: none;
-            border-bottom-left-radius: var(--radius-xs);
+            padding: var(--spacing-6) var(--spacing-10);
+            border: solid var(--stroke-width-md) var(--color-stroke-background-primary);
+
+            &:first-child {
+              position: sticky;
+              z-index: 2;
+              left: 0;
+              width: var(--fold-column-width);
+              border-bottom-color: var(--color-background-primary);
+              border-left: none;
+              background-color: var(--color-background-secondary);
+              font-weight: var(--font-weight-medium);
+              text-align: left;
+
+              &::after {
+                position: absolute;
+                top: 0;
+                right: -3px;
+                width: 3px;
+                height: 100%;
+                background: linear-gradient(
+                  to right,
+                  var(--color-background-secondary),
+                  transparent
+                );
+                content: " ";
+              }
+            }
+
+            &:last-child {
+              border-right: none;
+            }
+          }
+
+          &:last-child {
+            & td {
+              border-bottom: none;
+              border-bottom-left-radius: var(--radius-xs);
+            }
           }
         }
       }
     }
+  }
+}
+
+@media screen and (width >= 801px) {
+  .cross-validation-report-result {
+    --nb-scalar-columns: 3;
+  }
+}
+
+@media screen and (width >= 1025px) {
+  .cross-validation-report-result {
+    --nb-scalar-columns: 5;
   }
 }
 </style>

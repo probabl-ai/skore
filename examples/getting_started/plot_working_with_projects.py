@@ -14,23 +14,12 @@ of items that we can store in a skore :class:`~skore.Project`.
 # ======================================
 
 # %%
-# We start by creating a temporary directory to store our project so that we can
-# easily clean it after executing this example:
-
-# %%
-import tempfile
-from pathlib import Path
-
-temp_dir = tempfile.TemporaryDirectory(prefix="skore_example_")
-temp_dir_path = Path(temp_dir.name)
-
-# %%
-# We create and load the skore project from this temporary directory:
+# We create and load the skore project from the current directory:
 
 # %%
 import skore
 
-my_project = skore.create("my_project", working_dir=temp_dir_path)
+my_project = skore.open("my_project", create=True)
 
 # %%
 # Storing integers
@@ -71,20 +60,19 @@ my_project.get("my_int")
 #   see :ref:`example_tracking_items`.
 
 # %%
-# By using the :func:`~skore.Project.delete_item` method, we can also delete an object
-# so that our skore UI does not become cluttered:
+# By using the :func:`~skore.Project.delete` method, we can also delete an object:
 
 # %%
 my_project.put("my_int_2", 10)
 
 # %%
-my_project.delete_item("my_int_2")
+my_project.delete("my_int_2")
 
 # %%
 # We can display all the keys in our project:
 
 # %%
-my_project.list_item_keys()
+my_project.keys()
 
 # %%
 # Storing strings and texts
@@ -119,25 +107,19 @@ def my_func(x):
 )
 
 # %%
-# Moreover, we can also explicitly tell skore the media type of an object, for example
-# in HTML:
+# Moreover, we can also explicitly tell skore the way we want to display an object, for
+# example in HTML:
 
 # %%
-from skore.item import MediaItem
 
-my_project.put_item(
+my_project.put(
     "my_string_3",
-    MediaItem.factory(
-        "<p><h1>Title</h1> <b>bold</b>, <i>italic</i>, etc.</p>", media_type="text/html"
-    ),
+    "<p><h1>Title</h1> <b>bold</b>, <i>italic</i>, etc.</p>",
+    display_as="HTML",
 )
 
 # %%
-# .. note::
-#   We used :func:`~skore.Project.put_item` instead of :func:`~skore.Project.put`.
-
-# %%
-# Note that the media type is only used for the UI, and not in this notebook at hand:
+# Note that the `display_as` is only used for the UI, and not in this notebook at hand:
 
 # %%
 my_project.get("my_string_3")
@@ -231,7 +213,7 @@ import matplotlib.pyplot as plt
 
 x = np.linspace(0, 2, 100)
 
-fig, ax = plt.subplots(layout="constrained", dpi=200)
+fig, ax = plt.subplots(layout="constrained")
 ax.plot(x, x, label="linear")
 ax.plot(x, x**2, label="quadratic")
 ax.plot(x, x**3, label="cubic")
@@ -376,7 +358,7 @@ my_pipeline
 # Cleanup the project
 # -------------------
 #
-# Removing the temporary directory:
+# Let's clean the skore project to avoid conflict with other examples.
 
 # %%
-temp_dir.cleanup()
+my_project.clear()

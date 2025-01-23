@@ -1,0 +1,59 @@
+from typing import Any, Literal, Optional, Union
+
+import numpy as np
+from rich.panel import Panel
+from rich.tree import Tree
+from sklearn.base import BaseEstimator
+
+class _HelpMixin:
+    def _get_methods_for_help(self) -> list[tuple[str, Any]]: ...
+    def _sort_methods_for_help(
+        self, methods: list[tuple[str, Any]]
+    ) -> list[tuple[str, Any]]: ...
+    def _format_method_name(self, name: str) -> str: ...
+    def _get_method_description(self, method: Any) -> str: ...
+    def _create_help_panel(self) -> Panel: ...
+    def _get_help_panel_title(self) -> str: ...
+    def _create_help_tree(self) -> Tree: ...
+    def help(self) -> None: ...
+    def __repr__(self) -> str: ...
+
+class _BaseAccessor(_HelpMixin):
+    _parent: Any
+
+    def __init__(self, parent: Any) -> None: ...
+    def _get_help_panel_title(self) -> str: ...
+    def _create_help_tree(self) -> Tree: ...
+    def _get_X_y_and_data_source_hash(
+        self,
+        *,
+        data_source: Literal["test", "train", "X_y"],
+        X: Optional[np.ndarray] = None,
+        y: Optional[np.ndarray] = None,
+    ) -> tuple[Optional[np.ndarray], Optional[np.ndarray], Optional[str]]: ...
+
+def _get_cached_response_values(
+    *,
+    cache: dict,
+    estimator_hash: int,
+    estimator: BaseEstimator,
+    X: np.ndarray,
+    response_method: Union[str, list[str]],
+    pos_label: Optional[Union[str, int]] = None,
+    data_source: Literal["test", "train", "X_y"] = "test",
+    data_source_hash: Optional[str] = None,
+) -> np.ndarray: ...
+
+class _BaseReport(_HelpMixin):
+    _ACCESSOR_CONFIG: dict[str, dict[str, str]]
+    estimator_: BaseEstimator
+    estimator_name_: str
+    _X_test: Optional[np.ndarray]
+    _y_test: Optional[np.ndarray]
+    _X_train: Optional[np.ndarray]
+    _y_train: Optional[np.ndarray]
+
+    def _get_help_panel_title(self) -> str: ...
+    def _get_help_legend(self) -> str: ...
+    def _get_attributes_for_help(self) -> list[str]: ...
+    def _create_help_tree(self) -> Tree: ...

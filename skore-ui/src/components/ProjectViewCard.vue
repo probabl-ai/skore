@@ -56,7 +56,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="card" ref="root">
-    <div class="header">
+    <div class="header" data-drag-image-selector>
       <div class="titles">
         <div class="title">{{ props.title }}</div>
         <div class="subtitle" v-if="props.subtitle">
@@ -116,6 +116,7 @@ onBeforeUnmount(() => {
     & .titles {
       position: relative;
       padding-left: calc(var(--spacing-8) + 4px);
+      color: var(--color-text-primary);
 
       & .title {
         font-size: var(--font-size-sm);
@@ -155,6 +156,7 @@ onBeforeUnmount(() => {
     & .actions {
       display: flex;
       flex-direction: row;
+      align-items: center;
       gap: var(--spacing-4);
       opacity: 0;
       transition: opacity var(--animation-duration) var(--animation-easing);

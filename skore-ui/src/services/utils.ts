@@ -73,16 +73,16 @@ export function saveBlob(blob: Blob, filename: string) {
  * @param interval the delay in ms between each call
  * @returns a function that when called stops the polling.
  */
-export async function poll(fn: Function, interval: number): Promise<() => void> {
+export async function poll(fn: () => void, interval: number): Promise<() => void> {
   let intervalId: number = -1;
 
   const start = () => {
-    intervalId = setInterval(fn, interval);
+    intervalId = window.setInterval(fn, interval);
   };
 
   const stop = () => {
     if (intervalId) {
-      clearInterval(intervalId);
+      window.clearInterval(intervalId);
       intervalId = -1;
     }
   };
@@ -164,7 +164,11 @@ export function generateRandomId() {
  * @param immediate if true the function will be called immediately
  * @returns the debounced function
  */
-export function debounce(func: Function, wait: number, immediate: boolean) {
+export function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  wait: number,
+  immediate: boolean
+): (...args: Parameters<T>) => void {
   let timeout: ReturnType<typeof setTimeout> | null = null;
   return function (this: any, ...args: any[]) {
     if (timeout) clearTimeout(timeout);

@@ -139,7 +139,7 @@ onBeforeUnmount(() => {
           <span>Add a new view</span>
           <i class="icon-plus-circle" />
         </div>
-        <Simplebar class="view-list" v-if="views.length > 0">
+        <Simplebar class="view-list simplebar-inverted" v-if="views.length > 0">
           <EditableList
             v-model:items="views"
             :actions="[

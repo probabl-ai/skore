@@ -1,4 +1,4 @@
-name: Sphinx
+name: sphinx
 
 
 # **How it works**
@@ -106,34 +106,62 @@ jobs:
         with:
           python-version: '3.12'
           cache: 'pip'
+      - shell: bash
+        run: wget -qO- "${SKRUB_DATA_URL}" | tar -zxvf - -C "${HOME}"
+        env:
+          SKRUB_DATA_URL: https://skore.probabl.ai/f355443be646d49eab1aa76e29dfd0a8/skrub-data.tar.gz
+          HOME: ${{ github.workspace }}
       - uses: ./.github/actions/sphinx/build
+        timeout-minutes: 60
         with:
           SPHINX_VERSION: ${{ needs.sphinx-version.outputs.SPHINX_VERSION }}
           SPHINX_RELEASE: ${{ needs.sphinx-version.outputs.SPHINX_RELEASE }}
+          SPHINX_DOMAIN: ${{ vars.DOCUMENTATION_DOMAIN }}
+        env:
+          HOME: ${{ github.workspace }}
       - uses: actions/upload-artifact@v4
         with:
           name: sphinx-html-artifact
           path: sphinx/build/html/
 
   sphinx-deploy-html:
-    runs-on: ubuntu-latest
     if: ${{ (github.event_name == 'release') || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
+    runs-on: ubuntu-latest
     needs: [sphinx-version, sphinx-build]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download HTML artifacts
+        uses: actions/download-artifact@v4
         with:
           name: sphinx-html-artifact
           path: html/
-      - uses: ./.github/actions/sphinx/deploy
+
+      - name: Deploy HTML artifacts
+        uses: ./.github/actions/sphinx/deploy
         with:
           CONFIGURATION: ${{ secrets.RCLONE_CONFIG_DOCS }}
+          BUCKET: ${{ vars.DOCUMENTATION_BUCKET }}
           SOURCE: html/
           DESTINATION: ${{ needs.sphinx-version.outputs.SPHINX_VERSION }}/
 
+      - name: Purge CDN cache
+        shell: bash
+        run: |
+          curl --fail-with-body \
+          -X POST \
+          -H "X-Auth-Token: ${TOKEN}" \
+          -H "Content-Type: application/json" \
+          -d "{\"pipeline_id\":\"${PIPELINE_ID}\",\"all\":true}" \
+          "https://api.scaleway.com/edge-services/v1alpha1/purge-requests"
+        env:
+          TOKEN: ${{ secrets.SCW_SECRET_KEY }}
+          PIPELINE_ID: ${{ vars.DOCUMENTATION_EDGE_SERVICES_PIPELINE_ID }}
+
   sphinx-deploy-root-files:
-    runs-on: ubuntu-latest
     if: ${{ github.event_name == 'release' }}
+    runs-on: ubuntu-latest
     needs: [sphinx-version, sphinx-build, sphinx-deploy-html]
     steps:
       - uses: actions/checkout@v4
@@ -144,23 +172,35 @@ jobs:
             import operator
             import json
 
-            url = "https://skore.probabl.ai"
-            current = os.environ["CURRENT"]
+            version = os.environ["SPHINX_VERSION"]
+            release = os.environ["SPHINX_RELEASE"]
+            url = os.environ["SPHINX_URL"]
 
+            # Retrieve history
             response = requests.get(f"{url}/versions.json")
             response.raise_for_status()
 
-            history = set(map(operator.itemgetter("version"), response.json())) - {"dev"} | {current}
-            history = sorted(history, key=lambda x: float(x), reverse=True)[:10]
+            history = {version["name"]: version["version"] for version in response.json()}
 
+            # Add new version to history
+            history[version] = release
+
+            # Sort history, and always keep "dev" at the beginning
+            history = sorted(
+                history.items(),
+                key=lambda item: tuple(map(float, item[0].split("."))) if item[0] != "dev" else (float('inf'), 0),
+                reverse=True
+            )
+
+            # Rewrite the history with "dev" and the 10 latest versions
             new = [
                 {
                     "name": version,
-                    "version": version,
+                    "version": release,
                     "url": f"{url}/{version}/",
                     "preferred": i == 1,
                 }
-                for i, version in enumerate(["dev"] + history)
+                for i, (version, release) in enumerate(history[:11])
             ]
 
             os.mkdir("artifacts")
@@ -177,17 +217,20 @@ jobs:
                   """
               )
         env:
-          CURRENT: ${{ needs.sphinx-version.outputs.SPHINX_VERSION }}
+          SPHINX_VERSION: ${{ needs.sphinx-version.outputs.SPHINX_VERSION }}
+          SPHINX_RELEASE: ${{ needs.sphinx-version.outputs.SPHINX_RELEASE }}
+          SPHINX_URL: https://${{ vars.DOCUMENTATION_DOMAIN }}
       - uses: ./.github/actions/sphinx/deploy
         with:
           CONFIGURATION: ${{ secrets.RCLONE_CONFIG_DOCS }}
+          BUCKET: ${{ vars.DOCUMENTATION_BUCKET }}
           ACTION: copy
           SOURCE: artifacts/
           DESTINATION:
 
-  sphinx-clean:
+  sphinx-clean-artifacts:
     runs-on: ubuntu-latest
-    if: always()
+    if: ${{ always() && (github.event_name != 'pull_request') }}
     needs: [sphinx-version, sphinx-build, sphinx-deploy-html, sphinx-deploy-root-files]
     steps:
       - uses: geekyeggo/delete-artifact@v5

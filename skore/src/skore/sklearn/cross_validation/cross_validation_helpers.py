@@ -1,11 +1,13 @@
 """Helpers for enhancing the cross-validation manipulation."""
 
+from typing import Any
+
 from sklearn import metrics
 
 from skore.sklearn.find_ml_task import _find_ml_task
 
 
-def _get_scorers_to_add(estimator, y) -> list[str]:
+def _get_scorers_to_add(estimator, y) -> dict[str, Any]:
     """Get a list of scorers based on ``estimator`` and ``y``.
 
     Parameters
@@ -26,33 +28,36 @@ def _get_scorers_to_add(estimator, y) -> list[str]:
     if ml_task == "regression":
         return {
             "r2": "r2",
-            "neg_root_mean_squared_error": metrics.make_scorer(
-                metrics.root_mean_squared_error
+            "root_mean_squared_error": metrics.make_scorer(
+                metrics.root_mean_squared_error, response_method="predict"
             ),
         }
     if ml_task == "binary-classification":
-        return {
-            "roc_auc": "roc_auc",
-            "brier_score_loss": metrics.make_scorer(metrics.brier_score_loss),
+        scorers_to_add = {
             "recall": "recall",
             "precision": "precision",
+            "roc_auc": "roc_auc",
         }
-    if ml_task == "multiclass-classification":
         if hasattr(estimator, "predict_proba"):
-            return {
-                "recall_weighted": "recall_weighted",
-                "precision_weighted": "precision_weighted",
-                "roc_auc_ovr_weighted": "roc_auc_ovr_weighted",
-                "log_loss": metrics.make_scorer(metrics.log_loss),
-            }
-        return {
+            scorers_to_add["brier_score_loss"] = metrics.make_scorer(
+                metrics.brier_score_loss, response_method="predict_proba"
+            )
+        return scorers_to_add
+    if ml_task == "multiclass-classification":
+        scorers_to_add = {
             "recall_weighted": "recall_weighted",
             "precision_weighted": "precision_weighted",
         }
+        if hasattr(estimator, "predict_proba"):
+            scorers_to_add["roc_auc_ovr_weighted"] = "roc_auc_ovr_weighted"
+            scorers_to_add["log_loss"] = metrics.make_scorer(
+                metrics.log_loss, response_method="predict_proba"
+            )
+        return scorers_to_add
     return {}
 
 
-def _add_scorers(scorers, scorers_to_add):
+def _add_scorers(scorers, scorers_to_add, estimator):
     """Expand `scorers` with more scorers.
 
     The type of the resulting scorers object is dependent on the type of the input
@@ -73,6 +78,8 @@ def _add_scorers(scorers, scorers_to_add):
         The scorer(s) to expand.
     scorers_to_add : dict[str, str]
         The scorers to be added.
+    estimator : estimator
+        A scikit-learn estimator.
 
     Returns
     -------
@@ -83,10 +90,12 @@ def _add_scorers(scorers, scorers_to_add):
         in `scorers`).
     """
     if scorers is None or isinstance(scorers, str):
-        new_scorers, added_scorers = _add_scorers({"score": scorers}, scorers_to_add)
+        new_scorers, added_scorers = _add_scorers(
+            {"score": scorers}, scorers_to_add, estimator
+        )
     elif isinstance(scorers, (list, tuple)):
         new_scorers, added_scorers = _add_scorers(
-            {s: s for s in scorers}, scorers_to_add
+            {s: s for s in scorers}, scorers_to_add, estimator
         )
     elif isinstance(scorers, dict):
         # User-defined metrics have priority
@@ -97,10 +106,15 @@ def _add_scorers(scorers, scorers_to_add):
         from sklearn.metrics._scorer import _MultimetricScorer
 
         internal_scorer = _MultimetricScorer(
+            # NOTE: we pass `estimator` to `check_scoring` for compatibility with
+            # scikit-learn 1.4. However, because `scoring` is never `None`, this
+            # estimator will not have any effect.
             scorers={
-                name: check_scoring(estimator=None, scoring=scoring)
-                if isinstance(scoring, str)
-                else scoring
+                name: (
+                    check_scoring(estimator=estimator, scoring=scoring)
+                    if isinstance(scoring, str)
+                    else scoring
+                )
                 for name, scoring in scorers_to_add.items()
             }
         )

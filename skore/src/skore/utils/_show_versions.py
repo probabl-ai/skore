@@ -6,6 +6,7 @@ adapted from :func:`sklearn.show_versions`
 
 import importlib
 import platform
+import re
 import sys
 
 
@@ -47,7 +48,9 @@ def _get_deps_info():
 
     requirements = importlib.metadata.requires("skore")
     for requirement in filter(lambda r: "; extra" not in r, requirements):
-        deps.append(requirement)
+        # Extract just the package name before any version specifiers
+        package_name = re.split(r"[<>=~!]", requirement)[0].strip()
+        deps.append(package_name)
 
     deps_info = {
         "skore": version("skore"),

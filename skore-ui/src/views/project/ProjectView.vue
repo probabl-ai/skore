@@ -9,6 +9,7 @@ import ProjectViewCard from "@/components/ProjectViewCard.vue";
 import SimpleButton from "@/components/SimpleButton.vue";
 import { useProjectStore } from "@/stores/project";
 import { useToastsStore } from "@/stores/toasts";
+import ItemNote from "@/views/project/ItemNote.vue";
 import ProjectItemList from "@/views/project/ProjectItemList.vue";
 import ProjectViewNavigator from "@/views/project/ProjectViewNavigator.vue";
 
@@ -98,7 +99,7 @@ onBeforeUnmount(() => {
             @drop="onItemDrop($event)"
             @dragover.prevent
           >
-            <template #item="{ name, mediaType, data, createdAt, updatedAt, updates }">
+            <template #item="{ name, mediaType, data, createdAt, updatedAt, updates, note }">
               <ProjectViewCard
                 :key="name"
                 :title="name"
@@ -110,6 +111,7 @@ onBeforeUnmount(() => {
                 @card-removed="onCardRemoved(name)"
                 @update-selected="projectStore.setCurrentItemUpdateIndex(name, $event)"
               >
+                <ItemNote :name="name" :note="note" />
                 <MediaWidgetSelector :item="{ name, mediaType, data, createdAt, updatedAt }" />
               </ProjectViewCard>
             </template>
@@ -122,20 +124,6 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-@media (prefers-color-scheme: dark) {
-  main {
-    --not-found-image: url("../../assets/images/not-found-dark.png");
-    --editor-placeholder-image: url("../../assets/images/editor-placeholder-dark.svg");
-  }
-}
-
-@media (prefers-color-scheme: light) {
-  main {
-    --not-found-image: url("../../assets/images/not-found-light.png");
-    --editor-placeholder-image: url("../../assets/images/editor-placeholder-light.svg");
-  }
-}
-
 main {
   display: flex;
   overflow: hidden;
@@ -204,11 +192,12 @@ main {
         flex-direction: column;
         justify-content: center;
         background-color: var(--color-background-primary);
+        color: var(--color-text-secondary);
 
         & .wrapper {
           padding-top: 225px;
           margin: var(--spacing-24);
-          background-image: var(--editor-placeholder-image);
+          background-image: var(--image-editor-placeholder);
           background-position: 50% 0;
           background-repeat: no-repeat;
           background-size: 265px 192px;
@@ -237,6 +226,10 @@ main {
           min-height: calc(100dvh - var(--editor-height) - var(--spacing-24) * 2);
           gap: var(--spacing-24);
         }
+
+        & .item-note {
+          margin-bottom: var(--spacing-16);
+        }
       }
     }
   }
@@ -247,6 +240,7 @@ main {
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    color: var(--color-text-secondary);
   }
 }
 </style>

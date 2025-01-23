@@ -14,23 +14,12 @@ for example tracking some ML metrics over time.
 # ======================================
 
 # %%
-# We start by creating a temporary directory to store our project so that we can
-# easily clean it after executing this example:
-
-# %%
-import tempfile
-from pathlib import Path
-
-temp_dir = tempfile.TemporaryDirectory(prefix="skore_example_")
-temp_dir_path = Path(temp_dir.name)
-
-# %%
-# We create and load the skore project from this temporary directory:
+# We create and load the skore project in the current directory:
 
 # %%
 import skore
 
-my_project = skore.create("my_project", working_dir=temp_dir_path)
+my_project = skore.open("my_project", create=True)
 
 # %%
 # Tracking an integer
@@ -44,46 +33,25 @@ my_project = skore.create("my_project", working_dir=temp_dir_path)
 import time
 
 my_project.put("my_int", 4)
+
 time.sleep(0.1)
 my_project.put("my_int", 9)
+
 time.sleep(0.1)
 my_project.put("my_int", 16)
-
-# %%
-# .. note::
-#
-#   We could launch the skore dashboard with:
-#
-#   .. code-block:: bash
-#
-#       skore launch "my_project"
-#
-#   and, from the skore UI, we could see an activity feed:
-#
-#   .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_12_skore_activity_feed.png
-#       :alt: Activity feed on the skore UI
-#
-#   Moreover, in the items tab, we could also visualize the different histories of the
-#   ``my_int`` item:
-#
-#   .. image:: https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_12_skore_tracking_comp.gif
-#       :alt: Tracking the history of an item from the skore UI
 
 # %%
 # We retrieve the history of the ``my_int`` item:
 
 # %%
-item_histories = my_project.get_item_versions("my_int")
+history = my_project.get("my_int", version="all", metadata=True)
 
 # %%
-# We can print the first history (first iteration) of this item:
+# We can print the details of the first version of this item:
 
 # %%
-passed_item = item_histories[0]
-print(passed_item)
-print(passed_item.primitive)
-print(passed_item.created_at)
-print(passed_item.updated_at)
+
+print(history[0])
 
 # %%
 # Let us construct a dataframe with the values and last updated times:
@@ -92,18 +60,18 @@ print(passed_item.updated_at)
 import numpy as np
 import pandas as pd
 
-list_primitive, list_created_at, list_updated_at = zip(
-    *[(elem.primitive, elem.created_at, elem.updated_at) for elem in item_histories]
+list_value, list_created_at, list_updated_at = zip(
+    *[(version["value"], history[0]["date"], version["date"]) for version in history]
 )
 
 df_track = pd.DataFrame(
     {
-        "primitive": list_primitive,
+        "value": list_value,
         "created_at": list_created_at,
         "updated_at": list_updated_at,
     }
 )
-df_track.insert(0, "iteration_number", np.arange(len(df_track)))
+df_track.insert(0, "version_number", np.arange(len(df_track)))
 df_track
 
 # %%
@@ -111,9 +79,9 @@ df_track
 #   :language: python
 #
 # Notice that the ``created_at`` dates are the same for all iterations because they
-# correspond to the same item, but the ``updated_at`` dates are spaced by 0.1 second
-# (approximately) as we used :python:`time.sleep(0.1)` between each
-# :func:`~skore.Project.put`.
+# correspond to the date of the first version of the item, but the ``updated_at`` dates
+# are spaced by 0.1 second (approximately) as we used :python:`time.sleep(0.1)` between
+# each :func:`~skore.Project.put`.
 
 # %%
 # We can now track the value of the item over time:
@@ -123,8 +91,8 @@ import plotly.express as px
 
 fig = px.line(
     df_track,
-    x="iteration_number",
-    y="primitive",
+    x="version_number",
+    y="value",
     hover_data=df_track.columns,
     markers=True,
 )
@@ -137,8 +105,8 @@ fig
 #   example.
 
 # %%
-# Here, we focused on `how` to use skore's tracking of history of items.
-# But `why` track items?
+# Here, we focused on *how* to use skore's tracking of history of items.
+# But *why* track items?
 #
 # * We could track some items such as machine learning scores over time to better
 #   understand which feature engineering works best.
@@ -151,7 +119,7 @@ fig
 # Cleanup the project
 # -------------------
 #
-# Removing the temporary directory:
+# Let's clear the skore project (to avoid any conflict with other documentation examples).
 
 # %%
-temp_dir.cleanup()
+my_project.clear()

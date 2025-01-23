@@ -4,23 +4,14 @@
     <source srcset="https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/Logo_Skore_Dark@2x.svg" media="(prefers-color-scheme: dark)">
     <img width="200" src="https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/Logo_Skore_Light@2x.svg" alt="skore logo">
   </picture>
+  <h3>the scikit-learn sidekick</h3>
 
-  <h2>The scikit-learn Modeling Companion</h2>
-
-__Elevate ML Development with Tracking and Built-in Recommended Practices__ \
+Elevate ML Development with Built-in Recommended Practices \
 [Documentation](https://skore.probabl.ai) — [Community](https://discord.probabl.ai)
-
-<br />
-
-  ![license](https://img.shields.io/pypi/l/skore)
-  ![python](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue?style=flat&logo=python)
-  [![downloads](https://static.pepy.tech/badge/skore/month)](https://pepy.tech/projects/skore)
-  [![pypi](https://img.shields.io/pypi/v/skore)](https://pypi.org/project/skore/)
-  ![ci](https://github.com/probabl-ai/skore/actions/workflows/ci.yml/badge.svg?event=push)
-  [![Discord](https://img.shields.io/badge/Discord-%235865F2.svg?logo=discord&logoColor=white)](https://discord.probabl.ai/)
 
 </div>
 
+<br />
 
 ## Why skore?
 
@@ -33,11 +24,8 @@ Skore is just at the beginning of its journey, but we’re shipping fast! Freque
 
 ## Key features
 
-- **Track and Visualize Results**: Capture your intermediate ML/DS results without the overhead, while gaining deeper insights through intuitive visualizations of your experiments.
-- **Elevate Model Development**: Avoid common pitfalls and follow recommended practices with automatic guidance and insights.
-    - Enhancing key scikit-learn features with `skore.CrossValidationReporter` and `skore.train_test_split()`.
-
-![GIF: short demo of skore](https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_12_skore_demo_comp.gif)
+- **Diagnose**: Catch methodological errors before they impact your models with **smart alerts** that analyze both code execution and data patterns in real-time.
+- **Evaluate**: Uncover actionable insights through **automated reports** surfacing relevant metrics. Explore faster with our intelligent caching system.
 
 ## 🚀 Quick start
 
@@ -67,37 +55,45 @@ You can find information on the latest version [here](https://anaconda.org/conda
 1. From your Python code, create and load a skore project:
     ```python
     import skore
-    my_project = skore.create("my_project", overwrite=True)
+    my_project = skore.open("my_project")
     ```
     This will create a skore project directory named `my_project.skore` in your current working directory.
 
 2. Evaluate your model using `skore.CrossValidationReporter`:
     ```python
-    from sklearn.datasets import load_iris
-    from sklearn.svm import SVC
+    from sklearn.datasets import make_classification
+    from sklearn.linear_model import LogisticRegression
 
-    X, y = load_iris(return_X_y=True)
-    clf = SVC(kernel="linear", C=1, random_state=0)
+    from skore import CrossValidationReport
 
-    reporter = skore.CrossValidationReporter(clf, X, y, cv=5)
+    X, y = make_classification(n_classes=2, n_samples=100_000, n_informative=4)
+    clf = LogisticRegression()
 
-    # Store the results in the project
-    my_project.put("cv_reporter", reporter)
+    cv_report = CrossValidationReport(clf, X, y)
 
-    # Display a plot result in your notebook
-    reporter.plots.scores
+    # Display the help tree to see all the insights that are available to you
+    cv_report.help()
     ```
 
-3. Finally, from your shell (in the same directory), start the UI:
-    ```bash
-    skore launch "my_project"
+    ```python
+    # Display the report metrics that was computed for you:
+    df_cv_report_metrics = cv_report.metrics.report_metrics()
+    df_cv_report_metrics
     ```
-    This will open skore-ui in a browser window.
 
-You will automatically be able to visualize some key metrics (although you might have forgotten to specify all of them):
-![Cross-validation screenshot](https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/2024_12_12_skore_cross_val_clf.png)
+    ```python
+    # Display the ROC curve that was generated for you:
+    roc_plot = cv_report.metrics.plot.roc()
+    roc_plot
+    ```
 
-Also check out `skore.train_test_split()` that enhances scikit-learn. Learn more in our [documentation](https://skore.probabl.ai).
+3. Store the results in the skore project for safe-keeping:
+    ```python
+    my_project.put("df_cv_report_metrics", df_cv_report_metrics)
+    my_project.put("roc_plot", roc_plot)
+    ```
+
+Learn more in our [documentation](https://skore.probabl.ai).
 
 
 ## Contributing
@@ -107,10 +103,20 @@ Thank you for considering contributing to skore! Join our mission to promote ope
 
 ## Feedback & Community
 
--	Join our [Discord](https://discord.probabl.ai/) to share ideas or get support.
--	Request a feature or report a bug via [GitHub Issues](https://github.com/probabl-ai/skore/issues).
+-   Join our [Discord](https://discord.probabl.ai/) to share ideas or get support.
+-   Request a feature or report a bug via [GitHub Issues](https://github.com/probabl-ai/skore/issues).
 
+<br />
 
+<div align="center">
+
+  ![license](https://img.shields.io/pypi/l/skore)
+  ![python](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue?style=flat&logo=python)
+  [![downloads](https://static.pepy.tech/badge/skore/month)](https://pepy.tech/projects/skore)
+  [![pypi](https://img.shields.io/pypi/v/skore)](https://pypi.org/project/skore/)
+  [![Discord](https://img.shields.io/badge/Discord-%235865F2.svg?logo=discord&logoColor=white)](https://discord.probabl.ai/)
+
+</div>
 ---
 
 Brought to you by
