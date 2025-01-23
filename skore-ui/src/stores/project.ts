@@ -25,7 +25,7 @@ export const useProjectStore = defineStore("project", () => {
   let currentItemUpdateIndex: { [key: string]: number } = {};
 
   /**
-   * Return true if the the given key is in the list of displayed keys, false otherwise.
+   * Return true if the given key is in the list of displayed keys, false otherwise.
    * @param view the view to check
    * @param key the key to look for
    * @returns true if the key is displayed, false otherwise
