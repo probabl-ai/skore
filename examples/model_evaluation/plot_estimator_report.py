@@ -10,6 +10,9 @@ quickly get insights from any scikit-learn estimator.
 """
 
 # %%
+# Loading our dataset and defining our estimator
+# ==============================================
+#
 # First, we load a dataset from skrub. Our goal is to predict if a company paid a physician. The ultimate goal is to
 # detect potential conflict of interest when it comes to the actual problem that we want to solve.
 
@@ -62,9 +65,11 @@ estimator = tabular_learner("classifier").fit(X_train, y_train)
 estimator
 
 # %%
+# Getting insights from our estimator
+# ===================================
 #
 # Introducing the :class:`skore.EstimatorReport` class
-# ----------------------------------------------------
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # Now, we would be interested in getting some insights from our predictive model.
 # One way is to use the :class:`skore.EstimatorReport` class. This constructor will
@@ -96,7 +101,7 @@ report.metrics.plot.help()
 # %%
 #
 # Metrics computation with aggressive caching
-# -------------------------------------------
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # At this point, we might be interested to have a first look at the statistical
 # performance of our model on the validation set that we provided. We can access it
@@ -322,7 +327,7 @@ report.metrics.report_metrics(scoring=[f1_scorer, operational_decision_cost_scor
 # %%
 #
 # Effortless one-liner plotting
-# -----------------------------
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # The :class:`skore.EstimatorReport` class also provides a plotting interface that
 # allows to plot *defacto* the most common plots. As for the metrics, we only
