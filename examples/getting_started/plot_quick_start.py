@@ -12,6 +12,15 @@ Quick start
 # %%
 import skore
 
+# sphinx_gallery_start_ignore
+import os
+import tempfile
+from pathlib import Path
+
+temp_dir = tempfile.TemporaryDirectory()
+temp_dir_path = Path(temp_dir.name)
+os.chdir(temp_dir_path)
+# sphinx_gallery_end_ignore
 my_project = skore.open("my_project", create=True)
 
 # %%
@@ -64,17 +73,11 @@ plt.tight_layout()
 # %%
 my_project.put("df_cv_report_metrics", df_cv_report_metrics)
 my_project.put("roc_plot", roc_plot)
+# sphinx_gallery_start_ignore
+temp_dir.cleanup()
+# sphinx_gallery_end_ignore
 
 # %%
 # .. admonition:: What's next?
 #
 #    For a more in-depth guide, see our :ref:`example_skore_getting_started` page!
-
-# %%
-# Cleanup the project
-# -------------------
-#
-# Let's clear the skore project (to avoid any conflict with other documentation examples).
-
-# %%
-my_project.clear()
