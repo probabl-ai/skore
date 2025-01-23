@@ -28,7 +28,16 @@ os.environ["TOKENIZERS_PARALLELISM"] = "true"
 # experiments.
 import skore
 
-project = skore.open("my_project", create=True)
+# sphinx_gallery_start_ignore
+import os
+import tempfile
+from pathlib import Path
+
+temp_dir = tempfile.TemporaryDirectory()
+temp_dir_path = Path(temp_dir.name)
+os.chdir(temp_dir_path)
+# sphinx_gallery_end_ignore
+my_project = skore.open("my_project", create=True)
 
 # %%
 #
@@ -66,7 +75,7 @@ table_report
 #
 # We can store the report in the skore project so that we can easily retrieve it later
 # without necessarily having to reload the dataset and recompute the report.
-project.put("Input data summary", table_report)
+my_project.put("Input data summary", table_report)
 
 # %%
 #
@@ -190,7 +199,7 @@ with warnings.catch_warnings():
 # %%
 #
 # To not lose the this cross-validation report, let's store it in our skore project.
-project.put("Linear model report", report)
+my_project.put("Linear model report", report)
 
 # %%
 # We can now have a look at the performance of the model with some standard metrics.
@@ -232,7 +241,7 @@ report.cache_predictions(n_jobs=3)
 # %%
 #
 # We store the report in our skore project.
-project.put("HGBDT model report", report)
+my_project.put("HGBDT model report", report)
 
 # %%
 #
@@ -246,8 +255,8 @@ report.metrics.report_metrics(aggregate=["mean", "std"])
 # At this stage, I might not been careful and have already overwritten the report and
 # model from my first attempt. Hopefully, because we stored the reports in our skore
 # project, we can easily retrieve them. So let's retrieve the reports.
-linear_model_report = project.get("Linear model report")
-hgbdt_model_report = project.get("HGBDT model report")
+linear_model_report = my_project.get("Linear model report")
+hgbdt_model_report = my_project.get("HGBDT model report")
 
 # %%
 #
@@ -312,12 +321,6 @@ for split_idx, (ax, estimator_report) in enumerate(
     ax.set_title(f"Split #{split_idx + 1}")
     ax.legend(loc="lower right")
 plt.tight_layout()
-
-# %%
-# Cleanup the project
-# -------------------
-#
-# Let's clear the skore project (to avoid any conflict with other documentation examples).
-
-# %%
-project.clear()
+# sphinx_gallery_start_ignore
+temp_dir.cleanup()
+# sphinx_gallery_end_ignore

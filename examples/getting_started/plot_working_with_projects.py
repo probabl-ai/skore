@@ -15,10 +15,17 @@ of items that we can store in a skore :class:`~skore.Project`.
 
 # %%
 # We create and load the skore project from the current directory:
-
-# %%
 import skore
 
+# sphinx_gallery_start_ignore
+import os
+import tempfile
+from pathlib import Path
+
+temp_dir = tempfile.TemporaryDirectory()
+temp_dir_path = Path(temp_dir.name)
+os.chdir(temp_dir_path)
+# sphinx_gallery_end_ignore
 my_project = skore.open("my_project", create=True)
 
 # %%
@@ -353,12 +360,6 @@ my_pipeline.fit(X, y)
 
 my_project.put("my_fitted_pipeline", my_pipeline)
 my_pipeline
-
-# %%
-# Cleanup the project
-# -------------------
-#
-# Let's clean the skore project to avoid conflict with other examples.
-
-# %%
-my_project.clear()
+# sphinx_gallery_start_ignore
+temp_dir.cleanup()
+# sphinx_gallery_end_ignore
