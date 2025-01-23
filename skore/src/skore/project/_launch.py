@@ -5,7 +5,6 @@ import atexit
 import contextlib
 import socket
 import threading
-import time
 import webbrowser
 from contextlib import asynccontextmanager
 from typing import Union
@@ -24,17 +23,20 @@ def find_free_port(min_port: int = 22140, max_attempts: int = 100) -> int:
     Note: Jupyter has the same brutforce way to find a free port.
     see: https://github.com/jupyter/jupyter_core/blob/fa513c1550bbd1ebcc14a4a79eb8c5d95e3e23c9/tests/dotipython_empty/profile_default/ipython_notebook_config.py#L28
 
-    Args:
-        min_port: Minimum port number to start searching from
-        max_attempts: Maximum number of ports to try before giving up
+    Parameters
+    ----------
+        min_port : int
+            Minimum port number to start searching from.
+        max_attempts : int
+            Maximum number of ports to try before giving up.
 
     Returns
     -------
-        First available port number >= min_port
+        First available port number >= min_port.
 
     Raises
     ------
-        RuntimeError: If no free port found after max_attempts
+        RuntimeError: If no free port found after max_attempts.
     """
     for port in range(min_port, min_port + max_attempts):
         try:
@@ -52,12 +54,18 @@ def find_free_port(min_port: int = 22140, max_attempts: int = 100) -> int:
 
 
 class ServerManager:
+    """Manages the lifecycle of a server instance.
+
+    Includes starting, stopping, and cleanup.
+    Using daemon thread in interactive contexts (vscode & notebook)
+    and regular thread in scripts.
+    """
+
     _instance = None
     _port = None
     _server_running = False
 
     def __init__(self):
-        self._timestamp = time.time()
         self._loop = None
         self._server_thread = None
         self._server_ready = threading.Event()
@@ -80,6 +88,7 @@ class ServerManager:
         if not self._server_running:
             self._cleanup_complete.set()
             return
+
         self._server_running = False
         if self._loop and not self._loop.is_closed():
             with contextlib.suppress(Exception):
