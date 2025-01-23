@@ -363,3 +363,4 @@ my_pipeline
 # sphinx_gallery_start_ignore
 temp_dir.cleanup()
 # sphinx_gallery_end_ignore
+
