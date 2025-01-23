@@ -170,7 +170,7 @@ report.help()
 
 # %%
 # We observe that the cross-validation report detected that we have a regression task
-# and provides us with (a subset of) metrics and plots that make sense for our
+# and provides us with some metrics and plots that make sense for our
 # specific problem at hand.
 #
 # To accelerate any future computation (e.g. of a metric), we cache once and for all the
