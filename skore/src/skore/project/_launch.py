@@ -14,14 +14,41 @@ import uvicorn
 from fastapi import FastAPI
 
 from skore.project.project import Project, logger
+from skore.utils._environment import is_environment_notebook_like
 from skore.utils._logger import logger_context
 
 
-def find_free_port() -> int:
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(("", 0))
-        s.listen(1)
-        return s.getsockname()[1]
+def find_free_port(min_port: int = 22140, max_attempts: int = 100) -> int:
+    """Find first available port starting from min_port.
+
+    Note: Jupyter has the same brutforce way to find a free port.
+    see: https://github.com/jupyter/jupyter_core/blob/fa513c1550bbd1ebcc14a4a79eb8c5d95e3e23c9/tests/dotipython_empty/profile_default/ipython_notebook_config.py#L28
+
+    Args:
+        min_port: Minimum port number to start searching from
+        max_attempts: Maximum number of ports to try before giving up
+
+    Returns
+    -------
+        First available port number >= min_port
+
+    Raises
+    ------
+        RuntimeError: If no free port found after max_attempts
+    """
+    for port in range(min_port, min_port + max_attempts):
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.bind(("", port))
+                s.listen(1)
+                return s.getsockname()[1]
+        except OSError:
+            continue
+
+    raise RuntimeError(
+        f"Could not find free port after {max_attempts}"
+        f"attempts starting from {min_port}"
+    )
 
 
 class ServerManager:
@@ -49,6 +76,7 @@ class ServerManager:
 
     def _cleanup_server(self):
         """Cleanup server resources."""
+        #
         if not self._server_running:
             self._cleanup_complete.set()
             return
@@ -84,7 +112,14 @@ class ServerManager:
         if not self._cleanup_complete.is_set():
             self._cleanup_complete.set()
 
-    async def _run_server_async(self, project, port, open_browser, console):
+    async def _run_server_async(
+        self,
+        project,
+        port,
+        open_browser,
+        console,
+        is_running_as_daemon,
+    ):
         """Async function to start the server and signal when it's ready."""
 
         @asynccontextmanager
@@ -100,24 +135,12 @@ class ServerManager:
             app,
             port=port,
             log_level="error",
-            log_config={
-                "version": 1,
-                "disable_existing_loggers": True,
-                "handlers": {
-                    "default": {
-                        "class": "logging.NullHandler",
-                    }
-                },
-                "loggers": {
-                    "uvicorn": {"handlers": ["default"], "level": "ERROR"},
-                    "uvicorn.error": {"handlers": ["default"], "level": "ERROR"},
-                },
-            },
         )
         self._server = uvicorn.Server(server_config)
-        console.print(
-            f"Running skore UI from '{project.name}' at URL http://localhost:{port}"
-        )
+        msg = f"Running skore UI from '{project.name}' at URL http://localhost:{port}"
+        if not is_running_as_daemon:
+            msg += " (Press CTRL+C to quit)"
+        console.print(msg)
 
         # Set ready event when server is about to start
         self._server_ready.set()
@@ -143,7 +166,7 @@ class ServerManager:
             console.print(f"Server is already running at http://localhost:{port}")
             return
 
-        def run_server_loop():
+        def run_server_loop(is_running_as_daemon):
             self._loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self._loop)
             self._port = port
@@ -151,12 +174,23 @@ class ServerManager:
 
             try:
                 self._loop.run_until_complete(
-                    self._run_server_async(project, port, open_browser, console)
+                    self._run_server_async(
+                        project, port, open_browser, console, is_running_as_daemon
+                    )
                 )
             except Exception:
                 self._cleanup_server()
 
-        self._server_thread = threading.Thread(target=run_server_loop, daemon=True)
+        # if user asked to open the web browser and is running in a notebook like env
+        # then start the thread as daemon (it will die when kernel dies)
+        # if user asked to open the web browser and is running in a script
+        # then start the thread as non daemon user will have to hit ctrl+C to kill it
+        is_running_as_daemon = is_environment_notebook_like()
+        self._server_thread = threading.Thread(
+            target=run_server_loop,
+            daemon=is_running_as_daemon,
+            args=(is_running_as_daemon,),
+        )
         self._server_thread.start()
 
         # Wait for the server to be ready

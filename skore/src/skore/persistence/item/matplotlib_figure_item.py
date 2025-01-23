@@ -6,6 +6,7 @@ This module defines the MatplotlibFigureItem class, used to persist Matplotlib f
 from __future__ import annotations
 
 from base64 import b64encode
+from contextlib import contextmanager
 from io import BytesIO
 from typing import TYPE_CHECKING, Optional
 
@@ -16,6 +17,19 @@ from .media_item import lazy_is_instance
 
 if TYPE_CHECKING:
     from matplotlib.figure import Figure
+
+
+@contextmanager
+def mpl_backend(backend="agg"):
+    """Context manager for switching matplotlib backend."""
+    import matplotlib
+
+    original_backend = matplotlib.get_backend()
+    matplotlib.use(backend)
+    try:
+        yield
+    finally:
+        matplotlib.use(original_backend)
 
 
 class MatplotlibFigureItem(Item):
@@ -72,7 +86,11 @@ class MatplotlibFigureItem(Item):
     @property
     def figure(self) -> Figure:
         """The figure from the persistence."""
-        with BytesIO(self.figure_bytes) as stream:
+        # switch mpl backend to avoid opening windows in a background thread
+        with (
+            BytesIO(self.figure_bytes) as stream,
+            mpl_backend(backend="agg"),
+        ):
             return joblib.load(stream)
 
     def as_serializable_dict(self) -> dict:
