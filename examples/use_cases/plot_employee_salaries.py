@@ -267,7 +267,7 @@ results
 #
 # In addition, if we forgot to compute a specific metric
 # (e.g. :func:`~sklearn.metrics.mean_absolute_error`),
-# we can easily add it to the the report, without re-training the model and even
+# we can easily add it to the report, without re-training the model and even
 # without re-computing the predictions since they are cached internally in the report.
 # This allows us to save some potentially huge computation time.
 from sklearn.metrics import mean_absolute_error
@@ -295,7 +295,7 @@ results
 
 # %%
 #
-# Finally, we can even get individual :class:`~skore.EstimatorReport` for each fold
+# Finally, we can even get the individual :class:`~skore.EstimatorReport` for each fold
 # from the cross-validation to make further analysis.
 # Here, we plot the actual vs predicted values for each fold.
 from itertools import zip_longest

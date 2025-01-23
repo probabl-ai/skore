@@ -68,7 +68,7 @@ X_train, X_test, y_train, y_test = train_test_split(df, y, random_state=42)
 # Caching the predictions for fast metric computation
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
-# First, let us focus on :class:`~skore.EstimatorReport`, as the same philosophy will
+# First, we focus on :class:`~skore.EstimatorReport`, as the same philosophy will
 # apply to :class:`~skore.CrossValidationReport`.
 #
 # Let's explore how :class:`~skore.EstimatorReport` uses caching to speed up
@@ -238,13 +238,13 @@ print(f"Time taken: {end - start:.2f} seconds")
 # %%
 #
 # We only use the cache to retrieve the `display` object and not directly the matplotlib
-# figure. It means that you can still customize the cached plot before displaying it:
+# figure. It means that we can still customize the cached plot before displaying it:
 display.plot(roc_curve_kwargs={"color": "tab:orange"})
 plt.tight_layout()
 
 # %%
 #
-# Be aware that you can clear the cache if you want to:
+# Be aware that we can clear the cache if we want to:
 report.clear_cache()
 report._cache
 
