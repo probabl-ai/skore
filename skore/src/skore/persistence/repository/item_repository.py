@@ -10,6 +10,7 @@ from collections.abc import Iterator
 from typing import TYPE_CHECKING, Union
 
 import skore.persistence.item
+from skore.persistence.storage.skore_hub_storage import SkoreHubStorage
 
 if TYPE_CHECKING:
     from skore.persistence.item import Item
@@ -69,6 +70,9 @@ class ItemRepository:
         Item
             The retrieved item.
         """
+        if isinstance(self.storage, SkoreHubStorage):
+            return ItemRepository.__construct_item(self.storage[key])
+
         return ItemRepository.__construct_item(self.storage[key][-1])
 
     def get_item_versions(self, key) -> list[Item]:
@@ -103,6 +107,10 @@ class ItemRepository:
             The item to be stored.
         """
         _item = ItemRepository.__deconstruct_item(item)
+
+        if isinstance(self.storage, SkoreHubStorage):
+            self.storage[key] = _item
+            return
 
         if key in self.storage:
             items = self.storage[key]
