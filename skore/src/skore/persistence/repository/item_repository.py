@@ -70,9 +70,6 @@ class ItemRepository:
         Item
             The retrieved item.
         """
-        if isinstance(self.storage, SkoreHubStorage):
-            return ItemRepository.__construct_item(self.storage[key])
-
         return ItemRepository.__construct_item(self.storage[key][-1])
 
     def get_item_versions(self, key) -> list[Item]:

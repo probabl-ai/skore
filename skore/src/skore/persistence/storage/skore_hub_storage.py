@@ -23,16 +23,19 @@ class SkoreHubStorage(AbstractStorage):
         self.id = response.json()["id"]
 
     def __getitem__(self, key: str) -> Any:
-        request = f"{self.url}/{self.id}/items/{key}"
+        request = f"{self.url}/{self.id}/items/{key}/history"
         response = httpx.get(request)
         response.raise_for_status()
 
         response_json = response.json()
 
-        return {
-            "item_class_name": response_json["item_class_name"],
-            "item": response_json["item"],
-        }
+        return [
+            {
+                "item_class_name": row["item_class_name"],
+                "item": row["item"],
+            }
+            for row in response_json
+        ]
 
     def __setitem__(self, key: str, value: dict):
         request = f"{self.url}/{self.id}/items"
@@ -45,7 +48,11 @@ class SkoreHubStorage(AbstractStorage):
         raise NotImplementedError
 
     def keys(self) -> Iterator[str]:
-        raise NotImplementedError
+        request = f"{self.url}/{self.id}/keys"
+        response = httpx.get(request)
+        response.raise_for_status()
+
+        yield from response.json()
 
     def values(self) -> Iterator[Any]:
         raise NotImplementedError
