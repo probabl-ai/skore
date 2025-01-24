@@ -7,6 +7,7 @@ import multiprocessing
 import os
 import signal
 import socket
+import time
 import webbrowser
 from pathlib import Path
 from typing import Union
@@ -118,6 +119,7 @@ def cleanup_server(project: Project):
 
     try:
         os.kill(info["pid"], signal.SIGTERM)
+        time.sleep(1)
 
         from skore import console
 
