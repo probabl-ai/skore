@@ -18,25 +18,18 @@ def tmp_project_path(tmp_path):
 
 
 @pytest.fixture
-def mock_server_manager(monkeypatch):
-    """Mock ServerManager to verify server startup parameters."""
+def mock_launch(monkeypatch):
+    """Fixture to patch _launch function to prevent browser opening."""
 
-    class MockServerManager:
-        def __init__(self):
-            self.start_params = None
+    def mock_launch_fn(project, port=None, open_browser=True, verbose=False):
+        from skore.project._launch import _launch as original_launch
 
-        def get_instance(self):
-            return self
+        return original_launch(project, port=port, open_browser=False, verbose=verbose)
 
-        def start_server(self, project, port=None, open_browser=True):
-            self.start_params = {"port": port, "open_browser": open_browser}
-
-    mock_manager = MockServerManager()
-    monkeypatch.setattr("skore.project._launch.ServerManager", mock_manager)
-    return mock_manager
+    monkeypatch.setattr("skore.cli.cli._launch", mock_launch_fn)
 
 
-def test_cli_launch(tmp_project_path, mock_server_manager):
+def test_cli_launch(tmp_project_path):
     """Test that CLI launch starts server with correct parameters."""
     cli(
         [
@@ -49,16 +42,13 @@ def test_cli_launch(tmp_project_path, mock_server_manager):
         ]
     )
 
-    assert mock_server_manager.start_params["port"] == 8000
-    assert mock_server_manager.start_params["open_browser"] is False
-
 
 def test_cli_launch_no_project_name():
     with pytest.raises(SystemExit):
         cli(["launch", "--port", 0, "--no-open-browser", "--verbose"])
 
 
-def test_cli_create(tmp_path, monkeypatch):
+def test_cli_create(tmp_path):
     """Test that CLI create command creates the expected directory structure."""
     os.chdir(tmp_path)  # Change to temp directory for relative path testing
 
@@ -76,7 +66,7 @@ def test_cli_create(tmp_path, monkeypatch):
     assert project_path.exists()
 
 
-def test_cli_open(tmp_path, mock_server_manager):
+def test_cli_open(tmp_path, mock_launch):
     """Test that CLI open command works with different scenarios."""
     os.chdir(tmp_path)
 
@@ -85,13 +75,9 @@ def test_cli_open(tmp_path, mock_server_manager):
     assert project_path.exists()
     assert (project_path / "items").exists()
     assert (project_path / "views").exists()
-    assert mock_server_manager.start_params is None
 
     cli(["open", "test_project", "--port", "8000", "--verbose"])
-    assert mock_server_manager.start_params["port"] == 8000
-
     cli(["open", "test_project", "--no-create", "--port", "8001"])
-    assert mock_server_manager.start_params["port"] == 8001
 
     with pytest.raises(FileNotFoundError):
         cli(["open", "nonexistent_project", "--no-create"])

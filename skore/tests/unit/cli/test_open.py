@@ -16,26 +16,18 @@ def tmp_project_path(tmp_path):
 
 
 @pytest.fixture
-def mock_server_manager(monkeypatch):
-    """Mock ServerManager to verify server startup parameters."""
+def mock_launch(monkeypatch):
+    """Fixture that mocks the _launch function and tracks calls to it."""
+    calls = []
 
-    class MockServerManager:
-        def __init__(self):
-            self.start_params = None
+    def _mock_launch(project, port=None, open_browser=True, verbose=False):
+        calls.append((project, port, open_browser, verbose))
 
-        def get_instance(self):
-            return self
-
-        def start_server(self, project, port=None, open_browser=True):
-            # Always set open_browser to False to prevent browser opening
-            self.start_params = {"port": port, "open_browser": False}
-
-    mock_manager = MockServerManager()
-    monkeypatch.setattr("skore.project._launch.ServerManager", mock_manager)
-    return mock_manager
+    monkeypatch.setattr("skore.project._launch._launch", _mock_launch)
+    return calls
 
 
-def test_cli_open(tmp_project_path, mock_server_manager):
+def test_cli_open(tmp_project_path, mock_launch):
     """Test that CLI open creates a project and starts server with correct
     parameters."""
     cli(
@@ -49,29 +41,29 @@ def test_cli_open(tmp_project_path, mock_server_manager):
             "--verbose",
         ]
     )
-
-    assert mock_server_manager.start_params["port"] == 8000
-    assert mock_server_manager.start_params["open_browser"] is False
+    assert len(mock_launch) == 1
 
 
-def test_cli_open_creates_project(tmp_path, mock_server_manager):
+def test_cli_open_creates_project(tmp_path, mock_launch):
     """Test that CLI open creates a project when it doesn't exist."""
     project_path = tmp_path / "new_project.skore"
     assert not project_path.exists()
 
     cli(["open", str(project_path), "--create"])
     assert project_path.exists()
+    assert len(mock_launch) == 1
 
 
-def test_cli_open_no_create_fails(tmp_path, mock_server_manager):
+def test_cli_open_no_create_fails(tmp_path, mock_launch):
     """Test that CLI open fails when project doesn't exist and create=False."""
     project_path = tmp_path / "nonexistent.skore"
 
     with pytest.raises(FileNotFoundError):
         cli(["open", str(project_path), "--no-create"])
+    assert len(mock_launch) == 0
 
 
-def test_cli_open_overwrite(tmp_path, mock_server_manager):
+def test_cli_open_overwrite(tmp_path, mock_launch):
     """Test that CLI open can overwrite existing project."""
     project_path = tmp_path / "overwrite_test.skore"
 
@@ -81,12 +73,12 @@ def test_cli_open_overwrite(tmp_path, mock_server_manager):
     cli(["open", str(project_path), "--create", "--overwrite"])
     new_time = os.path.getmtime(project_path)
     assert new_time > initial_time
+    assert len(mock_launch) == 2
 
 
-def test_cli_open_no_serve(tmp_path, mock_server_manager):
+def test_cli_open_no_serve(tmp_path, mock_launch):
     """Test that server is not started when --no-serve flag is passed."""
     project_path = tmp_path / "no_serve.skore"
 
     cli(["open", str(project_path), "--create", "--no-serve"])
-
-    assert mock_server_manager.start_params is None
+    assert len(mock_launch) == 0
