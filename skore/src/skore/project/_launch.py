@@ -164,6 +164,7 @@ def _launch(
         try:
             os.kill(info["pid"], 0)
 
+            console.rule("[bold cyan]skore-UI[/bold cyan]")
             console.print(
                 f"Server is already running at http://localhost:{info['port']}"
             )
