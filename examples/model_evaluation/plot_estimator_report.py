@@ -10,6 +10,9 @@ quickly get insights from any scikit-learn estimator.
 """
 
 # %%
+# Loading our dataset and defining our estimator
+# ==============================================
+#
 # First, we load a dataset from skrub. Our goal is to predict if a company paid a physician. The ultimate goal is to
 # detect potential conflict of interest when it comes to the actual problem that we want to solve.
 
@@ -46,8 +49,8 @@ from skore import train_test_split
 X_train, X_test, y_train, y_test = train_test_split(df, y, random_state=42)
 
 # %%
-# By the way, notice how skore's :func:`~train_test_split` automatically warns us for a
-# class imbalance.
+# By the way, notice how skore's :func:`~skore.train_test_split` automatically warns us
+# for a class imbalance.
 #
 # Now, we need to define a predictive model. Hopefully, `skrub` provides a convenient
 # function (:func:`skrub.tabular_learner`) when it comes to getting strong baseline
@@ -62,9 +65,11 @@ estimator = tabular_learner("classifier").fit(X_train, y_train)
 estimator
 
 # %%
+# Getting insights from our estimator
+# ===================================
 #
 # Introducing the :class:`skore.EstimatorReport` class
-# ----------------------------------------------------
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # Now, we would be interested in getting some insights from our predictive model.
 # One way is to use the :class:`skore.EstimatorReport` class. This constructor will
@@ -79,15 +84,15 @@ report
 # %%
 #
 # Once the report is created, we get some information regarding the available tools
-# allowing us to get some insights from our specific model on the specific task.
+# allowing us to get some insights from our specific model on our specific task.
 #
-# You can get a similar information if you call the :meth:`~skore.EstimatorReport.help`
+# We can get a similar information if we call the :meth:`~skore.EstimatorReport.help`
 # method.
 report.help()
 
 # %%
 #
-# Be aware that you can access the help for each individual sub-accessor. For instance:
+# Be aware that we can access the help for each individual sub-accessor. For instance:
 report.metrics.help()
 
 # %%
@@ -96,7 +101,7 @@ report.metrics.plot.help()
 # %%
 #
 # Metrics computation with aggressive caching
-# -------------------------------------------
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # At this point, we might be interested to have a first look at the statistical
 # performance of our model on the validation set that we provided. We can access it
@@ -119,7 +124,7 @@ print(f"Time taken to compute the metrics: {end - start:.2f} seconds")
 # the caching mechanism. Indeed, when we have a large enough dataset, computing the
 # predictions for a model is not cheap anymore. For instance, on our smallish dataset,
 # it took a couple of seconds to compute the metrics. The report will cache the
-# predictions and if you are interested in computing a metric again or an alternative
+# predictions and if we are interested in computing a metric again or an alternative
 # metric that requires the same predictions, it will be faster. Let's check by
 # requesting the same metrics report again.
 
@@ -170,7 +175,7 @@ print(f"Time taken to compute the log loss: {end - start:.2f} seconds")
 
 # %%
 #
-# By default, the metrics are computed on the test set. However, if a training set
+# By default, the metrics are computed on the test set only. However, if a training set
 # is provided, we can also compute the metrics by specifying the `data_source`
 # parameter.
 report.metrics.log_loss(data_source="train")
@@ -210,13 +215,13 @@ print(f"Time taken to compute the metrics: {end - start:.2f} seconds")
 
 # %%
 #
-# .. warning::
+# .. note::
 #     In this last example, we rely on computing the hash of the input data. Therefore,
 #     there is a trade-off: the computation of the hash is not free and it might be
 #     faster to compute the predictions instead.
 #
-# Be aware that you can also benefit from the caching mechanism with your own custom
-# metrics. We only expect that you define your own metric function to take `y_true`
+# Be aware that we can also benefit from the caching mechanism with our own custom
+# metrics. Skore only expects that we define our own metric function to take `y_true`
 # and `y_pred` as the first two positional arguments. It can take any other arguments.
 # Let's see an example.
 
@@ -288,7 +293,7 @@ print(f"Time taken to compute the cost: {end - start:.2f} seconds")
 # %%
 #
 # We observe that caching is working as expected. It is really handy because it means
-# that you can compute some additional metrics without having to recompute the
+# that we can compute some additional metrics without having to recompute the
 # the predictions.
 report.metrics.report_metrics(
     scoring=["precision", "recall", operational_decision_cost],
@@ -302,9 +307,9 @@ report.metrics.report_metrics(
 
 # %%
 #
-# It could happen that you are interested in providing several custom metrics which
-# does not necessarily share the same parameters. In this more complex case, we will
-# require you to provide a scorer using the :func:`sklearn.metrics.make_scorer`
+# It could happen that we are interested in providing several custom metrics which
+# does not necessarily share the same parameters. In this more complex case, skore will
+# require us to provide a scorer using the :func:`sklearn.metrics.make_scorer`
 # function.
 from sklearn.metrics import make_scorer, f1_score
 
@@ -322,10 +327,10 @@ report.metrics.report_metrics(scoring=[f1_scorer, operational_decision_cost_scor
 # %%
 #
 # Effortless one-liner plotting
-# -----------------------------
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # The :class:`skore.EstimatorReport` class also provides a plotting interface that
-# allows to plot *defacto* the most common plots. As for the the metrics, we only
+# allows to plot *defacto* the most common plots. As for the metrics, we only
 # provide the meaningful set of plots for the provided estimator.
 report.metrics.plot.help()
 
@@ -338,9 +343,9 @@ plt.tight_layout()
 # %%
 #
 # The plot functionality is built upon the scikit-learn display objects. We return
-# those display (slightly modified to improve the UI) in case you want to tweak some
-# of the plot properties. You can have quick look at the available attributes and
-# methods by calling the `help` method or simply by printing the display.
+# those display (slightly modified to improve the UI) in case we want to tweak some
+# of the plot properties. We can have quick look at the available attributes and
+# methods by calling the ``help`` method or simply by printing the display.
 display
 
 # %%

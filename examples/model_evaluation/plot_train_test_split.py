@@ -12,7 +12,7 @@ This example illustrates the motivation and the use of skore's
 # %%
 # Creating and loading the skore project
 # ======================================
-# %%
+#
 # We create and load the skore project from the current directory:
 
 # %%
@@ -246,7 +246,8 @@ X_train, X_test, y_train, y_test = skore.train_test_split(
 # Cleanup the project
 # -------------------
 #
-# Let's clear the skore project (to avoid any conflict with other documentation examples).
+# Let's clear the skore project (to avoid any conflict with other documentation
+# examples).
 
 # %%
 my_project.clear()

@@ -74,7 +74,8 @@ my_project.put("roc_plot", roc_plot)
 # Cleanup the project
 # -------------------
 #
-# Let's clear the skore project (to avoid any conflict with other documentation examples).
+# Let's clear the skore project (to avoid any conflict with other documentation
+# examples).
 
 # %%
 my_project.clear()

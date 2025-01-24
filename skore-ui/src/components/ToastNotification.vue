@@ -158,9 +158,6 @@ onBeforeUnmount(() => {
 
         & .background {
           background-color: #2f3037;
-          mask:
-            linear-gradient(#0000 0 0) content-box intersect,
-            conic-gradient(#000 360deg, #0000 0);
         }
 
         & .foreground {

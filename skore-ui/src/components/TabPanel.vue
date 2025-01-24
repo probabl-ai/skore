@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, provide, ref, useSlots } from "vue";
+import { computed, onMounted, provide, ref, useSlots, type VNode } from "vue";
 
 import TabPanelContent from "@/components/TabPanelContent.vue";
 
@@ -8,10 +8,10 @@ const selectedTabName = ref("");
 provide("selectedTabName", selectedTabName);
 
 const tabs = computed(() => {
-  const children = slots.default?.() || [];
+  const children = slots.default?.({}) || [];
   return children
-    .filter((child) => child.type === TabPanelContent)
-    .map((child) => ({
+    .filter((child: VNode) => child.type === TabPanelContent)
+    .map((child: VNode) => ({
       name: child.props?.name,
       icon: child.props?.icon,
     }));
