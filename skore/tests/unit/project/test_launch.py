@@ -1,7 +1,7 @@
 import os
 import socket
-import uuid
 
+import joblib
 import psutil
 import pytest
 from skore.project._create import _create
@@ -57,7 +57,7 @@ def test_launch(capsys, tmp_path):
     server_info = skore_project._server_info
     pid_file_content = server_info.load_pid_file()
     assert server_info.port == pid_file_content["port"]
-    project_identifier = uuid.uuid3(uuid.NAMESPACE_DNS, str(skore_project.path))
+    project_identifier = joblib.hash(skore_project.path, hash_name="sha1")
     assert server_info.pid_file.name == f"skore-server-{project_identifier}.json"
 
     skore_project.shutdown_web_ui()

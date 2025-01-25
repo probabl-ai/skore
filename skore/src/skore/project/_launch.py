@@ -6,11 +6,11 @@ import json
 import multiprocessing
 import os
 import socket
-import uuid
 import webbrowser
 from pathlib import Path
 from typing import Union
 
+import joblib
 import platformdirs
 import psutil
 import uvicorn
@@ -84,18 +84,10 @@ class ServerInfo:
     def _get_pid_file_path(project: Project) -> Path:
         """Get the path to the PID file."""
         if project.path is not None:
-            project_identifier = uuid.uuid3(uuid.NAMESPACE_DNS, str(project.path))
+            project_identifier = joblib.hash(project.path, hash_name="sha1")
         else:
-            project_identifier = uuid.uuid3(uuid.NAMESPACE_DNS, str(project.name))
+            project_identifier = joblib.hash(project.name, hash_name="sha1")
 
-        # Print the content of the skore state directory
-        state_dir = platformdirs.user_state_path(appname="skore")
-        if state_dir.exists():
-            print(f"Content of {state_dir}:")
-            for path in state_dir.iterdir():
-                print(f"  {path.name}")
-        else:
-            print(f"Directory {state_dir} does not exist")
         return (
             platformdirs.user_state_path(appname="skore")
             / f"skore-server-{project_identifier}.json"
@@ -121,7 +113,6 @@ class ServerInfo:
             The server information.
         """
         pid_file = cls._get_pid_file_path(project)
-        print(pid_file)
         if not pid_file.exists():
             return
 
