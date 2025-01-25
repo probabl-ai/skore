@@ -50,7 +50,7 @@ def test_server_info(on_disk_project):
 def test_launch(capsys, tmp_path):
     """Check the general behaviour of the launch function."""
     skore_project = _create(tmp_path / "test_project")
-    _launch(skore_project, open_browser=False, verbose=True)
+    _launch(skore_project, open_browser=False, keep_alive=False, verbose=True)
     assert "Running skore UI" in capsys.readouterr().out
     assert skore_project._server_info is not None
 
@@ -64,8 +64,12 @@ def test_launch(capsys, tmp_path):
     output = capsys.readouterr().out
     assert "Server that was running" in output
 
-    _launch(skore_project, port=8000, open_browser=False, verbose=True)
-    _launch(skore_project, port=8000, open_browser=False, verbose=True)
+    _launch(
+        skore_project, port=8000, open_browser=False, keep_alive=False, verbose=True
+    )
+    _launch(
+        skore_project, port=8000, open_browser=False, keep_alive=False, verbose=True
+    )
     assert "Server is already running" in capsys.readouterr().out
 
 
@@ -139,7 +143,9 @@ def test_launch_zombie_process(tmp_path, monkeypatch):
 
     monkeypatch.setattr(os, "kill", mock_kill)
 
-    _launch(skore_project, port=8001, open_browser=False, verbose=True)
+    _launch(
+        skore_project, port=8001, open_browser=False, keep_alive=False, verbose=True
+    )
 
     assert skore_project._server_info is not None
     assert skore_project._server_info.port == 8001

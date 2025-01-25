@@ -6,7 +6,7 @@ from importlib.metadata import version
 from skore.cli.color_format import ColorArgumentParser
 from skore.project import open
 from skore.project._create import _create
-from skore.project._launch import _launch
+from skore.project._launch import _cleanup_potential_zombie_process, _launch
 from skore.project._load import _load
 
 
@@ -46,6 +46,15 @@ def cli(args: list[str]):
         help="the name or path of the project to open",
     )
     parser_launch.add_argument(
+        "--keep-alive",
+        action=argparse.BooleanOptionalAction,
+        help=(
+            "whether to keep the server alive once the main process finishes "
+            "(default: %(default)s)"
+        ),
+        default="auto",
+    )
+    parser_launch.add_argument(
         "--port",
         type=int,
         help="the port at which to bind the UI server (default: %(default)s)",
@@ -61,6 +70,16 @@ def cli(args: list[str]):
         default=True,
     )
     parser_launch.add_argument(
+        "--verbose",
+        action="store_true",
+        help="increase logging verbosity",
+    )
+
+    # cleanup potential zombie processes
+    parser_cleanup = subparsers.add_parser(
+        "cleanup", help="Clean up all UI running processes"
+    )
+    parser_cleanup.add_argument(
         "--verbose",
         action="store_true",
         help="increase logging verbosity",
@@ -94,6 +113,15 @@ def cli(args: list[str]):
         default=True,
     )
     parser_open.add_argument(
+        "--keep-alive",
+        action=argparse.BooleanOptionalAction,
+        help=(
+            "whether to keep the server alive once the main process finishes "
+            "(default: %(default)s)"
+        ),
+        default="auto",
+    )
+    parser_open.add_argument(
         "--port",
         type=int,
         help="the port at which to bind the UI server (default: %(default)s)",
@@ -116,6 +144,7 @@ def cli(args: list[str]):
     elif parsed_args.subcommand == "launch":
         _launch(
             project=_load(project_name=parsed_args.project_name),
+            keep_alive=parsed_args.keep_alive,
             port=parsed_args.port,
             open_browser=parsed_args.open_browser,
             verbose=parsed_args.verbose,
@@ -126,8 +155,11 @@ def cli(args: list[str]):
             create=parsed_args.create,
             overwrite=parsed_args.overwrite,
             serve=parsed_args.serve,
+            keep_alive=parsed_args.keep_alive,
             port=parsed_args.port,
             verbose=parsed_args.verbose,
         )
+    elif parsed_args.subcommand == "cleanup":
+        _cleanup_potential_zombie_process()
     else:
         parser.print_help()

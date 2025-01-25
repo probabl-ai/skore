@@ -17,6 +17,7 @@ import uvicorn
 from fastapi import FastAPI
 
 from skore.project.project import Project, logger
+from skore.utils._environment import is_environment_notebook_like
 from skore.utils._logger import logger_context
 
 
@@ -214,8 +215,27 @@ def cleanup_server(project: Project, timeout: float = 5.0) -> bool:
     return True
 
 
+def _cleanup_potential_zombie_process():
+    state_path = platformdirs.user_state_path(appname="skore")
+    for pid_file in state_path.glob("skore-server-*.json"):
+        try:
+            pid_info = json.load(pid_file.open())
+            try:
+                process = psutil.Process(pid_info["pid"])
+                process.terminate()
+                try:
+                    process.wait(timeout=5.0)
+                except psutil.TimeoutExpired:
+                    process.kill()
+            except psutil.NoSuchProcess:
+                pass
+        finally:
+            pid_file.unlink()
+
+
 def _launch(
     project: Project,
+    keep_alive: Union[str, bool] = "auto",
     port: Union[int, None] = None,
     open_browser: bool = True,
     verbose: bool = False,
@@ -224,14 +244,20 @@ def _launch(
 
     Parameters
     ----------
-        project : Project
-            The project to launch.
-        port : int, optional
-            The port to use for the server, by default None.
-        open_browser : bool, optional
-            Whether to open the browser, by default True.
-        verbose : bool, optional
-            Whether to print verbose output, by default False.
+    project : Project
+        The project to launch.
+    keep_alive : Union[str, bool], default="auto"
+        Whether to keep the server alive once the main process finishes. When False,
+        the server will be terminated when the main process finishes. When True,
+        the server will be kept alive and thus block the main process from exiting.
+        When `"auto"`, the server will be kept alive if the current execution context
+        is not a notebook-like environment.
+    port : int, optional
+        The port to use for the server, by default None.
+    open_browser : bool, optional
+        Whether to open the browser, by default True.
+    verbose : bool, optional
+        Whether to print verbose output, by default False.
     """
     from skore import console  # avoid circular import
 
@@ -253,11 +279,13 @@ def _launch(
 
     ready_event = multiprocessing.Event()
 
+    daemon = is_environment_notebook_like() if keep_alive == "auto" else not keep_alive
+
     with logger_context(logger, verbose):
         process = multiprocessing.Process(
             target=run_server,
             args=(project, port, open_browser, ready_event),
-            daemon=True,
+            daemon=daemon,
         )
         process.start()
         project._server_info = ServerInfo(project, port, process.pid)
@@ -265,8 +293,16 @@ def _launch(
         ready_event.wait()  # wait for server to been started
 
         console.rule("[bold cyan]skore-UI[/bold cyan]")
-        console.print(
-            f"Running skore UI from '{project.name}' at URL http://localhost:{port}"
-        )
 
-        atexit.register(cleanup_server, project)
+        msg = f"Running skore UI from '{project.name}' at URL http://localhost:{port}"
+        if not daemon:
+            msg += " (Press CTRL+C to quit)"
+        console.print(msg)
+
+        if not daemon:
+            try:
+                process.join()
+            except KeyboardInterrupt:
+                cleanup_server(project)
+        else:
+            atexit.register(cleanup_server, project)

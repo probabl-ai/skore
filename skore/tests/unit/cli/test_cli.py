@@ -35,6 +35,7 @@ def test_cli_launch(tmp_project_path):
         [
             "launch",
             str(tmp_project_path),
+            "--no-keep-alive",
             "--no-open-browser",
             "--verbose",
         ]
@@ -44,7 +45,9 @@ def test_cli_launch(tmp_project_path):
 
 def test_cli_launch_no_project_name():
     with pytest.raises(SystemExit):
-        cli(["launch", "--port", 0, "--no-open-browser", "--verbose"])
+        cli(
+            ["launch", "--port", 0, "--no-keep-alive", "--no-open-browser", "--verbose"]
+        )
 
 
 def test_cli_create(tmp_path):
@@ -82,9 +85,9 @@ def test_cli_open(tmp_path, monkeypatch):
     assert (project_path / "items").exists()
     assert (project_path / "views").exists()
 
-    cli(["open", str(project_path), "--verbose"])
+    cli(["open", str(project_path), "--no-keep-alive", "--verbose"])
     close_project(project_path)
-    cli(["open", str(project_path), "--no-create"])
+    cli(["open", str(project_path), "--no-keep-alive", "--no-create"])
     close_project(project_path)
 
     with pytest.raises(FileNotFoundError):

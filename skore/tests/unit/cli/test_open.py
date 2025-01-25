@@ -20,8 +20,10 @@ def mock_launch(monkeypatch):
     """Fixture that mocks the _launch function and tracks calls to it."""
     calls = []
 
-    def _mock_launch(project, port=None, open_browser=True, verbose=False):
-        calls.append((project, port, open_browser, verbose))
+    def _mock_launch(
+        project, keep_alive="auto", port=None, open_browser=True, verbose=False
+    ):
+        calls.append((project, keep_alive, port, open_browser, verbose))
 
     monkeypatch.setattr("skore.project._launch._launch", _mock_launch)
     return calls
@@ -38,6 +40,7 @@ def test_cli_open(tmp_project_path, mock_launch):
             "--port",
             "8000",
             "--serve",
+            "--no-keep-alive",
             "--verbose",
         ]
     )
@@ -49,7 +52,7 @@ def test_cli_open_creates_project(tmp_path, mock_launch):
     project_path = tmp_path / "new_project.skore"
     assert not project_path.exists()
 
-    cli(["open", str(project_path), "--create"])
+    cli(["open", str(project_path), "--create", "--no-keep-alive"])
     assert project_path.exists()
     assert len(mock_launch) == 1
 
@@ -59,7 +62,7 @@ def test_cli_open_no_create_fails(tmp_path, mock_launch):
     project_path = tmp_path / "nonexistent.skore"
 
     with pytest.raises(FileNotFoundError):
-        cli(["open", str(project_path), "--no-create"])
+        cli(["open", str(project_path), "--no-create", "--no-keep-alive"])
     assert len(mock_launch) == 0
 
 
@@ -67,10 +70,10 @@ def test_cli_open_overwrite(tmp_path, mock_launch):
     """Test that CLI open can overwrite existing project."""
     project_path = tmp_path / "overwrite_test.skore"
 
-    cli(["open", str(project_path), "--create"])
+    cli(["open", str(project_path), "--create", "--no-keep-alive"])
     initial_time = os.path.getmtime(project_path)
 
-    cli(["open", str(project_path), "--create", "--overwrite"])
+    cli(["open", str(project_path), "--create", "--overwrite", "--no-keep-alive"])
     new_time = os.path.getmtime(project_path)
     assert new_time > initial_time
     assert len(mock_launch) == 2

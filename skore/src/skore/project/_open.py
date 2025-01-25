@@ -12,6 +12,7 @@ def open(
     create: bool = True,
     overwrite: bool = False,
     serve: bool = True,
+    keep_alive: Union[str, bool] = "auto",
     port: Union[int, None] = None,
     verbose: bool = False,
 ) -> Project:
@@ -34,6 +35,12 @@ def open(
         Has no effect otherwise.
     serve: bool, default=True
         Whether to launch the skore UI.
+    keep_alive : Union[str, bool], default="auto"
+        Whether to keep the server alive once the main process finishes. When False,
+        the server will be terminated when the main process finishes. When True,
+        the server will be kept alive and thus block the main process from exiting.
+        When `"auto"`, the server will be kept alive if the current execution context
+        is not a notebook-like environment.
     port: int, default=None
         Port at which to bind the UI server. If ``None``, the server will be bound to
         an available port.
@@ -68,6 +75,6 @@ def open(
             raise
 
     if serve:
-        _launch(project, port=port, verbose=verbose)
+        _launch(project, keep_alive=keep_alive, port=port, verbose=verbose)
 
     return project
