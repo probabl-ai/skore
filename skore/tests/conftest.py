@@ -42,6 +42,7 @@ def in_memory_project():
     view_repository = ViewRepository(storage=InMemoryStorage())
     return Project(
         name="in_memory_project.skore",
+        path=None,
         item_repository=item_repository,
         view_repository=view_repository,
     )

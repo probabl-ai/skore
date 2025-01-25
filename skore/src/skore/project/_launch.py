@@ -6,10 +6,12 @@ import json
 import multiprocessing
 import os
 import socket
+import uuid
 import webbrowser
 from pathlib import Path
 from typing import Union
 
+import platformdirs
 import psutil
 import uvicorn
 from fastapi import FastAPI
@@ -56,25 +58,85 @@ def find_free_port(min_port: int = 22140, max_attempts: int = 100) -> int:
     )
 
 
-def get_server_info_path(project: Project) -> Path:
-    """Get path to the server info file for this project."""
-    return Path("/tmp") / "skore_server_info.json"
+class ServerInfo:
+    """Server information.
 
+    Parameters
+    ----------
+    project : Project
+        The project to associate with the server.
+    port : int
+        The port to use for the server.
+    pid : int
+        The PID of the server process.
 
-def save_server_info(project: Project, port: int, pid: int):
-    """Save server information to disk."""
-    info = {"port": port, "pid": pid}
-    with open(get_server_info_path(project), "w") as f:
-        json.dump(info, f)
+    Attributes
+    ----------
+    port : int
+        The port to use for the server.
+    pid : int
+        The PID of the server process.
+    pid_file : Path
+        The path to the PID file.
+    """
 
+    @staticmethod
+    def _get_pid_file_path(project: Project) -> Path:
+        """Get the path to the PID file."""
+        if project.path is not None:
+            project_identifier = uuid.uuid3(uuid.NAMESPACE_DNS, str(project.path))
+        else:
+            project_identifier = uuid.uuid3(uuid.NAMESPACE_DNS, str(project.name))
+        return (
+            platformdirs.user_state_path(appname="skore")
+            / f"skore-server-{project_identifier}.json"
+        )
 
-def load_server_info(project: Project) -> Union[dict, None]:
-    """Load server information from disk if it exists."""
-    try:
-        with open(get_server_info_path(project)) as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return None
+    def __init__(self, project: Project, port: int, pid: int):
+        self.port = port
+        self.pid = pid
+        self.pid_file = self._get_pid_file_path(project)
+
+    @classmethod
+    def rejoin(cls, project: Project):
+        """Rejoin a project to a server.
+
+        Parameters
+        ----------
+        project : Project
+            The project to associate with the server.
+
+        Returns
+        -------
+        ServerInfo
+            The server information.
+        """
+        pid_file = cls._get_pid_file_path(project)
+        if not pid_file.exists():
+            return
+
+        info = json.load(pid_file.open())
+        return cls(project, info["port"], info["pid"])
+
+    def save_pid_file(self):
+        """Save server information to disk."""
+        info = {"port": self.port, "pid": self.pid}
+        self.pid_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(self.pid_file, "w") as f:
+            json.dump(info, f)
+
+    def delete_pid_file(self):
+        """Delete server information from disk."""
+        with contextlib.suppress(FileNotFoundError):
+            os.remove(self.pid_file)
+
+    def load_pid_file(self) -> Union[dict, None]:
+        """Load server information from disk if it exists."""
+        try:
+            with open(self.pid_file) as f:
+                return json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            return None
 
 
 def run_server(
@@ -121,12 +183,11 @@ def cleanup_server(project: Project, timeout: float = 5.0) -> bool:
         True if the server was successfully terminated, False if timeout occurred
         or server wasn't running.
     """
-    info = load_server_info(project)
-    if info is None:
+    if project._server_info is None:
         return False
 
     try:
-        process = psutil.Process(info["pid"])
+        process = psutil.Process(project._server_info.pid)
         process.terminate()
 
         try:
@@ -141,15 +202,15 @@ def cleanup_server(project: Project, timeout: float = 5.0) -> bool:
         console.rule("[bold cyan]skore-UI[/bold cyan]")
         status = "gracefully" if success else "forcefully"
         console.print(
-            f"Server that was running at http://localhost:{info['port']} has "
-            f"been closed {status}"
+            f"Server that was running at http://localhost:{project._server_info.port} "
+            f"has been closed {status}"
         )
 
     except psutil.NoSuchProcess:
         pass  # Process already terminated
     finally:
-        with contextlib.suppress(FileNotFoundError):
-            os.remove(get_server_info_path(project))
+        project._server_info.delete_pid_file()
+        project._server_info = None
 
     return True
 
@@ -178,14 +239,14 @@ def _launch(
     if port is None:
         port = find_free_port()
 
-    info = load_server_info(project)
-    if info is not None:
+    if project._server_info is not None:
         try:
-            os.kill(info["pid"], 0)
+            os.kill(project._server_info.pid, 0)
 
             console.rule("[bold cyan]skore-UI[/bold cyan]")
             console.print(
-                f"Server is already running at http://localhost:{info['port']}"
+                "Server is already running at "
+                f"http://localhost:{project._server_info.port}"
             )
             return
         except ProcessLookupError:  # zombie process
@@ -200,7 +261,8 @@ def _launch(
             daemon=True,
         )
         process.start()
-        save_server_info(project, port, process.pid)
+        project._server_info = ServerInfo(project, port, process.pid)
+        project._server_info.save_pid_file()
         ready_event.wait()  # wait for server to been started
 
         console.rule("[bold cyan]skore-UI[/bold cyan]")

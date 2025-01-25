@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Iterator
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 
 from skore.persistence.item import item_to_object, object_to_item
@@ -35,15 +36,17 @@ class Project:
     :func:`~skore.Project.put`.
     """
 
-    _server_manager = None
+    _server_info = None
 
     def __init__(
         self,
         name: str,
+        path: Union[Path, str, None],
         item_repository: ItemRepository,
         view_repository: ViewRepository,
     ):
         self.name = name
+        self.path = path
         self.item_repository = item_repository
         self.view_repository = view_repository
 
@@ -280,10 +283,12 @@ class Project:
 
     def shutdown_web_ui(self):
         """Shutdown the web UI server if it is running."""
-        from skore.project._launch import cleanup_server
-
-        if not cleanup_server(self):
+        if self._server_info is None:
             raise RuntimeError("UI server is not running")
+
+        from skore.project._launch import cleanup_server  # avoid circular import
+
+        cleanup_server(self)
 
     def clear(self):
         """Delete all the contents of the project."""

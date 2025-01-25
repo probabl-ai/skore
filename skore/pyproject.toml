@@ -18,6 +18,7 @@ dependencies = [
   "skops",
   "uvicorn",
   "platformdirs",
+  "psutil",
 ]
 classifiers = [
   "Intended Audience :: Science/Research",
@@ -113,6 +114,7 @@ addopts = [
   "--ignore=doc",
   "--ignore=examples",
   "--ignore=notebooks",
+  "--dist=loadscope",
 ]
 doctest_optionflags = ["ELLIPSIS", "NORMALIZE_WHITESPACE"]
 

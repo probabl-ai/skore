@@ -9,6 +9,7 @@ from skore.persistence.storage.disk_cache_storage import (
     DirectoryDoesNotExist,
     DiskCacheStorage,
 )
+from skore.project._launch import ServerInfo
 from skore.project.project import Project
 
 
@@ -47,6 +48,7 @@ def _load(project_name: Union[str, Path]) -> Project:
         view_repository = ViewRepository(storage=view_storage)
         project = Project(
             name=path.name,
+            path=path,
             item_repository=item_repository,
             view_repository=view_repository,
         )
@@ -57,5 +59,9 @@ def _load(project_name: Union[str, Path]) -> Project:
             f"directory '{missing_directory}' should exist. "
             "Consider re-creating the project."
         ) from e
+
+    server_info = ServerInfo.rejoin(project)
+    if server_info is not None:
+        project._server_info = server_info
 
     return project
