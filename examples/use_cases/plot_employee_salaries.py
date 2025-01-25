@@ -162,7 +162,7 @@ model
 # performance of our model.
 from skore import CrossValidationReport
 
-report = CrossValidationReport(estimator=model, X=df, y=y, cv_splitter=5, n_jobs=3)
+report = CrossValidationReport(estimator=model, X=df, y=y, cv_splitter=5, n_jobs=4)
 report.help()
 
 # %%
@@ -182,7 +182,7 @@ with warnings.catch_warnings():
     # catch the warnings raised by the OneHotEncoder for seeing unknown categories
     # at transform time
     warnings.simplefilter(action="ignore", category=UserWarning)
-    report.cache_predictions(n_jobs=3)
+    report.cache_predictions(n_jobs=4)
 
 # %%
 #
@@ -218,13 +218,13 @@ model
 # %%
 #
 # Let's compute the cross-validation report for this model.
-report = CrossValidationReport(estimator=model, X=df, y=y, cv_splitter=5, n_jobs=3)
+report = CrossValidationReport(estimator=model, X=df, y=y, cv_splitter=5, n_jobs=4)
 report.help()
 
 # %%
 #
 # We cache the predictions for later use.
-report.cache_predictions(n_jobs=3)
+report.cache_predictions(n_jobs=4)
 
 # %%
 #

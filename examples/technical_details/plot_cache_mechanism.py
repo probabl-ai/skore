@@ -56,6 +56,7 @@ from skrub import tabular_learner
 model = tabular_learner("classifier")
 model
 
+
 # %%
 #
 # This model handles all types of data: numbers, categories, dates, and missing values.
@@ -75,16 +76,10 @@ X_train, X_test, y_train, y_test = train_test_split(df, y, random_state=42)
 # predictions. We start by training the model:
 from skore import EstimatorReport
 
-import time
-
-start = time.time()
 report = EstimatorReport(
     model, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
 )
 report.help()
-
-end = time.time()
-print(f"Time taken: {end - start:.2f} seconds")
 
 # %%
 #
@@ -156,10 +151,7 @@ print(f"Time taken: {end - start:.2f} seconds")
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # We can pre-compute all predictions at once using parallel processing:
-start = time.time()
-report.cache_predictions(n_jobs=2)
-end = time.time()
-print(f"Time taken: {end - start:.2f} seconds")
+report.cache_predictions(n_jobs=4)
 
 # %%
 #
@@ -268,19 +260,13 @@ report._cache
 # in cross-validation by leveraging the previous :class:`~skore.EstimatorReport`:
 from skore import CrossValidationReport
 
-start = time.time()
-report = CrossValidationReport(model, X=df, y=y, cv_splitter=5, n_jobs=2)
+report = CrossValidationReport(model, X=df, y=y, cv_splitter=5, n_jobs=4)
 report.help()
-end = time.time()
-print(f"Time taken: {end - start:.2f} seconds")
 
 # %%
 #
 # We can pre-compute all predictions at once using parallel processing:
-start = time.time()
-report.cache_predictions(n_jobs=2)
-end = time.time()
-print(f"Time taken: {end - start:.2f} seconds")
+report.cache_predictions(n_jobs=4)
 
 # %%
 #
