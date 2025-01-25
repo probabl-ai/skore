@@ -87,6 +87,15 @@ class ServerInfo:
             project_identifier = uuid.uuid3(uuid.NAMESPACE_DNS, str(project.path))
         else:
             project_identifier = uuid.uuid3(uuid.NAMESPACE_DNS, str(project.name))
+
+        # Print the content of the skore state directory
+        state_dir = platformdirs.user_state_path(appname="skore")
+        if state_dir.exists():
+            print(f"Content of {state_dir}:")
+            for path in state_dir.iterdir():
+                print(f"  {path.name}")
+        else:
+            print(f"Directory {state_dir} does not exist")
         return (
             platformdirs.user_state_path(appname="skore")
             / f"skore-server-{project_identifier}.json"
@@ -114,7 +123,6 @@ class ServerInfo:
         pid_file = cls._get_pid_file_path(project)
         print(pid_file)
         if not pid_file.exists():
-            print("XXXX rejoin failed")
             return
 
         info = json.load(pid_file.open())
