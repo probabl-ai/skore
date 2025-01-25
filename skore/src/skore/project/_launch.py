@@ -84,19 +84,11 @@ class ServerInfo:
     def _get_pid_file_path(project: Project) -> Path:
         """Get the path to the PID file."""
         if project.path is not None:
-            print(str(project.path))
             project_identifier = joblib.hash(str(project.path), hash_name="sha1")
         else:
-            print(project.name)
             project_identifier = joblib.hash(project.name, hash_name="sha1")
-        state_path = platformdirs.user_state_path(appname="skore")
-        if state_path.exists():
-            print(f"Contents of {state_path}:")
-            for item in state_path.iterdir():
-                print(f"  {item.name}")
-        else:
-            print(f"Directory {state_path} does not exist")
 
+        state_path = platformdirs.user_state_path(appname="skore")
         return state_path / f"skore-server-{project_identifier}.json"
 
     def __init__(self, project: Project, port: int, pid: int):
