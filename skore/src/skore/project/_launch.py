@@ -112,7 +112,9 @@ class ServerInfo:
             The server information.
         """
         pid_file = cls._get_pid_file_path(project)
+        print(pid_file)
         if not pid_file.exists():
+            print("XXXX rejoin failed")
             return
 
         info = json.load(pid_file.open())
