@@ -11,7 +11,6 @@ import webbrowser
 from pathlib import Path
 from typing import Union
 
-import platformdirs
 import psutil
 import uvicorn
 from fastapi import FastAPI
@@ -88,8 +87,8 @@ class ServerInfo:
         else:
             project_identifier = uuid.uuid3(uuid.NAMESPACE_DNS, str(project.name))
         return (
-            platformdirs.user_state_path(appname="skore")
-            / f"skore-server-{project_identifier}.json"
+            # platformdirs.user_state_path(appname="skore")
+            Path.home() / ".skore" / f"skore-server-{project_identifier}.json"
         )
 
     def __init__(self, project: Project, port: int, pid: int):
