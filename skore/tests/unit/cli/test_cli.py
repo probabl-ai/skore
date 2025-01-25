@@ -22,7 +22,11 @@ def close_project(path):
     from skore import open
 
     project = open(path, serve=False)
+    assert project._server_info is not None
+    pid_file = project._server_info.pid_file
+    assert pid_file.exists()
     project.shutdown_web_ui()
+    assert not pid_file.exists()
 
 
 def test_cli_launch(tmp_project_path):

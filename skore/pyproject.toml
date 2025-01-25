@@ -121,7 +121,7 @@ doctest_optionflags = ["ELLIPSIS", "NORMALIZE_WHITESPACE"]
 [tool.coverage.run]
 branch = true
 source = ["skore"]
-concurrency = ["thread"]
+concurrency = ["thread", "multiprocessing"]
 parallel = true
 
 [tool.coverage.report]

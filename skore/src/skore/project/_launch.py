@@ -53,7 +53,7 @@ def find_free_port(min_port: int = 22140, max_attempts: int = 100) -> int:
             continue
 
     raise RuntimeError(
-        f"Could not find free port after {max_attempts}"
+        f"Could not find free port after {max_attempts} "
         f"attempts starting from {min_port}"
     )
 
@@ -160,7 +160,7 @@ def run_server(
     async def lifespan(app: FastAPI):
         ready_event.set()  # Signal that the server is ready
         if open_browser:
-            webbrowser.open(f"http://localhost:{port}")
+            webbrowser.open(f"http://localhost:{port}")  # pragma: no cover
         yield
 
     app = create_app(project=project, lifespan=lifespan)
