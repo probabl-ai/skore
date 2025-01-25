@@ -32,8 +32,6 @@ def _load(project_name: Union[str, Path]) -> Project:
     Project
         The loaded Project instance.
     """
-    from skore import console  # avoid circular import
-
     path = Path(project_name).resolve()
 
     if path.suffix != ".skore":
@@ -65,9 +63,5 @@ def _load(project_name: Union[str, Path]) -> Project:
     server_info = ServerInfo.rejoin(project)
     if server_info is not None:
         project._server_info = server_info
-        console.print(
-            f"Project '{project.name}' rejoined skore UI at URL: "
-            f"http://localhost:{server_info.port}"
-        )
 
     return project
