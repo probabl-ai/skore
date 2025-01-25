@@ -215,7 +215,7 @@ def cleanup_server(project: Project, timeout: float = 5.0) -> bool:
     return True
 
 
-def _cleanup_potential_zombie_process():
+def _kill_all_servers():
     state_path = platformdirs.user_state_path(appname="skore")
     for pid_file in state_path.glob("skore-server-*.json"):
         try:

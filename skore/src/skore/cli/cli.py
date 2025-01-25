@@ -6,7 +6,7 @@ from importlib.metadata import version
 from skore.cli.color_format import ColorArgumentParser
 from skore.project import open
 from skore.project._create import _create
-from skore.project._launch import _cleanup_potential_zombie_process, _launch
+from skore.project._launch import _kill_all_servers, _launch
 from skore.project._load import _load
 
 
@@ -75,11 +75,9 @@ def cli(args: list[str]):
         help="increase logging verbosity",
     )
 
-    # cleanup potential zombie processes
-    parser_cleanup = subparsers.add_parser(
-        "cleanup", help="Clean up all UI running processes"
-    )
-    parser_cleanup.add_argument(
+    # kill all UI servers
+    parser_kill = subparsers.add_parser("kill", help="Kill all UI servers")
+    parser_kill.add_argument(
         "--verbose",
         action="store_true",
         help="increase logging verbosity",
@@ -159,7 +157,7 @@ def cli(args: list[str]):
             port=parsed_args.port,
             verbose=parsed_args.verbose,
         )
-    elif parsed_args.subcommand == "cleanup":
-        _cleanup_potential_zombie_process()
+    elif parsed_args.subcommand == "kill":
+        _kill_all_servers()
     else:
         parser.print_help()
