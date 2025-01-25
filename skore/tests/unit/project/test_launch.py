@@ -57,7 +57,7 @@ def test_launch(capsys, tmp_path):
     server_info = skore_project._server_info
     pid_file_content = server_info.load_pid_file()
     assert server_info.port == pid_file_content["port"]
-    project_identifier = joblib.hash(skore_project.path, hash_name="sha1")
+    project_identifier = joblib.hash(str(skore_project.path), hash_name="sha1")
     assert server_info.pid_file.name == f"skore-server-{project_identifier}.json"
 
     skore_project.shutdown_web_ui()
