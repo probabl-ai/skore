@@ -29,18 +29,18 @@ def test_find_free_port():
 
 def test_server_info_in_memory_project(in_memory_project):
     """Check the generation of the PID file path for an in-memory project."""
-    server_info = ServerInfo(in_memory_project, port=8000, pid=1234)
-    assert server_info.port == 8000
+    server_info = ServerInfo(in_memory_project, port=20000, pid=1234)
+    assert server_info.port == 20000
     assert server_info.pid == 1234
     assert server_info.pid_file.name.startswith("skore-server-")
 
 
 def test_server_info(on_disk_project):
     """Check the ServerInfo class behaviour."""
-    server_info = ServerInfo(on_disk_project, port=8000, pid=1234)
+    server_info = ServerInfo(on_disk_project, port=30000, pid=1234)
     server_info.save_pid_file()
     assert server_info.pid_file.exists()
-    assert server_info.load_pid_file() == {"port": 8000, "pid": 1234}
+    assert server_info.load_pid_file() == {"port": 30000, "pid": 1234}
 
     server_info.delete_pid_file()
     assert not server_info.pid_file.exists()

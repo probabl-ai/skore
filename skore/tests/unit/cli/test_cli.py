@@ -35,8 +35,6 @@ def test_cli_launch(tmp_project_path):
         [
             "launch",
             str(tmp_project_path),
-            "--port",
-            "8000",
             "--no-open-browser",
             "--verbose",
         ]
@@ -85,9 +83,9 @@ def test_cli_open(tmp_path, monkeypatch):
     assert (project_path / "items").exists()
     assert (project_path / "views").exists()
 
-    cli(["open", "test_project", "--port", "8000", "--verbose"])
+    cli(["open", "test_project", "--verbose"])
     close_project(project_path)
-    cli(["open", "test_project", "--no-create", "--port", "8001"])
+    cli(["open", "test_project", "--no-create"])
     close_project(project_path)
 
     with pytest.raises(FileNotFoundError):
