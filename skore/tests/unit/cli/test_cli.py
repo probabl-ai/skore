@@ -77,15 +77,15 @@ def test_cli_open(tmp_path, monkeypatch):
 
     os.chdir(tmp_path)
 
-    cli(["open", "test_project", "--no-serve"])
-    project_path = tmp_path / "test_project.skore"
+    cli(["open", "project_cli_open", "--no-serve"])
+    project_path = tmp_path / "project_cli_open.skore"
     assert project_path.exists()
     assert (project_path / "items").exists()
     assert (project_path / "views").exists()
 
-    cli(["open", "test_project", "--verbose"])
+    cli(["open", "project_cli_open", "--verbose"])
     close_project(project_path)
-    cli(["open", "test_project", "--no-create"])
+    cli(["open", "project_cli_open", "--no-create"])
     close_project(project_path)
 
     with pytest.raises(FileNotFoundError):
