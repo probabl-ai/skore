@@ -5,13 +5,12 @@ import contextlib
 import json
 import multiprocessing
 import os
-import signal
 import socket
-import time
 import webbrowser
 from pathlib import Path
 from typing import Union
 
+import psutil
 import uvicorn
 from fastapi import FastAPI
 
@@ -57,6 +56,27 @@ def find_free_port(min_port: int = 22140, max_attempts: int = 100) -> int:
     )
 
 
+def get_server_info_path(project: Project) -> Path:
+    """Get path to the server info file for this project."""
+    return Path("/tmp") / "skore_server_info.json"
+
+
+def save_server_info(project: Project, port: int, pid: int):
+    """Save server information to disk."""
+    info = {"port": port, "pid": pid}
+    with open(get_server_info_path(project), "w") as f:
+        json.dump(info, f)
+
+
+def load_server_info(project: Project) -> Union[dict, None]:
+    """Load server information from disk if it exists."""
+    try:
+        with open(get_server_info_path(project)) as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return None
+
+
 def run_server(
     project: Project, port: int, open_browser: bool, ready_event: multiprocessing.Event
 ):
@@ -85,50 +105,47 @@ def run_server(
     uvicorn.run(app, host="0.0.0.0", port=port, log_level="error")
 
 
-def get_server_info_path(project: Project) -> Path:
-    """Get path to the server info file for this project."""
-    return Path("/tmp") / "skore_server_info.json"
+def cleanup_server(project: Project, timeout: float = 5.0) -> bool:
+    """Cleanup server resources and wait for termination.
 
-
-def save_server_info(project: Project, port: int, pid: int):
-    """Save server information to disk."""
-    info = {"port": port, "pid": pid}
-    with open(get_server_info_path(project), "w") as f:
-        json.dump(info, f)
-
-
-def load_server_info(project: Project) -> Union[dict, None]:
-    """Load server information from disk if it exists."""
-    try:
-        with open(get_server_info_path(project)) as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return None
-
-
-def cleanup_server(project: Project):
-    """Cleanup server resources.
+    Parameters
+    ----------
+    project : Project
+        The project instance.
+    timeout : float, default=5.0
+        Maximum time to wait for the process to terminate in seconds.
 
     Returns
     -------
-        True if the server was successfully terminated, False otherwise.
+    bool
+        True if the server was successfully terminated, False if timeout occurred
+        or server wasn't running.
     """
     info = load_server_info(project)
     if info is None:
         return False
 
     try:
-        os.kill(info["pid"], signal.SIGTERM)
-        time.sleep(1)
+        process = psutil.Process(info["pid"])
+        process.terminate()
+
+        try:
+            process.wait(timeout=timeout)
+            success = True
+        except psutil.TimeoutExpired:
+            process.kill()
+            success = False
 
         from skore import console
 
         console.rule("[bold cyan]skore-UI[/bold cyan]")
+        status = "gracefully" if success else "forcefully"
         console.print(
             f"Server that was running at http://localhost:{info['port']} has "
-            "been closed"
+            f"been closed {status}"
         )
-    except ProcessLookupError:
+
+    except psutil.NoSuchProcess:
         pass  # Process already terminated
     finally:
         with contextlib.suppress(FileNotFoundError):

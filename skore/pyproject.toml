@@ -17,6 +17,7 @@ dependencies = [
   "scikit-learn",
   "skops",
   "uvicorn",
+  "platformdirs",
 ]
 classifiers = [
   "Intended Audience :: Science/Research",

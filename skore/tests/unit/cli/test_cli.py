@@ -17,16 +17,12 @@ def tmp_project_path(tmp_path):
     return project_path
 
 
-@pytest.fixture
-def mock_launch(monkeypatch):
-    """Fixture to patch _launch function to prevent browser opening."""
+def close_project(path):
+    """Force closing the web UI."""
+    from skore import open
 
-    def mock_launch_fn(project, port=None, open_browser=True, verbose=False):
-        from skore.project._launch import _launch as original_launch
-
-        return original_launch(project, port=port, open_browser=False, verbose=verbose)
-
-    monkeypatch.setattr("skore.cli.cli._launch", mock_launch_fn)
+    project = open(path, serve=False)
+    project.shutdown_web_ui()
 
 
 def test_cli_launch(tmp_project_path):
@@ -41,6 +37,7 @@ def test_cli_launch(tmp_project_path):
             "--verbose",
         ]
     )
+    close_project(tmp_project_path)
 
 
 def test_cli_launch_no_project_name():
@@ -66,8 +63,16 @@ def test_cli_create(tmp_path):
     assert project_path.exists()
 
 
-def test_cli_open(tmp_path, mock_launch):
+def test_cli_open(tmp_path, monkeypatch):
     """Test that CLI open command works with different scenarios."""
+    # Force open_browser to False for all _launch calls
+    from skore.project._launch import _launch
+
+    monkeypatch.setattr(
+        "skore.project._launch._launch",
+        lambda *args, **kwargs: _launch(*args, **{**kwargs, "open_browser": False}),
+    )
+
     os.chdir(tmp_path)
 
     cli(["open", "test_project", "--no-serve"])
@@ -77,7 +82,9 @@ def test_cli_open(tmp_path, mock_launch):
     assert (project_path / "views").exists()
 
     cli(["open", "test_project", "--port", "8000", "--verbose"])
+    close_project(project_path)
     cli(["open", "test_project", "--no-create", "--port", "8001"])
+    close_project(project_path)
 
     with pytest.raises(FileNotFoundError):
         cli(["open", "nonexistent_project", "--no-create"])
