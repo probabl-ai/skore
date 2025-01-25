@@ -265,13 +265,21 @@ report.help()
 
 # %%
 #
-# We can pre-compute all predictions at once using parallel processing:
-report.cache_predictions(n_jobs=4)
+# Since we a :class:`~skore.CrossValidationReport`, uses many
+# :class:`~skore.EstimatorReport`, we will observe the same behaviour as we previously
+# exposed. The first call will be slow because it computes the predictions for each
+# fold.
+start = time.time()
+result = report.metrics.report_metrics(aggregate=["mean", "std"])
+end = time.time()
+result
+
+# %%
+print(f"Time taken: {end - start:.2f} seconds")
 
 # %%
 #
-# Now, all possible predictions are stored. Any metric calculation will be much faster,
-# even on different data, as we showed for the :class:`~skore.EstimatorReport`.
+# While the subsequent calls are fast because the predictions are cached.
 start = time.time()
 result = report.metrics.report_metrics(aggregate=["mean", "std"])
 end = time.time()
