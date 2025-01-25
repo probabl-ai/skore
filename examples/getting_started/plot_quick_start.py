@@ -66,6 +66,13 @@ my_project.put("df_cv_report_metrics", df_cv_report_metrics)
 my_project.put("roc_plot", roc_plot)
 
 # %%
+# Retrieve what was stored:
+
+# %%
+df_get = my_project.get("df_cv_report_metrics")
+df_get
+
+# %%
 # .. admonition:: What's next?
 #
 #    For a more in-depth guide, see our :ref:`example_skore_getting_started` page!
