@@ -84,7 +84,7 @@ class ServerInfo:
     def _get_pid_file_path(project: Project) -> Path:
         """Get the path to the PID file."""
         if project.path is not None:
-            project_identifier = joblib.hash(project.path, hash_name="sha1")
+            project_identifier = joblib.hash(str(project.path), hash_name="sha1")
         else:
             project_identifier = joblib.hash(project.name, hash_name="sha1")
 
