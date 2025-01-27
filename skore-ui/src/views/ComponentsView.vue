@@ -1290,6 +1290,7 @@ const richText = ref(
           <div>icon-bold <i class="icon icon-bold"></i></div>
           <div>icon-italic <i class="icon icon-italic"></i></div>
           <div>icon-bullets <i class="icon icon-bullets"></i></div>
+          <div>icon-title <i class="icon icon-title"></i></div>
         </div>
       </TabPanelContent>
       <TabPanelContent name="draggable">
