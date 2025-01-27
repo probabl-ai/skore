@@ -64,6 +64,10 @@ table_report
 #   Hence, during our feature engineering, we could potentially drop one of them if the
 #   final predictive model is sensitive to the collinearity.
 #
+# When looking at the "Stats" tab, we observe that the "division" and
+# "employee_position_title" are two features containing a large number of categories. It
+# something that we should consider in our feature engineering.
+#
 # We can store the report in the skore project so that we can easily retrieve it later
 # without necessarily having to reload the dataset and recompute the report.
 project.put("Input data summary", table_report)
@@ -88,7 +92,7 @@ from sklearn.compose import make_column_transformer
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import OneHotEncoder, SplineTransformer
 from sklearn.linear_model import RidgeCV
-from skrub import DatetimeEncoder, ToDatetime, DropCols
+from skrub import DatetimeEncoder, ToDatetime, DropCols, GapEncoder
 
 
 def periodic_spline_transformer(period, n_splines=None, degree=3):
@@ -104,14 +108,7 @@ def periodic_spline_transformer(period, n_splines=None, degree=3):
     )
 
 
-categorical_features = [
-    "gender",
-    "department_name",
-    "division",
-    "assignment_category",
-    "employee_position_title",
-    "year_first_hired",
-]
+one_hot_features = ["gender", "department_name", "assignment_category"]
 datetime_features = "date_first_hired"
 
 date_encoder = make_pipeline(
@@ -130,7 +127,9 @@ feature_engineering_date = make_pipeline(date_encoder, date_engineering)
 
 preprocessing = make_column_transformer(
     (feature_engineering_date, datetime_features),
-    (OneHotEncoder(drop="if_binary", handle_unknown="ignore"), categorical_features),
+    (OneHotEncoder(drop="if_binary", handle_unknown="ignore"), one_hot_features),
+    (GapEncoder(n_components=100), "division"),
+    (GapEncoder(n_components=100), "employee_position_title"),
 )
 
 model = make_pipeline(preprocessing, RidgeCV(alphas=np.logspace(-3, 3, 100)))
@@ -139,13 +138,11 @@ model
 # %%
 # In the diagram above, we can see what how we performed our feature engineering:
 #
-# * For categorical features, we use a :class:`~sklearn.preprocessing.OneHotEncoder`
-#   to transform the categorical features.
-#   From the previous data exploration using a :class:`~skrub.TableReport`, from the
-#   "Stats" tab, one may have looked at the number of unique values and observed that we
-#   have feature with a large cardinality.
-#   In such cases, one-hot encoding might not be the best choice, but this is our
-#   starting point to get the ball rolling.
+# * In the diagram above, we can see what we intend to do as feature engineering.
+#   For categorical features, we use two approaches: if the number of categories is
+#   relatively small, we use a `OneHotEncoder` and if the number of categories is
+#   large, we use a `GapEncoder` that was designed to deal with high cardinality
+#   categorical features.
 #
 # * Then, we have another transformation to encode the date features. We first split the
 #   date into multiple features (day, month, and year). Then, we apply a periodic spline
@@ -165,7 +162,7 @@ model
 # performance of our model.
 from skore import CrossValidationReport
 
-report = CrossValidationReport(estimator=model, X=df, y=y, cv_splitter=5)
+report = CrossValidationReport(estimator=model, X=df, y=y, cv_splitter=5, n_jobs=4)
 report.help()
 
 # %%
@@ -185,7 +182,7 @@ with warnings.catch_warnings():
     # catch the warnings raised by the OneHotEncoder for seeing unknown categories
     # at transform time
     warnings.simplefilter(action="ignore", category=UserWarning)
-    report.cache_predictions(n_jobs=3)
+    report.cache_predictions(n_jobs=4)
 
 # %%
 #
@@ -221,13 +218,13 @@ model
 # %%
 #
 # Let's compute the cross-validation report for this model.
-report = CrossValidationReport(estimator=model, X=df, y=y, cv_splitter=5, n_jobs=3)
+report = CrossValidationReport(estimator=model, X=df, y=y, cv_splitter=5, n_jobs=4)
 report.help()
 
 # %%
 #
 # We cache the predictions for later use.
-report.cache_predictions(n_jobs=3)
+report.cache_predictions(n_jobs=4)
 
 # %%
 #
