@@ -150,14 +150,13 @@ jobs:
         shell: bash
         run: |
           curl --fail-with-body \
-          -X POST \
-          -H "X-Auth-Token: ${TOKEN}" \
-          -H "Content-Type: application/json" \
-          -d "{\"pipeline_id\":\"${PIPELINE_ID}\",\"all\":true}" \
-          "https://api.scaleway.com/edge-services/v1alpha1/purge-requests"
+               -X POST \
+               --url 'https://api.bunny.net/purge?url=https%3A%2F%2F${DOMAIN}%2F${VERSION}%2F%2A&async=false' \
+              --header 'AccessKey: ${ACCESS_KEY}'
         env:
-          TOKEN: ${{ secrets.SCW_SECRET_KEY }}
-          PIPELINE_ID: ${{ vars.DOCUMENTATION_EDGE_SERVICES_PIPELINE_ID }}
+          ACCESS_KEY: ${{ secrets.BUNNY_API_KEY }}
+          DOMAIN: ${{ vars.DOCUMENTATION_DOMAIN }}
+          VERSION: ${{ needs.sphinx-version.outputs.SPHINX_VERSION }}
 
   sphinx-deploy-root-files:
     if: ${{ github.event_name == 'release' }}
