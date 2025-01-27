@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { formatDistance } from "date-fns";
 import Simplebar from "simplebar-vue";
-import { onBeforeUnmount, onMounted, ref } from "vue";
+import { onBeforeUnmount, onMounted, ref, useTemplateRef } from "vue";
 
 import DraggableList from "@/components/DraggableList.vue";
 import MediaWidgetSelector from "@/components/MediaWidgetSelector.vue";
-import ProjectViewCard from "@/components/ProjectViewCard.vue";
 import SimpleButton from "@/components/SimpleButton.vue";
 import { useProjectStore } from "@/stores/project";
 import { useToastsStore } from "@/stores/toasts";
 import ItemNote from "@/views/project/ItemNote.vue";
 import ProjectItemList from "@/views/project/ProjectItemList.vue";
+import ProjectViewCard from "@/views/project/ProjectViewCard.vue";
 import ProjectViewNavigator from "@/views/project/ProjectViewNavigator.vue";
 
 const props = defineProps({
@@ -24,6 +24,7 @@ const projectStore = useProjectStore();
 const isInFocusMode = ref(false);
 const currentDropPosition = ref<number>();
 const toastsStore = useToastsStore();
+const editor = useTemplateRef<HTMLDivElement>("editor");
 
 function onFocusMode() {
   isInFocusMode.value = !isInFocusMode.value;
@@ -51,11 +52,24 @@ function getItemSubtitle(created_at: Date) {
   return `Created ${formatDistance(created_at, now)} ago`;
 }
 
+function onMouseMove(event: MouseEvent) {
+  const x = event.pageX;
+  const y = event.pageY;
+  const elt = document.elementFromPoint(x, y);
+  console.log(elt);
+}
+
 onMounted(async () => {
+  if (editor.value) {
+    editor.value.addEventListener("mousemove", onMouseMove);
+  }
   await projectStore.startBackendPolling();
 });
 
 onBeforeUnmount(() => {
+  if (editor.value) {
+    editor.value.removeEventListener("mousemove", onMouseMove);
+  }
   projectStore.stopBackendPolling();
 });
 </script>
@@ -224,7 +238,6 @@ main {
 
         & .draggable {
           min-height: calc(100dvh - var(--editor-height) - var(--spacing-24) * 2);
-          gap: var(--spacing-24);
         }
 
         & .item-note {
