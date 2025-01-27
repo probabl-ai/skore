@@ -12,7 +12,7 @@ Quick start
 # %%
 import skore
 
-my_project = skore.open("my_project", create=True)
+my_project = skore.open("my_project", create=True, serve=False)
 
 # %%
 # This will create a skore project directory named ``quick_start.skore`` in your

@@ -19,7 +19,7 @@ of items that we can store in a skore :class:`~skore.Project`.
 # %%
 import skore
 
-my_project = skore.open("my_project", create=True)
+my_project = skore.open("my_project", create=True, serve=False)
 
 # %%
 # Storing integers

@@ -19,7 +19,7 @@ for example tracking some ML metrics over time.
 # %%
 import skore
 
-my_project = skore.open("my_project", create=True)
+my_project = skore.open("my_project", create=True, serve=False)
 
 # %%
 # Tracking an integer

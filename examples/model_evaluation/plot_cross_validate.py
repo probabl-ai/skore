@@ -24,7 +24,7 @@ This example illustrates the motivation and the use of skore's
 # %%
 import skore
 
-my_project = skore.open("my_project", create=True)
+my_project = skore.open("my_project", create=True, serve=False)
 
 # %%
 # Cross-validation in scikit-learn

@@ -40,7 +40,7 @@ Skore: getting started
 # %%
 import skore
 
-my_project = skore.open("my_project", create=True)
+my_project = skore.open("my_project", create=True, serve=False)
 
 # %%
 # Now that the project exists, we can write some Python code (in the same

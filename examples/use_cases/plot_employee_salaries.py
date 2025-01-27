@@ -28,7 +28,7 @@ os.environ["TOKENIZERS_PARALLELISM"] = "true"
 # experiments.
 import skore
 
-project = skore.open("my_project", create=True)
+project = skore.open("my_project", create=True, serve=False)
 
 # %%
 #
