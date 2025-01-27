@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from uuid import UUID
 from collections.abc import Iterator
 from typing import Any
 
@@ -16,7 +17,7 @@ class DirectoryDoesNotExist(Exception):
 
 
 class SkoreHubStorage(AbstractStorage):
-    def __init__(self, *, project_id: int, domain="http://0.0.0.0:8000"):
+    def __init__(self, *, project_id: UUID, domain="http://0.0.0.0:8000"):
         self.url = f"{domain}/skore/projects"
         self.domain = domain
         self.project_id = project_id
