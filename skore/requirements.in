@@ -1,0 +1,13 @@
+diskcache
+fastapi
+joblib
+matplotlib
+numpy
+orjson
+pandas
+plotly>=5,<6
+pyarrow
+rich
+scikit-learn>=1.6
+skops
+uvicorn

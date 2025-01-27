@@ -1,8 +1,17 @@
 import shutil
 from pathlib import Path
-from contextlib import suppress
+from contextlib import ExitStack, suppress
 
 from hatchling.metadata.plugin.interface import MetadataHookInterface
+
+
+# @dataclasses.dataclass
+# class Configuration:
+
+
+def readlines(filepath):
+    with open(filepath) as file:
+        yield from file
 
 
 class MetadataHook(MetadataHookInterface):
@@ -21,3 +30,23 @@ class MetadataHook(MetadataHookInterface):
 
         license_dest = Path(self.root, license_path.name)
         shutil.copy2(license_path, license_dest)
+
+        # {
+        #     'path': 'hatch/metadata.py',
+        #     'license-file': '../LICENSE',
+        #     'readme-file': '../README.md',
+        #     'version-default': '0.0.0+unknown',
+        #     'dependencies': {'file': 'requirements.in'},
+        #     'optional-dependencies': {
+        #         'test': {'file': 'test-requirements.in'},
+        #         'sphinx': {'file': 'sphinx-requirements.in'}
+        #     }
+        # }
+
+        metadata["dependencies"] = list(
+            map(str.strip, readlines(self.config["dependencies"]))
+        )
+        metadata["optional-dependencies"] = {
+            label: list(map(str.strip, readlines(filepath)))
+            for label, filepath in self.config["optional-dependencies"].items()
+        }

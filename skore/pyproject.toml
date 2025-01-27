@@ -1,24 +1,15 @@
 [project]
 name = "skore"
 description = "the scikit-learn sidekick"
-dynamic = ["license", "readme", "version"]
+dynamic = [
+  "license",
+  "readme",
+  "version",
+  "dependencies",
+  "optional-dependencies",
+]
 requires-python = ">=3.9, <3.13"
 maintainers = [{ name = "skore developers", email = "skore@signal.probabl.ai" }]
-dependencies = [
-  "diskcache",
-  "fastapi",
-  "joblib",
-  "matplotlib",
-  "numpy",
-  "orjson",
-  "pandas",
-  "plotly>=5,<6",
-  "pyarrow",
-  "rich",
-  "scikit-learn",
-  "skops",
-  "uvicorn",
-]
 classifiers = [
   "Intended Audience :: Science/Research",
   "Intended Audience :: Developers",
@@ -57,6 +48,9 @@ path = "hatch/metadata.py"
 license-file = "../LICENSE"
 readme-file = "../README.md"
 version-default = "0.0.0+unknown"
+dependencies = "requirements.in"
+optional-dependencies.test = "test-requirements.in"
+optional-dependencies.sphinx = "sphinx-requirements.in"
 
 [tool.hatch.build.targets.sdist]
 only-include = ["src/", "hatch/"]
@@ -65,41 +59,6 @@ artifacts = ["src/skore/ui/static/"]
 [tool.hatch.build.targets.wheel]
 package = ["src/skore/"]
 artifacts = ["src/skore/ui/static/"]
-
-[project.optional-dependencies]
-test = [
-  "altair>=5,<6",
-  "httpx",
-  "pillow",
-  "plotly",
-  "polars",
-  "pre-commit",
-  "pytest",
-  "pytest-cov",
-  "pytest-order",
-  "pytest-randomly",
-  "pytest-xdist",
-  "ruff",
-  "scikit-learn<1.7",
-  "skrub",
-]
-
-sphinx = [
-  "IPython",
-  "altair",
-  "numpydoc",
-  "polars",
-  "kaleido",
-  "pydata-sphinx-theme",
-  "sentence-transformers",
-  "sphinx",
-  "sphinx_autosummary_accessors",
-  "sphinx-design",
-  "sphinx-gallery",
-  "sphinx-copybutton",
-  "sphinx-tabs",
-  "skrub",
-]
 
 [tool.pytest.ini_options]
 addopts = [
