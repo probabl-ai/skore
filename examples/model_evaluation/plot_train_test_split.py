@@ -10,17 +10,6 @@ This example illustrates the motivation and the use of skore's
 """
 
 # %%
-# Creating and loading the skore project
-# ======================================
-#
-# We create and load the skore project from the current directory:
-
-# %%
-import skore
-
-my_project = skore.open("my_project", create=True)
-
-# %%
 # Train-test split in scikit-learn
 # ================================
 #
@@ -116,6 +105,8 @@ y = [0] * 2_500 + [1] * 2_500
 # scikit-learn:
 
 # %%
+import skore
+
 X_train, X_test, y_train, y_test = skore.train_test_split(
     X, y, test_size=0.2, random_state=0
 )
@@ -241,13 +232,3 @@ X.head(2)
 X_train, X_test, y_train, y_test = skore.train_test_split(
     X, y, random_state=0, shuffle=False
 )
-
-# %%
-# Cleanup the project
-# -------------------
-#
-# Let's clear the skore project (to avoid any conflict with other documentation
-# examples).
-
-# %%
-my_project.clear()
