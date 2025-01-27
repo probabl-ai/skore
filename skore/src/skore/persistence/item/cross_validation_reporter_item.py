@@ -147,7 +147,7 @@ class CrossValidationReporterItem(Item):
 
     def __init__(
         self,
-        reporter_bytes: bytes,
+        reporter_hex_str: str,
         created_at: Optional[str] = None,
         updated_at: Optional[str] = None,
         note: Optional[str] = None,
@@ -157,7 +157,7 @@ class CrossValidationReporterItem(Item):
 
         Parameters
         ----------
-        reporter_bytes : bytes
+        reporter_hex_str : str
             The raw bytes of the reporter pickled representation.
         created_at : str, optional
             The creation timestamp in ISO format.
@@ -168,7 +168,7 @@ class CrossValidationReporterItem(Item):
         """
         super().__init__(created_at, updated_at, note)
 
-        self.reporter_bytes = reporter_bytes
+        self.reporter_hex_str = reporter_hex_str
 
     @classmethod
     def factory(
@@ -195,12 +195,17 @@ class CrossValidationReporterItem(Item):
         with io.BytesIO() as stream:
             joblib.dump(reporter, stream)
 
-            return cls(stream.getvalue(), **kwargs)
+            reporter_bytes = stream.getvalue()
+            reporter_hex_str = reporter_bytes.hex()
+
+            return cls(reporter_hex_str, **kwargs)
 
     @property
     def reporter(self) -> CrossValidationReporter:
         """The CrossValidationReporter from the persistence."""
-        with io.BytesIO(self.reporter_bytes) as stream:
+        reporter_bytes = bytes.fromhex(self.reporter_hex_str)
+
+        with io.BytesIO(reporter_bytes) as stream:
             return joblib.load(stream)
 
     def as_serializable_dict(self):

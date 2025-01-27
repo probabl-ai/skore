@@ -38,3 +38,17 @@ print(project.get("my-key", version="all"))
 print(project.get("my-key", version="all", metadata=True))
 print(list(project))
 print(project.keys())
+
+# ---
+
+from sklearn import datasets, linear_model
+from skore import CrossValidationReporter
+
+X, y = datasets.load_diabetes(return_X_y=True)
+lasso = linear_model.Lasso()
+reporter = CrossValidationReporter(lasso, X, y, cv=3)
+
+project.put("reporter", reporter)
+
+print(reporter.cv_results)
+print(project.get("reporter").cv_results)
