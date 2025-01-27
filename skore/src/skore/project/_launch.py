@@ -204,7 +204,7 @@ def start_server_in_subprocess(project: Project, port: int, open_browser: bool):
 
     if is_server_started(port):
         if open_browser:
-            webbrowser.open(f"http://localhost:{port}")
+            webbrowser.open(f"http://localhost:{port}")  # pragma: no cover
         return process
     else:
         process.terminate()
@@ -353,6 +353,6 @@ def _launch(
         console.print(msg)
 
         if keep_alive:
-            atexit.register(cleanup_server, project)
-        else:
             atexit.register(block_before_cleanup, project, process)
+        else:
+            atexit.register(cleanup_server, project)

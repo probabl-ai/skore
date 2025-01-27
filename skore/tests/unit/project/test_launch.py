@@ -5,7 +5,14 @@ import joblib
 import psutil
 import pytest
 from skore.project._create import _create
-from skore.project._launch import ServerInfo, _launch, cleanup_server, find_free_port
+from skore.project._launch import (
+    ServerInfo,
+    _launch,
+    block_before_cleanup,
+    cleanup_server,
+    find_free_port,
+    is_server_started,
+)
 
 
 def test_find_free_port():
@@ -150,3 +157,72 @@ def test_launch_zombie_process(tmp_path, monkeypatch):
     assert skore_project._server_info is not None
     assert skore_project._server_info.port == 8001
     assert skore_project._server_info.pid != 1234
+
+
+def test_is_server_started(monkeypatch):
+    """Check the behaviour of the is_server_started function."""
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    port = find_free_port()
+    sock.bind(("", port))
+    sock.listen(1)
+
+    try:
+        assert is_server_started(port, timeout=1) is True
+
+        unused_port = find_free_port()
+        assert is_server_started(unused_port, timeout=1) is False
+
+        def mock_connect_ex(*args, **kwargs):
+            raise socket.timeout()
+
+        monkeypatch.setattr(socket.socket, "connect_ex", mock_connect_ex)
+        assert is_server_started(port, timeout=1) is False
+
+    finally:
+        sock.close()
+
+
+def test_launch_server_timeout(tmp_path, monkeypatch):
+    """Test that launching server raises RuntimeError when it fails to start."""
+    monkeypatch.setattr(
+        "skore.project._launch.is_server_started", lambda *args, **kwargs: False
+    )
+
+    skore_project = _create(tmp_path / "test_project")
+
+    err_msg = "Server failed to start within timeout period"
+    with pytest.raises(RuntimeError, match=err_msg):
+        _launch(skore_project, open_browser=False, keep_alive=False)
+
+
+def test_block_before_cleanup(tmp_path, capsys, monkeypatch):
+    """Check the behaviour of the block_before_cleanup function."""
+    skore_project = _create(tmp_path / "test_project")
+
+    class MockProcess:
+        def __init__(self):
+            self._poll_count = 0
+
+        def poll(self):
+            self._poll_count += 1
+            # Return None for first call, then process ID to simulate termination
+            return None if self._poll_count == 1 else 12345
+
+    # Test normal termination
+    mock_process = MockProcess()
+    block_before_cleanup(skore_project, mock_process)
+    output = capsys.readouterr().out
+    assert "Press Ctrl+C to stop the server" in output
+
+    # Test keyboard interrupt
+    mock_process = MockProcess()
+
+    def mock_sleep(*args):
+        raise KeyboardInterrupt()
+
+    monkeypatch.setattr("time.sleep", mock_sleep)
+
+    block_before_cleanup(skore_project, mock_process)
+    output = capsys.readouterr().out
+    assert "Press Ctrl+C to stop the server" in output
+    assert "Received keyboard interrupt" in output
