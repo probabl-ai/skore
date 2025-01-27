@@ -3,9 +3,11 @@
 import atexit
 import contextlib
 import json
-import multiprocessing
 import os
 import socket
+import subprocess
+import sys
+import time
 import webbrowser
 from pathlib import Path
 from typing import Union
@@ -13,8 +15,6 @@ from typing import Union
 import joblib
 import platformdirs
 import psutil
-import uvicorn
-from fastapi import FastAPI
 
 from skore.project.project import Project, logger
 from skore.utils._environment import is_environment_notebook_like
@@ -139,32 +139,76 @@ class ServerInfo:
             return None
 
 
-def run_server(
-    project: Project, port: int, open_browser: bool, ready_event: multiprocessing.Event
-):
-    """Run the server in a separate process.
+def is_server_started(port: int, timeout: float = 10.0, interval: float = 0.1) -> bool:
+    """Wait for server to be ready by attempting to connect to the port.
+
+    Parameters
+    ----------
+    port : int
+        The port to check.
+    timeout : float, default=10.0
+        Maximum time to wait in seconds.
+    interval : float, default=0.1
+        Time between connection attempts in seconds.
+
+    Returns
+    -------
+    bool
+        True if server is ready, False if timeout occurred.
+    """
+    start_time = time.time()
+    while time.time() - start_time < timeout:
+        try:
+            with socket.create_connection(("localhost", port), timeout=interval):
+                return True
+        except (socket.timeout, ConnectionRefusedError):
+            time.sleep(interval)
+    return False
+
+
+def start_server_in_subprocess(project: Project, port: int, open_browser: bool):
+    """Start the server in a separate process.
 
     Parameters
     ----------
     project : Project
-        The project to launch.
+        The project to associate with the server.
     port : int
         The port to use for the server.
     open_browser : bool
         Whether to open the browser.
-    ready_event : multiprocessing.Event
-        Event to signal that the server is ready.
+
+    Returns
+    -------
+    subprocess.Popen
+        The process running the server.
+
+    Raises
+    ------
+    RuntimeError
+        If the server failed to start within the timeout period.
     """
-    from skore.ui.app import create_app
+    cmd = [
+        sys.executable,
+        "-m",
+        "skore.ui.server",
+        "--port",
+        str(port),
+        "--project-path",
+        str(project.path),
+    ]
 
-    async def lifespan(app: FastAPI):
-        ready_event.set()  # Signal that the server is ready
+    process = subprocess.Popen(
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+    )
+
+    if is_server_started(port):
         if open_browser:
-            webbrowser.open(f"http://localhost:{port}")  # pragma: no cover
-        yield
-
-    app = create_app(project=project, lifespan=lifespan)
-    uvicorn.run(app, host="0.0.0.0", port=port, log_level="error")
+            webbrowser.open(f"http://localhost:{port}")
+        return process
+    else:
+        process.terminate()
+        raise RuntimeError("Server failed to start within timeout period")
 
 
 def cleanup_server(project: Project, timeout: float = 5.0) -> bool:
@@ -215,7 +259,23 @@ def cleanup_server(project: Project, timeout: float = 5.0) -> bool:
     return True
 
 
+def block_before_cleanup(project: Project, process: subprocess.Popen) -> bool:
+    from skore import console
+
+    try:
+        console.print("Press Ctrl+C to stop the server...")
+        while True:
+            if process.poll() is not None:
+                break
+            time.sleep(0.1)
+    except KeyboardInterrupt:
+        console.print("\nReceived keyboard interrupt, shutting down...")
+    finally:
+        cleanup_server(project)
+
+
 def _kill_all_servers():
+    """Kill all running servers."""
     state_path = platformdirs.user_state_path(appname="skore")
     for pid_file in state_path.glob("skore-server-*.json"):
         try:
@@ -246,18 +306,19 @@ def _launch(
     ----------
     project : Project
         The project to launch.
-    keep_alive : Union[str, bool], default="auto"
+    keep_alive : str or bool, default="auto"
         Whether to keep the server alive once the main process finishes. When False,
         the server will be terminated when the main process finishes. When True,
-        the server will be kept alive and thus block the main process from exiting.
+        the server will be kept alive until interrupted by the user (Ctrl+C).
         When `"auto"`, the server will be kept alive if the current execution context
         is not a notebook-like environment.
-    port : int, optional
-        The port to use for the server, by default None.
-    open_browser : bool, optional
-        Whether to open the browser, by default True.
-    verbose : bool, optional
-        Whether to print verbose output, by default False.
+    port : int, default=None
+        The port to use for the server. If None, a free port will be found starting from
+        22140.
+    open_browser : bool, default=True
+        Whether to open the browser. By default, the browser is opened.
+    verbose : bool, default=False
+        Whether to print verbose output. By default, no output is printed.
     """
     from skore import console  # avoid circular import
 
@@ -265,6 +326,8 @@ def _launch(
         port = find_free_port()
 
     if project._server_info is not None:
+        # The project is already attached to a server.
+        # We need to check if the server is still running or if we need to restart it.
         try:
             os.kill(project._server_info.pid, 0)
 
@@ -277,32 +340,19 @@ def _launch(
         except ProcessLookupError:  # zombie process
             cleanup_server(project)
 
-    ready_event = multiprocessing.Event()
-
-    daemon = is_environment_notebook_like() if keep_alive == "auto" else not keep_alive
+    if keep_alive == "auto":
+        keep_alive = is_environment_notebook_like()
 
     with logger_context(logger, verbose):
-        process = multiprocessing.Process(
-            target=run_server,
-            args=(project, port, open_browser, ready_event),
-            daemon=daemon,
-        )
-        process.start()
+        process = start_server_in_subprocess(project, port, open_browser)
         project._server_info = ServerInfo(project, port, process.pid)
         project._server_info.save_pid_file()
-        ready_event.wait()  # wait for server to been started
 
         console.rule("[bold cyan]skore-UI[/bold cyan]")
-
         msg = f"Running skore UI from '{project.name}' at URL http://localhost:{port}"
-        if not daemon:
-            msg += " (Press CTRL+C to quit)"
         console.print(msg)
 
-        if not daemon:
-            try:
-                process.join()
-            except KeyboardInterrupt:
-                cleanup_server(project)
-        else:
+        if keep_alive:
             atexit.register(cleanup_server, project)
+        else:
+            atexit.register(block_before_cleanup, project, process)
