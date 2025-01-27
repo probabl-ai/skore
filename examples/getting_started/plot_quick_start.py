@@ -76,6 +76,13 @@ temp_dir.cleanup()
 # sphinx_gallery_end_ignore
 
 # %%
+# Retrieve what was stored:
+
+# %%
+df_get = my_project.get("df_cv_report_metrics")
+df_get
+
+# %%
 # .. admonition:: What's next?
 #
 #    For a more in-depth guide, see our :ref:`example_skore_getting_started` page!

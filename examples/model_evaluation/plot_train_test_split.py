@@ -10,27 +10,6 @@ This example illustrates the motivation and the use of skore's
 """
 
 # %%
-# Creating and loading the skore project
-# ======================================
-#
-# We create and load the skore project from the current directory:
-
-# %%
-import skore
-
-# sphinx_gallery_start_ignore
-import os
-import tempfile
-from pathlib import Path
-
-temp_dir = tempfile.TemporaryDirectory()
-temp_dir_path = Path(temp_dir.name)
-os.chdir(temp_dir_path)
-# sphinx_gallery_end_ignore
-my_project = skore.open("my_project", create=True)
-
-
-# %%
 # Train-test split in scikit-learn
 # ================================
 #
@@ -126,6 +105,8 @@ y = [0] * 2_500 + [1] * 2_500
 # scikit-learn:
 
 # %%
+import skore
+
 X_train, X_test, y_train, y_test = skore.train_test_split(
     X, y, test_size=0.2, random_state=0
 )
@@ -251,6 +232,3 @@ X.head(2)
 X_train, X_test, y_train, y_test = skore.train_test_split(
     X, y, random_state=0, shuffle=False
 )
-# sphinx_gallery_start_ignore
-temp_dir.cleanup()
-# sphinx_gallery_end_ignore
