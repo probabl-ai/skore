@@ -1,6 +1,7 @@
-"""In-memory storage."""
+"""Skore-hub storage."""
 
 from __future__ import annotations
+
 from collections.abc import Iterator
 from typing import Any
 
@@ -14,28 +15,24 @@ class DirectoryDoesNotExist(Exception):
 
 
 class SkoreHubStorage(AbstractStorage):
-    def __init__(self, name: str, *, domain="0.0.0.0:8000"):
+    def __init__(self, *, project_id: int, domain="0.0.0.0:8000"):
         self.url = f"http://{domain}/skore/projects"
         self.domain = domain
-
-        response = httpx.post(f"{self.url}?name={name}")
-        response.raise_for_status()
-
-        self.id = response.json()["id"]
+        self.project_id = project_id
 
         print("YEAH")
 
     @classmethod
-    def get(cls, project_id: int, *, domain="0.0.0.0:8000") -> SkoreHubStorage:
-        storage = cls.__new__(cls)
-        storage.url = f"http://{domain}/skore/projects"
-        storage.domain = domain
-        storage.id = project_id
+    def from_project_name(cls, name: str, *, domain="0.0.0.0:8000") -> SkoreHubStorage:
+        url = f"http://{domain}/skore/projects"
+        response = httpx.post(f"{url}?name={name}")
+        response.raise_for_status()
+        project_id = response.json()["id"]
 
-        return storage
+        return SkoreHubStorage(project_id=project_id, domain=domain)
 
     def __getitem__(self, key: str) -> Any:
-        request = f"{self.url}/{self.id}/items/{key}/history"
+        request = f"{self.url}/{self.project_id}/items/{key}/history"
         response = httpx.get(request)
         response.raise_for_status()
 
@@ -50,7 +47,7 @@ class SkoreHubStorage(AbstractStorage):
         ]
 
     def __setitem__(self, key: str, value: dict):
-        request = f"{self.url}/{self.id}/items"
+        request = f"{self.url}/{self.project_id}/items"
         data = {"key": key, **value}
 
         response = httpx.post(request, json=data)
@@ -60,7 +57,7 @@ class SkoreHubStorage(AbstractStorage):
         raise NotImplementedError
 
     def keys(self) -> Iterator[str]:
-        request = f"{self.url}/{self.id}/keys"
+        request = f"{self.url}/{self.project_id}/keys"
         response = httpx.get(request)
         response.raise_for_status()
 
