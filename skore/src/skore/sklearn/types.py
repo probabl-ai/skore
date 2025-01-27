@@ -7,5 +7,5 @@ MLTask = Literal[
     "multiclass-classification",
     "regression",
     "clustering",
-    "unsupported",
+    "unknown",
 ]
