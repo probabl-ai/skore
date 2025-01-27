@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from collections.abc import Iterator
 from typing import Any
 
@@ -19,6 +20,9 @@ class SkoreHubStorage(AbstractStorage):
         self.url = f"{domain}/skore/projects"
         self.domain = domain
         self.project_id = project_id
+        self.headers = {
+            "Cookie": f"_oauth2_proxy={os.environ.get("SKORE_HUB_OAUTH_TOKEN", "")}"
+        }
 
         print("YEAH")
 
@@ -27,7 +31,10 @@ class SkoreHubStorage(AbstractStorage):
         cls, name: str, *, domain="http://0.0.0.0:8000"
     ) -> SkoreHubStorage:
         url = f"{domain}/skore/projects"
-        response = httpx.post(f"{url}?name={name}")
+        headers = {
+            "Cookie": f"_oauth2_proxy={os.environ.get("SKORE_HUB_OAUTH_TOKEN", "")}"
+        }
+        response = httpx.post(f"{url}?name={name}", headers=headers)
         response.raise_for_status()
         project_id = response.json()["id"]
 
@@ -35,7 +42,7 @@ class SkoreHubStorage(AbstractStorage):
 
     def __getitem__(self, key: str) -> Any:
         request = f"{self.url}/{self.project_id}/items/{key}/history"
-        response = httpx.get(request)
+        response = httpx.get(request, headers=self.headers)
         response.raise_for_status()
 
         response_json = response.json()
@@ -52,7 +59,7 @@ class SkoreHubStorage(AbstractStorage):
         request = f"{self.url}/{self.project_id}/items"
         data = {"key": key, **value}
 
-        response = httpx.post(request, json=data)
+        response = httpx.post(request, json=data, headers=self.headers)
         response.raise_for_status()
 
     def __delitem__(self, key: str):
@@ -60,7 +67,7 @@ class SkoreHubStorage(AbstractStorage):
 
     def keys(self) -> Iterator[str]:
         request = f"{self.url}/{self.project_id}/keys"
-        response = httpx.get(request)
+        response = httpx.get(request, headers=self.headers)
         response.raise_for_status()
 
         yield from response.json()
