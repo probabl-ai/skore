@@ -10,6 +10,7 @@ dependencies = [
   "joblib",
   "matplotlib",
   "numpy",
+  "orjson",
   "pandas",
   "plotly>=5,<6",
   "pyarrow",
