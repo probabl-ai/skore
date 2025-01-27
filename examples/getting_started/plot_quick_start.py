@@ -71,9 +71,6 @@ plt.tight_layout()
 # %%
 my_project.put("df_cv_report_metrics", df_cv_report_metrics)
 my_project.put("roc_plot", roc_plot)
-# sphinx_gallery_start_ignore
-temp_dir.cleanup()
-# sphinx_gallery_end_ignore
 
 # %%
 # Retrieve what was stored:
@@ -81,6 +78,9 @@ temp_dir.cleanup()
 # %%
 df_get = my_project.get("df_cv_report_metrics")
 df_get
+# sphinx_gallery_start_ignore
+temp_dir.cleanup()
+# sphinx_gallery_end_ignore
 
 # %%
 # .. admonition:: What's next?
