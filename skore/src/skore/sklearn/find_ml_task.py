@@ -72,7 +72,7 @@ def _find_ml_task(y, estimator=None) -> MLTask:
                         return "multiclass-classification"
             else:  # fallback on the target
                 if y is None:
-                    return "unsupported"
+                    return "unknown"
 
                 target_type = type_of_target(y)
                 if target_type == "binary":
@@ -84,8 +84,8 @@ def _find_ml_task(y, estimator=None) -> MLTask:
                     if _is_sequential(y) and 0 in y:
                         return "multiclass-classification"
                     return "regression"
-            return "unsupported"
-        return "unsupported"
+            return "unknown"
+        return "unknown"
     else:
         if y is None:
             # NOTE: The task might not be clustering
@@ -104,4 +104,4 @@ def _find_ml_task(y, estimator=None) -> MLTask:
             if _is_sequential(y) and 0 in y:
                 return "multiclass-classification"
             return "regression"
-        return "unsupported"
+        return "unknown"
