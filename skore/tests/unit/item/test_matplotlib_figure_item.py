@@ -7,6 +7,7 @@ from matplotlib.figure import Figure
 from matplotlib.pyplot import subplots
 from matplotlib.testing.compare import compare_images
 from skore.persistence.item import ItemTypeError, MatplotlibFigureItem
+from skore.persistence.item.matplotlib_figure_item import mpl_backend
 
 
 class FakeFigure(Figure):
@@ -81,3 +82,12 @@ class TestMatplotlibFigureItem:
             "media_type": "image/svg+xml;base64",
             "value": figure_b64_str,
         }
+
+    def test_backend_switch(self):
+        import matplotlib
+
+        backend = matplotlib.get_backend()
+        # hoppefuly PostScript is never the default in tests ^^
+        with mpl_backend(backend="ps"):
+            assert matplotlib.get_backend() == "ps"
+        assert matplotlib.get_backend() == backend
