@@ -5,8 +5,6 @@ import interact from "interactjs";
 import Simplebar from "simplebar-core";
 import { onBeforeUnmount, onMounted, ref, useTemplateRef } from "vue";
 
-import DynamicContentRasterizer from "@/components/DynamicContentRasterizer.vue";
-
 interface Item {
   name: string;
   [key: string]: any;
@@ -208,9 +206,7 @@ onBeforeUnmount(() => {
           :style="topDropIndicatorStyles()"
         />
         <div class="content" :class="{ moving: movingItemIndex === index }">
-          <DynamicContentRasterizer :isRasterized="movingItemIndex !== -1">
-            <slot name="item" v-bind="item"></slot>
-          </DynamicContentRasterizer>
+          <slot name="item" v-bind="item"></slot>
         </div>
         <div class="drop-indicator bottom" :class="{ visible: dropIndicatorPosition === index }" />
       </div>
