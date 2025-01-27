@@ -56,6 +56,7 @@ from skrub import tabular_learner
 model = tabular_learner("classifier")
 model
 
+
 # %%
 #
 # This model handles all types of data: numbers, categories, dates, and missing values.
@@ -150,7 +151,7 @@ print(f"Time taken: {end - start:.2f} seconds")
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # We can pre-compute all predictions at once using parallel processing:
-report.cache_predictions(n_jobs=2)
+report.cache_predictions(n_jobs=4)
 
 # %%
 #
@@ -259,18 +260,26 @@ report._cache
 # in cross-validation by leveraging the previous :class:`~skore.EstimatorReport`:
 from skore import CrossValidationReport
 
-report = CrossValidationReport(model, X=df, y=y, cv_splitter=5, n_jobs=2)
+report = CrossValidationReport(model, X=df, y=y, cv_splitter=5, n_jobs=4)
 report.help()
 
 # %%
 #
-# We can pre-compute all predictions at once using parallel processing:
-report.cache_predictions(n_jobs=2)
+# Since we a :class:`~skore.CrossValidationReport`, uses many
+# :class:`~skore.EstimatorReport`, we will observe the same behaviour as we previously
+# exposed. The first call will be slow because it computes the predictions for each
+# fold.
+start = time.time()
+result = report.metrics.report_metrics(aggregate=["mean", "std"])
+end = time.time()
+result
+
+# %%
+print(f"Time taken: {end - start:.2f} seconds")
 
 # %%
 #
-# Now, all possible predictions are stored. Any metric calculation will be much faster,
-# even on different data, as we showed for the :class:`~skore.EstimatorReport`.
+# While the subsequent calls are fast because the predictions are cached.
 start = time.time()
 result = report.metrics.report_metrics(aggregate=["mean", "std"])
 end = time.time()
