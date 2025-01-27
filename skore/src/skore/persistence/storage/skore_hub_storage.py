@@ -1,5 +1,6 @@
 """In-memory storage."""
 
+from __future__ import annotations
 from collections.abc import Iterator
 from typing import Any
 
@@ -21,6 +22,17 @@ class SkoreHubStorage(AbstractStorage):
         response.raise_for_status()
 
         self.id = response.json()["id"]
+
+        print("YEAH")
+
+    @classmethod
+    def get(cls, project_id: int, *, domain="0.0.0.0:8000") -> SkoreHubStorage:
+        storage = cls.__new__(cls)
+        storage.url = f"http://{domain}/skore/projects"
+        storage.domain = domain
+        storage.id = project_id
+
+        return storage
 
     def __getitem__(self, key: str) -> Any:
         request = f"{self.url}/{self.id}/items/{key}/history"
