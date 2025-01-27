@@ -16,9 +16,7 @@ my_project = skore.open("my_project", create=True)
 
 # %%
 # This will create a skore project directory named ``quick_start.skore`` in your
-# current working directory. Note that `overwrite=True` will overwrite any pre-existing
-# project with the same path (which you might not want to do that depending on your use
-# case).
+# current working directory.
 
 # %%
 # Evaluate your model using skore's :class:`~skore.CrossValidationReport`:

@@ -308,6 +308,33 @@ def test_serialize_primitive_item(
     }
 
 
+def test_serialize_primitive_item_with_nan(
+    client,
+    in_memory_project,
+    monkeypatch_datetime,
+    mock_nowstr,
+):
+    in_memory_project.put("primitive", float("nan"))
+    response = client.get("/api/project/items")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "views": {},
+        "items": {
+            "primitive": [
+                {
+                    "name": "primitive",
+                    "media_type": "text/markdown",
+                    "value": None,
+                    "updated_at": mock_nowstr,
+                    "created_at": mock_nowstr,
+                    "note": None,
+                }
+            ]
+        },
+    }
+
+
 def test_serialize_media_item(
     client,
     in_memory_project,

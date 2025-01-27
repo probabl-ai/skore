@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request, status
+from fastapi.responses import ORJSONResponse
 
 from skore.persistence.item import Item
 from skore.persistence.view.view import Layout, View
@@ -68,7 +69,7 @@ def __project_as_serializable(project: Project) -> SerializableProject:
     )
 
 
-@router.get("/items")
+@router.get("/items", response_class=ORJSONResponse)
 async def get_items(request: Request):
     """Serialize a project and send it."""
     project = request.app.state.project
@@ -104,7 +105,7 @@ async def delete_view(request: Request, key: str):
     return __project_as_serializable(project)
 
 
-@router.get("/activity")
+@router.get("/activity", response_class=ORJSONResponse)
 async def get_activity(
     request: Request,
     after: datetime = datetime(1, 1, 1, 0, 0, 0, 0, timezone.utc),
