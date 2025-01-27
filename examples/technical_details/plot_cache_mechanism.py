@@ -265,10 +265,10 @@ report.help()
 
 # %%
 #
-# Since we a :class:`~skore.CrossValidationReport`, uses many
+# Since a :class:`~skore.CrossValidationReport` uses many
 # :class:`~skore.EstimatorReport`, we will observe the same behaviour as we previously
-# exposed. The first call will be slow because it computes the predictions for each
-# fold.
+# exposed.
+# The first call will be slow because it computes the predictions for each fold.
 start = time.time()
 result = report.metrics.report_metrics(aggregate=["mean", "std"])
 end = time.time()
@@ -279,7 +279,7 @@ print(f"Time taken: {end - start:.2f} seconds")
 
 # %%
 #
-# While the subsequent calls are fast because the predictions are cached.
+# But the subsequent calls are fast because the predictions are cached.
 start = time.time()
 result = report.metrics.report_metrics(aggregate=["mean", "std"])
 end = time.time()
