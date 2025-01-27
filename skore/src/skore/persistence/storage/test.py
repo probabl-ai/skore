@@ -3,7 +3,7 @@ from skore.persistence.storage import InMemoryStorage
 from skore.persistence.storage.skore_hub_storage import SkoreHubStorage
 from skore.project import Project
 
-storage = SkoreHubStorage.from_project_name("my-project")
+storage = SkoreHubStorage.from_project_name("my-project", domain="https://skh.k.probabl.dev")
 project = Project(
     item_repository=ItemRepository(storage=storage),
     view_repository=ViewRepository(storage=InMemoryStorage()),
@@ -26,7 +26,7 @@ my_project_id = storage.project_id
 del storage
 del project
 
-storage = SkoreHubStorage(project_id=my_project_id)
+storage = SkoreHubStorage(project_id=my_project_id, domain="https://skh.k.probabl.dev")
 project = Project(
     item_repository=ItemRepository(storage=storage),
     view_repository=ViewRepository(storage=InMemoryStorage()),

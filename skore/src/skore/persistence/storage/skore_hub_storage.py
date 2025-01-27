@@ -15,16 +15,18 @@ class DirectoryDoesNotExist(Exception):
 
 
 class SkoreHubStorage(AbstractStorage):
-    def __init__(self, *, project_id: int, domain="0.0.0.0:8000"):
-        self.url = f"http://{domain}/skore/projects"
+    def __init__(self, *, project_id: int, domain="http://0.0.0.0:8000"):
+        self.url = f"{domain}/skore/projects"
         self.domain = domain
         self.project_id = project_id
 
         print("YEAH")
 
     @classmethod
-    def from_project_name(cls, name: str, *, domain="0.0.0.0:8000") -> SkoreHubStorage:
-        url = f"http://{domain}/skore/projects"
+    def from_project_name(
+        cls, name: str, *, domain="http://0.0.0.0:8000"
+    ) -> SkoreHubStorage:
+        url = f"{domain}/skore/projects"
         response = httpx.post(f"{url}?name={name}")
         response.raise_for_status()
         project_id = response.json()["id"]
