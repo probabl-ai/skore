@@ -12,7 +12,6 @@ import SimpleButton from "@/components/SimpleButton.vue";
 .insert-cell {
   display: flex;
   align-items: center;
-  margin-left: var(--spacing-16);
   gap: var(--spacing-8);
 
   &::before,

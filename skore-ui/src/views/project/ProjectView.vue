@@ -12,6 +12,7 @@ import ItemNote from "@/views/project/ItemNote.vue";
 import ProjectItemList from "@/views/project/ProjectItemList.vue";
 import ProjectViewCard from "@/views/project/ProjectViewCard.vue";
 import ProjectViewNavigator from "@/views/project/ProjectViewNavigator.vue";
+import InsertCell from "./InsertCell.vue";
 
 const props = defineProps({
   showCardActions: {
@@ -52,24 +53,11 @@ function getItemSubtitle(created_at: Date) {
   return `Created ${formatDistance(created_at, now)} ago`;
 }
 
-function onMouseMove(event: MouseEvent) {
-  const x = event.pageX;
-  const y = event.pageY;
-  const elt = document.elementFromPoint(x, y);
-  console.log(elt);
-}
-
 onMounted(async () => {
-  if (editor.value) {
-    editor.value.addEventListener("mousemove", onMouseMove);
-  }
   await projectStore.startBackendPolling();
 });
 
 onBeforeUnmount(() => {
-  if (editor.value) {
-    editor.value.removeEventListener("mousemove", onMouseMove);
-  }
   projectStore.stopBackendPolling();
 });
 </script>
@@ -106,6 +94,9 @@ onBeforeUnmount(() => {
           </div>
         </div>
         <Simplebar class="editor-container" v-else>
+          <div class="insert-cell-wrapper first">
+            <InsertCell @click="console.log('coucou')" />
+          </div>
           <DraggableList
             v-model:items="projectStore.currentViewItems"
             auto-scroll-container-selector=".editor-container"
@@ -128,6 +119,9 @@ onBeforeUnmount(() => {
                 <ItemNote :name="name" :note="note" />
                 <MediaWidgetSelector :item="{ name, mediaType, data, createdAt, updatedAt }" />
               </ProjectViewCard>
+              <div class="insert-cell-wrapper">
+                <InsertCell @click="console.log('coucou', name)" />
+              </div>
             </template>
           </DraggableList>
         </Simplebar>
@@ -242,6 +236,30 @@ main {
 
         & .item-note {
           margin-bottom: var(--spacing-16);
+        }
+
+        & .insert-cell-wrapper {
+          position: relative;
+
+          &.first {
+            position: absolute;
+            top: var(--spacing-12);
+            width: 100%;
+            height: var(--spacing-24);
+            margin: 0 var(--spacing-24);
+          }
+
+          & .insert-cell {
+            position: absolute;
+            top: var(--spacing-6);
+            width: 100%;
+            opacity: 0;
+            transition: opacity var(--animation-duration) var(--animation-easing);
+
+            &:hover {
+              opacity: 1;
+            }
+          }
         }
       }
     }
