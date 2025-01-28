@@ -283,23 +283,36 @@ def block_before_cleanup(project: Project, process: subprocess.Popen) -> None:
         cleanup_server(project)
 
 
-def _kill_all_servers():
-    """Kill all running servers."""
+def _kill_all_servers(verbose: bool = False):
+    """Kill all running servers.
+
+    Parameters
+    ----------
+    verbose : bool, default=False
+        Whether to print verbose output.
+    """
+    from skore import console
+
     state_path = platformdirs.user_state_path(appname="skore")
-    for pid_file in state_path.glob("skore-server-*.json"):
-        try:
-            pid_info = json.load(pid_file.open())
+    with logger_context(logger, verbose):
+        for pid_file in state_path.glob("skore-server-*.json"):
             try:
-                process = psutil.Process(pid_info["pid"])
-                process.terminate()
+                pid_info = json.load(pid_file.open())
                 try:
-                    process.wait(timeout=5.0)
-                except psutil.TimeoutExpired:
-                    process.kill()
-            except psutil.NoSuchProcess:
-                pass
-        finally:
-            pid_file.unlink()
+                    process = psutil.Process(pid_info["pid"])
+                    process.terminate()
+                    try:
+                        process.wait(timeout=5.0)
+                    except psutil.TimeoutExpired:
+                        process.kill()
+                    console.print(
+                        f"Killed server at http://localhost:{pid_info['port']}"
+                    )
+                except psutil.NoSuchProcess:
+                    pass
+            finally:
+                console.print(f"Deleted PID file {pid_file}")
+                pid_file.unlink()
 
 
 def _launch(

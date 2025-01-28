@@ -3,7 +3,9 @@
 import os
 
 import pytest
+from skore import open
 from skore.cli.cli import cli
+from skore.project._launch import ServerInfo
 
 
 @pytest.fixture
@@ -27,27 +29,6 @@ def close_project(path):
     assert pid_file.exists()
     project.shutdown_web_ui()
     assert not pid_file.exists()
-
-
-def test_cli_launch(tmp_project_path):
-    """Test that CLI launch starts server with correct parameters."""
-    cli(
-        [
-            "launch",
-            str(tmp_project_path),
-            "--no-keep-alive",
-            "--no-open-browser",
-            "--verbose",
-        ]
-    )
-    close_project(tmp_project_path)
-
-
-def test_cli_launch_no_project_name():
-    with pytest.raises(SystemExit):
-        cli(
-            ["launch", "--port", 0, "--no-keep-alive", "--no-open-browser", "--verbose"]
-        )
 
 
 def test_cli_create(tmp_path):
@@ -85,31 +66,26 @@ def test_cli_open(tmp_path, monkeypatch):
     assert (project_path / "items").exists()
     assert (project_path / "views").exists()
 
-    cli(["open", str(project_path), "--no-keep-alive", "--verbose"])
+    cli(["open", str(project_path), "--verbose"])
     close_project(project_path)
-    cli(["open", str(project_path), "--no-keep-alive", "--no-create"])
+    cli(["open", str(project_path), "--no-create"])
     close_project(project_path)
 
     with pytest.raises(FileNotFoundError):
         cli(["open", "nonexistent_project", "--no-create"])
 
 
-def test_cli_kill(tmp_project_path):
+def test_cli_kill(tmp_project_path, monkeypatch):
     """Test that CLI kill command properly terminates all running servers."""
-    cli(
-        [
-            "launch",
-            str(tmp_project_path),
-            "--no-keep-alive",
-            "--no-open-browser",
-            "--verbose",
-        ]
+    # Force open_browser to False for all _launch calls
+    from skore.project._launch import _launch
+
+    monkeypatch.setattr(
+        "skore.project._launch._launch",
+        lambda *args, **kwargs: _launch(*args, **{**kwargs, "open_browser": False}),
     )
 
-    from skore import open
-    from skore.project._launch import ServerInfo
-
-    project = open(tmp_project_path, serve=False)
+    project = open(tmp_project_path, serve=True, keep_alive=False)
     pid_file = ServerInfo._get_pid_file_path(project)
     assert pid_file.exists()
 

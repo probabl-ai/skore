@@ -6,8 +6,7 @@ from importlib.metadata import version
 from skore.cli.color_format import ColorArgumentParser
 from skore.project import open
 from skore.project._create import _create
-from skore.project._launch import _kill_all_servers, _launch
-from skore.project._load import _load
+from skore.project._launch import _kill_all_servers
 
 
 def cli(args: list[str]):
@@ -34,50 +33,6 @@ def cli(args: list[str]):
         help="overwrite an existing project with the same name",
     )
     parser_create.add_argument(
-        "--verbose",
-        action="store_true",
-        help="increase logging verbosity",
-    )
-
-    # launch the skore UI
-    parser_launch = subparsers.add_parser("launch", help="Launch the web UI")
-    parser_launch.add_argument(
-        "project_name",
-        help="the name or path of the project to open",
-    )
-    parser_launch.add_argument(
-        "--keep-alive",
-        action=argparse.BooleanOptionalAction,
-        help=(
-            "whether to keep the server alive once the main process finishes "
-            "(default: %(default)s)"
-        ),
-        default="auto",
-    )
-    parser_launch.add_argument(
-        "--port",
-        type=int,
-        help="the port at which to bind the UI server (default: %(default)s)",
-        default=None,
-    )
-    parser_launch.add_argument(
-        "--open-browser",
-        action=argparse.BooleanOptionalAction,
-        help=(
-            "whether to automatically open a browser tab showing the web UI "
-            "(default: %(default)s)"
-        ),
-        default=True,
-    )
-    parser_launch.add_argument(
-        "--verbose",
-        action="store_true",
-        help="increase logging verbosity",
-    )
-
-    # kill all UI servers
-    parser_kill = subparsers.add_parser("kill", help="Kill all UI servers")
-    parser_kill.add_argument(
         "--verbose",
         action="store_true",
         help="increase logging verbosity",
@@ -111,21 +66,20 @@ def cli(args: list[str]):
         default=True,
     )
     parser_open.add_argument(
-        "--keep-alive",
-        action=argparse.BooleanOptionalAction,
-        help=(
-            "whether to keep the server alive once the main process finishes "
-            "(default: %(default)s)"
-        ),
-        default="auto",
-    )
-    parser_open.add_argument(
         "--port",
         type=int,
         help="the port at which to bind the UI server (default: %(default)s)",
         default=None,
     )
     parser_open.add_argument(
+        "--verbose",
+        action="store_true",
+        help="increase logging verbosity",
+    )
+
+    # kill all UI servers
+    parser_kill = subparsers.add_parser("kill", help="Kill all UI servers")
+    parser_kill.add_argument(
         "--verbose",
         action="store_true",
         help="increase logging verbosity",
@@ -139,25 +93,17 @@ def cli(args: list[str]):
             overwrite=parsed_args.overwrite,
             verbose=parsed_args.verbose,
         )
-    elif parsed_args.subcommand == "launch":
-        _launch(
-            project=_load(project_name=parsed_args.project_name),
-            keep_alive=parsed_args.keep_alive,
-            port=parsed_args.port,
-            open_browser=parsed_args.open_browser,
-            verbose=parsed_args.verbose,
-        )
     elif parsed_args.subcommand == "open":
         open(
             project_path=parsed_args.project_name,
             create=parsed_args.create,
             overwrite=parsed_args.overwrite,
             serve=parsed_args.serve,
-            keep_alive=parsed_args.keep_alive,
+            keep_alive=True,
             port=parsed_args.port,
             verbose=parsed_args.verbose,
         )
     elif parsed_args.subcommand == "kill":
-        _kill_all_servers()
+        _kill_all_servers(verbose=parsed_args.verbose)
     else:
         parser.print_help()

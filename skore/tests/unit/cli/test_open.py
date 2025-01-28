@@ -40,7 +40,6 @@ def test_cli_open(tmp_project_path, mock_launch):
             "--port",
             "8000",
             "--serve",
-            "--no-keep-alive",
             "--verbose",
         ]
     )
@@ -52,7 +51,7 @@ def test_cli_open_creates_project(tmp_path, mock_launch):
     project_path = tmp_path / "new_project.skore"
     assert not project_path.exists()
 
-    cli(["open", str(project_path), "--create", "--no-keep-alive"])
+    cli(["open", str(project_path), "--create"])
     assert project_path.exists()
     assert len(mock_launch) == 1
 
@@ -62,7 +61,7 @@ def test_cli_open_no_create_fails(tmp_path, mock_launch):
     project_path = tmp_path / "nonexistent.skore"
 
     with pytest.raises(FileNotFoundError):
-        cli(["open", str(project_path), "--no-create", "--no-keep-alive"])
+        cli(["open", str(project_path), "--no-create"])
     assert len(mock_launch) == 0
 
 
@@ -70,10 +69,10 @@ def test_cli_open_overwrite(tmp_path, mock_launch):
     """Test that CLI open can overwrite existing project."""
     project_path = tmp_path / "overwrite_test.skore"
 
-    cli(["open", str(project_path), "--create", "--no-keep-alive"])
+    cli(["open", str(project_path), "--create"])
     initial_time = os.path.getmtime(project_path)
 
-    cli(["open", str(project_path), "--create", "--overwrite", "--no-keep-alive"])
+    cli(["open", str(project_path), "--create", "--overwrite"])
     new_time = os.path.getmtime(project_path)
     assert new_time > initial_time
     assert len(mock_launch) == 2
