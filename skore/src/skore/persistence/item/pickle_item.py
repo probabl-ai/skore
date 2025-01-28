@@ -12,7 +12,8 @@ from typing import Any, Optional
 
 import joblib
 
-from .item import Item
+from skore.persistence.item.item import Item
+from skore.utils import b64_str_to_bytes, bytes_to_b64_str
 
 
 class PickleItem(Item):
@@ -25,7 +26,7 @@ class PickleItem(Item):
 
     def __init__(
         self,
-        pickle_bytes: bytes,
+        pickle_b64_str: str,
         created_at: Optional[str] = None,
         updated_at: Optional[str] = None,
         note: Optional[str] = None,
@@ -35,7 +36,7 @@ class PickleItem(Item):
 
         Parameters
         ----------
-        pickle_bytes : bytes
+        pickle_b64_str : str
             The raw bytes of the object pickled representation.
         created_at : str, optional
             The creation timestamp in ISO format.
@@ -46,7 +47,7 @@ class PickleItem(Item):
         """
         super().__init__(created_at, updated_at, note)
 
-        self.pickle_bytes = pickle_bytes
+        self.pickle_b64_str = pickle_b64_str
 
     @classmethod
     def factory(cls, object: Any, /, **kwargs) -> PickleItem:
@@ -66,12 +67,17 @@ class PickleItem(Item):
         with BytesIO() as stream:
             joblib.dump(object, stream)
 
-            return cls(stream.getvalue(), **kwargs)
+            pickle_bytes = stream.getvalue()
+            pickle_b64_str = bytes_to_b64_str(pickle_bytes)
+
+            return cls(pickle_b64_str, **kwargs)
 
     @property
     def object(self) -> Any:
         """The object from the persistence."""
-        with BytesIO(self.pickle_bytes) as stream:
+        pickle_bytes = b64_str_to_bytes(self.pickle_b64_str)
+
+        with BytesIO(pickle_bytes) as stream:
             return joblib.load(stream)
 
     def as_serializable_dict(self):

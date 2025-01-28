@@ -20,9 +20,9 @@ import numpy
 import plotly.graph_objects
 import plotly.io
 
+from skore.persistence.item.item import Item, ItemTypeError
 from skore.sklearn.cross_validation import CrossValidationReporter
-
-from .item import Item, ItemTypeError
+from skore.utils import b64_str_to_bytes, bytes_to_b64_str
 
 if TYPE_CHECKING:
     import sklearn.base
@@ -147,7 +147,7 @@ class CrossValidationReporterItem(Item):
 
     def __init__(
         self,
-        reporter_bytes: bytes,
+        reporter_b64_str: str,
         created_at: Optional[str] = None,
         updated_at: Optional[str] = None,
         note: Optional[str] = None,
@@ -157,7 +157,7 @@ class CrossValidationReporterItem(Item):
 
         Parameters
         ----------
-        reporter_bytes : bytes
+        reporter_b64_str : str
             The raw bytes of the reporter pickled representation.
         created_at : str, optional
             The creation timestamp in ISO format.
@@ -168,7 +168,7 @@ class CrossValidationReporterItem(Item):
         """
         super().__init__(created_at, updated_at, note)
 
-        self.reporter_bytes = reporter_bytes
+        self.reporter_b64_str = reporter_b64_str
 
     @classmethod
     def factory(
@@ -195,12 +195,17 @@ class CrossValidationReporterItem(Item):
         with io.BytesIO() as stream:
             joblib.dump(reporter, stream)
 
-            return cls(stream.getvalue(), **kwargs)
+            reporter_bytes = stream.getvalue()
+            reporter_b64_str = bytes_to_b64_str(reporter_bytes)
+
+            return cls(reporter_b64_str, **kwargs)
 
     @property
     def reporter(self) -> CrossValidationReporter:
         """The CrossValidationReporter from the persistence."""
-        with io.BytesIO(self.reporter_bytes) as stream:
+        reporter_bytes = b64_str_to_bytes(self.reporter_b64_str)
+
+        with io.BytesIO(reporter_bytes) as stream:
             return joblib.load(stream)
 
     def as_serializable_dict(self):
