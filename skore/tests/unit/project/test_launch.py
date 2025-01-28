@@ -179,10 +179,10 @@ def test_is_server_started(monkeypatch):
         unused_port = find_free_port()
         assert is_server_started(unused_port, timeout=1) is False
 
-        def mock_connect_ex(*args, **kwargs):
+        def mock_create_connection(*args, **kwargs):
             raise socket.timeout("Connection timed out")
 
-        monkeypatch.setattr(socket.socket, "connect_ex", mock_connect_ex)
+        monkeypatch.setattr(socket, "create_connection", mock_create_connection)
         assert is_server_started(port, timeout=1) is False
 
     finally:
