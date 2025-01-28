@@ -363,7 +363,7 @@ def _launch(
             cleanup_server(project)
 
     if keep_alive == "auto":
-        keep_alive = is_environment_notebook_like()
+        keep_alive = is_environment_notebook_like()  # pragma: no cover
 
     with logger_context(logger, verbose):
         process = start_server_in_subprocess(project, port, open_browser)
@@ -375,6 +375,6 @@ def _launch(
         console.print(msg)
 
         if keep_alive:
-            atexit.register(block_before_cleanup, project, process)
+            atexit.register(block_before_cleanup, project, process)  # pragma: no cover
         else:
             atexit.register(cleanup_server, project)

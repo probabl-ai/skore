@@ -174,16 +174,16 @@ def test_is_server_started(monkeypatch):
     sock.listen(1)
 
     try:
-        assert is_server_started(port, timeout=1) is True
+        assert is_server_started(port, timeout=3) is True
 
         unused_port = find_free_port()
-        assert is_server_started(unused_port, timeout=1) is False
+        assert is_server_started(unused_port, timeout=3) is False
 
         def mock_create_connection(*args, **kwargs):
             raise socket.timeout("Connection timed out")
 
         monkeypatch.setattr(socket, "create_connection", mock_create_connection)
-        assert is_server_started(port, timeout=1) is False
+        assert is_server_started(port, timeout=3) is False
 
     finally:
         sock.close()

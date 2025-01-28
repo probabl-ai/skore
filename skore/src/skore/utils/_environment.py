@@ -15,11 +15,11 @@ def get_environment_info():
         "details": {},
     }
 
-    # Check for interactive mode
     env_info["is_interactive"] = hasattr(sys, "ps1")
 
-    # Check for Jupyter
     try:
+        # get_ipython() is defined when running in Jupyter or IPython
+        # there is no need to import IPython here
         shell = get_ipython().__class__.__name__  # type: ignore
         env_info["details"]["ipython_shell"] = shell
 
@@ -31,7 +31,6 @@ def get_environment_info():
     except NameError:
         pass
 
-    # Check for VSCode
     if "VSCODE_PID" in os.environ:
         env_info["is_vscode"] = True
         if env_info["is_interactive"]:
@@ -39,7 +38,6 @@ def get_environment_info():
         else:
             env_info["environment_name"] = "vscode_script"
 
-    # Add additional environment details
     env_info["details"]["python_executable"] = sys.executable
     env_info["details"]["python_version"] = sys.version
 

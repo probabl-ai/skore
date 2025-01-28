@@ -8,7 +8,7 @@ from skore.project._load import _load
 from skore.ui.app import create_app
 
 
-def run_server(port: int, project_path: str):
+def run_server(port: int, project_path: str) -> uvicorn.Server:
     """Run the uvicorn server with the given project and port.
 
     Parameters
@@ -17,6 +17,11 @@ def run_server(port: int, project_path: str):
         The port number to run the server on.
     project_path : str
         Path to the skore project to load.
+
+    Returns
+    -------
+    uvicorn.Server
+        The uvicorn server instance.
     """
     project = _load(project_path)
     app = create_app(project=project)
@@ -24,6 +29,7 @@ def run_server(port: int, project_path: str):
     config = uvicorn.Config(app=app, host="127.0.0.1", port=port, log_level="error")
     server = uvicorn.Server(config)
     server.run()
+    return server
 
 
 if __name__ == "__main__":
