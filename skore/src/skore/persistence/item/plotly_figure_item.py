@@ -7,8 +7,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional
 
-from .item import Item, ItemTypeError
-from .media_item import lazy_is_instance
+from skore.persistence.item.item import Item, ItemTypeError
+from skore.persistence.item.media_item import lazy_is_instance
+from skore.utils import bytes_to_b64_str
 
 if TYPE_CHECKING:
     import plotly.basedatatypes
@@ -29,7 +30,7 @@ class PlotlyFigureItem(Item):
 
         Parameters
         ----------
-        figure_str : bytes
+        figure_str : str
             The JSON str of the Plotly figure.
         created_at : str, optional
             The creation timestamp in ISO format.
@@ -78,10 +79,8 @@ class PlotlyFigureItem(Item):
 
     def as_serializable_dict(self):
         """Convert item to a JSON-serializable dict to used by frontend."""
-        import base64
-
         figure_bytes = self.figure_str.encode("utf-8")
-        figure_b64_str = base64.b64encode(figure_bytes).decode()
+        figure_b64_str = bytes_to_b64_str(figure_bytes)
 
         return super().as_serializable_dict() | {
             "media_type": "application/vnd.plotly.v1+json;base64",

@@ -1,4 +1,5 @@
 import base64
+import json
 
 import plotly.graph_objects
 import plotly.io
@@ -23,6 +24,15 @@ class TestPlotlyFigureItem:
     def test_factory_exception(self):
         with pytest.raises(ItemTypeError):
             PlotlyFigureItem.factory(None)
+
+    def test_ensure_jsonable(self):
+        bar = plotly.graph_objects.Bar(x=[1, 2, 3], y=[1, 3, 2])
+        figure = plotly.graph_objects.Figure(data=[bar])
+
+        item = PlotlyFigureItem.factory(figure)
+        item_parameters = item.__parameters__
+
+        json.dumps(item_parameters)
 
     def test_figure(self):
         bar = plotly.graph_objects.Bar(x=[1, 2, 3], y=[1, 3, 2])

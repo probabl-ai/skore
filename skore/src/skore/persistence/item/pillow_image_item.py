@@ -5,10 +5,12 @@ This module defines the PillowImageItem class, used to persist Pillow images.
 
 from __future__ import annotations
 
+from io import BytesIO
 from typing import TYPE_CHECKING, Optional
 
-from .item import Item, ItemTypeError
-from .media_item import lazy_is_instance
+from skore.persistence.item.item import Item, ItemTypeError
+from skore.persistence.item.media_item import lazy_is_instance
+from skore.utils import b64_str_to_bytes, bytes_to_b64_str
 
 if TYPE_CHECKING:
     import PIL.Image
@@ -19,7 +21,7 @@ class PillowImageItem(Item):
 
     def __init__(
         self,
-        image_bytes: bytes,
+        image_b64_str: str,
         image_mode: str,
         image_size: tuple[int],
         created_at: Optional[str] = None,
@@ -31,7 +33,7 @@ class PillowImageItem(Item):
 
         Parameters
         ----------
-        image_bytes : bytes
+        image_b64_str : str
             The raw bytes of the Pillow image.
         image_mode : str
             The image mode.
@@ -46,7 +48,7 @@ class PillowImageItem(Item):
         """
         super().__init__(created_at, updated_at, note)
 
-        self.image_bytes = image_bytes
+        self.image_b64_str = image_b64_str
         self.image_mode = image_mode
         self.image_size = image_size
 
@@ -68,8 +70,11 @@ class PillowImageItem(Item):
         if not lazy_is_instance(image, "PIL.Image.Image"):
             raise ItemTypeError(f"Type '{image.__class__}' is not supported.")
 
+        image_bytes = image.tobytes()
+        image_b64_str = bytes_to_b64_str(image_bytes)
+
         return cls(
-            image_bytes=image.tobytes(),
+            image_b64_str=image_b64_str,
             image_mode=image.mode,
             image_size=image.size,
             **kwargs,
@@ -80,22 +85,21 @@ class PillowImageItem(Item):
         """The image from the persistence."""
         import PIL.Image
 
+        image_bytes = b64_str_to_bytes(self.image_b64_str)
+
         return PIL.Image.frombytes(
             mode=self.image_mode,
             size=self.image_size,
-            data=self.image_bytes,
+            data=image_bytes,
         )
 
     def as_serializable_dict(self):
         """Convert item to a JSON-serializable dict to used by frontend."""
-        import base64
-        import io
-
-        with io.BytesIO() as stream:
+        with BytesIO() as stream:
             self.image.save(stream, format="png")
 
             png_bytes = stream.getvalue()
-            png_b64_str = base64.b64encode(png_bytes).decode()
+            png_b64_str = bytes_to_b64_str(png_bytes)
 
         return super().as_serializable_dict() | {
             "media_type": "image/png;base64",
