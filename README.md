@@ -117,6 +117,7 @@ Thank you for considering contributing to skore! Join our mission to promote ope
   [![Discord](https://img.shields.io/badge/Discord-%235865F2.svg?logo=discord&logoColor=white)](https://discord.probabl.ai/)
 
 </div>
+
 ---
 
 Brought to you by
