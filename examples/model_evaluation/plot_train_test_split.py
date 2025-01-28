@@ -1,9 +1,9 @@
 """
 .. _example_train_test_split:
 
-================
-Train-test split
-================
+============================================================
+`train_test_split`: get diagnostics when splitting your data
+============================================================
 
 This example illustrates the motivation and the use of skore's
 :func:`skore.train_test_split` to get assistance when developing ML/DS projects.
