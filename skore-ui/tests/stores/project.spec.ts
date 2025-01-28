@@ -1,4 +1,4 @@
-import type { ProjectItemDto } from "@/dto";
+import type { ProjectDto, ProjectItemDto } from "@/dto";
 import { fetchProject } from "@/services/api";
 import { useProjectStore } from "@/stores/project";
 import { createTestingPinia } from "@pinia/testing";
@@ -81,11 +81,11 @@ describe("Project store", () => {
     const h1 = makeFakeViewItem("a");
     const h2 = makeFakeViewItem("a");
     const h3 = makeFakeViewItem("a");
-    const project = {
+    const project: ProjectDto = {
       items: {
         a: [h1, h2, h3],
       },
-      views: { default: ["a"] },
+      views: { default: [{ kind: "item", value: "a" }] },
     };
     await projectStore.setProject(project);
 

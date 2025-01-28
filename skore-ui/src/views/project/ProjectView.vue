@@ -236,10 +236,10 @@ main {
       & .editor-container {
         height: 0;
         flex: 1;
-        padding: 0 var(--spacing-20) var(--spacing-20) var(--spacing-20);
+        padding: 0 var(--spacing-24) var(--spacing-24) calc(var(--spacing-24) - var(--spacing-16));
 
         & .draggable {
-          min-height: calc(100dvh - var(--editor-height) - var(--spacing-20) * 2);
+          min-height: calc(100dvh - var(--editor-height) - var(--spacing-24) * 2);
         }
 
         & .item-note {
@@ -263,7 +263,7 @@ main {
 
           &.first {
             width: 100%;
-            height: var(--spacing-24);
+            height: var(--spacing-16);
 
             & .insert-cell {
               position: relative;

@@ -1,7 +1,7 @@
 import { acceptHMRUpdate, defineStore } from "pinia";
 import { ref, shallowRef, watch } from "vue";
 
-import { type LayoutDto, type ProjectDto, type ProjectItemDto } from "@/dto";
+import { type LayoutDto, type LayoutItemDto, type ProjectDto, type ProjectItemDto } from "@/dto";
 import { deserializeProjectItemDto, type PresentableItem } from "@/models";
 import { deleteView as deleteViewApi, fetchProject, putView, setNote } from "@/services/api";
 import { poll } from "@/services/utils";
@@ -32,7 +32,8 @@ export const useProjectStore = defineStore("project", () => {
    */
   function isKeyDisplayed(view: string, key: string) {
     const realKey = key.replace(" (self)", "");
-    const visibleKeys = views.value[view] ?? [];
+    const viewItems = views.value[view] ?? [];
+    const visibleKeys = viewItems.filter((i) => i.kind === "item").map((i) => i.value);
     return visibleKeys.includes(realKey);
   }
 
@@ -48,12 +49,13 @@ export const useProjectStore = defineStore("project", () => {
     let hasChanged = false;
     const realKey = key.replace(" (self)", "");
     if (!isKeyDisplayed(view, realKey)) {
+      const newItem: LayoutItemDto = { kind: "item", value: realKey };
       if (position === -1) {
-        views.value[view] = [...views.value[view], realKey];
+        views.value[view] = [...views.value[view], newItem];
       } else {
         views.value[view] = [
           ...views.value[view].slice(0, position),
-          realKey,
+          newItem,
           ...views.value[view].slice(position),
         ];
       }
@@ -73,7 +75,7 @@ export const useProjectStore = defineStore("project", () => {
     stopBackendPolling();
     if (isKeyDisplayed(view, key)) {
       const v = views.value[view];
-      views.value[view] = v.filter((k) => k !== key);
+      views.value[view] = v.filter((i) => i.kind === "item" && i.value !== key);
       await _persistView(view, views.value[view]);
     }
     await startBackendPolling();
@@ -347,7 +349,8 @@ export const useProjectStore = defineStore("project", () => {
     const r: ProjectPresentableItem[] = [];
     if (items.value !== null && currentView.value !== null) {
       const v = views.value[currentView.value];
-      for (const key of v) {
+      const keys = v.filter((i) => i.kind === "item").map((i) => i.value);
+      for (const key of keys) {
         const item =
           currentItemUpdateIndex[key] !== undefined
             ? getItemUpdate(key, currentItemUpdateIndex[key])
@@ -402,7 +405,11 @@ export const useProjectStore = defineStore("project", () => {
 
       if (!arraysMatch && currentView.value !== null) {
         const name = currentView.value;
-        views.value[name] = [...currentViewItems.value.map((item) => item.name)];
+        views.value[name] = [
+          ...currentViewItems.value.map(
+            (item) => ({ kind: "item", value: item.name }) as LayoutItemDto
+          ),
+        ];
         await _persistView(name, views.value[name]);
       }
     }

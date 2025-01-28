@@ -13,9 +13,19 @@ export interface ProjectItemDto {
 }
 
 /**
+ * A layout item.
+ *
+ * A view has items they can be a project item or a markdown item
+ */
+export interface LayoutItemDto {
+  kind: "markdown" | "item";
+  value: string;
+}
+
+/**
  * A layout is a list of keys that are visible in a view
  */
-export type LayoutDto = string[];
+export type LayoutDto = LayoutItemDto[];
 
 /**
  * A project is a collection of items and views
