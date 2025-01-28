@@ -18,13 +18,15 @@ logger.addHandler(NullHandler())  # Default to no output
 logger.setLevel(INFO)
 
 
-def open(
-    path: Optional[Union[str, Path]] = "project.skore",
-    *,
-    create: bool = True,
-    overwrite: bool = False,
-) -> Project:
-    return Project(path, create=create, overwrite=overwrite)
+def open(path: Optional[Union[str, Path]] = "project.skore"):
+    path = Path(path)
+    path = path.with_suffix(".skore")
+    path = path.resolve()
+
+    if not path.exists():
+        raise FileNotFoundError
+
+    return Project(path, exist_ok=True)
 
 
 class Project:
@@ -45,36 +47,39 @@ class Project:
         self,
         path: Optional[Union[str, Path]] = "project.skore",
         *,
-        create: bool = True,
-        overwrite: bool = False,
+        exist_ok: bool = False,
     ):
         self.path = Path(path)
         self.path = self.path.with_suffix(".skore")
         self.path = self.path.resolve()
 
-        if not create:
-            if not self.path.exists():
-                raise FileNotFoundError
+        if not exist_ok and self.path.exists():
+            raise FileExistsError
 
-            if not self.path.is_dir():
-                raise ValueError
+        self.__item_storage_dirpath = self.path / "items"
+        self.__view_storage_dirpath = self.path / "views"
 
-        item_storage_dirname = self.path / "items"
-        view_storage_dirname = self.path / "views"
+        # Create diskcache directories
+        self.__item_storage_dirpath.mkdir(parents=True, exist_ok=True)
+        self.__view_storage_dirpath.mkdir(parents=True, exist_ok=True)
 
-        if overwrite:
-            rmtree(item_storage_dirname, ignore_errors=True)
-            rmtree(view_storage_dirname, ignore_errors=True)
+        # Initialize repositories with dedicated storages
+        self.item_repository = ItemRepository(
+            DiskCacheStorage(self.__item_storage_dirpath)
+        )
+        self.view_repository = ViewRepository(
+            DiskCacheStorage(self.__view_storage_dirpath)
+        )
 
-        if create or overwrite:
-            item_storage_dirname.mkdir(parents=True, exist_ok=True)
-            view_storage_dirname.mkdir(parents=True, exist_ok=True)
-
-        self.item_repository = ItemRepository(DiskCacheStorage(item_storage_dirname))
-        self.view_repository = ViewRepository(DiskCacheStorage(view_storage_dirname))
-
-        if (create or overwrite) and ("default" not in self.view_repository):
+        # Ensure default view is available
+        if "default" not in self.view_repository:
             self.view_repository.put_view("default", View(layout=[]))
+
+    def clear(self):
+        rmtree(self.__item_storage_dirpath, ignore_errors=True)
+        rmtree(self.__view_storage_dirpath, ignore_errors=True)
+
+        self.__init__(self.path, exist_ok=False)
 
     def put(
         self,
