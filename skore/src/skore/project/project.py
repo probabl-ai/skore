@@ -65,6 +65,7 @@ class Project:
             self.view_repository.put_view("default", View(layout=[]))
 
     def clear(self):
+        """Clear project."""
         rmtree(self.__item_storage_dirpath, ignore_errors=True)
         rmtree(self.__view_storage_dirpath, ignore_errors=True)
 
