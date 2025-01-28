@@ -20,11 +20,19 @@ This example illustrates the motivation and the use of skore's
 
 # %%
 # We create and load the skore project from the current directory:
-
-# %%
 import skore
 
+# sphinx_gallery_start_ignore
+import os
+import tempfile
+from pathlib import Path
+
+temp_dir = tempfile.TemporaryDirectory()
+temp_dir_path = Path(temp_dir.name)
+os.chdir(temp_dir_path)
+# sphinx_gallery_end_ignore
 my_project = skore.open("my_project", create=True)
+
 
 # %%
 # Cross-validation in scikit-learn
@@ -154,13 +162,6 @@ my_project.put("cross_validation_reporter", reporter)
 
 reporter = my_project.get("cross_validation_reporter")
 reporter.plots.scores
-
-# %%
-# Cleanup the project
-# -------------------
-#
-# Let's clear the skore project (to avoid any conflict with other documentation
-# examples).
-
-# %%
-my_project.clear()
+# sphinx_gallery_start_ignore
+temp_dir.cleanup()
+# sphinx_gallery_end_ignore

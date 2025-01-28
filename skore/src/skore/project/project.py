@@ -7,7 +7,6 @@ from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 
 from skore.persistence.item import item_to_object, object_to_item
-from skore.persistence.view.view import View
 
 if TYPE_CHECKING:
     from skore.persistence import (
@@ -273,13 +272,3 @@ class Project:
         >>> project.delete_note("key", version=0)  # doctest: +SKIP
         """
         return self.item_repository.delete_item_note(key=key, version=version)
-
-    def clear(self):
-        """Delete all the contents of the project."""
-        # delete all the items
-        for item_key in self.keys():
-            self.delete(item_key)
-        for view_key in self.view_repository.keys():  # noqa: SIM118
-            self.view_repository.delete_view(view_key)
-        # recreate default view
-        self.view_repository.put_view("default", View(layout=[]))
