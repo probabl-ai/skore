@@ -150,9 +150,9 @@ jobs:
         shell: bash
         run: |
           curl --fail-with-body \
-               -X POST \
-               --url 'https://api.bunny.net/purge?url=https%3A%2F%2F${DOMAIN}%2F${VERSION}%2F%2A&async=false' \
-              --header 'AccessKey: ${ACCESS_KEY}'
+          -X POST \
+          --url 'https://api.bunny.net/purge?url=https%3A%2F%2F${DOMAIN}%2F${VERSION}%2F%2A&async=false' \
+          --header 'AccessKey: ${ACCESS_KEY}'
         env:
           ACCESS_KEY: ${{ secrets.BUNNY_API_KEY }}
           DOMAIN: ${{ vars.DOCUMENTATION_DOMAIN }}
@@ -226,6 +226,16 @@ jobs:
           ACTION: copy
           SOURCE: artifacts/
           DESTINATION:
+      - name: Purge CDN cache
+        shell: bash
+        run: |
+          curl --fail-with-body \
+          -X POST \
+          --url 'https://api.bunny.net/purge?url=https%3A%2F%2F${DOMAIN}%2F%2A.%2A&async=false' \
+          --header 'AccessKey: ${ACCESS_KEY}'
+        env:
+          ACCESS_KEY: ${{ secrets.BUNNY_API_KEY }}
+          DOMAIN: ${{ vars.DOCUMENTATION_DOMAIN }}
 
   sphinx-clean-artifacts:
     runs-on: ubuntu-latest
