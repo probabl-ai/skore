@@ -6,8 +6,8 @@ from collections.abc import Iterator
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from skore.persistence.abstract_storage import AbstractStorage
-    from skore.view.view import View
+    from skore.persistence.storage.abstract_storage import AbstractStorage
+    from skore.persistence.view.view import View
 
 
 class ViewRepository:
