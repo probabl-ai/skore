@@ -259,7 +259,16 @@ def cleanup_server(project: Project, timeout: float = 5.0) -> bool:
     return True
 
 
-def block_before_cleanup(project: Project, process: subprocess.Popen) -> bool:
+def block_before_cleanup(project: Project, process: subprocess.Popen) -> None:
+    """Block the main process until the server is terminated.
+
+    Parameters
+    ----------
+    project : Project
+        The project instance.
+    process : subprocess.Popen
+        The process running the server.
+    """
     from skore import console
 
     try:

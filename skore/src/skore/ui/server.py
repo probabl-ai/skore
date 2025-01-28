@@ -21,7 +21,7 @@ def run_server(port: int, project_path: str):
     project = _load(project_path)
     app = create_app(project=project)
 
-    config = uvicorn.Config(app=app, host="0.0.0.0", port=port, log_level="error")
+    config = uvicorn.Config(app=app, host="127.0.0.1", port=port, log_level="error")
     server = uvicorn.Server(config)
     server.run()
 

@@ -92,3 +92,31 @@ def test_cli_open(tmp_path, monkeypatch):
 
     with pytest.raises(FileNotFoundError):
         cli(["open", "nonexistent_project", "--no-create"])
+
+
+def test_cli_kill(tmp_project_path):
+    """Test that CLI kill command properly terminates all running servers."""
+    cli(
+        [
+            "launch",
+            str(tmp_project_path),
+            "--no-keep-alive",
+            "--no-open-browser",
+            "--verbose",
+        ]
+    )
+
+    from skore import open
+    from skore.project._launch import ServerInfo
+
+    project = open(tmp_project_path, serve=False)
+    pid_file = ServerInfo._get_pid_file_path(project)
+    assert pid_file.exists()
+
+    cli(["kill", "--verbose"])
+    assert not pid_file.exists()
+
+
+def test_cli_kill_no_servers():
+    """Test that CLI kill command works safely when no servers are running."""
+    cli(["kill", "--verbose"])

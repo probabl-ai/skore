@@ -1,3 +1,4 @@
+import json
 import os
 import socket
 
@@ -7,6 +8,7 @@ import pytest
 from skore.project._create import _create
 from skore.project._launch import (
     ServerInfo,
+    _kill_all_servers,
     _launch,
     block_before_cleanup,
     cleanup_server,
@@ -91,20 +93,24 @@ def test_cleanup_server_timeout(tmp_path, monkeypatch):
     skore_project = _create(tmp_path / "test_project")
 
     class MockProcess:
-        def __init__(self, pid):
-            self.terminate_called = False
-            self.kill_called = False
+        def __init__(self):
+            self.poll_count = 0
+
+        def poll(self):
+            self.poll_count += 1
+            return None if self.poll_count == 5 else 0
 
         def terminate(self):
             self.terminate_called = True
 
-        def wait(self, timeout):
-            raise psutil.TimeoutExpired(1, timeout)
+        def wait(self, timeout=0.1):
+            self.wait_called = True
+            raise psutil.TimeoutExpired(timeout)
 
         def kill(self):
             self.kill_called = True
 
-    mock_process = MockProcess(1234)
+    mock_process = MockProcess()
     monkeypatch.setattr(psutil, "Process", lambda pid: mock_process)
 
     server_info = ServerInfo(skore_project, port=8000, pid=1234)
@@ -114,6 +120,7 @@ def test_cleanup_server_timeout(tmp_path, monkeypatch):
     cleanup_server(skore_project)
 
     assert mock_process.terminate_called
+    assert mock_process.wait_called
     assert mock_process.kill_called
     assert not server_info.pid_file.exists()
     assert skore_project._server_info is None
@@ -195,34 +202,98 @@ def test_launch_server_timeout(tmp_path, monkeypatch):
         _launch(skore_project, open_browser=False, keep_alive=False)
 
 
-def test_block_before_cleanup(tmp_path, capsys, monkeypatch):
-    """Check the behaviour of the block_before_cleanup function."""
+def test_block_before_cleanup_keyboard_interrupt(tmp_path, capsys, monkeypatch):
+    """Test block_before_cleanup behavior when receiving a KeyboardInterrupt."""
     skore_project = _create(tmp_path / "test_project")
 
     class MockProcess:
-        def __init__(self):
-            self._poll_count = 0
-
         def poll(self):
-            self._poll_count += 1
-            # Return None for first call, then process ID to simulate termination
-            return None if self._poll_count == 1 else 12345
+            return None
 
-    # Test normal termination
     mock_process = MockProcess()
-    block_before_cleanup(skore_project, mock_process)
-    output = capsys.readouterr().out
-    assert "Press Ctrl+C to stop the server" in output
 
-    # Test keyboard interrupt
-    mock_process = MockProcess()
+    # Mock time.sleep to raise KeyboardInterrupt on first call
+    sleep_called = False
 
     def mock_sleep(*args):
-        raise KeyboardInterrupt()
+        nonlocal sleep_called
+        if not sleep_called:
+            sleep_called = True
+            raise KeyboardInterrupt()
 
     monkeypatch.setattr("time.sleep", mock_sleep)
 
     block_before_cleanup(skore_project, mock_process)
+
     output = capsys.readouterr().out
     assert "Press Ctrl+C to stop the server" in output
-    assert "Received keyboard interrupt" in output
+    assert "Received keyboard interrupt, shutting down" in output
+
+
+def test_kill_all_servers(tmp_path, monkeypatch):
+    """Test that _kill_all_servers properly terminates all running servers."""
+
+    def mock_user_state_path(*args, **kwargs):
+        # let's write in a temporary directory to avoid side effects from other tests
+        return tmp_path
+
+    monkeypatch.setattr("platformdirs.user_state_path", mock_user_state_path)
+
+    pid_files = [
+        {"pid": 1234, "port": 8000},
+        {"pid": 5678, "port": 8001},
+    ]
+
+    for i, info in enumerate(pid_files):
+        pid_file = tmp_path / f"skore-server-test{i}.json"
+        with open(pid_file, "w") as f:
+            json.dump(info, f)
+
+    terminated_pids, killed_pids = [], []
+
+    class MockProcess:
+        def __init__(self, pid):
+            self.pid = pid
+
+        def terminate(self):
+            terminated_pids.append(self.pid)
+
+        def wait(self, timeout):
+            if self.pid == 1234:  # First process terminates normally
+                return
+            raise psutil.TimeoutExpired(timeout)  # Second process needs to be killed
+
+        def kill(self):
+            killed_pids.append(self.pid)
+
+    def mock_process(pid):
+        return MockProcess(pid)
+
+    monkeypatch.setattr(psutil, "Process", mock_process)
+
+    _kill_all_servers()
+    assert sorted(terminated_pids) == [1234, 5678]
+    assert killed_pids == [5678]
+    assert not list(tmp_path.glob("skore-server-*.json"))
+
+
+def test_kill_all_servers_no_such_process(tmp_path, monkeypatch):
+    """Test _kill_all_servers when processes don't exist."""
+
+    def mock_user_state_path(*args, **kwargs):
+        # let's write in a temporary directory to avoid side effects from other tests
+        return tmp_path
+
+    monkeypatch.setattr("platformdirs.user_state_path", mock_user_state_path)
+
+    pid_file = tmp_path / "skore-server-test.json"
+    with open(pid_file, "w") as f:
+        json.dump({"pid": 1234, "port": 8000}, f)
+
+    def mock_process(pid):
+        raise psutil.NoSuchProcess(pid)
+
+    monkeypatch.setattr(psutil, "Process", mock_process)
+
+    _kill_all_servers()
+    assert not list(tmp_path.glob("skore-server-*.json"))
