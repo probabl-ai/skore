@@ -1314,11 +1314,13 @@ const richText = ref(
             @drop="onItemDrop($event)"
             @dragover.prevent
           >
-            <template #item="{ name: id, color, content }">
-              <div :style="{ backgroundColor: color, color: 'white' }">
-                <div data-drag-image-selector :style="{ backgroundColor: color }">ID: {{ id }}</div>
+            <template #item="{ item }">
+              <div :style="{ backgroundColor: item.color, color: 'white' }">
+                <div data-drag-image-selector :style="{ backgroundColor: item.color }">
+                  ID: {{ item.name }}
+                </div>
                 <ul>
-                  <li v-for="(c, i) in content" :key="i">{{ c }}</li>
+                  <li v-for="(c, i) in item.content" :key="i">{{ c }}</li>
                 </ul>
               </div>
             </template>

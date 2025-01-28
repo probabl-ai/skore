@@ -194,7 +194,7 @@ onBeforeUnmount(() => {
           :class="{ visible: dropIndicatorPosition === -1 && index === 0 }"
         />
         <div class="content" :class="{ moving: movingItemIndex === index }">
-          <slot name="item" v-bind="item"></slot>
+          <slot name="item" v-bind="{ item, index }"></slot>
         </div>
         <div class="drop-indicator bottom" :class="{ visible: dropIndicatorPosition === index }" />
       </div>

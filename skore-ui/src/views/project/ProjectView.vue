@@ -104,23 +104,31 @@ onBeforeUnmount(() => {
             @drop="onItemDrop($event)"
             @dragover.prevent
           >
-            <template #item="{ name, mediaType, data, createdAt, updatedAt, updates, note }">
+            <template #item="{ item, index }">
               <ProjectViewCard
-                :key="name"
-                :title="name"
-                :subtitle="getItemSubtitle(createdAt)"
+                :key="item.name"
+                :title="item.name"
+                :subtitle="getItemSubtitle(item.createdAt)"
                 :showActions="props.showCardActions"
-                :updates="updates"
-                :current-update-index="projectStore.getCurrentItemUpdateIndex(name)"
-                :data-name="name"
-                @card-removed="onCardRemoved(name)"
-                @update-selected="projectStore.setCurrentItemUpdateIndex(name, $event)"
+                :updates="item.updates"
+                :current-update-index="projectStore.getCurrentItemUpdateIndex(item.name)"
+                :data-name="item.name"
+                @card-removed="onCardRemoved(item.name)"
+                @update-selected="projectStore.setCurrentItemUpdateIndex(item.name, $event)"
               >
-                <ItemNote :name="name" :note="note" />
-                <MediaWidgetSelector :item="{ name, mediaType, data, createdAt, updatedAt }" />
+                <ItemNote :name="item.name" :note="item.note" />
+                <MediaWidgetSelector
+                  :item="{
+                    name: item.name,
+                    mediaType: item.mediaType,
+                    data: item.data,
+                    createdAt: item.createdAt,
+                    updatedAt: item.updatedAt,
+                  }"
+                />
               </ProjectViewCard>
               <div class="insert-cell-wrapper">
-                <InsertCell @click="console.log('coucou', name)" />
+                <InsertCell @click="console.log('coucou', index)" />
               </div>
             </template>
           </DraggableList>
@@ -228,10 +236,10 @@ main {
       & .editor-container {
         height: 0;
         flex: 1;
-        padding: var(--spacing-24);
+        padding: 0 var(--spacing-20) var(--spacing-20) var(--spacing-20);
 
         & .draggable {
-          min-height: calc(100dvh - var(--editor-height) - var(--spacing-24) * 2);
+          min-height: calc(100dvh - var(--editor-height) - var(--spacing-20) * 2);
         }
 
         & .item-note {
@@ -240,14 +248,6 @@ main {
 
         & .insert-cell-wrapper {
           position: relative;
-
-          &.first {
-            position: absolute;
-            top: var(--spacing-12);
-            width: 100%;
-            height: var(--spacing-24);
-            margin: 0 var(--spacing-24);
-          }
 
           & .insert-cell {
             position: absolute;
@@ -258,6 +258,17 @@ main {
 
             &:hover {
               opacity: 1;
+            }
+          }
+
+          &.first {
+            width: 100%;
+            height: var(--spacing-24);
+
+            & .insert-cell {
+              position: relative;
+              top: var(--spacing-6);
+              padding-left: var(--spacing-12);
             }
           }
         }
