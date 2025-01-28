@@ -55,7 +55,14 @@ est_report_rf = EstimatorReport(
 # %%
 # here starts the example to compare.
 # to create the comparison object:
-# comp = skore.Comparator(estimator_reports = [est_report_lr, est_report_rf])
+# comp = skore.Comparator(reports = [est_report_lr, est_report_rf])
+# comp = skore.Comparator(reports = project.get("est_rep", version = "all"))
+# to check on init
+# - that all estimators are in the same ml use case
+# - that all X_train, y_train have the same hash (for estimator)
+# - that all X_test, y_test have the same hash (for estimator)
+# - that the reports are estimator reports (for now)
+# - that all the reports have the same nature
 
 # %%
 import plotly.express as px
@@ -70,7 +77,7 @@ fig.update_traces(marker_size=10)
 fig.show()
 # with proper legend of course.
 # border cases:
-# - what if several estimators have the same model name?
+# - what if several estimators have the same model name? > in v0, we rename ourselves by adding #1
 
 
 # %%
@@ -93,10 +100,11 @@ df_metrics = pd.concat(
     ignore_index=False,
 )
 # border cases:
-# - what happen if we have computed a score for one model, and not for the other?
-# - what if several estimators have the same model name?
+# - what happen if we have computed a score for one model, and not for the other? > actually not a problem.
+# - what if several estimators have the same model name? > cf above, adding #n (1, 2, 3...)
 
 # comp.metrics.metric()
+# comp.metrics.custom_metric(scoring = my_func)
 df_metrics.style.apply(highlight_max, axis=0)
 
 # %%
@@ -104,3 +112,5 @@ print("fin de l'example")
 # sphinx_gallery_start_ignore
 temp_dir.cleanup()
 # sphinx_gallery_end_ignore
+
+# %%
