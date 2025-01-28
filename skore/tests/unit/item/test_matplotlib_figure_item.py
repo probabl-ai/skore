@@ -3,6 +3,7 @@ import io
 
 import joblib
 import pytest
+from matplotlib import get_backend
 from matplotlib.figure import Figure
 from matplotlib.pyplot import subplots
 from matplotlib.testing.compare import compare_images
@@ -84,10 +85,28 @@ class TestMatplotlibFigureItem:
         }
 
     def test_backend_switch(self):
-        import matplotlib
-
-        backend = matplotlib.get_backend()
+        backend = get_backend()
         # hoppefuly PostScript is never the default in tests ^^
         with mpl_backend(backend="ps"):
-            assert matplotlib.get_backend() == "ps"
-        assert matplotlib.get_backend() == backend
+            assert get_backend() == "ps"
+        assert get_backend() == backend
+
+    def test_backend_switch_in_thread(self):
+        # as default osx backend could crash the interpreter
+        # if it tries to open a window in a background thread
+        # test that the figure property is usable in a thread
+        backend = get_backend()
+
+        def foo():
+            figure, ax = subplots()
+            ax.plot([1, 2, 3, 4], [1, 4, 2, 3])
+            φ = MatplotlibFigureItem.factory(figure)
+            assert isinstance(φ.figure, Figure)
+
+        import threading
+
+        t = threading.Thread(target=foo)
+        t.start()
+        t.join()
+
+        assert get_backend() == backend
