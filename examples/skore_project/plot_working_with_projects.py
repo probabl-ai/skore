@@ -29,8 +29,7 @@ os.chdir(temp_dir_path)
 my_project = skore.open("my_project", create=True)
 
 # %%
-# In the following, we will se that there is a very simple and unique API for all
-# objects:
+# There is a very simple and unique API for all objects:
 #
 # .. code-block:: python
 #
@@ -38,6 +37,9 @@ my_project = skore.open("my_project", create=True)
 #
 # No need to remember ``plt.savefig(...)``, ``pd.to_csv(...)``, ``np.save(...)``, etc
 # for each type of object.
+#
+# In the following, we will list all the different types of objects that we can
+# :func:`~skore.Project.put` inside a skore :class:`~skore.Project`.
 
 
 # %%
@@ -326,6 +328,8 @@ my_anim_plotly_fig
 # PIL image:
 
 # %%
+# TODO: change this
+
 import io
 
 import PIL
@@ -372,6 +376,14 @@ diabetes = load_diabetes()
 X = diabetes.data[:150]
 y = diabetes.target[:150]
 my_pipeline.fit(X, y)
+
+# %%
+# Storing skore estimator reports
+# ===============================
+
+# %%
+# TODO
+
 
 my_project.put("my_fitted_pipeline", my_pipeline)
 my_pipeline
