@@ -1,10 +1,10 @@
-"""Test CLI properly calls the app."""
-
 import pytest
 from skore.cli.cli import cli
 
 
-def test_cli_launch(monkeypatch):
+def test_cli(monkeypatch, tmp_path):
+    """cli passes its arguments down to `launch`."""
+
     launch_project_name = None
     launch_port = None
     launch_open_browser = None
@@ -21,15 +21,24 @@ def test_cli_launch(monkeypatch):
         launch_open_browser = open_browser
         launch_verbose = verbose
 
-    monkeypatch.setattr("skore.cli.cli.__launch", fake_launch)
-    cli(["launch", "project.skore", "--port", "0", "--no-open-browser", "--verbose"])
+    monkeypatch.setattr("skore.cli.cli.launch", fake_launch)
 
-    assert launch_project_name == "project.skore"
-    assert launch_port == 0
-    assert not launch_open_browser
-    assert launch_verbose
+    cli(
+        [
+            str(tmp_path / "my_project.skore"),
+            "--port",
+            "888",
+            "--no-open-browser",
+            "--verbose",
+        ]
+    )
+
+    assert launch_project_name == str(tmp_path / "my_project.skore")
+    assert launch_port == 888
+    assert launch_open_browser is False
+    assert launch_verbose is True
 
 
-def test_cli_launch_no_project_name():
+def test_cli_no_project_name():
     with pytest.raises(SystemExit):
-        cli(["launch", "--port", 0, "--no-open-browser", "--verbose"])
+        cli([])
