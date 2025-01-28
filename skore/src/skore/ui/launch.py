@@ -1,4 +1,4 @@
-"""Implement the "launch" command."""
+"""Implement the "launch" function."""
 
 import webbrowser
 from contextlib import asynccontextmanager
@@ -9,12 +9,12 @@ import uvicorn
 from fastapi import FastAPI
 
 from skore.cli import logger
-from skore.project import open
+from skore.project import Project
 from skore.ui.app import create_app
 from skore.utils._logger import logger_context
 
 
-def __launch(
+def launch(
     project_name: Union[str, Path],
     port: int,
     open_browser: bool,
@@ -36,7 +36,7 @@ def __launch(
     from skore import console  # avoid circular import
 
     with logger_context(logger, verbose):
-        project = open(project_name)
+        project = Project(project_name)
 
         @asynccontextmanager
         async def lifespan(app: FastAPI):
