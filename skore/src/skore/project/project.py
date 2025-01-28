@@ -18,17 +18,6 @@ logger.addHandler(NullHandler())  # Default to no output
 logger.setLevel(INFO)
 
 
-def open(path: Optional[Union[str, Path]] = "project.skore"):
-    path = Path(path)
-    path = path.with_suffix(".skore")
-    path = path.resolve()
-
-    if not path.exists():
-        raise FileNotFoundError
-
-    return Project(path, exist_ok=True)
-
-
 class Project:
     """
     A collection of items arranged in views and stored in a storage.

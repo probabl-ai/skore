@@ -10,7 +10,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.types import Lifespan
 
-from skore.project import Project, open
+from skore.project import Project
 from skore.ui.dependencies import get_static_path
 from skore.ui.project_routes import router as project_router
 
@@ -20,11 +20,6 @@ def create_app(
 ) -> FastAPI:
     """FastAPI factory used to create the API to interact with `stores`."""
     app = FastAPI(lifespan=lifespan)
-
-    # Give the app access to the project
-    if not project:
-        project = open("project.skore")
-
     app.state.project = project
 
     # Enable CORS support on all routes, for all origins and methods.

@@ -19,7 +19,7 @@ def argumentparser():
 
     parser.add_argument(
         "project_name",
-        help="the name or path of the project to open",
+        help="the name or path of the project to be created or opened",
     )
 
     parser.add_argument(
