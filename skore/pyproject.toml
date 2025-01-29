@@ -48,7 +48,7 @@ Issues = "https://github.com/probabl-ai/skore/issues"
 "Release notes" = "https://github.com/probabl-ai/skore/releases"
 
 [project.scripts]
-skore = "skore.__main__:main"
+skore-ui = "skore.__main__:main"
 
 [build-system]
 requires = ["hatchling"]

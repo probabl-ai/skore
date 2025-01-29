@@ -18,7 +18,6 @@ from skore.ui.project_routes import router as project_router
 def create_app(project: Project, lifespan: Optional[Lifespan] = None) -> FastAPI:
     """FastAPI factory used to create the API to interact with `stores`."""
     app = FastAPI(lifespan=lifespan)
-
     app.state.project = project
 
     # Enable CORS support on all routes, for all origins and methods.

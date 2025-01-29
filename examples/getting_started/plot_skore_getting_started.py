@@ -49,7 +49,7 @@ temp_dir = tempfile.TemporaryDirectory()
 temp_dir_path = Path(temp_dir.name)
 os.chdir(temp_dir_path)
 # sphinx_gallery_end_ignore
-my_project = skore.open("my_project", create=True, serve=False)
+my_project = skore.Project("my_project")
 
 # %%
 # Now that the project exists, we can write some Python code (in the same

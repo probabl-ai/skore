@@ -19,7 +19,6 @@ These functions and classes are meant for managing a Project.
     :template: base.rst
     :caption: Managing a project
 
-    open
     Project
     Project.put
     Project.get

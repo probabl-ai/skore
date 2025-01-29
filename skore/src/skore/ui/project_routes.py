@@ -53,14 +53,14 @@ def __project_as_serializable(project: Project) -> SerializableProject:
     items = {
         key: [
             __item_as_serializable(key, item)
-            for item in project.item_repository.get_item_versions(key)
+            for item in project._item_repository.get_item_versions(key)
         ]
-        for key in project.item_repository
+        for key in project._item_repository
     }
 
     views = {
-        key: project.view_repository.get_view(key).layout
-        for key in project.view_repository
+        key: project._view_repository.get_view(key).layout
+        for key in project._view_repository
     }
 
     return SerializableProject(
@@ -85,7 +85,7 @@ async def put_view(request: Request, key: str, layout: Layout):
     project: Project = request.app.state.project
 
     view = View(layout=layout)
-    project.view_repository.put_view(key, view)
+    project._view_repository.put_view(key, view)
 
     return __project_as_serializable(project)
 
@@ -96,7 +96,7 @@ async def delete_view(request: Request, key: str):
     project: Project = request.app.state.project
 
     try:
-        project.view_repository.delete_view(key)
+        project._view_repository.delete_view(key)
     except KeyError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="View not found"
@@ -119,8 +119,8 @@ async def get_activity(
     return sorted(
         (
             __item_as_serializable(key, version)
-            for key in project.item_repository
-            for version in project.item_repository.get_item_versions(key)
+            for key in project._item_repository
+            for version in project._item_repository.get_item_versions(key)
             if datetime.fromisoformat(version.updated_at) > after
         ),
         key=operator.attrgetter("updated_at"),

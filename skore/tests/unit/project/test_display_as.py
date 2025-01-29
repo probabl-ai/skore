@@ -10,7 +10,7 @@ def monkeypatch_datetime(monkeypatch, MockDatetime):
 def test_str_without_display_as(in_memory_project, mock_nowstr):
     in_memory_project.put("key", "<str>")
 
-    item = in_memory_project.item_repository.get_item("key")
+    item = in_memory_project._item_repository.get_item("key")
 
     assert isinstance(item, MediaItem)
     assert item.media == "<str>"
@@ -21,7 +21,7 @@ def test_str_without_display_as(in_memory_project, mock_nowstr):
 def test_str_with_display_as(in_memory_project, mock_nowstr, media_type):
     in_memory_project.put("key", "<str>", display_as=media_type.name)
 
-    item = in_memory_project.item_repository.get_item("key")
+    item = in_memory_project._item_repository.get_item("key")
 
     assert isinstance(item, MediaItem)
     assert item.media == "<str>"

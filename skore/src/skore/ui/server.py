@@ -4,7 +4,7 @@ import argparse
 
 import uvicorn
 
-from skore.project._load import _load
+from skore.project.project import Project
 from skore.ui.app import create_app
 
 
@@ -23,7 +23,7 @@ def run_server(port: int, project_path: str) -> uvicorn.Server:
     uvicorn.Server
         The uvicorn server instance.
     """
-    project = _load(project_path)
+    project = Project(project_path, if_exists="load")
     app = create_app(project=project)
 
     config = uvicorn.Config(app=app, host="127.0.0.1", port=port, log_level="error")

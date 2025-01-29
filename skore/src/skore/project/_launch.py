@@ -328,19 +328,20 @@ def _launch(
     ----------
     project : Project
         The project to launch.
-    keep_alive : str or bool, default="auto"
+    keep_alive : str or bool, optional
         Whether to keep the server alive once the main process finishes. When False,
         the server will be terminated when the main process finishes. When True,
         the server will be kept alive until interrupted by the user (Ctrl+C).
         When `"auto"`, the server will be kept alive if the current execution context
-        is not a notebook-like environment.
-    port : int, default=None
+        is not a notebook-like environment. Default "auto".
+    port : int, optional
         The port to use for the server. If None, a free port will be found starting from
-        22140.
-    open_browser : bool, default=True
-        Whether to open the browser. By default, the browser is opened.
-    verbose : bool, default=False
-        Whether to print verbose output. By default, no output is printed.
+        22140. Default None.
+    open_browser : bool, optional
+        Whether to open the browser. By default, the browser is opened. Default True.
+    verbose : bool, optional
+        Whether to print verbose output. By default, no output is printed. Default
+        False.
     """
     from skore import console  # avoid circular import
 
