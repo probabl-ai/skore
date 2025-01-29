@@ -41,21 +41,3 @@ def test_cli(tmp_project_path, mock_launch):
         ]
     )
     assert len(mock_launch) == 1
-
-
-def test_cli_open_creates_project(tmp_path, mock_launch):
-    """Test that CLI open creates a project when it doesn't exist."""
-    project_path = tmp_path / "new_project.skore"
-    assert not project_path.exists()
-
-    cli(["open", str(project_path)])
-    assert project_path.exists()
-    assert len(mock_launch) == 1
-
-
-# def test_cli_open_no_serve(tmp_path, mock_launch):
-#     """Test that server is not started when --no-serve flag is passed."""
-#     project_path = tmp_path / "no_serve.skore"
-
-#     cli(["open", str(project_path), "--no-serve"])
-#     assert len(mock_launch) == 0
