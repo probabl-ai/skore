@@ -37,6 +37,21 @@ def test_init(tmp_path):
     Project(dirpath, exist_ok=True)
 
 
+def test_clear(tmp_path):
+    dirpath = tmp_path / "my-project.skore"
+    project = Project(dirpath)
+
+    project.put("<key>", "<value>")
+
+    assert project.keys() == ["<key>"]
+
+    project.clear()
+
+    assert project.keys() == []
+    assert project.item_repository.keys() == []
+    assert project.view_repository.keys() == ["default"]
+
+
 def test_put_string_item(in_memory_project):
     in_memory_project.put("string_item", "Hello, World!")
     assert in_memory_project.get("string_item") == "Hello, World!"

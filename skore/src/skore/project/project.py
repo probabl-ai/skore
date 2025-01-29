@@ -5,7 +5,6 @@ from __future__ import annotations
 from collections.abc import Iterator
 from logging import INFO, NullHandler, getLogger
 from pathlib import Path
-from shutil import rmtree
 from typing import Any, Literal, Optional, Union
 
 from skore.persistence.item import item_to_object, object_to_item
@@ -81,11 +80,15 @@ class Project:
             self.view_repository.put_view("default", View(layout=[]))
 
     def clear(self):
-        """Clear project."""
-        rmtree(self.__item_storage_dirpath, ignore_errors=True)
-        rmtree(self.__view_storage_dirpath, ignore_errors=True)
+        """Clear the project."""
+        for item_key in self.item_repository:
+            self.item_repository.delete_item(item_key)
 
-        self.__init__(self.path, exist_ok=False)
+        for view_key in self.view_repository:
+            self.view_repository.delete_view(view_key)
+
+        # Ensure default view is available
+        self.view_repository.put_view("default", View(layout=[]))
 
     def put(
         self,
