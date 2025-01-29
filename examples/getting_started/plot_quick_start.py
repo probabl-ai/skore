@@ -77,10 +77,10 @@ my_project.put("roc_plot", roc_plot)
 
 # %%
 df_get = my_project.get("df_cv_report_metrics")
-df_get
 # sphinx_gallery_start_ignore
 temp_dir.cleanup()
 # sphinx_gallery_end_ignore
+df_get
 
 # %%
 # .. admonition:: What's next?
