@@ -11,6 +11,9 @@ from rich.progress import (
 def progress_decorator(description):
     """Decorate class methods to add a progress bar.
 
+    This decorator adds a Rich progress bar to class methods, displaying progress
+    during execution. The progress bar automatically disappears after completion. 
+    
     Parameters
     ----------
     description : str or callable
@@ -43,7 +46,7 @@ def progress_decorator(description):
                     ),
                     TextColumn("[orange1]{task.percentage:>3.0f}%"),
                     expand=False,
-                    transient=True
+                    transient=True,
                 )
                 progress.start()
 
