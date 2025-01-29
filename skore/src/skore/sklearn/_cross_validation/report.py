@@ -88,7 +88,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     >>> estimator = LogisticRegression()
     >>> from skore import CrossValidationReport
     >>> report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=2)
-    Processing cross-validation ...
     """
 
     _ACCESSOR_CONFIG = {
@@ -181,7 +180,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
-        Processing cross-validation ...
         >>> report.cache_predictions()
         Cross-validation predictions ...
         Caching predictions ...
@@ -216,7 +214,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
-        Processing cross-validation ...
         >>> report.cache_predictions()
         Cross-validation predictions ...
         Caching predictions ...

@@ -97,7 +97,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
-        Processing cross-validation ...
         >>> report.metrics.report_metrics(
         ...     scoring=["precision", "recall"], pos_label=1, aggregate=["mean", "std"]
         ... )
@@ -211,7 +210,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
-        Processing cross-validation ...
         >>> report.metrics.accuracy()
         Compute metric for each split ...
         Metric                       Accuracy (↗︎)
@@ -291,7 +289,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
-        Processing cross-validation ...
         >>> report.metrics.precision()
         Compute metric for each split ...
         Metric                      Precision (↗︎)
@@ -375,7 +372,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
-        Processing cross-validation ...
         >>> report.metrics.recall()
         Compute metric for each split ...
         Metric                      Recall (↗︎)
@@ -421,7 +417,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
-        Processing cross-validation ...
         >>> report.metrics.brier_score()
         Compute metric for each split ...
         Metric                       Brier score (↘︎)
@@ -507,7 +502,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
-        Processing cross-validation ...
         >>> report.metrics.roc_auc()
         Compute metric for each split ...
         Metric                       ROC AUC (↗︎)
@@ -554,7 +548,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
-        Processing cross-validation ...
         >>> report.metrics.log_loss()
         Compute metric for each split ...
         Metric                       Log loss (↘︎)
@@ -611,7 +604,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> X, y = load_diabetes(return_X_y=True)
         >>> regressor = Ridge()
         >>> report = CrossValidationReport(regressor, X=X, y=y, cv_splitter=2)
-        Processing cross-validation ...
         >>> report.metrics.r2()
         Compute metric for each split ...
         Metric           R² (↗︎)
@@ -669,7 +661,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> X, y = load_diabetes(return_X_y=True)
         >>> regressor = Ridge()
         >>> report = CrossValidationReport(regressor, X=X, y=y, cv_splitter=2)
-        Processing cross-validation ...
         >>> report.metrics.rmse()
         Compute metric for each split ...
         Metric          RMSE (↘︎)
@@ -745,7 +736,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> X, y = load_diabetes(return_X_y=True)
         >>> regressor = Ridge()
         >>> report = CrossValidationReport(regressor, X=X, y=y, cv_splitter=2)
-        Processing cross-validation ...
         >>> report.metrics.custom_metric(
         ...     metric_function=mean_absolute_error,
         ...     response_method="predict",
@@ -975,7 +965,6 @@ class _PlotMetricsAccessor(_BaseAccessor):
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
-        Processing cross-validation ...
         >>> display = report.metrics.plot.roc()
         Computing predictions for display ...
         >>> display.plot(roc_curve_kwargs={"color": "tab:red"})
@@ -1026,7 +1015,6 @@ class _PlotMetricsAccessor(_BaseAccessor):
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
-        Processing cross-validation ...
         >>> display = report.metrics.plot.precision_recall()
         Computing predictions for display ...
         >>> display.plot()
@@ -1101,7 +1089,6 @@ class _PlotMetricsAccessor(_BaseAccessor):
         >>> X, y = load_diabetes(return_X_y=True)
         >>> regressor = Ridge()
         >>> report = CrossValidationReport(regressor, X=X, y=y, cv_splitter=2)
-        Processing cross-validation ...
         >>> display = report.metrics.plot.prediction_error(
         ...     kind="actual_vs_predicted"
         ... )
