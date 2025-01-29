@@ -200,7 +200,7 @@ def test_cross_validation_reporter(in_memory_project, fixture_name, request):
 
     in_memory_project.put("cross-validation", reporter)
 
-    retrieved_item = in_memory_project.item_repository.get_item("cross-validation")
+    retrieved_item = in_memory_project._item_repository.get_item("cross-validation")
     assert isinstance(retrieved_item, CrossValidationReporterItem)
 
 

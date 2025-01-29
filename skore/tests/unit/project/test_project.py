@@ -48,8 +48,8 @@ def test_clear(tmp_path):
     project.clear()
 
     assert project.keys() == []
-    assert project.item_repository.keys() == []
-    assert project.view_repository.keys() == ["default"]
+    assert project._item_repository.keys() == []
+    assert project._view_repository.keys() == ["default"]
 
 
 def test_put_string_item(in_memory_project):
