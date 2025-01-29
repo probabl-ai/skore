@@ -36,7 +36,7 @@ def launch(
     from skore import console  # avoid circular import
 
     with logger_context(logger, verbose):
-        project = Project(project_name)
+        project = Project(project_name, exist_ok=True)
 
         @asynccontextmanager
         async def lifespan(app: FastAPI):
