@@ -43,6 +43,7 @@ def progress_decorator(description):
                     ),
                     TextColumn("[orange1]{task.percentage:>3.0f}%"),
                     expand=False,
+                    transient=True
                 )
                 progress.start()
 
