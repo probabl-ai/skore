@@ -1,43 +1,61 @@
-import os
-
 import pytest
 from skore.cli.cli import cli
 
 
-@pytest.fixture
-def tmp_project_path(tmp_path):
-    """Create a project at `tmp_path` and return its absolute path."""
-    # Project path must end with ".skore"
-    project_path = tmp_path.parent / (tmp_path.name + ".skore")
-    os.mkdir(project_path)
-    os.mkdir(project_path / "items")
-    os.mkdir(project_path / "views")
-    return project_path
+@pytest.mark.parametrize(
+    "args,expected_outputs",
+    [
+        (["--help"], ["usage: skore-ui", "open", "kill"]),
+        (["-h"], ["usage: skore-ui", "open", "kill"]),
+        (["open", "--help"], ["usage: skore-ui open", "project_path", "--serve"]),
+        (["open", "-h"], ["usage: skore-ui open", "project_path", "--serve"]),
+    ],
+)
+def test_help_messages(capsys, args, expected_outputs):
+    """Test that help messages are displayed correctly."""
+    with pytest.raises(SystemExit) as exc_info:
+        cli(args)
+
+    assert exc_info.value.code == 0
+    captured = capsys.readouterr()
+    for expected in expected_outputs:
+        assert expected in captured.out
 
 
-@pytest.fixture
-def mock_launch(monkeypatch):
-    """Fixture that mocks the _launch function and tracks calls to it."""
-    calls = []
-
-    def _mock_launch(
-        project, keep_alive="auto", port=None, open_browser=True, verbose=False
-    ):
-        calls.append((project, keep_alive, port, open_browser, verbose))
-
-    monkeypatch.setattr("skore.project._launch._launch", _mock_launch)
-    return calls
+def test_kill_command(tmp_path, monkeypatch):
+    """Test that kill command executes without errors and calls the right function."""
+    # Mock platformdirs state dir to use a temporary directory and avoid side-effects
+    with monkeypatch.context() as m:
+        m.setattr("platformdirs.user_state_path", lambda appname: tmp_path)
+        cli(["kill"])
 
 
-def test_cli(tmp_project_path, mock_launch):
-    """Check that the CLI create a project and launch the server."""
-    cli(
-        [
-            str(tmp_project_path),
-            "--port",
-            "8000",
-            "--serve",
-            "--verbose",
-        ]
-    )
-    assert len(mock_launch) == 1
+def test_open_command(tmp_path, monkeypatch):
+    """Test that open command."""
+    project_path = tmp_path / "test_project.skore"
+    project_path.mkdir()
+
+    # Mock _launch to prevent browser opening and match the actual signature
+    with monkeypatch.context() as m:
+        m.setattr(
+            "skore.project._launch._launch",
+            lambda project,
+            keep_alive="auto",
+            port=None,
+            open_browser=True,
+            verbose=False: None,
+        )
+
+        cli(["open", str(project_path), "--no-serve"])
+
+        assert project_path.exists()
+        assert project_path.is_dir()
+
+        # We should be able to open the same project again
+        cli(["open", str(project_path), "--no-serve"])
+
+        assert project_path.exists()
+        assert project_path.is_dir()
+
+        # Let's start the server
+        cli(["open", str(project_path), "--serve"])

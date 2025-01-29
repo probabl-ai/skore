@@ -113,7 +113,7 @@ class ServerInfo:
         """
         pid_file = cls._get_pid_file_path(project)
         if not pid_file.exists():
-            return
+            return None
 
         info = json.load(pid_file.open())
         return cls(project, info["port"], info["pid"])

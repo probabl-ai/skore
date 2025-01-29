@@ -36,16 +36,25 @@ def test_find_free_port():
         sock.close()
 
 
-def test_server_info(on_disk_project):
+def test_server_info(on_disk_project, in_memory_project):
     """Check the ServerInfo class behaviour."""
     server_info = ServerInfo(on_disk_project, port=30000, pid=1234)
     server_info.save_pid_file()
     assert server_info.pid_file.exists()
     assert server_info.load_pid_file() == {"port": 30000, "pid": 1234}
 
+    server_info = ServerInfo.rejoin(on_disk_project)
+    assert server_info is not None
+    assert server_info.port == 30000
+    assert server_info.pid == 1234
+
     server_info.delete_pid_file()
     assert not server_info.pid_file.exists()
     assert server_info.load_pid_file() is None
+
+    # in_memory_project does not expose a path and should raise an error
+    with pytest.raises(ValueError):
+        ServerInfo(in_memory_project, port=30000, pid=1234)
 
 
 def test_launch(capsys, tmp_path):

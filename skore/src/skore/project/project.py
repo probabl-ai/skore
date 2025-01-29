@@ -100,6 +100,11 @@ class Project:
         if "default" not in self._view_repository:
             self._view_repository.put_view("default", View(layout=[]))
 
+        # Check if the project should rejoin a server
+        from skore.project._launch import ServerInfo  # avoid circular import
+
+        self._server_info = ServerInfo.rejoin(self)
+
     def clear(self):
         """Clear the project."""
         for item_key in self._item_repository:
