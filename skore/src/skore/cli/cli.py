@@ -9,7 +9,10 @@ from skore.ui.launch import launch
 
 def argumentparser():
     """Argument parser for the Skore CLI."""
-    parser = ColorArgumentParser(prog="skore")
+    parser = ColorArgumentParser(
+        prog="skore-ui",
+        description="Launch the skore UI on a defined skore project.",
+    )
 
     parser.add_argument(
         "--version",
