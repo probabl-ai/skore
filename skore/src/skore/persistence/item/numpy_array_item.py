@@ -5,8 +5,10 @@ This module defines the NumpyArrayItem class, which represents a NumPy array ite
 
 from __future__ import annotations
 
-from json import dumps, loads
+from io import BytesIO
 from typing import TYPE_CHECKING, Union
+
+from skore.utils import b64_str_to_bytes, bytes_to_b64_str
 
 from .item import Item, ItemTypeError
 
@@ -23,7 +25,7 @@ class NumpyArrayItem(Item):
 
     def __init__(
         self,
-        array_json: str,
+        array_b64_str: str,
         created_at: Union[str, None] = None,
         updated_at: Union[str, None] = None,
         note: Union[str, None] = None,
@@ -33,7 +35,7 @@ class NumpyArrayItem(Item):
 
         Parameters
         ----------
-        array_json : str
+        array_b64_json : str
             The JSON representation of the array.
         created_at : str
             The creation timestamp in ISO format.
@@ -44,7 +46,7 @@ class NumpyArrayItem(Item):
         """
         super().__init__(created_at, updated_at, note)
 
-        self.array_json = array_json
+        self.array_b64_str = array_b64_str
 
     @property
     def array(self) -> numpy.ndarray:
@@ -57,7 +59,10 @@ class NumpyArrayItem(Item):
         """
         import numpy
 
-        return numpy.asarray(loads(self.array_json))
+        array_bytes = b64_str_to_bytes(self.array_b64_str)
+
+        with BytesIO(array_bytes) as stream:
+            return numpy.load(stream)
 
     @classmethod
     def factory(cls, array: numpy.ndarray, /, **kwargs) -> NumpyArrayItem:
@@ -79,7 +84,12 @@ class NumpyArrayItem(Item):
         if not isinstance(array, numpy.ndarray):
             raise ItemTypeError(f"Type '{array.__class__}' is not supported.")
 
-        return cls(array_json=dumps(array.tolist()), **kwargs)
+        with BytesIO() as stream:
+            numpy.save(stream, array, allow_pickle=False)
+
+            array_bytes = stream.getvalue()
+            array_b64_str = bytes_to_b64_str(array_bytes)
+            return cls(array_b64_str=array_b64_str, **kwargs)
 
     def as_serializable_dict(self):
         """Convert item to a JSON-serializable dict to used by frontend."""
