@@ -206,7 +206,7 @@ const lastSelectedItem = ref<string | null>(null);
 
 function addItemToDraggableList(i: number) {
   draggableListData.value.splice(i, 0, {
-    name: `${i}`,
+    key: `${i}`,
     color: `hsl(${(360 / 25) * i}deg, 90%, 50%)`,
     content: Array.from(
       { length: Math.floor(Math.random() * 10) + 1 }, // Random number of items between 1 and 10
@@ -217,7 +217,7 @@ function addItemToDraggableList(i: number) {
 
 const draggableListData = ref(
   Array.from({ length: 25 }, (v, i) => ({
-    name: `${i}`,
+    key: `${i}`,
     color: `hsl(${(360 / 25) * i}deg, 90%, 50%)`,
     content: Array.from(
       { length: Math.floor(Math.random() * 10) + 1 }, // Random number of items between 1 and 10
@@ -1294,7 +1294,7 @@ const richText = ref(
         </div>
       </TabPanelContent>
       <TabPanelContent name="draggable">
-        <div>Item order: {{ draggableListData.map((item) => item.name).join(", ") }}</div>
+        <div>Item order: {{ draggableListData.map((item) => item.key).join(", ") }}</div>
         <div>Drop position: {{ currentDropPosition }}</div>
         <div>
           <SimpleButton

@@ -13,6 +13,7 @@ import ProjectItemList from "@/views/project/ProjectItemList.vue";
 import ProjectViewCard from "@/views/project/ProjectViewCard.vue";
 import ProjectViewNavigator from "@/views/project/ProjectViewNavigator.vue";
 import InsertCell from "./InsertCell.vue";
+import ProjectViewNote from "./ProjectViewNote.vue";
 
 const props = defineProps({
   showCardActions: {
@@ -51,6 +52,10 @@ function onItemDrop(event: DragEvent) {
 function getItemSubtitle(created_at: Date) {
   const now = new Date();
   return `Created ${formatDistance(created_at, now)} ago`;
+}
+
+function addNoteToView(position: number) {
+  projectStore.addNoteToView(position);
 }
 
 onMounted(async () => {
@@ -95,7 +100,7 @@ onBeforeUnmount(() => {
         </div>
         <Simplebar class="editor-container" v-else>
           <div class="insert-cell-wrapper first">
-            <InsertCell @click="console.log('coucou')" />
+            <InsertCell @click="addNoteToView(0)" />
           </div>
           <DraggableList
             v-model:items="projectStore.currentViewItems"
@@ -104,8 +109,10 @@ onBeforeUnmount(() => {
             @drop="onItemDrop($event)"
             @dragover.prevent
           >
-            <template #item="{ item, index }">
+            <template #item="{ item: { isNote, note, item }, index }">
+              <ProjectViewNote v-if="isNote" :position="index" :note="note" />
               <ProjectViewCard
+                v-else
                 :key="item.name"
                 :title="item.name"
                 :subtitle="getItemSubtitle(item.createdAt)"
@@ -127,8 +134,9 @@ onBeforeUnmount(() => {
                   }"
                 />
               </ProjectViewCard>
+
               <div class="insert-cell-wrapper">
-                <InsertCell @click="console.log('coucou', index)" />
+                <InsertCell @click="addNoteToView(index + 1)" />
               </div>
             </template>
           </DraggableList>
@@ -242,7 +250,7 @@ main {
           min-height: calc(100dvh - var(--editor-height) - var(--spacing-24) * 2);
         }
 
-        & .item-note {
+        & .view-note {
           margin-bottom: var(--spacing-16);
         }
 

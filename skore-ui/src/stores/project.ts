@@ -4,22 +4,26 @@ import { ref, shallowRef, watch } from "vue";
 import { type LayoutDto, type LayoutItemDto, type ProjectDto, type ProjectItemDto } from "@/dto";
 import { deserializeProjectItemDto, type PresentableItem } from "@/models";
 import { deleteView as deleteViewApi, fetchProject, putView, setNote } from "@/services/api";
-import { poll } from "@/services/utils";
+import { isDeepEqual, poll } from "@/services/utils";
 
 export interface TreeNode {
   name: string;
   children: TreeNode[];
 }
 
-type ProjectPresentableItem = PresentableItem & {
-  updates: string[];
-};
+type ViewPresentableItem = PresentableItem & { updates?: string[]; note?: string };
+
+interface ViewItem {
+  isNote: boolean;
+  item?: ViewPresentableItem;
+  note?: string;
+}
 
 export const useProjectStore = defineStore("project", () => {
   // this objects are not deeply reactive as they may be very large
-  const items = shallowRef<{ [key: string]: ProjectItemDto } | null>(null);
-  const currentViewItems = shallowRef<ProjectPresentableItem[]>([]);
-  const views = ref<{ [key: string]: LayoutDto }>({});
+  const itemsDtos = shallowRef<{ [key: string]: ProjectItemDto } | null>(null);
+  const viewsDtos = ref<{ [key: string]: LayoutDto }>({});
+  const currentViewItems = shallowRef<ViewItem[]>([]);
   const currentView = ref<string | null>(null);
   const itemsUpdates = ref<{ [key: string]: string[] }>({});
   let currentItemUpdateIndex: { [key: string]: number } = {};
@@ -32,7 +36,7 @@ export const useProjectStore = defineStore("project", () => {
    */
   function isKeyDisplayed(view: string, key: string) {
     const realKey = key.replace(" (self)", "");
-    const viewItems = views.value[view] ?? [];
+    const viewItems = viewsDtos.value[view] ?? [];
     const visibleKeys = viewItems.filter((i) => i.kind === "item").map((i) => i.value);
     return visibleKeys.includes(realKey);
   }
@@ -51,15 +55,15 @@ export const useProjectStore = defineStore("project", () => {
     if (!isKeyDisplayed(view, realKey)) {
       const newItem: LayoutItemDto = { kind: "item", value: realKey };
       if (position === -1) {
-        views.value[view] = [...views.value[view], newItem];
+        viewsDtos.value[view] = [...viewsDtos.value[view], newItem];
       } else {
-        views.value[view] = [
-          ...views.value[view].slice(0, position),
+        viewsDtos.value[view] = [
+          ...viewsDtos.value[view].slice(0, position),
           newItem,
-          ...views.value[view].slice(position),
+          ...viewsDtos.value[view].slice(position),
         ];
       }
-      await _persistView(view, views.value[view]);
+      await _persistView(view, viewsDtos.value[view]);
       hasChanged = true;
     }
     await startBackendPolling();
@@ -74,9 +78,9 @@ export const useProjectStore = defineStore("project", () => {
   async function hideKey(view: string, key: string) {
     stopBackendPolling();
     if (isKeyDisplayed(view, key)) {
-      const v = views.value[view];
-      views.value[view] = v.filter((i) => i.kind === "item" && i.value !== key);
-      await _persistView(view, views.value[view]);
+      const v = viewsDtos.value[view];
+      viewsDtos.value[view] = v.filter((i) => i.kind === "item" && i.value !== key);
+      await _persistView(view, viewsDtos.value[view]);
     }
     await startBackendPolling();
   }
@@ -132,11 +136,11 @@ export const useProjectStore = defineStore("project", () => {
       historyByKey[key] = value.map((item) => item.updated_at);
     }
 
-    items.value = latestItemByKey;
-    views.value = p.views;
+    itemsDtos.value = latestItemByKey;
+    viewsDtos.value = p.views;
     itemsUpdates.value = historyByKey;
 
-    const viewNames = Object.keys(views.value);
+    const viewNames = Object.keys(viewsDtos.value);
     if (currentView.value === null) {
       if (viewNames.length > 0) {
         currentView.value = viewNames[0];
@@ -183,7 +187,7 @@ export const useProjectStore = defineStore("project", () => {
   function keysAsTree() {
     const lut: { [key: string]: TreeNode } = {};
     const tree: TreeNode[] = [];
-    const keys = Object.keys(items.value || {});
+    const keys = Object.keys(itemsDtos.value || {});
 
     for (const key of keys) {
       const segments = key.split("/").filter((s) => s.length > 0);
@@ -241,8 +245,8 @@ export const useProjectStore = defineStore("project", () => {
    * @param name the name of the view to create
    */
   async function createView(name: string) {
-    views.value[name] = [];
-    await _persistView(name, views.value[name]);
+    viewsDtos.value[name] = [];
+    await _persistView(name, viewsDtos.value[name]);
   }
 
   /**
@@ -251,12 +255,12 @@ export const useProjectStore = defineStore("project", () => {
    * @param name the name of the new view
    */
   async function duplicateView(src: string, name: string) {
-    if (views.value[src] === undefined) {
+    if (viewsDtos.value[src] === undefined) {
       console.error("View not found", src);
       return;
     }
-    views.value[name] = [...views.value[src]];
-    await _persistView(name, views.value[name]);
+    viewsDtos.value[name] = [...viewsDtos.value[src]];
+    await _persistView(name, viewsDtos.value[name]);
   }
 
   /**
@@ -267,7 +271,7 @@ export const useProjectStore = defineStore("project", () => {
     if (name === currentView.value) {
       currentView.value = null;
     }
-    delete views.value[name];
+    delete viewsDtos.value[name];
     await deleteViewApi(name);
   }
 
@@ -277,9 +281,9 @@ export const useProjectStore = defineStore("project", () => {
    */
   async function renameView(name: string, newName: string) {
     if (name !== newName) {
-      views.value[newName] = [...views.value[name]];
+      viewsDtos.value[newName] = [...viewsDtos.value[name]];
       await deleteView(name);
-      await _persistView(newName, views.value[newName]);
+      await _persistView(newName, viewsDtos.value[newName]);
     }
   }
 
@@ -323,7 +327,8 @@ export const useProjectStore = defineStore("project", () => {
    */
   function getCurrentItemUpdateIndex(key: string) {
     if (currentItemUpdateIndex[key] === undefined) {
-      const updates = currentViewItems.value.find((item) => item.name === key)?.updates;
+      const updates = currentViewItems.value.find((vi) => !vi.isNote && vi.item?.name === key)?.item
+        ?.updates;
       if (updates) {
         return updates.length - 1;
       } else {
@@ -336,9 +341,40 @@ export const useProjectStore = defineStore("project", () => {
   /**
    * Set a note on a currently displayed note
    */
-  async function setNoteOnItem(key: string, message: string) {
+  async function setNoteOnItem(key: string, note: string) {
     const updateIndex = getCurrentItemUpdateIndex(key);
-    await setNote(key, message, updateIndex);
+    await setNote(key, note, updateIndex);
+  }
+
+  /**
+   * Add a note at a specific index in the current view
+   */
+  function addNoteToView(index: number) {
+    console.log("add note !");
+    _setNoteInView(index, "");
+  }
+
+  /**
+   * Edit an existing note in a view.
+   */
+  async function setNoteInView(index: number, note: string) {
+    _setNoteInView(index, note);
+    const view = currentView.value;
+    if (view) {
+      await _persistView(view, viewsDtos.value[view]);
+    }
+  }
+
+  function _setNoteInView(index: number, note: string) {
+    const cv = currentView.value;
+    if (cv) {
+      const dto: LayoutItemDto = { kind: "note", value: note };
+      viewsDtos.value[cv] = [
+        ...viewsDtos.value[cv].slice(0, index),
+        dto,
+        ...viewsDtos.value[cv].slice(index),
+      ];
+    }
   }
 
   /**
@@ -346,20 +382,25 @@ export const useProjectStore = defineStore("project", () => {
    * @returns a list of items with their metadata
    */
   function _updatePresentableItemsInView() {
-    const r: ProjectPresentableItem[] = [];
-    if (items.value !== null && currentView.value !== null) {
-      const v = views.value[currentView.value];
-      const keys = v.filter((i) => i.kind === "item").map((i) => i.value);
-      for (const key of keys) {
-        const item =
-          currentItemUpdateIndex[key] !== undefined
-            ? getItemUpdate(key, currentItemUpdateIndex[key])
-            : items.value[key];
-        if (item) {
-          r.push({
-            ...deserializeProjectItemDto(item),
-            updates: itemsUpdates.value[key],
-          });
+    const r: ViewItem[] = [];
+    if (itemsDtos.value !== null && currentView.value !== null) {
+      const v = viewsDtos.value[currentView.value];
+
+      for (const li of v) {
+        if (li.kind === "item") {
+          const item =
+            currentItemUpdateIndex[li.value] !== undefined
+              ? getItemUpdate(li.value, currentItemUpdateIndex[li.value])
+              : itemsDtos.value[li.value];
+          if (item) {
+            r.push({
+              isNote: false,
+              item: { ...deserializeProjectItemDto(item), updates: itemsUpdates.value[li.value] },
+            });
+          }
+        } else {
+          // "note"
+          r.push({ isNote: true, note: li.value });
         }
       }
     }
@@ -372,7 +413,7 @@ export const useProjectStore = defineStore("project", () => {
    * @param layout the layout to persist
    */
   async function _persistView(view: string, layout: LayoutDto) {
-    if (items.value && views.value) {
+    if (itemsDtos.value && viewsDtos.value) {
       const r = await putView(view, layout);
       if (r) {
         setProject(r);
@@ -396,21 +437,14 @@ export const useProjectStore = defineStore("project", () => {
   watch(
     () => currentViewItems.value,
     async (value, oldValue) => {
-      // Compare arrays by mapping to keys and checking if they're in the same order
-      const newKeys = value.map((item) => item.name);
-      const oldKeys = oldValue.map((item) => item.name);
-
-      const arraysMatch =
-        newKeys.length === oldKeys.length && newKeys.every((key, index) => key === oldKeys[index]);
-
-      if (!arraysMatch && currentView.value !== null) {
+      if (!isDeepEqual(value, oldValue) && currentView.value !== null) {
         const name = currentView.value;
-        views.value[name] = [
-          ...currentViewItems.value.map(
-            (item) => ({ kind: "item", value: item.name }) as LayoutItemDto
-          ),
-        ];
-        await _persistView(name, views.value[name]);
+        viewsDtos.value[name] = currentViewItems.value.map((i: ViewItem) => {
+          const kind = i.isNote ? "note" : "item";
+          const value = (i.isNote ? i.note : i.item?.name) ?? "";
+          return { kind, value };
+        });
+        await _persistView(name, viewsDtos.value[name]);
       }
     }
   );
@@ -419,24 +453,27 @@ export const useProjectStore = defineStore("project", () => {
     // refs
     currentView,
     currentViewItems,
-    items,
-    views,
+    items: itemsDtos,
+    views: viewsDtos,
     // actions
+    addNoteToView,
     createView,
     deleteView,
     displayKey,
     duplicateView,
     hideKey,
-    isKeyDisplayed,
-    keysAsTree,
+    renameView,
     setCurrentView,
     setProject,
-    renameView,
     setCurrentItemUpdateIndex,
-    getCurrentItemUpdateIndex,
+    setNoteInView,
     setNoteOnItem,
     startBackendPolling,
     stopBackendPolling,
+    // accessors
+    getCurrentItemUpdateIndex,
+    isKeyDisplayed,
+    keysAsTree,
   };
 });
 

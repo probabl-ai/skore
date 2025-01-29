@@ -65,7 +65,9 @@ def test_get_items(client, in_memory_project):
 
 
 def test_put_view_layout(client):
-    response = client.put("/api/project/views?key=hello", json=["test"])
+    response = client.put(
+        "/api/project/views?key=hello", json=[{"kind": "item", "value": "test"}]
+    )
     assert response.status_code == 201
 
 
@@ -497,9 +499,7 @@ def test_serialize_cross_validation_reporter_item(
                             "name": "Cross-validation parameters",
                             "description": "Controls how data is split and validated",
                             "value": (
-                                "n_splits: *3*, "
-                                "shuffle: *False*, "
-                                "random_state: *None*"
+                                "n_splits: *3*, shuffle: *False*, random_state: *None*"
                             ),
                         },
                     ],

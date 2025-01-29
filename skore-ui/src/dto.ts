@@ -15,10 +15,10 @@ export interface ProjectItemDto {
 /**
  * A layout item.
  *
- * A view has items they can be a project item or a markdown item
+ * A view has items they can be a project item or a note item
  */
 export interface LayoutItemDto {
-  kind: "markdown" | "item";
+  kind: "note" | "item";
   value: string;
 }
 

@@ -90,23 +90,23 @@ describe("Project store", () => {
     await projectStore.setProject(project);
 
     let d = projectStore.currentViewItems[0];
-    expect(d.createdAt.toISOString()).toEqual(h1.created_at);
-    expect(d.updatedAt.toISOString()).toEqual(h1.updated_at);
-    expect(d.data).toEqual(h1.value);
-    expect(d.name).toEqual("a");
+    expect(d.item?.createdAt.toISOString()).toEqual(h1.created_at);
+    expect(d.item?.updatedAt.toISOString()).toEqual(h1.updated_at);
+    expect(d.item?.data).toEqual(h1.value);
+    expect(d.item?.name).toEqual("a");
 
     projectStore.setCurrentItemUpdateIndex("a", 1);
     d = projectStore.currentViewItems[0];
-    expect(d.createdAt.toISOString()).toEqual(h2.created_at);
-    expect(d.updatedAt.toISOString()).toEqual(h2.updated_at);
-    expect(d.data).toEqual(h2.value);
-    expect(d.name).toEqual("a");
+    expect(d.item?.createdAt.toISOString()).toEqual(h2.created_at);
+    expect(d.item?.updatedAt.toISOString()).toEqual(h2.updated_at);
+    expect(d.item?.data).toEqual(h2.value);
+    expect(d.item?.name).toEqual("a");
 
     projectStore.setCurrentItemUpdateIndex("a", 2);
     d = projectStore.currentViewItems[0];
-    expect(d.createdAt.toISOString()).toEqual(h3.created_at);
-    expect(d.updatedAt.toISOString()).toEqual(h3.updated_at);
-    expect(d.data).toEqual(h3.value);
-    expect(d.name).toEqual("a");
+    expect(d.item?.createdAt.toISOString()).toEqual(h3.created_at);
+    expect(d.item?.updatedAt.toISOString()).toEqual(h3.updated_at);
+    expect(d.item?.data).toEqual(h3.value);
+    expect(d.item?.name).toEqual("a");
   });
 });

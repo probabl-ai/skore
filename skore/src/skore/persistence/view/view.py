@@ -8,10 +8,10 @@ from typing import Literal
 class LayoutItem:
     """A layout item.
 
-    A view has items they can be an project item or a markdown item
+    A view has items they can be an project item or a note item
     """
 
-    kind: Literal["markdown", "item"]
+    kind: Literal["note", "item"]
     value: str
 
 
@@ -26,7 +26,7 @@ class View:
     Examples
     --------
     >>> View(layout=[
-        {"kind": "markdown", "value": "# title"},
+        {"kind": "note", "value": "# title"},
         {"kind": "item", "value": "item/key"},
     ])
     View(...)

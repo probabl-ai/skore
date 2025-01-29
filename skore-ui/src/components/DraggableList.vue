@@ -6,7 +6,6 @@ import Simplebar from "simplebar-core";
 import { onBeforeUnmount, onMounted, ref, useTemplateRef } from "vue";
 
 interface Item {
-  name: string;
   [key: string]: any;
 }
 
@@ -186,7 +185,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="draggable" :class="{ dragging: movingItemIndex !== -1 }" ref="container">
-    <div v-for="(item, index) in items" class="item" :key="item.name">
+    <div v-for="(item, index) in items" class="item" :key="item.key">
       <div class="handle" :data-index="index"><span class="icon-handle" /></div>
       <div class="content-wrapper">
         <div
