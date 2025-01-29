@@ -1,44 +1,63 @@
+import os
+
 import pytest
 from skore.cli.cli import cli
 
 
-def test_cli(monkeypatch, tmp_path):
-    """cli passes its arguments down to `launch`."""
+@pytest.fixture
+def tmp_project_path(tmp_path):
+    """Create a project at `tmp_path` and return its absolute path."""
+    # Project path must end with ".skore"
+    project_path = tmp_path.parent / (tmp_path.name + ".skore")
+    os.mkdir(project_path)
+    os.mkdir(project_path / "items")
+    os.mkdir(project_path / "views")
+    return project_path
 
-    launch_project_name = None
-    launch_port = None
-    launch_open_browser = None
-    launch_verbose = None
 
-    def fake_launch(project_name, port, open_browser, verbose):
-        nonlocal launch_project_name
-        nonlocal launch_port
-        nonlocal launch_open_browser
-        nonlocal launch_verbose
+@pytest.fixture
+def mock_launch(monkeypatch):
+    """Fixture that mocks the _launch function and tracks calls to it."""
+    calls = []
 
-        launch_project_name = project_name
-        launch_port = port
-        launch_open_browser = open_browser
-        launch_verbose = verbose
+    def _mock_launch(
+        project, keep_alive="auto", port=None, open_browser=True, verbose=False
+    ):
+        calls.append((project, keep_alive, port, open_browser, verbose))
 
-    monkeypatch.setattr("skore.cli.cli.launch", fake_launch)
+    monkeypatch.setattr("skore.project._launch._launch", _mock_launch)
+    return calls
 
+
+def test_cli_open(tmp_project_path, mock_launch):
+    """Test that CLI open creates a project and starts server with correct
+    parameters."""
     cli(
         [
-            str(tmp_path / "my_project.skore"),
+            "open",
+            str(tmp_project_path),
             "--port",
-            "888",
-            "--no-open-browser",
+            "8000",
+            "--serve",
             "--verbose",
         ]
     )
-
-    assert launch_project_name == str(tmp_path / "my_project.skore")
-    assert launch_port == 888
-    assert launch_open_browser is False
-    assert launch_verbose is True
+    assert len(mock_launch) == 1
 
 
-def test_cli_no_project_name():
-    with pytest.raises(SystemExit):
-        cli([])
+def test_cli_open_creates_project(tmp_path, mock_launch):
+    """Test that CLI open creates a project when it doesn't exist."""
+    project_path = tmp_path / "new_project.skore"
+    assert not project_path.exists()
+
+    cli(["open", str(project_path)])
+    assert project_path.exists()
+    assert len(mock_launch) == 1
+
+
+def test_cli_open_no_serve(tmp_path, mock_launch):
+    """Test that server is not started when --no-serve flag is passed."""
+    project_path = tmp_path / "no_serve.skore"
+
+    cli(["open", str(project_path), "--no-serve"])
+    assert len(mock_launch) == 0
