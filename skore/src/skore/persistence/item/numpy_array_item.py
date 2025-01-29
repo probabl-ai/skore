@@ -36,7 +36,7 @@ class NumpyArrayItem(Item):
         Parameters
         ----------
         array_b64_str : str
-            The raw bytes of the array in the NumPy serialization format, encoded in 
+            The raw bytes of the array in the NumPy serialization format, encoded in
             bas64 string.
         created_at : str
             The creation timestamp in ISO format.
