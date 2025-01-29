@@ -1,5 +1,5 @@
+import sys
 from functools import wraps
-
 from rich.progress import (
     BarColumn,
     Progress,
@@ -43,6 +43,7 @@ def progress_decorator(description):
                     ),
                     TextColumn("[orange1]{task.percentage:>3.0f}%"),
                     expand=False,
+                    transient="pytest" not in sys.modules,  # Disable transient during tests
                 )
                 progress.start()
 
@@ -68,7 +69,7 @@ def progress_decorator(description):
                             task, completed=progress.tasks[task].total, refresh=True
                         )
                     progress.stop()
-                # clean up to make object pickable
+                # Clean up to make object pickable
                 self_obj._parent_progress = None
                 self_obj._progress_info = None
 
