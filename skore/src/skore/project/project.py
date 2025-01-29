@@ -34,8 +34,8 @@ class Project:
     ----------
     path : str or Path, optional
         The path of the project to initialize, default "./project.skore".
-    exist_ok: bool, optional
-        Ignore if the project already exists or raise an error, default False.
+    if_exists: Literal["raise", "load"], optional
+        Raise an exception if the project already exists, or load it, default raise.
 
     Attributes
     ----------
@@ -57,7 +57,7 @@ class Project:
         self,
         path: Optional[Union[str, Path]] = "project.skore",
         *,
-        exist_ok: bool = False,
+        if_exists: Optional[Literal["raise", "load"]] = "raise",
     ):
         """
         Initialize a Project.
@@ -68,8 +68,8 @@ class Project:
         ----------
         path : str or Path, optional
             The path of the project to initialize, default "./project.skore".
-        exist_ok: bool, optional
-            Ignore if the project already exists or raise an error, default False.
+        if_exists: Literal["raise", "load"], optional
+            Raise an exception if the project already exists, or load it, default raise.
 
         Raises
         ------
@@ -79,7 +79,7 @@ class Project:
         self.path = self.path.with_suffix(".skore")
         self.path = self.path.resolve()
 
-        if not exist_ok and self.path.exists():
+        if if_exists == "raise" and self.path.exists():
             raise FileExistsError(f"Project '{str(path)}' already exists.")
 
         item_storage_dirpath = self.path / "items"

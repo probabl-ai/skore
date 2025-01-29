@@ -29,12 +29,12 @@ def test_init(tmp_path):
     assert (dirpath / "items").exists()
     assert (dirpath / "views").exists()
 
-    # Ensure existing project raises an error with `exist_ok=False`
+    # Ensure existing project raises an error with `if_exists="raise"`
     with pytest.raises(FileExistsError):
-        Project(dirpath, exist_ok=False)
+        Project(dirpath, if_exists="raise")
 
-    # Ensure existing project can be loaded with `exist_ok=True`
-    Project(dirpath, exist_ok=True)
+    # Ensure existing project can be loaded with `if_exists="load"`
+    Project(dirpath, if_exists="load")
 
 
 def test_clear(tmp_path):
