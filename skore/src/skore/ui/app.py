@@ -15,9 +15,7 @@ from skore.ui.dependencies import get_static_path
 from skore.ui.project_routes import router as project_router
 
 
-def create_app(
-    project: Optional[Project] = None, lifespan: Optional[Lifespan] = None
-) -> FastAPI:
+def create_app(project: Project, lifespan: Optional[Lifespan] = None) -> FastAPI:
     """FastAPI factory used to create the API to interact with `stores`."""
     app = FastAPI(lifespan=lifespan)
     app.state.project = project
