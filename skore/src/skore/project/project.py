@@ -38,12 +38,28 @@ class Project:
         *,
         exist_ok: bool = False,
     ):
+        """
+        Initialize a Project.
+
+        Initialize a project, by creating a new project or by loading an existing one.
+
+        Parameters
+        ----------
+        path : str or Path, optional
+            The path of the project to initialize, default "./project.skore".
+        exist_ok: bool, optional
+            Ignore if the project already exists or raise an error, default False.
+
+        Raises
+        ------
+        FileExistsError
+        """
         self.path = Path(path)
         self.path = self.path.with_suffix(".skore")
         self.path = self.path.resolve()
 
         if not exist_ok and self.path.exists():
-            raise FileExistsError
+            raise FileExistsError(f"Project '{str(path)}' already exists.")
 
         self.__item_storage_dirpath = self.path / "items"
         self.__view_storage_dirpath = self.path / "views"

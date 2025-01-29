@@ -11,11 +11,30 @@ from matplotlib.pyplot import subplots
 from matplotlib.testing.compare import compare_images
 from PIL import Image
 from sklearn.ensemble import RandomForestClassifier
+from skore import Project
 
 
 @pytest.fixture(autouse=True)
 def monkeypatch_datetime(monkeypatch, MockDatetime):
     monkeypatch.setattr("skore.persistence.item.item.datetime", MockDatetime)
+
+
+def test_init(tmp_path):
+    dirpath = tmp_path / "my-project.skore"
+
+    # Ensure missing project can be created
+    Project(dirpath)
+
+    assert dirpath.exists()
+    assert (dirpath / "items").exists()
+    assert (dirpath / "views").exists()
+
+    # Ensure existing project raises an error with `exist_ok=False`
+    with pytest.raises(FileExistsError):
+        Project(dirpath, exist_ok=False)
+
+    # Ensure existing project can be loaded with `exist_ok=True`
+    Project(dirpath, exist_ok=True)
 
 
 def test_put_string_item(in_memory_project):
