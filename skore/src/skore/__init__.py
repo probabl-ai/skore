@@ -5,7 +5,7 @@ import logging
 from rich.console import Console
 from rich.theme import Theme
 
-from skore.project import Project, open
+from skore.project import Project
 from skore.sklearn import (
     CrossValidationReport,
     CrossValidationReporter,
@@ -19,7 +19,6 @@ __all__ = [
     "CrossValidationReporter",
     "CrossValidationReport",
     "EstimatorReport",
-    "open",
     "Project",
     "show_versions",
     "train_test_split",
