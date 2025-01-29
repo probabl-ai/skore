@@ -350,7 +350,6 @@ export const useProjectStore = defineStore("project", () => {
    * Add a note at a specific index in the current view
    */
   function addNoteToView(index: number) {
-    console.log("add note !");
     _setNoteInView(index, "");
   }
 
@@ -366,6 +365,7 @@ export const useProjectStore = defineStore("project", () => {
   }
 
   function _setNoteInView(index: number, note: string) {
+    // FIXME delete note when note.length===0
     const cv = currentView.value;
     if (cv) {
       const dto: LayoutItemDto = { kind: "note", value: note };
@@ -374,6 +374,7 @@ export const useProjectStore = defineStore("project", () => {
         dto,
         ...viewsDtos.value[cv].slice(index),
       ];
+      _updatePresentableItemsInView();
     }
   }
 
