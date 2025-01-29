@@ -5,7 +5,6 @@ import socket
 import joblib
 import psutil
 import pytest
-from skore.project._create import _create
 from skore.project._launch import (
     ServerInfo,
     _kill_all_servers,
@@ -15,6 +14,7 @@ from skore.project._launch import (
     find_free_port,
     is_server_started,
 )
+from skore.project.project import Project
 
 
 def test_find_free_port():
@@ -36,14 +36,6 @@ def test_find_free_port():
         sock.close()
 
 
-def test_server_info_in_memory_project(in_memory_project):
-    """Check the generation of the PID file path for an in-memory project."""
-    server_info = ServerInfo(in_memory_project, port=20000, pid=1234)
-    assert server_info.port == 20000
-    assert server_info.pid == 1234
-    assert server_info.pid_file.name.startswith("skore-server-")
-
-
 def test_server_info(on_disk_project):
     """Check the ServerInfo class behaviour."""
     server_info = ServerInfo(on_disk_project, port=30000, pid=1234)
@@ -58,7 +50,7 @@ def test_server_info(on_disk_project):
 
 def test_launch(capsys, tmp_path):
     """Check the general behaviour of the launch function."""
-    skore_project = _create(tmp_path / "test_project")
+    skore_project = Project(tmp_path / "test_project")
     _launch(skore_project, open_browser=False, keep_alive=False, verbose=True)
     assert "Running skore UI" in capsys.readouterr().out
     assert skore_project._server_info is not None
@@ -84,13 +76,13 @@ def test_launch(capsys, tmp_path):
 
 def test_cleanup_server_not_running(tmp_path):
     """Check that cleanup does not fail when the server is not running."""
-    skore_project = _create(tmp_path / "test_project")
+    skore_project = Project(tmp_path / "test_project")
     cleanup_server(skore_project)
 
 
 def test_cleanup_server_timeout(tmp_path, monkeypatch):
     """Test cleanup_server when process termination times out."""
-    skore_project = _create(tmp_path / "test_project")
+    skore_project = Project(tmp_path / "test_project")
 
     class MockProcess:
         def __init__(self):
@@ -128,7 +120,7 @@ def test_cleanup_server_timeout(tmp_path, monkeypatch):
 
 def test_cleanup_server_no_process(tmp_path, monkeypatch):
     """Test cleanup_server when the process no longer exists."""
-    skore_project = _create(tmp_path / "test_project")
+    skore_project = Project(tmp_path / "test_project")
 
     def mock_process_init(pid):
         raise psutil.NoSuchProcess(pid)
@@ -147,7 +139,7 @@ def test_cleanup_server_no_process(tmp_path, monkeypatch):
 
 def test_launch_zombie_process(tmp_path, monkeypatch):
     """Test launch handling when encountering a zombie process."""
-    skore_project = _create(tmp_path / "test_project")
+    skore_project = Project(tmp_path / "test_project")
     server_info = ServerInfo(skore_project, port=8000, pid=1234)
     skore_project._server_info = server_info
     server_info.save_pid_file()
@@ -195,7 +187,7 @@ def test_launch_server_timeout(tmp_path, monkeypatch):
         "skore.project._launch.is_server_started", lambda *args, **kwargs: False
     )
 
-    skore_project = _create(tmp_path / "test_project")
+    skore_project = Project(tmp_path / "test_project")
 
     err_msg = "Server failed to start within timeout period"
     with pytest.raises(RuntimeError, match=err_msg):
@@ -204,7 +196,7 @@ def test_launch_server_timeout(tmp_path, monkeypatch):
 
 def test_block_before_cleanup_keyboard_interrupt(tmp_path, capsys, monkeypatch):
     """Test block_before_cleanup behavior when receiving a KeyboardInterrupt."""
-    skore_project = _create(tmp_path / "test_project")
+    skore_project = Project(tmp_path / "test_project")
 
     class MockProcess:
         def poll(self):

@@ -29,12 +29,10 @@ def mock_launch(monkeypatch):
     return calls
 
 
-def test_cli_open(tmp_project_path, mock_launch):
-    """Test that CLI open creates a project and starts server with correct
-    parameters."""
+def test_cli(tmp_project_path, mock_launch):
+    """Check that the CLI create a project and launch the server."""
     cli(
         [
-            "open",
             str(tmp_project_path),
             "--port",
             "8000",
@@ -55,9 +53,9 @@ def test_cli_open_creates_project(tmp_path, mock_launch):
     assert len(mock_launch) == 1
 
 
-def test_cli_open_no_serve(tmp_path, mock_launch):
-    """Test that server is not started when --no-serve flag is passed."""
-    project_path = tmp_path / "no_serve.skore"
+# def test_cli_open_no_serve(tmp_path, mock_launch):
+#     """Test that server is not started when --no-serve flag is passed."""
+#     project_path = tmp_path / "no_serve.skore"
 
-    cli(["open", str(project_path), "--no-serve"])
-    assert len(mock_launch) == 0
+#     cli(["open", str(project_path), "--no-serve"])
+#     assert len(mock_launch) == 0

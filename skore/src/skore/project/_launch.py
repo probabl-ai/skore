@@ -87,7 +87,7 @@ class ServerInfo:
         if project.path is not None:
             project_identifier = joblib.hash(str(project.path), hash_name="sha1")
         else:
-            project_identifier = joblib.hash(project.name, hash_name="sha1")
+            raise ValueError("Project path is required to create a PID file")
 
         state_path = platformdirs.user_state_path(appname="skore")
         return state_path / f"skore-server-{project_identifier}.json"

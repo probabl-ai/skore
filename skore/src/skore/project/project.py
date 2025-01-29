@@ -80,6 +80,7 @@ class Project:
         self.path = Path(path)
         self.path = self.path.with_suffix(".skore")
         self.path = self.path.resolve()
+        self.name = self.path.name
 
         if if_exists == "raise" and self.path.exists():
             raise FileExistsError(f"Project '{str(path)}' already exists.")
