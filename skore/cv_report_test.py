@@ -19,4 +19,8 @@ class SlowEstimator(LogisticRegression):
 X, y = make_classification(random_state=42)
 estimator = SlowEstimator()
 
+# Terminate it early with a KeyboardInterrupt (Ctrl-C)
 report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=5)
+
+# Should list <5 splits, but still work
+report.metrics.report_metrics()
