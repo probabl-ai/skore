@@ -429,26 +429,6 @@ def test_get_items_with_pickle_item(
     }
 
 
-def test_set_note(client, in_memory_project):
-    for i in range(3):
-        in_memory_project.put("notted", i)
-
-    for i in range(3):
-        response = client.put(
-            "/api/project/note",
-            json={
-                "key": "notted",
-                "message": f"note{i}",
-                "version": i,
-            },
-        )
-        assert response.status_code == 201
-
-    for i in range(3):
-        note = in_memory_project.get_note("notted", version=i)
-        assert note == f"note{i}"
-
-
 def test_get_items_with_pickle_item_and_unpickling_error(
     monkeypatch,
     MockDatetime,
@@ -487,3 +467,23 @@ def test_get_items_with_pickle_item_and_unpickling_error(
             ],
         },
     }
+
+
+def test_set_note(client, in_memory_project):
+    for i in range(3):
+        in_memory_project.put("notted", i)
+
+    for i in range(3):
+        response = client.put(
+            "/api/project/note",
+            json={
+                "key": "notted",
+                "message": f"note{i}",
+                "version": i,
+            },
+        )
+        assert response.status_code == 201
+
+    for i in range(3):
+        note = in_memory_project.get_note("notted", version=i)
+        assert note == f"note{i}"
