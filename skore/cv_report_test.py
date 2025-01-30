@@ -20,3 +20,9 @@ X, y = make_classification(random_state=42)
 estimator = SlowEstimator()
 
 report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=5)
+
+# Terminate it early
+report._fit_estimator_reports()
+
+# Should list <5 splits, but still work
+report.metrics.report_metrics()

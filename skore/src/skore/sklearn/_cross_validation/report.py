@@ -116,16 +116,14 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         )
         self.n_jobs = n_jobs
 
-        self.estimator_reports_ = self._fit_estimator_reports()
+        # self.estimator_reports_ = self._fit_estimator_reports()
 
         self._rng = np.random.default_rng(time.time_ns())
         self._hash = self._rng.integers(
             low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
         )
         self._cache = {}
-        self._ml_task = _find_ml_task(
-            y, estimator=self.estimator_reports_[0]._estimator
-        )
+        self._ml_task = _find_ml_task(y, estimator=self._estimator)
 
     @progress_decorator(
         description=lambda self: (
@@ -162,12 +160,12 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             for train_indices, test_indices in self._cv_splitter.split(self._X, self._y)
         )
 
-        estimator_reports = []
+        self.estimator_reports_ = []
         for report in generator:
-            estimator_reports.append(report)
+            self.estimator_reports_.append(report)
             progress.update(task, advance=1, refresh=True)
 
-        return estimator_reports
+        return self.estimator_reports_
 
     def clear_cache(self):
         """Clear the cache.
