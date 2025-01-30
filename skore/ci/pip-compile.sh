@@ -1,9 +1,12 @@
 #!/bin/bash
 #
 # This script compiles all the `test-requirements.txt` files, based on combinations of
-# `python` and `scikit-learn` versions.
+# `python` and `scikit-learn` versions. These combinations mirror those defined in the
+# GitHub `backend` workflow.
 #
-# The combinations mirror those defined in the GitHub `backend` workflow.
+# You can pass any piptools parameter:
+#
+#     $ bash pip-compile.sh --upgrade
 #
 
 CWD="$PWD"
