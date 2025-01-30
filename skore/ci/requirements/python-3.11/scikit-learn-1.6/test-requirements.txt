@@ -37,7 +37,7 @@ exceptiongroup==1.2.2
     #   pytest
 execnet==2.1.1
     # via pytest-xdist
-fastapi==0.115.7
+fastapi==0.115.8
     # via skore (skore/pyproject.toml)
 filelock==3.17.0
     # via

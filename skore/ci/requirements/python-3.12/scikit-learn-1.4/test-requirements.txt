@@ -37,7 +37,7 @@ exceptiongroup==1.2.2
     #   pytest
 execnet==2.1.1
     # via pytest-xdist
-fastapi==0.115.7
+fastapi==0.115.8
     # via skore (skore/pyproject.toml)
 filelock==3.17.0
     # via
@@ -187,7 +187,7 @@ rpds-py==0.22.3
     #   referencing
 ruff==0.9.3
     # via skore (skore/pyproject.toml)
-scikit-learn==1.6.1
+scikit-learn==1.4.2
     # via
     #   skops
     #   skore (skore/pyproject.toml)

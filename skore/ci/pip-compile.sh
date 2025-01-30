@@ -1,8 +1,18 @@
 #!/bin/bash
+#
+# This script compiles all the `test-requirements.txt` files, based on combinations of
+# `python` and `scikit-learn` versions.
+#
+# The combinations mirror those defined in the GitHub `backend` workflow.
+#
 
 CWD="$PWD"
-TMPDIR=$(mktemp -d); trap 'rm -rf ${TMPDIR}' 0
+TMPDIR=$(mktemp -d)
 
+# Make sure that `TMPDIR` is removed on exit, whatever the signal
+trap 'rm -rf ${TMPDIR}' 0
+
+# Declare the combinations of `python` and `scikit-learn` versions
 declare -a COMBINATIONS
 
 COMBINATIONS[0]='3.9;1.6'
@@ -15,10 +25,12 @@ COMBINATIONS[5]='3.12;1.6'
 set -eu
 
 (
+    # Copy everything necessary to compile requirements in `TMPDIR`
     cp -r .. "${TMPDIR}/skore"
     cp ../../LICENSE "${TMPDIR}/LICENSE"
     cp ../../README.md "${TMPDIR}/README.md"
 
+    # Move to `TMPDIR` to avoid absolute paths in requirements file
     cd "${TMPDIR}"
 
     for combination in "${COMBINATIONS[@]}"
@@ -27,16 +39,22 @@ set -eu
 
         python="${combination[0]}"
         scikit_learn="${combination[1]}"
-        filepath="${CWD}/requirements/python-${python}-scikit-learn-${scikit_learn}-test-requirements.txt"
+        filepath="${CWD}/requirements/python-${python}/scikit-learn-${scikit_learn}/test-requirements.txt"
 
-        sed -i "s/scikit-learn.*/scikit-learn==${scikit_learn}.*/g" skore/test-requirements.in
+        echo "Generating requirements: python ==${python} | scikit-learn ==${scikit_learn}"
 
+        # Force the `python` version by creating the appropriate virtual environment
         pyenv local "${python}"
         python -m venv "python-${python}"
         source "python-${python}/bin/activate"
 
-        echo "Generating requirements: python ==${python} | scikit-learn ==${scikit_learn}"
+        # Force the `scikit-learn` version by overloading test requirements
+        sed -i "s/scikit-learn.*/scikit-learn==${scikit_learn}.*/g" skore/test-requirements.in
 
+        # Create the requirements file tree
+        mkdir -p $(dirname "${filepath}")
+
+        # Create the requirements file
         python -m pip install --upgrade pip pip-tools --quiet
         python -m piptools compile \
                --quiet \
