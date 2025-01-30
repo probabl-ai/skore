@@ -100,7 +100,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> report.metrics.report_metrics(
         ...     scoring=["precision", "recall"], pos_label=1, aggregate=["mean", "std"]
         ... )
-        Compute metric for each split ...
         Metric                   Precision (↗︎)  Recall (↗︎)
         LogisticRegression mean        0.94...     0.96...
                            std         0.02...     0.02...
@@ -211,7 +210,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         >>> report.metrics.accuracy()
-        Compute metric for each split ...
         Metric                       Accuracy (↗︎)
         LogisticRegression Split #0       0.94...
                            Split #1       0.94...
@@ -290,7 +288,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         >>> report.metrics.precision()
-        Compute metric for each split ...
         Metric                      Precision (↗︎)
         Class label                              0         1
         LogisticRegression Split #0       0.96...   0.93...
@@ -373,7 +370,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         >>> report.metrics.recall()
-        Compute metric for each split ...
         Metric                      Recall (↗︎)
         Class label                           0        1
         LogisticRegression Split #0    0.87...   0.98...
@@ -418,7 +414,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         >>> report.metrics.brier_score()
-        Compute metric for each split ...
         Metric                       Brier score (↘︎)
         LogisticRegression Split #0          0.04...
                            Split #1          0.04...
@@ -503,7 +498,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         >>> report.metrics.roc_auc()
-        Compute metric for each split ...
         Metric                       ROC AUC (↗︎)
         LogisticRegression Split #0      0.99...
                            Split #1      0.98...
@@ -549,7 +543,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         >>> report.metrics.log_loss()
-        Compute metric for each split ...
         Metric                       Log loss (↘︎)
         LogisticRegression Split #0       0.1...
                            Split #1       0.1...
@@ -605,7 +598,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> regressor = Ridge()
         >>> report = CrossValidationReport(regressor, X=X, y=y, cv_splitter=2)
         >>> report.metrics.r2()
-        Compute metric for each split ...
         Metric           R² (↗︎)
         Ridge Split #0  0.36...
               Split #1  0.39...
@@ -662,7 +654,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> regressor = Ridge()
         >>> report = CrossValidationReport(regressor, X=X, y=y, cv_splitter=2)
         >>> report.metrics.rmse()
-        Compute metric for each split ...
         Metric          RMSE (↘︎)
         Ridge Split #0  59.9...
               Split #1  61.4...
@@ -741,7 +732,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     response_method="predict",
         ...     metric_name="MAE (↗︎)",
         ... )
-        Compute metric for each split ...
         Metric           MAE (↗︎)
         Ridge Split #0  50.1...
               Split #1  52.6...
@@ -966,7 +956,6 @@ class _PlotMetricsAccessor(_BaseAccessor):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         >>> display = report.metrics.plot.roc()
-        Computing predictions for display ...
         >>> display.plot(roc_curve_kwargs={"color": "tab:red"})
         """
         response_method = ("predict_proba", "decision_function")
@@ -1016,7 +1005,6 @@ class _PlotMetricsAccessor(_BaseAccessor):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         >>> display = report.metrics.plot.precision_recall()
-        Computing predictions for display ...
         >>> display.plot()
         """
         response_method = ("predict_proba", "decision_function")
@@ -1092,7 +1080,6 @@ class _PlotMetricsAccessor(_BaseAccessor):
         >>> display = report.metrics.plot.prediction_error(
         ...     kind="actual_vs_predicted"
         ... )
-        Computing predictions for display ...
         >>> display.plot(line_kwargs={"color": "tab:red"})
         """
         display_kwargs = {"subsample": subsample, "random_state": random_state}

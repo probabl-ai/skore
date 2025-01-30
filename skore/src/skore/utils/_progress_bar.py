@@ -12,8 +12,8 @@ def progress_decorator(description):
     """Decorate class methods to add a progress bar.
 
     This decorator adds a Rich progress bar to class methods, displaying progress
-    during execution. The progress bar automatically disappears after completion. 
-    
+    during execution. The progress bar automatically disappears after completion.
+
     Parameters
     ----------
     description : str or callable

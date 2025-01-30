@@ -181,9 +181,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         >>> report.cache_predictions()
-        Cross-validation predictions ...
-        Caching predictions ...
-        Caching predictions ...
         >>> report.clear_cache()
         >>> report._cache
         {}
@@ -215,9 +212,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         >>> report.cache_predictions()
-        Cross-validation predictions ...
-        Caching predictions ...
-        Caching predictions ...
         >>> report._cache
         {...}
         """
