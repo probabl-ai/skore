@@ -11,17 +11,45 @@ from matplotlib.pyplot import subplots
 from matplotlib.testing.compare import compare_images
 from PIL import Image
 from sklearn.ensemble import RandomForestClassifier
-from skore.exceptions import (
-    InvalidProjectNameError,
-    ProjectCreationError,
-)
-from skore.persistence.view.view import View
-from skore.project.create import _create, _validate_project_name
+from skore import Project
 
 
 @pytest.fixture(autouse=True)
 def monkeypatch_datetime(monkeypatch, MockDatetime):
     monkeypatch.setattr("skore.persistence.item.item.datetime", MockDatetime)
+
+
+def test_init(tmp_path):
+    dirpath = tmp_path / "my-project.skore"
+
+    # Ensure missing project can be created
+    Project(dirpath)
+
+    assert dirpath.exists()
+    assert (dirpath / "items").exists()
+    assert (dirpath / "views").exists()
+
+    # Ensure existing project raises an error with `if_exists="raise"`
+    with pytest.raises(FileExistsError):
+        Project(dirpath, if_exists="raise")
+
+    # Ensure existing project can be loaded with `if_exists="load"`
+    Project(dirpath, if_exists="load")
+
+
+def test_clear(tmp_path):
+    dirpath = tmp_path / "my-project.skore"
+    project = Project(dirpath)
+
+    project.put("<key>", "<value>")
+
+    assert project.keys() == ["<key>"]
+
+    project.clear()
+
+    assert project.keys() == []
+    assert project._item_repository.keys() == []
+    assert project._view_repository.keys() == ["default"]
 
 
 def test_put_string_item(in_memory_project):
@@ -265,71 +293,3 @@ def test_put_wrong_key_and_value_raise(in_memory_project):
     """When `on_error` is "raise", raise the first error that occurs."""
     with pytest.raises(TypeError):
         in_memory_project.put(0, (lambda: "unsupported object"))
-
-
-def test_clear(in_memory_project):
-    in_memory_project.put("key1", 1)
-    in_memory_project.put("key1", 2)
-    in_memory_project.put("a str", "some text here to have fun")
-    in_memory_project.view_repository.put_view(
-        "default_test_", View(layout=["key1", "key2"])
-    )
-    in_memory_project.clear()
-    assert len(in_memory_project.keys()) == 0
-    assert len(in_memory_project.view_repository.keys()) == 1
-    assert in_memory_project.view_repository.keys()[0] == "default"
-
-
-test_cases = [
-    (
-        "a" * 250,
-        (False, InvalidProjectNameError()),
-    ),
-    (
-        "%",
-        (False, InvalidProjectNameError()),
-    ),
-    (
-        "hello world",
-        (False, InvalidProjectNameError()),
-    ),
-]
-
-
-@pytest.mark.parametrize("project_name,expected", test_cases)
-def test_validate_project_name(project_name, expected):
-    result, exception = _validate_project_name(project_name)
-    expected_result, expected_exception = expected
-    assert result == expected_result
-    assert type(exception) is type(expected_exception)
-
-
-@pytest.mark.parametrize("project_name", ["hello", "hello.skore"])
-def test_create_project(project_name, tmp_path):
-    _create(tmp_path / project_name)
-    assert (tmp_path / "hello.skore").exists()
-
-
-# TODO: If using fixtures in test cases is possible, join this with
-# `test_create_project`
-def test_create_project_absolute_path(tmp_path):
-    _create(tmp_path / "hello")
-    assert (tmp_path / "hello.skore").exists()
-
-
-def test_create_project_fails_if_file_exists(tmp_path):
-    _create(tmp_path / "hello")
-    assert (tmp_path / "hello.skore").exists()
-    with pytest.raises(FileExistsError):
-        _create(tmp_path / "hello")
-
-
-def test_create_project_fails_if_permission_denied(tmp_path):
-    with pytest.raises(ProjectCreationError):
-        _create("/")
-
-
-@pytest.mark.parametrize("project_name", ["hello.txt", "%%%", "COM1"])
-def test_create_project_fails_if_invalid_name(project_name, tmp_path):
-    with pytest.raises(ProjectCreationError):
-        _create(tmp_path / project_name)

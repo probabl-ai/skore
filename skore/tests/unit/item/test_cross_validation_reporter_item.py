@@ -1,5 +1,6 @@
 import dataclasses
 import io
+import json
 
 import joblib
 import numpy
@@ -15,6 +16,7 @@ from skore.sklearn.cross_validation import CrossValidationReporter
 from skore.sklearn.cross_validation.cross_validation_reporter import (
     CrossValidationPlots,
 )
+from skore.utils import bytes_to_b64_str
 
 
 class FakeEstimator:
@@ -89,10 +91,19 @@ class TestCrossValidationReporterItem:
             joblib.dump(reporter, stream)
 
             reporter_bytes = stream.getvalue()
+            reporter_b64_str = bytes_to_b64_str(reporter_bytes)
 
-        assert item.reporter_bytes == reporter_bytes
+        assert item.reporter_b64_str == reporter_b64_str
         assert item.created_at == mock_nowstr
         assert item.updated_at == mock_nowstr
+
+    def test_ensure_jsonable(self):
+        reporter = FakeCrossValidationReporter()
+
+        item = CrossValidationReporterItem.factory(reporter)
+        item_parameters = item.__parameters__
+
+        json.dumps(item_parameters)
 
     def test_reporter(self, mock_nowstr):
         reporter = FakeCrossValidationReporter()
@@ -101,10 +112,11 @@ class TestCrossValidationReporterItem:
             joblib.dump(reporter, stream)
 
             reporter_bytes = stream.getvalue()
+            reporter_b64_str = bytes_to_b64_str(reporter_bytes)
 
         item1 = CrossValidationReporterItem.factory(reporter)
         item2 = CrossValidationReporterItem(
-            reporter_bytes=reporter_bytes,
+            reporter_b64_str=reporter_b64_str,
             created_at=mock_nowstr,
             updated_at=mock_nowstr,
         )

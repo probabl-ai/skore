@@ -8,7 +8,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Union
 
-from .item import Item, ItemTypeError
+from skore.persistence.item.item import Item, ItemTypeError
+from skore.utils import b64_str_to_bytes, bytes_to_b64_str
 
 if TYPE_CHECKING:
     import sklearn.base
@@ -25,7 +26,7 @@ class SklearnBaseEstimatorItem(Item):
     def __init__(
         self,
         estimator_html_repr: str,
-        estimator_skops: bytes,
+        estimator_skops_b64_str: str,
         estimator_skops_untrusted_types: list[str],
         created_at: Union[str, None] = None,
         updated_at: Union[str, None] = None,
@@ -38,7 +39,7 @@ class SklearnBaseEstimatorItem(Item):
         ----------
         estimator_html_repr : str
             The HTML representation of the scikit-learn estimator.
-        estimator_skops : bytes
+        estimator_skops_b64_str : str
             The skops representation of the scikit-learn estimator.
         estimator_skops_untrusted_types : list[str]
             The list of untrusted types in the skops representation.
@@ -52,7 +53,7 @@ class SklearnBaseEstimatorItem(Item):
         super().__init__(created_at, updated_at, note)
 
         self.estimator_html_repr = estimator_html_repr
-        self.estimator_skops = estimator_skops
+        self.estimator_skops_b64_str = estimator_skops_b64_str
         self.estimator_skops_untrusted_types = estimator_skops_untrusted_types
 
     @property
@@ -67,8 +68,11 @@ class SklearnBaseEstimatorItem(Item):
         """
         import skops.io
 
+        estimator_skops_bytes = b64_str_to_bytes(self.estimator_skops_b64_str)
+
         return skops.io.loads(
-            self.estimator_skops, trusted=self.estimator_skops_untrusted_types
+            data=estimator_skops_bytes,
+            trusted=self.estimator_skops_untrusted_types,
         )
 
     @classmethod
@@ -92,24 +96,25 @@ class SklearnBaseEstimatorItem(Item):
             A new SklearnBaseEstimatorItem instance.
         """
         import sklearn.base
-        import sklearn.utils
 
         if not isinstance(estimator, sklearn.base.BaseEstimator):
             raise ItemTypeError(f"Type '{estimator.__class__}' is not supported.")
 
         # This line is only needed if we know `estimator` has the right type, so we do
         # it after the type check
+        import sklearn.utils
         import skops.io
 
         estimator_html_repr = sklearn.utils.estimator_html_repr(estimator)
-        estimator_skops = skops.io.dumps(estimator)
+        estimator_skops_bytes = skops.io.dumps(estimator)
+        estimator_skops_b64_str = bytes_to_b64_str(estimator_skops_bytes)
         estimator_skops_untrusted_types = skops.io.get_untrusted_types(
-            data=estimator_skops
+            data=estimator_skops_bytes
         )
 
         return cls(
             estimator_html_repr=estimator_html_repr,
-            estimator_skops=estimator_skops,
+            estimator_skops_b64_str=estimator_skops_b64_str,
             estimator_skops_untrusted_types=estimator_skops_untrusted_types,
             **kwargs,
         )

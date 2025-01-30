@@ -1,4 +1,5 @@
 import base64
+import json
 
 import altair
 import pytest
@@ -21,6 +22,14 @@ class TestAltairChartItem:
     def test_factory_exception(self):
         with pytest.raises(ItemTypeError):
             AltairChartItem.factory(None)
+
+    def test_ensure_jsonable(self):
+        chart = altair.Chart().mark_point()
+
+        item = AltairChartItem.factory(chart)
+        item_parameters = item.__parameters__
+
+        json.dumps(item_parameters)
 
     def test_chart(self):
         chart = altair.Chart().mark_point()

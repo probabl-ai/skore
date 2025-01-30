@@ -1,8 +1,10 @@
 import io
+import json
 
 import joblib
 import pytest
 from skore.persistence.item import PickleItem
+from skore.utils import bytes_to_b64_str
 
 
 class TestPickleItem:
@@ -17,21 +19,29 @@ class TestPickleItem:
         with io.BytesIO() as stream:
             joblib.dump(object, stream)
 
-            object_bytes = stream.getvalue()
+            pickle_bytes = stream.getvalue()
+            pickle_b64_str = bytes_to_b64_str(pickle_bytes)
 
-        assert item.pickle_bytes == object_bytes
+        assert item.pickle_b64_str == pickle_b64_str
         assert item.created_at == mock_nowstr
         assert item.updated_at == mock_nowstr
+
+    def test_ensure_jsonable(self):
+        item = PickleItem.factory(object)
+        item_parameters = item.__parameters__
+
+        json.dumps(item_parameters)
 
     def test_object(self, mock_nowstr):
         with io.BytesIO() as stream:
             joblib.dump(int, stream)
 
-            int_bytes = stream.getvalue()
+            pickle_bytes = stream.getvalue()
+            pickle_b64_str = bytes_to_b64_str(pickle_bytes)
 
         item1 = PickleItem.factory(int)
         item2 = PickleItem(
-            pickle_bytes=int_bytes,
+            pickle_b64_str=pickle_b64_str,
             created_at=mock_nowstr,
             updated_at=mock_nowstr,
         )

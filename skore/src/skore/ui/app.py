@@ -10,20 +10,25 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.types import Lifespan
 
-from skore.project import Project, open
+from skore.project import Project
 from skore.ui.dependencies import get_static_path
 from skore.ui.project_routes import router as project_router
 
 
 def create_app(
-    project: Optional[Project] = None, lifespan: Optional[Lifespan] = None
+    project: Optional[Project] = None,
+    lifespan: Optional[Lifespan] = None,
 ) -> FastAPI:
     """FastAPI factory used to create the API to interact with `stores`."""
     app = FastAPI(lifespan=lifespan)
 
-    # Give the app access to the project
+    # Give the app an access to the project, especially when invoking uvicorn in debug
+    # mode, directly from CLI. In such way, we can't directly pass to the function a
+    # project.
+    #
+    # If the project doesn't exist yet, it will be implicitly created.
     if not project:
-        project = open("project.skore")
+        project = Project("project.skore", if_exists="load")
 
     app.state.project = project
 

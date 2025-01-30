@@ -7,8 +7,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional
 
-from .item import Item, ItemTypeError
-from .media_item import lazy_is_instance
+from skore.persistence.item.item import Item, ItemTypeError
+from skore.persistence.item.media_item import lazy_is_instance
+from skore.utils import bytes_to_b64_str
 
 if TYPE_CHECKING:
     from altair.vegalite.v5.schema.core import TopLevelSpec as AltairChart
@@ -71,10 +72,8 @@ class AltairChartItem(Item):
 
     def as_serializable_dict(self):
         """Convert item to a JSON-serializable dict to used by frontend."""
-        import base64
-
         chart_bytes = self.chart_str.encode("utf-8")
-        chart_b64_str = base64.b64encode(chart_bytes).decode()
+        chart_b64_str = bytes_to_b64_str(chart_bytes)
 
         return super().as_serializable_dict() | {
             "media_type": "application/vnd.vega.v5+json;base64",

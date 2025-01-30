@@ -55,7 +55,7 @@ You can find information on the latest version [here](https://anaconda.org/conda
 1. From your Python code, create and load a skore project:
     ```python
     import skore
-    my_project = skore.open("my_project", create=True)
+    my_project = skore.Project("my_project")
     ```
     This will create a skore project directory named `my_project.skore` in your current working directory.
 
@@ -117,6 +117,7 @@ Thank you for considering contributing to skore! Join our mission to promote ope
   [![Discord](https://img.shields.io/badge/Discord-%235865F2.svg?logo=discord&logoColor=white)](https://discord.probabl.ai/)
 
 </div>
+
 ---
 
 Brought to you by
