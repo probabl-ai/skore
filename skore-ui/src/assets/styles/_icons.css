@@ -27,11 +27,11 @@
   text-transform: none;
 }
 
-.icon-bar-chart::before {
+.icon-ascending-arrow::before {
   content: "\e900";
 }
 
-.icon-ascending-arrow::before {
+.icon-bar-chart::before {
   content: "\e901";
 }
 
@@ -199,14 +199,18 @@
   content: "\e92a";
 }
 
-.icon-trash::before {
+.icon-title::before {
   content: "\e92b";
 }
 
-.icon-warning-circle::before {
+.icon-trash::before {
   content: "\e92c";
 }
 
-.icon-warning::before {
+.icon-warning-circle::before {
   content: "\e92d";
+}
+
+.icon-warning::before {
+  content: "\e92e";
 }

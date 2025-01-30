@@ -1,17 +1,19 @@
 <script setup lang="ts">
 import { formatDistance } from "date-fns";
 import Simplebar from "simplebar-vue";
-import { onBeforeUnmount, onMounted, ref } from "vue";
+import { onBeforeUnmount, onMounted, ref, useTemplateRef } from "vue";
 
 import DraggableList from "@/components/DraggableList.vue";
 import MediaWidgetSelector from "@/components/MediaWidgetSelector.vue";
-import ProjectViewCard from "@/components/ProjectViewCard.vue";
 import SimpleButton from "@/components/SimpleButton.vue";
 import { useProjectStore } from "@/stores/project";
 import { useToastsStore } from "@/stores/toasts";
 import ItemNote from "@/views/project/ItemNote.vue";
 import ProjectItemList from "@/views/project/ProjectItemList.vue";
+import ProjectViewCard from "@/views/project/ProjectViewCard.vue";
 import ProjectViewNavigator from "@/views/project/ProjectViewNavigator.vue";
+import InsertCell from "./InsertCell.vue";
+import ProjectViewNote from "./ProjectViewNote.vue";
 
 const props = defineProps({
   showCardActions: {
@@ -24,6 +26,7 @@ const projectStore = useProjectStore();
 const isInFocusMode = ref(false);
 const currentDropPosition = ref<number>();
 const toastsStore = useToastsStore();
+const editor = useTemplateRef<HTMLDivElement>("editor");
 
 function onFocusMode() {
   isInFocusMode.value = !isInFocusMode.value;
@@ -49,6 +52,10 @@ function onItemDrop(event: DragEvent) {
 function getItemSubtitle(created_at: Date) {
   const now = new Date();
   return `Created ${formatDistance(created_at, now)} ago`;
+}
+
+function addNoteToView(position: number) {
+  projectStore.addNoteToView(position);
 }
 
 onMounted(async () => {
@@ -92,6 +99,9 @@ onBeforeUnmount(() => {
           </div>
         </div>
         <Simplebar class="editor-container" v-else>
+          <div class="insert-cell-wrapper first">
+            <InsertCell @click="addNoteToView(0)" />
+          </div>
           <DraggableList
             v-model:items="projectStore.currentViewItems"
             auto-scroll-container-selector=".editor-container"
@@ -99,21 +109,35 @@ onBeforeUnmount(() => {
             @drop="onItemDrop($event)"
             @dragover.prevent
           >
-            <template #item="{ name, mediaType, data, createdAt, updatedAt, updates, note }">
+            <template #item="{ item: { isNote, note, item }, index }">
+              <ProjectViewNote v-if="isNote" :position="index" :note="note" />
               <ProjectViewCard
-                :key="name"
-                :title="name"
-                :subtitle="getItemSubtitle(createdAt)"
+                v-else
+                :key="item.name"
+                :title="item.name"
+                :subtitle="getItemSubtitle(item.createdAt)"
                 :showActions="props.showCardActions"
-                :updates="updates"
-                :current-update-index="projectStore.getCurrentItemUpdateIndex(name)"
-                :data-name="name"
-                @card-removed="onCardRemoved(name)"
-                @update-selected="projectStore.setCurrentItemUpdateIndex(name, $event)"
+                :updates="item.updates"
+                :current-update-index="projectStore.getCurrentItemUpdateIndex(item.name)"
+                :data-name="item.name"
+                @card-removed="onCardRemoved(item.name)"
+                @update-selected="projectStore.setCurrentItemUpdateIndex(item.name, $event)"
               >
-                <ItemNote :name="name" :note="note" />
-                <MediaWidgetSelector :item="{ name, mediaType, data, createdAt, updatedAt }" />
+                <ItemNote :name="item.name" :note="item.note" />
+                <MediaWidgetSelector
+                  :item="{
+                    name: item.name,
+                    mediaType: item.mediaType,
+                    data: item.data,
+                    createdAt: item.createdAt,
+                    updatedAt: item.updatedAt,
+                  }"
+                />
               </ProjectViewCard>
+
+              <div class="insert-cell-wrapper">
+                <InsertCell @click="addNoteToView(index + 1)" />
+              </div>
             </template>
           </DraggableList>
         </Simplebar>
@@ -220,15 +244,41 @@ main {
       & .editor-container {
         height: 0;
         flex: 1;
-        padding: var(--spacing-24);
+        padding: 0 var(--spacing-24) var(--spacing-24) calc(var(--spacing-24) - var(--spacing-16));
 
         & .draggable {
           min-height: calc(100dvh - var(--editor-height) - var(--spacing-24) * 2);
-          gap: var(--spacing-24);
         }
 
-        & .item-note {
+        & .view-note {
           margin-bottom: var(--spacing-16);
+        }
+
+        & .insert-cell-wrapper {
+          position: relative;
+
+          & .insert-cell {
+            position: absolute;
+            top: var(--spacing-6);
+            width: 100%;
+            opacity: 0;
+            transition: opacity var(--animation-duration) var(--animation-easing);
+
+            &:hover {
+              opacity: 1;
+            }
+          }
+
+          &.first {
+            width: 100%;
+            height: var(--spacing-16);
+
+            & .insert-cell {
+              position: relative;
+              top: var(--spacing-6);
+              padding-left: var(--spacing-12);
+            }
+          }
         }
       }
     }

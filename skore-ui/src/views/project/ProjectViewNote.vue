@@ -6,7 +6,7 @@ import RichTextEditor from "@/components/RichTextEditor.vue";
 import SimpleButton from "@/components/SimpleButton.vue";
 import { useProjectStore } from "@/stores/project";
 
-const props = defineProps<{ name: string; note: string | null }>();
+const props = defineProps<{ position: number; note: string | null }>();
 
 const projectStore = useProjectStore();
 const el = useTemplateRef<HTMLDivElement>("el");
@@ -33,18 +33,13 @@ async function onEditionEnd() {
     // stop listening to outside click
     document.removeEventListener("click", onClickOutside);
     innerNote.value = innerNote.value.replace(/\n+$/g, "");
-    await projectStore.setNoteOnItem(props.name, innerNote.value);
+    await projectStore.setNoteInView(props.position, innerNote.value);
     isEditing.value = false;
     // actually wait for the editor to be closed to restart backend polling
     nextTick(() => {
       projectStore.startBackendPolling();
     });
   }
-}
-
-async function onClear() {
-  innerNote.value = "";
-  await onEditionEnd();
 }
 
 async function onClickOutside(e: Event) {
@@ -61,7 +56,7 @@ async function onClickOutside(e: Event) {
 }
 
 watch(innerNote, async () => {
-  await projectStore.setNoteOnItem(props.name, innerNote.value);
+  await projectStore.setNoteInView(props.position, innerNote.value);
 });
 
 watch(
@@ -79,28 +74,12 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="view-note" ref="el">
-    <div class="header">
-      <div class="info">
-        <div>Note</div>
-        <Transition name="fade">
-          <SimpleButton
-            v-if="isEditing && innerNote && innerNote.length > 0"
-            label="clear"
-            class="clear"
-            :is-inline="true"
-            @click="onClear"
-          />
-        </Transition>
-      </div>
-      <Transition name="fade">
-        <div class="edit-actions" v-if="isEditing">
-          <SimpleButton :is-inline="true" icon="icon-bold" @click="editor?.markBold()" />
-          <SimpleButton :is-inline="true" icon="icon-italic" @click="editor?.markItalic()" />
-          <SimpleButton :is-inline="true" icon="icon-bullets" @click="editor?.markList()" />
-        </div>
-      </Transition>
-    </div>
     <div class="editor" v-if="isEditing">
+      <div class="edit-actions" v-if="isEditing">
+        <SimpleButton :is-inline="true" icon="icon-bold" @click="editor?.markBold()" />
+        <SimpleButton :is-inline="true" icon="icon-italic" @click="editor?.markItalic()" />
+        <SimpleButton :is-inline="true" icon="icon-bullets" @click="editor?.markList()" />
+      </div>
       <RichTextEditor
         ref="editor"
         v-model:value="innerNote"
@@ -108,11 +87,11 @@ onBeforeUnmount(() => {
         @keyup.esc="onEditionEnd"
         @keydown.shift.enter.prevent="onEditionEnd"
         @keydown.meta.enter.prevent="onEditionEnd"
+        placeholder="No content yet."
       />
     </div>
     <div class="preview" v-if="!isEditing" @click="onEdit">
       <MarkdownWidget :source="innerNote" v-if="innerNote && innerNote.length > 0" />
-      <div class="placeholder" v-else>Click to annotate {{ props.name }}.</div>
     </div>
   </div>
 </template>

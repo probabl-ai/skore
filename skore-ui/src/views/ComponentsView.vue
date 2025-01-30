@@ -206,7 +206,7 @@ const lastSelectedItem = ref<string | null>(null);
 
 function addItemToDraggableList(i: number) {
   draggableListData.value.splice(i, 0, {
-    name: `${i}`,
+    key: `${i}`,
     color: `hsl(${(360 / 25) * i}deg, 90%, 50%)`,
     content: Array.from(
       { length: Math.floor(Math.random() * 10) + 1 }, // Random number of items between 1 and 10
@@ -217,7 +217,7 @@ function addItemToDraggableList(i: number) {
 
 const draggableListData = ref(
   Array.from({ length: 25 }, (v, i) => ({
-    name: `${i}`,
+    key: `${i}`,
     color: `hsl(${(360 / 25) * i}deg, 90%, 50%)`,
     content: Array.from(
       { length: Math.floor(Math.random() * 10) + 1 }, // Random number of items between 1 and 10
@@ -1290,10 +1290,11 @@ const richText = ref(
           <div>icon-bold <i class="icon icon-bold"></i></div>
           <div>icon-italic <i class="icon icon-italic"></i></div>
           <div>icon-bullets <i class="icon icon-bullets"></i></div>
+          <div>icon-title <i class="icon icon-title"></i></div>
         </div>
       </TabPanelContent>
       <TabPanelContent name="draggable">
-        <div>Item order: {{ draggableListData.map((item) => item.name).join(", ") }}</div>
+        <div>Item order: {{ draggableListData.map((item) => item.key).join(", ") }}</div>
         <div>Drop position: {{ currentDropPosition }}</div>
         <div>
           <SimpleButton
@@ -1313,11 +1314,13 @@ const richText = ref(
             @drop="onItemDrop($event)"
             @dragover.prevent
           >
-            <template #item="{ name: id, color, content }">
-              <div :style="{ backgroundColor: color, color: 'white' }">
-                <div data-drag-image-selector :style="{ backgroundColor: color }">ID: {{ id }}</div>
+            <template #item="{ item }">
+              <div :style="{ backgroundColor: item.color, color: 'white' }">
+                <div data-drag-image-selector :style="{ backgroundColor: item.color }">
+                  ID: {{ item.name }}
+                </div>
                 <ul>
-                  <li v-for="(c, i) in content" :key="i">{{ c }}</li>
+                  <li v-for="(c, i) in item.content" :key="i">{{ c }}</li>
                 </ul>
               </div>
             </template>

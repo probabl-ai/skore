@@ -6,7 +6,6 @@ import Simplebar from "simplebar-core";
 import { onBeforeUnmount, onMounted, ref, useTemplateRef } from "vue";
 
 interface Item {
-  name: string;
   [key: string]: any;
 }
 
@@ -23,16 +22,6 @@ const movingItemY = ref(0);
 const container = useTemplateRef("container");
 let draggable: Interactable;
 let autoScrollContainer: HTMLElement = document.body;
-
-function topDropIndicatorStyles() {
-  if (dropIndicatorPosition.value === -1) {
-    return {
-      marginTop: `${movingItemHeight.value}px`,
-      marginBottom: "var(--spacing-16)",
-    };
-  }
-  return {};
-}
 
 function capturedStyles() {
   const a = -4 * (Math.PI / 180);
@@ -196,17 +185,15 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="draggable" :class="{ dragging: movingItemIndex !== -1 }" ref="container">
-    <div v-for="(item, index) in items" class="item" :key="item.name">
+    <div v-for="(item, index) in items" class="item" :key="item.key">
       <div class="handle" :data-index="index"><span class="icon-handle" /></div>
       <div class="content-wrapper">
         <div
-          v-if="index === 0"
           class="drop-indicator top"
-          :class="{ visible: dropIndicatorPosition === -1 }"
-          :style="topDropIndicatorStyles()"
+          :class="{ visible: dropIndicatorPosition === -1 && index === 0 }"
         />
         <div class="content" :class="{ moving: movingItemIndex === index }">
-          <slot name="item" v-bind="item"></slot>
+          <slot name="item" v-bind="{ item, index }"></slot>
         </div>
         <div class="drop-indicator bottom" :class="{ visible: dropIndicatorPosition === index }" />
       </div>
@@ -219,7 +206,7 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .draggable {
-  --content-left-margin: 18px;
+  --content-left-margin: var(--spacing-16);
 
   position: relative;
   display: flex;
@@ -232,7 +219,7 @@ onBeforeUnmount(() => {
 
     & .handle {
       position: absolute;
-      top: 6px;
+      top: var(--spacing-16);
       left: 0;
       display: flex;
       color: var(--color-icon-primary);
@@ -259,6 +246,7 @@ onBeforeUnmount(() => {
     & .drop-indicator {
       height: 0;
       border-radius: var(--radius-xs);
+      margin: 0;
       background-color: var(--color-background-branding);
       opacity: 0;
 
@@ -267,8 +255,12 @@ onBeforeUnmount(() => {
         opacity: 1;
       }
 
+      &.top {
+        margin: 0 0 var(--spacing-16) 0;
+      }
+
       &.bottom {
-        margin: var(--spacing-16) 0;
+        margin: var(--spacing-16) 0 0 0;
       }
     }
 
