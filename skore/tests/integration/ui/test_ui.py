@@ -359,28 +359,6 @@ def test_serialize_media_item(
     }
 
 
-@pytest.fixture
-def fake_cross_validate(monkeypatch):
-    def _fake_cross_validate(*args, **kwargs):
-        result = {
-            "test_score": numpy.array([1.0] * 5),
-            "score_time": numpy.array([1.0] * 5),
-            "fit_time": numpy.array([1.0] * 5),
-        }
-        if kwargs.get("return_estimator"):
-            result["estimator"] = numpy.array([])
-        if kwargs.get("return_indices"):
-            result["indices"] = {
-                "train": numpy.array([[1.0] * 5] * 5),
-                "test": numpy.array([[1.0] * 5] * 5),
-            }
-        if kwargs.get("return_train_score"):
-            result["train_score"] = numpy.array([1.0] * 5)
-        return result
-
-    monkeypatch.setattr("sklearn.model_selection.cross_validate", _fake_cross_validate)
-
-
 def test_activity_feed(monkeypatch, client, in_memory_project):
     class MockDatetime:
         NOW = datetime.datetime.now(tz=datetime.timezone.utc)
@@ -469,3 +447,43 @@ def test_set_note(client, in_memory_project):
     for i in range(3):
         note = in_memory_project.get_note("notted", version=i)
         assert note == f"note{i}"
+
+
+def test_get_items_with_pickle_item_and_unpickling_error(
+    monkeypatch,
+    MockDatetime,
+    mock_nowstr,
+    client,
+    in_memory_project,
+):
+    import skore.persistence.item
+
+    monkeypatch.setattr("skore.persistence.item.item.datetime", MockDatetime)
+    in_memory_project.put("pickle", skore.persistence.item.NumpyArrayItem)
+
+    monkeypatch.delattr("skore.persistence.item.numpy_array_item.NumpyArrayItem")
+    monkeypatch.setattr(
+        "skore.persistence.item.pickle_item.format_exception",
+        lambda *args, **kwargs: "<traceback>",
+    )
+
+    response = client.get("/api/project/items")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "views": {},
+        "items": {
+            "pickle": [
+                {
+                    "created_at": mock_nowstr,
+                    "updated_at": mock_nowstr,
+                    "name": "pickle",
+                    "media_type": "text/markdown",
+                    "value": "Item cannot be displayed",
+                    "note": (
+                        "\n\nUnpicklingError with complete traceback:\n\n<traceback>"
+                    ),
+                },
+            ],
+        },
+    }
