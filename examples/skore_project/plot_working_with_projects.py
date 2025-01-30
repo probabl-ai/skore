@@ -26,7 +26,7 @@ temp_dir = tempfile.TemporaryDirectory()
 temp_dir_path = Path(temp_dir.name)
 os.chdir(temp_dir_path)
 # sphinx_gallery_end_ignore
-my_project = skore.open("my_project", create=True)
+my_project = skore.Project("my_project")
 
 # %%
 # Storing integers
