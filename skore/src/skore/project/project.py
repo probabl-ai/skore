@@ -41,6 +41,8 @@ class Project:
     ----------
     path : Path
         The unified path of the project.
+    name : str
+        The name of the project. Corresponds to `path.name`.
 
     Examples
     --------
