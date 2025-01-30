@@ -1,9 +1,9 @@
 """
 .. _example_cross_validate:
 
-================
-Cross-validation
-================
+========================================================================
+`CrossValidationReporter`: get insights on your cross-validation results
+========================================================================
 
 This example illustrates the motivation and the use of skore's
 :class:`skore.CrossValidationReporter` to get assistance when developing ML/DS projects.

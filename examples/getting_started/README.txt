@@ -1,4 +1,5 @@
 Getting started
 ---------------
 
-Overall and gentle introduction to skore.
+We recommend starting with these examples that provide an overall and gentle
+introduction to skore.
