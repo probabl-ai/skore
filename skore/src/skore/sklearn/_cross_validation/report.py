@@ -163,9 +163,12 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         )
 
         estimator_reports = []
-        for report in generator:
-            estimator_reports.append(report)
-            progress.update(task, advance=1, refresh=True)
+        try:
+            for report in generator:
+                estimator_reports.append(report)
+                progress.update(task, advance=1, refresh=True)
+        except (Exception, KeyboardInterrupt):
+            pass
 
         return estimator_reports
 
