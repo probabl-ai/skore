@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 
+import FloatingTooltip from "@/components/FloatingTooltip.vue";
 import SlideToggle from "@/components/SlideToggle.vue";
 import SkoreLogo from "@/components/icons/SkoreLogo.vue";
 import { useThemesStore } from "@/stores/themes";
@@ -27,6 +28,11 @@ watch(
     <nav>
       <slot></slot>
     </nav>
+    <div class="project-name">
+      <FloatingTooltip text="~/dev/project.skore" placement="bottom">
+        project.skore
+      </FloatingTooltip>
+    </div>
     <div class="tools">
       <div class="dark-light">
         <i class="icon icon-sun" />
@@ -40,39 +46,45 @@ watch(
 <style scoped>
 .app-toolbar {
   display: flex;
-  min-width: var(--width-toolbar);
-  height: 100dvh;
-  flex-direction: column;
+  width: 100%;
+  height: var(--height-header);
+  flex-direction: row;
   border-right: solid var(--stroke-width-md) var(--color-stroke-background-primary);
   background-color: var(--color-background-secondary);
 
   & .logo {
     display: flex;
-    height: var(--height-header);
     align-items: center;
     justify-content: center;
-    border-bottom: solid var(--stroke-width-md) var(--color-stroke-background-primary);
+    padding: var(--spacing-8);
+    border-right: solid var(--stroke-width-md) var(--color-stroke-background-primary);
 
     & svg {
-      width: calc(var(--width-toolbar) * 0.8);
+      height: calc(var(--height-header) * 0.8);
     }
+  }
+
+  & .project-name {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    color: var(--color-text-primary);
   }
 
   & nav {
     display: flex;
-    flex: 1;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
-    padding: var(--spacing-12) 0;
-    gap: var(--spacing-10);
+    padding: var(--spacing-8);
+    gap: var(--spacing-8);
   }
 
   & .tools {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
     justify-content: center;
-    padding: var(--spacing-8) 0;
+    padding: var(--spacing-8);
     gap: var(--spacing-8);
 
     & .dark-light {

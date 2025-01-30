@@ -67,12 +67,11 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .scroll {
-  max-height: 100dvh;
+  max-height: calc(100dvh - var(--height-header));
 }
 
 .activity-feed {
   display: flex;
-  min-height: 100dvh;
   flex-direction: column;
   padding: var(--spacing-24) 11%;
 
