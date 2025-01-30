@@ -40,7 +40,16 @@ Skore: getting started
 # %%
 import skore
 
-my_project = skore.open("my_project", create=True)
+# sphinx_gallery_start_ignore
+import os
+import tempfile
+from pathlib import Path
+
+temp_dir = tempfile.TemporaryDirectory()
+temp_dir_path = Path(temp_dir.name)
+os.chdir(temp_dir_path)
+# sphinx_gallery_end_ignore
+my_project = skore.Project("my_project")
 
 # %%
 # Now that the project exists, we can write some Python code (in the same
@@ -280,6 +289,9 @@ X.head(2)
 X_train, X_test, y_train, y_test = skore.train_test_split(
     X, y, random_state=0, shuffle=False
 )
+# sphinx_gallery_start_ignore
+temp_dir.cleanup()
+# sphinx_gallery_end_ignore
 
 # %%
 # We get a ``TimeBasedColumnWarning`` advising us to use
@@ -303,13 +315,3 @@ X_train, X_test, y_train, y_test = skore.train_test_split(
 #   Feedbacks are welcome: please feel free to join our
 #   `Discord <http://discord.probabl.ai>`_ or
 #   `create an issue <https://github.com/probabl-ai/skore/issues>`_.
-
-# %%
-# Cleanup the project
-# -------------------
-#
-# Let's clear the skore project (to avoid any conflict with other documentation
-# examples).
-
-# %%
-my_project.clear()

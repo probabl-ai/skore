@@ -5,17 +5,31 @@ This module defines the MatplotlibFigureItem class, used to persist Matplotlib f
 
 from __future__ import annotations
 
-from base64 import b64encode
+from contextlib import contextmanager
 from io import BytesIO
 from typing import TYPE_CHECKING, Optional
 
 import joblib
 
-from .item import Item, ItemTypeError
-from .media_item import lazy_is_instance
+from skore.persistence.item.item import Item, ItemTypeError
+from skore.persistence.item.media_item import lazy_is_instance
+from skore.utils import b64_str_to_bytes, bytes_to_b64_str
 
 if TYPE_CHECKING:
     from matplotlib.figure import Figure
+
+
+@contextmanager
+def mpl_backend(backend="agg"):
+    """Context manager for switching matplotlib backend."""
+    import matplotlib
+
+    original_backend = matplotlib.get_backend()
+    matplotlib.use(backend)
+    try:
+        yield
+    finally:
+        matplotlib.use(original_backend)
 
 
 class MatplotlibFigureItem(Item):
@@ -23,7 +37,7 @@ class MatplotlibFigureItem(Item):
 
     def __init__(
         self,
-        figure_bytes: str,
+        figure_b64_str: str,
         created_at: Optional[str] = None,
         updated_at: Optional[str] = None,
         note: Optional[str] = None,
@@ -33,7 +47,7 @@ class MatplotlibFigureItem(Item):
 
         Parameters
         ----------
-        figure_bytes : bytes
+        figure_b64_str : str
             The raw bytes of the Matplotlib figure pickled representation.
         created_at : str, optional
             The creation timestamp in ISO format.
@@ -44,7 +58,7 @@ class MatplotlibFigureItem(Item):
         """
         super().__init__(created_at, updated_at, note)
 
-        self.figure_bytes = figure_bytes
+        self.figure_b64_str = figure_b64_str
 
     @classmethod
     def factory(cls, figure: Figure, /, **kwargs) -> MatplotlibFigureItem:
@@ -67,12 +81,21 @@ class MatplotlibFigureItem(Item):
         with BytesIO() as stream:
             joblib.dump(figure, stream)
 
-            return cls(stream.getvalue(), **kwargs)
+            figure_bytes = stream.getvalue()
+            figure_b64_str = bytes_to_b64_str(figure_bytes)
+
+            return cls(figure_b64_str, **kwargs)
 
     @property
     def figure(self) -> Figure:
         """The figure from the persistence."""
-        with BytesIO(self.figure_bytes) as stream:
+        # switch mpl backend to avoid opening windows in a background thread
+        figure_bytes = b64_str_to_bytes(self.figure_b64_str)
+
+        with (
+            BytesIO(figure_bytes) as stream,
+            mpl_backend(backend="agg"),
+        ):
             return joblib.load(stream)
 
     def as_serializable_dict(self) -> dict:
@@ -81,7 +104,7 @@ class MatplotlibFigureItem(Item):
             self.figure.savefig(stream, format="svg", bbox_inches="tight")
 
             figure_bytes = stream.getvalue()
-            figure_b64_str = b64encode(figure_bytes).decode()
+            figure_b64_str = bytes_to_b64_str(figure_bytes)
 
             return super().as_serializable_dict() | {
                 "media_type": "image/svg+xml;base64",

@@ -19,7 +19,17 @@ for example tracking some ML metrics over time.
 # %%
 import skore
 
-my_project = skore.open("my_project", create=True)
+# sphinx_gallery_start_ignore
+import os
+import tempfile
+from pathlib import Path
+
+temp_dir = tempfile.TemporaryDirectory()
+temp_dir_path = Path(temp_dir.name)
+os.chdir(temp_dir_path)
+# sphinx_gallery_end_ignore
+
+my_project = skore.Project("my_project")
 
 # %%
 # Tracking an integer
@@ -98,6 +108,9 @@ fig = px.line(
 )
 fig.update_layout(xaxis_type="category")
 fig
+# sphinx_gallery_start_ignore
+temp_dir.cleanup()
+# sphinx_gallery_end_ignore
 
 # %%
 # .. note::
@@ -114,13 +127,3 @@ fig
 # * Avoid overwriting a useful metric by mistake. No results are can be lost.
 #
 # * The last updated time can help us reproduce an iteration of a key metric.
-
-# %%
-# Cleanup the project
-# -------------------
-#
-# Let's clear the skore project (to avoid any conflict with other documentation
-# examples).
-
-# %%
-my_project.clear()
