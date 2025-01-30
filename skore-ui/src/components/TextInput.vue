@@ -53,6 +53,7 @@ onMounted(() => {
 
   .icon {
     margin: 0 var(--spacing-10);
+    color: var(--color-text-primary);
   }
 
   input {
@@ -60,10 +61,14 @@ onMounted(() => {
     min-width: 0;
     border: none;
     background-color: transparent;
-    color: inherit;
+    color: var(--color-text-primary);
 
     &:focus {
       outline: none;
+    }
+
+    &::placeholder {
+      color: var(--color-text-secondary);
     }
   }
 
