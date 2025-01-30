@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scikit-learn Model Card</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <div class="container p-4">
+        <!-- Model Header -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <h4 class="mb-1">Model Card</h4>
+                        <p class="text-muted mb-2">{{name}}</p>
+                    </div>
+                    <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                        <button class="btn btn-outline-secondary btn-sm">View Logs</button>
+                    </div>
+                    <div class="col-12">
+                        <div class="row">
+                            <div class="col-12 d-flex justify-content-center align-items-center">
+                                {{ model_repr | safe }}
+                            </div>
+                        </div>
+                        <p class="text-muted mt-2 mb-0"><small>Generated on: 2025-01-30 13:43:06 CET</small></p>
+                        <span class="badge bg-secondary me-2">Binary Classification</span>
+                        {% for v in relevant_versions %}
+                            <span class="badge bg-secondary me-2">{{v}}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Model Description -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h4 class="card-title">Model Description</h5>
+                <p class="card-text">
+                {{ description}}
+                </p>
+
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <h6>Intended Use</h6>
+                        <p class="text-muted">
+                        {{ intended_use }}
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Limitations</h6>
+                        <p class="text-muted">
+                        {{ limitations }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Model Metrics -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h4 class="card-title">Model Metrics</h5>
+                <div class="row">
+                    <div class="col-12 d-flex justify-content-center align-items-center">
+                        {{ cv_metrics | safe }}
+                   </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Metrics -->
+        <div class="row g-3 mb-4">
+            <!-- Accuracy -->
+            <div class="col-12 col-md-6 col-lg-3">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h6 class="card-subtitle mb-2 text-muted">Accuracy</h6>
+                        <h2 class="card-title mb-3">0.89</h2>
+                        <div class="progress mb-2" style="height: 5px;">
+                            <div class="progress-bar bg-success" role="progressbar" style="width: 89%"></div>
+                        </div>
+                        <small class="text-muted">5-fold cross-validation</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- F1 Score -->
+            <div class="col-12 col-md-6 col-lg-3">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h6 class="card-subtitle mb-2 text-muted">F1 Score</h6>
+                        <h2 class="card-title mb-3">0.85</h2>
+                        <div class="progress mb-2" style="height: 5px;">
+                            <div class="progress-bar bg-success" role="progressbar" style="width: 85%"></div>
+                        </div>
+                        <small class="text-muted">Macro-averaged</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ROC AUC -->
+            <div class="col-12 col-md-6 col-lg-3">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h6 class="card-subtitle mb-2 text-muted">ROC AUC</h6>
+                        <h2 class="card-title mb-3">0.92</h2>
+                        <div class="progress mb-2" style="height: 5px;">
+                            <div class="progress-bar bg-success" role="progressbar" style="width: 92%"></div>
+                        </div>
+                        <small class="text-muted">Test set performance</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Training Time -->
+            <div class="col-12 col-md-6 col-lg-3">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h6 class="card-subtitle mb-2 text-muted">Training Time</h6>
+                        <h2 class="card-title mb-3">4.2m</h2>
+                        <div class="progress mb-2" style="height: 5px;">
+                            <div class="progress-bar bg-info" role="progressbar" style="width: 65%"></div>
+                        </div>
+                        <small class="text-muted">On production hardware</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

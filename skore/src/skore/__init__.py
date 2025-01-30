@@ -5,6 +5,7 @@ import logging
 from rich.console import Console
 from rich.theme import Theme
 
+from skore._card import render_model_card
 from skore.project import Project
 from skore.sklearn import (
     CrossValidationReport,
@@ -22,6 +23,7 @@ __all__ = [
     "Project",
     "show_versions",
     "train_test_split",
+    "render_model_card",
 ]
 
 logger = logging.getLogger(__name__)
