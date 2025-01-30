@@ -122,6 +122,7 @@ def test_serialize_matplotlib_item(
             "updated_at": mock_nowstr,
             "created_at": mock_nowstr,
             "note": None,
+            "version": 0,
         }
     ]
 
@@ -149,6 +150,7 @@ def test_serialize_altair_item(
             "updated_at": mock_nowstr,
             "created_at": mock_nowstr,
             "note": None,
+            "version": 0,
         }
     ]
 
@@ -180,6 +182,7 @@ def test_serialize_pillow_item(
             "updated_at": mock_nowstr,
             "created_at": mock_nowstr,
             "note": None,
+            "version": 0,
         }
     ]
 
@@ -208,6 +211,7 @@ def test_serialize_plotly_item(
             "updated_at": mock_nowstr,
             "created_at": mock_nowstr,
             "note": None,
+            "version": 0,
         }
     ]
 
@@ -230,6 +234,7 @@ def test_serialize_primitive_item(
             "updated_at": mock_nowstr,
             "created_at": mock_nowstr,
             "note": None,
+            "version": 0,
         }
     ]
 
@@ -252,6 +257,7 @@ def test_serialize_primitive_item_with_nan(
             "updated_at": mock_nowstr,
             "created_at": mock_nowstr,
             "note": None,
+            "version": 0,
         }
     ]
 
@@ -274,6 +280,7 @@ def test_serialize_media_item(
             "updated_at": mock_nowstr,
             "created_at": mock_nowstr,
             "note": None,
+            "version": 0,
         }
     ]
 
@@ -423,6 +430,7 @@ def test_serialize_cross_validation_reporter_item(
         "updated_at": mock_nowstr,
         "created_at": mock_nowstr,
         "note": None,
+        "version": 0,
     }
     assert expected == feed[0]
 
@@ -488,6 +496,7 @@ def test_get_items_with_pickle_item(
             "media_type": "text/markdown",
             "value": "```python\n<class 'object'>\n```",
             "note": None,
+            "version": 0,
         },
     ]
 
@@ -523,6 +532,7 @@ def test_get_items_with_pickle_item_and_unpickling_error(
             "media_type": "text/markdown",
             "value": "Item cannot be displayed",
             "note": ("\n\nUnpicklingError with complete traceback:\n\n<traceback>"),
+            "version": 0,
         },
     ]
 

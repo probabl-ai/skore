@@ -25,9 +25,10 @@ class SerializableItem:
     updated_at: str
     created_at: str
     note: str
+    version: int
 
 
-def __item_as_serializable(name: str, item: Item) -> SerializableItem:
+def __item_as_serializable(name: str, item: Item, version: int) -> SerializableItem:
     d = item.as_serializable_dict()
     return SerializableItem(
         name=name,
@@ -36,6 +37,7 @@ def __item_as_serializable(name: str, item: Item) -> SerializableItem:
         updated_at=d.get("updated_at"),
         created_at=d.get("created_at"),
         note=d.get("note"),
+        version=version,
     )
 
 
@@ -52,9 +54,11 @@ async def get_activity(
     project = request.app.state.project
     return sorted(
         (
-            __item_as_serializable(key, version)
+            __item_as_serializable(key, version, index)
             for key in project._item_repository
-            for version in project._item_repository.get_item_versions(key)
+            for index, version in enumerate(
+                project._item_repository.get_item_versions(key)
+            )
             if datetime.fromisoformat(version.updated_at) > after
         ),
         key=operator.attrgetter("updated_at"),

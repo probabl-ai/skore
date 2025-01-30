@@ -5,6 +5,7 @@ import { computed } from "vue";
 const props = defineProps<{
   icon: string;
   name: string;
+  version: number;
   datetime: Date;
 }>();
 
@@ -14,7 +15,10 @@ const time = computed(() => format(props.datetime, "HH:mm:ss"));
 
 <template>
   <div class="activity-feed-card-header">
-    <div class="name"><i class="icon" :class="props.icon" /> {{ props.name }}</div>
+    <div class="name">
+      <i class="icon" :class="props.icon" /> {{ props.name }}
+      <span v-if="version > 0" class="version">#{{ props.version }}</span>
+    </div>
     <div class="datetime">{{ date }} <span class="at">at</span> {{ time }}</div>
   </div>
 </template>
@@ -33,6 +37,11 @@ const time = computed(() => format(props.datetime, "HH:mm:ss"));
     & .icon {
       color: var(--color-icon-tertiary);
       vertical-align: middle;
+    }
+
+    & .version {
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-xxs);
     }
   }
 

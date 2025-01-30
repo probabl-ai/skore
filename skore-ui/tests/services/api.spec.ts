@@ -2,7 +2,7 @@ import { createTestingPinia } from "@pinia/testing";
 import { setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { deleteView, fetchProject, putView, setNote } from "@/services/api";
+import { fetchActivityFeed, setNote } from "@/services/api";
 import { useToastsStore } from "@/stores/toasts";
 import { createFetchResponse, mockedFetch } from "../test.utils";
 
@@ -21,23 +21,15 @@ describe("API Service", () => {
       throw error;
     });
 
-    expect(await fetchProject()).toBeNull();
+    expect(await fetchActivityFeed()).toBeNull();
     const toastsStore = useToastsStore();
     expect(toastsStore.toasts.length).toBe(1);
   });
 
   it("Can call endpoints", async () => {
     mockedFetch.mockResolvedValue(createFetchResponse({}, 200));
-    const project = await fetchProject();
+    const project = await fetchActivityFeed();
     expect(project).toBeDefined();
-
-    mockedFetch.mockResolvedValue(createFetchResponse({}, 201));
-    const view = await putView("test", []);
-    expect(view).toBeDefined();
-
-    mockedFetch.mockResolvedValue(createFetchResponse({}, 202));
-    const del = await deleteView("test");
-    expect(del).toBeUndefined();
 
     mockedFetch.mockResolvedValue(createFetchResponse({}, 201));
     const note = await setNote("test", "test");

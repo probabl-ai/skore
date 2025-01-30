@@ -10,19 +10,7 @@ export interface ProjectItemDto {
   updated_at: string;
   created_at: string;
   note?: string;
-}
-
-/**
- * A layout is a list of keys that are visible in a view
- */
-export type LayoutDto = string[];
-
-/**
- * A project is a collection of items and views
- */
-export interface ProjectDto {
-  items: { [key: string]: ProjectItemDto[] };
-  views: { [key: string]: LayoutDto };
+  version: number;
 }
 
 /**
