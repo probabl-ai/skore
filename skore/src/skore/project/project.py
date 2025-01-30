@@ -41,6 +41,8 @@ class Project:
     ----------
     path : Path
         The unified path of the project.
+    name : str
+        The name of the project. Corresponds to `path.name`.
 
     Examples
     --------
@@ -52,6 +54,8 @@ class Project:
     >> project.get("score")
     1.0
     """
+
+    _server_info = None
 
     def __init__(
         self,
@@ -78,6 +82,7 @@ class Project:
         self.path = Path(path)
         self.path = self.path.with_suffix(".skore")
         self.path = self.path.resolve()
+        self.name = self.path.name
 
         if if_exists == "raise" and self.path.exists():
             raise FileExistsError(
@@ -99,6 +104,11 @@ class Project:
         # Ensure default view is available
         if "default" not in self._view_repository:
             self._view_repository.put_view("default", View(layout=[]))
+
+        # Check if the project should rejoin a server
+        from skore.project._launch import ServerInfo  # avoid circular import
+
+        self._server_info = ServerInfo.rejoin(self)
 
     def clear(self):
         """Clear the project."""
@@ -341,3 +351,12 @@ class Project:
         >>> project.delete_note("key", version=0)  # doctest: +SKIP
         """
         return self._item_repository.delete_item_note(key=key, version=version)
+
+    def shutdown_web_ui(self):
+        """Shutdown the web UI server if it is running."""
+        if self._server_info is None:
+            raise RuntimeError("UI server is not running")
+
+        from skore.project._launch import cleanup_server  # avoid circular import
+
+        cleanup_server(self)
