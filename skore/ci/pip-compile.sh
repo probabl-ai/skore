@@ -37,7 +37,7 @@ set -eu
 
         echo "Generating requirements: python ==${python} | scikit-learn ==${scikit_learn}"
 
-        python -m pip install pip pip-tools --quiet
+        python -m pip install --upgrade pip pip-tools --quiet
         python -m piptools compile \
                --quiet \
                --no-strip-extras \
