@@ -31,10 +31,6 @@ diskcache==5.6.3
     # via skore (skore/pyproject.toml)
 distlib==0.3.9
     # via virtualenv
-exceptiongroup==1.2.2
-    # via
-    #   anyio
-    #   pytest
 execnet==2.1.1
     # via pytest-xdist
 fastapi==0.115.8
@@ -64,10 +60,6 @@ idna==3.10
     #   anyio
     #   httpx
     #   requests
-importlib-metadata==8.6.1
-    # via pytest-randomly
-importlib-resources==6.5.2
-    # via matplotlib
 iniconfig==2.0.0
     # via pytest
 jinja2==3.1.5
@@ -127,7 +119,9 @@ pillow==11.1.0
     #   matplotlib
     #   skore (skore/pyproject.toml)
 platformdirs==4.3.6
-    # via virtualenv
+    # via
+    #   skore (skore/pyproject.toml)
+    #   virtualenv
 plotly==5.24.1
     # via skore (skore/pyproject.toml)
 pluggy==1.5.0
@@ -135,6 +129,8 @@ pluggy==1.5.0
 polars==1.21.0
     # via skore (skore/pyproject.toml)
 pre-commit==4.1.0
+    # via skore (skore/pyproject.toml)
+psutil==6.1.1
     # via skore (skore/pyproject.toml)
 pyarrow==19.0.0
     # via skore (skore/pyproject.toml)
@@ -212,10 +208,6 @@ tenacity==9.0.0
     # via plotly
 threadpoolctl==3.5.0
     # via scikit-learn
-tomli==2.2.1
-    # via
-    #   coverage
-    #   pytest
 tqdm==4.67.1
     # via huggingface-hub
 typing-extensions==4.12.2
@@ -227,9 +219,6 @@ typing-extensions==4.12.2
     #   pydantic
     #   pydantic-core
     #   referencing
-    #   rich
-    #   starlette
-    #   uvicorn
 tzdata==2025.1
     # via pandas
 urllib3==2.3.0
@@ -238,7 +227,3 @@ uvicorn==0.34.0
     # via skore (skore/pyproject.toml)
 virtualenv==20.29.1
     # via pre-commit
-zipp==3.21.0
-    # via
-    #   importlib-metadata
-    #   importlib-resources
