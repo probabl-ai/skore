@@ -85,7 +85,10 @@ class Project:
         self.name = self.path.name
 
         if if_exists == "raise" and self.path.exists():
-            raise FileExistsError(f"Project '{str(path)}' already exists.")
+            raise FileExistsError(
+                f"Project '{str(path)}' already exists. Set `if_exists` to 'load' to "
+                "only load the project."
+            )
 
         item_storage_dirpath = self.path / "items"
         view_storage_dirpath = self.path / "views"

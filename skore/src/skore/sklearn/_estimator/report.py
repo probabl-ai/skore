@@ -166,7 +166,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         ...     y_test=y_test,
         ... )
         >>> report.cache_predictions()
-        Caching predictions ...
         >>> report.clear_cache()
         >>> report._cache
         {}
@@ -207,7 +206,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         ...     y_test=y_test,
         ... )
         >>> report.cache_predictions()
-        Caching predictions ...
         >>> report._cache
         {...}
         """
