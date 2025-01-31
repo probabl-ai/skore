@@ -41,6 +41,7 @@ def in_memory_project(monkeypatch):
 
     project = Project()
     project.path = None
+    project.name = "test"
     project._item_repository = ItemRepository(storage=InMemoryStorage())
 
     return project

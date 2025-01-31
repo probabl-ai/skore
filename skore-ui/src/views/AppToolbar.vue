@@ -1,13 +1,16 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { onMounted, ref, watch } from "vue";
 
 import FloatingTooltip from "@/components/FloatingTooltip.vue";
 import SlideToggle from "@/components/SlideToggle.vue";
 import SkoreLogo from "@/components/icons/SkoreLogo.vue";
+import { getInfo } from "@/services/api";
 import { useThemesStore } from "@/stores/themes";
 
 const themesStore = useThemesStore();
 const isDarkModeForced = ref(themesStore.currentTheme === "dark");
+const projectName = ref("");
+const projectPath = ref("");
 
 watch(isDarkModeForced, (forceDarkMode) => {
   themesStore.setTheme(forceDarkMode ? "dark" : "light");
@@ -18,6 +21,14 @@ watch(
     isDarkModeForced.value = themesStore.currentTheme === "dark";
   }
 );
+
+onMounted(async () => {
+  const info = await getInfo();
+  if (info) {
+    projectName.value = info.name;
+    projectPath.value = info.path;
+  }
+});
 </script>
 
 <template>
@@ -29,8 +40,8 @@ watch(
       <slot></slot>
     </nav>
     <div class="project-name">
-      <FloatingTooltip text="~/dev/project.skore" placement="bottom">
-        project.skore
+      <FloatingTooltip :text="projectPath" placement="bottom">
+        {{ projectName }}
       </FloatingTooltip>
     </div>
     <div class="tools">

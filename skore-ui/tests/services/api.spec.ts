@@ -2,7 +2,7 @@ import { createTestingPinia } from "@pinia/testing";
 import { setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { fetchActivityFeed, setNote } from "@/services/api";
+import { fetchActivityFeed, getInfo, setNote } from "@/services/api";
 import { useToastsStore } from "@/stores/toasts";
 import { createFetchResponse, mockedFetch } from "../test.utils";
 
@@ -34,5 +34,9 @@ describe("API Service", () => {
     mockedFetch.mockResolvedValue(createFetchResponse({}, 201));
     const note = await setNote("test", "test");
     expect(note).toBeDefined();
+
+    mockedFetch.mockResolvedValue(createFetchResponse({}, 200));
+    const info = await getInfo();
+    expect(info).toBeDefined();
   });
 });

@@ -82,3 +82,13 @@ async def set_note(request: Request, payload: NotePayload):
     project: Project = request.app.state.project
     project.set_note(key=payload.key, note=payload.message, version=payload.version)
     return {"result": "ok"}
+
+
+@router.get("/info", response_class=ORJSONResponse)
+async def get_info(request: Request):
+    """Get the name and path of the current project."""
+    project: Project = request.app.state.project
+    return {
+        "name": project.name,
+        "path": project.path,
+    }

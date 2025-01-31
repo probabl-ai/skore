@@ -1,4 +1,4 @@
-import type { ActivityFeedDto } from "@/dto";
+import type { ActivityFeedDto, ProjectInfoDto } from "@/dto";
 import { getErrorMessage } from "@/services/utils";
 import { useToastsStore } from "@/stores/toasts";
 
@@ -48,6 +48,17 @@ export async function setNote(
       },
     });
     checkResponseStatus(r, 201);
+    return await r.json();
+  } catch (error) {
+    reportError(getErrorMessage(error));
+  }
+  return null;
+}
+
+export async function getInfo(): Promise<ProjectInfoDto | null> {
+  try {
+    const r = await fetch(`${BASE_URL}/project/info`);
+    checkResponseStatus(r, 200);
     return await r.json();
   } catch (error) {
     reportError(getErrorMessage(error));

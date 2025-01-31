@@ -400,3 +400,11 @@ def test_set_note(client, in_memory_project):
     for i in range(3):
         note = in_memory_project.get_note("notted", version=i)
         assert note == f"note{i}"
+
+
+def test_get_info(client, in_memory_project):
+    response = client.get("/api/project/info")
+    assert response.json() == {
+        "name": in_memory_project.name,
+        "path": in_memory_project.path,
+    }

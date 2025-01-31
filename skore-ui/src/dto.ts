@@ -20,6 +20,14 @@ export interface ProjectItemDto {
  */
 export type ActivityFeedDto = ProjectItemDto[];
 
+/**
+ * Project info
+ */
+export interface ProjectInfoDto {
+  name: string;
+  path: string;
+}
+
 export type Favorability = "greater_is_better" | "lower_is_better" | "unknown";
 
 export interface ScalarResultDto {
