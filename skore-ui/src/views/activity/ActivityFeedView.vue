@@ -2,10 +2,9 @@
 import Simplebar from "simplebar-vue";
 import { onBeforeUnmount } from "vue";
 
-import MediaWidgetSelector from "@/components/MediaWidgetSelector.vue";
-import ActivityFeedCardHeader from "@/views/activity/ActivityFeedCardHeader.vue";
+import { useActivityStore } from "@/views/activity/activity";
 import ActivityFeedCurvedArrow from "@/views/activity/ActivityFeedCurvedArrow.vue";
-import { useActivityStore } from "./activity";
+import ActivityFeedItem from "@/views/activity/ActivityFeedItem.vue";
 
 const activityStore = useActivityStore();
 
@@ -30,13 +29,7 @@ onBeforeUnmount(() => {
               :key="`${item.name}-${item.updatedAt.getTime()}`"
             >
               <ActivityFeedCurvedArrow :has-arrow="i === 0" />
-              <ActivityFeedCardHeader
-                :icon="item.icon"
-                :datetime="item.updatedAt"
-                :name="item.name"
-                :version="item.version"
-              />
-              <MediaWidgetSelector :item="item" />
+              <ActivityFeedItem :item="item" />
             </div>
           </div>
           <div class="placeholder" v-else>

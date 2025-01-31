@@ -5,7 +5,7 @@ import { deserializeProjectItemDto, type PresentableItem } from "@/models";
 import { fetchActivityFeed, setNote } from "@/services/api";
 import { poll } from "@/services/utils";
 
-type ActivityPresentableItem = PresentableItem & { icon: string };
+export type ActivityPresentableItem = PresentableItem & { icon: string };
 
 export const useActivityStore = defineStore("activity", () => {
   // this object is not deeply reactive as it may be very large
@@ -15,8 +15,15 @@ export const useActivityStore = defineStore("activity", () => {
    * Set a note on a currently displayed note
    */
   async function setNoteOnItem(key: string, version: number, message: string) {
-    // const updateIndex = getCurrentItemUpdateIndex(key);
+    // save in the backend
     await setNote(key, message, version);
+    // also keep it locally
+    items.value = items.value.map((item) => {
+      if (item.name === key && item.version === version) {
+        item.note = message;
+      }
+      return item;
+    });
   }
 
   /**
