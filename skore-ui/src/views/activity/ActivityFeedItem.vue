@@ -41,11 +41,13 @@ function finishEdition() {
       :note="props.item.note ?? ''"
       @edition-end="finishEdition"
     />
-    <MarkdownWidget
-      v-if="props.item.note && props.item.note.length > 0 && !isAnnotating"
-      :source="props.item.note"
-      @click.stop="annotateItem()"
-    />
+    <div class="note-wrapper">
+      <MarkdownWidget
+        v-if="props.item.note && props.item.note.length > 0 && !isAnnotating"
+        :source="props.item.note"
+        @click.stop="annotateItem()"
+      />
+    </div>
     <div class="item-wrapper">
       <MediaWidgetSelector :item="item" />
     </div>
@@ -56,6 +58,11 @@ function finishEdition() {
 .activity-feed-item {
   &.has-note .item-wrapper {
     margin-top: var(--spacing-4);
+  }
+
+  .note-wrapper {
+    padding-left: var(--spacing-12);
+    border-left: solid var(--stroke-width-md) var(--color-stroke-background-primary);
   }
 }
 </style>
