@@ -40,7 +40,7 @@ onMounted(async () => {
       <slot></slot>
     </nav>
     <div class="project-name">
-      <FloatingTooltip :text="projectPath" placement="bottom">
+      <FloatingTooltip :text="projectPath" placement="bottom-start">
         {{ projectName }}
       </FloatingTooltip>
     </div>
