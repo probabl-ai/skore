@@ -27,4 +27,4 @@ updates:
           - "*"
 
     # It uses `skore/ci/requirements/python*/.python-version` to specify the python
-    # version to used to update `skore/ci/requirements/**/test-requirements.txt`
+    # version used to update `skore/ci/requirements/**/test-requirements.txt`
