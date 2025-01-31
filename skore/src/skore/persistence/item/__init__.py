@@ -7,7 +7,6 @@ from typing import Any, Literal, Optional
 
 from . import skrub_table_report_item as SkrubTableReportItem
 from .altair_chart_item import AltairChartItem
-from .cross_validation_reporter_item import CrossValidationReporterItem
 from .item import Item, ItemTypeError
 from .matplotlib_figure_item import MatplotlibFigureItem
 from .media_item import MediaItem, MediaType
@@ -47,7 +46,6 @@ def object_to_item(
 
     for cls in (
         AltairChartItem,
-        CrossValidationReporterItem,
         MatplotlibFigureItem,
         MediaItem,
         NumpyArrayItem,
@@ -85,8 +83,6 @@ def item_to_object(item: Item) -> Any:
         return item.series
     elif isinstance(item, SklearnBaseEstimatorItem):
         return item.estimator
-    elif isinstance(item, CrossValidationReporterItem):
-        return item.reporter
     elif isinstance(item, MediaItem):
         return item.media
     elif isinstance(item, PillowImageItem):
@@ -105,7 +101,6 @@ def item_to_object(item: Item) -> Any:
 
 __all__ = [
     "AltairChartItem",
-    "CrossValidationReporterItem",
     "Item",
     "MatplotlibFigureItem",
     "MediaItem",
