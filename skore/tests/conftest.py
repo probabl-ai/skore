@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
 import pytest
-from skore.persistence.repository import ItemRepository, ViewRepository
+from skore.persistence.repository import ItemRepository
 from skore.persistence.storage import InMemoryStorage
 from skore.project import Project
 
@@ -41,8 +41,8 @@ def in_memory_project(monkeypatch):
 
     project = Project()
     project.path = None
+    project.name = "test"
     project._item_repository = ItemRepository(storage=InMemoryStorage())
-    project._view_repository = ViewRepository(storage=InMemoryStorage())
 
     return project
 

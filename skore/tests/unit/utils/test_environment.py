@@ -39,6 +39,9 @@ def test_get_environment_info_vscode():
         assert "vscode" in info["environment_name"]
 
 
+@patch.dict(
+    "os.environ", {}, clear=True
+)  # to avoid false vscode detection when running tests from vscode test runner
 @patch("skore.utils._environment.get_ipython", create=True)
 def test_get_environment_info_jupyter(mock_get_ipython):
     """Test environment detection for Jupyter"""
@@ -68,6 +71,9 @@ def test_is_environment_notebook_like_jupyter(mock_get_ipython):
     assert is_environment_notebook_like() is True
 
 
+@patch.dict(
+    "os.environ", {}, clear=True
+)  # to avoid false vscode detection when running tests from vscode test runner
 @patch("skore.utils._environment.get_ipython", create=True)
 def test_get_environment_info_ipython_terminal(mock_get_ipython):
     """Test environment detection for IPython terminal"""

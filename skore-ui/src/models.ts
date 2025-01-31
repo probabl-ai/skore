@@ -11,6 +11,7 @@ export interface PresentableItem {
   createdAt: Date;
   updatedAt: Date;
   note?: string;
+  version: number;
 }
 
 /**
@@ -45,5 +46,6 @@ export function deserializeProjectItemDto(dto: ProjectItemDto): PresentableItem 
     createdAt,
     updatedAt,
     note: dto.note,
+    version: dto.version,
   };
 }

@@ -17,13 +17,15 @@ const themesStore = useThemesStore();
   <div class="skore" :class="themesStore.currentThemeClass">
     <div class="app-shell">
       <AppToolbar>
-        <NavigationButton
-          v-for="(r, i) in router.getRoutes()"
-          :key="i"
-          :icon="`${r.meta['icon']}`"
-          :is-selected="r.name == route.name"
-          :to="r.path"
-        />
+        <template v-if="router.getRoutes().length > 1">
+          <NavigationButton
+            v-for="(r, i) in router.getRoutes()"
+            :key="i"
+            :icon="`${r.meta['icon']}`"
+            :is-selected="r.name == route.name"
+            :to="r.path"
+          />
+        </template>
       </AppToolbar>
       <RouterView v-slot="{ Component, route }">
         <template v-if="Component">
@@ -49,20 +51,21 @@ const themesStore = useThemesStore();
 
 <style scoped>
 .skore {
+  color: var(--color-text-primary);
+
   & .app-shell {
     display: flex;
-    flex-direction: row;
+    height: 100dvh;
+    flex-direction: column;
     background-color: var(--color-background-primary);
 
-    main {
-      width: calc(100dvw - var(--width-toolbar));
-      height: 100vh;
+    main,
+    .loader {
+      flex: 1;
     }
 
     .loader {
       display: flex;
-      height: 100dvh;
-      flex: 1;
       align-items: center;
       justify-content: center;
     }

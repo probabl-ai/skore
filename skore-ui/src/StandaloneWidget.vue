@@ -25,5 +25,6 @@ onBeforeUnmount(() => {
 .widget {
   width: 100%;
   background-color: var(--color-background-primary);
+  color: var(--color-text-primary);
 }
 </style>

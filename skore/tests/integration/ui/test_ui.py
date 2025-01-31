@@ -12,7 +12,6 @@ import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
 from sklearn.linear_model import Lasso
-from skore.persistence.view.view import View
 from skore.ui.app import create_app
 
 
@@ -30,111 +29,63 @@ def test_app_state(client):
     assert client.app.state.project is not None
 
 
-def test_get_items(client, in_memory_project):
-    response = client.get("/api/project/items")
-
-    assert response.status_code == 200
-    assert response.json() == {"views": {}, "items": {}}
-
-    in_memory_project.put("test", "version_1")
-    in_memory_project.put("test", "version_2")
-
-    items = in_memory_project._item_repository.get_item_versions("test")
-
-    response = client.get("/api/project/items")
-    assert response.status_code == 200
-    assert response.json() == {
-        "views": {},
-        "items": {
-            "test": [
-                {
-                    "name": "test",
-                    "media_type": "text/markdown",
-                    "value": item.media,
-                    "created_at": item.created_at,
-                    "updated_at": item.updated_at,
-                    "note": None,
-                }
-                for item in items
-            ],
-        },
-    }
-
-
-def test_put_view_layout(client):
-    response = client.put("/api/project/views?key=hello", json=["test"])
-    assert response.status_code == 201
-
-
-def test_delete_view(client, in_memory_project):
-    in_memory_project._view_repository.put_view("hello", View(layout=[]))
-    response = client.delete("/api/project/views?key=hello")
-    assert response.status_code == 202
-
-
-def test_delete_view_missing(client):
-    response = client.delete("/api/project/views?key=hello")
-    assert response.status_code == 404
-
-
 def test_serialize_pandas_dataframe_with_missing_values(client, in_memory_project):
     pandas_df = pandas.DataFrame([1, 2, 3, 4, None, float("nan")])
     in_memory_project.put("🐼", pandas_df)
-
-    response = client.get("/api/project/items")
+    response = client.get("/api/project/activity")
     assert response.status_code == 200
-    project = response.json()
-    assert len(project["items"]["🐼"][0]["value"]["data"]) == 6
+    feed = response.json()
+    assert len(feed[0]["value"]["data"]) == 6
 
 
 def test_serialize_polars_dataframe_with_missing_values(client, in_memory_project):
     polars_df = polars.DataFrame([1, 2, 3, 4, None, float("nan")], strict=False)
     in_memory_project.put("🐻‍❄️", polars_df)
 
-    response = client.get("/api/project/items")
+    response = client.get("/api/project/activity")
     assert response.status_code == 200
-    project = response.json()
-    assert len(project["items"]["🐻‍❄️"][0]["value"]["data"]) == 6
+    feed = response.json()
+    assert len(feed[0]["value"]["data"]) == 6
 
 
 def test_serialize_pandas_series_with_missing_values(client, in_memory_project):
     pandas_series = pandas.Series([1, 2, 3, 4, None, float("nan")])
     in_memory_project.put("🐼", pandas_series)
 
-    response = client.get("/api/project/items")
+    response = client.get("/api/project/activity")
     assert response.status_code == 200
-    project = response.json()
-    assert len(project["items"]["🐼"][0]["value"]) == 6
+    feed = response.json()
+    assert len(feed[0]["value"]) == 6
 
 
 def test_serialize_polars_series_with_missing_values(client, in_memory_project):
     polars_df = polars.Series([1, 2, 3, 4, None, float("nan")], strict=False)
     in_memory_project.put("🐻‍❄️", polars_df)
 
-    response = client.get("/api/project/items")
+    response = client.get("/api/project/activity")
     assert response.status_code == 200
-    project = response.json()
-    assert len(project["items"]["🐻‍❄️"][0]["value"]) == 6
+    feed = response.json()
+    assert len(feed[0]["value"]) == 6
 
 
 def test_serialize_numpy_array(client, in_memory_project):
     np_array = numpy.array([1, 2, 3, 4])
     in_memory_project.put("np array", np_array)
 
-    response = client.get("/api/project/items")
+    response = client.get("/api/project/activity")
     assert response.status_code == 200
-    project = response.json()
-    assert len(project["items"]["np array"][0]["value"]) == 4
+    feed = response.json()
+    assert len(feed[0]["value"]) == 4
 
 
 def test_serialize_sklearn_estimator(client, in_memory_project):
     estimator = Lasso()
     in_memory_project.put("estimator", estimator)
 
-    response = client.get("/api/project/items")
+    response = client.get("/api/project/activity")
     assert response.status_code == 200
-    project = response.json()
-    assert project["items"]["estimator"][0]["value"] is not None
+    feed = response.json()
+    assert feed[0]["value"] is not None
 
 
 class FakeFigure(matplotlib.figure.Figure):
@@ -157,24 +108,20 @@ def test_serialize_matplotlib_item(
         figure_b64_str = base64.b64encode(figure_bytes).decode()
 
     in_memory_project.put("figure", figure)
-    response = client.get("/api/project/items")
+    response = client.get("/api/project/activity")
 
     assert response.status_code == 200
-    assert response.json() == {
-        "views": {},
-        "items": {
-            "figure": [
-                {
-                    "name": "figure",
-                    "media_type": "image/svg+xml;base64",
-                    "value": figure_b64_str,
-                    "updated_at": mock_nowstr,
-                    "created_at": mock_nowstr,
-                    "note": None,
-                }
-            ]
-        },
-    }
+    assert response.json() == [
+        {
+            "name": "figure",
+            "media_type": "image/svg+xml;base64",
+            "value": figure_b64_str,
+            "updated_at": mock_nowstr,
+            "created_at": mock_nowstr,
+            "note": None,
+            "version": 0,
+        }
+    ]
 
 
 def test_serialize_altair_item(
@@ -189,24 +136,20 @@ def test_serialize_altair_item(
     chart_b64_str = base64.b64encode(chart_bytes).decode()
 
     in_memory_project.put("chart", chart)
-    response = client.get("/api/project/items")
+    response = client.get("/api/project/activity")
 
     assert response.status_code == 200
-    assert response.json() == {
-        "views": {},
-        "items": {
-            "chart": [
-                {
-                    "name": "chart",
-                    "media_type": "application/vnd.vega.v5+json;base64",
-                    "value": chart_b64_str,
-                    "updated_at": mock_nowstr,
-                    "created_at": mock_nowstr,
-                    "note": None,
-                }
-            ]
-        },
-    }
+    assert response.json() == [
+        {
+            "name": "chart",
+            "media_type": "application/vnd.vega.v5+json;base64",
+            "value": chart_b64_str,
+            "updated_at": mock_nowstr,
+            "created_at": mock_nowstr,
+            "note": None,
+            "version": 0,
+        }
+    ]
 
 
 def test_serialize_pillow_item(
@@ -225,24 +168,20 @@ def test_serialize_pillow_item(
         png_b64_str = base64.b64encode(png_bytes).decode()
 
     in_memory_project.put("image", image)
-    response = client.get("/api/project/items")
+    response = client.get("/api/project/activity")
 
     assert response.status_code == 200
-    assert response.json() == {
-        "views": {},
-        "items": {
-            "image": [
-                {
-                    "name": "image",
-                    "media_type": "image/png;base64",
-                    "value": png_b64_str,
-                    "updated_at": mock_nowstr,
-                    "created_at": mock_nowstr,
-                    "note": None,
-                }
-            ]
-        },
-    }
+    assert response.json() == [
+        {
+            "name": "image",
+            "media_type": "image/png;base64",
+            "value": png_b64_str,
+            "updated_at": mock_nowstr,
+            "created_at": mock_nowstr,
+            "note": None,
+            "version": 0,
+        }
+    ]
 
 
 def test_serialize_plotly_item(
@@ -258,24 +197,20 @@ def test_serialize_plotly_item(
     figure_b64_str = base64.b64encode(figure_bytes).decode()
 
     in_memory_project.put("figure", figure)
-    response = client.get("/api/project/items")
+    response = client.get("/api/project/activity")
 
     assert response.status_code == 200
-    assert response.json() == {
-        "views": {},
-        "items": {
-            "figure": [
-                {
-                    "name": "figure",
-                    "media_type": "application/vnd.plotly.v1+json;base64",
-                    "value": figure_b64_str,
-                    "updated_at": mock_nowstr,
-                    "created_at": mock_nowstr,
-                    "note": None,
-                }
-            ]
-        },
-    }
+    assert response.json() == [
+        {
+            "name": "figure",
+            "media_type": "application/vnd.plotly.v1+json;base64",
+            "value": figure_b64_str,
+            "updated_at": mock_nowstr,
+            "created_at": mock_nowstr,
+            "note": None,
+            "version": 0,
+        }
+    ]
 
 
 def test_serialize_primitive_item(
@@ -285,24 +220,20 @@ def test_serialize_primitive_item(
     mock_nowstr,
 ):
     in_memory_project.put("primitive", [1, 2, [3, 4]])
-    response = client.get("/api/project/items")
+    response = client.get("/api/project/activity")
 
     assert response.status_code == 200
-    assert response.json() == {
-        "views": {},
-        "items": {
-            "primitive": [
-                {
-                    "name": "primitive",
-                    "media_type": "text/markdown",
-                    "value": [1, 2, [3, 4]],
-                    "updated_at": mock_nowstr,
-                    "created_at": mock_nowstr,
-                    "note": None,
-                }
-            ]
-        },
-    }
+    assert response.json() == [
+        {
+            "name": "primitive",
+            "media_type": "text/markdown",
+            "value": [1, 2, [3, 4]],
+            "updated_at": mock_nowstr,
+            "created_at": mock_nowstr,
+            "note": None,
+            "version": 0,
+        }
+    ]
 
 
 def test_serialize_primitive_item_with_nan(
@@ -312,24 +243,20 @@ def test_serialize_primitive_item_with_nan(
     mock_nowstr,
 ):
     in_memory_project.put("primitive", float("nan"))
-    response = client.get("/api/project/items")
+    response = client.get("/api/project/activity")
 
     assert response.status_code == 200
-    assert response.json() == {
-        "views": {},
-        "items": {
-            "primitive": [
-                {
-                    "name": "primitive",
-                    "media_type": "text/markdown",
-                    "value": None,
-                    "updated_at": mock_nowstr,
-                    "created_at": mock_nowstr,
-                    "note": None,
-                }
-            ]
-        },
-    }
+    assert response.json() == [
+        {
+            "name": "primitive",
+            "media_type": "text/markdown",
+            "value": None,
+            "updated_at": mock_nowstr,
+            "created_at": mock_nowstr,
+            "note": None,
+            "version": 0,
+        }
+    ]
 
 
 def test_serialize_media_item(
@@ -339,24 +266,20 @@ def test_serialize_media_item(
     mock_nowstr,
 ):
     in_memory_project.put("media", "<media>", display_as="HTML")
-    response = client.get("/api/project/items")
+    response = client.get("/api/project/activity")
 
     assert response.status_code == 200
-    assert response.json() == {
-        "views": {},
-        "items": {
-            "media": [
-                {
-                    "name": "media",
-                    "media_type": "text/html",
-                    "value": "<media>",
-                    "updated_at": mock_nowstr,
-                    "created_at": mock_nowstr,
-                    "note": None,
-                }
-            ]
-        },
-    }
+    assert response.json() == [
+        {
+            "name": "media",
+            "media_type": "text/html",
+            "value": "<media>",
+            "updated_at": mock_nowstr,
+            "created_at": mock_nowstr,
+            "note": None,
+            "version": 0,
+        }
+    ]
 
 
 def test_activity_feed(monkeypatch, client, in_memory_project):
@@ -409,24 +332,20 @@ def test_get_items_with_pickle_item(
     monkeypatch.setattr("skore.persistence.item.item.datetime", MockDatetime)
     in_memory_project.put("pickle", object)
 
-    response = client.get("/api/project/items")
+    response = client.get("/api/project/activity")
 
     assert response.status_code == 200
-    assert response.json() == {
-        "views": {},
-        "items": {
-            "pickle": [
-                {
-                    "created_at": mock_nowstr,
-                    "updated_at": mock_nowstr,
-                    "name": "pickle",
-                    "media_type": "text/markdown",
-                    "value": "```python\n<class 'object'>\n```",
-                    "note": None,
-                },
-            ],
+    assert response.json() == [
+        {
+            "created_at": mock_nowstr,
+            "updated_at": mock_nowstr,
+            "name": "pickle",
+            "media_type": "text/markdown",
+            "value": "```python\n<class 'object'>\n```",
+            "note": None,
+            "version": 0,
         },
-    }
+    ]
 
 
 def test_get_items_with_pickle_item_and_unpickling_error(
@@ -447,26 +366,20 @@ def test_get_items_with_pickle_item_and_unpickling_error(
         lambda *args, **kwargs: "<traceback>",
     )
 
-    response = client.get("/api/project/items")
+    response = client.get("/api/project/activity")
 
     assert response.status_code == 200
-    assert response.json() == {
-        "views": {},
-        "items": {
-            "pickle": [
-                {
-                    "created_at": mock_nowstr,
-                    "updated_at": mock_nowstr,
-                    "name": "pickle",
-                    "media_type": "text/markdown",
-                    "value": "Item cannot be displayed",
-                    "note": (
-                        "\n\nUnpicklingError with complete traceback:\n\n<traceback>"
-                    ),
-                },
-            ],
+    assert response.json() == [
+        {
+            "created_at": mock_nowstr,
+            "updated_at": mock_nowstr,
+            "name": "pickle",
+            "media_type": "text/markdown",
+            "value": "Item cannot be displayed",
+            "note": ("\n\nUnpicklingError with complete traceback:\n\n<traceback>"),
+            "version": 0,
         },
-    }
+    ]
 
 
 def test_set_note(client, in_memory_project):
@@ -487,3 +400,11 @@ def test_set_note(client, in_memory_project):
     for i in range(3):
         note = in_memory_project.get_note("notted", version=i)
         assert note == f"note{i}"
+
+
+def test_get_info(client, in_memory_project):
+    response = client.get("/api/project/info")
+    assert response.json() == {
+        "name": in_memory_project.name,
+        "path": in_memory_project.path,
+    }

@@ -9,7 +9,6 @@
 }
 
 .skore-ui {
-  color: var(--color-text-primary);
   font-family: Geist, sans-serif;
   font-size: var(--root-font-size);
   font-weight: var(--font-weight-regular);
