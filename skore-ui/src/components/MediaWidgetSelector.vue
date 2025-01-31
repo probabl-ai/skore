@@ -45,11 +45,4 @@ function matchMediaType(mediaType: string) {
     :src="props.item.data"
   />
   <HtmlSnippetWidget v-if="matchMediaType('text/html')" :src="props.item.data" />
-  <CrossValidationReport
-    v-if="matchMediaType('application/vnd.skore.cross_validation')"
-    :scalar-results="props.item.data.scalar_results"
-    :tabular-results="props.item.data.tabular_results"
-    :plots="props.item.data.plots"
-    :sections="props.item.data.sections"
-  />
 </template>
