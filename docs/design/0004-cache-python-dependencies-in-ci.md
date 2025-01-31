@@ -41,6 +41,8 @@ cache is automatically built.
 
 Each test run knows which cache to use, depending on its context.
 
+Unused cache is automatically purged by GH after 90 days.
+
 ## More Information
 
 Implementation in pull-request [#916](https://github.com/probabl-ai/skore/pull/916).
