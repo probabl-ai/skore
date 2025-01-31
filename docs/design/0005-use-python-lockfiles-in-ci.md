@@ -9,7 +9,6 @@ decision-makers: ["@thomass-dev"]
 
 ## Decision Outcome
 
-
 ## More Information
 
-Implementation in pull-request [#916](https://github.com/probabl-ai/skore/pull/1238).
+Implementation in pull-request [#1238](https://github.com/probabl-ai/skore/pull/1238).
