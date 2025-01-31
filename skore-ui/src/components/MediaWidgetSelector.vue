@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import CrossValidationReport from "@/components/CrossValidationReport.vue";
 import DataFrameWidget from "@/components/DataFrameWidget.vue";
 import HtmlSnippetWidget from "@/components/HtmlSnippetWidget.vue";
 import ImageWidget from "@/components/ImageWidget.vue";

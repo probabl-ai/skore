@@ -154,5 +154,3 @@ These functions and classes are deprecated.
     :toctree: generated/
     :template: base.rst
     :caption: Deprecated
-
-    CrossValidationReporter

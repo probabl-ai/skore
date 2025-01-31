@@ -1,7 +1,6 @@
 import base64
 import datetime
 import io
-import json
 
 import altair
 import matplotlib.figure
@@ -13,8 +12,6 @@ import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
 from sklearn.linear_model import Lasso
-from sklearn.model_selection import KFold
-from skore import CrossValidationReporter
 from skore.persistence.view.view import View
 from skore.ui.app import create_app
 
@@ -362,158 +359,6 @@ def test_serialize_media_item(
     }
 
 
-@pytest.fixture
-def fake_cross_validate(monkeypatch):
-    def _fake_cross_validate(*args, **kwargs):
-        result = {
-            "test_score": numpy.array([1.0] * 5),
-            "score_time": numpy.array([1.0] * 5),
-            "fit_time": numpy.array([1.0] * 5),
-        }
-        if kwargs.get("return_estimator"):
-            result["estimator"] = numpy.array([])
-        if kwargs.get("return_indices"):
-            result["indices"] = {
-                "train": numpy.array([[1.0] * 5] * 5),
-                "test": numpy.array([[1.0] * 5] * 5),
-            }
-        if kwargs.get("return_train_score"):
-            result["train_score"] = numpy.array([1.0] * 5)
-        return result
-
-    monkeypatch.setattr("sklearn.model_selection.cross_validate", _fake_cross_validate)
-
-
-def test_serialize_cross_validation_reporter_item(
-    client,
-    in_memory_project,
-    monkeypatch,
-    MockDatetime,
-    mock_nowstr,
-    fake_cross_validate,
-):
-    monkeypatch.setattr("skore.persistence.item.item.datetime", MockDatetime)
-    monkeypatch.setattr(
-        "skore.sklearn.cross_validation.cross_validation_reporter.plot_cross_validation_compare_scores",
-        lambda _: {},
-    )
-    monkeypatch.setattr(
-        "skore.sklearn.cross_validation.cross_validation_reporter.plot_cross_validation_timing",
-        lambda _: {},
-    )
-
-    def prepare_cv():
-        from sklearn import datasets, linear_model
-
-        diabetes = datasets.load_diabetes()
-        X = diabetes.data[:100]
-        y = diabetes.target[:100]
-        lasso = linear_model.Lasso(alpha=2.5)
-        return lasso, X, y
-
-    model, X, y = prepare_cv()
-    reporter = CrossValidationReporter(model, X, y, cv=KFold(3))
-    in_memory_project.put("cv", reporter)
-
-    response = client.get("/api/project/items")
-    assert response.status_code == 200
-
-    project = response.json()
-    expected = {
-        "name": "cv",
-        "media_type": "application/vnd.skore.cross_validation+json",
-        "value": {
-            "scalar_results": [
-                {
-                    "name": "Mean test score",
-                    "value": 1.0,
-                    "stddev": 0.0,
-                    "favorability": "greater_is_better",
-                },
-                {
-                    "name": "Mean score time (seconds)",
-                    "value": 1.0,
-                    "stddev": 0.0,
-                    "favorability": "lower_is_better",
-                },
-                {
-                    "name": "Mean fit time (seconds)",
-                    "value": 1.0,
-                    "stddev": 0.0,
-                    "favorability": "lower_is_better",
-                },
-            ],
-            "tabular_results": [
-                {
-                    "name": "Cross validation results",
-                    "columns": ["test_score", "score_time", "fit_time"],
-                    "data": [
-                        [1.0, 1.0, 1.0],
-                        [1.0, 1.0, 1.0],
-                        [1.0, 1.0, 1.0],
-                        [1.0, 1.0, 1.0],
-                        [1.0, 1.0, 1.0],
-                    ],
-                    "favorability": [
-                        "greater_is_better",
-                        "lower_is_better",
-                        "lower_is_better",
-                    ],
-                }
-            ],
-            "plots": [
-                {
-                    "name": "Scores",
-                    "value": json.loads(plotly.io.to_json({}, engine="json")),
-                },
-                {
-                    "name": "Timings",
-                    "value": json.loads(plotly.io.to_json({}, engine="json")),
-                },
-            ],
-            "sections": [
-                {
-                    "title": "Model",
-                    "icon": "icon-square-cursor",
-                    "items": [
-                        {
-                            "name": "Estimator parameters",
-                            "description": "Core model configuration used for training",
-                            "value": (
-                                '<a href="https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html" target="_blank"><code>Lasso</code></a>\n'  # noqa: E501
-                                "- alpha: *2.5*\n"
-                                "- copy_X: True (default)\n"
-                                "- fit_intercept: True (default)\n"
-                                "- max_iter: 1000 (default)\n"
-                                "- positive: False (default)\n"
-                                "- precompute: False (default)\n"
-                                "- random_state: None (default)\n"
-                                "- selection: 'cyclic' (default)\n"
-                                "- tol: 0.0001 (default)\n"
-                                "- warm_start: False (default)"
-                            ),
-                        },
-                        {
-                            "name": "Cross-validation parameters",
-                            "description": "Controls how data is split and validated",
-                            "value": (
-                                "n_splits: *3*, "
-                                "shuffle: *False*, "
-                                "random_state: *None*"
-                            ),
-                        },
-                    ],
-                }
-            ],
-        },
-        "updated_at": mock_nowstr,
-        "created_at": mock_nowstr,
-        "note": None,
-    }
-    actual = project["items"]["cv"][0]
-    assert expected == actual
-
-
 def test_activity_feed(monkeypatch, client, in_memory_project):
     class MockDatetime:
         NOW = datetime.datetime.now(tz=datetime.timezone.utc)
@@ -594,11 +439,9 @@ def test_get_items_with_pickle_item_and_unpickling_error(
     import skore.persistence.item
 
     monkeypatch.setattr("skore.persistence.item.item.datetime", MockDatetime)
-    in_memory_project.put("pickle", skore.persistence.item.CrossValidationReporterItem)
+    in_memory_project.put("pickle", skore.persistence.item.NumpyArrayItem)
 
-    monkeypatch.delattr(
-        "skore.persistence.item.cross_validation_reporter_item.CrossValidationReporterItem"
-    )
+    monkeypatch.delattr("skore.persistence.item.numpy_array_item.NumpyArrayItem")
     monkeypatch.setattr(
         "skore.persistence.item.pickle_item.format_exception",
         lambda *args, **kwargs: "<traceback>",
