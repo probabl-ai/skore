@@ -43,6 +43,27 @@ jobs:
         working-directory: skore/
         run: pre-commit run --all-files ruff
 
+  backend-lockfiles:
+    runs-on: "ubuntu-latest"
+    if: ${{ github.event_name == 'pull_request' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check lockfiles are not obsolete
+        run: |
+          changes=$(git diff --name-only HEAD^1 HEAD)
+
+          if
+            (echo "${changes}" | grep -qE 'skore/(test-)?requirements.in') &&
+            (echo "${changes}" | (! grep -qE "skore/ci/requirements/.*/test-requirements.txt"))
+          then
+            echo '::error title=backend-lockfiles:: Lockfiles obsolete, please execute `$ cd skore/ci; bash pip-compile.sh`'
+            exit 1
+          fi
+
   backend-test:
     strategy:
       fail-fast: false
