@@ -12,7 +12,6 @@ import spec from "@/assets/fixtures/vega.json";
 import base64Png from "@/assets/images/button-background.png?base64";
 import base64Svg from "@/assets/images/editor-placeholder-dark.svg?base64";
 
-import CrossValidationReport from "@/components/CrossValidationReport.vue";
 import DataFrameWidget from "@/components/DataFrameWidget.vue";
 import DraggableList from "@/components/DraggableList.vue";
 import DropdownButton from "@/components/DropdownButton.vue";

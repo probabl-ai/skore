@@ -59,7 +59,7 @@ You can find information on the latest version [here](https://anaconda.org/conda
     ```
     This will create a skore project directory named `my_project.skore` in your current working directory.
 
-2. Evaluate your model using `skore.CrossValidationReporter`:
+2. Evaluate your model using `skore.CrossValidationReport`:
     ```python
     from sklearn.datasets import make_classification
     from sklearn.linear_model import LogisticRegression

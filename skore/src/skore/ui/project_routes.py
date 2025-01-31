@@ -11,6 +11,7 @@ from fastapi import APIRouter, Request, status
 from fastapi.responses import ORJSONResponse
 
 from skore.persistence.item import Item
+from skore.project.project import Project
 
 router = APIRouter(prefix="/project")
 
@@ -51,7 +52,7 @@ async def get_activity(
     The activity is composed of all the items and their versions created after the
     datetime `after`, sorted from newest to oldest.
     """
-    project = request.app.state.project
+    project: Project = request.app.state.project
     return sorted(
         (
             __item_as_serializable(key, version, index)
@@ -78,6 +79,6 @@ class NotePayload:
 @router.put("/note", status_code=status.HTTP_201_CREATED)
 async def set_note(request: Request, payload: NotePayload):
     """Add a note to the given item."""
-    project = request.app.state.project
+    project: Project = request.app.state.project
     project.set_note(key=payload.key, note=payload.message, version=payload.version)
     return {"result": "ok"}
