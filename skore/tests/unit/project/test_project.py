@@ -293,3 +293,8 @@ def test_put_wrong_key_and_value_raise(in_memory_project):
     """When `on_error` is "raise", raise the first error that occurs."""
     with pytest.raises(TypeError):
         in_memory_project.put(0, (lambda: "unsupported object"))
+
+
+def test_shutdown_web_ui(in_memory_project):
+    with pytest.raises(RuntimeError, match="UI server is not running"):
+        in_memory_project.shutdown_web_ui()

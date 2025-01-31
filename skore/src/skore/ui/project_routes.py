@@ -72,7 +72,7 @@ def __project_as_serializable(project: Project) -> SerializableProject:
 @router.get("/items", response_class=ORJSONResponse)
 async def get_items(request: Request):
     """Serialize a project and send it."""
-    project = request.app.state.project
+    project: Project = request.app.state.project
     return __project_as_serializable(project)
 
 
@@ -115,7 +115,7 @@ async def get_activity(
     The activity is composed of all the items and their versions created after the
     datetime `after`, sorted from newest to oldest.
     """
-    project = request.app.state.project
+    project: Project = request.app.state.project
     return sorted(
         (
             __item_as_serializable(key, version)
@@ -140,6 +140,6 @@ class NotePayload:
 @router.put("/note", status_code=status.HTTP_201_CREATED)
 async def set_note(request: Request, payload: NotePayload):
     """Add a note to the given item."""
-    project = request.app.state.project
+    project: Project = request.app.state.project
     project.set_note(key=payload.key, note=payload.message, version=payload.version)
     return __project_as_serializable(project)
