@@ -51,7 +51,6 @@ const time = computed(() => format(props.datetime, "HH:mm:ss"));
 
     & .version {
       color: var(--color-text-secondary);
-      font-size: var(--font-size-xxs);
     }
   }
 
