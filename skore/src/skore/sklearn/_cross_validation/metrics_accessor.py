@@ -24,17 +24,17 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     You can access this accessor using the `metrics` attribute.
     """
 
-    _SCORE_OR_LOSS_ICONS = {
-        "accuracy": "(↗︎)",
-        "precision": "(↗︎)",
-        "recall": "(↗︎)",
-        "brier_score": "(↘︎)",
-        "roc_auc": "(↗︎)",
-        "log_loss": "(↘︎)",
-        "r2": "(↗︎)",
-        "rmse": "(↘︎)",
-        "report_metrics": "",
-        "custom_metric": "",
+    _SCORE_OR_LOSS_INFO = {
+        "accuracy": {"name": "Accuracy", "icon": "(↗︎)"},
+        "precision": {"name": "Precision", "icon": "(↗︎)"},
+        "recall": {"name": "Recall", "icon": "(↗︎)"},
+        "brier_score": {"name": "Brier score", "icon": "(↘︎)"},
+        "roc_auc": {"name": "ROC AUC", "icon": "(↗︎)"},
+        "log_loss": {"name": "Log loss", "icon": "(↘︎)"},
+        "r2": {"name": "R²", "icon": "(↗︎)"},
+        "rmse": {"name": "RMSE", "icon": "(↘︎)"},
+        "custom_metric": {"name": "Custom metric", "icon": ""},
+        "report_metrics": {"name": "Report metrics", "icon": ""},
     }
 
     def __init__(self, parent):
@@ -772,12 +772,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         """Override format method for metrics-specific naming."""
         method_name = f"{name}(...)"
         method_name = method_name.ljust(22)
-        if self._SCORE_OR_LOSS_ICONS[name] in ("(↗︎)", "(↘︎)"):
-            if self._SCORE_OR_LOSS_ICONS[name] == "(↗︎)":
-                method_name += f"[cyan]{self._SCORE_OR_LOSS_ICONS[name]}[/cyan]"
+        if self._SCORE_OR_LOSS_INFO[name]["icon"] in ("(↗︎)", "(↘︎)"):
+            if self._SCORE_OR_LOSS_INFO[name]["icon"] == "(↗︎)":
+                method_name += f"[cyan]{self._SCORE_OR_LOSS_INFO[name]['name']}[/cyan]"
                 return method_name.ljust(43)
             else:  # (↘︎)
-                method_name += f"[orange1]{self._SCORE_OR_LOSS_ICONS[name]}[/orange1]"
+                method_name += (
+                    f"[orange1]{self._SCORE_OR_LOSS_INFO[name]['name']}[/orange1]"
+                )
                 return method_name.ljust(49)
         else:
             return method_name.ljust(29)
