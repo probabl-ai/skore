@@ -1,36 +1,17 @@
 <script setup lang="ts">
 import Simplebar from "simplebar-vue";
-import { onBeforeUnmount, shallowRef } from "vue";
+import { onBeforeUnmount } from "vue";
 
-import MediaWidgetSelector from "@/components/MediaWidgetSelector.vue";
-import { deserializeProjectItemDto, type PresentableItem } from "@/models";
-import { fetchActivityFeed } from "@/services/api";
-import { poll } from "@/services/utils";
-import ActivityFeedCardHeader from "@/views/activity/ActivityFeedCardHeader.vue";
+import { useActivityStore } from "@/views/activity/activity";
 import ActivityFeedCurvedArrow from "@/views/activity/ActivityFeedCurvedArrow.vue";
+import ActivityFeedItem from "@/views/activity/ActivityFeedItem.vue";
 
-type ActivityPresentableItem = PresentableItem & { icon: string };
+const activityStore = useActivityStore();
 
-const items = shallowRef<ActivityPresentableItem[]>([]);
-let lastFetchTime = new Date(1, 1, 1, 0, 0, 0, 0);
-
-async function fetch() {
-  const now = new Date();
-  const feed = await fetchActivityFeed(lastFetchTime.toISOString());
-  lastFetchTime = now;
-  if (feed !== null) {
-    const newItems = feed.map((i) => ({
-      ...deserializeProjectItemDto(i),
-      icon: i.media_type.startsWith("text") ? "icon-pill" : "icon-playground",
-    }));
-    items.value = [...newItems, ...items.value];
-  }
-}
-
-const stopPolling = await poll(fetch, 1000);
+activityStore.startBackendPolling();
 
 onBeforeUnmount(() => {
-  stopPolling();
+  activityStore.stopBackendPolling();
 });
 </script>
 
@@ -41,19 +22,14 @@ onBeforeUnmount(() => {
         <h1>Activity feed</h1>
         <h2>Find all your activity, right below.</h2>
         <Transition name="fade" mode="out-in">
-          <div class="items" v-if="items.length > 0">
+          <div class="items" v-if="activityStore.items.length > 0">
             <div
               class="item"
-              v-for="(item, i) in items"
+              v-for="(item, i) in activityStore.items"
               :key="`${item.name}-${item.updatedAt.getTime()}`"
             >
               <ActivityFeedCurvedArrow :has-arrow="i === 0" />
-              <ActivityFeedCardHeader
-                :icon="item.icon"
-                :datetime="item.updatedAt"
-                :name="item.name"
-              />
-              <MediaWidgetSelector :item="item" />
+              <ActivityFeedItem :item="item" />
             </div>
           </div>
           <div class="placeholder" v-else>
@@ -67,14 +43,13 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .scroll {
-  max-height: 100dvh;
+  max-height: calc(100dvh - var(--height-header));
 }
 
 .activity-feed {
   display: flex;
-  min-height: 100dvh;
   flex-direction: column;
-  padding: var(--spacing-24) 11%;
+  padding: var(--spacing-24);
 
   & h1 {
     color: var(--color-text-primary);
@@ -139,6 +114,18 @@ onBeforeUnmount(() => {
       letter-spacing: var(--letter-spacing);
       text-align: center;
     }
+  }
+}
+
+@media screen and (width >= 801px) {
+  .activity-feed {
+    padding: var(--spacing-24) calc(var(--spacing-24) * 2);
+  }
+}
+
+@media screen and (width >= 1025px) {
+  .activity-feed {
+    padding: var(--spacing-24) calc(var(--spacing-24) * 4);
   }
 }
 </style>

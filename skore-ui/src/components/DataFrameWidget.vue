@@ -206,6 +206,7 @@ watch(
       & tr {
         position: relative;
         padding: var(--spacing-4);
+        color: var(--color-text-secondary);
 
         & td {
           padding: var(--spacing-4);

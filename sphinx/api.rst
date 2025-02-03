@@ -19,7 +19,6 @@ These functions and classes are meant for managing a Project.
     :template: base.rst
     :caption: Managing a project
 
-    open
     Project
     Project.put
     Project.get
@@ -155,5 +154,3 @@ These functions and classes are deprecated.
     :toctree: generated/
     :template: base.rst
     :caption: Deprecated
-
-    CrossValidationReporter

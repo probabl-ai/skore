@@ -1,4 +1,4 @@
-import type { ActivityFeedDto, LayoutDto, ProjectDto } from "@/dto";
+import type { ActivityFeedDto, ProjectInfoDto } from "@/dto";
 import { getErrorMessage } from "@/services/utils";
 import { useToastsStore } from "@/stores/toasts";
 
@@ -16,45 +16,6 @@ function reportError(message: string) {
 function checkResponseStatus(r: Response, attendedStatusCode: number) {
   if (r.status !== attendedStatusCode) {
     throw new Error(`Server responded with unexpected status code: ${r.status}`);
-  }
-}
-
-export async function fetchProject(): Promise<ProjectDto | null> {
-  try {
-    const r = await fetch(`${BASE_URL}/project/items`);
-    checkResponseStatus(r, 200);
-    return await r.json();
-  } catch (error) {
-    reportError(getErrorMessage(error));
-  }
-  return null;
-}
-
-export async function putView(view: string, layout: LayoutDto): Promise<ProjectDto | null> {
-  try {
-    const r = await fetch(`${BASE_URL}/project/views?key=${view}`, {
-      method: "PUT",
-      body: JSON.stringify(layout),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-    checkResponseStatus(r, 201);
-    return await r.json();
-  } catch (error) {
-    reportError(getErrorMessage(error));
-  }
-  return null;
-}
-
-export async function deleteView(view: string) {
-  try {
-    const r = await fetch(`${BASE_URL}/project/views?key=${view}`, {
-      method: "DELETE",
-    });
-    checkResponseStatus(r, 202);
-  } catch (error) {
-    reportError(getErrorMessage(error));
   }
 }
 
@@ -77,7 +38,7 @@ export async function setNote(
   key: string,
   message: string,
   version: number = -1
-): Promise<ProjectDto | null> {
+): Promise<object | null> {
   try {
     const r = await fetch(`${BASE_URL}/project/note`, {
       method: "PUT",
@@ -87,6 +48,17 @@ export async function setNote(
       },
     });
     checkResponseStatus(r, 201);
+    return await r.json();
+  } catch (error) {
+    reportError(getErrorMessage(error));
+  }
+  return null;
+}
+
+export async function getInfo(): Promise<ProjectInfoDto | null> {
+  try {
+    const r = await fetch(`${BASE_URL}/project/info`);
+    checkResponseStatus(r, 200);
     return await r.json();
   } catch (error) {
     reportError(getErrorMessage(error));

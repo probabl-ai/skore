@@ -1,0 +1,14 @@
+IPython
+altair
+numpydoc
+polars
+kaleido
+pydata-sphinx-theme
+sentence-transformers
+sphinx
+sphinx_autosummary_accessors
+sphinx-design
+sphinx-gallery
+sphinx-copybutton
+sphinx-tabs
+skrub

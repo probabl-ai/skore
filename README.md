@@ -55,11 +55,11 @@ You can find information on the latest version [here](https://anaconda.org/conda
 1. From your Python code, create and load a skore project:
     ```python
     import skore
-    my_project = skore.open("my_project", create=True)
+    my_project = skore.Project("my_project")
     ```
     This will create a skore project directory named `my_project.skore` in your current working directory.
 
-2. Evaluate your model using `skore.CrossValidationReporter`:
+2. Evaluate your model using `skore.CrossValidationReport`:
     ```python
     from sklearn.datasets import make_classification
     from sklearn.linear_model import LogisticRegression

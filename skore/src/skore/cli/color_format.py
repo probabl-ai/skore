@@ -79,7 +79,7 @@ class RichColorHelpFormatter(HelpFormatter):
 
         # Color the subcommands in cyan
         help_text = re.sub(
-            r"(?<=\s)(launch|create|quickstart)(?=\s+)",
+            r"(?<=\s)(create|open|kill)(?=\s+)",
             r"[cyan bold]\1[/cyan bold]",
             help_text,
         )
@@ -104,3 +104,13 @@ class ColorArgumentParser(ArgumentParser):
         """Print the help message."""
         console = Console(file=file)
         console.print(self.format_help())
+
+    def error(self, message):
+        """Print error message with Rich formatting and exit."""
+        console = Console(stderr=True, theme=skore_console_theme)
+        console.print(f"[red bold]error:[/red bold] {message}")
+
+        console.print(f"\n{self.format_usage()}")
+
+        console.print("\nFor more information, try '[cyan]--help[/cyan]'")
+        self.exit(2)

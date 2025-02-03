@@ -8,7 +8,6 @@ from rich.theme import Theme
 from skore.project import Project, open
 from skore.sklearn import (
     CrossValidationReport,
-    CrossValidationReporter,
     EstimatorReport,
     train_test_split,
 )
@@ -16,11 +15,10 @@ from skore.utils._patch import setup_jupyter_display
 from skore.utils._show_versions import show_versions
 
 __all__ = [
-    "CrossValidationReporter",
     "CrossValidationReport",
     "EstimatorReport",
-    "open",
     "Project",
+    "open",
     "show_versions",
     "train_test_split",
 ]
