@@ -35,7 +35,7 @@ my_project = skore.open("my_project", create=True)
 #
 #     my_project.put("my_key", "my_value")
 #
-# No need to remember ``plt.savefig(...)``, ``pd.to_csv(...)``, ``np.save(...)``, etc
+# No need to remember ``plt.savefig(...)``, ``df.to_csv(...)``, ``np.save(...)``, etc
 # for each type of object.
 #
 # In the following, we will list all the different types of objects that we can

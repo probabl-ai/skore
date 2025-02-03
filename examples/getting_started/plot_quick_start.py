@@ -7,27 +7,9 @@ Quick start
 """
 
 # %%
-# From your Python code, create and load a skore :class:`~skore.Project`:
-
-# %%
-import skore
-
-# sphinx_gallery_start_ignore
-import os
-import tempfile
-from pathlib import Path
-
-temp_dir = tempfile.TemporaryDirectory()
-temp_dir_path = Path(temp_dir.name)
-os.chdir(temp_dir_path)
-# sphinx_gallery_end_ignore
-my_project = skore.open("my_project", create=True)
-
-# %%
-# This will create a skore project directory named ``my_project.skore`` in your
-# current working directory.
-
-# %%
+# Machine learning evaluation and diagnostics
+# ===========================================
+#
 # Evaluate your model using skore's :class:`~skore.CrossValidationReport`:
 
 # %%
@@ -42,8 +24,8 @@ clf = LogisticRegression()
 cv_report = CrossValidationReport(clf, X, y)
 
 # %%
-# Display the help tree to see all the insights that are available to you (given that
-# you are doing binary classification):
+# Display the help tree to see all the insights that are available to you (skore
+# detected that you are doing binary classification):
 
 # %%
 cv_report.help()
@@ -66,7 +48,32 @@ roc_plot
 plt.tight_layout()
 
 # %%
-# Store the results in the skore project for safe-keeping:
+# Skore project: storing some items
+# =================================
+
+# %%
+# From your Python code, create and load a skore :class:`~skore.Project`:
+
+# %%
+import skore
+
+# sphinx_gallery_start_ignore
+import os
+import tempfile
+from pathlib import Path
+
+temp_dir = tempfile.TemporaryDirectory()
+temp_dir_path = Path(temp_dir.name)
+os.chdir(temp_dir_path)
+# sphinx_gallery_end_ignore
+my_project = skore.open("my_project", create=True)
+
+# %%
+# This will create a skore project directory named ``my_project.skore`` in your
+# current working directory.
+
+# %%
+# Store some previous results in the skore project for safe-keeping:
 
 # %%
 my_project.put("df_cv_report_metrics", df_cv_report_metrics)
