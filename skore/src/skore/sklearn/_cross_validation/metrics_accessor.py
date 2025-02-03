@@ -214,8 +214,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         LogisticRegression Split #0       0.94...
                            Split #1       0.94...
         """
-        return self._compute_metric_scores(
-            report_metric_name="accuracy",
+        return self.report_metrics(
+            scoring=["accuracy"],
             data_source=data_source,
             aggregate=aggregate,
         )
@@ -289,16 +289,16 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         >>> report.metrics.precision()
         Metric                      Precision (↗︎)
-        Class label                              0         1
+        Label / Average                          0         1
         LogisticRegression Split #0       0.96...   0.93...
                            Split #1       0.90...   0.96...
         """
-        return self._compute_metric_scores(
-            report_metric_name="precision",
+        return self.report_metrics(
+            scoring=["precision"],
             data_source=data_source,
             aggregate=aggregate,
-            average=average,
             pos_label=pos_label,
+            scoring_kwargs={"average": average},
         )
 
     @available_if(
@@ -371,16 +371,16 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         >>> report.metrics.recall()
         Metric                      Recall (↗︎)
-        Class label                           0        1
+        Label / Average                          0         1
         LogisticRegression Split #0    0.87...   0.98...
                            Split #1    0.94...   0.94...
         """
-        return self._compute_metric_scores(
-            report_metric_name="recall",
+        return self.report_metrics(
+            scoring=["recall"],
             data_source=data_source,
             aggregate=aggregate,
-            average=average,
             pos_label=pos_label,
+            scoring_kwargs={"average": average},
         )
 
     @available_if(
@@ -418,8 +418,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         LogisticRegression Split #0          0.04...
                            Split #1          0.04...
         """
-        return self._compute_metric_scores(
-            report_metric_name="brier_score",
+        return self.report_metrics(
+            scoring=["brier_score"],
             data_source=data_source,
             aggregate=aggregate,
         )
@@ -447,8 +447,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
 
-        average : {"auto", "macro", "micro", "weighted", "samples"}, \
-                default=None
+        average : {"macro", "micro", "weighted", "samples"}, default=None
             Average to compute the ROC AUC score in a multiclass setting. By default,
             no average is computed. Otherwise, this determines the type of averaging
             performed on the data.
@@ -502,12 +501,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         LogisticRegression Split #0      0.99...
                            Split #1      0.98...
         """
-        return self._compute_metric_scores(
-            report_metric_name="roc_auc",
+        return self.report_metrics(
+            scoring=["roc_auc"],
             data_source=data_source,
             aggregate=aggregate,
-            average=average,
-            multi_class=multi_class,
+            scoring_kwargs={"average": average, "multi_class": multi_class},
         )
 
     @available_if(
@@ -547,8 +545,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         LogisticRegression Split #0       0.1...
                            Split #1       0.1...
         """
-        return self._compute_metric_scores(
-            report_metric_name="log_loss",
+        return self.report_metrics(
+            scoring=["log_loss"],
             data_source=data_source,
             aggregate=aggregate,
         )
@@ -602,11 +600,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Ridge Split #0  0.36...
               Split #1  0.39...
         """
-        return self._compute_metric_scores(
-            report_metric_name="r2",
+        return self.report_metrics(
+            scoring=["r2"],
             data_source=data_source,
             aggregate=aggregate,
-            multioutput=multioutput,
+            scoring_kwargs={"multioutput": multioutput},
         )
 
     @available_if(_check_supported_ml_task(supported_ml_tasks=["regression"]))
@@ -658,11 +656,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Ridge Split #0  59.9...
               Split #1  61.4...
         """
-        return self._compute_metric_scores(
-            report_metric_name="rmse",
+        return self.report_metrics(
+            scoring=["rmse"],
             data_source=data_source,
             aggregate=aggregate,
-            multioutput=multioutput,
+            scoring_kwargs={"multioutput": multioutput},
         )
 
     def custom_metric(

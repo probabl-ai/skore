@@ -576,7 +576,7 @@ def test_cross_validation_report_report_metrics_scoring_kwargs(
     result = report.metrics.report_metrics(scoring_kwargs={"average": None})
     assert result.shape == (2, 10)
     assert isinstance(result.columns, pd.MultiIndex)
-    assert result.columns.names == ["Metric", "Class label"]
+    assert result.columns.names == ["Metric", "Label / Average"]
 
 
 @pytest.mark.parametrize(
