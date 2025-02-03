@@ -3,11 +3,8 @@ name: backend
 on:
   pull_request:
     paths:
-      - 'skore/src/**'
-      - 'skore/tests/**'
-      - 'skore/pyproject.toml'
-      - 'skore/requirements*.txt'
       - '.github/workflows/backend.yml'
+      - 'skore/**'
   push:
     branches:
       - main
