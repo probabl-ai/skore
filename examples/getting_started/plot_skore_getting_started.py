@@ -259,11 +259,10 @@ my_project.put("my_key_metric", 16)
 
 # %%
 history = my_project.get("my_key_metric", version="all")
-print(history)
-
 # sphinx_gallery_start_ignore
 temp_dir.cleanup()
 # sphinx_gallery_end_ignore
+history
 
 # %%
 # These tracking functionalities are very useful to:
