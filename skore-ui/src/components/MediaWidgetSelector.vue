@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import DataFrameWidget from "@/components/DataFrameWidget.vue";
+import EstimatorReport from "@/components/EstimatorReport.vue";
 import HtmlSnippetWidget from "@/components/HtmlSnippetWidget.vue";
 import ImageWidget from "@/components/ImageWidget.vue";
 import MarkdownWidget from "@/components/MarkdownWidget.vue";
@@ -45,4 +46,11 @@ function matchMediaType(mediaType: string) {
     :src="props.item.data"
   />
   <HtmlSnippetWidget v-if="matchMediaType('text/html')" :src="props.item.data" />
+  <EstimatorReport
+    v-if="matchMediaType('application/vnd.skore.estimator-report')"
+    :scalar-results="props.item.data.scalar_results"
+    :tabular-results="props.item.data.tabular_results"
+    :plots="props.item.data.plots"
+    :sections="props.item.data.sections"
+  />
 </template>

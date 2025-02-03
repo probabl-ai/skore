@@ -4,6 +4,7 @@ import type { VisualizationSpec } from "vega-embed";
 import { ref, useTemplateRef } from "vue";
 
 import datatable from "@/assets/fixtures/datatable.json";
+import estimatorReportFixture from "@/assets/fixtures/estimator-report.json";
 import htmlSnippet from "@/assets/fixtures/html-snippet.html?raw";
 import markdownString from "@/assets/fixtures/markdown.md?raw";
 import multiIndexDatatable from "@/assets/fixtures/multi-index-datatable.json";
@@ -18,6 +19,10 @@ import DropdownButton from "@/components/DropdownButton.vue";
 import DropdownButtonItem from "@/components/DropdownButtonItem.vue";
 import DynamicContentRasterizer from "@/components/DynamicContentRasterizer.vue";
 import EditableList, { type EditableListItemModel } from "@/components/EditableList.vue";
+import EstimatorReport, {
+  type EstimatorReportScalarResult,
+  type EstimatorReportTabularResult,
+} from "@/components/EstimatorReport.vue";
 import FloatingTooltip from "@/components/FloatingTooltip.vue";
 import HtmlSnippetWidget from "@/components/HtmlSnippetWidget.vue";
 import ImageWidget from "@/components/ImageWidget.vue";
@@ -625,6 +630,16 @@ const richText = ref(
         </div>
         <MarkdownWidget :source="richText" />
       </TabPanelContent>
+      <TabPanelContent name="report" class="report">
+        <EstimatorReport
+          :scalar-results="estimatorReportFixture.scalar_results as EstimatorReportScalarResult[]"
+          :tabular-results="
+            estimatorReportFixture.tabular_results as EstimatorReportTabularResult[]
+          "
+          :plots="estimatorReportFixture.plots"
+          :sections="estimatorReportFixture.sections"
+        />
+      </TabPanelContent>
     </TabPanel>
   </main>
 </template>
@@ -750,5 +765,9 @@ main {
     padding-bottom: var(--spacing-8);
     gap: var(--spacing-8);
   }
+}
+
+.report {
+  padding: var(--spacing-8);
 }
 </style>

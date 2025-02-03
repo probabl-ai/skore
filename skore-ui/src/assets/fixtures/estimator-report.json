@@ -1,0 +1,113 @@
+{
+  "scalar_results": [
+    { "name": "toto", "value": 4.32, "favorability": "greater_is_better" },
+    { "name": "tata", "value": 4.32, "favorability": "greater_is_better" },
+    { "name": "titi", "value": 4.32, "stddev": 1, "favorability": "greater_is_better" },
+    { "name": "tutu", "value": 4.32, "favorability": "greater_is_better" },
+    { "name": "stab", "value": 0.4, "label": "Good", "favorability": "greater_is_better" },
+    { "name": "titi", "value": 4.32, "stddev": 1, "favorability": "greater_is_better" },
+    { "name": "tutu", "value": 4.32, "favorability": "greater_is_better" },
+    {
+      "name": "stab",
+      "value": 0.9,
+      "label": "Good",
+      "description": "your blabla is good",
+      "favorability": "greater_is_better"
+    }
+  ],
+  "tabular_results": [
+    {
+      "name": "abracadaraabracadaraabracadaraabracadara",
+      "columns": [0, 1, 2, 3, 4],
+      "data": [
+        ["0.1234", "0.5678", "0.9012", "0.3456", "0.7890"],
+        ["0.2345", "0.6789", "0.0123", "0.4567", "0.8901"],
+        ["0.3456", "0.7890", "0.1234", "0.5678", "0.9012"],
+        ["0.4567", "0.8901", "0.2345", "0.6789", "0.0123"],
+        ["0.5678", "0.9012", "0.3456", "0.7890", "0.1234"],
+        ["0.6789", "0.0123", "0.4567", "0.8901", "0.2345"]
+      ],
+      "favorability": [
+        "greater_is_better",
+        "lower_is_better",
+        "greater_is_better",
+        "lower_is_better"
+      ]
+    },
+    {
+      "name": "b",
+      "columns": ["Accuracy", "Precision", "Recall", "F1 Score"],
+      "data": [
+        [0.8, 0.4, 0.5, 0.6],
+        [0.8, 0.4, 0.5, 0.6],
+        [0.8, 0.4, 0.5, 0.6],
+        [0.8, 0.4, 0.5, 0.6]
+      ],
+      "favorability": ["greater_is_better", "greater_is_better", "lower_is_better"]
+    }
+  ],
+  "plots": [
+    {
+      "name": "plot 1",
+      "value": {
+        "data": [{ "x": [1, 2, 3], "y": [1, 3, 2], "type": "bar" }],
+        "layout": {
+          "title": { "text": "A Figure Specified by a Dictionary" }
+        }
+      }
+    },
+    {
+      "name": "plot 2",
+      "value": {
+        "data": [{ "x": [4, 5, 6], "y": [7, 8, 9], "type": "bar" }],
+        "layout": {
+          "title": { "text": "Another Figure" }
+        }
+      }
+    }
+  ],
+  "sections": [
+    {
+      "title": "Model",
+      "icon": "icon-square-cursor",
+      "items": [
+        {
+          "name": "Estimator parameters:",
+          "description": "Core model configuration used for training",
+          "value": "`RandomForestClassifier` *100* trees, max_depth *10*"
+        },
+        {
+          "name": "Estimator parameters:",
+          "description": "Core model configuration used for training",
+          "value": "`RandomForestClassifier` *100* trees, max_depth *10*"
+        },
+        {
+          "name": "Estimator parameters:",
+          "description": "Core model configuration used for training",
+          "value": "`RandomForestClassifier` *100* trees, max_depth *10*"
+        }
+      ]
+    },
+    {
+      "title": "bla bla",
+      "icon": "icon-text",
+      "items": [
+        {
+          "name": "Estimator parameters:",
+          "description": "Core model configuration used for training",
+          "value": "`RandomForestClassifier` *100* trees, max_depth *10*"
+        },
+        {
+          "name": "Estimator parameters:",
+          "description": "Core model configuration used for training",
+          "value": "`RandomForestClassifier` *100* trees, max_depth *10*"
+        },
+        {
+          "name": "Estimator parameters:",
+          "description": "Core model configuration used for training",
+          "value": "`RandomForestClassifier` *100* trees, max_depth *10*"
+        }
+      ]
+    }
+  ]
+}
