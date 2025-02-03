@@ -35,8 +35,8 @@ my_project = skore.open("my_project", create=True)
 #
 #     my_project.put("my_key", "my_value")
 #
-# No need to remember ``plt.savefig(...)``, ``df.to_csv(...)``, ``np.save(...)``, etc
-# for each type of object.
+# There is no need to remember ``plt.savefig(...)``, ``df.to_csv(...)``,
+# ``np.save(...)``, etc for each type of object.
 #
 # In the following, we will list all the different types of objects that we can
 # :func:`~skore.Project.put` inside a skore :class:`~skore.Project`.
@@ -325,22 +325,6 @@ my_project.put("my_anim_plotly_fig", my_anim_plotly_fig)
 my_anim_plotly_fig
 
 # %%
-# PIL image:
-
-# %%
-# TODO: change this
-
-import io
-
-import PIL
-
-my_pil_image = PIL.Image.new("RGB", (100, 100), color="red")
-with io.BytesIO() as output:
-    my_pil_image.save(output, format="png")
-
-my_project.put("my_pil_image", my_pil_image)
-
-# %%
 # Storing scikit-learn models and pipelines
 # =========================================
 #
@@ -377,16 +361,19 @@ X = diabetes.data[:150]
 y = diabetes.target[:150]
 my_pipeline.fit(X, y)
 
-# %%
-# Storing skore estimator reports
-# ===============================
-
-# %%
-# TODO
-
 
 my_project.put("my_fitted_pipeline", my_pipeline)
-my_pipeline
 # sphinx_gallery_start_ignore
 temp_dir.cleanup()
 # sphinx_gallery_end_ignore
+my_pipeline
+
+# %%
+# Storing skore objects
+# =====================
+#
+# .. seealso::
+#
+#   We can also store skore objects such as :class:`skore.EstimatorReport` and
+#   :class:`skore.CrossValidationReport`.
+#   See :ref:`example_use_case_employee_salaries`.
