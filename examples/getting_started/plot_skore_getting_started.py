@@ -121,11 +121,12 @@ roc_plot_cv
 plt.tight_layout()
 
 # %%
-# We can retrieve the metrics of a specific fold to investigate further, for example
-# the first fold:
+# We can retrieve the estimator report of a specific fold to investigate further,
+# for example the first fold:
 
 # %%
-df_report_metrics_fold = cv_report.estimator_reports_[0].metrics.report_metrics()
+est_report_fold = cv_report.estimator_reports_[0]
+df_report_metrics_fold = est_report_fold.metrics.report_metrics()
 df_report_metrics_fold
 
 # %%
@@ -252,14 +253,19 @@ my_project.put("my_key_metric", 9)
 
 my_project.put("my_key_metric", 16)
 
+# %%
+# Skore does not overwrite items with the same name (key): instead, it stores
+# their history so that nothing is lost:
+
+# %%
+history = my_project.get("my_key_metric", version="all")
+print(history)
+
 # sphinx_gallery_start_ignore
 temp_dir.cleanup()
 # sphinx_gallery_end_ignore
 
 # %%
-# Skore does not overwrite items with the same name (key): instead, it stores
-# their history so that nothing is lost.
-#
 # These tracking functionalities are very useful to:
 #
 # * never lose some key machine learning metrics,
@@ -268,7 +274,7 @@ temp_dir.cleanup()
 # %%
 # .. seealso::
 #
-#   For more information about the tracking of items using their history,
+#   For more functionalities about the tracking of items using their history,
 #   see :ref:`example_tracking_items`.
 
 # %%
