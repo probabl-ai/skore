@@ -361,7 +361,6 @@ X = diabetes.data[:150]
 y = diabetes.target[:150]
 my_pipeline.fit(X, y)
 
-
 my_project.put("my_fitted_pipeline", my_pipeline)
 # sphinx_gallery_start_ignore
 temp_dir.cleanup()
