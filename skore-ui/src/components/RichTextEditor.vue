@@ -96,16 +96,13 @@ defineExpose({ markBold, markItalic, markList, focus });
   & textarea {
     width: 100%;
     height: 100%;
-    border: var(--stroke-width-md) solid var(--color-stroke-background-primary);
-    border-radius: var(--radius-xs);
+    border: none;
     background-color: var(--color-background-primary);
     color: var(--color-text-secondary);
     font-family: GeistMono, monospace;
     resize: none;
-    transition: border-color var(--animation-duration) var(--animation-easing);
 
     &:focus {
-      border-color: var(--color-stroke-background-branding);
       outline: none;
     }
   }

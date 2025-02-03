@@ -8,9 +8,8 @@ from pathlib import Path
 from typing import Any, Literal, Optional, Union
 
 from skore.persistence.item import item_to_object, object_to_item
-from skore.persistence.repository import ItemRepository, ViewRepository
+from skore.persistence.repository import ItemRepository
 from skore.persistence.storage import DiskCacheStorage
-from skore.persistence.view import View
 
 logger = getLogger(__name__)
 logger.addHandler(NullHandler())  # Default to no output
@@ -91,19 +90,12 @@ class Project:
             )
 
         item_storage_dirpath = self.path / "items"
-        view_storage_dirpath = self.path / "views"
 
         # Create diskcache directories
         item_storage_dirpath.mkdir(parents=True, exist_ok=True)
-        view_storage_dirpath.mkdir(parents=True, exist_ok=True)
 
         # Initialize repositories with dedicated storages
         self._item_repository = ItemRepository(DiskCacheStorage(item_storage_dirpath))
-        self._view_repository = ViewRepository(DiskCacheStorage(view_storage_dirpath))
-
-        # Ensure default view is available
-        if "default" not in self._view_repository:
-            self._view_repository.put_view("default", View(layout=[]))
 
         # Check if the project should rejoin a server
         from skore.project._launch import ServerInfo  # avoid circular import
@@ -114,12 +106,6 @@ class Project:
         """Clear the project."""
         for item_key in self._item_repository:
             self._item_repository.delete_item(item_key)
-
-        for view_key in self._view_repository:
-            self._view_repository.delete_view(view_key)
-
-        # Ensure default view is available
-        self._view_repository.put_view("default", View(layout=[]))
 
     def put(
         self,

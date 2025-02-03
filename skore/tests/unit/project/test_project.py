@@ -27,7 +27,6 @@ def test_init(tmp_path):
 
     assert dirpath.exists()
     assert (dirpath / "items").exists()
-    assert (dirpath / "views").exists()
 
     # Ensure existing project raises an error with `if_exists="raise"`
     with pytest.raises(FileExistsError):
@@ -49,7 +48,6 @@ def test_clear(tmp_path):
 
     assert project.keys() == []
     assert project._item_repository.keys() == []
-    assert project._view_repository.keys() == ["default"]
 
 
 def test_put_string_item(in_memory_project):
