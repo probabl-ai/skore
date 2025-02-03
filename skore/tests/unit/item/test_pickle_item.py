@@ -49,14 +49,3 @@ class TestPickleItem:
         assert item1.object is int
         assert item2.object is int
 
-    def test_get_serializable_dict(self, mock_nowstr):
-        item = PickleItem.factory(int)
-        serializable = item.as_serializable_dict()
-
-        assert serializable == {
-            "updated_at": mock_nowstr,
-            "created_at": mock_nowstr,
-            "note": None,
-            "media_type": "text/markdown",
-            "value": "```python\n<class 'int'>\n```",
-        }

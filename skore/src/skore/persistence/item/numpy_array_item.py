@@ -91,10 +91,3 @@ class NumpyArrayItem(Item):
             array_bytes = stream.getvalue()
             array_b64_str = bytes_to_b64_str(array_bytes)
             return cls(array_b64_str=array_b64_str, **kwargs)
-
-    def as_serializable_dict(self):
-        """Convert item to a JSON-serializable dict to used by frontend."""
-        return super().as_serializable_dict() | {
-            "media_type": "text/markdown",
-            "value": self.array.tolist(),
-        }

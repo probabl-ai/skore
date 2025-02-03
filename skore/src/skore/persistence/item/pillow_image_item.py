@@ -5,7 +5,6 @@ This module defines the PillowImageItem class, used to persist Pillow images.
 
 from __future__ import annotations
 
-from io import BytesIO
 from typing import TYPE_CHECKING, Optional
 
 from skore.persistence.item.item import Item, ItemTypeError
@@ -92,16 +91,3 @@ class PillowImageItem(Item):
             size=self.image_size,
             data=image_bytes,
         )
-
-    def as_serializable_dict(self):
-        """Convert item to a JSON-serializable dict to used by frontend."""
-        with BytesIO() as stream:
-            self.image.save(stream, format="png")
-
-            png_bytes = stream.getvalue()
-            png_b64_str = bytes_to_b64_str(png_bytes)
-
-        return super().as_serializable_dict() | {
-            "media_type": "image/png;base64",
-            "value": png_b64_str,
-        }

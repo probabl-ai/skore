@@ -7,10 +7,6 @@ from skore.persistence.item import ItemTypeError, SklearnBaseEstimatorItem
 from skore.utils import bytes_to_b64_str
 
 
-class Estimator(sklearn.svm.SVC):
-    pass
-
-
 class TestSklearnBaseEstimatorItem:
     @pytest.fixture(autouse=True)
     def monkeypatch_datetime(self, monkeypatch, MockDatetime):
@@ -79,6 +75,9 @@ class TestSklearnBaseEstimatorItem:
 
     @pytest.mark.order(1)
     def test_estimator_untrusted(self, mock_nowstr):
+        class Estimator(sklearn.svm.SVC):
+            pass
+
         estimator = Estimator()
         estimator_skops_bytes = skops.io.dumps(estimator)
         estimator_skops_b64_str = bytes_to_b64_str(estimator_skops_bytes)
@@ -106,16 +105,3 @@ class TestSklearnBaseEstimatorItem:
 
         assert isinstance(item1.estimator, Estimator)
         assert isinstance(item2.estimator, Estimator)
-
-    def test_get_serializable_dict(self, mock_nowstr):
-        estimator = Estimator()
-        item = SklearnBaseEstimatorItem.factory(estimator)
-        serializable = item.as_serializable_dict()
-
-        assert serializable == {
-            "updated_at": mock_nowstr,
-            "created_at": mock_nowstr,
-            "note": None,
-            "media_type": "application/vnd.sklearn.estimator+html",
-            "value": item.estimator_html_repr,
-        }

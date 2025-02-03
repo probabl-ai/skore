@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING, Optional
 
 from skore.persistence.item.item import Item, ItemTypeError
 from skore.persistence.item.media_item import lazy_is_instance
-from skore.utils import bytes_to_b64_str
 
 if TYPE_CHECKING:
     import plotly.basedatatypes
@@ -76,13 +75,3 @@ class PlotlyFigureItem(Item):
         import plotly.io
 
         return plotly.io.from_json(self.figure_str)
-
-    def as_serializable_dict(self):
-        """Convert item to a JSON-serializable dict to used by frontend."""
-        figure_bytes = self.figure_str.encode("utf-8")
-        figure_b64_str = bytes_to_b64_str(figure_bytes)
-
-        return super().as_serializable_dict() | {
-            "media_type": "application/vnd.plotly.v1+json;base64",
-            "value": figure_b64_str,
-        }
