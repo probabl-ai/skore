@@ -7,6 +7,7 @@ from rich.theme import Theme
 
 from skore.project import Project, open
 from skore.sklearn import (
+    Comparator,
     CrossValidationReport,
     EstimatorReport,
     train_test_split,
@@ -16,6 +17,7 @@ from skore.utils._show_versions import show_versions
 
 __all__ = [
     "CrossValidationReport",
+    "Comparator",
     "EstimatorReport",
     "Project",
     "open",
