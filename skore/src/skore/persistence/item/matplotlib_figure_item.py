@@ -97,16 +97,3 @@ class MatplotlibFigureItem(Item):
             mpl_backend(backend="agg"),
         ):
             return joblib.load(stream)
-
-    def as_serializable_dict(self) -> dict:
-        """Convert item to a JSON-serializable dict to used by frontend."""
-        with BytesIO() as stream:
-            self.figure.savefig(stream, format="svg", bbox_inches="tight")
-
-            figure_bytes = stream.getvalue()
-            figure_b64_str = bytes_to_b64_str(figure_bytes)
-
-            return super().as_serializable_dict() | {
-                "media_type": "image/svg+xml;base64",
-                "value": figure_b64_str,
-            }
