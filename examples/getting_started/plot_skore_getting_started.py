@@ -26,9 +26,9 @@ Skore: getting started
 # Machine learning evaluation and diagnostics
 # ===========================================
 #
-# Skore re-implements or wraps some key scikit-learn class / functions to automatically
-# provide insights and diagnostics when using them, as a way to facilitate good
-# practices and avoid common pitfalls.
+# Skore implements new tools or wraps some key scikit-learn class / functions to
+# automatically provide insights and diagnostics when using them, as a way to
+# facilitate good practices and avoid common pitfalls.
 
 # %%
 # Model evaluation with skore
@@ -91,7 +91,7 @@ plt.tight_layout()
 # Cross-validation with skore
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
-# skore has also implemented a :class:`skore.CrossValidationReport` class that contains
+# skore has also (re-)implemented a :class:`skore.CrossValidationReport` class that contains
 # several :class:`skore.EstimatorReport` for each fold.
 
 # %%
