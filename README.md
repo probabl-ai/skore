@@ -96,19 +96,19 @@ You can find information on the latest version [here](https://anaconda.org/conda
 
 1. Store your results for safe-keeping.
     ```python
-    # create and load a skore project
+    # Create and load a skore project
     import skore
     my_project = skore.Project("my_project")
     ```
 
     ```python
-    # store your results
+    # Store your results
     my_project.put("df_cv_report_metrics", df_cv_report_metrics)
     my_project.put("roc_plot", roc_plot)
     ```
 
     ```python
-    # get your results
+    # Get your results
     df_get = my_project.put("df_cv_report_metrics")
     ```
 
