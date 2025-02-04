@@ -3,14 +3,14 @@ import io
 
 import altair
 import numpy
+import pandas
 import PIL
 import plotly
+import polars
 import pytest
 import sklearn
 from matplotlib.figure import Figure
-from pandas import DataFrame, Index, Series
 from skore.persistence.item.altair_chart_item import AltairChartItem
-from skore.persistence.item.item import Item
 from skore.persistence.item.matplotlib_figure_item import MatplotlibFigureItem
 from skore.persistence.item.media_item import MediaItem, MediaType
 from skore.persistence.item.numpy_array_item import NumpyArrayItem
@@ -42,13 +42,16 @@ from skore.ui.serializers import (
 from skore.utils import bytes_to_b64_str
 
 
-def test_item_as_serializable_dict(mock_nowstr):
-    item = Item(created_at=mock_nowstr, updated_at=mock_nowstr)
+def test_item_as_serializable_dict(monkeypatch, mock_nowstr, MockDatetime):
+    monkeypatch.setattr("skore.persistence.item.item.datetime", MockDatetime)
 
+    item = PrimitiveItem.factory(2)
     assert item_as_serializable(item) == {
         "updated_at": mock_nowstr,
         "created_at": mock_nowstr,
         "note": None,
+        "media_type": "text/markdown",
+        "value": 2,
     }
 
 
@@ -66,11 +69,12 @@ def test_altair_chart_item_as_serializable_dict():
     }
 
 
-def test_matplotlib_figure_item_as_serializable_dict():
-    class FakeFigure(Figure):
-        def savefig(self, stream, *args, **kwargs):
-            stream.write(b"<figure>")
+class FakeFigure(Figure):
+    def savefig(self, stream, *args, **kwargs):
+        stream.write(b"<figure>")
 
+
+def test_matplotlib_figure_item_as_serializable_dict():
     figure = FakeFigure()
 
     with io.BytesIO() as stream:
@@ -109,7 +113,9 @@ def test_numpy_array_item_as_serializable_dict():
 
 
 def test_pandas_data_frame_item_as_serializable_dict():
-    dataframe = DataFrame([{"key": numpy.array([1])}], Index([0], name="myIndex"))
+    dataframe = pandas.DataFrame(
+        [{"key": numpy.array([1])}], pandas.Index([0], name="myIndex")
+    )
     item = PandasDataFrameItem.factory(dataframe)
     serializable = _pandas_data_frame_item_as_serializable_dict(item)
     assert serializable == {
@@ -119,7 +125,7 @@ def test_pandas_data_frame_item_as_serializable_dict():
 
 
 def test_pandas_series_item_as_serializable_dict():
-    series = Series([numpy.array([1])], Index([0], name="myIndex"))
+    series = pandas.Series([numpy.array([1])], pandas.Index([0], name="myIndex"))
     item = PandasSeriesItem.factory(series)
     serializable = _pandas_series_item_as_serializable_dict(item)
     assert serializable == {
@@ -169,7 +175,7 @@ def test_plotly_figure_item_as_serializable_dict():
 
 
 def test_polars_data_frame_item_as_serializable_dict():
-    dataframe = DataFrame([{"key": "value"}])
+    dataframe = polars.DataFrame([{"key": "value"}])
     item = PolarsDataFrameItem.factory(dataframe)
     serializable = _polars_data_frame_item_as_serializable_dict(item)
     assert serializable == {
@@ -179,7 +185,7 @@ def test_polars_data_frame_item_as_serializable_dict():
 
 
 def test_polars_series_item_as_serializable():
-    series = Series([numpy.array([1, 2])])
+    series = polars.Series([numpy.array([1, 2])])
     item = PolarsSeriesItem.factory(series)
     serializable = _polars_series_item_as_serializable(item)
     assert serializable == {

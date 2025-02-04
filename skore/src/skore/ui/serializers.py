@@ -59,7 +59,7 @@ def item_as_serializable(item: Item):
 
 
 def _altair_chart_item_as_serializable_dict(item: AltairChartItem):
-    """Convert item to a JSON-serializable dict to used by frontend."""
+    """Convert a AltairChartItem to a JSON-serializable dict to used by frontend."""
     chart_bytes = item.chart_str.encode("utf-8")
     chart_b64_str = bytes_to_b64_str(chart_bytes)
 
@@ -126,7 +126,7 @@ def _pickle_item_as_serializable_dict(item: PickleItem):
                 "Item cannot be displayed",
                 "\n\n",
                 "UnpicklingError with complete traceback:",
-                "\n\n```pytb",
+                "\n\n```pytb\n",
                 traceback,
                 "```",
             )

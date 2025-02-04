@@ -7,6 +7,10 @@ from skore.persistence.item import ItemTypeError, SklearnBaseEstimatorItem
 from skore.utils import bytes_to_b64_str
 
 
+class Estimator(sklearn.svm.SVC):
+    pass
+
+
 class TestSklearnBaseEstimatorItem:
     @pytest.fixture(autouse=True)
     def monkeypatch_datetime(self, monkeypatch, MockDatetime):
@@ -75,9 +79,6 @@ class TestSklearnBaseEstimatorItem:
 
     @pytest.mark.order(1)
     def test_estimator_untrusted(self, mock_nowstr):
-        class Estimator(sklearn.svm.SVC):
-            pass
-
         estimator = Estimator()
         estimator_skops_bytes = skops.io.dumps(estimator)
         estimator_skops_b64_str = bytes_to_b64_str(estimator_skops_bytes)
