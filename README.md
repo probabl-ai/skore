@@ -1,5 +1,15 @@
 <div align="center">
 
+  ![license](https://img.shields.io/pypi/l/skore)
+  ![python](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue?style=flat&logo=python)
+  [![downloads](https://static.pepy.tech/badge/skore/month)](https://pepy.tech/projects/skore)
+  [![pypi](https://img.shields.io/pypi/v/skore)](https://pypi.org/project/skore/)
+  [![Discord](https://img.shields.io/badge/Discord-%235865F2.svg?logo=discord&logoColor=white)](https://discord.probabl.ai/)
+
+</div>
+
+<div align="center">
+
   <picture>
     <source srcset="https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/Logo_Skore_Dark@2x.svg" media="(prefers-color-scheme: dark)">
     <img width="200" src="https://media.githubusercontent.com/media/probabl-ai/skore/main/sphinx/_static/images/Logo_Skore_Light@2x.svg" alt="skore logo">
@@ -13,19 +23,23 @@ Elevate ML Development with Built-in Recommended Practices \
 
 <br />
 
-## Why skore?
+## What is skore?
 
-ML development is an art — blending business sense, stats knowledge, and coding skills. Brought to you by [Probabl](https://probabl.ai), a company co-founded by scikit-learn core developers, skore helps data scientists focus on what matters: building impactful models with hindsight and clarity.
-
-Skore is just at the beginning of its journey, but we’re shipping fast! Frequent updates and new features are on the way as we work toward our vision of becoming a comprehensive library for data scientists, supporting every phase of the machine learning lifecycle.
-
-⭐ Support us with a star and spread the word - it means a lot! ⭐
-
+skore is a Python open-source library designed to help data scientists apply recommended practices and avoid common methodological pitfalls in scikit-learn.
 
 ## Key features
 
-- **Diagnose**: Catch methodological errors before they impact your models with **smart alerts** that analyze both code execution and data patterns in real-time.
-- **Evaluate**: Uncover actionable insights through **automated reports** surfacing relevant metrics. Explore faster with our intelligent caching system.
+- **Diagnose**: catch methodological errors before they impact your models.
+  - `train_test_split` supercharged with methodological guidance: the API is the same as scikit-learn's, but skore displays warnings when applicable. For example, it warns you against shuffling time series data or when you have class imbalance.
+- **Evaluate**: automated insightful reports.
+  - `EstimatorReport`: feed your scikit-learn compatible estimator and dataset, and it generates recommended metrics and plots to help you analyze your estimator. All these are computed and generated for you in 1 line of code. Under the hood, we use efficient caching to make the computations blazing fast.
+  - `CrossValidationReport`: Get a skore estimator report for each fold of your cross-validation.
+
+## What's next?
+
+Skore is just at the beginning of its journey, but we’re shipping fast! Frequent updates and new features are on the way as we work toward our vision of becoming a comprehensive library for data scientists.
+
+⭐ Support us with a star and spread the word - it means a lot! ⭐
 
 ## 🚀 Quick start
 
@@ -52,14 +66,7 @@ You can find information on the latest version [here](https://anaconda.org/conda
 
 ### Get assistance when developing your ML/DS projects
 
-1. From your Python code, create and load a skore project:
-    ```python
-    import skore
-    my_project = skore.Project("my_project")
-    ```
-    This will create a skore project directory named `my_project.skore` in your current working directory.
-
-2. Evaluate your model using `skore.CrossValidationReport`:
+1. Evaluate your model using `skore.CrossValidationReport`:
     ```python
     from sklearn.datasets import make_classification
     from sklearn.linear_model import LogisticRegression
@@ -87,10 +94,22 @@ You can find information on the latest version [here](https://anaconda.org/conda
     roc_plot
     ```
 
-3. Store the results in the skore project for safe-keeping:
+1. Store your results for safe-keeping.
     ```python
+    # create and load a skore project
+    import skore
+    my_project = skore.Project("my_project")
+    ```
+
+    ```python
+    # store your results
     my_project.put("df_cv_report_metrics", df_cv_report_metrics)
     my_project.put("roc_plot", roc_plot)
+    ```
+
+    ```python
+    # get your results
+    df_get = my_project.put("df_cv_report_metrics")
     ```
 
 Learn more in our [documentation](https://skore.probabl.ai).
@@ -107,16 +126,6 @@ Thank you for considering contributing to skore! Join our mission to promote ope
 -   Request a feature or report a bug via [GitHub Issues](https://github.com/probabl-ai/skore/issues).
 
 <br />
-
-<div align="center">
-
-  ![license](https://img.shields.io/pypi/l/skore)
-  ![python](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue?style=flat&logo=python)
-  [![downloads](https://static.pepy.tech/badge/skore/month)](https://pepy.tech/projects/skore)
-  [![pypi](https://img.shields.io/pypi/v/skore)](https://pypi.org/project/skore/)
-  [![Discord](https://img.shields.io/badge/Discord-%235865F2.svg?logo=discord&logoColor=white)](https://discord.probabl.ai/)
-
-</div>
 
 ---
 
