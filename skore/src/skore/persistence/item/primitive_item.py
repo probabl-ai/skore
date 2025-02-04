@@ -89,4 +89,3 @@ class PrimitiveItem(Item):
             raise ItemTypeError(f"Type '{primitive.__class__}' is not supported.")
 
         return cls(primitive=primitive, **kwargs)
-

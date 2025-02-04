@@ -29,5 +29,3 @@ class TestPrimitiveItem:
 
         with pytest.raises(ItemTypeError):
             PrimitiveItem.factory("<content>")
-
-    

@@ -48,4 +48,3 @@ class TestPickleItem:
 
         assert item1.object is int
         assert item2.object is int
-

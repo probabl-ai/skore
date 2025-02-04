@@ -39,5 +39,3 @@ class TestAltairChartItem:
         # Altair strict equality doesn't work
         assert item1.chart.to_json() == chart_str
         assert item2.chart.to_json() == chart_str
-
-    
