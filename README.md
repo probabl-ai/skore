@@ -4,7 +4,7 @@
   ![python](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue?style=flat&logo=python)
   [![downloads](https://static.pepy.tech/badge/skore/month)](https://pepy.tech/projects/skore)
   [![pypi](https://img.shields.io/pypi/v/skore)](https://pypi.org/project/skore/)
-  [![Discord](https://img.shields.io/badge/Discord-%235865F2.svg?logo=discord&logoColor=white)](https://discord.probabl.ai/)
+  [![Discord](https://img.shields.io/discord/1275821367324840119?label=Discord)](https://discord.probabl.ai/)
 
 </div>
 
