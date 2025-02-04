@@ -38,9 +38,9 @@ Key features
 -  **Evaluate**: Uncover actionable insights through **automated reports** surfacing
    relevant metrics. Explore faster with our intelligent caching system.
 
-   -  :class:`skore.EstimatorReport`: get a report for your estimator
+   -  :class:`skore.EstimatorReport`: get a report on your estimator
 
-   -  :class:`skore.CrossValidationReport`: get a report for your cross-validation 
+   -  :class:`skore.CrossValidationReport`: get a report on your cross-validation 
       results
 
 .. currentmodule:: skore

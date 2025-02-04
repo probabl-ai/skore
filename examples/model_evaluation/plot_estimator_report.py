@@ -1,9 +1,9 @@
 """
 .. _example_estimator_report:
 
-============================================
-Get insights from any scikit-learn estimator
-============================================
+===============================================================
+`EstimatorReport`: Get insights from any scikit-learn estimator
+===============================================================
 
 This example shows how the :class:`skore.EstimatorReport` class can be used to
 quickly get insights from any scikit-learn estimator.

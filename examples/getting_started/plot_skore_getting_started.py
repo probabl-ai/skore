@@ -9,164 +9,26 @@ Skore: getting started
 # %%
 # This getting started guide illustrates how to use skore and why:
 #
-# #.    Track your ML/DS results using skore's :class:`~skore.Project`
-#       (for storage).
+# #.    Get assistance when developing your ML/DS projects to avoid common pitfalls
+#       and follow recommended practices.
 #
-# #.    Machine learning diagnostics: get assistance when developing your ML/DS
-#       projects to avoid common pitfalls and follow recommended practices.
+#       *   :class:`skore.EstimatorReport`: get an insightful report on your estimator
 #
-#       *   :class:`skore.EstimatorReport`: get an insightful report for your estimator
-#
-#       *   :class:`skore.CrossValidationReport`: get an insightful report for your
+#       *   :class:`skore.CrossValidationReport`: get an insightful report on your
 #           cross-validation results
 #
 #       *   :func:`skore.train_test_split`: get diagnostics when splitting your data
-
-# %%
-# Tracking: skore project
-# =======================
 #
-# A key feature of skore is its :class:`~skore.Project` that allows to store
-# items of many types.
+# #.    Track your ML/DS results using skore's :class:`~skore.Project`
+#       (for storage).
 
 # %%
-# Setup: creating and loading a skore project
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-# %%
-#   Let's start by creating a skore project directory named ``my_project.skore`` in our
-#   current directory.
-
-# %%
-import skore
-
-# sphinx_gallery_start_ignore
-import os
-import tempfile
-from pathlib import Path
-
-temp_dir = tempfile.TemporaryDirectory()
-temp_dir_path = Path(temp_dir.name)
-os.chdir(temp_dir_path)
-# sphinx_gallery_end_ignore
-my_project = skore.Project("my_project")
-
-# %%
-# Now that the project exists, we can write some Python code (in the same
-# directory) to add (:func:`~skore.Project.put`) some useful items in it,
-# with a key-value convention:
-
-# %%
-my_project.put("my_int", 3)
-
-# %%
-# We can retrieve the value of an item:
-
-# %%
-my_project.get("my_int")
-
-# %%
-# Skore project: storing some items
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-#
-# As an illustration of the usage of the skore project with a machine learning
-# motivation, let us perform a hyperparameter sweep and store relevant information
-# in the skore project.
-
-# %%
-# We search for the ``alpha`` hyperparameter of a Ridge regression on the
-# Diabetes dataset:
-
-# %%
-import numpy as np
-from sklearn.datasets import load_diabetes
-from sklearn.linear_model import Ridge
-from sklearn.model_selection import GridSearchCV
-
-X, y = load_diabetes(return_X_y=True)
-
-gs_cv = GridSearchCV(
-    Ridge(),
-    param_grid={"alpha": np.logspace(-3, 5, 50)},
-    scoring="neg_root_mean_squared_error",
-)
-gs_cv.fit(X, y)
-
-# %%
-# Now, we store the hyperparameter's metrics in a dataframe and make a custom
-# plot:
-
-# %%
-import pandas as pd
-
-df = pd.DataFrame(gs_cv.cv_results_)
-df.insert(len(df.columns), "rmse", -df["mean_test_score"].values)
-df[["param_alpha", "rmse"]].head()
-
-# %%
-import matplotlib.pyplot as plt
-
-fig = plt.figure(layout="constrained")
-plt.plot(df["param_alpha"], df["rmse"])
-plt.xscale("log")
-plt.xlabel("Alpha hyperparameter")
-plt.ylabel("RMSE")
-plt.title("Ridge regression")
-plt.show()
-
-# %%
-#
-# Finally, we store these relevant items in our skore project, so that we
-# can visualize them later:
-
-# %%
-my_project.put("my_gs_cv", gs_cv)
-my_project.put("my_df", df)
-my_project.put("my_fig", fig)
-
-# %%
-# .. seealso::
-#
-#   For more information about the functionalities and the different types
-#   of items that we can store in a skore :class:`~skore.Project`,
-#   see :ref:`example_working_with_projects`.
-
-# %%
-# Tracking the history of items
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-# %%
-# Suppose we store several values for a same item called ``my_key_metric``:
-#
-# .. code-block:: python
-#
-#     my_project.put("my_key_metric", 4)
-#
-#     my_project.put("my_key_metric", 9)
-#
-#     my_project.put("my_key_metric", 16)
-#
-# Skore does not overwrite items with the same name (key): instead, it stores
-# their history so that nothing is lost.
-#
-# These tracking functionalities are very useful to:
-#
-# * never lose some key machine learning metrics,
-# * and observe the evolution over time / runs.
-
-# %%
-# .. seealso::
-#
-#   For more information about the tracking of items using their history,
-#   see :ref:`example_tracking_items`.
-
-# %%
-# Machine learning diagnostics and evaluation
+# Machine learning evaluation and diagnostics
 # ===========================================
 #
 # Skore re-implements or wraps some key scikit-learn class / functions to automatically
-# provide diagnostics and checks when using them, as a way to facilitate good practices
-# and avoid common pitfalls.
+# provide insights and diagnostics when using them, as a way to facilitate good
+# practices and avoid common pitfalls.
 
 # %%
 # Model evaluation with skore
@@ -188,7 +50,7 @@ from skore import EstimatorReport
 X, y = make_classification(n_classes=2, n_samples=100_000, n_informative=4)
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 
-clf = LogisticRegression()
+clf = LogisticRegression(random_state=0)
 
 est_report = EstimatorReport(
     clf, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test
@@ -196,7 +58,7 @@ est_report = EstimatorReport(
 
 # %%
 # Now, we can display the help tree to see all the insights that are available to us
-# given that we are doing binary classification:
+# (skore detected that we are doing binary classification):
 
 # %%
 est_report.help()
@@ -254,9 +116,18 @@ df_cv_report_metrics
 # We display the ROC curves for each fold:
 
 # %%
-roc_plot = cv_report.metrics.plot.roc()
-roc_plot
+roc_plot_cv = cv_report.metrics.plot.roc()
+roc_plot_cv
 plt.tight_layout()
+
+# %%
+# We can retrieve the estimator report of a specific fold to investigate further,
+# for example the first fold:
+
+# %%
+est_report_fold = cv_report.estimator_reports_[0]
+df_report_metrics_fold = est_report_fold.metrics.report_metrics()
+df_report_metrics_fold
 
 # %%
 # .. seealso::
@@ -274,6 +145,7 @@ plt.tight_layout()
 # Let us load a dataset containing some time series data:
 
 # %%
+import pandas as pd
 from skrub.datasets import fetch_employee_salaries
 
 dataset = fetch_employee_salaries()
@@ -286,18 +158,16 @@ X.head(2)
 # Now, let us apply :func:`skore.train_test_split` on this data:
 
 # %%
+import skore
+
 X_train, X_test, y_train, y_test = skore.train_test_split(
     X, y, random_state=0, shuffle=False
 )
-# sphinx_gallery_start_ignore
-temp_dir.cleanup()
-# sphinx_gallery_end_ignore
 
 # %%
 # We get a ``TimeBasedColumnWarning`` advising us to use
 # :class:`sklearn.model_selection.TimeSeriesSplit` instead!
 # Indeed, we should not shuffle time-ordered data!
-
 
 # %%
 # .. seealso::
@@ -305,6 +175,106 @@ temp_dir.cleanup()
 #   More methodological advice is available.
 #   For more information about the motivation and usage of
 #   :func:`skore.train_test_split`, see :ref:`example_train_test_split`.
+
+# %%
+# Tracking: skore project
+# =======================
+#
+# A key feature of skore is its :class:`~skore.Project` that allows to store
+# items of many types.
+
+# %%
+# Setup: creating and loading a skore project
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+# %%
+#   Let's start by creating a skore project directory named ``my_project.skore`` in our
+#   current directory:
+
+# %%
+
+# sphinx_gallery_start_ignore
+import os
+import tempfile
+from pathlib import Path
+
+temp_dir = tempfile.TemporaryDirectory()
+temp_dir_path = Path(temp_dir.name)
+os.chdir(temp_dir_path)
+# sphinx_gallery_end_ignore
+my_project = skore.Project("my_project")
+
+
+# %%
+# Skore project: storing and retrieving some items
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+# Now that the project exists, we can store some useful items in it (in the same
+# directory) using :func:`~skore.Project.put`), with a "universal" key-value convention:
+
+# %%
+my_project.put("my_int", 3)
+my_project.put("df_cv_report_metrics", df_cv_report_metrics)
+my_project.put("roc_plot", roc_plot)
+
+# %%
+# .. note ::
+#   With the skore :func:`~skore.Project.put`, there is no need to remember the API for
+#   each type of object: ``df.to_csv(...)``, ``plt.savefig(...)``, ``np.save(...)``,
+#   etc.
+
+# %%
+# We can retrieve the value of an item:
+
+# %%
+my_project.get("my_int")
+
+# %%
+my_project.get("df_cv_report_metrics")
+
+# %%
+# .. seealso::
+#
+#   For more information about the functionalities and the different types
+#   of items that we can store in a skore :class:`~skore.Project`,
+#   see :ref:`example_working_with_projects`.
+
+# %%
+# Tracking the history of items
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+# %%
+# Suppose we store several values for a same item called ``my_key_metric``:
+
+# %%
+my_project.put("my_key_metric", 4)
+
+my_project.put("my_key_metric", 9)
+
+my_project.put("my_key_metric", 16)
+
+# %%
+# Skore does not overwrite items with the same name (key): instead, it stores
+# their history so that nothing is lost:
+
+# %%
+history = my_project.get("my_key_metric", version="all")
+# sphinx_gallery_start_ignore
+temp_dir.cleanup()
+# sphinx_gallery_end_ignore
+history
+
+# %%
+# These tracking functionalities are very useful to:
+#
+# * never lose some key machine learning metrics,
+# * and observe the evolution over time / runs.
+
+# %%
+# .. seealso::
+#
+#   For more functionalities about the tracking of items using their history,
+#   see :ref:`example_tracking_items`.
 
 # %%
 # .. admonition:: Stay tuned!
