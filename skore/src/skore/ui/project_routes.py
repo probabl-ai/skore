@@ -12,6 +12,7 @@ from fastapi.responses import ORJSONResponse
 
 from skore.persistence.item import Item
 from skore.project.project import Project
+from skore.ui.serializers import item_as_serializable
 
 router = APIRouter(prefix="/project")
 
@@ -30,7 +31,7 @@ class SerializableItem:
 
 
 def __item_as_serializable(name: str, item: Item, version: int) -> SerializableItem:
-    d = item.as_serializable_dict()
+    d = item_as_serializable(item)
     return SerializableItem(
         name=name,
         media_type=d.get("media_type"),
