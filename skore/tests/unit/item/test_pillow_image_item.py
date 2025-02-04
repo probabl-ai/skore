@@ -1,4 +1,3 @@
-import io
 import json
 
 import PIL.Image
@@ -51,21 +50,3 @@ class TestPillowImageItem:
 
         assert item1.image == image
         assert item2.image == image
-
-    def test_as_serializable_dict(self, mock_nowstr):
-        image = PIL.Image.new("RGB", (100, 100), color="red")
-        item = PillowImageItem.factory(image)
-
-        with io.BytesIO() as stream:
-            image.save(stream, format="png")
-
-            png_bytes = stream.getvalue()
-            png_b64_str = bytes_to_b64_str(png_bytes)
-
-        assert item.as_serializable_dict() == {
-            "updated_at": mock_nowstr,
-            "created_at": mock_nowstr,
-            "note": None,
-            "media_type": "image/png;base64",
-            "value": png_b64_str,
-        }
