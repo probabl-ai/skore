@@ -91,8 +91,8 @@ plt.tight_layout()
 # Cross-validation with skore
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
-# skore has also (re-)implemented a :class:`skore.CrossValidationReport` class that contains
-# several :class:`skore.EstimatorReport` for each fold.
+# skore has also (re-)implemented a :class:`skore.CrossValidationReport` class that
+# contains several :class:`skore.EstimatorReport` for each fold.
 
 # %%
 from skore import CrossValidationReport
