@@ -28,6 +28,11 @@ def _generate_estimator_report(estimator, X, y, train_indices, test_indices):
 class CrossValidationReport(_BaseReport, DirNamesMixin):
     """Report for cross-validation results.
 
+    Upon initialization, CrossValidationReport will clone ``estimator`` according to
+    ``cv_splitter`` and fit the generated estimators. The fitting is done in parallel,
+    and can be interrupted: the estimators that have been fitted can be accessed even if
+    the full cross-validation process did not complete.
+
     Parameters
     ----------
     estimator : estimator object
