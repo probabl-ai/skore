@@ -99,3 +99,4 @@ df_metrics.style.apply(highlight_max, axis=0)
 # sphinx_gallery_start_ignore
 temp_dir.cleanup()
 # sphinx_gallery_end_ignore
+# 
