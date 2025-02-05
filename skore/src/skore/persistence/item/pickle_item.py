@@ -7,7 +7,6 @@ be otherwise.
 from __future__ import annotations
 
 from io import BytesIO
-from traceback import format_exception
 from typing import Any, Optional
 
 import joblib
@@ -79,29 +78,3 @@ class PickleItem(Item):
 
         with BytesIO(pickle_bytes) as stream:
             return joblib.load(stream)
-
-    def as_serializable_dict(self):
-        """Convert item to a JSON-serializable dict to used by frontend."""
-        try:
-            object = self.object
-        except Exception as e:
-            value = "Item cannot be displayed"
-            traceback = "".join(format_exception(None, e, e.__traceback__))
-            note = "".join(
-                (
-                    (self.note or ""),
-                    "\n\n",
-                    "UnpicklingError with complete traceback:",
-                    "\n\n",
-                    traceback,
-                )
-            )
-        else:
-            value = f"```python\n{repr(object)}\n```"
-            note = self.note
-
-        return super().as_serializable_dict() | {
-            "media_type": "text/markdown",
-            "value": value,
-            "note": note,
-        }

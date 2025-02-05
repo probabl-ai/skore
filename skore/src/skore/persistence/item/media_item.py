@@ -92,10 +92,3 @@ class MediaItem(Item):
             raise ValueError(f"MIME type '{media_type}' is not supported.")
 
         return cls(media, media_type, **kwargs)
-
-    def as_serializable_dict(self):
-        """Convert item to a JSON-serializable dict to used by frontend."""
-        return super().as_serializable_dict() | {
-            "media_type": self.media_type,
-            "value": self.media,
-        }

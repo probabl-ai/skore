@@ -22,15 +22,3 @@ class TestMediaItem:
         assert item.media_type == media_type
         assert item.created_at == mock_nowstr
         assert item.updated_at == mock_nowstr
-
-    @pytest.mark.parametrize("media_type", [enum.value for enum in MediaType])
-    def test_as_serializable_dict(self, mock_nowstr, media_type):
-        item = MediaItem.factory("<content>", media_type)
-
-        assert item.as_serializable_dict() == {
-            "updated_at": mock_nowstr,
-            "created_at": mock_nowstr,
-            "note": None,
-            "media_type": media_type,
-            "value": "<content>",
-        }

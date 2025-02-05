@@ -89,10 +89,3 @@ class PrimitiveItem(Item):
             raise ItemTypeError(f"Type '{primitive.__class__}' is not supported.")
 
         return cls(primitive=primitive, **kwargs)
-
-    def as_serializable_dict(self):
-        """Convert item to a JSON-serializable dict to used by frontend."""
-        return super().as_serializable_dict() | {
-            "media_type": "text/markdown",
-            "value": self.primitive,
-        }

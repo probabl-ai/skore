@@ -84,15 +84,3 @@ class Item(ABC):
     def __repr__(self) -> str:
         """Represent the item."""
         return f"{self.__class__.__name__}(...)"
-
-    def as_serializable_dict(self):
-        """Convert item to a JSON-serializable dict to used by frontend.
-
-        Derived class must call their super implementation and merge the result with
-        their output.
-        """
-        return {
-            "updated_at": self.updated_at,
-            "created_at": self.created_at,
-            "note": self.note,
-        }

@@ -362,7 +362,7 @@ def test_get_items_with_pickle_item_and_unpickling_error(
 
     monkeypatch.delattr("skore.persistence.item.numpy_array_item.NumpyArrayItem")
     monkeypatch.setattr(
-        "skore.persistence.item.pickle_item.format_exception",
+        "skore.ui.serializers.format_exception",
         lambda *args, **kwargs: "<traceback>",
     )
 
@@ -375,8 +375,8 @@ def test_get_items_with_pickle_item_and_unpickling_error(
             "updated_at": mock_nowstr,
             "name": "pickle",
             "media_type": "text/markdown",
-            "value": "Item cannot be displayed",
-            "note": ("\n\nUnpicklingError with complete traceback:\n\n<traceback>"),
+            "value": "Item cannot be displayed\n\nUnpicklingError with complete traceback:\n\n```pytb\n<traceback>```",  # noqa: E501
+            "note": None,
             "version": 0,
         },
     ]
