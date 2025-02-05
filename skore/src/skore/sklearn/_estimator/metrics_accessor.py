@@ -257,11 +257,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                             [[metric_name], [pos_label]],
                             names=["Metric", "Label / Average"],
                         )
-                    else:  # average is not None
+                    elif metrics_kwargs["average"] is not None:
                         columns = pd.MultiIndex.from_arrays(
                             [[metric_name], [metrics_kwargs["average"]]],
                             names=["Metric", "Label / Average"],
                         )
+                    else:
+                        columns = pd.Index([metric_name], name="Metric")
                     score = np.array(score).reshape(1, -1)
                 else:
                     columns = pd.Index([metric_name], name="Metric")

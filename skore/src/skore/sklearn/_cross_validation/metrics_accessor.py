@@ -1,6 +1,7 @@
 import joblib
 import numpy as np
 import pandas as pd
+from sklearn.metrics import make_scorer
 from sklearn.utils.metaestimators import available_if
 
 from skore.externals._pandas_accessors import DirNamesMixin
@@ -734,14 +735,17 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Ridge Split #0  50.1...
               Split #1  52.6...
         """
-        return self._compute_metric_scores(
-            report_metric_name="custom_metric",
+        scorer = make_scorer(
+            metric_function,
+            greater_is_better=True,
+            response_method=response_method,
+            **kwargs,
+        )
+        return self.report_metrics(
+            scoring=[scorer],
             data_source=data_source,
             aggregate=aggregate,
-            metric_function=metric_function,
-            response_method=response_method,
-            metric_name=metric_name,
-            **kwargs,
+            scoring_names=[metric_name],
         )
 
     ####################################################################################
