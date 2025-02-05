@@ -8,8 +8,8 @@ import joblib
 import numpy as np
 
 from skore.externals._pandas_accessors import DirNamesMixin
-from skore.sklearn import EstimatorReport
 from skore.sklearn._base import _BaseReport
+from skore.sklearn._estimator.report import EstimatorReport
 
 if TYPE_CHECKING:
     from skore.sklearn import EstimatorReport
