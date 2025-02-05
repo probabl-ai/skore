@@ -4,7 +4,7 @@ import joblib
 import numpy as np
 import pandas as pd
 import pytest
-from sklearn.base import clone
+from sklearn.base import BaseEstimator, clone
 from sklearn.datasets import make_classification, make_regression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.exceptions import NotFittedError
@@ -739,33 +739,34 @@ def test_cross_validation_report_custom_metric(binary_classification_data):
     assert result.columns == ["accuracy_score"]
 
 
-@pytest.fixture
-def fake_clone(monkeypatch):
-    """Mock `clone` function which raises an Exception when called too many times.
-
-    This allows us to interrupt the cross-validation process early, since each
-    cross-validation split is performed on a different `clone`d estimator.
-    """
-    nb_calls = 0
-
-    def failing_clone(estimator):
-        from sklearn.base import clone
-
-        nonlocal nb_calls
-        nb_calls += 1
-        if nb_calls > 2:
-            raise Exception("clone called more than twice")
-
-        return clone(estimator)
-
-    monkeypatch.setattr("skore.sklearn._cross_validation.report.clone", failing_clone)
-
-
-def test_cross_validation_report_interrupted(fake_clone, binary_classification_data):
+def test_cross_validation_report_interrupted(binary_classification_data):
     """Check that we can interrupt cross-validation without losing all
     data."""
-    estimator, X, y = binary_classification_data
-    report = CrossValidationReport(estimator, X, y, cv_splitter=10)
+
+    class MockEstimator(BaseEstimator):
+        def __init__(self, n_call=0, fail_after_n_clone=3):
+            self.n_call = n_call
+            self.fail_after_n_clone = fail_after_n_clone
+
+        def fit(self, X, y):
+            if self.n_call > self.fail_after_n_clone:
+                raise ValueError
+            return self
+
+        def __sklearn_clone__(self):
+            """Do not clone the estimator
+
+            Instead, we increment a counter each time that
+            `sklearn.clone` is called.
+            """
+            self.n_call += 1
+            return self
+
+        def predict(self, X):
+            return np.ones(X.shape[0])
+
+    _, X, y = binary_classification_data
+    report = CrossValidationReport(MockEstimator(), X, y, cv_splitter=10)
 
     result = report.metrics.custom_metric(
         metric_function=accuracy_score,
