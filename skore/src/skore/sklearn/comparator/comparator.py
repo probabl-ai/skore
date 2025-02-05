@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import time
-import warnings
 from copy import deepcopy
 from typing import TYPE_CHECKING, Literal
 
@@ -14,6 +13,21 @@ from skore.sklearn._base import _BaseReport
 
 if TYPE_CHECKING:
     from skore.sklearn import EstimatorReport
+
+
+def warn(title, message):
+    from rich.panel import Panel
+
+    from skore import console
+
+    console.print(
+        Panel(
+            title=title,
+            renderable=message,
+            style="orange1",
+            border_style="cyan",
+        )
+    )
 
 
 class Comparator(_BaseReport, DirNamesMixin):
@@ -59,15 +73,17 @@ class Comparator(_BaseReport, DirNamesMixin):
             raise ValueError("Only instances of EstimatorReport are allowed")
 
         if first_X_train is None or first_y_train is None:
-            warnings.warn(
-                "Not all estimators have training data, this could lead to incoherent comparisons",
-                stacklevel=1,
+            warn(
+                "MissingTestDataWarning",
+                "We can't ensure that all estimators have been trained with the same dataset.\n"
+                "This could lead to incoherent comparisons.",
             )
 
         if first_X_test is None or first_y_test is None:
-            warnings.warn(
-                "Not all estimators have testing data, this could lead to incoherent comparisons",
-                stacklevel=1,
+            warn(
+                "MissingTrainingDataWarning",
+                "We can't ensure that all estimators have been tested with the same dataset.\n"
+                "This could lead to incoherent comparisons.",
             )
 
         for report in self.estimator_reports_[1:]:
