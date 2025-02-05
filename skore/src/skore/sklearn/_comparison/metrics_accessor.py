@@ -816,7 +816,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     def __repr__(self):
         """Return a string representation using rich."""
         return self._rich_repr(
-            class_name="skore.Comparator.metrics",
+            class_name="skore.ComparisonReport.metrics",
             help_method_name="report.metrics.help()",
         )
 

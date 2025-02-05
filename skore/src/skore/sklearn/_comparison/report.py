@@ -30,7 +30,7 @@ def warn(title, message):
     )
 
 
-class Comparator(_BaseReport, DirNamesMixin):
+class ComparisonReport(_BaseReport, DirNamesMixin):
     """"""
 
     _ACCESSOR_CONFIG = {
@@ -39,14 +39,16 @@ class Comparator(_BaseReport, DirNamesMixin):
 
     def __init__(
         self,
-        estimator_reports: list[EstimatorReport],
+        reports: list[EstimatorReport],
         n_jobs=None,
     ):
-        if len(estimator_reports) < 2:
+        if len(reports) < 2:
             raise ValueError("At least 2 instances of EstimatorReport are needed")
 
-        self.estimator_reports_ = deepcopy(estimator_reports)
-        self._ml_task = self.estimator_reports_[0]._ml_task
+        if not all(isinstance(report, EstimatorReport) for report in reports):
+            raise TypeError("Only instances of EstimatorReport are allowed")
+
+        self.estimator_reports_ = deepcopy(reports)
 
         # We check that the estimator reports can be compared:
         # - all estimators are in the same ml use case
@@ -69,27 +71,21 @@ class Comparator(_BaseReport, DirNamesMixin):
             first_report, "test"
         )
 
-        if not isinstance(first_report, EstimatorReport):
-            raise ValueError("Only instances of EstimatorReport are allowed")
-
         if first_X_train is None or first_y_train is None:
             warn(
-                "MissingTestDataWarning",
-                "We can't ensure that all estimators have been trained with the same dataset.\n"
+                "MissingTrainingDataWarning",
+                "We cannot ensure that all estimators have been trained with the same dataset.\n"
                 "This could lead to incoherent comparisons.",
             )
 
         if first_X_test is None or first_y_test is None:
             warn(
-                "MissingTrainingDataWarning",
-                "We can't ensure that all estimators have been tested with the same dataset.\n"
+                "MissingTestDataWarning",
+                "We cannot ensure that all estimators have been tested with the same dataset.\n"
                 "This could lead to incoherent comparisons.",
             )
 
         for report in self.estimator_reports_[1:]:
-            if not isinstance(report, EstimatorReport):
-                raise ValueError("Only instances of EstimatorReport are allowed")
-
             if report._ml_task != first_ml_task:
                 raise ValueError("Not all estimators are in the same ML usecase")
 
@@ -126,4 +122,6 @@ class Comparator(_BaseReport, DirNamesMixin):
 
     def __repr__(self):
         """Return a string representation using rich."""
-        return self._rich_repr(class_name="skore.Comparator", help_method_name="help()")
+        return self._rich_repr(
+            class_name="skore.ComparisonReport", help_method_name="help()"
+        )

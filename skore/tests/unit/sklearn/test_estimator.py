@@ -1,5 +1,6 @@
 import re
 from copy import deepcopy
+from io import BytesIO
 
 import joblib
 import numpy as np
@@ -339,7 +340,8 @@ def test_estimator_report_pickle(tmp_path, binary_classification_data):
     estimator, X_test, y_test = binary_classification_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     report.cache_predictions()
-    joblib.dump(report, tmp_path / "report.joblib")
+    with BytesIO() as f:
+        joblib.dump(report, f)
 
 
 ########################################################################################
