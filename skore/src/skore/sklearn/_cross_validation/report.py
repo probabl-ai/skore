@@ -82,7 +82,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     Examples
     --------
     >>> from sklearn.datasets import make_classification
-    >>> from sklearn.model_selection import train_test_split
     >>> from sklearn.linear_model import LogisticRegression
     >>> X, y = make_classification(random_state=42)
     >>> estimator = LogisticRegression()

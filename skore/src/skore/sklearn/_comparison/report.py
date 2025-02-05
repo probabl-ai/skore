@@ -31,7 +31,45 @@ def warn(title, message):
 
 
 class ComparisonReport(_BaseReport, DirNamesMixin):
-    """"""
+    """Report for comparison of estimators.
+
+    Parameters
+    ----------
+    reports : list of ``EstimatorReport``s
+        Estimators to compare.
+
+    n_jobs : int, default=None
+        Number of jobs to run in parallel. Training the estimators and computing
+        the scores are parallelized.
+        When accessing some methods of the `ComparisonReport`, the `n_jobs`
+        parameter is used to parallelize the computation.
+        ``None`` means 1 unless in a :obj:`joblib.parallel_backend` context.
+        ``-1`` means using all processors.
+
+    Attributes
+    ----------
+    estimator_reports_ : list of EstimatorReport
+        The estimator reports for each split.
+
+    See Also
+    --------
+    skore.sklearn.estimator.report.EstimatorReport
+        Report for a fitted estimator.
+
+    Examples
+    --------
+    >>> from sklearn.datasets import make_classification
+    >>> from sklearn.model_selection import train_test_split
+    >>> from sklearn.linear_model import LogisticRegression
+    >>> from skore import ComparisonReport, EstimatorReport
+    >>> X, y = make_classification(random_state=42)
+    >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+    >>> estimator1 = LogisticRegression()
+    >>> estimator_report1 = EstimatorReport(estimator1, X_test=X_test, y_test=y_test)
+    >>> estimator2 = LogisticRegression(C=2)  # Different regularization
+    >>> estimator_report2 = EstimatorReport(estimator2, X_test=X_test, y_test=y_test)
+    >>> report = ComparisonReport([estimator_report1, estimator_report2])
+    """
 
     _ACCESSOR_CONFIG = {
         "metrics": {"name": "metrics"},
@@ -51,7 +89,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         self.estimator_reports_ = deepcopy(reports)
 
         # We check that the estimator reports can be compared:
-        # - all estimators are in the same ml use case
+        # - all estimators are in the same ML use case
         # - all X_train, y_train have the same hash (for estimator)
         # - all X_test, y_test have the same hash (for estimator)
         # - all reports are estimator reports (for now)
@@ -74,15 +112,19 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         if first_X_train is None or first_y_train is None:
             warn(
                 "MissingTrainingDataWarning",
-                "We cannot ensure that all estimators have been trained with the same dataset.\n"
-                "This could lead to incoherent comparisons.",
+                (
+                    "We cannot ensure that all estimators have been trained "
+                    "with the same dataset. This could lead to incoherent comparisons."
+                ),
             )
 
         if first_X_test is None or first_y_test is None:
             warn(
                 "MissingTestDataWarning",
-                "We cannot ensure that all estimators have been tested with the same dataset.\n"
-                "This could lead to incoherent comparisons.",
+                (
+                    "We cannot ensure that all estimators have been tested "
+                    "with the same dataset. This could lead to incoherent comparisons."
+                ),
             )
 
         for report in self.estimator_reports_[1:]:

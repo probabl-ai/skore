@@ -187,10 +187,9 @@ def test_comparison_report_init_MissingTrainingDataWarning(capsys):
         y_test=y_test,
     )
 
-    comp = ComparisonReport([est_report, est_report])
+    ComparisonReport([est_report, est_report])
 
     captured = capsys.readouterr()
-    print(captured)
 
     assert "MissingTrainingDataWarning" in captured.out
 
