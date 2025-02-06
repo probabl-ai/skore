@@ -69,21 +69,24 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     >>> from skore import ComparisonReport, EstimatorReport
     >>> X, y = make_classification(random_state=42)
     >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-    >>> estimator1 = LogisticRegression()
-    >>> estimator_report1 = EstimatorReport(estimator1,
-            X_train=X_train,
-            y_train=y_train,
-            X_test=X_test,
-            y_test=y_test
-        )
-    >>> estimator2 = LogisticRegression(C=2)  # Different regularization
-    >>> estimator_report2 = EstimatorReport(estimator2,
-            X_train=X_train,
-            y_train=y_train,
-            X_test=X_test,
-            y_test=y_test
-        )
-    >>> report = ComparisonReport([estimator_report1, estimator_report2])
+    >>> estimator_1 = LogisticRegression()
+    >>> estimator_report_1 = EstimatorReport(
+    ...     estimator_1,
+    ...     X_train=X_train,
+    ...     y_train=y_train,
+    ...     X_test=X_test,
+    ...     y_test=y_test
+    ... )
+    >>> estimator_2 = LogisticRegression(C=2)  # Different regularization
+    >>> estimator_report_2 = EstimatorReport(
+    ...     estimator_2,
+    ...     X_train=X_train,
+    ...     y_train=y_train,
+    ...     X_test=X_test,
+    ...     y_test=y_test
+    ... )
+    >>> report = ComparisonReport([estimator_report_1, estimator_report_2])
+    ...
     """
 
     _ACCESSOR_CONFIG = {
