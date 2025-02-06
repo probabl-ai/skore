@@ -248,7 +248,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
 
                     default_line_kwargs = {
                         "label": (
-                            f"{self.data_source.title()} set - fold #{split_idx + 1} "
+                            f"{self.data_source.title()} - fold #{split_idx + 1} "
                             f"(AUC = {roc_auc:0.2f})"
                         )
                     }

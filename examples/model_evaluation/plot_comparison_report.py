@@ -61,7 +61,12 @@ estimator_report_random_forest = EstimatorReport(
 )
 
 # %%
-comp = skore.ComparisonReport(reports=[estimator_report_logistic_regression, estimator_report_random_forest,])
+comp = skore.ComparisonReport(
+    reports=[
+        estimator_report_logistic_regression,
+        estimator_report_random_forest,
+    ]
+)
 
 # %%
 # Compute the accuracy for each estimator
@@ -81,7 +86,10 @@ def highlight_max(s):
 
 
 df_metrics = pd.concat(
-    [estimator_report_logistic_regression.metrics.report_metrics(), estimator_report_random_forest.metrics.report_metrics()],
+    [
+        estimator_report_logistic_regression.metrics.report_metrics(),
+        estimator_report_random_forest.metrics.report_metrics(),
+    ],
     ignore_index=False,
 )
 

@@ -284,6 +284,47 @@ def test_comparison_report_init_different_test_data():
         ComparisonReport([report_1, report_2])
 
 
+def test_comparison_report_init_without_report_names(logistic_regression_report):
+    comp = ComparisonReport(
+        [logistic_regression_report, logistic_regression_report],
+        report_names=["report1", "report2"],
+    )
+    accuracy = comp.metrics.accuracy()
+
+    assert comp.report_names_ == ["report1", "report2"]
+    pd.testing.assert_index_equal(
+        accuracy.index,
+        pd.MultiIndex.from_tuples(
+            enumerate(["report1", "report2"]),
+            names=[None, "Estimator"],
+        ),
+    )
+
+
+def test_comparison_report_init_with_report_names(logistic_regression_report):
+    comp = ComparisonReport([logistic_regression_report, logistic_regression_report])
+    accuracy = comp.metrics.accuracy()
+
+    assert comp.report_names_ == ["LogisticRegression", "LogisticRegression"]
+    pd.testing.assert_index_equal(
+        accuracy.index,
+        pd.MultiIndex.from_tuples(
+            enumerate(["LogisticRegression", "LogisticRegression"]),
+            names=[None, "Estimator"],
+        ),
+    )
+
+
+def test_comparison_report_init_with_invalid_report_names(logistic_regression_report):
+    with pytest.raises(
+        ValueError, match="There should be as many report names as there are reports"
+    ):
+        ComparisonReport(
+            [logistic_regression_report, logistic_regression_report],
+            report_names=["report1", "report2", "report3"],
+        )
+
+
 def test_comparison_report_help(capsys, logistic_regression_report):
     """Check that the help method writes to the console."""
     report = ComparisonReport([logistic_regression_report, logistic_regression_report])
