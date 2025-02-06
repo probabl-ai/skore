@@ -1,47 +1,39 @@
 """
 .. _example_compare_estimators:
 
-============================================
-Example driven development - Compare feature
-============================================
+=====================================================
+`ComparisonReport`: Compare several estimator reports
+=====================================================
+
+In :ref:`example_estimator_report`, we explain how to use the
+:class:`skore.EstimatorReport`.
+Let us assume that, for a same dataset, we have several estimator reports corresponding
+to several estimators.
+We would like to compare these estimator reports together, as in a benchmark of
+estimators.
+That is what skore implemented a :class:`~skore.ComparisonReport` for.
 """
 
 # %%
-# From your Python code, create and load a skore :class:`~skore.Project`:
-
-# %%
-import skore
-
-# sphinx_gallery_start_ignore
-import os
-import tempfile
-from pathlib import Path
-
-temp_dir = tempfile.TemporaryDirectory()
-temp_dir_path = Path(temp_dir.name)
-os.chdir(temp_dir_path)
-# sphinx_gallery_end_ignore
-my_project = skore.Project("my_project")
-
-# %%
-# This will create a skore project directory named ``my_project.skore`` in your
-# current working directory.
-
-# %%
-# Evaluate your model using skore's :class:`~skore.EstimatorReport`:
+# Let us load and split some data:
 
 # %%
 from sklearn.datasets import make_classification
-from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
-from skore import EstimatorReport, train_test_split
+from skore import train_test_split
 
 X, y = make_classification(n_classes=2, n_samples=100_000, n_informative=4)
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
 
 # %%
+# We get our first estimator report for a logistic regression:
+
+# %%
+from sklearn.linear_model import LogisticRegression
+from skore import EstimatorReport
+
 logistic_regression = LogisticRegression()
-estimator_report_logistic_regression = EstimatorReport(
+logistic_regression_report = EstimatorReport(
     logistic_regression,
     X_train=X_train,
     y_train=y_train,
@@ -50,9 +42,12 @@ estimator_report_logistic_regression = EstimatorReport(
 )
 
 # %%
-# Now let us create a new model, hopefully better than the previous one, with the same data
+# Let us create our second model, a random forest, *on the same data as
+# previously*:
+
+# %%
 random_forest = RandomForestClassifier(max_depth=2, random_state=0)
-estimator_report_random_forest = EstimatorReport(
+random_forest_report = EstimatorReport(
     random_forest,
     X_train=X_train,
     y_train=y_train,
@@ -61,37 +56,57 @@ estimator_report_random_forest = EstimatorReport(
 )
 
 # %%
-comp = skore.ComparisonReport(
+# Now, we have two estimator reports corresponding to a logistic regression and a
+# random forest *on the same dataset*.
+# Hence, we can compare these two estimator report using a
+# :class:`~skore.ComparisonReport`:
+
+# %%
+from skore import ComparisonReport
+
+comp = ComparisonReport(
     reports=[
-        estimator_report_logistic_regression,
-        estimator_report_random_forest,
+        logistic_regression_report,
+        random_forest_report,
     ]
 )
 
 # %%
-# Compute the accuracy for each estimator
-comp.metrics.accuracy()
+# As for the :class:`~skore.EstimatorReport` and the :class:`~skore.CrossValidationReport`, we have a helper:
 
 # %%
-# Plot accuracy using pandas API
+comp.help()
+
+# %%
+# Let us display the result of our benchmark:
+
+# %%
+df_report_metrics = comp.metrics.report_metrics()
+df_report_metrics
+
+# %%
+# We can also compare the ROC curves of all estimators for example:
+
+# %%
+import matplotlib.pyplot as plt
+
+comp.metrics.plot.roc()
+plt.tight_layout()
+
+# %%
+# Using pandas, we can also plot accuracy using pandas API
 comp.metrics.accuracy().plot.bar()
+plt.show()
 
 # %%
-import pandas as pd
 
 
 def highlight_max(s):
-    # thanks chatgpt
     return ["font-weight: bold" if v == s.max() else "" for v in s]
 
 
-df_metrics = pd.concat(
-    [
-        estimator_report_logistic_regression.metrics.report_metrics(),
-        estimator_report_random_forest.metrics.report_metrics(),
-    ],
-    ignore_index=False,
-)
+df_report_metrics.style.apply(highlight_max, axis=0)
+
 
 # %%
 #
@@ -100,10 +115,3 @@ df_metrics = pd.concat(
 #       comp.metrics.metric()
 #       comp.metrics.custom_metric(scoring=my_func)
 #
-
-df_metrics.style.apply(highlight_max, axis=0)
-
-# %%
-# sphinx_gallery_start_ignore
-temp_dir.cleanup()
-# sphinx_gallery_end_ignore
