@@ -162,12 +162,12 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 results.append(result)
                 progress.update(main_task, advance=1, refresh=True)
 
-            results = pd.concat(
-                results,
-                axis=0,
-                keys=[f"#{i}" for i in range(len(self._parent.estimator_reports_))],
+            results = pd.concat(results, axis=0, ignore_index=True)
+            results.index = pd.MultiIndex.from_tuples(
+                enumerate(self._parent.report_names_),
+                names=[None, "Estimator"],
             )
-            results = results.swaplevel(0, 1)
+
             if aggregate:
                 if isinstance(aggregate, str):
                     aggregate = [aggregate]

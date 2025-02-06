@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 from copy import deepcopy
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, Optional
 
 import joblib
 import numpy as np
@@ -36,7 +36,12 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     Parameters
     ----------
     reports : list of ``EstimatorReport``s
-        Estimators to compare.
+        Estimator reports to compare.
+
+    report_names : list of str, default=None
+        Used to name the compared reports. It should be of
+        the same length as the `reports` parameter.
+        If None, each report is named after its estimator's class.
 
     n_jobs : int, default=None
         Number of jobs to run in parallel. Training the estimators and computing
@@ -65,9 +70,19 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     >>> X, y = make_classification(random_state=42)
     >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
     >>> estimator1 = LogisticRegression()
-    >>> estimator_report1 = EstimatorReport(estimator1, X_test=X_test, y_test=y_test)
+    >>> estimator_report1 = EstimatorReport(estimator1,
+            X_train=X_train,
+            y_train=y_train,
+            X_test=X_test,
+            y_test=y_test
+        )
     >>> estimator2 = LogisticRegression(C=2)  # Different regularization
-    >>> estimator_report2 = EstimatorReport(estimator2, X_test=X_test, y_test=y_test)
+    >>> estimator_report2 = EstimatorReport(estimator2,
+            X_train=X_train,
+            y_train=y_train,
+            X_test=X_test,
+            y_test=y_test
+        )
     >>> report = ComparisonReport([estimator_report1, estimator_report2])
     """
 
@@ -78,13 +93,24 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     def __init__(
         self,
         reports: list[EstimatorReport],
-        n_jobs=None,
+        *,
+        report_names: Optional[list[str]] = None,
+        n_jobs: Optional[int] = None,
     ):
         if len(reports) < 2:
             raise ValueError("At least 2 instances of EstimatorReport are needed")
 
         if not all(isinstance(report, EstimatorReport) for report in reports):
             raise TypeError("Only instances of EstimatorReport are allowed")
+
+        if report_names is None:
+            self.report_names_ = [report.estimator_name_ for report in reports]
+        else:
+            if len(report_names) != len(reports):
+                raise ValueError(
+                    "There should be as many report names as there are reports"
+                )
+            self.report_names_ = report_names
 
         self.estimator_reports_ = deepcopy(reports)
 
