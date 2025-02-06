@@ -739,7 +739,16 @@ def test_cross_validation_report_custom_metric(binary_classification_data):
     assert result.columns == ["accuracy_score"]
 
 
-def test_cross_validation_report_interrupted(binary_classification_data):
+@pytest.mark.parametrize(
+    "error,error_message",
+    [
+        (ValueError("No more fitting"), "Cross-validation interrupted by an error"),
+        (KeyboardInterrupt(), "Cross-validation interrupted manually"),
+    ],
+)
+def test_cross_validation_report_interrupted(
+    binary_classification_data, capsys, error, error_message
+):
     """Check that we can interrupt cross-validation without losing all
     data."""
 
@@ -750,7 +759,7 @@ def test_cross_validation_report_interrupted(binary_classification_data):
 
         def fit(self, X, y):
             if self.n_call > self.fail_after_n_clone:
-                raise ValueError
+                raise error
             return self
 
         def __sklearn_clone__(self):
@@ -766,7 +775,11 @@ def test_cross_validation_report_interrupted(binary_classification_data):
             return np.ones(X.shape[0])
 
     _, X, y = binary_classification_data
+
     report = CrossValidationReport(MockEstimator(), X, y, cv_splitter=10)
+
+    captured = capsys.readouterr()
+    assert all(word in captured.out for word in error_message.split(" "))
 
     result = report.metrics.custom_metric(
         metric_function=accuracy_score,

@@ -2,6 +2,7 @@ import time
 
 import joblib
 import numpy as np
+from rich.panel import Panel
 from sklearn.base import clone, is_classifier
 from sklearn.model_selection import check_cv
 from sklearn.pipeline import Pipeline
@@ -172,8 +173,38 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             for report in generator:
                 estimator_reports.append(report)
                 progress.update(task, advance=1, refresh=True)
-        except (Exception, KeyboardInterrupt):
-            pass
+        except KeyboardInterrupt:
+            from skore import console  # avoid circular import
+
+            console.print(
+                Panel(
+                    title="Cross-validation interrupted",
+                    renderable=(
+                        "Cross-validation process was interrupted manually before all "
+                        "estimators could be fitted; CrossValidationReport object "
+                        "might not contain all the expected results."
+                    ),
+                    style="orange1",
+                    border_style="cyan",
+                )
+            )
+
+        except Exception as e:
+            from skore import console  # avoid circular import
+
+            console.print(
+                Panel(
+                    title="Cross-validation interrupted",
+                    renderable=(
+                        "Cross-validation process was interrupted by an error before "
+                        "all estimators could be fitted; CrossValidationReport object "
+                        "might not contain all the expected results. "
+                        f"Traceback: \n{e}"
+                    ),
+                    style="orange1",
+                    border_style="cyan",
+                )
+            )
 
         return estimator_reports
 
