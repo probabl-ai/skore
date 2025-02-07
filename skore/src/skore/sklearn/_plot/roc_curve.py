@@ -17,7 +17,7 @@ from skore.sklearn._plot.utils import (
 class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
     """ROC Curve visualization.
 
-    An instance of this class is should created by `EstimatorReport.metrics.plot.roc()`.
+    An instance of this class is should created by `EstimatorReport.metrics.roc()`.
     You should not create an instance of this class directly.
 
     Parameters
@@ -98,7 +98,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
     ...     X_test=X_test,
     ...     y_test=y_test,
     ... )
-    >>> display = report.metrics.plot.roc()
+    >>> display = report.metrics.roc()
     >>> display.plot(roc_curve_kwargs={"color": "tab:red"})
     """
 
@@ -179,7 +179,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         ...     X_test=X_test,
         ...     y_test=y_test,
         ... )
-        >>> display = report.metrics.plot.roc()
+        >>> display = report.metrics.roc()
         >>> display.plot(roc_curve_kwargs={"color": "tab:red"})
         """
         self.ax_, self.figure_, estimator_name = self._validate_plot_params(

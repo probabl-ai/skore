@@ -38,7 +38,7 @@ def test_prediction_error_display_raise_error(pyplot, params, err_msg, regressio
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
     with pytest.raises(ValueError, match=err_msg):
-        report.metrics.plot.prediction_error(**params)
+        report.metrics.prediction_error(**params)
 
 
 @pytest.mark.parametrize("subsample", [None, 1_000])
@@ -49,7 +49,7 @@ def test_prediction_error_display_regression(pyplot, regression_data, subsample)
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = report.metrics.plot.prediction_error(subsample=subsample)
+    display = report.metrics.prediction_error(subsample=subsample)
     assert isinstance(display, PredictionErrorDisplay)
 
     # check the structure of the attributes
@@ -81,7 +81,7 @@ def test_prediction_error_cross_validation_display_regression(
     with cross-validation data."""
     (estimator, X, y), cv = regression_data_no_split, 3
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
-    display = report.metrics.plot.prediction_error()
+    display = report.metrics.prediction_error()
     assert isinstance(display, PredictionErrorDisplay)
 
     # check the structure of the attributes
@@ -111,7 +111,7 @@ def test_prediction_error_display_regression_kind(pyplot, regression_data):
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = report.metrics.plot.prediction_error(kind="actual_vs_predicted")
+    display = report.metrics.prediction_error(kind="actual_vs_predicted")
     assert isinstance(display, PredictionErrorDisplay)
 
     assert isinstance(display.line_, mpl.lines.Line2D)
@@ -138,7 +138,7 @@ def test_prediction_error_cross_validation_display_regression_kind(
     """Check the attributes when switching to the "actual_vs_predicted" kind."""
     (estimator, X, y), cv = regression_data_no_split, 3
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
-    display = report.metrics.plot.prediction_error(kind="actual_vs_predicted")
+    display = report.metrics.prediction_error(kind="actual_vs_predicted")
     assert isinstance(display, PredictionErrorDisplay)
 
     # check the structure of the attributes
@@ -169,13 +169,11 @@ def test_prediction_error_display_data_source(pyplot, regression_data):
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = report.metrics.plot.prediction_error(data_source="train")
+    display = report.metrics.prediction_error(data_source="train")
     assert display.line_.get_label() == "Perfect predictions"
     assert display.scatter_.get_label() == "Train set"
 
-    display = report.metrics.plot.prediction_error(
-        data_source="X_y", X=X_train, y=y_train
-    )
+    display = report.metrics.prediction_error(data_source="X_y", X=X_train, y=y_train)
     assert display.line_.get_label() == "Perfect predictions"
     assert display.scatter_.get_label() == "Data set"
 
@@ -186,7 +184,7 @@ def test_prediction_error_display_kwargs(pyplot, regression_data):
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = report.metrics.plot.prediction_error()
+    display = report.metrics.prediction_error()
     display.plot(scatter_kwargs={"color": "red"}, line_kwargs={"color": "blue"})
     np.testing.assert_allclose(display.scatter_.get_facecolor(), [[1, 0, 0, 0.3]])
     assert display.line_.get_color() == "blue"
@@ -196,9 +194,9 @@ def test_prediction_error_display_kwargs(pyplot, regression_data):
     assert display.ax_.spines["right"].get_visible()
 
     expected_subsample = 10
-    display = report.metrics.plot.prediction_error(subsample=expected_subsample)
+    display = report.metrics.prediction_error(subsample=expected_subsample)
     assert len(display.scatter_.get_offsets()) == expected_subsample
 
     expected_subsample = int(X_test.shape[0] * 0.5)
-    display = report.metrics.plot.prediction_error(subsample=0.5)
+    display = report.metrics.prediction_error(subsample=0.5)
     assert len(display.scatter_.get_offsets()) == expected_subsample

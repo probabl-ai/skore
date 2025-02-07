@@ -66,8 +66,7 @@ Metrics
 """""""
 
 The `metrics` accessor helps you to evaluate the statistical performance of your
-estimator. In addition, we provide a sub-accessor `plot`, to get the common
-performance metric representations.
+estimator.
 
 .. autosummary::
     :toctree: generated/
@@ -81,14 +80,14 @@ performance metric representations.
     EstimatorReport.metrics.brier_score
     EstimatorReport.metrics.log_loss
     EstimatorReport.metrics.precision
+    EstimatorReport.metrics.precision_recall
+    EstimatorReport.metrics.prediction_error
     EstimatorReport.metrics.r2
     EstimatorReport.metrics.recall
     EstimatorReport.metrics.rmse
+    EstimatorReport.metrics.roc
     EstimatorReport.metrics.roc_auc
-    EstimatorReport.metrics.plot.help
-    EstimatorReport.metrics.plot.precision_recall
-    EstimatorReport.metrics.plot.prediction_error
-    EstimatorReport.metrics.plot.roc
+
 
 Cross-validation report for an estimator
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -121,8 +120,7 @@ Metrics
 """""""
 
 The `metrics` accessor helps you to evaluate the statistical performance of your
-estimator during a cross-validation. In addition, we provide a sub-accessor `plot`, to
-get the common performance metric representations.
+estimator during a cross-validation.
 
 .. autosummary::
     :toctree: generated/
@@ -136,14 +134,13 @@ get the common performance metric representations.
     CrossValidationReport.metrics.brier_score
     CrossValidationReport.metrics.log_loss
     CrossValidationReport.metrics.precision
+    CrossValidationReport.metrics.precision_recall
+    CrossValidationReport.metrics.prediction_error
     CrossValidationReport.metrics.r2
     CrossValidationReport.metrics.recall
     CrossValidationReport.metrics.rmse
+    CrossValidationReport.metrics.roc
     CrossValidationReport.metrics.roc_auc
-    CrossValidationReport.metrics.plot.help
-    CrossValidationReport.metrics.plot.precision_recall
-    CrossValidationReport.metrics.plot.prediction_error
-    CrossValidationReport.metrics.plot.roc
 
 .. Deprecated
 .. ----------
