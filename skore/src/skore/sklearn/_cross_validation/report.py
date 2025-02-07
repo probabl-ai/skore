@@ -32,7 +32,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     Upon initialization, CrossValidationReport will clone ``estimator`` according to
     ``cv_splitter`` and fit the generated estimators. The fitting is done in parallel,
     and can be interrupted: the estimators that have been fitted can be accessed even if
-    the full cross-validation process did not complete.
+    the full cross-validation process did not complete. In particular,
+    `KeyboardInterrupt` exceptions are swallowed and will only interrupt the
+    cross-validation process, rather than the entire program.
 
     Parameters
     ----------
