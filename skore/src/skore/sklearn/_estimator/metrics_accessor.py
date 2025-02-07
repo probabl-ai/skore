@@ -387,6 +387,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             )
 
             score = metric_fn(y_true, y_pred, **kwargs)
+            if isinstance(score, np.floating):
+                # convert np.float64 and np.float32 to float for consistency across
+                # functions
+                score = float(score)
             self._parent._cache[cache_key] = score
 
         if self._parent._ml_task in (
@@ -762,7 +766,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     y_test=y_test,
         ... )
         >>> report.metrics.brier_score()
-        np.float64(0.03...)
+        0.03...
         """
         return self._brier_score(
             data_source=data_source,
@@ -882,7 +886,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     y_test=y_test,
         ... )
         >>> report.metrics.roc_auc()
-        np.float64(0.99...)
+        0.99...
         """
         return self._roc_auc(
             data_source=data_source,
