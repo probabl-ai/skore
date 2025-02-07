@@ -173,34 +173,27 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             for report in generator:
                 estimator_reports.append(report)
                 progress.update(task, advance=1, refresh=True)
-        except KeyboardInterrupt:
+        except (Exception, KeyboardInterrupt) as e:
             from skore import console  # avoid circular import
 
-            console.print(
-                Panel(
-                    title="Cross-validation interrupted",
-                    renderable=(
-                        "Cross-validation process was interrupted manually before all "
-                        "estimators could be fitted; CrossValidationReport object "
-                        "might not contain all the expected results."
-                    ),
-                    style="orange1",
-                    border_style="cyan",
+            if isinstance(e, KeyboardInterrupt):
+                message = (
+                    "Cross-validation process was interrupted manually before all "
+                    "estimators could be fitted; CrossValidationReport object "
+                    "might not contain all the expected results."
                 )
-            )
-
-        except Exception as e:
-            from skore import console  # avoid circular import
+            else:
+                message = (
+                    "Cross-validation process was interrupted by an error before "
+                    "all estimators could be fitted; CrossValidationReport object "
+                    "might not contain all the expected results. "
+                    f"Traceback: \n{e}"
+                )
 
             console.print(
                 Panel(
                     title="Cross-validation interrupted",
-                    renderable=(
-                        "Cross-validation process was interrupted by an error before "
-                        "all estimators could be fitted; CrossValidationReport object "
-                        "might not contain all the expected results. "
-                        f"Traceback: \n{e}"
-                    ),
+                    renderable=message,
                     style="orange1",
                     border_style="cyan",
                 )
