@@ -331,7 +331,7 @@ def test_estimator_report_cache_predictions(
     assert report._cache.keys() == stored_cache.keys()
 
 
-def test_estimator_report_pickle(tmp_path, binary_classification_data):
+def test_estimator_report_pickle(binary_classification_data):
     """Check that we can pickle an estimator report.
 
     In particular, the progress bar from rich are pickable, therefore we trigger
@@ -340,8 +340,9 @@ def test_estimator_report_pickle(tmp_path, binary_classification_data):
     estimator, X_test, y_test = binary_classification_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     report.cache_predictions()
-    with BytesIO() as f:
-        joblib.dump(report, f)
+
+    with BytesIO() as stream:
+        joblib.dump(report, stream)
 
 
 ########################################################################################

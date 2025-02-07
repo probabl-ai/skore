@@ -15,15 +15,14 @@ def usecase(
     type: Literal["binary-logisitic-regression", "linear-regression"],
     random_state: Optional[int] = 42,
 ):
-    match type:
-        case "binary-logistic-regression":
-            X, y = make_classification(n_classes=2, random_state=random_state)
-            estimator = LogisticRegression()
-        case "linear-regression":
-            X, y = make_regression(random_state=random_state)
-            estimator = LinearRegression()
-        case _:
-            raise ValueError
+    if type == "binary-logistic-regression":
+        X, y = make_classification(n_classes=2, random_state=random_state)
+        estimator = LogisticRegression()
+    elif type == "linear-regression":
+        X, y = make_regression(random_state=random_state)
+        estimator = LinearRegression()
+    else:
+        raise ValueError
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=random_state)
 
