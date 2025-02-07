@@ -313,10 +313,14 @@ for split_idx, (ax, estimator_report) in enumerate(
     if estimator_report is None:
         ax.axis("off")
         continue
-    estimator_report.metrics.plot.prediction_error(kind="actual_vs_predicted", ax=ax)
+    estimator_report.metrics.plot.prediction_error().plot(
+        kind="actual_vs_predicted", ax=ax
+    )
     ax.set_title(f"Split #{split_idx + 1}")
     ax.legend(loc="lower right")
 plt.tight_layout()
 # sphinx_gallery_start_ignore
 temp_dir.cleanup()
 # sphinx_gallery_end_ignore
+
+# %%
