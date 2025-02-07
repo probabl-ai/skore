@@ -31,11 +31,11 @@ def warn(title, message):
 
 
 class ComparisonReport(_BaseReport, DirNamesMixin):
-    """Report for comparison of estimators.
+    """Report for comparison of :class:`skore.EstimatorReport`.
 
     Parameters
     ----------
-    reports : list of ``EstimatorReport``s
+    reports : list of :class:`skore.EstimatorReport`s
         Estimator reports to compare.
 
     report_names : list of str, default=None
