@@ -145,12 +145,12 @@ get the common performance metric representations.
     CrossValidationReport.metrics.plot.prediction_error
     CrossValidationReport.metrics.plot.roc
 
-Deprecated
-----------
+.. Deprecated
+.. ----------
 
-These functions and classes are deprecated.
+.. These functions and classes are deprecated.
 
-.. autosummary::
-    :toctree: generated/
-    :template: base.rst
-    :caption: Deprecated
+.. .. autosummary::
+..     :toctree: generated/
+..     :template: base.rst
+..     :caption: Deprecated

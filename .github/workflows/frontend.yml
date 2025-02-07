@@ -3,8 +3,8 @@ name: frontend
 on:
   pull_request:
     paths:
-      - 'skore-ui/**'
       - '.github/workflows/frontend.yml'
+      - 'skore-ui/**'
   push:
     branches:
       - main

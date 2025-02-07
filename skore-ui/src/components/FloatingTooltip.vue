@@ -56,7 +56,7 @@ const { floatingStyles } = useFloating(reference, floating, {
   .floating-tooltip-content {
     position: absolute;
     z-index: 9999;
-    width: max-content;
+    max-width: 50dvw;
     padding: var(--spacing-6);
     border: solid var(--stroke-width-md) var(--color-stroke-background-primary);
     border-radius: var(--radius-xs);

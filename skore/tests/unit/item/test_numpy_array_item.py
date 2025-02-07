@@ -65,16 +65,3 @@ class TestNumpyArrayItem:
             match="Object arrays cannot be saved when allow_pickle=False",
         ):
             NumpyArrayItem.factory(array)
-
-    def test_get_serializable_dict(self, mock_nowstr):
-        array = numpy.array([1, 2, 3])
-
-        item = NumpyArrayItem.factory(array)
-        serializable = item.as_serializable_dict()
-        assert serializable == {
-            "updated_at": mock_nowstr,
-            "created_at": mock_nowstr,
-            "note": None,
-            "media_type": "text/markdown",
-            "value": array.tolist(),
-        }

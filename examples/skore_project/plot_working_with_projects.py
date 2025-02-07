@@ -29,6 +29,20 @@ os.chdir(temp_dir_path)
 my_project = skore.Project("my_project")
 
 # %%
+# There is a very simple and unique API for all objects:
+#
+# .. code-block:: python
+#
+#     my_project.put("my_key", "my_value")
+#
+# There is no need to remember ``plt.savefig(...)``, ``df.to_csv(...)``,
+# ``np.save(...)``, etc for each type of object.
+#
+# In the following, we will list all the different types of objects that we can
+# :func:`~skore.Project.put` inside a skore :class:`~skore.Project`.
+
+
+# %%
 # Storing integers
 # ================
 #
@@ -47,8 +61,11 @@ my_project.put("my_int", 3)
 my_project.get("my_int")
 
 # %%
-# Careful; like in a traditional Python dictionary, the ``put`` method will *overwrite*
-# past data if we use a key that already exists!
+# More generally, we follow the principile of "what you put is what you get".
+
+# %%
+# Like in a traditional Python dictionary, the ``put`` method will *overwrite*
+# past data if we use a key that already exists:
 
 # %%
 my_project.put("my_int", 30_000)
@@ -62,7 +79,7 @@ my_project.get("my_int")
 # %%
 # .. seealso::
 #
-#   Skore does not exactly *overwrite*, but stores the history of items.
+#   Actually, skore does not exactly *overwrite*, but stores the history of items.
 #   For more information about the tracking of items using their history,
 #   see :ref:`example_tracking_items`.
 
@@ -308,20 +325,6 @@ my_project.put("my_anim_plotly_fig", my_anim_plotly_fig)
 my_anim_plotly_fig
 
 # %%
-# PIL image:
-
-# %%
-import io
-
-import PIL
-
-my_pil_image = PIL.Image.new("RGB", (100, 100), color="red")
-with io.BytesIO() as output:
-    my_pil_image.save(output, format="png")
-
-my_project.put("my_pil_image", my_pil_image)
-
-# %%
 # Storing scikit-learn models and pipelines
 # =========================================
 #
@@ -359,7 +362,17 @@ y = diabetes.target[:150]
 my_pipeline.fit(X, y)
 
 my_project.put("my_fitted_pipeline", my_pipeline)
-my_pipeline
 # sphinx_gallery_start_ignore
 temp_dir.cleanup()
 # sphinx_gallery_end_ignore
+my_pipeline
+
+# %%
+# Storing skore objects
+# =====================
+#
+# .. seealso::
+#
+#   We can also store skore objects such as :class:`skore.EstimatorReport` and
+#   :class:`skore.CrossValidationReport`.
+#   See :ref:`example_use_case_employee_salaries`.

@@ -48,15 +48,3 @@ class TestPolarsSeriesItem:
         item = PolarsSeriesItem.factory(series)
 
         assert_series_equal(item.series, series, check_dtypes=False)
-
-    def test_get_serializable_dict(self, mock_nowstr):
-        series = Series([np.array([1, 2])])
-        item = PolarsSeriesItem.factory(series)
-        serializable = item.as_serializable_dict()
-        assert serializable == {
-            "updated_at": mock_nowstr,
-            "created_at": mock_nowstr,
-            "note": None,
-            "media_type": "text/markdown",
-            "value": series.to_list(),
-        }

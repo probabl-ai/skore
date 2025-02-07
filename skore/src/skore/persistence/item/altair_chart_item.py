@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING, Optional
 
 from skore.persistence.item.item import Item, ItemTypeError
 from skore.persistence.item.media_item import lazy_is_instance
-from skore.utils import bytes_to_b64_str
 
 if TYPE_CHECKING:
     from altair.vegalite.v5.schema.core import TopLevelSpec as AltairChart
@@ -69,13 +68,3 @@ class AltairChartItem(Item):
         import altair
 
         return altair.Chart.from_json(self.chart_str)
-
-    def as_serializable_dict(self):
-        """Convert item to a JSON-serializable dict to used by frontend."""
-        chart_bytes = self.chart_str.encode("utf-8")
-        chart_b64_str = bytes_to_b64_str(chart_bytes)
-
-        return super().as_serializable_dict() | {
-            "media_type": "application/vnd.vega.v5+json;base64",
-            "value": chart_b64_str,
-        }
