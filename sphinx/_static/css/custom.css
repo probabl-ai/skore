@@ -107,3 +107,13 @@ div.docutils.container.index-box {
     padding-top: 1.5rem !important;
     padding-bottom: 2.5rem !important;
 }
+
+/* Change the color of links to the orange of skore */
+a {
+    color: #F89A36; /* Change this to your desired color */
+}
+
+/* Change the color of visited links to the blue of skore */
+a:visited {
+    color: #3499CD; /* Change this to your desired color */
+}
