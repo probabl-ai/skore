@@ -216,23 +216,19 @@ except ValueError as e:
 #
 # Methodologically, we always want to compare estimator reports on the exact same
 # dataset. If we do not know where the datasets come from, then we expect skore to
-# throw an error:
+# throw a warning:
 
 # %%
 logistic_regression_report = EstimatorReport(logistic_regression, fit=False)
 
 random_forest_report = EstimatorReport(random_forest, fit=False)
 
-try:
-    # We expect skore to raise an error
-    comp = ComparisonReport(
-        reports=[
-            logistic_regression_report,
-            random_forest_report,
-        ]
-    )
-except ValueError as e:
-    print(f"skore raised a ValueError with the following message:\n\n{e}")
+comp = ComparisonReport(
+    reports=[
+        logistic_regression_report,
+        random_forest_report,
+    ]
+)
 
 # %%
-# As desired, skore raises an error.
+# As desired, skore raised a warning.
