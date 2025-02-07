@@ -86,10 +86,3 @@ class PolarsSeriesItem(Item):
             raise ItemTypeError(f"Type '{series.__class__}' is not supported.")
 
         return cls(series_json=series.to_frame().write_json(), **kwargs)
-
-    def as_serializable_dict(self):
-        """Convert item to a JSON-serializable dict to used by frontend."""
-        return super().as_serializable_dict() | {
-            "value": self.series.to_list(),
-            "media_type": "text/markdown",
-        }

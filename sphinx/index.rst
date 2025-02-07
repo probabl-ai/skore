@@ -16,32 +16,39 @@
 
    See our :ref:`example_quick_start` page!
 
-Why skore?
-----------
+What is skore?
+""""""""""""""
 
-ML development is an art — blending business sense, stats knowledge, and coding skills.
-Brought to you by `Probabl <https://probabl.ai>`_, a company co-founded by scikit-learn
-core developers, skore helps data scientists focus on what matters: building impactful
-models with hindsight and clarity.
-
-Skore is just at the beginning of its journey, but we’re shipping fast! Frequent
-updates and new features are on the way as we work toward our vision of becoming a
-comprehensive library for data scientists, supporting every phase of the machine
-learning lifecycle.
+skore is a Python open-source library designed to help data scientists apply recommended
+practices and avoid common methodological pitfalls in scikit-learn.
 
 Key features
-------------
+""""""""""""
 
--  **Diagnose**: Catch methodological errors before they impact your models with
-   **smart alerts** that analyze both code execution and data patterns in real-time.
+-  **Diagnose**: catch methodological errors before they impact your models.
 
--  **Evaluate**: Uncover actionable insights through **automated reports** surfacing
-   relevant metrics. Explore faster with our intelligent caching system.
+   -  :func:`skore.train_test_split` supercharged with methodological guidance:
+      the API is the same as scikit-learn's, but skore displays warnings when
+      applicable.
+      For example, it warns you against shuffling time series data or when you have
+      class imbalance.
 
-   -  :class:`skore.EstimatorReport`: get a report on your estimator
+-  **Evaluate**: automated insightful reports.
 
-   -  :class:`skore.CrossValidationReport`: get a report on your cross-validation 
-      results
+   -  :class:`skore.EstimatorReport`: feed your scikit-learn compatible estimator and
+      dataset, and it generates recommended metrics and plots to help you analyze your
+      estimator.
+      All these are computed and generated for you in 1 line of code.
+      Under the hood, we use efficient caching to make the computations blazing fast.
+
+   -  :class:`skore.CrossValidationReport`: Get a skore estimator report for each fold
+      of your cross-validation.
+
+What's next?
+""""""""""""
+
+Skore is just at the beginning of its journey, but we’re shipping fast! Frequent updates and new features are on the way as we work toward our vision of becoming a comprehensive library for data scientists.
+
 
 .. currentmodule:: skore
 

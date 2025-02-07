@@ -1,4 +1,3 @@
-import base64
 import io
 import json
 
@@ -11,11 +10,6 @@ from matplotlib.testing.compare import compare_images
 from skore.persistence.item import ItemTypeError, MatplotlibFigureItem
 from skore.persistence.item.matplotlib_figure_item import mpl_backend
 from skore.utils import b64_str_to_bytes, bytes_to_b64_str
-
-
-class FakeFigure(Figure):
-    def savefig(self, stream, *args, **kwargs):
-        stream.write(b"<figure>")
 
 
 class TestMatplotlibFigureItem:
@@ -76,25 +70,6 @@ class TestMatplotlibFigureItem:
         assert (
             compare_images(tmp_path / "figure.png", tmp_path / "item2.png", 0) is None
         )
-
-    def test_as_serializable_dict(self, mock_nowstr):
-        figure = FakeFigure()
-
-        with io.BytesIO() as stream:
-            figure.savefig(stream, format="svg", bbox_inches="tight")
-
-            figure_bytes = stream.getvalue()
-            figure_b64_str = base64.b64encode(figure_bytes).decode()
-
-        item = MatplotlibFigureItem.factory(figure)
-
-        assert item.as_serializable_dict() == {
-            "updated_at": mock_nowstr,
-            "created_at": mock_nowstr,
-            "note": None,
-            "media_type": "image/svg+xml;base64",
-            "value": figure_b64_str,
-        }
 
     def test_backend_switch(self):
         backend = get_backend()
