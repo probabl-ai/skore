@@ -145,6 +145,60 @@ get the common performance metric representations.
     CrossValidationReport.metrics.plot.prediction_error
     CrossValidationReport.metrics.plot.roc
 
+Comparison of EstimatorReports
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The class :class:`ComparisonReport` provides a report allowing to compare :class:`EstimatorReport`s in an interactive way. The
+functionalities of the report are accessible through accessors.
+
+.. autosummary::
+    :toctree: generated/
+    :template: base.rst
+
+    ComparisonReport
+
+.. autosummary::
+    :toctree: generated/
+    :nosignatures:
+    :template: autosummary/accessor_method.rst
+
+    ComparisonReport.help
+
+.. autosummary::
+    :toctree: generated/
+    :nosignatures:
+    :template: autosummary/accessor.rst
+
+    ComparisonReport.metrics
+
+Metrics
+"""""""
+
+The `metrics` accessor helps you to evaluate the statistical performance of the
+compared estimators. In addition, we provide a sub-accessor `plot`, to
+get the common performance metric representations.
+
+.. autosummary::
+    :toctree: generated/
+    :nosignatures:
+    :template: autosummary/accessor_method.rst
+
+    ComparisonReport.metrics.help
+    ComparisonReport.metrics.report_metrics
+    ComparisonReport.metrics.custom_metric
+    ComparisonReport.metrics.accuracy
+    ComparisonReport.metrics.brier_score
+    ComparisonReport.metrics.log_loss
+    ComparisonReport.metrics.precision
+    ComparisonReport.metrics.r2
+    ComparisonReport.metrics.recall
+    ComparisonReport.metrics.rmse
+    ComparisonReport.metrics.roc_auc
+    ComparisonReport.metrics.plot.help
+    ComparisonReport.metrics.plot.precision_recall
+    ComparisonReport.metrics.plot.prediction_error
+    ComparisonReport.metrics.plot.roc
+
 .. Deprecated
 .. ----------
 
