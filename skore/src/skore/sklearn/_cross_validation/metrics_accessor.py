@@ -11,6 +11,7 @@ from skore.sklearn._plot import (
     RocCurveDisplay,
 )
 from skore.utils._accessor import _check_supported_ml_task
+from skore.utils._index import flatten_multiindex
 from skore.utils._progress_bar import progress_decorator
 
 ###############################################################################
@@ -48,9 +49,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source="test",
         scoring=None,
         scoring_names=None,
-        pos_label=None,
         scoring_kwargs=None,
+        pos_label=None,
         aggregate=None,
+        flat_index=False,
     ):
         """Report a set of metrics for our estimator.
 
@@ -75,14 +77,17 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             Used to overwrite the default scoring names in the report. It should be of
             the same length as the `scoring` parameter.
 
-        pos_label : int, float, bool or str, default=None
-            The positive class.
-
         scoring_kwargs : dict, default=None
             The keyword arguments to pass to the scoring functions.
 
+        pos_label : int, float, bool or str, default=None
+            The positive class.
+
         aggregate : {"mean", "std"} or list of such str, default=None
             Function to aggregate the scores across the cross-validation splits.
+
+        flat_index : bool, default=False
+            Whether to flatten the multiindex columns.
 
         Returns
         -------
@@ -104,7 +109,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         LogisticRegression mean        0.94...     0.96...
                            std         0.02...     0.02...
         """
-        return self._compute_metric_scores(
+        results = self._compute_metric_scores(
             report_metric_name="report_metrics",
             data_source=data_source,
             aggregate=aggregate,
@@ -113,6 +118,12 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             scoring_kwargs=scoring_kwargs,
             scoring_names=scoring_names,
         )
+        if flat_index:
+            if isinstance(results.columns, pd.MultiIndex):
+                results.columns = flatten_multiindex(results.columns)
+            if isinstance(results.index, pd.MultiIndex):
+                results.index = flatten_multiindex(results.index)
+        return results
 
     @progress_decorator(description="Compute metric for each split")
     def _compute_metric_scores(

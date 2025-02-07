@@ -16,6 +16,7 @@ from skore.sklearn._plot import (
     RocCurveDisplay,
 )
 from skore.utils._accessor import _check_supported_ml_task
+from skore.utils._index import flatten_multiindex
 
 ###############################################################################
 # Metrics accessor
@@ -53,8 +54,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         y=None,
         scoring=None,
         scoring_names=None,
-        pos_label=None,
         scoring_kwargs=None,
+        pos_label=None,
+        flat_index=False,
     ):
         """Report a set of metrics for our estimator.
 
@@ -88,11 +90,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             Used to overwrite the default scoring names in the report. It should be of
             the same length as the `scoring` parameter.
 
+        scoring_kwargs : dict, default=None
+            The keyword arguments to pass to the scoring functions.
+
         pos_label : int, float, bool or str, default=None
             The positive class.
 
-        scoring_kwargs : dict, default=None
-            The keyword arguments to pass to the scoring functions.
+        flat_index : bool, default=False
+            Whether to flatten the multiindex columns.
 
         Returns
         -------
@@ -116,7 +121,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     X_test=X_test,
         ...     y_test=y_test,
         ... )
-        >>> report.metrics.report_metrics(pos_label=1)
+        >>> report.metrics.report_metrics(pos_label=1, flatten_multiindex=False)
         Metric              Precision (↗︎)  Recall (↗︎)  ROC AUC (↗︎)  Brier score (↘︎)
         LogisticRegression        0.98...     0.93...      0.99...          0.03...
         """
@@ -265,7 +270,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                         names=name_index,
                     )
 
-        return pd.concat(scores, axis=1)
+        results = pd.concat(scores, axis=1)
+        if flat_index:
+            if isinstance(results.columns, pd.MultiIndex):
+                results.columns = flatten_multiindex(results.columns)
+            if isinstance(results.index, pd.MultiIndex):
+                results.index = flatten_multiindex(results.index)
+        return results
 
     def _compute_metric_scores(
         self,
