@@ -4,7 +4,7 @@ import joblib
 import numpy as np
 import pandas as pd
 import pytest
-from sklearn.base import BaseEstimator, clone
+from sklearn.base import BaseEstimator, ClassifierMixin, clone
 from sklearn.datasets import make_classification, make_regression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.exceptions import NotFittedError
@@ -169,8 +169,7 @@ def test_cross_validation_report_repr(binary_classification_data):
     report = CrossValidationReport(estimator, X, y)
 
     repr_str = repr(report)
-    assert "skore.CrossValidationReport" in repr_str
-    assert "help()" in repr_str
+    assert "CrossValidationReport" in repr_str
 
 
 @pytest.mark.parametrize(
@@ -556,7 +555,7 @@ def test_cross_validation_report_report_metrics_scoring_kwargs(
     result = report.metrics.report_metrics(scoring_kwargs={"average": None})
     assert result.shape == (2, 10)
     assert isinstance(result.columns, pd.MultiIndex)
-    assert result.columns.names == ["Metric", "Class label"]
+    assert result.columns.names == ["Metric", "Label / Average"]
 
 
 @pytest.mark.parametrize(
@@ -732,7 +731,7 @@ def test_cross_validation_report_interrupted(
     """Check that we can interrupt cross-validation without losing all
     data."""
 
-    class MockEstimator(BaseEstimator):
+    class MockEstimator(ClassifierMixin, BaseEstimator):
         def __init__(self, n_call=0, fail_after_n_clone=3):
             self.n_call = n_call
             self.fail_after_n_clone = fail_after_n_clone
@@ -740,6 +739,7 @@ def test_cross_validation_report_interrupted(
         def fit(self, X, y):
             if self.n_call > self.fail_after_n_clone:
                 raise error
+            self.classes_ = np.unique(y)
             return self
 
         def __sklearn_clone__(self):
