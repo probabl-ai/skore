@@ -731,6 +731,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Ridge Split #0  50.1...
               Split #1  52.6...
         """
+        # create a scorer with `greater_is_better=True` to not alter the output of
+        # `metric_function`
         scorer = make_scorer(
             metric_function,
             greater_is_better=True,

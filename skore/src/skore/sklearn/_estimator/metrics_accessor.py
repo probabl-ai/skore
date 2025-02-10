@@ -1249,6 +1249,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     response_method="predict",
         ... )
         44.9...
+        >>> def metric_function(y_true, y_pred):
+        ...     return {"output": float(mean_absolute_error(y_true, y_pred))}
+        >>> report.metrics.custom_metric(
+        ...     metric_function=metric_function,
+        ...     response_method="predict",
+        ... )
+        {'output': 44.9...}
         """
         return self._custom_metric(
             data_source=data_source,
