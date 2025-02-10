@@ -17,7 +17,7 @@ report are accessible through accessors.
 
 .. autosummary::
    :toctree: ../api/
-   :template: base.rst
+   :template: autosummary/accessor_method.rst
 
    EstimatorReport.help
 
@@ -25,20 +25,32 @@ report are accessible through accessors.
 
 .. autosummary::
    :toctree: ../api/
-   :template: base.rst
+   :template: autosummary/accessor.rst
 
    EstimatorReport.metrics
-   EstimatorReport.metrics.help
-   EstimatorReport.metrics.report_metrics
-   EstimatorReport.metrics.custom_metric
-   EstimatorReport.metrics.accuracy
-   EstimatorReport.metrics.brier_score
-   EstimatorReport.metrics.log_loss
-   EstimatorReport.metrics.precision
-   EstimatorReport.metrics.precision_recall
-   EstimatorReport.metrics.prediction_error
-   EstimatorReport.metrics.r2
-   EstimatorReport.metrics.recall
-   EstimatorReport.metrics.rmse
-   EstimatorReport.metrics.roc
-   EstimatorReport.metrics.roc_auc
+
+Metrics
+-------
+
+The `metrics` accessor helps you to evaluate the statistical performance of your
+estimator.
+
+.. autosummary::
+    :toctree: generated/
+    :nosignatures:
+    :template: autosummary/accessor_method.rst
+
+    EstimatorReport.metrics.help
+    EstimatorReport.metrics.report_metrics
+    EstimatorReport.metrics.custom_metric
+    EstimatorReport.metrics.accuracy
+    EstimatorReport.metrics.brier_score
+    EstimatorReport.metrics.log_loss
+    EstimatorReport.metrics.precision
+    EstimatorReport.metrics.precision_recall
+    EstimatorReport.metrics.prediction_error
+    EstimatorReport.metrics.r2
+    EstimatorReport.metrics.recall
+    EstimatorReport.metrics.rmse
+    EstimatorReport.metrics.roc
+    EstimatorReport.metrics.roc_auc
