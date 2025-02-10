@@ -96,6 +96,8 @@ def _find_ml_task(y, estimator=None) -> MLTask:
 
         if target_type == "continuous":
             return "regression"
+        if target_type == "continuous-multioutput":
+            return "multioutput-regression"
         if target_type == "binary":
             return "binary-classification"
         if target_type == "multiclass":
