@@ -15,6 +15,17 @@ def _is_sequential(y) -> bool:
     return np.array_equal(y_values, sequential)
 
 
+def _is_classification(y) -> bool:
+    """Determine if `y` is a target for a classification task.
+
+    If `y` contains integers, sklearn's `type_of_target` considers
+    the task to be multiclass classification.
+    This function makes the analysis finer.
+    """
+    y = y.flatten()
+    return _is_sequential(y) and 0 in y
+
+
 def _find_ml_task(y, estimator=None) -> MLTask:
     """Guess the ML task being addressed based on a target array and an estimator.
 
@@ -101,24 +112,15 @@ def _find_ml_task(y, estimator=None) -> MLTask:
         if target_type == "binary":
             return "binary-classification"
         if target_type == "multiclass":
-            # If y is a vector of integers, type_of_target considers
-            # the task to be multiclass-classification.
-            # We refine this analysis a bit here.
-            if _is_sequential(y) and 0 in y:
+            if _is_classification(y):
                 return "multiclass-classification"
             return "regression"
         if target_type == "multiclass-multioutput":
-            # If y contains integers, type_of_target considers
-            # the task to be multiclass classification.
-            # We refine this analysis a bit here.
-            if _is_sequential(y.flatten()) and 0 in y:
+            if _is_classification(y):
                 return "multioutput-multiclass-classification"
             return "multioutput-regression"
         if target_type == "multilabel-indicator":
-            # If y contains integers, type_of_target considers
-            # the task to be multiclass classification.
-            # We refine this analysis a bit here.
-            if _is_sequential(y.flatten()) and 0 in y:
+            if _is_classification(y):
                 return "multioutput-binary-classification"
             return "multioutput-regression"
         return "unknown"
