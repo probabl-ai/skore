@@ -36,7 +36,7 @@ The `metrics` accessor helps you to evaluate the statistical performance of your
 estimator.
 
 .. autosummary::
-    :toctree: generated/
+    :toctree: ../api/
     :nosignatures:
     :template: autosummary/accessor_method.rst
 
