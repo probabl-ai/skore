@@ -191,10 +191,9 @@ get the common performance metric representations.
     ComparisonReport.metrics.recall
     ComparisonReport.metrics.rmse
     ComparisonReport.metrics.roc_auc
-    ComparisonReport.metrics.plot.help
-    ComparisonReport.metrics.plot.precision_recall
-    ComparisonReport.metrics.plot.prediction_error
-    ComparisonReport.metrics.plot.roc
+    ComparisonReport.metrics.precision_recall
+    ComparisonReport.metrics.prediction_error
+    ComparisonReport.metrics.roc
 
 .. Deprecated
 .. ----------

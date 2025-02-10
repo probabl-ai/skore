@@ -133,7 +133,7 @@ plt.tight_layout()
 # %%
 import matplotlib.pyplot as plt
 
-display = comp.metrics.plot.roc()
+display = comp.metrics.roc().plot()
 plt.tight_layout()
 
 # %%
