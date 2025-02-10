@@ -55,7 +55,10 @@ def test_find_ml_task_with_estimator(X, y, estimator, expected_task, should_fit)
         ),
         (make_regression(n_samples=100, random_state=42)[1], "regression"),
         (None, "clustering"),
-        (make_multilabel_classification(random_state=42)[1], "unknown"),
+        (
+            make_multilabel_classification(random_state=42)[1],
+            "multioutput-binary-classification",
+        ),
         (numpy.array([1, 5, 9]), "regression"),
         (numpy.array([0, 1, 2]), "multiclass-classification"),
         (numpy.array([1, 2, 3]), "regression"),
