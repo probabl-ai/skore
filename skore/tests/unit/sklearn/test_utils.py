@@ -46,9 +46,11 @@ def test_find_ml_task_with_estimator(X, y, estimator, expected_task, should_fit)
     [
         (make_classification(random_state=42)[1], "binary-classification"),
         (
-            make_classification(n_classes=3, n_clusters_per_class=1, random_state=42)[
-                1
-            ],
+            make_classification(
+                n_classes=3,
+                n_clusters_per_class=1,
+                random_state=42,
+            )[1],
             "multiclass-classification",
         ),
         (make_regression(n_samples=100, random_state=42)[1], "regression"),
