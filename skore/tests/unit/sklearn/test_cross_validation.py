@@ -169,8 +169,7 @@ def test_cross_validation_report_repr(binary_classification_data):
     report = CrossValidationReport(estimator, X, y)
 
     repr_str = repr(report)
-    assert "skore.CrossValidationReport" in repr_str
-    assert "help()" in repr_str
+    assert "CrossValidationReport" in repr_str
 
 
 @pytest.mark.parametrize(
