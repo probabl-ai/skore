@@ -1,12 +1,7 @@
 from skore.externals._pandas_accessors import _register_accessor
+from skore.sklearn._comparison.metrics_accessor import _MetricsAccessor
+from skore.sklearn._comparison.report import ComparisonReport
 
-from .metrics_accessor import _MetricsAccessor, _PlotMetricsAccessor
-from .report import ComparisonReport
-
-# add the metrics accessor to the ComparisonReport
 _register_accessor("metrics", ComparisonReport)(_MetricsAccessor)
-
-# add the plot accessor to the metrics accessor
-_register_accessor("plot", _MetricsAccessor)(_PlotMetricsAccessor)
 
 __all__ = ["ComparisonReport"]
