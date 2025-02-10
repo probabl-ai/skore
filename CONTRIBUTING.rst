@@ -189,7 +189,12 @@ When writing documentation, whether it be online, docstrings or help messages in
 Contributing to the examples
 ----------------------------
 
+The examples are stored in the folder called `examples`. They are classified in subcategories.
+They should be written in a python file, with cells marked by `# %%`. They will be automatically transcripted to rst files in the subfolder `sphinx/auto_examples`. This subfolder is listed in the gitignore, and cannot be pushed.
 
+The python file should start by a docstring indicating the example name and the title.
+
+No example should require to have large files in this repository. For example, no dataset should be stored, it should be downloaded in the script.
 
 Contributing to the ReadMe
 --------------------------
