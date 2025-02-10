@@ -15,7 +15,7 @@ Project
 These functions and classes are meant for managing a Project.
 
 .. autosummary::
-    :toctree: generated/
+    :toctree: api/
     :template: base.rst
     :caption: Managing a project
 
@@ -29,7 +29,7 @@ Get assistance when developing ML/DS projects
 These functions and classes enhance scikit-learn's ones.
 
 .. autosummary::
-    :toctree: generated/
+    :toctree: api/
     :template: base.rst
     :caption: ML Assistance
 
@@ -43,20 +43,20 @@ evaluate a scikit-learn estimator in an interactive way. The functionalities of 
 report are accessible through accessors.
 
 .. autosummary::
-    :toctree: generated/
+    :toctree: api/
     :template: base.rst
 
     EstimatorReport
 
 .. autosummary::
-    :toctree: generated/
+    :toctree: api/
     :nosignatures:
     :template: autosummary/accessor_method.rst
 
     EstimatorReport.help
 
 .. autosummary::
-    :toctree: generated/
+    :toctree: api/
     :nosignatures:
     :template: autosummary/accessor.rst
 
@@ -69,7 +69,7 @@ The `metrics` accessor helps you to evaluate the statistical performance of your
 estimator.
 
 .. autosummary::
-    :toctree: generated/
+    :toctree: api/
     :nosignatures:
     :template: autosummary/accessor_method.rst
 
@@ -97,20 +97,20 @@ evaluate a scikit-learn estimator through cross-validation in an interactive way
 functionalities of the report are accessible through accessors.
 
 .. autosummary::
-    :toctree: generated/
+    :toctree: api/
     :template: base.rst
 
     CrossValidationReport
 
 .. autosummary::
-    :toctree: generated/
+    :toctree: api/
     :nosignatures:
     :template: autosummary/accessor_method.rst
 
     CrossValidationReport.help
 
 .. autosummary::
-    :toctree: generated/
+    :toctree: api/
     :nosignatures:
     :template: autosummary/accessor.rst
 
@@ -123,7 +123,7 @@ The `metrics` accessor helps you to evaluate the statistical performance of your
 estimator during a cross-validation.
 
 .. autosummary::
-    :toctree: generated/
+    :toctree: api/
     :nosignatures:
     :template: autosummary/accessor_method.rst
 
@@ -148,6 +148,6 @@ estimator during a cross-validation.
 .. These functions and classes are deprecated.
 
 .. .. autosummary::
-..     :toctree: generated/
+..     :toctree: api/
 ..     :template: base.rst
 ..     :caption: Deprecated
