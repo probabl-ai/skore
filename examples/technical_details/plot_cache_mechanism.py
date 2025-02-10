@@ -218,7 +218,7 @@ print(f"Time taken: {end - start:.2f} seconds")
 import matplotlib.pyplot as plt
 
 start = time.time()
-display = report.metrics.plot.roc(pos_label="allowed")
+display = report.metrics.roc(pos_label="allowed")
 end = time.time()
 plt.tight_layout()
 
@@ -229,7 +229,7 @@ print(f"Time taken: {end - start:.2f} seconds")
 #
 # The second plot is instant because it uses cached data:
 start = time.time()
-display = report.metrics.plot.roc(pos_label="allowed")
+display = report.metrics.roc(pos_label="allowed")
 end = time.time()
 plt.tight_layout()
 

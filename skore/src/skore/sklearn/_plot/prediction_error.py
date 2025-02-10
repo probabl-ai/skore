@@ -21,7 +21,7 @@ class PredictionErrorDisplay(HelpDisplayMixin):
     preferably on held-out data points.
 
     An instance of this class is should created by
-    `EstimatorReport.metrics.plot.prediction_error()`.
+    `EstimatorReport.metrics.prediction_error()`.
     You should not create an instance of this class directly.
 
     Parameters
@@ -74,7 +74,7 @@ class PredictionErrorDisplay(HelpDisplayMixin):
     ...     X_test=X_test,
     ...     y_test=y_test,
     ... )
-    >>> display = report.metrics.plot.prediction_error()
+    >>> display = report.metrics.prediction_error()
     >>> display.plot(kind="actual_vs_predicted")
     """
 
@@ -151,7 +151,7 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         ...     X_test=X_test,
         ...     y_test=y_test,
         ... )
-        >>> display = report.metrics.plot.prediction_error()
+        >>> display = report.metrics.prediction_error()
         >>> display.plot(kind="actual_vs_predicted")
         """
         expected_kind = ("actual_vs_predicted", "residual_vs_predicted")

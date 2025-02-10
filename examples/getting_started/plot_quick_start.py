@@ -43,7 +43,7 @@ df_cv_report_metrics
 # %%
 import matplotlib.pyplot as plt
 
-roc_plot = cv_report.metrics.plot.roc()
+roc_plot = cv_report.metrics.roc()
 roc_plot
 plt.tight_layout()
 

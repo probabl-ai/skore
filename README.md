@@ -90,7 +90,7 @@ You can find information on the latest version [here](https://anaconda.org/conda
 
     ```python
     # Display the ROC curve that was generated for you:
-    roc_plot = cv_report.metrics.plot.roc()
+    roc_plot = cv_report.metrics.roc()
     roc_plot
     ```
 
