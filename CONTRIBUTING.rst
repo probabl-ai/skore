@@ -9,6 +9,26 @@ everyone and appreciate you taking the time to get involved.
 
 This project is hosted on https://github.com/probabl-ai/skore.
 
+.. topic:: **Our community, our values**
+
+    We are a community based on openness and friendly, didactic
+    discussions.
+
+    We aspire to treat everybody equally, and value their contributions.  We
+    are particularly seeking people from underrepresented backgrounds in Open
+    Source Software to participate and contribute their expertise and experience.
+
+    Decisions are made based on technical merit and consensus.
+
+    Code is not the only way to help the project. Reviewing pull
+    requests, answering questions to help others on mailing lists or
+    issues, organizing and teaching tutorials, working on the website,
+    improving the documentation, are all priceless contributions.
+
+    We abide by the principles of openness, respect, and consideration of
+    others of the Python Software Foundation:
+    https://www.python.org/psf/codeofconduct/
+
 Below are some guidelines to help you get started.
 
 Questions, bugs and feature requests
