@@ -105,13 +105,30 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         We check that the estimator reports can be compared:
         - all reports are estimator reports,
         - all estimators are in the same ML use case,
-        - all X_test, y_test have the same hash.
+        - all estimators have non-empty X_test and y_test,
+        - all estimators have the same X_test and y_test.
         """
         if len(reports) < 2:
             raise ValueError("At least 2 instances of EstimatorReport are needed")
 
-        if not all(isinstance(report, EstimatorReport) for report in reports):
-            raise TypeError("Only instances of EstimatorReport are allowed")
+        ml_tasks = set()
+        test_dataset_hashes = set()
+
+        for report in reports:
+            if not isinstance(report, EstimatorReport):
+                raise TypeError("Only instances of EstimatorReport are allowed")
+
+            if (report.X_test is None) or (report.y_test is None):
+                raise ValueError("Cannot compare reports without testing data")
+
+            ml_tasks.add(report._ml_task)
+            test_dataset_hashes.add(joblib.hash((report.X_test, report.y_test)))
+
+            if len(ml_tasks) > 1:
+                raise ValueError("Not all estimators are in the same ML usecase")
+
+            if len(test_dataset_hashes) > 1:
+                raise ValueError("Not all estimators have the same testing data")
 
         if report_names is None:
             self.report_names_ = [report.estimator_name_ for report in reports]
@@ -124,26 +141,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
         self.estimator_reports_ = deepcopy(reports)
 
-        first_report = self.estimator_reports_[0]
-        first_report_ml_task = first_report._ml_task
-        first_report_test_hash = joblib.hash((first_report.X_test, first_report.y_test))
-
-        for report in self.estimator_reports_[1:]:
-            if report._ml_task != first_report_ml_task:
-                raise ValueError("Not all estimators are in the same ML usecase")
-
-            if joblib.hash((report.X_test, report.y_test)) != first_report_test_hash:
-                raise ValueError("Not all estimators have the same testing data")
-
-        if (first_report.X_test is None) or (first_report.y_test is None):
-            warn(
-                "MissingTestDataWarning",
-                (
-                    "We cannot ensure that all estimators have been tested "
-                    "with the same dataset. This could lead to incoherent comparisons."
-                ),
-            )
-
         # NEEDED FOR METRICS ACCESSOR
         self.n_jobs = n_jobs
         self._rng = np.random.default_rng(time.time_ns())
@@ -151,7 +148,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
         )
         self._cache = {}
-
         self._ml_task = self.estimator_reports_[0]._ml_task
 
     ####################################################################################

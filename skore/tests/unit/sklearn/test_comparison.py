@@ -32,8 +32,13 @@ def usecase(
 def test_comparison_report_init_wrong_parameters():
     """If the input is not valid, raise."""
 
-    estimator, _, _, _, _ = usecase("binary-logistic-regression")
-    estimator_report = EstimatorReport(estimator, fit=False)
+    estimator, _, X_test, _, y_test = usecase("binary-logistic-regression")
+    estimator_report = EstimatorReport(
+        estimator,
+        fit=False,
+        X_test=X_test,
+        y_test=y_test,
+    )
 
     with pytest.raises(
         TypeError, match="object of type 'EstimatorReport' has no len()"
@@ -59,8 +64,14 @@ def test_comparison_report_init_wrong_parameters():
 def test_comparison_report_init_deepcopy():
     """If an estimator report is modified outside of the comparator, it is not modified
     inside the comparator."""
-    estimator, _, _, _, _ = usecase("binary-logistic-regression")
-    estimator_report = EstimatorReport(estimator, fit=False)
+    estimator, _, X_test, _, y_test = usecase("binary-logistic-regression")
+    estimator_report = EstimatorReport(
+        estimator,
+        fit=False,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
     comp = ComparisonReport([estimator_report, estimator_report])
 
     # check if the deepcopy work well
@@ -74,33 +85,33 @@ def test_comparison_report_init_deepcopy():
     assert comp.estimator_reports_[0]._hash != 0
 
 
-def test_comparison_report_init_MissingTestDataWarning(capsys):
+def test_comparison_report_init_without_testing_data():
     """Raise a warning if there is no test data (`None`) for any estimator
     report."""
+    estimator, _, _, _, _ = usecase("binary-logistic-regression")
+    estimator_report = EstimatorReport(estimator, fit=False)
 
-    estimator, X_train, _, y_train, _ = usecase("binary-logistic-regression")
-    estimator_report = EstimatorReport(
-        estimator,
-        fit=False,
-        X_train=X_train,
-        y_train=y_train,
-    )
-
-    ComparisonReport([estimator_report, estimator_report])
-
-    captured = capsys.readouterr()
-
-    assert "MissingTestDataWarning" in captured.out
+    with pytest.raises(ValueError, match="Cannot compare reports without testing data"):
+        ComparisonReport([estimator_report, estimator_report])
 
 
 def test_comparison_report_init_different_ml_usecases():
-    linear_regression_estimator, _, _, _, _ = usecase("linear-regression")
-    linear_regression_report = EstimatorReport(linear_regression_estimator, fit=False)
+    linear_regression_estimator, _, X_test, _, y_test = usecase("linear-regression")
+    linear_regression_report = EstimatorReport(
+        linear_regression_estimator,
+        fit=False,
+        X_test=X_test,
+        y_test=y_test,
+    )
 
-    logistic_regression_estimator, _, _, _, _ = usecase("binary-logistic-regression")
+    logistic_regression_estimator, _, X_test, _, y_test = usecase(
+        "binary-logistic-regression"
+    )
     logistic_regression_report = EstimatorReport(
         logistic_regression_estimator,
         fit=False,
+        X_test=X_test,
+        y_test=y_test,
     )
 
     with pytest.raises(
@@ -175,8 +186,13 @@ def test_comparison_report_init_without_report_names():
 
 
 def test_comparison_report_init_with_invalid_report_names():
-    estimator, _, _, _, _ = usecase("binary-logistic-regression")
-    estimator_report = EstimatorReport(estimator, fit=False)
+    estimator, _, X_test, _, y_test = usecase("binary-logistic-regression")
+    estimator_report = EstimatorReport(
+        estimator,
+        fit=False,
+        X_test=X_test,
+        y_test=y_test,
+    )
 
     with pytest.raises(
         ValueError, match="There should be as many report names as there are reports"
@@ -185,8 +201,13 @@ def test_comparison_report_init_with_invalid_report_names():
 
 
 def test_comparison_report_help(capsys):
-    estimator, _, _, _, _ = usecase("binary-logistic-regression")
-    estimator_report = EstimatorReport(estimator, fit=False)
+    estimator, _, X_test, _, y_test = usecase("binary-logistic-regression")
+    estimator_report = EstimatorReport(
+        estimator,
+        fit=False,
+        X_test=X_test,
+        y_test=y_test,
+    )
 
     ComparisonReport([estimator_report, estimator_report]).help()
 
@@ -194,8 +215,13 @@ def test_comparison_report_help(capsys):
 
 
 def test_comparison_report_repr():
-    estimator, _, _, _, _ = usecase("binary-logistic-regression")
-    estimator_report = EstimatorReport(estimator, fit=False)
+    estimator, _, X_test, _, y_test = usecase("binary-logistic-regression")
+    estimator_report = EstimatorReport(
+        estimator,
+        fit=False,
+        X_test=X_test,
+        y_test=y_test,
+    )
 
     repr_str = repr(ComparisonReport([estimator_report, estimator_report]))
 
@@ -205,8 +231,13 @@ def test_comparison_report_repr():
 
 def test_comparison_report_pickle(tmp_path):
     """Check that we can pickle a comparison report."""
-    estimator, _, _, _, _ = usecase("binary-logistic-regression")
-    estimator_report = EstimatorReport(estimator, fit=False)
+    estimator, _, X_test, _, y_test = usecase("binary-logistic-regression")
+    estimator_report = EstimatorReport(
+        estimator,
+        fit=False,
+        X_test=X_test,
+        y_test=y_test,
+    )
 
     with BytesIO() as stream:
         joblib.dump(ComparisonReport([estimator_report, estimator_report]), stream)
