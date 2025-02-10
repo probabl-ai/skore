@@ -220,31 +220,11 @@ def test_cross_validation_report_pickle(tmp_path, binary_classification_data):
 ########################################################################################
 
 
-def test_cross_validation_report_plot_help(capsys, binary_classification_data):
-    """Check that the help method writes to the console."""
-    estimator, X, y = binary_classification_data
-    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
-
-    report.metrics.plot.help()
-    captured = capsys.readouterr()
-    assert "Available plot methods" in captured.out
-
-
-def test_cross_validation_report_plot_repr(binary_classification_data):
-    """Check that __repr__ returns a string starting with the expected prefix."""
-    estimator, X, y = binary_classification_data
-    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
-
-    repr_str = repr(report.metrics.plot)
-    assert "skore.CrossValidationReport.metrics.plot" in repr_str
-    assert "report.metrics.plot.help()" in repr_str
-
-
 def test_cross_validation_report_plot_roc(binary_classification_data):
     """Check that the ROC plot method works."""
     estimator, X, y = binary_classification_data
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
-    assert isinstance(report.metrics.plot.roc(), RocCurveDisplay)
+    assert isinstance(report.metrics.roc(), RocCurveDisplay)
 
 
 @pytest.mark.parametrize("display", ["roc", "precision_recall"])
@@ -254,10 +234,10 @@ def test_cross_validation_report_display_binary_classification(
     """General behaviour of the function creating display on binary classification."""
     estimator, X, y = binary_classification_data
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
-    assert hasattr(report.metrics.plot, display)
-    display_first_call = getattr(report.metrics.plot, display)()
+    assert hasattr(report.metrics, display)
+    display_first_call = getattr(report.metrics, display)()
     assert report._cache != {}
-    display_second_call = getattr(report.metrics.plot, display)()
+    display_second_call = getattr(report.metrics, display)()
     assert display_first_call is display_second_call
 
 
@@ -266,10 +246,10 @@ def test_cross_validation_report_display_regression(pyplot, regression_data, dis
     """General behaviour of the function creating display on regression."""
     estimator, X, y = regression_data
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
-    assert hasattr(report.metrics.plot, display)
-    display_first_call = getattr(report.metrics.plot, display)()
+    assert hasattr(report.metrics, display)
+    display_first_call = getattr(report.metrics, display)()
     assert report._cache != {}
-    display_second_call = getattr(report.metrics.plot, display)()
+    display_second_call = getattr(report.metrics, display)()
     assert display_first_call is display_second_call
 
 

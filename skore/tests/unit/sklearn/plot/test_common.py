@@ -24,7 +24,7 @@ def test_display_help(pyplot, capsys, plot_func, estimator, dataset):
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = getattr(report.metrics.plot, plot_func)()
+    display = getattr(report.metrics, plot_func)()
 
     display.help()
     captured = capsys.readouterr()
@@ -49,7 +49,7 @@ def test_display_str(pyplot, plot_func, estimator, dataset):
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = getattr(report.metrics.plot, plot_func)()
+    display = getattr(report.metrics, plot_func)()
 
     str_str = str(display)
     assert f"{display.__class__.__name__}" in str_str
@@ -74,7 +74,7 @@ def test_display_repr(pyplot, plot_func, estimator, dataset):
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = getattr(report.metrics.plot, plot_func)()
+    display = getattr(report.metrics, plot_func)()
 
     repr_str = repr(display)
     assert f"skore.{display.__class__.__name__}(...)" in repr_str
@@ -98,7 +98,7 @@ def test_display_provide_ax(pyplot, plot_func, estimator, dataset):
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = getattr(report.metrics.plot, plot_func)()
+    display = getattr(report.metrics, plot_func)()
 
     _, ax = pyplot.subplots()
     display.plot(ax=ax)

@@ -21,7 +21,7 @@ class PredictionErrorDisplay(HelpDisplayMixin):
     preferably on held-out data points.
 
     An instance of this class is should created by
-    `EstimatorReport.metrics.plot.prediction_error()`.
+    `EstimatorReport.metrics.prediction_error()`.
     You should not create an instance of this class directly.
 
     Parameters
@@ -74,7 +74,7 @@ class PredictionErrorDisplay(HelpDisplayMixin):
     ...     X_test=X_test,
     ...     y_test=y_test,
     ... )
-    >>> display = report.metrics.plot.prediction_error()
+    >>> display = report.metrics.prediction_error()
     >>> display.plot(kind="actual_vs_predicted")
     """
 
@@ -151,7 +151,7 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         ...     X_test=X_test,
         ...     y_test=y_test,
         ... )
-        >>> display = report.metrics.plot.prediction_error()
+        >>> display = report.metrics.prediction_error()
         >>> display.plot(kind="actual_vs_predicted")
         """
         expected_kind = ("actual_vs_predicted", "residual_vs_predicted")
@@ -291,13 +291,8 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         estimator_name,
         ml_task,  # FIXME: to be used when having single-output vs. multi-output
         data_source=None,
-        kind="residual_vs_predicted",
         subsample=1_000,
         random_state=None,
-        ax=None,
-        scatter_kwargs=None,
-        line_kwargs=None,
-        despine=True,
     ):
         """Plot the prediction error given the true and predicted targets.
 
@@ -321,16 +316,6 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         data_source : {"train", "test", "X_y"}, default=None
             The data source used to compute the ROC curve.
 
-        kind : {"actual_vs_predicted", "residual_vs_predicted"}, \
-                default="residual_vs_predicted"
-            The type of plot to draw:
-
-            - "actual_vs_predicted" draws the observed values (y-axis) vs.
-              the predicted values (x-axis).
-            - "residual_vs_predicted" draws the residuals, i.e. difference
-              between observed and predicted values, (y-axis) vs. the predicted
-              values (x-axis).
-
         subsample : float, int or None, default=1_000
             Sampling the samples to be shown on the scatter plot. If `float`,
             it should be between 0 and 1 and represents the proportion of the
@@ -341,21 +326,6 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         random_state : int or RandomState, default=None
             Controls the randomness when `subsample` is not `None`.
             See :term:`Glossary <random_state>` for details.
-
-        ax : matplotlib axes, default=None
-            Axes object to plot on. If `None`, a new figure and axes is
-            created.
-
-        scatter_kwargs : dict, default=None
-            Dictionary with keywords passed to the `matplotlib.pyplot.scatter`
-            call.
-
-        line_kwargs : dict, default=None
-            Dictionary with keyword passed to the `matplotlib.pyplot.plot`
-            call to draw the optimal line.
-
-        despine : bool, default=True
-            Whether to remove the top and right spines from the plot.
 
         Returns
         -------
@@ -394,20 +364,9 @@ class PredictionErrorDisplay(HelpDisplayMixin):
                 y_true_display.append(y_true_i)
                 y_pred_display.append(y_pred_i)
 
-        viz = cls(
+        return cls(
             y_true=y_true_display,
             y_pred=y_pred_display,
             estimator_name=estimator_name,
             data_source=data_source,
         )
-
-        viz.plot(
-            ax=ax,
-            estimator_name=estimator_name,
-            kind=kind,
-            scatter_kwargs=scatter_kwargs,
-            line_kwargs=line_kwargs,
-            despine=despine,
-        )
-
-        return viz

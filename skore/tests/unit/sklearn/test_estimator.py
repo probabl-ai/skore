@@ -269,10 +269,10 @@ def test_estimator_report_check_support_plot(
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
     for supported_plot_method in supported_plot_methods:
-        assert hasattr(report.metrics.plot, supported_plot_method)
+        assert hasattr(report.metrics, supported_plot_method)
 
     for not_supported_plot_method in not_supported_plot_methods:
-        assert not hasattr(report.metrics.plot, not_supported_plot_method)
+        assert not hasattr(report.metrics, not_supported_plot_method)
 
 
 def test_estimator_report_help(capsys, binary_classification_data):
@@ -348,31 +348,11 @@ def test_estimator_report_pickle(tmp_path, binary_classification_data):
 ########################################################################################
 
 
-def test_estimator_report_plot_help(capsys, binary_classification_data):
-    """Check that the help method writes to the console."""
-    estimator, X_test, y_test = binary_classification_data
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-
-    report.metrics.plot.help()
-    captured = capsys.readouterr()
-    assert "Available plot methods" in captured.out
-
-
-def test_estimator_report_plot_repr(binary_classification_data):
-    """Check that __repr__ returns a string starting with the expected prefix."""
-    estimator, X_test, y_test = binary_classification_data
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-
-    repr_str = repr(report.metrics.plot)
-    assert "skore.EstimatorReport.metrics.plot" in repr_str
-    assert "report.metrics.plot.help()" in repr_str
-
-
 def test_estimator_report_plot_roc(binary_classification_data):
     """Check that the ROC plot method works."""
     estimator, X_test, y_test = binary_classification_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    assert isinstance(report.metrics.plot.roc(), RocCurveDisplay)
+    assert isinstance(report.metrics.roc(), RocCurveDisplay)
 
 
 @pytest.mark.parametrize("display", ["roc", "precision_recall"])
@@ -382,10 +362,10 @@ def test_estimator_report_display_binary_classification(
     """General behaviour of the function creating display on binary classification."""
     estimator, X_test, y_test = binary_classification_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    assert hasattr(report.metrics.plot, display)
-    display_first_call = getattr(report.metrics.plot, display)()
+    assert hasattr(report.metrics, display)
+    display_first_call = getattr(report.metrics, display)()
     assert report._cache != {}
-    display_second_call = getattr(report.metrics.plot, display)()
+    display_second_call = getattr(report.metrics, display)()
     assert display_first_call is display_second_call
 
 
@@ -394,10 +374,10 @@ def test_estimator_report_display_regression(pyplot, regression_data, display):
     """General behaviour of the function creating display on regression."""
     estimator, X_test, y_test = regression_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    assert hasattr(report.metrics.plot, display)
-    display_first_call = getattr(report.metrics.plot, display)()
+    assert hasattr(report.metrics, display)
+    display_first_call = getattr(report.metrics, display)()
     assert report._cache != {}
-    display_second_call = getattr(report.metrics.plot, display)()
+    display_second_call = getattr(report.metrics, display)()
     assert display_first_call is display_second_call
 
 
@@ -410,12 +390,12 @@ def test_estimator_report_display_binary_classification_external_data(
     """
     estimator, X_test, y_test = binary_classification_data
     report = EstimatorReport(estimator)
-    assert hasattr(report.metrics.plot, display)
-    display_first_call = getattr(report.metrics.plot, display)(
+    assert hasattr(report.metrics, display)
+    display_first_call = getattr(report.metrics, display)(
         data_source="X_y", X=X_test, y=y_test
     )
     assert report._cache != {}
-    display_second_call = getattr(report.metrics.plot, display)(
+    display_second_call = getattr(report.metrics, display)(
         data_source="X_y", X=X_test, y=y_test
     )
     assert display_first_call is display_second_call
@@ -430,12 +410,12 @@ def test_estimator_report_display_regression_external_data(
     """
     estimator, X_test, y_test = regression_data
     report = EstimatorReport(estimator)
-    assert hasattr(report.metrics.plot, display)
-    display_first_call = getattr(report.metrics.plot, display)(
+    assert hasattr(report.metrics, display)
+    display_first_call = getattr(report.metrics, display)(
         data_source="X_y", X=X_test, y=y_test
     )
     assert report._cache != {}
-    display_second_call = getattr(report.metrics.plot, display)(
+    display_second_call = getattr(report.metrics, display)(
         data_source="X_y", X=X_test, y=y_test
     )
     assert display_first_call is display_second_call
@@ -450,12 +430,12 @@ def test_estimator_report_display_binary_classification_switching_data_source(
     report = EstimatorReport(
         estimator, X_train=X_test, y_train=y_test, X_test=X_test, y_test=y_test
     )
-    assert hasattr(report.metrics.plot, display)
-    display_first_call = getattr(report.metrics.plot, display)(data_source="test")
+    assert hasattr(report.metrics, display)
+    display_first_call = getattr(report.metrics, display)(data_source="test")
     assert report._cache != {}
-    display_second_call = getattr(report.metrics.plot, display)(data_source="train")
+    display_second_call = getattr(report.metrics, display)(data_source="train")
     assert display_first_call is not display_second_call
-    display_third_call = getattr(report.metrics.plot, display)(
+    display_third_call = getattr(report.metrics, display)(
         data_source="X_y", X=X_test, y=y_test
     )
     assert display_first_call is not display_third_call
@@ -471,12 +451,12 @@ def test_estimator_report_display_regression_switching_data_source(
     report = EstimatorReport(
         estimator, X_train=X_test, y_train=y_test, X_test=X_test, y_test=y_test
     )
-    assert hasattr(report.metrics.plot, display)
-    display_first_call = getattr(report.metrics.plot, display)(data_source="test")
+    assert hasattr(report.metrics, display)
+    display_first_call = getattr(report.metrics, display)(data_source="test")
     assert report._cache != {}
-    display_second_call = getattr(report.metrics.plot, display)(data_source="train")
+    display_second_call = getattr(report.metrics, display)(data_source="train")
     assert display_first_call is not display_second_call
-    display_third_call = getattr(report.metrics.plot, display)(
+    display_third_call = getattr(report.metrics, display)(
         data_source="X_y", X=X_test, y=y_test
     )
     assert display_first_call is not display_third_call
