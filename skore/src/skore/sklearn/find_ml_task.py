@@ -115,5 +115,10 @@ def _find_ml_task(y, estimator=None) -> MLTask:
                 return "multioutput-multiclass-classification"
             return "multioutput-regression"
         if target_type == "multilabel-indicator":
-            return "multioutput-binary-classification"
+            # If y contains integers, type_of_target considers
+            # the task to be multiclass classification.
+            # We refine this analysis a bit here.
+            if _is_sequential(y.flatten()) and 0 in y:
+                return "multioutput-binary-classification"
+            return "multioutput-regression"
         return "unknown"
