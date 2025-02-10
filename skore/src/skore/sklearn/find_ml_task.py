@@ -114,4 +114,6 @@ def _find_ml_task(y, estimator=None) -> MLTask:
             if _is_sequential(y.flatten()) and 0 in y:
                 return "multioutput-multiclass-classification"
             return "multioutput-regression"
+        if target_type == "multilabel-indicator":
+            return "multioutput-binary-classification"
         return "unknown"
