@@ -76,8 +76,8 @@ df_est_report_metrics
 # %%
 import matplotlib.pyplot as plt
 
-roc_plot = est_report.metrics.plot.roc()
-roc_plot
+roc_plot = est_report.metrics.roc()
+roc_plot.plot()
 plt.tight_layout()
 
 # %%
@@ -116,8 +116,8 @@ df_cv_report_metrics
 # We display the ROC curves for each fold:
 
 # %%
-roc_plot_cv = cv_report.metrics.plot.roc()
-roc_plot_cv
+roc_plot_cv = cv_report.metrics.roc()
+roc_plot_cv.plot()
 plt.tight_layout()
 
 # %%

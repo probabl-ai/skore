@@ -13,10 +13,6 @@ from skore.sklearn._plot import (
 from skore.utils._accessor import _check_supported_ml_task
 from skore.utils._progress_bar import progress_decorator
 
-###############################################################################
-# Metrics accessor
-###############################################################################
-
 
 class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     """Accessor for metrics-related operations.
@@ -772,7 +768,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         """Override format method for metrics-specific naming."""
         method_name = f"{name}(...)"
         method_name = method_name.ljust(22)
-        if self._SCORE_OR_LOSS_ICONS[name] in ("(↗︎)", "(↘︎)"):
+        if name in self._SCORE_OR_LOSS_ICONS and self._SCORE_OR_LOSS_ICONS[name] in (
+            "(↗︎)",
+            "(↘︎)",
+        ):
             if self._SCORE_OR_LOSS_ICONS[name] == "(↗︎)":
                 method_name += f"[cyan]{self._SCORE_OR_LOSS_ICONS[name]}[/cyan]"
                 return method_name.ljust(43)
@@ -786,22 +785,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         """Override to exclude the plot accessor from methods list."""
         methods = super()._get_methods_for_help()
         return [(name, method) for name, method in methods if name != "plot"]
-
-    def _create_help_tree(self):
-        """Override to include plot methods in a separate branch."""
-        tree = super()._create_help_tree()
-
-        # Add plot methods in a separate branch
-        plot_branch = tree.add("[bold cyan].plot :art:[/bold cyan]")
-        plot_methods = self.plot._get_methods_for_help()
-        plot_methods = self.plot._sort_methods_for_help(plot_methods)
-
-        for name, method in plot_methods:
-            displayed_name = self.plot._format_method_name(name)
-            description = self.plot._get_method_description(method)
-            plot_branch.add(f".{displayed_name}".ljust(27) + f"- {description}")
-
-        return tree
 
     def _get_help_panel_title(self):
         return "[bold cyan]Available metrics methods[/bold cyan]"
@@ -821,21 +804,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             help_method_name="report.metrics.help()",
         )
 
-
-########################################################################################
-# Sub-accessors
-# Plotting
-########################################################################################
-
-
-class _PlotMetricsAccessor(_BaseAccessor):
-    """Plotting methods for the metrics accessor."""
-
-    def __init__(self, parent):
-        super().__init__(parent._parent)
-        self._metrics_parent = parent
-        self._parent_progress = None
-
     @progress_decorator(description="Computing predictions for display")
     def _get_display(
         self,
@@ -844,7 +812,6 @@ class _PlotMetricsAccessor(_BaseAccessor):
         response_method,
         display_class,
         display_kwargs,
-        display_plot_kwargs,
     ):
         """Get the display from the cache or compute it.
 
@@ -865,9 +832,6 @@ class _PlotMetricsAccessor(_BaseAccessor):
         display_kwargs : dict
             The display kwargs used by `display_class._from_predictions`.
 
-        display_plot_kwargs : dict
-            The display kwargs used by `display.plot`.
-
         Returns
         -------
         display : display_class
@@ -884,7 +848,6 @@ class _PlotMetricsAccessor(_BaseAccessor):
 
         if cache_key in self._parent._cache:
             display = self._parent._cache[cache_key]
-            display.plot(**display_plot_kwargs)
         else:
             y_true, y_pred = [], []
             for report in self._parent.estimator_reports_:
@@ -914,7 +877,6 @@ class _PlotMetricsAccessor(_BaseAccessor):
                 ml_task=self._parent._ml_task,
                 data_source=data_source,
                 **display_kwargs,
-                **display_plot_kwargs,
             )
             self._parent._cache[cache_key] = display
 
@@ -925,7 +887,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def roc(self, *, data_source="test", pos_label=None, ax=None):
+    def roc(self, *, data_source="test", pos_label=None):
         """Plot the ROC curve.
 
         Parameters
@@ -938,9 +900,6 @@ class _PlotMetricsAccessor(_BaseAccessor):
 
         pos_label : int, float, bool or str, default=None
             The positive class.
-
-        ax : matplotlib.axes.Axes, default=None
-            The axes to plot on.
 
         Returns
         -------
@@ -955,18 +914,16 @@ class _PlotMetricsAccessor(_BaseAccessor):
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
-        >>> display = report.metrics.plot.roc()
+        >>> display = report.metrics.roc()
         >>> display.plot(roc_curve_kwargs={"color": "tab:red"})
         """
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
-        display_plot_kwargs = {"ax": ax, "plot_chance_level": True, "despine": True}
         return self._get_display(
             data_source=data_source,
             response_method=response_method,
             display_class=RocCurveDisplay,
             display_kwargs=display_kwargs,
-            display_plot_kwargs=display_plot_kwargs,
         )
 
     @available_if(
@@ -974,7 +931,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def precision_recall(self, *, data_source="test", pos_label=None, ax=None):
+    def precision_recall(self, *, data_source="test", pos_label=None):
         """Plot the precision-recall curve.
 
         Parameters
@@ -987,9 +944,6 @@ class _PlotMetricsAccessor(_BaseAccessor):
 
         pos_label : int, float, bool or str, default=None
             The positive class.
-
-        ax : matplotlib.axes.Axes, default=None
-            The axes to plot on.
 
         Returns
         -------
@@ -1004,18 +958,16 @@ class _PlotMetricsAccessor(_BaseAccessor):
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
-        >>> display = report.metrics.plot.precision_recall()
+        >>> display = report.metrics.precision_recall()
         >>> display.plot()
         """
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
-        display_plot_kwargs = {"ax": ax, "despine": True}
         return self._get_display(
             data_source=data_source,
             response_method=response_method,
             display_class=PrecisionRecallCurveDisplay,
             display_kwargs=display_kwargs,
-            display_plot_kwargs=display_plot_kwargs,
         )
 
     @available_if(_check_supported_ml_task(supported_ml_tasks=["regression"]))
@@ -1023,8 +975,6 @@ class _PlotMetricsAccessor(_BaseAccessor):
         self,
         *,
         data_source="test",
-        ax=None,
-        kind="residual_vs_predicted",
         subsample=1_000,
         random_state=None,
     ):
@@ -1039,20 +989,6 @@ class _PlotMetricsAccessor(_BaseAccessor):
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-
-        ax : matplotlib axes, default=None
-            Axes object to plot on. If `None`, a new figure and axes is
-            created.
-
-        kind : {"actual_vs_predicted", "residual_vs_predicted"}, \
-                default="residual_vs_predicted"
-            The type of plot to draw:
-
-            - "actual_vs_predicted" draws the observed values (y-axis) vs.
-              the predicted values (x-axis).
-            - "residual_vs_predicted" draws the residuals, i.e. difference
-              between observed and predicted values, (y-axis) vs. the predicted
-              values (x-axis).
 
         subsample : float, int or None, default=1_000
             Sampling the samples to be shown on the scatter plot. If `float`,
@@ -1077,30 +1013,13 @@ class _PlotMetricsAccessor(_BaseAccessor):
         >>> X, y = load_diabetes(return_X_y=True)
         >>> regressor = Ridge()
         >>> report = CrossValidationReport(regressor, X=X, y=y, cv_splitter=2)
-        >>> display = report.metrics.plot.prediction_error(
-        ...     kind="actual_vs_predicted"
-        ... )
-        >>> display.plot(line_kwargs={"color": "tab:red"})
+        >>> display = report.metrics.prediction_error()
+        >>> display.plot(kind="actual_vs_predicted", line_kwargs={"color": "tab:red"})
         """
         display_kwargs = {"subsample": subsample, "random_state": random_state}
-        display_plot_kwargs = {"ax": ax, "kind": kind}
         return self._get_display(
             data_source=data_source,
             response_method="predict",
             display_class=PredictionErrorDisplay,
             display_kwargs=display_kwargs,
-            display_plot_kwargs=display_plot_kwargs,
-        )
-
-    def _get_help_panel_title(self):
-        return "[bold cyan]Available plot methods[/bold cyan]"
-
-    def _get_help_tree_title(self):
-        return "[bold cyan]report.metrics.plot[/bold cyan]"
-
-    def __repr__(self):
-        """Return a string representation using rich."""
-        return self._rich_repr(
-            class_name="skore.CrossValidationReport.metrics.plot",
-            help_method_name="report.metrics.plot.help()",
         )
