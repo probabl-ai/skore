@@ -389,11 +389,6 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         data_source=None,
         pos_label=None,
         drop_intermediate=True,
-        ax=None,
-        roc_curve_kwargs=None,
-        plot_chance_level=True,
-        chance_level_kwargs=None,
-        despine=True,
     ):
         """Private method to create a RocCurveDisplay from predictions.
 
@@ -425,24 +420,6 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
 
         drop_intermediate : bool, default=True
             Whether to drop intermediate points with identical value.
-
-        ax : matplotlib axes, default=None
-            Axes object to plot on. If `None`, a new figure and axes is
-            created.
-
-        roc_curve_kwargs : dict or list of dict, default=None
-            Keyword arguments to be passed to matplotlib's `plot` for rendering
-            the ROC curve(s).
-
-        plot_chance_level : bool, default=True
-            Whether to plot the chance level.
-
-        chance_level_kwargs : dict, default=None
-            Keyword arguments to be passed to matplotlib's `plot` for rendering
-            the chance level line.
-
-        despine : bool, default=True
-            Whether to remove the top and right spines from the plot.
 
         Returns
         -------
@@ -485,7 +462,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
                     tpr[class_].append(tpr_class_i)
                     roc_auc[class_].append(roc_auc_class_i)
 
-        viz = cls(
+        return cls(
             fpr=fpr,
             tpr=tpr,
             roc_auc=roc_auc,
@@ -493,14 +470,3 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
             pos_label=pos_label_validated,
             data_source=data_source,
         )
-
-        viz.plot(
-            ax=ax,
-            estimator_name=estimator_name,
-            roc_curve_kwargs=roc_curve_kwargs,
-            plot_chance_level=plot_chance_level,
-            chance_level_kwargs=chance_level_kwargs,
-            despine=despine,
-        )
-
-        return viz

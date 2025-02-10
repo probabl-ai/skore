@@ -1396,7 +1396,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         response_method,
         display_class,
         display_kwargs,
-        display_plot_kwargs,
     ):
         """Get the display from the cache or compute it.
 
@@ -1424,9 +1423,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         display_kwargs : dict
             The display kwargs used by `display_class._from_predictions`.
 
-        display_plot_kwargs : dict
-            The display kwargs used by `display.plot`.
-
         Returns
         -------
         display : display_class
@@ -1442,7 +1438,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         if cache_key in self._parent._cache:
             display = self._parent._cache[cache_key]
-            display.plot(**display_plot_kwargs)
         else:
             y_pred = _get_cached_response_values(
                 cache=self._parent._cache,
@@ -1463,7 +1458,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 ml_task=self._parent._ml_task,
                 data_source=data_source,
                 **display_kwargs,
-                **display_plot_kwargs,
             )
             self._parent._cache[cache_key] = display
 
@@ -1474,7 +1468,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def roc(self, *, data_source="test", X=None, y=None, pos_label=None, ax=None):
+    def roc(self, *, data_source="test", X=None, y=None, pos_label=None):
         """Plot the ROC curve.
 
         Parameters
@@ -1496,9 +1490,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         pos_label : int, float, bool or str, default=None
             The positive class.
-
-        ax : matplotlib.axes.Axes, default=None
-            The axes to plot on.
 
         Returns
         -------
@@ -1527,7 +1518,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         """
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
-        display_plot_kwargs = {"ax": ax, "plot_chance_level": True, "despine": True}
         return self._get_display(
             X=X,
             y=y,
@@ -1535,7 +1525,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             response_method=response_method,
             display_class=RocCurveDisplay,
             display_kwargs=display_kwargs,
-            display_plot_kwargs=display_plot_kwargs,
         )
 
     @available_if(
@@ -1550,7 +1539,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         X=None,
         y=None,
         pos_label=None,
-        ax=None,
     ):
         """Plot the precision-recall curve.
 
@@ -1573,9 +1561,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         pos_label : int, float, bool or str, default=None
             The positive class.
-
-        ax : matplotlib.axes.Axes, default=None
-            The axes to plot on.
 
         Returns
         -------
@@ -1604,7 +1589,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         """
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
-        display_plot_kwargs = {"ax": ax, "despine": True}
         return self._get_display(
             X=X,
             y=y,
@@ -1612,7 +1596,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             response_method=response_method,
             display_class=PrecisionRecallCurveDisplay,
             display_kwargs=display_kwargs,
-            display_plot_kwargs=display_plot_kwargs,
         )
 
     @available_if(_check_supported_ml_task(supported_ml_tasks=["regression"]))
@@ -1622,8 +1605,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source="test",
         X=None,
         y=None,
-        ax=None,
-        kind="residual_vs_predicted",
         subsample=1_000,
         random_state=None,
     ):
@@ -1647,20 +1628,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         y : array-like of shape (n_samples,), default=None
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
-
-        ax : matplotlib axes, default=None
-            Axes object to plot on. If `None`, a new figure and axes is
-            created.
-
-        kind : {"actual_vs_predicted", "residual_vs_predicted"}, \
-                default="residual_vs_predicted"
-            The type of plot to draw:
-
-            - "actual_vs_predicted" draws the observed values (y-axis) vs.
-              the predicted values (x-axis).
-            - "residual_vs_predicted" draws the residuals, i.e. difference
-              between observed and predicted values, (y-axis) vs. the predicted
-              values (x-axis).
 
         subsample : float, int or None, default=1_000
             Sampling the samples to be shown on the scatter plot. If `float`,
@@ -1694,13 +1661,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     X_test=X_test,
         ...     y_test=y_test,
         ... )
-        >>> display = report.metrics.prediction_error(
-        ...     kind="actual_vs_predicted"
-        ... )
+        >>> display = report.metrics.prediction_error()
         >>> display.plot(line_kwargs={"color": "tab:red"})
         """
         display_kwargs = {"subsample": subsample, "random_state": random_state}
-        display_plot_kwargs = {"ax": ax, "kind": kind}
         return self._get_display(
             X=X,
             y=y,
@@ -1708,5 +1672,4 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             response_method="predict",
             display_class=PredictionErrorDisplay,
             display_kwargs=display_kwargs,
-            display_plot_kwargs=display_plot_kwargs,
         )

@@ -56,6 +56,7 @@ def test_roc_curve_display_binary_classification(pyplot, binary_classification_d
         assert isinstance(attr[estimator.classes_[1]], list)
         assert len(attr[estimator.classes_[1]]) == 1
 
+    display.plot()
     assert isinstance(display.lines_, list)
     assert len(display.lines_) == 1
     roc_curve_mpl = display.lines_[0]
@@ -104,6 +105,7 @@ def test_roc_curve_display_multiclass_classification(
             assert isinstance(attr[class_label], list)
             assert len(attr[class_label]) == 1
 
+    display.plot()
     assert isinstance(display.lines_, list)
     assert len(display.lines_) == len(estimator.classes_)
     default_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
@@ -141,9 +143,11 @@ def test_roc_curve_display_data_source_binary_classification(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
     display = report.metrics.roc(data_source="train")
+    display.plot()
     assert display.lines_[0].get_label() == "Train set (AUC = 1.00)"
 
     display = report.metrics.roc(data_source="X_y", X=X_train, y=y_train)
+    display.plot()
     assert display.lines_[0].get_label() == "AUC = 1.00"
 
 
@@ -156,6 +160,7 @@ def test_roc_curve_display_data_source_multiclass_classification(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
     display = report.metrics.roc(data_source="train")
+    display.plot()
     for class_label in estimator.classes_:
         assert display.lines_[class_label].get_label() == (
             f"{str(class_label).title()} - train set "
@@ -163,6 +168,7 @@ def test_roc_curve_display_data_source_multiclass_classification(
         )
 
     display = report.metrics.roc(data_source="X_y", X=X_train, y=y_train)
+    display.plot()
     for class_label in estimator.classes_:
         assert display.lines_[class_label].get_label() == (
             f"{str(class_label).title()} - AUC = 1.00"
@@ -267,6 +273,7 @@ def test_roc_curve_display_cross_validation_binary_classification(
         assert isinstance(attr[pos_label], list)
         assert len(attr[pos_label]) == cv
 
+    display.plot()
     assert isinstance(display.lines_, list)
     assert len(display.lines_) == cv
     expected_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
@@ -315,6 +322,7 @@ def test_roc_curve_display_cross_validation_multiclass_classification(
             assert isinstance(attr[class_label], list)
             assert len(attr[class_label]) == cv
 
+    display.plot()
     assert isinstance(display.lines_, list)
     assert len(display.lines_) == len(class_labels) * cv
     default_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)

@@ -379,9 +379,6 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
         data_source=None,
         pos_label=None,
         drop_intermediate=False,
-        ax=None,
-        pr_curve_kwargs=None,
-        despine=True,
     ):
         """Plot precision-recall curve given binary class predictions.
 
@@ -415,19 +412,6 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
             Whether to drop some suboptimal thresholds which would not appear
             on a plotted precision-recall curve. This is useful in order to
             create lighter precision-recall curves.
-
-        ax : matplotlib axes, default=None
-            Axes object to plot on. If `None`, a new figure and axes is created.
-
-        pr_curve_kwargs : dict or list of dict, default=None
-            Keyword arguments to be passed to matplotlib's `plot` for rendering
-            the precision-recall curve(s).
-
-        despine : bool, default=True
-            Whether to remove the top and right spines from the plot.
-
-        **kwargs : dict
-            Keyword arguments to be passed to matplotlib's `plot`.
 
         Returns
         -------
@@ -475,7 +459,7 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
                     recall[class_].append(recall_class_i)
                     average_precision[class_].append(average_precision_class_i)
 
-        viz = cls(
+        return cls(
             precision=precision,
             recall=recall,
             average_precision=average_precision,
@@ -483,12 +467,3 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
             pos_label=pos_label_validated,
             data_source=data_source,
         )
-
-        viz.plot(
-            ax=ax,
-            estimator_name=estimator_name,
-            pr_curve_kwargs=pr_curve_kwargs,
-            despine=despine,
-        )
-
-        return viz

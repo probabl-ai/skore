@@ -43,11 +43,12 @@ class HelpDisplayMixin:
         attr_branch = tree.add("[bold cyan] Attributes[/bold cyan]")
         # Ensure figure_ and ax_ are first
         sorted_attrs = sorted(attributes)
-        sorted_attrs.remove(".ax_")
-        sorted_attrs.remove(".figure_")
-        sorted_attrs = [".figure_", ".ax_"] + [
-            attr for attr in sorted_attrs if attr not in [".figure_", ".ax_"]
-        ]
+        if ("figure_" in sorted_attrs) and ("ax_" in sorted_attrs):
+            sorted_attrs.remove(".ax_")
+            sorted_attrs.remove(".figure_")
+            sorted_attrs = [".figure_", ".ax_"] + [
+                attr for attr in sorted_attrs if attr not in [".figure_", ".ax_"]
+            ]
         for attr in sorted_attrs:
             attr_branch.add(attr)
 
