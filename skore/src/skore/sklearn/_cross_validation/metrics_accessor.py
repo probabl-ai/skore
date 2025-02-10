@@ -1,6 +1,7 @@
 import joblib
 import numpy as np
 import pandas as pd
+from sklearn.metrics import make_scorer
 from sklearn.utils.metaestimators import available_if
 
 from skore.externals._pandas_accessors import DirNamesMixin
@@ -20,17 +21,17 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     You can access this accessor using the `metrics` attribute.
     """
 
-    _SCORE_OR_LOSS_ICONS = {
-        "accuracy": "(↗︎)",
-        "precision": "(↗︎)",
-        "recall": "(↗︎)",
-        "brier_score": "(↘︎)",
-        "roc_auc": "(↗︎)",
-        "log_loss": "(↘︎)",
-        "r2": "(↗︎)",
-        "rmse": "(↘︎)",
-        "report_metrics": "",
-        "custom_metric": "",
+    _SCORE_OR_LOSS_INFO = {
+        "accuracy": {"name": "Accuracy", "icon": "(↗︎)"},
+        "precision": {"name": "Precision", "icon": "(↗︎)"},
+        "recall": {"name": "Recall", "icon": "(↗︎)"},
+        "brier_score": {"name": "Brier score", "icon": "(↘︎)"},
+        "roc_auc": {"name": "ROC AUC", "icon": "(↗︎)"},
+        "log_loss": {"name": "Log loss", "icon": "(↘︎)"},
+        "r2": {"name": "R²", "icon": "(↗︎)"},
+        "rmse": {"name": "RMSE", "icon": "(↘︎)"},
+        "custom_metric": {"name": "Custom metric", "icon": ""},
+        "report_metrics": {"name": "Report metrics", "icon": ""},
     }
 
     def __init__(self, parent):
@@ -210,8 +211,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         LogisticRegression Split #0       0.94...
                            Split #1       0.94...
         """
-        return self._compute_metric_scores(
-            report_metric_name="accuracy",
+        return self.report_metrics(
+            scoring=["accuracy"],
             data_source=data_source,
             aggregate=aggregate,
         )
@@ -285,16 +286,16 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         >>> report.metrics.precision()
         Metric                      Precision (↗︎)
-        Class label                              0         1
+        Label / Average                          0         1
         LogisticRegression Split #0       0.96...   0.93...
                            Split #1       0.90...   0.96...
         """
-        return self._compute_metric_scores(
-            report_metric_name="precision",
+        return self.report_metrics(
+            scoring=["precision"],
             data_source=data_source,
             aggregate=aggregate,
-            average=average,
             pos_label=pos_label,
+            scoring_kwargs={"average": average},
         )
 
     @available_if(
@@ -367,16 +368,16 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         >>> report.metrics.recall()
         Metric                      Recall (↗︎)
-        Class label                           0        1
+        Label / Average                          0         1
         LogisticRegression Split #0    0.87...   0.98...
                            Split #1    0.94...   0.94...
         """
-        return self._compute_metric_scores(
-            report_metric_name="recall",
+        return self.report_metrics(
+            scoring=["recall"],
             data_source=data_source,
             aggregate=aggregate,
-            average=average,
             pos_label=pos_label,
+            scoring_kwargs={"average": average},
         )
 
     @available_if(
@@ -414,8 +415,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         LogisticRegression Split #0          0.04...
                            Split #1          0.04...
         """
-        return self._compute_metric_scores(
-            report_metric_name="brier_score",
+        return self.report_metrics(
+            scoring=["brier_score"],
             data_source=data_source,
             aggregate=aggregate,
         )
@@ -443,8 +444,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
 
-        average : {"auto", "macro", "micro", "weighted", "samples"}, \
-                default=None
+        average : {"macro", "micro", "weighted", "samples"}, default=None
             Average to compute the ROC AUC score in a multiclass setting. By default,
             no average is computed. Otherwise, this determines the type of averaging
             performed on the data.
@@ -498,12 +498,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         LogisticRegression Split #0      0.99...
                            Split #1      0.98...
         """
-        return self._compute_metric_scores(
-            report_metric_name="roc_auc",
+        return self.report_metrics(
+            scoring=["roc_auc"],
             data_source=data_source,
             aggregate=aggregate,
-            average=average,
-            multi_class=multi_class,
+            scoring_kwargs={"average": average, "multi_class": multi_class},
         )
 
     @available_if(
@@ -543,8 +542,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         LogisticRegression Split #0       0.1...
                            Split #1       0.1...
         """
-        return self._compute_metric_scores(
-            report_metric_name="log_loss",
+        return self.report_metrics(
+            scoring=["log_loss"],
             data_source=data_source,
             aggregate=aggregate,
         )
@@ -598,11 +597,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Ridge Split #0  0.36...
               Split #1  0.39...
         """
-        return self._compute_metric_scores(
-            report_metric_name="r2",
+        return self.report_metrics(
+            scoring=["r2"],
             data_source=data_source,
             aggregate=aggregate,
-            multioutput=multioutput,
+            scoring_kwargs={"multioutput": multioutput},
         )
 
     @available_if(_check_supported_ml_task(supported_ml_tasks=["regression"]))
@@ -654,11 +653,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Ridge Split #0  59.9...
               Split #1  61.4...
         """
-        return self._compute_metric_scores(
-            report_metric_name="rmse",
+        return self.report_metrics(
+            scoring=["rmse"],
             data_source=data_source,
             aggregate=aggregate,
-            multioutput=multioutput,
+            scoring_kwargs={"multioutput": multioutput},
         )
 
     def custom_metric(
@@ -732,14 +731,19 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Ridge Split #0  50.1...
               Split #1  52.6...
         """
-        return self._compute_metric_scores(
-            report_metric_name="custom_metric",
+        # create a scorer with `greater_is_better=True` to not alter the output of
+        # `metric_function`
+        scorer = make_scorer(
+            metric_function,
+            greater_is_better=True,
+            response_method=response_method,
+            **kwargs,
+        )
+        return self.report_metrics(
+            scoring=[scorer],
             data_source=data_source,
             aggregate=aggregate,
-            metric_function=metric_function,
-            response_method=response_method,
-            metric_name=metric_name,
-            **kwargs,
+            scoring_names=[metric_name],
         )
 
     ####################################################################################
@@ -768,15 +772,16 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         """Override format method for metrics-specific naming."""
         method_name = f"{name}(...)"
         method_name = method_name.ljust(22)
-        if name in self._SCORE_OR_LOSS_ICONS and self._SCORE_OR_LOSS_ICONS[name] in (
-            "(↗︎)",
-            "(↘︎)",
-        ):
-            if self._SCORE_OR_LOSS_ICONS[name] == "(↗︎)":
-                method_name += f"[cyan]{self._SCORE_OR_LOSS_ICONS[name]}[/cyan]"
+        if name in self._SCORE_OR_LOSS_INFO and self._SCORE_OR_LOSS_INFO[name][
+            "icon"
+        ] in ("(↗︎)", "(↘︎)"):
+            if self._SCORE_OR_LOSS_INFO[name]["icon"] == "(↗︎)":
+                method_name += f"[cyan]{self._SCORE_OR_LOSS_INFO[name]['name']}[/cyan]"
                 return method_name.ljust(43)
             else:  # (↘︎)
-                method_name += f"[orange1]{self._SCORE_OR_LOSS_ICONS[name]}[/orange1]"
+                method_name += (
+                    f"[orange1]{self._SCORE_OR_LOSS_INFO[name]['name']}[/orange1]"
+                )
                 return method_name.ljust(49)
         else:
             return method_name.ljust(29)

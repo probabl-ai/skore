@@ -36,6 +36,7 @@ def _find_ml_task(y, estimator=None) -> MLTask:
     Examples
     --------
     >>> import numpy
+    >>> from skore.sklearn.find_ml_task import _find_ml_task
 
     # Discrete values, not sequential
     >>> _find_ml_task(numpy.array([1, 5, 9]))
