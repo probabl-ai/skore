@@ -242,89 +242,87 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             if self._parent._ml_task == "binary-classification":
                 if isinstance(score, dict):
                     classes = list(score.keys())
-                    columns = pd.MultiIndex.from_arrays(
+                    index = pd.MultiIndex.from_arrays(
                         [[metric_name] * len(classes), classes],
                         names=["Metric", "Label / Average"],
                     )
-                    score = np.hstack([score[c] for c in classes]).reshape(1, -1)
+                    score = np.hstack([score[c] for c in classes]).reshape(-1, 1)
                 elif "average" in metrics_kwargs:
                     if metrics_kwargs["average"] == "binary":
-                        columns = pd.MultiIndex.from_arrays(
+                        index = pd.MultiIndex.from_arrays(
                             [[metric_name], [pos_label]],
                             names=["Metric", "Label / Average"],
                         )
                     elif metrics_kwargs["average"] is not None:
-                        columns = pd.MultiIndex.from_arrays(
+                        index = pd.MultiIndex.from_arrays(
                             [[metric_name], [metrics_kwargs["average"]]],
                             names=["Metric", "Label / Average"],
                         )
                     else:
-                        columns = pd.Index([metric_name], name="Metric")
-                    score = np.array(score).reshape(1, -1)
+                        index = pd.Index([metric_name], name="Metric")
+                    score = np.array(score).reshape(-1, 1)
                 else:
-                    columns = pd.Index([metric_name], name="Metric")
-                    score = np.array(score).reshape(1, -1)
+                    index = pd.Index([metric_name], name="Metric")
+                    score = np.array(score).reshape(-1, 1)
             elif self._parent._ml_task == "multiclass-classification":
                 if isinstance(score, dict):
                     classes = list(score.keys())
-                    columns = pd.MultiIndex.from_arrays(
+                    index = pd.MultiIndex.from_arrays(
                         [[metric_name] * len(classes), classes],
                         names=["Metric", "Label / Average"],
                     )
-                    score = np.hstack([score[c] for c in classes]).reshape(1, -1)
+                    score = np.hstack([score[c] for c in classes]).reshape(-1, 1)
                 elif (
                     "average" in metrics_kwargs
                     and metrics_kwargs["average"] is not None
                 ):
-                    columns = pd.MultiIndex.from_arrays(
+                    index = pd.MultiIndex.from_arrays(
                         [[metric_name], [metrics_kwargs["average"]]],
                         names=["Metric", "Label / Average"],
                     )
-                    score = np.array(score).reshape(1, -1)
+                    score = np.array(score).reshape(-1, 1)
                 else:
-                    columns = pd.Index([metric_name], name="Metric")
-                    score = np.array(score).reshape(1, -1)
+                    index = pd.Index([metric_name], name="Metric")
+                    score = np.array(score).reshape(-1, 1)
             elif self._parent._ml_task == "regression":
                 if isinstance(score, np.ndarray):
-                    columns = pd.MultiIndex.from_arrays(
+                    index = pd.MultiIndex.from_arrays(
                         [[metric_name] * len(score), list(range(len(score)))],
                         names=["Metric", "Output"],
                     )
-                    score = score.reshape(1, -1)
+                    score = score.reshape(-1, 1)
                 else:
-                    columns = pd.Index([metric_name], name="Metric")
-                    score = np.array(score).reshape(1, -1)
+                    index = pd.Index([metric_name], name="Metric")
+                    score = np.array(score).reshape(-1, 1)
             else:  # unknown task - try our best
-                columns = [metric_name] if len(score) == 1 else None
+                index = [metric_name] if len(score) == 1 else None
 
             scores.append(
-                pd.DataFrame(
-                    score, columns=columns, index=[self._parent.estimator_name_]
-                )
+                pd.DataFrame(score, index=index, columns=[self._parent.estimator_name_])
             )
 
         has_multilevel = any(
-            isinstance(score, pd.DataFrame) and isinstance(score.columns, pd.MultiIndex)
+            isinstance(score, pd.DataFrame) and isinstance(score.index, pd.MultiIndex)
             for score in scores
         )
 
         if has_multilevel:
             # Convert single-level dataframes to multi-level
             for i, score in enumerate(scores):
-                if hasattr(score, "columns") and not isinstance(
-                    score.columns, pd.MultiIndex
+                if hasattr(score, "index") and not isinstance(
+                    score.index, pd.MultiIndex
                 ):
                     if self._parent._ml_task == "regression":
                         name_index = ["Metric", "Output"]
                     else:
                         name_index = ["Metric", "Label / Average"]
 
-                    scores[i].columns = pd.MultiIndex.from_tuples(
-                        [(col, "") for col in score.columns],
+                    scores[i].index = pd.MultiIndex.from_tuples(
+                        [(idx, "") for idx in score.index],
                         names=name_index,
                     )
 
-        return pd.concat(scores, axis=1)
+        return pd.concat(scores, axis=0)
 
     def _compute_metric_scores(
         self,

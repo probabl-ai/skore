@@ -161,15 +161,17 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
             results = pd.concat(
                 results,
-                axis=0,
+                axis=1,
                 keys=[f"Split #{i}" for i in range(len(results))],
             )
-            results = results.swaplevel(0, 1)
+            results = results.swaplevel(0, 1, axis=1)
             if aggregate:
                 if isinstance(aggregate, str):
                     aggregate = [aggregate]
-                results = results.aggregate(func=aggregate, axis=0)
-                results = pd.concat([results], keys=[self._parent.estimator_name_])
+                results = results.aggregate(func=aggregate, axis=1)
+                results = pd.concat(
+                    [results], keys=[self._parent.estimator_name_], axis=1
+                )
 
             self._parent._cache[cache_key] = results
         return results
