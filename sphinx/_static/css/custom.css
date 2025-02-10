@@ -108,12 +108,15 @@ div.docutils.container.index-box {
     padding-bottom: 2.5rem !important;
 }
 
-/* Change the color of links to the orange of skore */
-a {
-    color: #F89A36; /* Change this to your desired color */
+
+/* Change the colors to the orange and blue of skore */
+
+html[data-theme="dark"]{
+    --pst-color-primary: #F89A36;
+    --pst-color-secondary: #3499CD;
 }
 
-/* Change the color of visited links to the blue of skore */
-a:visited {
-    color: #3499CD; /* Change this to your desired color */
+html[data-theme="light"]{
+    --pst-color-primary: #F89A36;
+    --pst-color-secondary: #3499CD;
 }
