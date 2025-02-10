@@ -96,9 +96,6 @@ report.help()
 report.metrics.help()
 
 # %%
-report.metrics.plot.help()
-
-# %%
 #
 # Metrics computation with aggressive caching
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -332,12 +329,12 @@ report.metrics.report_metrics(scoring=[f1_scorer, operational_decision_cost_scor
 # The :class:`skore.EstimatorReport` class also provides a plotting interface that
 # allows to plot *defacto* the most common plots. As for the metrics, we only
 # provide the meaningful set of plots for the provided estimator.
-report.metrics.plot.help()
+report.metrics.help()
 
 # %%
 #
 # Let's start by plotting the ROC curve for our binary classification task.
-display = report.metrics.plot.roc(pos_label=pos_label)
+display = report.metrics.roc(pos_label=pos_label)
 plt.tight_layout()
 
 # %%
@@ -365,7 +362,7 @@ plt.tight_layout()
 # performance gain we can get.
 start = time.time()
 # we already trigger the computation of the predictions in a previous call
-report.metrics.plot.roc(pos_label=pos_label)
+report.metrics.roc(pos_label=pos_label)
 plt.tight_layout()
 end = time.time()
 
@@ -379,7 +376,7 @@ report.clear_cache()
 
 # %%
 start = time.time()
-report.metrics.plot.roc(pos_label=pos_label)
+report.metrics.roc(pos_label=pos_label)
 plt.tight_layout()
 end = time.time()
 

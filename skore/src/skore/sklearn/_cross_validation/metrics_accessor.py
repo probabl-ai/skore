@@ -13,10 +13,6 @@ from skore.sklearn._plot import (
 from skore.utils._accessor import _check_supported_ml_task
 from skore.utils._progress_bar import progress_decorator
 
-###############################################################################
-# Metrics accessor
-###############################################################################
-
 
 class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     """Accessor for metrics-related operations.
@@ -772,7 +768,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         """Override format method for metrics-specific naming."""
         method_name = f"{name}(...)"
         method_name = method_name.ljust(22)
-        if self._SCORE_OR_LOSS_ICONS[name] in ("(↗︎)", "(↘︎)"):
+        if name in self._SCORE_OR_LOSS_ICONS and self._SCORE_OR_LOSS_ICONS[name] in (
+            "(↗︎)",
+            "(↘︎)",
+        ):
             if self._SCORE_OR_LOSS_ICONS[name] == "(↗︎)":
                 method_name += f"[cyan]{self._SCORE_OR_LOSS_ICONS[name]}[/cyan]"
                 return method_name.ljust(43)
@@ -786,22 +785,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         """Override to exclude the plot accessor from methods list."""
         methods = super()._get_methods_for_help()
         return [(name, method) for name, method in methods if name != "plot"]
-
-    def _create_help_tree(self):
-        """Override to include plot methods in a separate branch."""
-        tree = super()._create_help_tree()
-
-        # Add plot methods in a separate branch
-        plot_branch = tree.add("[bold cyan].plot :art:[/bold cyan]")
-        plot_methods = self.plot._get_methods_for_help()
-        plot_methods = self.plot._sort_methods_for_help(plot_methods)
-
-        for name, method in plot_methods:
-            displayed_name = self.plot._format_method_name(name)
-            description = self.plot._get_method_description(method)
-            plot_branch.add(f".{displayed_name}".ljust(27) + f"- {description}")
-
-        return tree
 
     def _get_help_panel_title(self):
         return "[bold cyan]Available metrics methods[/bold cyan]"
@@ -820,21 +803,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             class_name="skore.CrossValidationReport.metrics",
             help_method_name="report.metrics.help()",
         )
-
-
-########################################################################################
-# Sub-accessors
-# Plotting
-########################################################################################
-
-
-class _PlotMetricsAccessor(_BaseAccessor):
-    """Plotting methods for the metrics accessor."""
-
-    def __init__(self, parent):
-        super().__init__(parent._parent)
-        self._metrics_parent = parent
-        self._parent_progress = None
 
     @progress_decorator(description="Computing predictions for display")
     def _get_display(
@@ -955,7 +923,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
-        >>> display = report.metrics.plot.roc()
+        >>> display = report.metrics.roc()
         >>> display.plot(roc_curve_kwargs={"color": "tab:red"})
         """
         response_method = ("predict_proba", "decision_function")
@@ -1004,7 +972,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
-        >>> display = report.metrics.plot.precision_recall()
+        >>> display = report.metrics.precision_recall()
         >>> display.plot()
         """
         response_method = ("predict_proba", "decision_function")
@@ -1077,7 +1045,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
         >>> X, y = load_diabetes(return_X_y=True)
         >>> regressor = Ridge()
         >>> report = CrossValidationReport(regressor, X=X, y=y, cv_splitter=2)
-        >>> display = report.metrics.plot.prediction_error(
+        >>> display = report.metrics.prediction_error(
         ...     kind="actual_vs_predicted"
         ... )
         >>> display.plot(line_kwargs={"color": "tab:red"})
@@ -1090,17 +1058,4 @@ class _PlotMetricsAccessor(_BaseAccessor):
             display_class=PredictionErrorDisplay,
             display_kwargs=display_kwargs,
             display_plot_kwargs=display_plot_kwargs,
-        )
-
-    def _get_help_panel_title(self):
-        return "[bold cyan]Available plot methods[/bold cyan]"
-
-    def _get_help_tree_title(self):
-        return "[bold cyan]report.metrics.plot[/bold cyan]"
-
-    def __repr__(self):
-        """Return a string representation using rich."""
-        return self._rich_repr(
-            class_name="skore.CrossValidationReport.metrics.plot",
-            help_method_name="report.metrics.plot.help()",
         )

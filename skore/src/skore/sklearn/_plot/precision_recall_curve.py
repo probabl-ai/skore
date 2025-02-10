@@ -18,7 +18,7 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
     """Precision Recall visualization.
 
     An instance of this class is should created by
-    `EstimatorReport.metrics.plot.precision_recall()`. You should not create an
+    `EstimatorReport.metrics.precision_recall()`. You should not create an
     instance of this class directly.
 
 
@@ -97,7 +97,7 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
     ...     X_test=X_test,
     ...     y_test=y_test,
     ... )
-    >>> display = report.metrics.plot.precision_recall()
+    >>> display = report.metrics.precision_recall()
     >>> display.plot(pr_curve_kwargs={"color": "tab:red"})
     """
 
@@ -180,7 +180,7 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
         ...     X_test=X_test,
         ...     y_test=y_test,
         ... )
-        >>> display = report.metrics.plot.precision_recall()
+        >>> display = report.metrics.precision_recall()
         >>> display.plot(pr_curve_kwargs={"color": "tab:red"})
         """
         self.ax_, self.figure_, estimator_name = self._validate_plot_params(
