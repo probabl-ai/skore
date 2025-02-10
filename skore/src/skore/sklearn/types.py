@@ -4,11 +4,11 @@ from typing import Literal
 
 MLTask = Literal[
     "binary-classification",
-    "multioutput-binary-classification",
+    "clustering",
     "multiclass-classification",
+    "multioutput-binary-classification",
     "multioutput-multiclass-classification",
     "multioutput-regression",
     "regression",
-    "clustering",
     "unknown",
 ]
