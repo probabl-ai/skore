@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 from copy import deepcopy
-from typing import TYPE_CHECKING, Literal, Optional
+from typing import Optional
 
 import joblib
 import numpy as np
@@ -10,9 +10,6 @@ import numpy as np
 from skore.externals._pandas_accessors import DirNamesMixin
 from skore.sklearn._base import _BaseReport
 from skore.sklearn._estimator.report import EstimatorReport
-
-if TYPE_CHECKING:
-    from skore.sklearn import EstimatorReport
 
 
 def warn(title, message):
@@ -100,6 +97,16 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         report_names: Optional[list[str]] = None,
         n_jobs: Optional[int] = None,
     ):
+        """
+        ComparisonReport instance initializer.
+
+        Notes
+        -----
+        We check that the estimator reports can be compared:
+        - all reports are estimator reports,
+        - all estimators are in the same ML use case,
+        - all X_test, y_test have the same hash.
+        """
         if len(reports) < 2:
             raise ValueError("At least 2 instances of EstimatorReport are needed")
 
@@ -108,46 +115,27 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
         if report_names is None:
             self.report_names_ = [report.estimator_name_ for report in reports]
-        else:
-            if len(report_names) != len(reports):
-                raise ValueError(
-                    "There should be as many report names as there are reports"
-                )
+        elif len(report_names) == len(reports):
             self.report_names_ = report_names
+        else:
+            raise ValueError(
+                "There should be as many report names as there are reports"
+            )
 
         self.estimator_reports_ = deepcopy(reports)
 
-        # We check that the estimator reports can be compared:
-        # - all estimators are in the same ML use case
-        # - all X_train, y_train have the same hash (for estimator)
-        # - all X_test, y_test have the same hash (for estimator)
-        # - all reports are estimator reports (for now)
-
-        def get_data_and_hash(report, source: Literal["train", "test"], /):
-            X = getattr(report, f"X_{source}")
-            y = getattr(report, f"y_{source}")
-
-            return X, y, joblib.hash((X, y))
-
         first_report = self.estimator_reports_[0]
-        first_ml_task = first_report._ml_task
-        first_X_train, first_y_train, first_train_hash = get_data_and_hash(
-            first_report, "train"
-        )
-        first_X_test, first_y_test, first_test_hash = get_data_and_hash(
-            first_report, "test"
-        )
+        first_report_ml_task = first_report._ml_task
+        first_report_test_hash = joblib.hash((first_report.X_test, first_report.y_test))
 
-        if first_X_train is None or first_y_train is None:
-            warn(
-                "MissingTrainingDataWarning",
-                (
-                    "We cannot ensure that all estimators have been trained "
-                    "with the same dataset. This could lead to incoherent comparisons."
-                ),
-            )
+        for report in self.estimator_reports_[1:]:
+            if report._ml_task != first_report_ml_task:
+                raise ValueError("Not all estimators are in the same ML usecase")
 
-        if first_X_test is None or first_y_test is None:
+            if joblib.hash((report.X_test, report.y_test)) != first_report_test_hash:
+                raise ValueError("Not all estimators have the same testing data")
+
+        if (first_report.X_test is None) or (first_report.y_test is None):
             warn(
                 "MissingTestDataWarning",
                 (
@@ -155,19 +143,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                     "with the same dataset. This could lead to incoherent comparisons."
                 ),
             )
-
-        for report in self.estimator_reports_[1:]:
-            if report._ml_task != first_ml_task:
-                raise ValueError("Not all estimators are in the same ML usecase")
-
-            _, _, train_hash = get_data_and_hash(report, "train")
-            _, _, test_hash = get_data_and_hash(report, "test")
-
-            if train_hash != first_train_hash:
-                raise ValueError("Not all estimators have the same training data")
-
-            if test_hash != first_test_hash:
-                raise ValueError("Not all estimators have the same testing data")
 
         # NEEDED FOR METRICS ACCESSOR
         self.n_jobs = n_jobs

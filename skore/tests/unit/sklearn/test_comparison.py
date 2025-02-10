@@ -74,25 +74,6 @@ def test_comparison_report_init_deepcopy():
     assert comp.estimator_reports_[0]._hash != 0
 
 
-def test_comparison_report_init_MissingTrainingDataWarning(capsys):
-    """Raise a warning if there is no training data (`None`) for any estimator
-    report."""
-
-    estimator, _, X_test, _, y_test = usecase("binary-logistic-regression")
-    estimator_report = EstimatorReport(
-        estimator,
-        fit=False,
-        X_test=X_test,
-        y_test=y_test,
-    )
-
-    ComparisonReport([estimator_report, estimator_report])
-
-    captured = capsys.readouterr()
-
-    assert "MissingTrainingDataWarning" in captured.out
-
-
 def test_comparison_report_init_MissingTestDataWarning(capsys):
     """Raise a warning if there is no test data (`None`) for any estimator
     report."""
@@ -126,30 +107,6 @@ def test_comparison_report_init_different_ml_usecases():
         ValueError, match="Not all estimators are in the same ML usecase"
     ):
         ComparisonReport([linear_regression_report, logistic_regression_report])
-
-
-def test_comparison_report_init_different_training_data():
-    estimator, X_train, _, y_train, _ = usecase("binary-logistic-regression")
-
-    with pytest.raises(
-        ValueError, match="Not all estimators have the same training data"
-    ):
-        ComparisonReport(
-            [
-                EstimatorReport(
-                    estimator,
-                    fit=False,
-                    X_train=X_train,
-                    y_train=y_train,
-                ),
-                EstimatorReport(
-                    estimator,
-                    fit=False,
-                    X_train=X_train[:-1],
-                    y_train=y_train[:-1],
-                ),
-            ]
-        )
 
 
 def test_comparison_report_init_different_test_data():
