@@ -107,4 +107,9 @@ def _find_ml_task(y, estimator=None) -> MLTask:
             if _is_sequential(y) and 0 in y:
                 return "multiclass-classification"
             return "regression"
+        if target_type == "multiclass-multioutput":
+            # If y contains integers, type_of_target considers
+            # the task to be multiclass classification.
+            # We refine this analysis a bit here.
+            return "multioutput-multiclass-classification"
         return "unknown"

@@ -5,6 +5,7 @@ from typing import Literal
 MLTask = Literal[
     "binary-classification",
     "multiclass-classification",
+    "multioutput-multiclass-classification",
     "multioutput-regression",
     "regression",
     "clustering",
