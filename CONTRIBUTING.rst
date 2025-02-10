@@ -142,7 +142,7 @@ To run only front-end tests, use:
 Linting
 -------
 
-We use
+We use the linter ruff to make sure that the code is formatted correctly.
 
 .. code-block:: bash
 
