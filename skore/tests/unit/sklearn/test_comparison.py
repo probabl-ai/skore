@@ -11,28 +11,28 @@ from sklearn.model_selection import train_test_split
 from skore import ComparisonReport, EstimatorReport
 
 
-def usecase(
-    type: Literal["binary-logisitic-regression", "linear-regression"],
-    random_state: Optional[int] = 42,
-):
-    if type == "binary-logistic-regression":
-        X, y = make_classification(n_classes=2, random_state=random_state)
-        estimator = LogisticRegression()
-    elif type == "linear-regression":
-        X, y = make_regression(random_state=random_state)
-        estimator = LinearRegression()
-    else:
-        raise ValueError
+@pytest.fixture
+def binary_classification_model():
+    """Create a binary classification dataset and return fitted estimator and data."""
+    X, y = make_classification(random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=random_state)
-
-    return estimator, X_train, X_test, y_train, y_test
+    return LogisticRegression(random_state=42), X_train, X_test, y_train, y_test
 
 
-def test_comparison_report_init_wrong_parameters():
+@pytest.fixture
+def regression_model():
+    """Create a binary classification dataset and return fitted estimator and data."""
+    X, y = make_classification(random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+
+    return LinearRegression(), X_train, X_test, y_train, y_test
+
+
+def test_comparison_report_init_wrong_parameters(binary_classification_model):
     """If the input is not valid, raise."""
 
-    estimator, _, X_test, _, y_test = usecase("binary-logistic-regression")
+    estimator, _, X_test, _, y_test = binary_classification_model
     estimator_report = EstimatorReport(
         estimator,
         fit=False,
@@ -61,10 +61,10 @@ def test_comparison_report_init_wrong_parameters():
         ComparisonReport([None, estimator_report])
 
 
-def test_comparison_report_init_deepcopy():
+def test_comparison_report_init_deepcopy(binary_classification_model):
     """If an estimator report is modified outside of the comparator, it is not modified
     inside the comparator."""
-    estimator, _, X_test, _, y_test = usecase("binary-logistic-regression")
+    estimator, _, X_test, _, y_test = binary_classification_model
     estimator_report = EstimatorReport(
         estimator,
         fit=False,
@@ -85,18 +85,20 @@ def test_comparison_report_init_deepcopy():
     assert comp.estimator_reports_[0]._hash != 0
 
 
-def test_comparison_report_init_without_testing_data():
+def test_comparison_report_init_without_testing_data(binary_classification_model):
     """Raise a warning if there is no test data (`None`) for any estimator
     report."""
-    estimator, _, _, _, _ = usecase("binary-logistic-regression")
+    estimator, _, _, _, _ = binary_classification_model
     estimator_report = EstimatorReport(estimator, fit=False)
 
     with pytest.raises(ValueError, match="Cannot compare reports without testing data"):
         ComparisonReport([estimator_report, estimator_report])
 
 
-def test_comparison_report_init_different_ml_usecases():
-    linear_regression_estimator, _, X_test, _, y_test = usecase("linear-regression")
+def test_comparison_report_init_different_ml_usecases(
+    binary_classification_model, regression_model
+):
+    linear_regression_estimator, _, X_test, _, y_test = regression_model
     linear_regression_report = EstimatorReport(
         linear_regression_estimator,
         fit=False,
@@ -104,9 +106,7 @@ def test_comparison_report_init_different_ml_usecases():
         y_test=y_test,
     )
 
-    logistic_regression_estimator, _, X_test, _, y_test = usecase(
-        "binary-logistic-regression"
-    )
+    logistic_regression_estimator, _, X_test, _, y_test = binary_classification_model
     logistic_regression_report = EstimatorReport(
         logistic_regression_estimator,
         fit=False,
@@ -120,8 +120,8 @@ def test_comparison_report_init_different_ml_usecases():
         ComparisonReport([linear_regression_report, logistic_regression_report])
 
 
-def test_comparison_report_init_different_test_data():
-    estimator, _, X_test, _, y_test = usecase("binary-logistic-regression")
+def test_comparison_report_init_different_test_data(binary_classification_model):
+    estimator, _, X_test, _, y_test = binary_classification_model
 
     with pytest.raises(
         ValueError, match="Not all estimators have the same testing data"
@@ -144,8 +144,8 @@ def test_comparison_report_init_different_test_data():
         )
 
 
-def test_comparison_report_init_with_report_names():
-    estimator, X_train, X_test, y_train, y_test = usecase("binary-logistic-regression")
+def test_comparison_report_init_with_report_names(binary_classification_model):
+    estimator, X_train, X_test, y_train, y_test = binary_classification_model
     estimator_report = EstimatorReport(
         estimator,
         X_train=X_train,
@@ -164,8 +164,8 @@ def test_comparison_report_init_with_report_names():
     )
 
 
-def test_comparison_report_init_without_report_names():
-    estimator, X_train, X_test, y_train, y_test = usecase("binary-logistic-regression")
+def test_comparison_report_init_without_report_names(binary_classification_model):
+    estimator, X_train, X_test, y_train, y_test = binary_classification_model
     estimator_report = EstimatorReport(
         estimator,
         X_train=X_train,
@@ -185,8 +185,8 @@ def test_comparison_report_init_without_report_names():
     )
 
 
-def test_comparison_report_init_with_invalid_report_names():
-    estimator, _, X_test, _, y_test = usecase("binary-logistic-regression")
+def test_comparison_report_init_with_invalid_report_names(binary_classification_model):
+    estimator, _, X_test, _, y_test = binary_classification_model
     estimator_report = EstimatorReport(
         estimator,
         fit=False,
@@ -200,8 +200,8 @@ def test_comparison_report_init_with_invalid_report_names():
         ComparisonReport([estimator_report, estimator_report], report_names=["r1"])
 
 
-def test_comparison_report_help(capsys):
-    estimator, _, X_test, _, y_test = usecase("binary-logistic-regression")
+def test_comparison_report_help(capsys, binary_classification_model):
+    estimator, _, X_test, _, y_test = binary_classification_model
     estimator_report = EstimatorReport(
         estimator,
         fit=False,
@@ -214,8 +214,8 @@ def test_comparison_report_help(capsys):
     assert "Tools to compare estimators" in capsys.readouterr().out
 
 
-def test_comparison_report_repr():
-    estimator, _, X_test, _, y_test = usecase("binary-logistic-regression")
+def test_comparison_report_repr(binary_classification_model):
+    estimator, _, X_test, _, y_test = binary_classification_model
     estimator_report = EstimatorReport(
         estimator,
         fit=False,
@@ -229,9 +229,9 @@ def test_comparison_report_repr():
     assert "help()" in repr_str
 
 
-def test_comparison_report_pickle(tmp_path):
+def test_comparison_report_pickle(tmp_path, binary_classification_model):
     """Check that we can pickle a comparison report."""
-    estimator, _, X_test, _, y_test = usecase("binary-logistic-regression")
+    estimator, _, X_test, _, y_test = binary_classification_model
     estimator_report = EstimatorReport(
         estimator,
         fit=False,
@@ -255,9 +255,7 @@ def test_comparison_report_pickle(tmp_path):
     ],
 )
 def test_estimator_report_metrics_binary_classification(
-    monkeypatch,
-    metric_name,
-    metric_value,
+    monkeypatch, metric_name, metric_value, binary_classification_model
 ):
     def dummy(*args, **kwargs):
         return pd.DataFrame([[metric_value]])
@@ -267,7 +265,7 @@ def test_estimator_report_metrics_binary_classification(
         dummy,
     )
 
-    estimator, X_train, X_test, y_train, y_test = usecase("binary-logistic-regression")
+    estimator, X_train, X_test, y_train, y_test = binary_classification_model
     estimator_report = EstimatorReport(
         estimator,
         X_train=X_train,
@@ -295,9 +293,7 @@ def test_estimator_report_metrics_binary_classification(
     ],
 )
 def test_estimator_report_metrics_linear_regression(
-    monkeypatch,
-    metric_name,
-    metric_value,
+    monkeypatch, metric_name, metric_value, regression_model
 ):
     def dummy(*args, **kwargs):
         return pd.DataFrame([[metric_value]])
@@ -307,7 +303,7 @@ def test_estimator_report_metrics_linear_regression(
         dummy,
     )
 
-    estimator, X_train, X_test, y_train, y_test = usecase("linear-regression")
+    estimator, X_train, X_test, y_train, y_test = regression_model
     estimator_report = EstimatorReport(
         estimator,
         X_train=X_train,
