@@ -28,7 +28,7 @@ from skore.sklearn.find_ml_task import _find_ml_task
         (
             *make_multilabel_classification(random_state=42),
             MultiOutputClassifier(LogisticRegression()),
-            "unknown",
+            "multioutput-binary-classification",
         ),
     ],
 )

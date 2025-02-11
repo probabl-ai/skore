@@ -102,45 +102,34 @@ def _find_ml_task(y, estimator=None) -> MLTask:
                         return "binary-classification"
                     if estimator.classes_.size > 2:
                         return "multiclass-classification"
-            else:  # fallback on the target
+            else:
+                # fallback on the target
                 if y is None:
                     return "unknown"
 
-                target_type = type_of_target(y)
-                if target_type == "binary":
-                    return "binary-classification"
-                if target_type == "multiclass":
-                    # If y is a vector of integers, type_of_target considers
-                    # the task to be multiclass-classification.
-                    # We refine this analysis a bit here.
-                    if _is_sequential(y) and 0 in y:
-                        return "multiclass-classification"
-                    return "regression"
-            return "unknown"
-        return "unknown"
-    else:
-        if y is None:
-            # NOTE: The task might not be clustering
-            return "clustering"
+    # fallback on the target
+    if y is None:
+        # NOTE: The task might not be clustering
+        return "clustering"
 
-        target_type = type_of_target(y)
+    target_type = type_of_target(y)
 
-        if target_type == "continuous":
-            return "regression"
-        if target_type == "continuous-multioutput":
-            return "multioutput-regression"
-        if target_type == "binary":
-            return "binary-classification"
-        if target_type == "multiclass":
-            if _is_classification(y):
-                return "multiclass-classification"
-            return "regression"
-        if target_type == "multiclass-multioutput":
-            if _is_classification(y):
-                return "multioutput-multiclass-classification"
-            return "multioutput-regression"
-        if target_type == "multilabel-indicator":
-            if _is_classification(y):
-                return "multioutput-binary-classification"
-            return "multioutput-regression"
-        return "unknown"
+    if target_type == "continuous":
+        return "regression"
+    if target_type == "continuous-multioutput":
+        return "multioutput-regression"
+    if target_type == "binary":
+        return "binary-classification"
+    if target_type == "multiclass":
+        if _is_classification(y):
+            return "multiclass-classification"
+        return "regression"
+    if target_type == "multiclass-multioutput":
+        if _is_classification(y):
+            return "multioutput-multiclass-classification"
+        return "multioutput-regression"
+    if target_type == "multilabel-indicator":
+        if _is_classification(y):
+            return "multioutput-binary-classification"
+        return "multioutput-regression"
+    return "unknown"
