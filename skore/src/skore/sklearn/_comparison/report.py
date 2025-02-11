@@ -118,16 +118,18 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         if not all(isinstance(report, EstimatorReport) for report in reports):
             raise TypeError("Expected instances of EstimatorReport")
 
-        test_dataset_hashes = set()
-
         for report in reports:
             if (report.X_test is None) or (report.y_test is None):
                 raise ValueError("Cannot compare reports without testing data")
 
-            test_dataset_hashes.add(joblib.hash((report.X_test, report.y_test)))
-
-            if len(test_dataset_hashes) > 1:
-                raise ValueError("Not all estimators have the same testing data")
+        test_dataset_hashes = {
+            report: joblib.hash((report.X_test, report.y_test)) for report in reports
+        }
+        if len(set(test_dataset_hashes.values())) > 1:
+            raise ValueError(
+                "Expected all estimators to have the same testing data; "
+                f"got {test_dataset_hashes}"
+            )
 
         ml_tasks = {report: report._ml_task for report in reports}
         if len(set(ml_tasks.values())) > 1:

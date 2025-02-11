@@ -115,7 +115,7 @@ def test_comparison_report_init_different_test_data(binary_classification_model)
     estimator, _, X_test, _, y_test = binary_classification_model
 
     with pytest.raises(
-        ValueError, match="Not all estimators have the same testing data"
+        ValueError, match="Expected all estimators to have the same testing data"
     ):
         ComparisonReport(
             [
