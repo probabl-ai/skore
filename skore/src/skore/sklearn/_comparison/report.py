@@ -144,7 +144,8 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             self.report_names_ = report_names
         else:
             raise ValueError(
-                "There should be as many report names as there are reports"
+                "Expected as many report names as there are reports; "
+                f"got {len(report_names)} report names but {len(reports)} reports"
             )
 
         self.estimator_reports_ = deepcopy(reports)

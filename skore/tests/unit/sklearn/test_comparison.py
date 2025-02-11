@@ -186,7 +186,7 @@ def test_comparison_report_init_with_invalid_report_names(binary_classification_
     )
 
     with pytest.raises(
-        ValueError, match="There should be as many report names as there are reports"
+        ValueError, match="Expected as many report names as there are reports"
     ):
         ComparisonReport([estimator_report, estimator_report], report_names=["r1"])
 
