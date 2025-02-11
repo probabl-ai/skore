@@ -56,8 +56,8 @@ You'll need ``python >=3.9, <3.13`` to build the backend and ``Node>=20`` to bui
 .. code-block:: bash
 
     make install-skore
-    skore create
     make build-skore-ui
+    skore create
     make serve-skore-ui
 
 You are now all setup to run the library locally.
@@ -107,15 +107,14 @@ Then, to use the skore-ui
 
 Do not forget to do a hard refresh when changing the front-end (meta+shift+R) if the expected changes do not appear.
 
-PR format
----------
+Pull request format
+-------------------
 
 We use the `conventional commits <https://www.conventionalcommits.org/en/v1.0.0/#summary>`_ format, and we automatically check that the PR title fits this format.
-In particular, commits are "sentence case", meaning "fix: Fix issue" passes, while "fix: fix issue" doesn't.
 
-Generally the description of a commit should start with a verb in the imperative voice, so that it would properly complete the sentence: "When applied, this commit will [...]".
-
-Examples of correct PR titles: ``docs: Update the docstrings`` or ``feat: Remove CrossValidationAggregationItem.``
+- In particular, commits are "sentence case", meaning that the ``fix: Fix issue`` title passes, while ``fix: fix issue`` does not.
+- Generally, the description of a commit should start with a verb in the imperative voice, so that it would properly complete the sentence. Example: ``When applied, this commit will [...]``.
+- Examples of correct PR titles: ``docs: Update the docstrings`` or ``feat: Remove CrossValidationAggregationItem.``
 
 Tests
 -----
@@ -189,15 +188,16 @@ When writing documentation, whether it be online, docstrings or help messages in
 Contributing to the examples
 ----------------------------
 
-The examples are stored in the folder called `examples`. They are classified in subcategories.
-They should be written in a python file, with cells marked by `# %%`. They will be automatically converted to rst files in the subfolder `sphinx/auto_examples`. This subfolder is listed in the gitignore, and cannot be pushed.
+The examples are stored in the `examples` folder:
 
-The python file should start by a docstring indicating the example name and the title.
+- They are classified in subcategories.
+- They should be written in a python script (`.py`), with cells marked by `# %%`.
+- The file should start with a docstring giving the example title.
+- No example should require to have large files stored in this repository. For example, no dataset should be stored, it should be downloaded in the script.
+- When built (using `make html` for example), these examples will automatically be converted into rst files in the `sphinx/auto_examples` subfolder. This subfolder is listed in the gitignore and cannot be pushed.
 
-No example should require to have large files in this repository. For example, no dataset should be stored, it should be downloaded in the script.
-
-Contributing to the ReadMe
+Contributing to the README
 --------------------------
 
-The README.md file can be modified and is part of the documentation.
-This file is used to be presented on [PyPI](https://pypi.org/project/skore/#description).
+The `README.md` file can be modified and is part of the documentation.
+This file is used to be presented on `PyPI <https://pypi.org/project/skore/#description>`_.
