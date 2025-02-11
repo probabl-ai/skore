@@ -115,12 +115,12 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         if len(reports) < 2:
             raise ValueError("At least 2 instances of EstimatorReport are needed")
 
+        if not all(isinstance(report, EstimatorReport) for report in reports):
+            raise TypeError("Expected instances of EstimatorReport")
+
         test_dataset_hashes = set()
 
         for report in reports:
-            if not isinstance(report, EstimatorReport):
-                raise TypeError("Only instances of EstimatorReport are allowed")
-
             if (report.X_test is None) or (report.y_test is None):
                 raise ValueError("Cannot compare reports without testing data")
 

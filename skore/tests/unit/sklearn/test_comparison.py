@@ -48,9 +48,7 @@ def test_comparison_report_init_wrong_parameters(binary_classification_model):
     ):
         ComparisonReport([estimator_report])
 
-    with pytest.raises(
-        TypeError, match="Only instances of EstimatorReport are allowed"
-    ):
+    with pytest.raises(TypeError, match="Expected instances of EstimatorReport"):
         ComparisonReport([None, estimator_report])
 
 
