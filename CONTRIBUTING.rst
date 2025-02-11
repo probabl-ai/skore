@@ -190,7 +190,7 @@ Contributing to the examples
 ----------------------------
 
 The examples are stored in the folder called `examples`. They are classified in subcategories.
-They should be written in a python file, with cells marked by `# %%`. They will be automatically transcripted to rst files in the subfolder `sphinx/auto_examples`. This subfolder is listed in the gitignore, and cannot be pushed.
+They should be written in a python file, with cells marked by `# %%`. They will be automatically converted to rst files in the subfolder `sphinx/auto_examples`. This subfolder is listed in the gitignore, and cannot be pushed.
 
 The python file should start by a docstring indicating the example name and the title.
 
