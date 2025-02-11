@@ -13,21 +13,6 @@ from skore.sklearn._base import _BaseReport
 from skore.sklearn._estimator.report import EstimatorReport
 
 
-def warn(title, message):
-    from rich.panel import Panel
-
-    from skore import console
-
-    console.print(
-        Panel(
-            title=title,
-            renderable=message,
-            style="orange1",
-            border_style="cyan",
-        )
-    )
-
-
 class ComparisonReport(_BaseReport, DirNamesMixin):
     """Report for comparison of :class:`skore.EstimatorReport`.
 
