@@ -137,7 +137,7 @@ print(f"Time taken to compute the metrics: {end - start:.2f} seconds")
 # pandas.
 import matplotlib.pyplot as plt
 
-ax = metric_report.T.plot.barh()
+ax = metric_report.plot.barh()
 ax.set_title("Metrics report")
 plt.tight_layout()
 
