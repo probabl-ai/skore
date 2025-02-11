@@ -113,7 +113,7 @@ Pull request format
 We use the `conventional commits <https://www.conventionalcommits.org/en/v1.0.0/#summary>`_ format, and we automatically check that the PR title fits this format.
 
 - In particular, commits are "sentence case", meaning that the ``fix: Fix issue`` title passes, while ``fix: fix issue`` does not.
-- Generally, the description of a commit should start with a verb in the imperative voice, so that it would properly complete the sentence. Example: ``When applied, this commit will [...]``.
+- Generally, the description of a commit should start with a verb in the imperative voice, so that it would properly complete the sentence: ``When applied, this commit will [...]``.
 - Examples of correct PR titles: ``docs: Update the docstrings`` or ``feat: Remove CrossValidationAggregationItem.``
 
 Tests
