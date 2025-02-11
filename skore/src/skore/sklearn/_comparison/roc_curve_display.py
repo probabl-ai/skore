@@ -56,18 +56,13 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         self,
         ax=None,
         *,
-        estimator_names=None,
         roc_curve_kwargs=None,
         plot_chance_level=True,
         chance_level_kwargs=None,
         despine=True,
     ):
-        # TO STANDARDIZE
         if ax is None:
             _, ax = plt.subplots()
-
-        estimator_names = estimator_names or self.estimator_names
-        #
 
         self.lines_ = []
         if len(self.fpr) == 1:  # binary-classification
@@ -95,7 +90,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
                 fpr = self.fpr[self.pos_label][i]
                 tpr = self.tpr[self.pos_label][i]
                 roc_auc = self.roc_auc[self.pos_label][i]
-                estimator_name = estimator_names[i]
+                estimator_name = self.estimator_names[i]
 
                 default_line_kwargs = {
                     "alpha": 0.6,
@@ -118,7 +113,10 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
             )
         else:  # multiclass-classification
             info_pos_label = None  # irrelevant for multiclass
-            colors = sample_mpl_colormap(plt.cm.tab10, len(estimator_names))
+            colors = sample_mpl_colormap(
+                plt.cm.tab10,
+                10 if len(self.estimator_names) < 10 else len(self.estimator_names),
+            )
 
             if roc_curve_kwargs is None:
                 roc_curve_kwargs = [{}] * len(self.fpr)
@@ -138,27 +136,24 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
                     f"{len(self.fpr)} elements. Got {roc_curve_kwargs!r} instead."
                 )
 
-            for class_idx, class_ in enumerate(self.fpr):
-                fpr_class = self.fpr[class_]
-                tpr_class = self.tpr[class_]
-                roc_auc_class = self.roc_auc[class_]
-                linestyle = LINESTYLE[(class_idx % len(LINESTYLE))]
+            for report_idx, report_name in enumerate(self.estimator_names):
+                report_color = colors[report_idx]
 
-                for split_idx in range(len(fpr_class)):
-                    fpr = fpr_class[split_idx]
-                    tpr = tpr_class[split_idx]
-                    roc_auc_mean = np.mean(roc_auc_class)
-                    estimator_name = estimator_names[split_idx]
+                for class_idx, class_ in enumerate(self.fpr):
+                    fpr = self.fpr[class_][report_idx]
+                    tpr = self.tpr[class_][report_idx]
+                    roc_auc_mean = np.mean(self.roc_auc[class_])
+                    class_linestyle = LINESTYLE[(class_idx % len(LINESTYLE))]
 
                     default_line_kwargs = {
                         "alpha": 0.6,
-                        "linestyle": linestyle,
-                        "color": colors[split_idx],
+                        "linestyle": class_linestyle,
+                        "color": report_color,
                         "label": (
                             f"{self.data_source.title()} set - "
                             f"class {str(class_).title()} - "
-                            f"{estimator_name} #{split_idx + 1} "
-                            f"(AUC = {roc_auc_mean:0.2f}"
+                            f"{report_name} #{report_idx + 1} "
+                            f"(AUC = {roc_auc_mean:0.2f})"
                         ),
                     }
 
