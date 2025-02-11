@@ -108,7 +108,7 @@ def test_comparison_report_init_different_ml_usecases(
     )
 
     with pytest.raises(
-        ValueError, match="Not all estimators are in the same ML usecase"
+        ValueError, match="Expected all estimators to have the same ML usecase"
     ):
         ComparisonReport([linear_regression_report, logistic_regression_report])
 

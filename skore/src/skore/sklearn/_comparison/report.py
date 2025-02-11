@@ -128,11 +128,15 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             ml_tasks.add(report._ml_task)
             test_dataset_hashes.add(joblib.hash((report.X_test, report.y_test)))
 
-            if len(ml_tasks) > 1:
-                raise ValueError("Not all estimators are in the same ML usecase")
-
             if len(test_dataset_hashes) > 1:
                 raise ValueError("Not all estimators have the same testing data")
+
+        if len(ml_tasks) > 1:
+            ml_tasks_ = {report: report._ml_task for report in reports}
+            raise ValueError(
+                f"Expected all estimators to have the same ML usecase; "
+                f"got {ml_tasks_}"
+            )
 
         if report_names is None:
             self.report_names_ = [report.estimator_name_ for report in reports]
