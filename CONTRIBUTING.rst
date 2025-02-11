@@ -130,7 +130,7 @@ To run only back-end tests, use:
 
 .. code-block:: bash
 
-    make test-back-end
+    make test-backend
 
 To run only front-end tests, use:
 
