@@ -115,7 +115,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         if len(reports) < 2:
             raise ValueError("At least 2 instances of EstimatorReport are needed")
 
-        ml_tasks = set()
         test_dataset_hashes = set()
 
         for report in reports:
@@ -125,17 +124,16 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             if (report.X_test is None) or (report.y_test is None):
                 raise ValueError("Cannot compare reports without testing data")
 
-            ml_tasks.add(report._ml_task)
             test_dataset_hashes.add(joblib.hash((report.X_test, report.y_test)))
 
             if len(test_dataset_hashes) > 1:
                 raise ValueError("Not all estimators have the same testing data")
 
-        if len(ml_tasks) > 1:
-            ml_tasks_ = {report: report._ml_task for report in reports}
+        ml_tasks = {report: report._ml_task for report in reports}
+        if len(set(ml_tasks.values())) > 1:
             raise ValueError(
                 f"Expected all estimators to have the same ML usecase; "
-                f"got {ml_tasks_}"
+                f"got {ml_tasks}"
             )
 
         if report_names is None:
