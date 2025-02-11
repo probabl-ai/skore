@@ -44,10 +44,10 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     See Also
     --------
-    skore.sklearn._estimator.report.EstimatorReport
+    skore.EstimatorReport
         Report for a fitted estimator.
 
-    skore.sklearn._cross_validation.report.CrossValidationReport
+    skore.CrossValidationReport
         Report for the cross-validation of an estimator.
 
     Examples
