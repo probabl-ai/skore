@@ -59,4 +59,4 @@ Skore is just at the beginning of its journey, but we’re shipping fast! Freque
    install
    auto_examples/index
    api
-   contributing_link
+   contributing
