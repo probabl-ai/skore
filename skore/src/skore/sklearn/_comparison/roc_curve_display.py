@@ -10,7 +10,6 @@ from skore.sklearn._plot.utils import (
     _ClassifierCurveDisplayMixin,
     _despine_matplotlib_axis,
     _validate_style_kwargs,
-    sample_mpl_colormap,
 )
 
 
@@ -76,10 +75,11 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
                 estimator_name = estimator_names[i]
 
                 default_line_kwargs = {
+                    "alpha": 0.3,
                     "label": (
-                        f"{self.data_source.title()} - {estimator_name} #{i + 1} "
+                        f"{self.data_source.title()} set - {estimator_name} #{i + 1} "
                         f"(AUC = {roc_auc:0.2f})"
-                    )
+                    ),
                 }
                 line_kwargs = _validate_style_kwargs(
                     default_line_kwargs, roc_curve_kwargs[i]
@@ -95,9 +95,6 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
             )
         else:  # multiclass-classification
             info_pos_label = None  # irrelevant for multiclass
-            class_colors = sample_mpl_colormap(
-                plt.cm.tab10, 10 if len(self.fpr) < 10 else len(self.fpr)
-            )
             if roc_curve_kwargs is None:
                 roc_curve_kwargs = [{}] * len(self.fpr)
             elif isinstance(roc_curve_kwargs, list):
@@ -116,58 +113,33 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
                     f"{len(self.fpr)} elements. Got {roc_curve_kwargs!r} instead."
                 )
 
-            for class_idx, class_ in enumerate(self.fpr):
+            for class_ in self.fpr:
                 fpr_class = self.fpr[class_]
                 tpr_class = self.tpr[class_]
                 roc_auc_class = self.roc_auc[class_]
-                roc_curve_kwargs_class = roc_curve_kwargs[class_idx]
 
-                if len(fpr_class) == 1:  # single-split
-                    fpr = fpr_class[0]
-                    tpr = tpr_class[0]
-                    roc_auc = roc_auc_class[0]
+                for split_idx in range(len(fpr_class)):
+                    fpr = fpr_class[split_idx]
+                    tpr = tpr_class[split_idx]
+                    roc_auc_mean = np.mean(roc_auc_class)
+                    roc_auc_std = np.std(roc_auc_class)
+                    estimator_name = estimator_names[split_idx]
 
-                    default_line_kwargs = {"color": class_colors[class_idx]}
-                    if self.data_source in ("train", "test"):
-                        default_line_kwargs["label"] = (
-                            f"{str(class_).title()} - {self.data_source} "
-                            f"set (AUC = {roc_auc:0.2f})"
-                        )
-                    else:  # data_source in (None, "X_y")
-                        default_line_kwargs["label"] = (
-                            f"{str(class_).title()} - AUC = {roc_auc:0.2f}"
-                        )
+                    default_line_kwargs = {
+                        "alpha": 0.3,
+                        "label": (
+                            f"{self.data_source.title()} set - "
+                            f"class {str(class_).title()} - "
+                            f"{estimator_name} #{split_idx + 1} "
+                            f"(AUC = {roc_auc_mean:0.2f} +/- "
+                            f"{roc_auc_std:0.2f})"
+                        ),
+                    }
 
-                    line_kwargs = _validate_style_kwargs(
-                        default_line_kwargs, roc_curve_kwargs_class
-                    )
+                    line_kwargs = _validate_style_kwargs(default_line_kwargs, {})
 
                     (line_,) = ax.plot(fpr, tpr, **line_kwargs)
                     self.lines_.append(line_)
-                else:  # cross-validation
-                    for split_idx in range(len(fpr_class)):
-                        fpr = fpr_class[split_idx]
-                        tpr = tpr_class[split_idx]
-                        roc_auc_mean = np.mean(roc_auc_class)
-                        roc_auc_std = np.std(roc_auc_class)
-
-                        default_line_kwargs = {
-                            "color": class_colors[class_idx],
-                            "alpha": 0.3,
-                        }
-                        if split_idx == 0:
-                            default_line_kwargs["label"] = (  # <- not valid
-                                f"{str(class_).title()} - {self.data_source} set"
-                                f" (AUC = {roc_auc_mean:0.2f} +/- "
-                                f"{roc_auc_std:0.2f})"
-                            )
-                        else:
-                            default_line_kwargs["label"] = None
-
-                        line_kwargs = _validate_style_kwargs(default_line_kwargs, {})
-
-                        (line_,) = ax.plot(fpr, tpr, **line_kwargs)
-                        self.lines_.append(line_)
 
         default_chance_level_line_kw = {
             "label": "Chance level (AUC = 0.5)",
@@ -204,7 +176,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         if despine:
             _despine_matplotlib_axis(ax)
 
-        ax.legend(loc="lower right", title=estimator_name)
+        ax.legend(loc="lower right")
 
     @classmethod
     def _from_predictions(

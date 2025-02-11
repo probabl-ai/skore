@@ -1091,7 +1091,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         return display
 
     @available_if(
-        _check_supported_ml_task(supported_ml_tasks=["binary-classification"])
+        _check_supported_ml_task(
+            supported_ml_tasks=["binary-classification", "multiclass-classification"]
+        )
     )
     def roc(self, *, data_source="test", pos_label=None, ax=None):
         """Plot the ROC curve.
@@ -1152,7 +1154,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         )
 
     @available_if(
-        _check_supported_ml_task(supported_ml_tasks=["binary-classification"])
+        _check_supported_ml_task(
+            supported_ml_tasks=["binary-classification", "multiclass-classification"]
+        )
     )
     def precision_recall(self, *, data_source="test", pos_label=None):
         """Plot the precision-recall curve.
