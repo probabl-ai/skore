@@ -64,6 +64,26 @@ def _find_ml_task(y, estimator=None) -> MLTask:
     # Discrete sequential values, not containing 0
     >>> _find_ml_task(numpy.array([1, 3, 2]))
     'regression'
+
+    # 2 values, containing 0, in a 2d array
+    >>> _find_ml_task(numpy.array([[0, 1], [1, 1]]))
+    'multioutput-binary-classification'
+
+    # Discrete sequential values, containing 0, in a 2d array
+    >>> _find_ml_task(numpy.array([[0, 1, 2], [2, 1, 1]]))
+    'multioutput-multiclass-classification'
+
+    # Discrete values, not sequential, in a 2d array
+    >>> _find_ml_task(numpy.array([[1, 5], [5, 9]]))
+    'multioutput-regression'
+
+    # Discrete values, not sequential, containing 0, in a 2d array
+    >>> _find_ml_task(numpy.array([[0, 1, 5, 9], [1, 0, 1, 1]]))
+    'multioutput-regression'
+
+    # Discrete sequential values, not containing 0, in a 2d array
+    >>> _find_ml_task(numpy.array([[1, 3, 2], [2, 1, 1]]))
+    'multioutput-regression'
     """
     if estimator is not None:
         # checking the estimator is more robust and faster than checking the type of
