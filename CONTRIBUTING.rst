@@ -200,4 +200,4 @@ Contributing to the ReadMe
 --------------------------
 
 The README.md file can be modified and is part of the documentation.
-This file is used to be presented on [Pypi](https://pypi.org/project/skore/#description).
+This file is used to be presented on [PyPI](https://pypi.org/project/skore/#description).
