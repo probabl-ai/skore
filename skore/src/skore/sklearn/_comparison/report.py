@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import time
+from collections.abc import Iterable
 from copy import deepcopy
 from typing import Optional
 
@@ -108,6 +109,9 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         - all estimators have non-empty X_test and y_test,
         - all estimators have the same X_test and y_test.
         """
+        if not isinstance(reports, Iterable):
+            raise TypeError(f"Expected reports to be an iterable; got {type(reports)}")
+
         if len(reports) < 2:
             raise ValueError("At least 2 instances of EstimatorReport are needed")
 
