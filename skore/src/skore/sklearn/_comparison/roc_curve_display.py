@@ -42,6 +42,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         tpr,
         roc_auc,
         estimator_names,
+        ml_task,
         pos_label=None,
         data_source=None,
     ):
@@ -49,6 +50,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         self.fpr = fpr
         self.tpr = tpr
         self.roc_auc = roc_auc
+        self.ml_task = ml_task
         self.pos_label = pos_label
         self.data_source = data_source
 
@@ -65,7 +67,8 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
             _, ax = plt.subplots()
 
         self.lines_ = []
-        if len(self.fpr) == 1:  # binary-classification
+
+        if self.ml_task == "binary-classification":
             if roc_curve_kwargs is None:
                 roc_curve_kwargs = [{}] * len(self.fpr[self.pos_label])
             elif isinstance(roc_curve_kwargs, dict):
@@ -90,14 +93,11 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
                 fpr = self.fpr[self.pos_label][i]
                 tpr = self.tpr[self.pos_label][i]
                 roc_auc = self.roc_auc[self.pos_label][i]
-                estimator_name = self.estimator_names[i]
+                report_name = self.estimator_names[i]
 
                 default_line_kwargs = {
                     "alpha": 0.6,
-                    "label": (
-                        f"{self.data_source.title()} set - {estimator_name} #{i + 1} "
-                        f"(AUC = {roc_auc:0.2f})"
-                    ),
+                    "label": f"{report_name} #{i + 1} (AUC = {roc_auc:0.2f})",
                 }
                 line_kwargs = _validate_style_kwargs(
                     default_line_kwargs, roc_curve_kwargs[i]
@@ -150,9 +150,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
                         "linestyle": class_linestyle,
                         "color": report_color,
                         "label": (
-                            f"{self.data_source.title()} set - "
-                            f"class {str(class_).title()} - "
-                            f"{report_name} #{report_idx + 1} "
+                            f"{report_name} #{report_idx + 1} - class {str(class_)} "
                             f"(AUC = {roc_auc_mean:0.2f})"
                         ),
                     }
@@ -197,7 +195,10 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         if despine:
             _despine_matplotlib_axis(ax)
 
-        ax.legend(loc="lower right")
+        ax.legend(
+            loc="lower right",
+            title=f"{self.ml_task.title()} on $\\bf{{{self.data_source}}}$ set",
+        )
 
     @classmethod
     def _from_predictions(
@@ -257,6 +258,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
             tpr=tpr,
             roc_auc=roc_auc,
             estimator_names=estimator_names,
+            ml_task=ml_task,
             pos_label=pos_label_validated,
             data_source=data_source,
         )
