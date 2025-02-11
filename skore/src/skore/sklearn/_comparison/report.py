@@ -59,7 +59,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     See Also
     --------
-    skore.sklearn.estimator.report.EstimatorReport
+    skore.sklearn._estimator.report.EstimatorReport
         Report for a fitted estimator.
 
     Examples
