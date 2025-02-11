@@ -10,7 +10,28 @@ from skore.sklearn._plot.utils import (
     _ClassifierCurveDisplayMixin,
     _despine_matplotlib_axis,
     _validate_style_kwargs,
+    sample_mpl_colormap,
 )
+
+LINESTYLE = [
+    "solid",
+    "dotted",
+    "dashed",
+    "dashdot",
+    (0, (1, 10)),
+    (0, (1, 5)),
+    (0, (1, 1)),
+    (5, (10, 3)),
+    (0, (5, 10)),
+    (0, (5, 5)),
+    (0, (5, 1)),
+    (0, (3, 10, 1, 10)),
+    (0, (3, 5, 1, 5)),
+    (0, (3, 1, 1, 1)),
+    (0, (3, 5, 1, 5, 1, 5)),
+    (0, (3, 10, 1, 10, 1, 10)),
+    (0, (3, 1, 1, 1, 1, 1)),
+]
 
 
 class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
@@ -41,10 +62,12 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         chance_level_kwargs=None,
         despine=True,
     ):
+        # TO STANDARDIZE
         if ax is None:
             _, ax = plt.subplots()
 
         estimator_names = estimator_names or self.estimator_names
+        #
 
         self.lines_ = []
         if len(self.fpr) == 1:  # binary-classification
@@ -75,7 +98,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
                 estimator_name = estimator_names[i]
 
                 default_line_kwargs = {
-                    "alpha": 0.3,
+                    "alpha": 0.6,
                     "label": (
                         f"{self.data_source.title()} set - {estimator_name} #{i + 1} "
                         f"(AUC = {roc_auc:0.2f})"
@@ -95,6 +118,8 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
             )
         else:  # multiclass-classification
             info_pos_label = None  # irrelevant for multiclass
+            colors = sample_mpl_colormap(plt.cm.tab10, len(estimator_names))
+
             if roc_curve_kwargs is None:
                 roc_curve_kwargs = [{}] * len(self.fpr)
             elif isinstance(roc_curve_kwargs, list):
@@ -113,26 +138,27 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
                     f"{len(self.fpr)} elements. Got {roc_curve_kwargs!r} instead."
                 )
 
-            for class_ in self.fpr:
+            for class_idx, class_ in enumerate(self.fpr):
                 fpr_class = self.fpr[class_]
                 tpr_class = self.tpr[class_]
                 roc_auc_class = self.roc_auc[class_]
+                linestyle = LINESTYLE[(class_idx % len(LINESTYLE))]
 
                 for split_idx in range(len(fpr_class)):
                     fpr = fpr_class[split_idx]
                     tpr = tpr_class[split_idx]
                     roc_auc_mean = np.mean(roc_auc_class)
-                    roc_auc_std = np.std(roc_auc_class)
                     estimator_name = estimator_names[split_idx]
 
                     default_line_kwargs = {
-                        "alpha": 0.3,
+                        "alpha": 0.6,
+                        "linestyle": linestyle,
+                        "color": colors[split_idx],
                         "label": (
                             f"{self.data_source.title()} set - "
                             f"class {str(class_).title()} - "
                             f"{estimator_name} #{split_idx + 1} "
-                            f"(AUC = {roc_auc_mean:0.2f} +/- "
-                            f"{roc_auc_std:0.2f})"
+                            f"(AUC = {roc_auc_mean:0.2f}"
                         ),
                     }
 
