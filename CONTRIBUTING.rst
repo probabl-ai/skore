@@ -170,7 +170,7 @@ Then, you can access the local build via:
 
     open build/html/index.html
 
-The PR will also build the documentation and a bot will indicate the link to the documentation preview to easily check the results.
+The PR will also build the documentation and a bot will automatically add a comment with a link to the documentation preview to easily check the results.
 
 Contributing to the docstrings
 ------------------------------
