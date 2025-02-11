@@ -84,7 +84,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
     See Also
     --------
-    skore.sklearn.estimator.report.EstimatorReport :
+    skore.EstimatorReport
         Report for a fitted estimator.
 
     Examples
