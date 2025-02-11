@@ -54,6 +54,9 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     estimator_reports_ : list of EstimatorReport
         The estimator reports for each split.
 
+    report_names_ : list of str
+        The names of the compared estimator reports.
+
     See Also
     --------
     skore.sklearn.estimator.report.EstimatorReport
