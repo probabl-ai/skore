@@ -97,9 +97,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> report.metrics.report_metrics(
         ...     scoring=["precision", "recall"], pos_label=1, aggregate=["mean", "std"]
         ... )
-        Metric                   Precision (↗︎)  Recall (↗︎)
-        LogisticRegression mean        0.94...     0.96...
-                           std         0.02...     0.02...
+                    LogisticRegression
+                                    mean       std
+        Metric
+        Precision (↗︎)            0.94...  0.024...
+        Recall (↗︎)               0.96...  0.027...
         """
         return self._compute_metric_scores(
             report_metric_name="report_metrics",
@@ -161,15 +163,17 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
             results = pd.concat(
                 results,
-                axis=0,
+                axis=1,
                 keys=[f"Split #{i}" for i in range(len(results))],
             )
-            results = results.swaplevel(0, 1)
+            results = results.swaplevel(0, 1, axis=1)
             if aggregate:
                 if isinstance(aggregate, str):
                     aggregate = [aggregate]
-                results = results.aggregate(func=aggregate, axis=0)
-                results = pd.concat([results], keys=[self._parent.estimator_name_])
+                results = results.aggregate(func=aggregate, axis=1)
+                results = pd.concat(
+                    [results], keys=[self._parent.estimator_name_], axis=1
+                )
 
             self._parent._cache[cache_key] = results
         return results
@@ -207,9 +211,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         >>> report.metrics.accuracy()
-        Metric                       Accuracy (↗︎)
-        LogisticRegression Split #0       0.94...
-                           Split #1       0.94...
+                    LogisticRegression
+                                Split #0  Split #1
+        Metric
+        Accuracy (↗︎)            0.94...   0.94...
         """
         return self.report_metrics(
             scoring=["accuracy"],
@@ -285,10 +290,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         >>> report.metrics.precision()
-        Metric                      Precision (↗︎)
-        Label / Average                          0         1
-        LogisticRegression Split #0       0.96...   0.93...
-                           Split #1       0.90...   0.96...
+                                    LogisticRegression
+                                                Split #0  Split #1
+        Metric         Label / Average
+        Precision (↗︎) 0                         0.96...   0.90...
+                      1                         0.93...   0.96...
         """
         return self.report_metrics(
             scoring=["precision"],
@@ -367,10 +373,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         >>> report.metrics.recall()
-        Metric                      Recall (↗︎)
-        Label / Average                          0         1
-        LogisticRegression Split #0    0.87...   0.98...
-                           Split #1    0.94...   0.94...
+                                    LogisticRegression
+                                            Split #0  Split #1
+        Metric      Label / Average
+        Recall (↗︎) 0                         0.87...  0.94...
+                   1                         0.98...  0.94...
         """
         return self.report_metrics(
             scoring=["recall"],
@@ -411,9 +418,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         >>> report.metrics.brier_score()
-        Metric                       Brier score (↘︎)
-        LogisticRegression Split #0          0.04...
-                           Split #1          0.04...
+                        LogisticRegression
+                                Split #0  Split #1
+        Metric
+        Brier score (↘︎)         0.04...   0.04...
         """
         return self.report_metrics(
             scoring=["brier_score"],
@@ -494,9 +502,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         >>> report.metrics.roc_auc()
-        Metric                       ROC AUC (↗︎)
-        LogisticRegression Split #0      0.99...
-                           Split #1      0.98...
+                    LogisticRegression
+                            Split #0  Split #1
+        Metric
+        ROC AUC (↗︎)         0.99...   0.98...
         """
         return self.report_metrics(
             scoring=["roc_auc"],
@@ -538,9 +547,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         >>> report.metrics.log_loss()
-        Metric                       Log loss (↘︎)
-        LogisticRegression Split #0       0.1...
-                           Split #1       0.1...
+                    LogisticRegression
+                                Split #0  Split #1
+        Metric
+        Log loss (↘︎)           0.1...     0.1...
         """
         return self.report_metrics(
             scoring=["log_loss"],
@@ -593,9 +603,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> regressor = Ridge()
         >>> report = CrossValidationReport(regressor, X=X, y=y, cv_splitter=2)
         >>> report.metrics.r2()
-        Metric           R² (↗︎)
-        Ridge Split #0  0.36...
-              Split #1  0.39...
+                    Ridge
+                Split #0  Split #1
+        Metric
+        R² (↗︎)  0.36...   0.39...
         """
         return self.report_metrics(
             scoring=["r2"],
@@ -649,9 +660,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> regressor = Ridge()
         >>> report = CrossValidationReport(regressor, X=X, y=y, cv_splitter=2)
         >>> report.metrics.rmse()
-        Metric          RMSE (↘︎)
-        Ridge Split #0  59.9...
-              Split #1  61.4...
+                    Ridge
+                    Split #0   Split #1
+        Metric
+        RMSE (↘︎)    59.9...    61.4...
         """
         return self.report_metrics(
             scoring=["rmse"],
@@ -727,9 +739,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     response_method="predict",
         ...     metric_name="MAE (↗︎)",
         ... )
-        Metric           MAE (↗︎)
-        Ridge Split #0  50.1...
-              Split #1  52.6...
+                    Ridge
+                Split #0   Split #1
+        Metric
+        MAE (↗︎) 50.1...   52.6...
         """
         # create a scorer with `greater_is_better=True` to not alter the output of
         # `metric_function`
