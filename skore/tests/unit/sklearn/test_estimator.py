@@ -584,12 +584,12 @@ def _normalize_metric_name(column):
 
 def _check_results_report_metrics(result, expected_metrics, expected_nb_stats):
     assert isinstance(result, pd.DataFrame)
-    assert len(result.columns) == expected_nb_stats
+    assert len(result.index) == expected_nb_stats
 
     normalized_expected = {
         _normalize_metric_name(metric) for metric in expected_metrics
     }
-    for column in result.columns:
+    for column in result.index:
         normalized_column = _normalize_metric_name(column)
         matches = [
             metric for metric in normalized_expected if metric == normalized_column
@@ -702,17 +702,17 @@ def test_estimator_report_report_metrics_scoring_kwargs(
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     assert hasattr(report.metrics, "report_metrics")
     result = report.metrics.report_metrics(scoring_kwargs={"multioutput": "raw_values"})
-    assert result.shape == (1, 4)
-    assert isinstance(result.columns, pd.MultiIndex)
-    assert result.columns.names == ["Metric", "Output"]
+    assert result.shape == (4, 1)
+    assert isinstance(result.index, pd.MultiIndex)
+    assert result.index.names == ["Metric", "Output"]
 
     estimator, X_test, y_test = multiclass_classification_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     assert hasattr(report.metrics, "report_metrics")
     result = report.metrics.report_metrics(scoring_kwargs={"average": None})
-    assert result.shape == (1, 10)
-    assert isinstance(result.columns, pd.MultiIndex)
-    assert result.columns.names == ["Metric", "Label / Average"]
+    assert result.shape == (10, 1)
+    assert isinstance(result.index, pd.MultiIndex)
+    assert result.index.names == ["Metric", "Label / Average"]
 
 
 @pytest.mark.parametrize(
@@ -744,15 +744,15 @@ def test_estimator_report_report_metrics_overwrite_scoring_names(
     estimator, X_test, y_test = request.getfixturevalue(fixture_name)
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     result = report.metrics.report_metrics(scoring_names=scoring_names)
-    assert result.shape == (1, len(expected_columns))
+    assert result.shape == (len(expected_columns), 1)
 
     # Get level 0 names if MultiIndex, otherwise get column names
-    result_columns = (
-        result.columns.get_level_values(0).tolist()
-        if isinstance(result.columns, pd.MultiIndex)
-        else result.columns.tolist()
+    result_index = (
+        result.index.get_level_values(0).tolist()
+        if isinstance(result.index, pd.MultiIndex)
+        else result.index.tolist()
     )
-    assert result_columns == expected_columns
+    assert result_index == expected_columns
 
 
 def test_estimator_report_interaction_cache_metrics(regression_multioutput_data):
@@ -896,14 +896,12 @@ def test_estimator_report_report_metrics_with_custom_metric(regression_data):
         scoring=["r2", custom_metric],
         scoring_kwargs={"some_weights": weights, "response_method": "predict"},
     )
-    assert result.shape == (1, 2)
+    assert result.shape == (2, 1)
     np.testing.assert_allclose(
         result.to_numpy(),
         [
-            [
-                r2_score(y_test, estimator.predict(X_test)),
-                custom_metric(y_test, estimator.predict(X_test), weights),
-            ]
+            [r2_score(y_test, estimator.predict(X_test))],
+            [custom_metric(y_test, estimator.predict(X_test), weights)],
         ],
     )
 
@@ -928,15 +926,13 @@ def test_estimator_report_report_metrics_with_scorer(regression_data):
         scoring=[r2_score, median_absolute_error_scorer, custom_metric_scorer],
         scoring_kwargs={"response_method": "predict"},  # only dispatched to r2_score
     )
-    assert result.shape == (1, 3)
+    assert result.shape == (3, 1)
     np.testing.assert_allclose(
         result.to_numpy(),
         [
-            [
-                r2_score(y_test, estimator.predict(X_test)),
-                median_absolute_error(y_test, estimator.predict(X_test)),
-                custom_metric(y_test, estimator.predict(X_test), weights),
-            ]
+            [r2_score(y_test, estimator.predict(X_test))],
+            [median_absolute_error(y_test, estimator.predict(X_test))],
+            [custom_metric(y_test, estimator.predict(X_test), weights)],
         ],
     )
 
@@ -1004,17 +1000,13 @@ def test_estimator_report_report_metrics_with_scorer_binary_classification(
     result = report.metrics.report_metrics(
         scoring=["accuracy", accuracy_score, scorer],
     )
-    assert result.shape == (1, 3)
+    assert result.shape == (3, 1)
     np.testing.assert_allclose(
         result.to_numpy(),
         [
-            [
-                accuracy_score(y_test, estimator.predict(X_test)),
-                accuracy_score(y_test, estimator.predict(X_test)),
-                f1_score(
-                    y_test, estimator.predict(X_test), average="macro", pos_label=1
-                ),
-            ]
+            [accuracy_score(y_test, estimator.predict(X_test))],
+            [accuracy_score(y_test, estimator.predict(X_test))],
+            [f1_score(y_test, estimator.predict(X_test), average="macro", pos_label=1)],
         ],
     )
 
