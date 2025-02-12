@@ -235,27 +235,85 @@ def test_comparison_report_pickle(tmp_path, binary_classification_model):
 
 
 @pytest.mark.parametrize(
-    "metric_name,metric_value",
+    "metric_name, expected",
     [
-        ("accuracy", 1),
-        ("precision", 2),
-        ("recall", 3),
-        ("brier_score", 4),
-        ("roc_auc", 5),
-        ("log_loss", 6),
+        (
+            "accuracy",
+            pd.DataFrame(
+                [[1.0], [1.0]],
+                index=pd.MultiIndex.from_arrays(
+                    [(0, 1), ("LogisticRegression", "LogisticRegression")],
+                    names=[None, "Estimator"],
+                ),
+                columns=pd.Index(["Accuracy (↗︎)"], dtype="object", name="Metric"),
+            ),
+        ),
+        (
+            "precision",
+            pd.DataFrame(
+                [[1.0, 1.0], [1.0, 1.0]],
+                index=pd.MultiIndex.from_arrays(
+                    [(0, 1), ("LogisticRegression", "LogisticRegression")],
+                    names=[None, "Estimator"],
+                ),
+                columns=pd.MultiIndex.from_tuples(
+                    [("Precision (↗︎)", 0), ("Precision (↗︎)", 1)],
+                    names=["Metric", "Class label"],
+                ),
+            ),
+        ),
+        (
+            "recall",
+            pd.DataFrame(
+                [[1.0, 1.0], [1.0, 1.0]],
+                index=pd.MultiIndex.from_arrays(
+                    [(0, 1), ("LogisticRegression", "LogisticRegression")],
+                    names=[None, "Estimator"],
+                ),
+                columns=pd.MultiIndex.from_tuples(
+                    [("Recall (↗︎)", 0), ("Recall (↗︎)", 1)],
+                    names=["Metric", "Class label"],
+                ),
+            ),
+        ),
+        (
+            "brier_score",
+            pd.DataFrame(
+                [[0.026684], [0.026684]],
+                index=pd.MultiIndex.from_arrays(
+                    [(0, 1), ("LogisticRegression", "LogisticRegression")],
+                    names=[None, "Estimator"],
+                ),
+                columns=pd.Index(["Brier score (↘︎)"], dtype="object", name="Metric"),
+            ),
+        ),
+        (
+            "roc_auc",
+            pd.DataFrame(
+                [[1.0], [1.0]],
+                index=pd.MultiIndex.from_arrays(
+                    [(0, 1), ("LogisticRegression", "LogisticRegression")],
+                    names=[None, "Estimator"],
+                ),
+                columns=pd.Index(["ROC AUC (↗︎)"], dtype="object", name="Metric"),
+            ),
+        ),
+        (
+            "log_loss",
+            pd.DataFrame(
+                [[0.113233], [0.113233]],
+                index=pd.MultiIndex.from_arrays(
+                    [(0, 1), ("LogisticRegression", "LogisticRegression")],
+                    names=[None, "Estimator"],
+                ),
+                columns=pd.Index(["Log loss (↘︎)"], dtype="object", name="Metric"),
+            ),
+        ),
     ],
 )
 def test_estimator_report_metrics_binary_classification(
-    monkeypatch, metric_name, metric_value, binary_classification_model
+    metric_name, expected, binary_classification_model
 ):
-    def dummy(*args, **kwargs):
-        return pd.DataFrame([[metric_value]])
-
-    monkeypatch.setattr(
-        f"skore.sklearn._estimator.metrics_accessor._MetricsAccessor.{metric_name}",
-        dummy,
-    )
-
     estimator, X_train, X_test, y_train, y_test = binary_classification_model
     estimator_report = EstimatorReport(
         estimator,
@@ -269,11 +327,11 @@ def test_estimator_report_metrics_binary_classification(
 
     # ensure metric is valid
     result = getattr(comp.metrics, metric_name)()
-    np.testing.assert_array_equal(result.to_numpy(), [[metric_value], [metric_value]])
+    pd.testing.assert_frame_equal(result, expected)
 
     # ensure metric is valid even from the cache
     result = getattr(comp.metrics, metric_name)()
-    np.testing.assert_array_equal(result.to_numpy(), [[metric_value], [metric_value]])
+    pd.testing.assert_frame_equal(result, expected)
 
 
 @pytest.mark.parametrize(
