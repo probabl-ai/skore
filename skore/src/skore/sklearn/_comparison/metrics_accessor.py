@@ -46,7 +46,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         scoring_names=None,
         pos_label=None,
         scoring_kwargs=None,
-        aggregate=None,
     ):
         """Report a set of metrics for the estimators.
 
@@ -76,9 +75,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         scoring_kwargs : dict, default=None
             The keyword arguments to pass to the scoring functions.
-
-        aggregate : {"mean", "std"} or list of such str, default=None
-            Function to aggregate the scores across the estimators.
 
         Returns
         -------
@@ -120,19 +116,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
           Estimator
         0 LogisticRegression        0.96...     0.97...
         1 LogisticRegression        0.96...     0.97...
-        >>> comparison_report.metrics.report_metrics(
-        ...     scoring=["precision", "recall"],
-        ...     pos_label=1,
-        ...     aggregate=["mean", "std"],
-        ... )
-        Metric  Precision (↗︎)  Recall (↗︎)
-        mean          0.96...     0.97...
-        std           0.00...     0.00...
         """
         return self._compute_metric_scores(
             report_metric_name="report_metrics",
             data_source=data_source,
-            aggregate=aggregate,
             scoring=scoring,
             pos_label=pos_label,
             scoring_kwargs=scoring_kwargs,
@@ -145,11 +132,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         report_metric_name,
         *,
         data_source="test",
-        aggregate=None,
         **metric_kwargs,
     ):
         cache_key = (self._parent._hash, report_metric_name, data_source)
-        cache_key += (aggregate,) if aggregate is None else tuple(aggregate)
 
         if metric_kwargs != {}:
             # we need to enforce the order of the parameter for a specific metric
@@ -193,11 +178,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 names=[None, "Estimator"],
             )
 
-            if aggregate:
-                if isinstance(aggregate, str):
-                    aggregate = [aggregate]
-                results = results.aggregate(func=aggregate, axis=0)
-
             self._parent._cache[cache_key] = results
         return results
 
@@ -206,7 +186,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def accuracy(self, *, data_source="test", aggregate=None):
+    def accuracy(self, *, data_source="test"):
         """Compute the accuracy score.
 
         Parameters
@@ -216,9 +196,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-
-        aggregate : {"mean", "std"} or list of such str, default=None
-            Function to aggregate the scores across the estimators.
 
         Returns
         -------
@@ -261,7 +238,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         return self._compute_metric_scores(
             report_metric_name="accuracy",
             data_source=data_source,
-            aggregate=aggregate,
         )
 
     @available_if(
@@ -275,7 +251,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source="test",
         average=None,
         pos_label=None,
-        aggregate=None,
     ):
         """Compute the precision score.
 
@@ -314,9 +289,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         pos_label : int, float, bool or str, default=None
             The positive class.
-
-        aggregate : {"mean", "std"} or list of such str, default=None
-            Function to aggregate the scores across the estimators.
 
         Returns
         -------
@@ -360,7 +332,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         return self._compute_metric_scores(
             report_metric_name="precision",
             data_source=data_source,
-            aggregate=aggregate,
             average=average,
             pos_label=pos_label,
         )
@@ -376,7 +347,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source="test",
         average=None,
         pos_label=None,
-        aggregate=None,
     ):
         """Compute the recall score.
 
@@ -416,9 +386,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         pos_label : int, float, bool or str, default=None
             The positive class.
-
-        aggregate : {"mean", "std"} or list of such str, default=None
-            Function to aggregate the scores across the estimators.
 
         Returns
         -------
@@ -462,7 +429,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         return self._compute_metric_scores(
             report_metric_name="recall",
             data_source=data_source,
-            aggregate=aggregate,
             average=average,
             pos_label=pos_label,
         )
@@ -470,7 +436,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     @available_if(
         _check_supported_ml_task(supported_ml_tasks=["binary-classification"])
     )
-    def brier_score(self, *, data_source="test", aggregate=None):
+    def brier_score(self, *, data_source="test"):
         """Compute the Brier score.
 
         Parameters
@@ -480,9 +446,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-
-        aggregate : {"mean", "std"} or list of such str, default=None
-            Function to aggregate the scores across the estimators.
 
         Returns
         -------
@@ -525,7 +488,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         return self._compute_metric_scores(
             report_metric_name="brier_score",
             data_source=data_source,
-            aggregate=aggregate,
         )
 
     @available_if(
@@ -539,7 +501,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source="test",
         average=None,
         multi_class="ovr",
-        aggregate=None,
     ):
         """Compute the ROC AUC score.
 
@@ -585,9 +546,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
               pairwise combinations of classes. Insensitive to class imbalance when
               `average == "macro"`.
 
-        aggregate : {"mean", "std"} or list of such str, default=None
-            Function to aggregate the scores across the estimators.
-
         Returns
         -------
         pd.DataFrame
@@ -629,7 +587,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         return self._compute_metric_scores(
             report_metric_name="roc_auc",
             data_source=data_source,
-            aggregate=aggregate,
             average=average,
             multi_class=multi_class,
         )
@@ -639,7 +596,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def log_loss(self, *, data_source="test", aggregate=None):
+    def log_loss(self, *, data_source="test"):
         """Compute the log loss.
 
         Parameters
@@ -649,9 +606,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-
-        aggregate : {"mean", "std"} or list of such str, default=None
-            Function to aggregate the scores across the estimators.
 
         Returns
         -------
@@ -694,7 +648,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         return self._compute_metric_scores(
             report_metric_name="log_loss",
             data_source=data_source,
-            aggregate=aggregate,
         )
 
     @available_if(_check_supported_ml_task(supported_ml_tasks=["regression"]))
@@ -703,7 +656,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         *,
         data_source="test",
         multioutput="raw_values",
-        aggregate=None,
     ):
         """Compute the R² score.
 
@@ -724,9 +676,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             - "uniform_average": Errors of all outputs are averaged with uniform weight.
 
             By default, no averaging is done.
-
-        aggregate : {"mean", "std"} or list of such str, default=None
-            Function to aggregate the scores across the estimators.
 
         Returns
         -------
@@ -769,7 +718,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         return self._compute_metric_scores(
             report_metric_name="r2",
             data_source=data_source,
-            aggregate=aggregate,
             multioutput=multioutput,
         )
 
@@ -779,7 +727,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         *,
         data_source="test",
         multioutput="raw_values",
-        aggregate=None,
     ):
         """Compute the root mean squared error.
 
@@ -800,9 +747,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             - "uniform_average": Errors of all outputs are averaged with uniform weight.
 
             By default, no averaging is done.
-
-        aggregate : {"mean", "std"} or list of such str, default=None
-            Function to aggregate the scores across the estimators.
 
         Returns
         -------
@@ -845,7 +789,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         return self._compute_metric_scores(
             report_metric_name="rmse",
             data_source=data_source,
-            aggregate=aggregate,
             multioutput=multioutput,
         )
 
@@ -856,7 +799,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         *,
         metric_name=None,
         data_source="test",
-        aggregate=None,
         **kwargs,
     ):
         """Compute a custom metric.
@@ -890,9 +832,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-
-        aggregate : {"mean", "std"} or list of such str, default=None
-            Function to aggregate the scores across the estimators.
 
         **kwargs : dict
             Any additional keyword arguments to be passed to the metric function.
@@ -943,7 +882,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         return self._compute_metric_scores(
             report_metric_name="custom_metric",
             data_source=data_source,
-            aggregate=aggregate,
             metric_function=metric_function,
             response_method=response_method,
             metric_name=metric_name,
