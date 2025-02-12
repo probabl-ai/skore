@@ -2,53 +2,33 @@ from collections import defaultdict
 
 import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.metrics import auc, roc_curve
+from sklearn.metrics import average_precision_score, precision_recall_curve
 from sklearn.preprocessing import LabelBinarizer
 
+from skore.sklearn._comparison.roc_curve_display import LINESTYLE
 from skore.sklearn._plot.utils import (
     HelpDisplayMixin,
     _ClassifierCurveDisplayMixin,
     _despine_matplotlib_axis,
-    _validate_style_kwargs,
     sample_mpl_colormap,
 )
 
-LINESTYLE = [
-    "solid",
-    "dotted",
-    "dashed",
-    "dashdot",
-    (0, (1, 10)),
-    (0, (1, 5)),
-    (0, (1, 1)),
-    (5, (10, 3)),
-    (0, (5, 10)),
-    (0, (5, 5)),
-    (0, (5, 1)),
-    (0, (3, 10, 1, 10)),
-    (0, (3, 5, 1, 5)),
-    (0, (3, 1, 1, 1)),
-    (0, (3, 5, 1, 5, 1, 5)),
-    (0, (3, 10, 1, 10, 1, 10)),
-    (0, (3, 1, 1, 1, 1, 1)),
-]
 
-
-class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
+class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
     def __init__(
         self,
+        precision,
+        recall,
         *,
-        fpr,
-        tpr,
-        roc_auc,
+        average_precision,
         estimator_names,
         ml_task,
         pos_label=None,
         data_source=None,
     ):
-        self.fpr = fpr
-        self.tpr = tpr
-        self.roc_auc = roc_auc
+        self.precision = precision
+        self.recall = recall
+        self.average_precision = average_precision
         self.estimator_names = estimator_names
         self.ml_task = ml_task
         self.pos_label = pos_label
@@ -58,26 +38,29 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         self,
         ax=None,
         *,
-        plot_chance_level=True,
-        chance_level_kwargs=None,
         despine=True,
     ):
         if ax is None:
             _, ax = plt.subplots()
 
         self.lines_ = []
+        self.chance_levels_ = []
 
         if self.ml_task == "binary-classification":
             for report_idx, report_name in enumerate(self.estimator_names):
-                fpr = self.fpr[self.pos_label][report_idx]
-                tpr = self.tpr[self.pos_label][report_idx]
-                roc_auc = self.roc_auc[self.pos_label][report_idx]
+                precision = self.precision[self.pos_label][report_idx]
+                recall = self.recall[self.pos_label][report_idx]
+                average_precision = self.average_precision[self.pos_label][report_idx]
 
                 (line_,) = ax.plot(
-                    fpr,
-                    tpr,
+                    recall,
+                    precision,
+                    drawstyle="steps-post",
                     alpha=0.6,
-                    label=f"{report_name} #{report_idx + 1} (AUC = {roc_auc:0.2f})",
+                    label=(
+                        f"{report_name} #{report_idx + 1} "
+                        f"(AP = {average_precision:0.2f})"
+                    ),
                 )
 
                 self.lines_.append(line_)
@@ -97,39 +80,29 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
             for report_idx, report_name in enumerate(self.estimator_names):
                 report_color = colors[report_idx]
 
-                for class_idx, class_ in enumerate(self.fpr):
-                    fpr = self.fpr[class_][report_idx]
-                    tpr = self.tpr[class_][report_idx]
-                    roc_auc_mean = np.mean(self.roc_auc[class_])
+                for class_idx, class_ in enumerate(self.precision):
+                    precision = self.precision[class_][report_idx]
+                    recall = self.recall[class_][report_idx]
+                    average_precision_class = self.average_precision[class_]
+                    average_precision = average_precision_class[report_idx]
                     class_linestyle = LINESTYLE[(class_idx % len(LINESTYLE))]
 
                     (line_,) = ax.plot(
-                        fpr,
-                        tpr,
-                        alpha=0.6,
-                        linestyle=class_linestyle,
+                        recall,
+                        precision,
                         color=report_color,
+                        linestyle=class_linestyle,
+                        alpha=0.6,
                         label=(
                             f"{report_name} #{report_idx + 1} - class {str(class_)} "
-                            f"(AUC = {roc_auc_mean:0.2f})"
+                            f"(AP = {np.mean(average_precision_class):0.2f})"
                         ),
                     )
 
                     self.lines_.append(line_)
 
-        default_chance_level_line_kw = {
-            "label": "Chance level (AUC = 0.5)",
-            "color": "k",
-            "linestyle": "--",
-        }
-
-        chance_level_kwargs = _validate_style_kwargs(
-            default_chance_level_line_kw,
-            chance_level_kwargs or {},
-        )
-
-        xlabel = "False Positive Rate"
-        ylabel = "True Positive Rate"
+        xlabel = "Recall"
+        ylabel = "Precision"
         if info_pos_label:
             xlabel += info_pos_label
             ylabel += info_pos_label
@@ -141,11 +114,6 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
             ylim=(-0.01, 1.01),
             aspect="equal",
         )
-
-        if plot_chance_level:
-            (self.chance_level_,) = ax.plot((0, 1), (0, 1), **chance_level_kwargs)
-        else:
-            self.chance_level_ = None
 
         if despine:
             _despine_matplotlib_axis(ax)
@@ -168,23 +136,29 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         pos_label=None,
         drop_intermediate=True,
     ):
-        fpr, tpr, roc_auc = (defaultdict(list) for _ in range(3))
+        precision, recall, average_precision = (defaultdict(list) for _ in range(3))
         pos_label_validated = cls._validate_from_predictions_params(
             y_true, y_pred, ml_task=ml_task, pos_label=pos_label
         )
 
         if ml_task == "binary-classification":
             for y_true_i, y_pred_i in zip(y_true, y_pred):
-                fpr_i, tpr_i, _ = roc_curve(
+                precision_i, recall_i, _ = precision_recall_curve(
                     y_true_i,
                     y_pred_i,
-                    pos_label=pos_label,
+                    pos_label=pos_label_validated,
                     drop_intermediate=drop_intermediate,
                 )
 
-                fpr[pos_label_validated].append(fpr_i)
-                tpr[pos_label_validated].append(tpr_i)
-                roc_auc[pos_label_validated].append(auc(fpr_i, tpr_i))
+                precision[pos_label_validated].append(precision_i)
+                recall[pos_label_validated].append(recall_i)
+                average_precision[pos_label_validated].append(
+                    average_precision_score(
+                        y_true_i,
+                        y_pred_i,
+                        pos_label=pos_label_validated,
+                    )
+                )
         elif ml_task == "multiclass-classification":
             for y_true_i, y_pred_i, estimator_classes_i in zip(
                 y_true,
@@ -195,23 +169,28 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
                 y_true_onehot_i = label_binarizer.transform(y_true_i)
 
                 for class_idx, class_ in enumerate(estimator_classes_i):
-                    fpr_class_i, tpr_class_i, _ = roc_curve(
+                    precision_class_i, recall_class_i, _ = precision_recall_curve(
                         y_true_onehot_i[:, class_idx],
                         y_pred_i[:, class_idx],
                         pos_label=None,
                         drop_intermediate=drop_intermediate,
                     )
 
-                    fpr[class_].append(fpr_class_i)
-                    tpr[class_].append(tpr_class_i)
-                    roc_auc[class_].append(auc(fpr_class_i, tpr_class_i))
+                    precision[class_].append(precision_class_i)
+                    recall[class_].append(recall_class_i)
+                    average_precision[class_].append(
+                        average_precision_score(
+                            y_true_onehot_i[:, class_idx],
+                            y_pred_i[:, class_idx],
+                        )
+                    )
         else:
             raise ValueError
 
         return cls(
-            fpr=fpr,
-            tpr=tpr,
-            roc_auc=roc_auc,
+            precision=precision,
+            recall=recall,
+            average_precision=average_precision,
             estimator_names=estimator_names,
             ml_task=ml_task,
             pos_label=pos_label_validated,
