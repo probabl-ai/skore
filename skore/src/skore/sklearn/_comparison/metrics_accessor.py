@@ -8,8 +8,8 @@ from skore.sklearn._base import _BaseAccessor, _get_cached_response_values
 from skore.sklearn._comparison.precision_recall_curve_display import (
     PrecisionRecallCurveDisplay,
 )
+from skore.sklearn._comparison.prediction_error_display import PredictionErrorDisplay
 from skore.sklearn._comparison.roc_curve_display import RocCurveDisplay
-from skore.sklearn._plot import PredictionErrorDisplay
 from skore.utils._accessor import _check_supported_ml_task
 from skore.utils._progress_bar import progress_decorator
 
@@ -1080,10 +1080,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             display = display_class._from_predictions(
                 y_true,
                 y_pred,
-                estimator_classes=[
-                    report.estimator_.classes_
-                    for report in self._parent.estimator_reports_
-                ],
+                estimator_classes=(
+                    [
+                        report.estimator_.classes_
+                        for report in self._parent.estimator_reports_
+                    ]
+                    if self._parent._ml_task != "regression"
+                    else []
+                ),
                 estimator_names=self._parent.report_names_,
                 ml_task=self._parent._ml_task,
                 data_source=data_source,
