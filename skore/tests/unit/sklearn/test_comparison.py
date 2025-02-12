@@ -335,23 +335,35 @@ def test_estimator_report_metrics_binary_classification(
 
 
 @pytest.mark.parametrize(
-    "metric_name,metric_value",
+    "metric_name, expected",
     [
-        ("rmse", 1),
-        ("r2", 2),
+        (
+            "rmse",
+            pd.DataFrame(
+                [[0.27699], [0.27699]],
+                index=pd.MultiIndex.from_arrays(
+                    [(0, 1), ("LinearRegression", "LinearRegression")],
+                    names=[None, "Estimator"],
+                ),
+                columns=pd.Index(["RMSE (↘︎)"], dtype="object", name="Metric"),
+            ),
+        ),
+        (
+            "r2",
+            pd.DataFrame(
+                [[0.680319], [0.680319]],
+                index=pd.MultiIndex.from_arrays(
+                    [(0, 1), ("LinearRegression", "LinearRegression")],
+                    names=[None, "Estimator"],
+                ),
+                columns=pd.Index(["R² (↗︎)"], dtype="object", name="Metric"),
+            ),
+        ),
     ],
 )
 def test_estimator_report_metrics_linear_regression(
-    monkeypatch, metric_name, metric_value, regression_model
+    metric_name, expected, regression_model
 ):
-    def dummy(*args, **kwargs):
-        return pd.DataFrame([[metric_value]])
-
-    monkeypatch.setattr(
-        f"skore.sklearn._estimator.metrics_accessor._MetricsAccessor.{metric_name}",
-        dummy,
-    )
-
     estimator, X_train, X_test, y_train, y_test = regression_model
     estimator_report = EstimatorReport(
         estimator,
@@ -365,8 +377,8 @@ def test_estimator_report_metrics_linear_regression(
 
     # ensure metric is valid
     result = getattr(comp.metrics, metric_name)()
-    np.testing.assert_array_equal(result.to_numpy(), [[metric_value], [metric_value]])
+    pd.testing.assert_frame_equal(result, expected)
 
     # ensure metric is valid even from the cache
     result = getattr(comp.metrics, metric_name)()
-    np.testing.assert_array_equal(result.to_numpy(), [[metric_value], [metric_value]])
+    pd.testing.assert_frame_equal(result, expected)
