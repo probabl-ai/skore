@@ -193,24 +193,6 @@ random_forest_report = EstimatorReport(
 )
 
 # %%
-# Now, let us try to compare these estimator reports:
-
-# %%
-try:
-    # We expect skore to raise an error
-    comp_datasets = ComparisonReport(
-        reports=[
-            logistic_regression_report,
-            random_forest_report,
-        ]
-    )
-except ValueError as e:
-    print(f"skore raised a ValueError with the following message:\n\n{e}")
-
-# %%
-# As desired, skore raises an error.
-
-# %%
 # Comparing 2 estimator reports that do not hold their data
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
