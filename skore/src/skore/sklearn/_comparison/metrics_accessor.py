@@ -42,6 +42,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         self,
         *,
         data_source="test",
+        X=None,
+        y=None,
         scoring=None,
         scoring_names=None,
         pos_label=None,
@@ -51,11 +53,20 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train"}, default="test"
+        data_source : {"test", "train", "X_y"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the report.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the report.
 
         scoring : list of str, callable, or scorer, default=None
             The metrics to report. You can get the possible list of strings by calling
@@ -120,6 +131,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         return self._compute_metric_scores(
             report_metric_name="report_metrics",
             data_source=data_source,
+            X=X,
+            y=y,
             scoring=scoring,
             pos_label=pos_label,
             scoring_kwargs=scoring_kwargs,
@@ -132,6 +145,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         report_metric_name,
         *,
         data_source="test",
+        X=None,
+        y=None,
         **metric_kwargs,
     ):
         cache_key = (self._parent._hash, report_metric_name, data_source)
@@ -163,7 +178,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             )
             generator = parallel(
                 joblib.delayed(getattr(report.metrics, report_metric_name))(
-                    data_source=data_source, **metric_kwargs
+                    data_source=data_source, X=X, y=y, **metric_kwargs
                 )
                 for report in self._parent.estimator_reports_
             )

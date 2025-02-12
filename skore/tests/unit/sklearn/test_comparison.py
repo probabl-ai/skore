@@ -382,3 +382,49 @@ def test_estimator_report_metrics_linear_regression(
     # ensure metric is valid even from the cache
     result = getattr(comp.metrics, metric_name)()
     pd.testing.assert_frame_equal(result, expected)
+
+
+def test_comparison_report_report_metrics_X_y(binary_classification_model):
+    estimator, X_train, X_test, y_train, y_test = binary_classification_model
+    estimator_report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+    comp = ComparisonReport([estimator_report, estimator_report])
+
+    result = comp.metrics.report_metrics(
+        data_source="X_y",
+        X=X_train[:10],
+        y=y_train[:10],
+    )
+
+    expected = pd.DataFrame(
+        [
+            [1.0, 1.0, 1.0, 1.0, 1.0, 0.01514976],
+            [1.0, 1.0, 1.0, 1.0, 1.0, 0.01514976],
+        ],
+        index=pd.MultiIndex.from_tuples(
+            [(0, "LogisticRegression"), (1, "LogisticRegression")],
+            names=[None, "Estimator"],
+        ),
+        columns=pd.MultiIndex.from_tuples(
+            [
+                ("Precision (↗︎)", 0),
+                ("Precision (↗︎)", 1),
+                ("Recall (↗︎)", 0),
+                ("Recall (↗︎)", 1),
+                ("ROC AUC (↗︎)", ""),
+                ("Brier score (↘︎)", ""),
+            ],
+            names=["Metric", "Class label"],
+        ),
+    )
+    pd.testing.assert_frame_equal(result, expected)
+
+    assert len(comp._cache) == 1
+    cached_result = list(comp._cache.values())[0]
+    pd.testing.assert_frame_equal(cached_result, expected)
