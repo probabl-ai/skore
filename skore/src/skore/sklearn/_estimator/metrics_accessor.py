@@ -313,7 +313,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             score = pd.DataFrame(
                 score, index=index, columns=[self._parent.estimator_name_]
             )
-            score["Favorability"] = metric_favorability
+            if indicator_favorability:
+                score["Favorability"] = metric_favorability
 
             scores.append(score)
 

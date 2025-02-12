@@ -47,6 +47,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         scoring_names=None,
         pos_label=None,
         scoring_kwargs=None,
+        indicator_favorability=False,
         aggregate=None,
     ):
         """Report a set of metrics for our estimator.
@@ -78,6 +79,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         scoring_kwargs : dict, default=None
             The keyword arguments to pass to the scoring functions.
 
+        indicator_favorability : bool, default=False
+            Whether or not to add an indicator of the favorability of the metric as
+            an extra column in the returned DataFrame.
+
         aggregate : {"mean", "std"} or list of such str, default=None
             Function to aggregate the scores across the cross-validation splits.
 
@@ -103,7 +108,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Precision (↗︎)            0.94...  0.024...
         Recall (↗︎)               0.96...  0.027...
         """
-        return self._compute_metric_scores(
+        results = self._compute_metric_scores(
             report_metric_name="report_metrics",
             data_source=data_source,
             aggregate=aggregate,
@@ -111,7 +116,16 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             pos_label=pos_label,
             scoring_kwargs=scoring_kwargs,
             scoring_names=scoring_names,
+            indicator_favorability=indicator_favorability,
         )
+        if indicator_favorability:
+            # the previous call will add the "Favorability" column for each split or
+            # aggregate. We need to only keep one of them and add it to the final
+            # column.
+            favorability = results.pop("Favorability")
+            results["Favorability"] = favorability.iloc[:, 0]
+
+        return results
 
     @progress_decorator(description="Compute metric for each split")
     def _compute_metric_scores(
