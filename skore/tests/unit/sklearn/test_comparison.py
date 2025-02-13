@@ -235,7 +235,7 @@ def test_comparison_report_pickle(tmp_path, binary_classification_model):
 
 
 @pytest.mark.parametrize(
-    "metric_name, expected",
+    "metric_name, expected, data_source",
     [
         (
             "accuracy",
@@ -247,6 +247,7 @@ def test_comparison_report_pickle(tmp_path, binary_classification_model):
                 ),
                 columns=pd.Index(["Accuracy (↗︎)"], dtype="object", name="Metric"),
             ),
+            "test",
         ),
         (
             "precision",
@@ -261,6 +262,7 @@ def test_comparison_report_pickle(tmp_path, binary_classification_model):
                     names=["Metric", "Class label"],
                 ),
             ),
+            "test",
         ),
         (
             "recall",
@@ -275,6 +277,7 @@ def test_comparison_report_pickle(tmp_path, binary_classification_model):
                     names=["Metric", "Class label"],
                 ),
             ),
+            "test",
         ),
         (
             "brier_score",
@@ -286,6 +289,7 @@ def test_comparison_report_pickle(tmp_path, binary_classification_model):
                 ),
                 columns=pd.Index(["Brier score (↘︎)"], dtype="object", name="Metric"),
             ),
+            "test",
         ),
         (
             "roc_auc",
@@ -297,6 +301,7 @@ def test_comparison_report_pickle(tmp_path, binary_classification_model):
                 ),
                 columns=pd.Index(["ROC AUC (↗︎)"], dtype="object", name="Metric"),
             ),
+            "test",
         ),
         (
             "log_loss",
@@ -308,11 +313,12 @@ def test_comparison_report_pickle(tmp_path, binary_classification_model):
                 ),
                 columns=pd.Index(["Log loss (↘︎)"], dtype="object", name="Metric"),
             ),
+            "test",
         ),
     ],
 )
 def test_estimator_report_metrics_binary_classification(
-    metric_name, expected, binary_classification_model
+    metric_name, expected, data_source, binary_classification_model
 ):
     estimator, X_train, X_test, y_train, y_test = binary_classification_model
     estimator_report = EstimatorReport(
@@ -326,11 +332,21 @@ def test_estimator_report_metrics_binary_classification(
     comp = ComparisonReport([estimator_report, estimator_report])
 
     # ensure metric is valid
-    result = getattr(comp.metrics, metric_name)()
+    if data_source == "X_y":
+        result = getattr(comp.metrics, metric_name)(
+            data_source=data_source, X=X_test, y=y_test
+        )
+    else:
+        result = getattr(comp.metrics, metric_name)(data_source=data_source)
     pd.testing.assert_frame_equal(result, expected)
 
     # ensure metric is valid even from the cache
-    result = getattr(comp.metrics, metric_name)()
+    if data_source == "X_y":
+        result = getattr(comp.metrics, metric_name)(
+            data_source=data_source, X=X_test, y=y_test
+        )
+    else:
+        result = getattr(comp.metrics, metric_name)(data_source=data_source)
     pd.testing.assert_frame_equal(result, expected)
 
 
