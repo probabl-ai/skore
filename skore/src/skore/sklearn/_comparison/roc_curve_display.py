@@ -10,7 +10,6 @@ from skore.sklearn._plot.utils import (
     HelpDisplayMixin,
     _ClassifierCurveDisplayMixin,
     _despine_matplotlib_axis,
-    _validate_style_kwargs,
     sample_mpl_colormap,
 )
 
@@ -57,16 +56,11 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
 
     def plot(
         self,
-        ax=None,
         *,
         plot_chance_level=True,
-        chance_level_kwargs=None,
         despine=True,
     ):
-        if ax is None:
-            _, ax = plt.subplots()
-
-        self.lines_ = []
+        _, ax = plt.subplots()
 
         if self.ml_task == "binary-classification":
             for report_idx, report_name in enumerate(self.estimator_names):
@@ -74,14 +68,12 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
                 tpr = self.tpr[self.pos_label][report_idx]
                 roc_auc = self.roc_auc[self.pos_label][report_idx]
 
-                (line_,) = ax.plot(
+                ax.plot(
                     fpr,
                     tpr,
                     alpha=0.6,
                     label=f"{report_name} #{report_idx + 1} (AUC = {roc_auc:0.2f})",
                 )
-
-                self.lines_.append(line_)
 
             info_pos_label = (
                 f"\n(Positive label: {self.pos_label})"
@@ -104,7 +96,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
                     roc_auc_mean = np.mean(self.roc_auc[class_])
                     class_linestyle = LINESTYLE[(class_idx % len(LINESTYLE))]
 
-                    (line_,) = ax.plot(
+                    ax.plot(
                         fpr,
                         tpr,
                         alpha=0.6,
@@ -115,19 +107,6 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
                             f"(AUC = {roc_auc_mean:0.2f})"
                         ),
                     )
-
-                    self.lines_.append(line_)
-
-        default_chance_level_line_kw = {
-            "label": "Chance level (AUC = 0.5)",
-            "color": "k",
-            "linestyle": "--",
-        }
-
-        chance_level_kwargs = _validate_style_kwargs(
-            default_chance_level_line_kw,
-            chance_level_kwargs or {},
-        )
 
         xlabel = "False Positive Rate"
         ylabel = "True Positive Rate"
@@ -144,9 +123,13 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         )
 
         if plot_chance_level:
-            (self.chance_level_,) = ax.plot((0, 1), (0, 1), **chance_level_kwargs)
-        else:
-            self.chance_level_ = None
+            ax.plot(
+                (0, 1),
+                (0, 1),
+                label="Chance level (AUC = 0.5)",
+                color="k",
+                linestyle="--",
+            )
 
         if despine:
             _despine_matplotlib_axis(ax)
@@ -211,9 +194,9 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
             raise ValueError
 
         return cls(
-            fpr=fpr,
-            tpr=tpr,
-            roc_auc=roc_auc,
+            fpr=dict(fpr),
+            tpr=dict(tpr),
+            roc_auc=dict(roc_auc),
             estimator_names=estimator_names,
             ml_task=ml_task,
             pos_label=pos_label_validated,
