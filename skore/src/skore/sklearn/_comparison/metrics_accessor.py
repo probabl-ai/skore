@@ -201,16 +201,25 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def accuracy(self, *, data_source="test"):
+    def accuracy(self, *, data_source="test", X=None, y=None):
         """Compute the accuracy score.
 
         Parameters
         ----------
-        data_source : {"test", "train"}, default="test"
+        data_source : {"test", "train", "X_y"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the report.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the report.
 
         Returns
         -------
@@ -253,6 +262,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         return self._compute_metric_scores(
             report_metric_name="accuracy",
             data_source=data_source,
+            X=X,
+            y=y,
         )
 
     @available_if(

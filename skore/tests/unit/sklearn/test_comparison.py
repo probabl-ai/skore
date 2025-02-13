@@ -250,6 +250,18 @@ def test_comparison_report_pickle(tmp_path, binary_classification_model):
             "test",
         ),
         (
+            "accuracy",
+            pd.DataFrame(
+                [[1.0], [1.0]],
+                index=pd.MultiIndex.from_arrays(
+                    [(0, 1), ("LogisticRegression", "LogisticRegression")],
+                    names=[None, "Estimator"],
+                ),
+                columns=pd.Index(["Accuracy (↗︎)"], dtype="object", name="Metric"),
+            ),
+            "X_y",
+        ),
+        (
             "precision",
             pd.DataFrame(
                 [[1.0, 1.0], [1.0, 1.0]],
