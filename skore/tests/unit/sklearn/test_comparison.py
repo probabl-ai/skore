@@ -143,9 +143,7 @@ def test_comparison_report_init_with_report_names(binary_classification_model):
         y_test=y_test,
     )
 
-    comp = ComparisonReport(
-        [estimator_report, estimator_report], report_names=["r1", "r2"]
-    )
+    comp = ComparisonReport({"r1": estimator_report, "r2": estimator_report})
 
     pd.testing.assert_index_equal(
         comp.metrics.accuracy().index,
@@ -171,7 +169,7 @@ def test_comparison_report_init_without_report_names(binary_classification_model
     )
 
 
-def test_comparison_report_init_with_invalid_report_names(binary_classification_model):
+def test_comparison_report_non_string_report_names(binary_classification_model):
     estimator, _, X_test, _, y_test = binary_classification_model
     estimator_report = EstimatorReport(
         estimator,
@@ -180,10 +178,9 @@ def test_comparison_report_init_with_invalid_report_names(binary_classification_
         y_test=y_test,
     )
 
-    with pytest.raises(
-        ValueError, match="Expected as many report names as there are reports"
-    ):
-        ComparisonReport([estimator_report, estimator_report], report_names=["r1"])
+    report = ComparisonReport({0: estimator_report, "1": estimator_report})
+    assert report.report_names_ == ["0", "1"]
+
 
 
 def test_comparison_report_help(capsys, binary_classification_model):
