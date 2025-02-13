@@ -208,8 +208,7 @@ def test_comparison_report_repr(binary_classification_model):
 
     repr_str = repr(ComparisonReport([estimator_report, estimator_report]))
 
-    assert "skore.ComparisonReport" in repr_str
-    assert "help()" in repr_str
+    assert "ComparisonReport" in repr_str
 
 
 def test_comparison_report_pickle(tmp_path, binary_classification_model):

@@ -169,7 +169,5 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         )
 
     def __repr__(self):
-        """Return a string representation using rich."""
-        return self._rich_repr(
-            class_name="skore.ComparisonReport", help_method_name="help()"
-        )
+        """Return a string representation."""
+        return f"{self.__class__.__name__}(...)"
