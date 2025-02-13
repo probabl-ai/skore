@@ -456,3 +456,49 @@ def test_comparison_report_report_metrics_X_y(binary_classification_model):
     assert len(comp._cache) == 1
     cached_result = list(comp._cache.values())[0]
     pd.testing.assert_frame_equal(cached_result, expected)
+
+
+def test_comparison_report_custom_metric_X_y(binary_classification_model):
+    from sklearn.metrics import mean_absolute_error
+
+    estimator, X_train, X_test, y_train, y_test = binary_classification_model
+    estimator_report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+    comp = ComparisonReport([estimator_report, estimator_report])
+
+    expected = pd.DataFrame(
+        [[0.0], [0.0]],
+        index=pd.MultiIndex.from_tuples(
+            [(0, "LogisticRegression"), (1, "LogisticRegression")],
+            names=[None, "Estimator"],
+        ),
+        columns=pd.Index(["MAE (↗︎)"], name="Metric"),
+    )
+
+    # ensure metric is valid
+    result = comp.metrics.custom_metric(
+        metric_function=mean_absolute_error,
+        response_method="predict",
+        metric_name="MAE (↗︎)",
+        data_source="X_y",
+        X=X_test,
+        y=y_test,
+    )
+    pd.testing.assert_frame_equal(result, expected)
+
+    # ensure metric is valid even from the cache
+    result = comp.metrics.custom_metric(
+        metric_function=mean_absolute_error,
+        response_method="predict",
+        metric_name="MAE (↗︎)",
+        data_source="X_y",
+        X=X_test,
+        y=y_test,
+    )
+    pd.testing.assert_frame_equal(result, expected)
