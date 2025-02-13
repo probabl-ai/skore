@@ -80,3 +80,58 @@ class TestPrecisionRecallCurveDisplay:
         assert_equal(display.ml_task, "multiclass-classification")
         assert_equal(display.pos_label, None)
         assert_equal(display.data_source, "test")
+
+    def test_plot_binary_classification(self, tmp_path):
+        classes = (0, 1)
+        y_true = (array((0, 1)), array((0, 1)))
+        y_pred = (array((0.2, 0.8)), array((0.8, 0.2)))
+        estimators = (FakeEstimator(classes), FakeEstimator(classes))
+        display = PrecisionRecallCurveDisplay._from_predictions(
+            y_true=y_true,
+            y_pred=y_pred,
+            estimators=estimators,
+            estimator_names=["BC-E1", "BC-E2"],
+            ml_task="binary-classification",
+            data_source="test",
+        )
+
+        display.plot()
+        plt.gcf().savefig(tmp_path / "pr-binary-classification.png")
+
+        assert (
+            compare_images(
+                tmp_path / "pr-binary-classification.png",
+                CWD / "pr-binary-classification.png",
+                0,
+            )
+            is None
+        )
+
+    def test_plot_multiclass_classification(self, tmp_path):
+        classes = (0, 1, 2)
+        y_true = (array((0, 1, 2)), array((0, 1, 2)))
+        y_pred = (
+            array(((0.8, 0.2, 0.0), (0.0, 0.8, 0.2), (0.2, 0.0, 0.8))),
+            array(((0.0, 0.2, 0.8), (0.8, 0.0, 0.2), (0.2, 0.8, 0.0))),
+        )
+        estimators = (FakeEstimator(classes), FakeEstimator(classes))
+        display = PrecisionRecallCurveDisplay._from_predictions(
+            y_true=y_true,
+            y_pred=y_pred,
+            estimators=estimators,
+            estimator_names=["MC-E1", "MC-E2"],
+            ml_task="multiclass-classification",
+            data_source="test",
+        )
+
+        display.plot()
+        plt.gcf().savefig(tmp_path / "pr-multiclass-classification.png")
+
+        assert (
+            compare_images(
+                tmp_path / "pr-multiclass-classification.png",
+                CWD / "pr-multiclass-classification.png",
+                0,
+            )
+            is None
+        )
