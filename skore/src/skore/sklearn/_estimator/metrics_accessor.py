@@ -24,23 +24,22 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     You can access this accessor using the `metrics` attribute.
     """
 
-    _SCORE_OR_LOSS_ICONS = {
-        "accuracy": "(↗︎)",
-        "precision": "(↗︎)",
-        "recall": "(↗︎)",
-        "brier_score": "(↘︎)",
-        "roc_auc": "(↗︎)",
-        "log_loss": "(↘︎)",
-        "r2": "(↗︎)",
-        "rmse": "(↘︎)",
-        "report_metrics": "",
-        "custom_metric": "",
+    _SCORE_OR_LOSS_INFO = {
+        "accuracy": {"name": "Accuracy", "icon": "(↗︎)"},
+        "precision": {"name": "Precision", "icon": "(↗︎)"},
+        "recall": {"name": "Recall", "icon": "(↗︎)"},
+        "brier_score": {"name": "Brier score", "icon": "(↘︎)"},
+        "roc_auc": {"name": "ROC AUC", "icon": "(↗︎)"},
+        "log_loss": {"name": "Log loss", "icon": "(↘︎)"},
+        "r2": {"name": "R²", "icon": "(↗︎)"},
+        "rmse": {"name": "RMSE", "icon": "(↘︎)"},
+        "custom_metric": {"name": "Custom metric", "icon": ""},
+        "report_metrics": {"name": "Report metrics", "icon": ""},
     }
 
     def __init__(self, parent):
         super().__init__(parent)
 
-    # TODO: should build on the `add_scorers` function
     def report_metrics(
         self,
         *,
@@ -113,8 +112,12 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     y_test=y_test,
         ... )
         >>> report.metrics.report_metrics(pos_label=1)
-        Metric              Precision (↗︎)  Recall (↗︎)  ROC AUC (↗︎)  Brier score (↘︎)
-        LogisticRegression        0.98...     0.93...      0.99...          0.03...
+                        LogisticRegression
+        Metric
+        Precision (↗︎)              0.98...
+        Recall (↗︎)                 0.93...
+        ROC AUC (↗︎)                0.99...
+        Brier score (↘︎)            0.03...
         """
         if data_source == "X_y":
             # optimization of the hash computation to avoid recomputing it
@@ -185,24 +188,31 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                             )
                     elif pos_label is not None:
                         metrics_kwargs["pos_label"] = pos_label
+                if metric_name is None:
+                    metric_name = metric._score_func.__name__
             elif isinstance(metric, str) or callable(metric):
                 if isinstance(metric, str):
                     err_msg = (
                         f"Invalid metric: {metric!r}. Please use a valid metric"
                         " from the list of supported metrics: "
-                        f"{list(self._SCORE_OR_LOSS_ICONS.keys())}"
+                        f"{list(self._SCORE_OR_LOSS_INFO.keys())}"
                     )
                     if (
                         metric.startswith("_")
-                        and metric[1:] not in self._SCORE_OR_LOSS_ICONS
+                        and metric[1:] not in self._SCORE_OR_LOSS_INFO
                     ):
                         raise ValueError(err_msg)
                     if not metric.startswith("_"):
-                        if metric not in self._SCORE_OR_LOSS_ICONS:
+                        if metric not in self._SCORE_OR_LOSS_INFO:
                             raise ValueError(err_msg)
                         metric = f"_{metric}"
                     metric_fn = getattr(self, metric)
                     metrics_kwargs = {"data_source_hash": data_source_hash}
+                    if metric_name is None:
+                        metric_name = (
+                            f"{self._SCORE_OR_LOSS_INFO[metric[1:]]['name']} "
+                            f"{self._SCORE_OR_LOSS_INFO[metric[1:]]['icon']}"
+                        )
                 else:
                     metric_fn = partial(self._custom_metric, metric_function=metric)
                     if scoring_kwargs is None:
@@ -217,6 +227,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                             if param in scoring_kwargs
                         }
                     metrics_kwargs["data_source_hash"] = data_source_hash
+                    if metric_name is None:
+                        metric_name = metric.__name__
                 metrics_params = inspect.signature(metric_fn).parameters
                 if scoring_kwargs is not None:
                     for param in metrics_params:
@@ -229,39 +241,92 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                     f"Invalid type of metric: {type(metric)} for {metric!r}"
                 )
 
-            if metric_name is not None:
-                metrics_kwargs["metric_name"] = metric_name
+            score = metric_fn(data_source=data_source, X=X, y=y, **metrics_kwargs)
+
+            if self._parent._ml_task == "binary-classification":
+                if isinstance(score, dict):
+                    classes = list(score.keys())
+                    index = pd.MultiIndex.from_arrays(
+                        [[metric_name] * len(classes), classes],
+                        names=["Metric", "Label / Average"],
+                    )
+                    score = np.hstack([score[c] for c in classes]).reshape(-1, 1)
+                elif "average" in metrics_kwargs:
+                    if metrics_kwargs["average"] == "binary":
+                        index = pd.MultiIndex.from_arrays(
+                            [[metric_name], [pos_label]],
+                            names=["Metric", "Label / Average"],
+                        )
+                    elif metrics_kwargs["average"] is not None:
+                        index = pd.MultiIndex.from_arrays(
+                            [[metric_name], [metrics_kwargs["average"]]],
+                            names=["Metric", "Label / Average"],
+                        )
+                    else:
+                        index = pd.Index([metric_name], name="Metric")
+                    score = np.array(score).reshape(-1, 1)
+                else:
+                    index = pd.Index([metric_name], name="Metric")
+                    score = np.array(score).reshape(-1, 1)
+            elif self._parent._ml_task == "multiclass-classification":
+                if isinstance(score, dict):
+                    classes = list(score.keys())
+                    index = pd.MultiIndex.from_arrays(
+                        [[metric_name] * len(classes), classes],
+                        names=["Metric", "Label / Average"],
+                    )
+                    score = np.hstack([score[c] for c in classes]).reshape(-1, 1)
+                elif (
+                    "average" in metrics_kwargs
+                    and metrics_kwargs["average"] is not None
+                ):
+                    index = pd.MultiIndex.from_arrays(
+                        [[metric_name], [metrics_kwargs["average"]]],
+                        names=["Metric", "Label / Average"],
+                    )
+                    score = np.array(score).reshape(-1, 1)
+                else:
+                    index = pd.Index([metric_name], name="Metric")
+                    score = np.array(score).reshape(-1, 1)
+            elif self._parent._ml_task == "regression":
+                if isinstance(score, np.ndarray):
+                    index = pd.MultiIndex.from_arrays(
+                        [[metric_name] * len(score), list(range(len(score)))],
+                        names=["Metric", "Output"],
+                    )
+                    score = score.reshape(-1, 1)
+                else:
+                    index = pd.Index([metric_name], name="Metric")
+                    score = np.array(score).reshape(-1, 1)
+            else:  # unknown task - try our best
+                index = [metric_name] if len(score) == 1 else None
+
             scores.append(
-                metric_fn(
-                    data_source=data_source,
-                    X=X,
-                    y=y,
-                    **metrics_kwargs,
-                )
+                pd.DataFrame(score, index=index, columns=[self._parent.estimator_name_])
             )
 
         has_multilevel = any(
-            isinstance(score, pd.DataFrame) and isinstance(score.columns, pd.MultiIndex)
+            isinstance(score, pd.DataFrame) and isinstance(score.index, pd.MultiIndex)
             for score in scores
         )
 
         if has_multilevel:
             # Convert single-level dataframes to multi-level
             for i, score in enumerate(scores):
-                if hasattr(score, "columns") and not isinstance(
-                    score.columns, pd.MultiIndex
+                if hasattr(score, "index") and not isinstance(
+                    score.index, pd.MultiIndex
                 ):
-                    name_index = (
-                        ["Metric", "Output"]
-                        if self._parent._ml_task == "regression"
-                        else ["Metric", "Class label"]
-                    )
-                    scores[i].columns = pd.MultiIndex.from_tuples(
-                        [(col, "") for col in score.columns],
+                    if self._parent._ml_task == "regression":
+                        name_index = ["Metric", "Output"]
+                    else:
+                        name_index = ["Metric", "Label / Average"]
+
+                    scores[i].index = pd.MultiIndex.from_tuples(
+                        [(idx, "") for idx in score.index],
                         names=name_index,
                     )
 
-        return pd.concat(scores, axis=1)
+        return pd.concat(scores, axis=0)
 
     def _compute_metric_scores(
         self,
@@ -273,7 +338,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source_hash=None,
         response_method,
         pos_label=None,
-        metric_name=None,
         **metric_kwargs,
     ):
         if data_source_hash is None:
@@ -321,41 +385,20 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             )
 
             score = metric_fn(y_true, y_pred, **kwargs)
+            if isinstance(score, np.floating):
+                # convert np.float64 and np.float32 to float for consistency across
+                # functions
+                score = float(score)
             self._parent._cache[cache_key] = score
 
-        score = np.array([score]) if not isinstance(score, np.ndarray) else score
-        metric_name = metric_name or metric_fn.__name__
-
-        if self._parent._ml_task in [
+        if self._parent._ml_task in (
             "binary-classification",
             "multiclass-classification",
-        ]:
-            if len(score) == 1:
-                columns = pd.Index([metric_name], name="Metric")
-            else:
-                classes = self._parent._estimator.classes_
-                columns = pd.MultiIndex.from_arrays(
-                    [[metric_name] * len(classes), classes],
-                    names=["Metric", "Class label"],
-                )
-                score = score.reshape(1, -1)
-        elif self._parent._ml_task == "regression":
-            if len(score) == 1:
-                columns = pd.Index([metric_name], name="Metric")
-            else:
-                columns = pd.MultiIndex.from_arrays(
-                    [
-                        [metric_name] * len(score),
-                        [f"#{i}" for i in range(len(score))],
-                    ],
-                    names=["Metric", "Output"],
-                )
-                score = score.reshape(1, -1)
-        else:  # unknown task - try our best
-            columns = [metric_name] if score.shape[0] == 1 else None
-        return pd.DataFrame(
-            score, columns=columns, index=[self._parent.estimator_name_]
-        )
+        ) and isinstance(score, np.ndarray):
+            return dict(zip(self._parent._estimator.classes_, score))
+        elif isinstance(score, np.ndarray):
+            return score[0] if score.size == 1 else score
+        return score
 
     @available_if(
         _check_supported_ml_task(
@@ -384,7 +427,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         Returns
         -------
-        pd.DataFrame
+        float
             The accuracy score.
 
         Examples
@@ -405,8 +448,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     y_test=y_test,
         ... )
         >>> report.metrics.accuracy()
-        Metric              Accuracy (↗︎)
-        LogisticRegression       0.95...
+        0.95...
         """
         return self._accuracy(data_source=data_source, data_source_hash=None, X=X, y=y)
 
@@ -417,19 +459,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source_hash=None,
         X=None,
         y=None,
-        metric_name=None,
     ):
         """Private interface of `accuracy` to be able to pass `data_source_hash`.
 
         `data_source_hash` is either an `int` when we already computed the hash
         and are able to pass it around or `None` and thus trigger its computation
         in the underlying process.
-
-        `metric_name` allows to overwrite the default name of the metric in the report.
         """
-        if metric_name is None:
-            metric_name = f"Accuracy {self._SCORE_OR_LOSS_ICONS['accuracy']}"
-
         return self._compute_metric_scores(
             metrics.accuracy_score,
             X=X,
@@ -437,7 +473,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             data_source=data_source,
             data_source_hash=data_source_hash,
             response_method="predict",
-            metric_name=metric_name,
         )
 
     @available_if(
@@ -497,7 +532,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         Returns
         -------
-        pd.DataFrame
+        float or dict
             The precision score.
 
         Examples
@@ -518,8 +553,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     y_test=y_test,
         ... )
         >>> report.metrics.precision(pos_label=1)
-        Metric              Precision (↗︎)
-        LogisticRegression        0.98...
+        0.98...
         """
         return self._precision(
             data_source=data_source,
@@ -537,7 +571,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source_hash=None,
         X=None,
         y=None,
-        metric_name=None,
         average=None,
         pos_label=None,
     ):
@@ -546,16 +579,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         `data_source_hash` is either an `int` when we already computed the hash
         and are able to pass it around or `None` and thus trigger its computation
         in the underlying process.
-
-        `metric_name` allows to overwrite the default name of the metric in the report.
         """
         if self._parent._ml_task == "binary-classification" and pos_label is not None:
             # if `pos_label` is specified by our user, then we can safely report only
             # the statistics of the positive class
             average = "binary"
-
-        if metric_name is None:
-            metric_name = f"Precision {self._SCORE_OR_LOSS_ICONS['precision']}"
 
         return self._compute_metric_scores(
             metrics.precision_score,
@@ -565,7 +593,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             data_source_hash=data_source_hash,
             response_method="predict",
             pos_label=pos_label,
-            metric_name=metric_name,
             average=average,
         )
 
@@ -627,7 +654,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         Returns
         -------
-        pd.DataFrame
+        float or dict
             The recall score.
 
         Examples
@@ -648,8 +675,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     y_test=y_test,
         ... )
         >>> report.metrics.recall(pos_label=1)
-        Metric              Recall (↗︎)
-        LogisticRegression     0.93...
+        0.93...
         """
         return self._recall(
             data_source=data_source,
@@ -667,7 +693,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source_hash=None,
         X=None,
         y=None,
-        metric_name=None,
         average=None,
         pos_label=None,
     ):
@@ -676,16 +701,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         `data_source_hash` is either an `int` when we already computed the hash
         and are able to pass it around or `None` and thus trigger its computation
         in the underlying process.
-
-        `metric_name` allows to overwrite the default name of the metric in the report.
         """
         if self._parent._ml_task == "binary-classification" and pos_label is not None:
             # if `pos_label` is specified by our user, then we can safely report only
             # the statistics of the positive class
             average = "binary"
-
-        if metric_name is None:
-            metric_name = f"Recall {self._SCORE_OR_LOSS_ICONS['recall']}"
 
         return self._compute_metric_scores(
             metrics.recall_score,
@@ -695,7 +715,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             data_source_hash=data_source_hash,
             response_method="predict",
             pos_label=pos_label,
-            metric_name=metric_name,
             average=average,
         )
 
@@ -724,7 +743,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         Returns
         -------
-        pd.DataFrame
+        float
             The Brier score.
 
         Examples
@@ -745,8 +764,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     y_test=y_test,
         ... )
         >>> report.metrics.brier_score()
-        Metric              Brier score (↘︎)
-        LogisticRegression          0.03...
+        0.03...
         """
         return self._brier_score(
             data_source=data_source,
@@ -762,23 +780,17 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source_hash=None,
         X=None,
         y=None,
-        metric_name=None,
     ):
         """Private interface of `brier_score` to be able to pass `data_source_hash`.
 
         `data_source_hash` is either an `int` when we already computed the hash
         and are able to pass it around or `None` and thus trigger its computation
         in the underlying process.
-
-        `metric_name` allows to overwrite the default name of the metric in the report.
         """
         # The Brier score in scikit-learn request `pos_label` to ensure that the
         # integral encoding of `y_true` corresponds to the probabilities of the
         # `pos_label`. Since we get the predictions with `get_response_method`, we
         # can pass any `pos_label`, they will lead to the same result.
-        if metric_name is None:
-            metric_name = f"Brier score {self._SCORE_OR_LOSS_ICONS['brier_score']}"
-
         return self._compute_metric_scores(
             metrics.brier_score_loss,
             X=X,
@@ -786,7 +798,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             data_source=data_source,
             data_source_hash=data_source_hash,
             response_method="predict_proba",
-            metric_name=metric_name,
             pos_label=self._parent._estimator.classes_[-1],
         )
 
@@ -817,8 +828,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
 
-        average : {"auto", "macro", "micro", "weighted", "samples"}, \
-                default=None
+        average : {"macro", "micro", "weighted", "samples"}, default=None
             Average to compute the ROC AUC score in a multiclass setting. By default,
             no average is computed. Otherwise, this determines the type of averaging
             performed on the data.
@@ -853,7 +863,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         Returns
         -------
-        pd.DataFrame
+        float or dict
             The ROC AUC score.
 
         Examples
@@ -874,8 +884,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     y_test=y_test,
         ... )
         >>> report.metrics.roc_auc()
-        Metric              ROC AUC (↗︎)
-        LogisticRegression      0.99...
+        0.99...
         """
         return self._roc_auc(
             data_source=data_source,
@@ -893,7 +902,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source_hash=None,
         X=None,
         y=None,
-        metric_name=None,
         average=None,
         multi_class="ovr",
     ):
@@ -902,12 +910,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         `data_source_hash` is either an `int` when we already computed the hash
         and are able to pass it around or `None` and thus trigger its computation
         in the underlying process.
-
-        `metric_name` allows to overwrite the default name of the metric in the report.
         """
-        if metric_name is None:
-            metric_name = f"ROC AUC {self._SCORE_OR_LOSS_ICONS['roc_auc']}"
-
         return self._compute_metric_scores(
             metrics.roc_auc_score,
             X=X,
@@ -915,7 +918,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             data_source=data_source,
             data_source_hash=data_source_hash,
             response_method=["predict_proba", "decision_function"],
-            metric_name=metric_name,
             average=average,
             multi_class=multi_class,
         )
@@ -940,7 +942,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         Returns
         -------
-        pd.DataFrame
+        float
             The log-loss.
 
         Examples
@@ -961,8 +963,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     y_test=y_test,
         ... )
         >>> report.metrics.log_loss()
-        Metric              Log loss (↘︎)
-        LogisticRegression       0.10...
+        0.10...
         """
         return self._log_loss(
             data_source=data_source,
@@ -978,19 +979,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source_hash=None,
         X=None,
         y=None,
-        metric_name=None,
     ):
         """Private interface of `log_loss` to be able to pass `data_source_hash`.
 
         `data_source_hash` is either an `int` when we already computed the hash
         and are able to pass it around or `None` and thus trigger its computation
         in the underlying process.
-
-        `metric_name` allows to overwrite the default name of the metric in the report.
         """
-        if metric_name is None:
-            metric_name = f"Log loss {self._SCORE_OR_LOSS_ICONS['log_loss']}"
-
         return self._compute_metric_scores(
             metrics.log_loss,
             X=X,
@@ -998,7 +993,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             data_source=data_source,
             data_source_hash=data_source_hash,
             response_method="predict_proba",
-            metric_name=metric_name,
         )
 
     @available_if(_check_supported_ml_task(supported_ml_tasks=["regression"]))
@@ -1034,7 +1028,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         Returns
         -------
-        pd.DataFrame
+        float or ndarray of shape (n_outputs,)
             The R² score.
 
         Examples
@@ -1055,8 +1049,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     y_test=y_test,
         ... )
         >>> report.metrics.r2()
-        Metric  R² (↗︎)
-        Ridge   0.35...
+        np.float64(0.35...)
         """
         return self._r2(
             data_source=data_source,
@@ -1073,7 +1066,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source_hash=None,
         X=None,
         y=None,
-        metric_name=None,
         multioutput="raw_values",
     ):
         """Private interface of `r2` to be able to pass `data_source_hash`.
@@ -1081,12 +1073,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         `data_source_hash` is either an `int` when we already computed the hash
         and are able to pass it around or `None` and thus trigger its computation
         in the underlying process.
-
-        `metric_name` allows to overwrite the default name of the metric in the report.
         """
-        if metric_name is None:
-            metric_name = f"R² {self._SCORE_OR_LOSS_ICONS['r2']}"
-
         return self._compute_metric_scores(
             metrics.r2_score,
             X=X,
@@ -1094,7 +1081,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             data_source=data_source,
             data_source_hash=data_source_hash,
             response_method="predict",
-            metric_name=metric_name,
             multioutput=multioutput,
         )
 
@@ -1131,7 +1117,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         Returns
         -------
-        pd.DataFrame
+        float or ndarray of shape (n_outputs,)
             The root mean squared error.
 
         Examples
@@ -1152,8 +1138,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     y_test=y_test,
         ... )
         >>> report.metrics.rmse()
-        Metric  RMSE (↘︎)
-        Ridge   56.5...
+        np.float64(56.5...)
         """
         return self._rmse(
             data_source=data_source,
@@ -1170,7 +1155,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source_hash=None,
         X=None,
         y=None,
-        metric_name=None,
         multioutput="raw_values",
     ):
         """Private interface of `rmse` to be able to pass `data_source_hash`.
@@ -1178,12 +1162,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         `data_source_hash` is either an `int` when we already computed the hash
         and are able to pass it around or `None` and thus trigger its computation
         in the underlying process.
-
-        `metric_name` allows to overwrite the default name of the metric in the report.
         """
-        if metric_name is None:
-            metric_name = f"RMSE {self._SCORE_OR_LOSS_ICONS['rmse']}"
-
         return self._compute_metric_scores(
             metrics.root_mean_squared_error,
             X=X,
@@ -1191,7 +1170,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             data_source=data_source,
             data_source_hash=data_source_hash,
             response_method="predict",
-            metric_name=metric_name,
             multioutput=multioutput,
         )
 
@@ -1200,7 +1178,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         metric_function,
         response_method,
         *,
-        metric_name=None,
         data_source="test",
         X=None,
         y=None,
@@ -1228,10 +1205,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             values are: `predict`, `predict_proba`, `predict_log_proba`, and
             `decision_function`.
 
-        metric_name : str, default=None
-            The name of the metric. If not provided, it will be inferred from the
-            metric function.
-
         data_source : {"test", "train", "X_y"}, default="test"
             The data source to use.
 
@@ -1252,8 +1225,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         Returns
         -------
-        pd.DataFrame
-            The custom metric.
+        float, dict, or ndarray of shape (n_outputs,)
+            The custom metric. The output type depends on the metric function.
 
         Examples
         --------
@@ -1276,10 +1249,15 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> report.metrics.custom_metric(
         ...     metric_function=mean_absolute_error,
         ...     response_method="predict",
-        ...     metric_name="MAE (↗︎)",
         ... )
-        Metric        MAE (↗︎)
-        Ridge   44.9...
+        44.9...
+        >>> def metric_function(y_true, y_pred):
+        ...     return {"output": float(mean_absolute_error(y_true, y_pred))}
+        >>> report.metrics.custom_metric(
+        ...     metric_function=metric_function,
+        ...     response_method="predict",
+        ... )
+        {'output': 44.9...}
         """
         return self._custom_metric(
             data_source=data_source,
@@ -1288,7 +1266,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             y=y,
             metric_function=metric_function,
             response_method=response_method,
-            metric_name=metric_name,
             **kwargs,
         )
 
@@ -1301,7 +1278,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         y=None,
         metric_function=None,
         response_method=None,
-        metric_name=None,
         **kwargs,
     ):
         """Private interface of `custom_metric` to be able to pass `data_source_hash`.
@@ -1317,7 +1293,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             data_source=data_source,
             data_source_hash=data_source_hash,
             response_method=response_method,
-            metric_name=metric_name,
             **kwargs,
         )
 
@@ -1347,15 +1322,16 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         """Override format method for metrics-specific naming."""
         method_name = f"{name}(...)"
         method_name = method_name.ljust(22)
-        if name in self._SCORE_OR_LOSS_ICONS and self._SCORE_OR_LOSS_ICONS[name] in (
-            "(↗︎)",
-            "(↘︎)",
-        ):
-            if self._SCORE_OR_LOSS_ICONS[name] == "(↗︎)":
-                method_name += f"[cyan]{self._SCORE_OR_LOSS_ICONS[name]}[/cyan]"
+        if name in self._SCORE_OR_LOSS_INFO and self._SCORE_OR_LOSS_INFO[name][
+            "icon"
+        ] in ("(↗︎)", "(↘︎)"):
+            if self._SCORE_OR_LOSS_INFO[name]["icon"] == "(↗︎)":
+                method_name += f"[cyan]{self._SCORE_OR_LOSS_INFO[name]['icon']}[/cyan]"
                 return method_name.ljust(43)
             else:  # (↘︎)
-                method_name += f"[orange1]{self._SCORE_OR_LOSS_ICONS[name]}[/orange1]"
+                method_name += (
+                    f"[orange1]{self._SCORE_OR_LOSS_INFO[name]['icon']}[/orange1]"
+                )
                 return method_name.ljust(49)
         else:
             return method_name.ljust(29)
