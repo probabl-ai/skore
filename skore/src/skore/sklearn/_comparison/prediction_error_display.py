@@ -98,7 +98,7 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         y_pred,
         *,
         estimator_names,
-        ml_task,  # FIXME: to be used when having single-output vs. multi-output
+        ml_task,
         data_source=None,
         subsample=1_000,
         random_state=None,

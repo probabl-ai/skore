@@ -1080,14 +1080,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             display = display_class._from_predictions(
                 y_true,
                 y_pred,
-                estimator_classes=(
-                    [
-                        report.estimator_.classes_
-                        for report in self._parent.estimator_reports_
-                    ]
-                    if self._parent._ml_task != "regression"
-                    else []
-                ),
+                estimators=[r.estimator_ for r in self._parent.estimator_reports_],
                 estimator_names=self._parent.report_names_,
                 ml_task=self._parent._ml_task,
                 data_source=data_source,

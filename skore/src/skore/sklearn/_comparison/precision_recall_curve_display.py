@@ -1,4 +1,5 @@
 from collections import defaultdict
+from operator import attrgetter
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -129,13 +130,14 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
         y_true: list[list],
         y_pred: list[list],
         *,
-        estimator_classes: list[list],
+        estimators: list,
         estimator_names: list[str],
         ml_task,
         data_source=None,
         pos_label=None,
         drop_intermediate=True,
     ):
+        estimator_classes = map(attrgetter("classes_"), estimators)
         precision, recall, average_precision = (defaultdict(list) for _ in range(3))
         pos_label_validated = cls._validate_from_predictions_params(
             y_true, y_pred, ml_task=ml_task, pos_label=pos_label
