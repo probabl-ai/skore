@@ -5,11 +5,11 @@ from sklearn.utils.metaestimators import available_if
 
 from skore.externals._pandas_accessors import DirNamesMixin
 from skore.sklearn._base import _BaseAccessor, _get_cached_response_values
-from skore.sklearn._plot import (
+from skore.sklearn._comparison.precision_recall_curve_display import (
     PrecisionRecallCurveDisplay,
-    PredictionErrorDisplay,
-    RocCurveDisplay,
 )
+from skore.sklearn._comparison.prediction_error_display import PredictionErrorDisplay
+from skore.sklearn._comparison.roc_curve_display import RocCurveDisplay
 from skore.utils._accessor import _check_supported_ml_task
 from skore.utils._progress_bar import progress_decorator
 
@@ -1153,8 +1153,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             display = display_class._from_predictions(
                 y_true,
                 y_pred,
-                estimator=self._parent.estimator_reports_[0]._estimator,
-                estimator_name="",
+                estimators=[r.estimator_ for r in self._parent.estimator_reports_],
+                estimator_names=self._parent.report_names_,
                 ml_task=self._parent._ml_task,
                 data_source=data_source,
                 **display_kwargs,
@@ -1164,7 +1164,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         return display
 
     @available_if(
-        _check_supported_ml_task(supported_ml_tasks=["binary-classification"])
+        _check_supported_ml_task(
+            supported_ml_tasks=["binary-classification", "multiclass-classification"]
+        )
     )
     def roc(self, *, data_source="test", pos_label=None, ax=None):
         """Plot the ROC curve.
@@ -1225,7 +1227,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         )
 
     @available_if(
-        _check_supported_ml_task(supported_ml_tasks=["binary-classification"])
+        _check_supported_ml_task(
+            supported_ml_tasks=["binary-classification", "multiclass-classification"]
+        )
     )
     def precision_recall(self, *, data_source="test", pos_label=None):
         """Plot the precision-recall curve.
