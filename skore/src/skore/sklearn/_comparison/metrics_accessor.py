@@ -124,9 +124,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     pos_label=1,
         ... )
         Metric                Precision (↗︎)  Recall (↗︎)
-          Estimator
-        0 LogisticRegression        0.96...     0.97...
-        1 LogisticRegression        0.96...     0.97...
+        Estimator
+        LogisticRegression        0.96...     0.97...
+        LogisticRegression        0.96...     0.97...
         """
         return self._compute_metric_scores(
             report_metric_name="report_metrics",
@@ -188,10 +188,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 progress.update(main_task, advance=1, refresh=True)
 
             results = pd.concat(results, axis=0, ignore_index=True)
-            results.index = pd.MultiIndex.from_tuples(
-                enumerate(self._parent.report_names_),
-                names=[None, "Estimator"],
-            )
+            results.index = pd.Index(self._parent.report_names_, name="Estimator")
 
             self._parent._cache[cache_key] = results
         return results
@@ -255,9 +252,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ... )
         >>> comparison_report.metrics.accuracy()
         Metric                Accuracy (↗︎)
-          Estimator
-        0 LogisticRegression       0.96...
-        1 LogisticRegression       0.96...
+        Estimator
+        LogisticRegression       0.96...
+        LogisticRegression       0.96...
         """
         return self._compute_metric_scores(
             report_metric_name="accuracy",
@@ -362,9 +359,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> comparison_report.metrics.precision()
         Metric               Precision (↗︎)
         Class label                       0         1
-          Estimator
-        0 LogisticRegression        0.96...   0.96...
-        1 LogisticRegression        0.96...   0.96...
+        Estimator
+        LogisticRegression        0.96...   0.96...
+        LogisticRegression        0.96...   0.96...
         """
         return self._compute_metric_scores(
             report_metric_name="precision",
@@ -472,9 +469,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> comparison_report.metrics.recall()
         Metric               Recall (↗︎)
         Class label                    0         1
-          Estimator
-        0 LogisticRegression     0.94...   0.97...
-        1 LogisticRegression     0.94...   0.97...
+        Estimator
+        LogisticRegression     0.94...   0.97...
+        LogisticRegression     0.94...   0.97...
         """
         return self._compute_metric_scores(
             report_metric_name="recall",
@@ -548,9 +545,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ... )
         >>> comparison_report.metrics.brier_score()
         Metric                Brier score (↘︎)
-          Estimator
-        0 LogisticRegression          0.025...
-        1 LogisticRegression          0.025...
+        Estimator
+        LogisticRegression          0.025...
+        LogisticRegression          0.025...
         """
         return self._compute_metric_scores(
             report_metric_name="brier_score",
@@ -660,9 +657,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ... )
         >>> comparison_report.metrics.roc_auc()
         Metric                ROC AUC (↗︎)
-          Estimator
-        0 LogisticRegression      0.99...
-        1 LogisticRegression      0.99...
+        Estimator
+        LogisticRegression      0.99...
+        LogisticRegression      0.99...
         """
         return self._compute_metric_scores(
             report_metric_name="roc_auc",
@@ -738,9 +735,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ... )
         >>> comparison_report.metrics.log_loss()
         Metric                Log loss (↘︎)
-          Estimator
-        0 LogisticRegression       0.082...
-        1 LogisticRegression       0.082...
+        Estimator
+        LogisticRegression       0.082...
+        LogisticRegression       0.082...
         """
         return self._compute_metric_scores(
             report_metric_name="log_loss",
@@ -821,9 +818,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ... )
         >>> comparison_report.metrics.r2()
         Metric       R² (↗︎)
-          Estimator
-        0 Ridge       0.43...
-        1 Ridge       0.43...
+        Estimator
+        Ridge       0.43...
+        Ridge       0.43...
         """
         return self._compute_metric_scores(
             report_metric_name="r2",
@@ -905,9 +902,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ... )
         >>> comparison_report.metrics.rmse()
         Metric       RMSE (↘︎)
-          Estimator
-        0 Ridge      55.726...
-        1 Ridge      55.726...
+        Estimator
+        Ridge      55.726...
+        Ridge      55.726...
         """
         return self._compute_metric_scores(
             report_metric_name="rmse",
@@ -1011,9 +1008,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     metric_name="MAE (↗︎)",
         ... )
         Metric        MAE (↗︎)
-          Estimator
-        0 Ridge      45.913439
-        1 Ridge      45.913439
+        Estimator
+        Ridge      45.913439
+        Ridge      45.913439
         """
         return self._compute_metric_scores(
             report_metric_name="custom_metric",
