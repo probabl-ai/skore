@@ -1,8 +1,6 @@
-import time
 from collections.abc import Generator
 from typing import TYPE_CHECKING, Any, Optional, Union
 
-import numpy as np
 from numpy.typing import ArrayLike
 from rich.panel import Panel
 from sklearn.base import BaseEstimator, clone, is_classifier
@@ -11,9 +9,8 @@ from sklearn.pipeline import Pipeline
 
 from skore.externals._pandas_accessors import DirNamesMixin
 from skore.externals._sklearn_compat import _safe_indexing
-from skore.sklearn._base import _BaseReport
+from skore.sklearn._comparison.report import ComparisonReport
 from skore.sklearn._estimator.report import EstimatorReport
-from skore.sklearn.find_ml_task import _find_ml_task
 from skore.sklearn.types import SKLearnCrossValidator
 from skore.utils._parallel import Parallel, delayed
 from skore.utils._progress_bar import progress_decorator
@@ -39,7 +36,7 @@ def _generate_estimator_report(
     )
 
 
-class CrossValidationReport(_BaseReport, DirNamesMixin):
+class CrossValidationReport(ComparisonReport, DirNamesMixin):
     """Report for cross-validation results.
 
     Upon initialization, `CrossValidationReport` will clone ``estimator`` according to
@@ -140,13 +137,12 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
         self.estimator_reports_ = self._fit_estimator_reports()
 
-        self._rng = np.random.default_rng(time.time_ns())
-        self._hash = self._rng.integers(
-            low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
-        )
-        self._cache: dict[tuple[Any, ...], Any] = {}
-        self._ml_task = _find_ml_task(
-            y, estimator=self.estimator_reports_[0]._estimator
+        super().__init__(
+            reports={
+                f"Split #{i}": report
+                for i, report in enumerate(self.estimator_reports_)
+            },
+            n_jobs=n_jobs,
         )
 
     @progress_decorator(
