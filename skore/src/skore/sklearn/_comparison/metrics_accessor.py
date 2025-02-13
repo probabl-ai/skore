@@ -275,6 +275,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         self,
         *,
         data_source="test",
+        X=None,
+        y=None,
         average=None,
         pos_label=None,
     ):
@@ -282,11 +284,20 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train"}, default="test"
+        data_source : {"test", "train", "X_y"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the report.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the report.
 
         average : {"binary","macro", "micro", "weighted", "samples"} or None, \
                 default=None
@@ -358,6 +369,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         return self._compute_metric_scores(
             report_metric_name="precision",
             data_source=data_source,
+            X=X,
+            y=y,
             average=average,
             pos_label=pos_label,
         )
@@ -371,6 +384,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         self,
         *,
         data_source="test",
+        X=None,
+        y=None,
         average=None,
         pos_label=None,
     ):
@@ -383,6 +398,15 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the report.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the report.
 
         average : {"binary","macro", "micro", "weighted", "samples"} or None, \
                 default=None
@@ -455,6 +479,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         return self._compute_metric_scores(
             report_metric_name="recall",
             data_source=data_source,
+            X=X,
+            y=y,
             average=average,
             pos_label=pos_label,
         )
@@ -462,7 +488,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     @available_if(
         _check_supported_ml_task(supported_ml_tasks=["binary-classification"])
     )
-    def brier_score(self, *, data_source="test"):
+    def brier_score(
+        self,
+        *,
+        data_source="test",
+        X=None,
+        y=None,
+    ):
         """Compute the Brier score.
 
         Parameters
@@ -472,6 +504,15 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the report.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the report.
 
         Returns
         -------
@@ -514,6 +555,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         return self._compute_metric_scores(
             report_metric_name="brier_score",
             data_source=data_source,
+            X=X,
+            y=y,
         )
 
     @available_if(
@@ -525,6 +568,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         self,
         *,
         data_source="test",
+        X=None,
+        y=None,
         average=None,
         multi_class="ovr",
     ):
@@ -537,6 +582,15 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the report.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the report.
 
         average : {"auto", "macro", "micro", "weighted", "samples"}, \
                 default=None
@@ -613,6 +667,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         return self._compute_metric_scores(
             report_metric_name="roc_auc",
             data_source=data_source,
+            X=X,
+            y=y,
             average=average,
             multi_class=multi_class,
         )
@@ -622,7 +678,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def log_loss(self, *, data_source="test"):
+    def log_loss(
+        self,
+        *,
+        data_source="test",
+        X=None,
+        y=None,
+    ):
         """Compute the log loss.
 
         Parameters
@@ -632,6 +694,15 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the report.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the report.
 
         Returns
         -------
@@ -674,6 +745,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         return self._compute_metric_scores(
             report_metric_name="log_loss",
             data_source=data_source,
+            X=X,
+            y=y,
         )
 
     @available_if(_check_supported_ml_task(supported_ml_tasks=["regression"]))
@@ -681,6 +754,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         self,
         *,
         data_source="test",
+        X=None,
+        y=None,
         multioutput="raw_values",
     ):
         """Compute the R² score.
@@ -692,6 +767,15 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the report.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the report.
 
         multioutput : {"raw_values", "uniform_average"} or array-like of shape \
                 (n_outputs,), default="raw_values"
@@ -744,6 +828,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         return self._compute_metric_scores(
             report_metric_name="r2",
             data_source=data_source,
+            X=X,
+            y=y,
             multioutput=multioutput,
         )
 
@@ -752,6 +838,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         self,
         *,
         data_source="test",
+        X=None,
+        y=None,
         multioutput="raw_values",
     ):
         """Compute the root mean squared error.
@@ -763,6 +851,15 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the report.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the report.
 
         multioutput : {"raw_values", "uniform_average"} or array-like of shape \
                 (n_outputs,), default="raw_values"
@@ -815,6 +912,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         return self._compute_metric_scores(
             report_metric_name="rmse",
             data_source=data_source,
+            X=X,
+            y=y,
             multioutput=multioutput,
         )
 
@@ -825,6 +924,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         *,
         metric_name=None,
         data_source="test",
+        X=None,
+        y=None,
         **kwargs,
     ):
         """Compute a custom metric.
@@ -858,6 +959,15 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the report.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the report.
 
         **kwargs : dict
             Any additional keyword arguments to be passed to the metric function.
@@ -908,6 +1018,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         return self._compute_metric_scores(
             report_metric_name="custom_metric",
             data_source=data_source,
+            X=X,
+            y=y,
             metric_function=metric_function,
             response_method=response_method,
             metric_name=metric_name,

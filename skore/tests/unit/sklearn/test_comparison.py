@@ -277,6 +277,21 @@ def test_comparison_report_pickle(tmp_path, binary_classification_model):
             "test",
         ),
         (
+            "precision",
+            pd.DataFrame(
+                [[1.0, 1.0], [1.0, 1.0]],
+                index=pd.MultiIndex.from_arrays(
+                    [(0, 1), ("LogisticRegression", "LogisticRegression")],
+                    names=[None, "Estimator"],
+                ),
+                columns=pd.MultiIndex.from_tuples(
+                    [("Precision (↗︎)", 0), ("Precision (↗︎)", 1)],
+                    names=["Metric", "Class label"],
+                ),
+            ),
+            "X_y",
+        ),
+        (
             "recall",
             pd.DataFrame(
                 [[1.0, 1.0], [1.0, 1.0]],
@@ -292,6 +307,21 @@ def test_comparison_report_pickle(tmp_path, binary_classification_model):
             "test",
         ),
         (
+            "recall",
+            pd.DataFrame(
+                [[1.0, 1.0], [1.0, 1.0]],
+                index=pd.MultiIndex.from_arrays(
+                    [(0, 1), ("LogisticRegression", "LogisticRegression")],
+                    names=[None, "Estimator"],
+                ),
+                columns=pd.MultiIndex.from_tuples(
+                    [("Recall (↗︎)", 0), ("Recall (↗︎)", 1)],
+                    names=["Metric", "Class label"],
+                ),
+            ),
+            "X_y",
+        ),
+        (
             "brier_score",
             pd.DataFrame(
                 [[0.026684], [0.026684]],
@@ -302,6 +332,18 @@ def test_comparison_report_pickle(tmp_path, binary_classification_model):
                 columns=pd.Index(["Brier score (↘︎)"], dtype="object", name="Metric"),
             ),
             "test",
+        ),
+        (
+            "brier_score",
+            pd.DataFrame(
+                [[0.026684], [0.026684]],
+                index=pd.MultiIndex.from_arrays(
+                    [(0, 1), ("LogisticRegression", "LogisticRegression")],
+                    names=[None, "Estimator"],
+                ),
+                columns=pd.Index(["Brier score (↘︎)"], dtype="object", name="Metric"),
+            ),
+            "X_y",
         ),
         (
             "roc_auc",
@@ -316,6 +358,18 @@ def test_comparison_report_pickle(tmp_path, binary_classification_model):
             "test",
         ),
         (
+            "roc_auc",
+            pd.DataFrame(
+                [[1.0], [1.0]],
+                index=pd.MultiIndex.from_arrays(
+                    [(0, 1), ("LogisticRegression", "LogisticRegression")],
+                    names=[None, "Estimator"],
+                ),
+                columns=pd.Index(["ROC AUC (↗︎)"], dtype="object", name="Metric"),
+            ),
+            "X_y",
+        ),
+        (
             "log_loss",
             pd.DataFrame(
                 [[0.113233], [0.113233]],
@@ -326,6 +380,18 @@ def test_comparison_report_pickle(tmp_path, binary_classification_model):
                 columns=pd.Index(["Log loss (↘︎)"], dtype="object", name="Metric"),
             ),
             "test",
+        ),
+        (
+            "log_loss",
+            pd.DataFrame(
+                [[0.113233], [0.113233]],
+                index=pd.MultiIndex.from_arrays(
+                    [(0, 1), ("LogisticRegression", "LogisticRegression")],
+                    names=[None, "Estimator"],
+                ),
+                columns=pd.Index(["Log loss (↘︎)"], dtype="object", name="Metric"),
+            ),
+            "X_y",
         ),
     ],
 )
@@ -363,7 +429,7 @@ def test_estimator_report_metrics_binary_classification(
 
 
 @pytest.mark.parametrize(
-    "metric_name, expected",
+    "metric_name, expected, data_source",
     [
         (
             "rmse",
@@ -375,6 +441,19 @@ def test_estimator_report_metrics_binary_classification(
                 ),
                 columns=pd.Index(["RMSE (↘︎)"], dtype="object", name="Metric"),
             ),
+            "test",
+        ),
+        (
+            "rmse",
+            pd.DataFrame(
+                [[0.27699], [0.27699]],
+                index=pd.MultiIndex.from_arrays(
+                    [(0, 1), ("LinearRegression", "LinearRegression")],
+                    names=[None, "Estimator"],
+                ),
+                columns=pd.Index(["RMSE (↘︎)"], dtype="object", name="Metric"),
+            ),
+            "X_y",
         ),
         (
             "r2",
@@ -386,11 +465,24 @@ def test_estimator_report_metrics_binary_classification(
                 ),
                 columns=pd.Index(["R² (↗︎)"], dtype="object", name="Metric"),
             ),
+            "test",
+        ),
+        (
+            "r2",
+            pd.DataFrame(
+                [[0.680319], [0.680319]],
+                index=pd.MultiIndex.from_arrays(
+                    [(0, 1), ("LinearRegression", "LinearRegression")],
+                    names=[None, "Estimator"],
+                ),
+                columns=pd.Index(["R² (↗︎)"], dtype="object", name="Metric"),
+            ),
+            "X_y",
         ),
     ],
 )
 def test_estimator_report_metrics_linear_regression(
-    metric_name, expected, regression_model
+    metric_name, expected, data_source, regression_model
 ):
     estimator, X_train, X_test, y_train, y_test = regression_model
     estimator_report = EstimatorReport(
@@ -404,11 +496,21 @@ def test_estimator_report_metrics_linear_regression(
     comp = ComparisonReport([estimator_report, estimator_report])
 
     # ensure metric is valid
-    result = getattr(comp.metrics, metric_name)()
+    if data_source == "X_y":
+        result = getattr(comp.metrics, metric_name)(
+            data_source=data_source, X=X_test, y=y_test
+        )
+    else:
+        result = getattr(comp.metrics, metric_name)()
     pd.testing.assert_frame_equal(result, expected)
 
     # ensure metric is valid even from the cache
-    result = getattr(comp.metrics, metric_name)()
+    if data_source == "X_y":
+        result = getattr(comp.metrics, metric_name)(
+            data_source=data_source, X=X_test, y=y_test
+        )
+    else:
+        result = getattr(comp.metrics, metric_name)()
     pd.testing.assert_frame_equal(result, expected)
 
 
