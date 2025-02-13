@@ -46,6 +46,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source="test",
         X=None,
         y=None,
+        aggregate=None,
         scoring=None,
         scoring_names=None,
         scoring_kwargs=None,
@@ -71,6 +72,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         y : array-like of shape (n_samples,), default=None
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
+
+        aggregate : {"mean", "std"} or list of such str, default=None
+            Function to aggregate the scores across the cross-validation splits.
 
         scoring : list of str, callable, or scorer, default=None
             The metrics to report. You can get the possible list of strings by calling
@@ -145,6 +149,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             data_source=data_source,
             X=X,
             y=y,
+            aggregate=aggregate,
             scoring=scoring,
             pos_label=pos_label,
             scoring_kwargs=scoring_kwargs,
@@ -166,9 +171,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source="test",
         X=None,
         y=None,
+        aggregate=None,
         **metric_kwargs,
     ):
         cache_key = (self._parent._hash, report_metric_name, data_source)
+        cache_key += (aggregate,) if aggregate is None else tuple(aggregate)
 
         # we need to enforce the order of the parameter for a specific metric
         # to make sure that we hit the cache in a consistent way
@@ -223,6 +230,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             if favorability is not None:
                 results["Favorability"] = favorability
 
+            if aggregate:
+                if isinstance(aggregate, str):
+                    aggregate = [aggregate]
+                results = results.aggregate(func=aggregate, axis=1)
+                results = pd.concat(
+                    [results], keys=[self._parent.estimator_name_], axis=1
+                )
+
             self._parent._cache[cache_key] = results
         return results
 
@@ -231,7 +246,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def accuracy(self, *, data_source="test", X=None, y=None):
+    def accuracy(
+        self,
+        *,
+        data_source="test",
+        X=None,
+        y=None,
+        aggregate=None,
+    ):
         """Compute the accuracy score.
 
         Parameters
@@ -250,6 +272,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         y : array-like of shape (n_samples,), default=None
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
+
+        aggregate : {"mean", "std"} or list of such str, default=None
+            Function to aggregate the scores across the cross-validation splits.
 
         Returns
         -------
@@ -293,6 +318,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             data_source=data_source,
             X=X,
             y=y,
+            aggregate=aggregate,
         )
 
     @available_if(
@@ -306,6 +332,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source="test",
         X=None,
         y=None,
+        aggregate=None,
         average=None,
         pos_label=None,
     ):
@@ -327,6 +354,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         y : array-like of shape (n_samples,), default=None
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
+
+        aggregate : {"mean", "std"} or list of such str, default=None
+            Function to aggregate the scores across the cross-validation splits.
 
         average : {"binary", "macro", "micro", "weighted", "samples"} or None, \
                 default=None
@@ -399,6 +429,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             data_source=data_source,
             X=X,
             y=y,
+            aggregate=aggregate,
             pos_label=pos_label,
             scoring_kwargs={"average": average},
         )
@@ -414,6 +445,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source="test",
         X=None,
         y=None,
+        aggregate=None,
         average=None,
         pos_label=None,
     ):
@@ -435,6 +467,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         y : array-like of shape (n_samples,), default=None
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
+
+        aggregate : {"mean", "std"} or list of such str, default=None
+            Function to aggregate the scores across the cross-validation splits.
 
         average : {"binary","macro", "micro", "weighted", "samples"} or None, \
                 default=None
@@ -508,6 +543,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             data_source=data_source,
             X=X,
             y=y,
+            aggregate=aggregate,
             pos_label=pos_label,
             scoring_kwargs={"average": average},
         )
@@ -521,6 +557,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source="test",
         X=None,
         y=None,
+        aggregate=None,
     ):
         """Compute the Brier score.
 
@@ -540,6 +577,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         y : array-like of shape (n_samples,), default=None
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
+
+        aggregate : {"mean", "std"} or list of such str, default=None
+            Function to aggregate the scores across the cross-validation splits.
 
         Returns
         -------
@@ -583,6 +623,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             data_source=data_source,
             X=X,
             y=y,
+            aggregate=aggregate,
         )
 
     @available_if(
@@ -596,6 +637,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source="test",
         X=None,
         y=None,
+        aggregate=None,
         average=None,
         multi_class="ovr",
     ):
@@ -617,6 +659,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         y : array-like of shape (n_samples,), default=None
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
+
+        aggregate : {"mean", "std"} or list of such str, default=None
+            Function to aggregate the scores across the cross-validation splits.
 
         average : {"auto", "macro", "micro", "weighted", "samples"}, \
                 default=None
@@ -694,6 +739,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             data_source=data_source,
             X=X,
             y=y,
+            aggregate=aggregate,
             scoring_kwargs={"average": average, "multi_class": multi_class},
         )
 
@@ -708,6 +754,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source="test",
         X=None,
         y=None,
+        aggregate=None,
     ):
         """Compute the log loss.
 
@@ -727,6 +774,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         y : array-like of shape (n_samples,), default=None
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
+
+        aggregate : {"mean", "std"} or list of such str, default=None
+            Function to aggregate the scores across the cross-validation splits.
 
         Returns
         -------
@@ -770,6 +820,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             data_source=data_source,
             X=X,
             y=y,
+            aggregate=aggregate,
         )
 
     @available_if(_check_supported_ml_task(supported_ml_tasks=["regression"]))
@@ -779,6 +830,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source="test",
         X=None,
         y=None,
+        aggregate=None,
         multioutput="raw_values",
     ):
         """Compute the R² score.
@@ -799,6 +851,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         y : array-like of shape (n_samples,), default=None
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
+
+        aggregate : {"mean", "std"} or list of such str, default=None
+            Function to aggregate the scores across the cross-validation splits.
 
         multioutput : {"raw_values", "uniform_average"} or array-like of shape \
                 (n_outputs,), default="raw_values"
@@ -852,6 +907,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             data_source=data_source,
             X=X,
             y=y,
+            aggregate=aggregate,
             scoring_kwargs={"multioutput": multioutput},
         )
 
@@ -862,6 +918,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source="test",
         X=None,
         y=None,
+        aggregate=None,
         multioutput="raw_values",
     ):
         """Compute the root mean squared error.
@@ -882,6 +939,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         y : array-like of shape (n_samples,), default=None
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
+
+        aggregate : {"mean", "std"} or list of such str, default=None
+            Function to aggregate the scores across the cross-validation splits.
 
         multioutput : {"raw_values", "uniform_average"} or array-like of shape \
                 (n_outputs,), default="raw_values"
@@ -935,6 +995,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             data_source=data_source,
             X=X,
             y=y,
+            aggregate=aggregate,
             scoring_kwargs={"multioutput": multioutput},
         )
 
@@ -947,6 +1008,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source="test",
         X=None,
         y=None,
+        aggregate=None,
         **kwargs,
     ):
         """Compute a custom metric.
@@ -989,6 +1051,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         y : array-like of shape (n_samples,), default=None
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
+
+        aggregate : {"mean", "std"} or list of such str, default=None
+            Function to aggregate the scores across the cross-validation splits.
 
         **kwargs : dict
             Any additional keyword arguments to be passed to the metric function.
@@ -1048,6 +1113,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             data_source=data_source,
             X=X,
             y=y,
+            aggregate=aggregate,
             scoring_names=[metric_name],
         )
 
@@ -1109,8 +1175,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
     def __repr__(self):
         """Return a string representation using rich."""
+        parent_name = self._parent.__class__.__name__
         return self._rich_repr(
-            class_name="skore.ComparisonReport.metrics",
+            class_name=f"skore.{parent_name}.metrics",
             help_method_name="report.metrics.help()",
         )
 
