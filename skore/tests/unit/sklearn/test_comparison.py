@@ -41,11 +41,6 @@ def test_comparison_report_init_wrong_parameters(binary_classification_model):
     with pytest.raises(TypeError, match="Expected reports to be an iterable"):
         ComparisonReport(estimator_report)
 
-    with pytest.raises(
-        ValueError, match="At least 2 instances of EstimatorReport are needed"
-    ):
-        ComparisonReport([estimator_report])
-
     with pytest.raises(TypeError, match="Expected instances of EstimatorReport"):
         ComparisonReport([None, estimator_report])
 
