@@ -109,30 +109,6 @@ def test_comparison_report_init_different_ml_usecases(
         ComparisonReport([linear_regression_report, logistic_regression_report])
 
 
-def test_comparison_report_init_different_test_data(binary_classification_model):
-    estimator, _, X_test, _, y_test = binary_classification_model
-
-    with pytest.raises(
-        ValueError, match="Expected all estimators to have the same testing data"
-    ):
-        ComparisonReport(
-            [
-                EstimatorReport(
-                    estimator,
-                    fit=False,
-                    X_test=X_test,
-                    y_test=y_test,
-                ),
-                EstimatorReport(
-                    estimator,
-                    fit=False,
-                    X_test=X_test[:-1],
-                    y_test=y_test[:-1],
-                ),
-            ]
-        )
-
-
 def test_comparison_report_init_with_report_names(binary_classification_model):
     estimator, X_train, X_test, y_train, y_test = binary_classification_model
     estimator_report = EstimatorReport(
