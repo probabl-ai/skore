@@ -137,13 +137,8 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
         if report_names is None:
             self.report_names_ = [report.estimator_name_ for report in reports]
-        elif len(report_names) == len(reports):
-            self.report_names_ = report_names
         else:
-            raise ValueError(
-                "Expected as many report names as there are reports; "
-                f"got {len(report_names)} report names but {len(reports)} reports"
-            )
+            self.report_names_ = report_names
 
         self.estimator_reports_ = deepcopy(reports)
 
