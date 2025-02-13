@@ -4,7 +4,6 @@ import time
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 
-import joblib
 import numpy as np
 
 from skore.externals._pandas_accessors import DirNamesMixin
@@ -116,9 +115,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         if not isinstance(reports, Iterable):
             raise TypeError(f"Expected reports to be an iterable; got {type(reports)}")
 
-        if len(reports) < 2:
-            raise ValueError("At least 2 instances of EstimatorReport are needed")
-
         report_names = (
             list(map(str, reports.keys())) if isinstance(reports, dict) else None
         )
@@ -126,14 +122,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
         if not all(isinstance(report, EstimatorReport) for report in reports):
             raise TypeError("Expected instances of EstimatorReport")
-
-        test_dataset_hashes = {
-            joblib.hash((report.X_test, report.y_test))
-            for report in reports
-            if not ((report.X_test is None) and (report.y_test is None))
-        }
-        if len(test_dataset_hashes) > 1:
-            raise ValueError("Expected all estimators to have the same testing data.")
 
         ml_tasks = {report: report._ml_task for report in reports}
         if len(set(ml_tasks.values())) > 1:
@@ -145,6 +133,9 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             self.report_names_ = [report.estimator_name_ for report in reports]
         else:
             self.report_names_ = report_names
+
+        # used to know if a parent launch a progress bar manager
+        self._parent_progress = None
 
         self.estimator_reports_ = reports
 

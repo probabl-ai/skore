@@ -336,9 +336,9 @@ def _check_results_single_metric(report, metric, expected_n_splits, expected_nb_
     pd.testing.assert_frame_equal(result, result_with_cache)
 
     # check that the columns contains the expected split names
-    split_names = result.columns.get_level_values(1).unique()
+    split_names = list(result.columns)
     expected_split_names = [f"Split #{i}" for i in range(expected_n_splits)]
-    assert list(split_names) == expected_split_names
+    assert split_names == expected_split_names
 
     # check that something was written to the cache
     assert report._cache != {}
@@ -372,9 +372,9 @@ def _check_results_report_metric(
     pd.testing.assert_frame_equal(result, result_with_cache)
 
     # check that the columns contains the expected split names
-    split_names = result.columns.get_level_values(1).unique()
+    split_names = list(result.columns)
     expected_split_names = [f"Split #{i}" for i in range(expected_n_splits)]
-    assert list(split_names) == expected_split_names
+    assert split_names == expected_split_names
 
     _check_metrics_names(result, expected_metrics, expected_nb_stats)
 
