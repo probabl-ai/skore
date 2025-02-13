@@ -103,7 +103,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
                         linestyle=class_linestyle,
                         color=report_color,
                         label=(
-                            f"{report_name} #{report_idx + 1} - class {str(class_)} "
+                            f"{report_name} #{report_idx + 1} - class {class_} "
                             f"(AUC = {roc_auc_mean:0.2f})"
                         ),
                     )

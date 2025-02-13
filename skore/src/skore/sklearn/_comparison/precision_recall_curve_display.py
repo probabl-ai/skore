@@ -95,7 +95,7 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
                         linestyle=class_linestyle,
                         alpha=0.6,
                         label=(
-                            f"{report_name} #{report_idx + 1} - class {str(class_)} "
+                            f"{report_name} #{report_idx + 1} - class {class_} "
                             f"(AP = {np.mean(average_precision_class):0.2f})"
                         ),
                     )
