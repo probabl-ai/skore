@@ -4,6 +4,7 @@ from matplotlib import pyplot as plt
 from matplotlib.testing.compare import compare_images
 from numpy import array
 from numpy.testing import assert_equal
+from pytest import fixture
 from skore.sklearn._comparison.precision_recall_curve_display import (
     PrecisionRecallCurveDisplay,
 )
@@ -16,20 +17,48 @@ class FakeEstimator:
         self.classes_ = classes
 
 
+@fixture
+def binary_classification_display():
+    classes = (0, 1)
+    y_true = (array((0, 1)), array((0, 1)))
+    y_pred = (array((0.2, 0.8)), array((0.8, 0.2)))
+    estimators = (FakeEstimator(classes), FakeEstimator(classes))
+
+    return PrecisionRecallCurveDisplay._from_predictions(
+        y_true=y_true,
+        y_pred=y_pred,
+        estimators=estimators,
+        estimator_names=["BC-E1", "BC-E2"],
+        ml_task="binary-classification",
+        data_source="test",
+    )
+
+
+@fixture
+def multiclass_classification_display():
+    classes = (0, 1, 2)
+    y_true = (array((0, 1, 2)), array((0, 1, 2)))
+    y_pred = (
+        array(((0.8, 0.2, 0.0), (0.0, 0.8, 0.2), (0.2, 0.0, 0.8))),
+        array(((0.0, 0.2, 0.8), (0.8, 0.0, 0.2), (0.2, 0.8, 0.0))),
+    )
+    estimators = (FakeEstimator(classes), FakeEstimator(classes))
+
+    return PrecisionRecallCurveDisplay._from_predictions(
+        y_true=y_true,
+        y_pred=y_pred,
+        estimators=estimators,
+        estimator_names=["MC-E1", "MC-E2"],
+        ml_task="multiclass-classification",
+        data_source="test",
+    )
+
+
 class TestPrecisionRecallCurveDisplay:
-    def test_from_predictions_binary_classification(self):
-        classes = (0, 1)
-        y_true = (array((0, 1)), array((0, 1)))
-        y_pred = (array((0.2, 0.8)), array((0.8, 0.2)))
-        estimators = (FakeEstimator(classes), FakeEstimator(classes))
-        display = PrecisionRecallCurveDisplay._from_predictions(
-            y_true=y_true,
-            y_pred=y_pred,
-            estimators=estimators,
-            estimator_names=["BC-E1", "BC-E2"],
-            ml_task="binary-classification",
-            data_source="test",
-        )
+    def test_from_predictions_binary_classification(
+        self, binary_classification_display
+    ):
+        display = binary_classification_display
 
         assert_equal(display.precision, {1: [(0.5, 1, 1), (0.5, 0, 1)]})
         assert_equal(display.recall, {1: [(1, 1, 0), (1, 0, 0)]})
@@ -39,22 +68,10 @@ class TestPrecisionRecallCurveDisplay:
         assert_equal(display.pos_label, 1)
         assert_equal(display.data_source, "test")
 
-    def test_from_predictions_multiclass_classification(self):
-        classes = (0, 1, 2)
-        y_true = (array((0, 1, 2)), array((0, 1, 2)))
-        y_pred = (
-            array(((0.8, 0.2, 0.0), (0.0, 0.8, 0.2), (0.2, 0.0, 0.8))),
-            array(((0.0, 0.2, 0.8), (0.8, 0.0, 0.2), (0.2, 0.8, 0.0))),
-        )
-        estimators = (FakeEstimator(classes), FakeEstimator(classes))
-        display = PrecisionRecallCurveDisplay._from_predictions(
-            y_true=y_true,
-            y_pred=y_pred,
-            estimators=estimators,
-            estimator_names=["MC-E1", "MC-E2"],
-            ml_task="multiclass-classification",
-            data_source="test",
-        )
+    def test_from_predictions_multiclass_classification(
+        self, multiclass_classification_display
+    ):
+        display = multiclass_classification_display
 
         assert_equal(
             display.precision,
@@ -81,19 +98,8 @@ class TestPrecisionRecallCurveDisplay:
         assert_equal(display.pos_label, None)
         assert_equal(display.data_source, "test")
 
-    def test_plot_binary_classification(self, tmp_path):
-        classes = (0, 1)
-        y_true = (array((0, 1)), array((0, 1)))
-        y_pred = (array((0.2, 0.8)), array((0.8, 0.2)))
-        estimators = (FakeEstimator(classes), FakeEstimator(classes))
-        display = PrecisionRecallCurveDisplay._from_predictions(
-            y_true=y_true,
-            y_pred=y_pred,
-            estimators=estimators,
-            estimator_names=["BC-E1", "BC-E2"],
-            ml_task="binary-classification",
-            data_source="test",
-        )
+    def test_plot_binary_classification(self, tmp_path, binary_classification_display):
+        display = binary_classification_display
 
         display.plot()
         plt.gcf().savefig(tmp_path / "pr-binary-classification.png")
@@ -107,22 +113,10 @@ class TestPrecisionRecallCurveDisplay:
             is None
         )
 
-    def test_plot_multiclass_classification(self, tmp_path):
-        classes = (0, 1, 2)
-        y_true = (array((0, 1, 2)), array((0, 1, 2)))
-        y_pred = (
-            array(((0.8, 0.2, 0.0), (0.0, 0.8, 0.2), (0.2, 0.0, 0.8))),
-            array(((0.0, 0.2, 0.8), (0.8, 0.0, 0.2), (0.2, 0.8, 0.0))),
-        )
-        estimators = (FakeEstimator(classes), FakeEstimator(classes))
-        display = PrecisionRecallCurveDisplay._from_predictions(
-            y_true=y_true,
-            y_pred=y_pred,
-            estimators=estimators,
-            estimator_names=["MC-E1", "MC-E2"],
-            ml_task="multiclass-classification",
-            data_source="test",
-        )
+    def test_plot_multiclass_classification(
+        self, tmp_path, multiclass_classification_display
+    ):
+        display = multiclass_classification_display
 
         display.plot()
         plt.gcf().savefig(tmp_path / "pr-multiclass-classification.png")
