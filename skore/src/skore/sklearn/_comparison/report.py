@@ -5,7 +5,6 @@ from collections.abc import Iterable
 from copy import deepcopy
 from typing import Optional, Union
 
-import joblib
 import numpy as np
 
 from skore.externals._pandas_accessors import DirNamesMixin
@@ -104,9 +103,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         if not isinstance(reports, Iterable):
             raise TypeError(f"Expected reports to be an iterable; got {type(reports)}")
 
-        if len(reports) < 2:
-            raise ValueError("At least 2 instances of EstimatorReport are needed")
-
         report_names = (
             list(map(str, reports.keys())) if isinstance(reports, dict) else None
         )
@@ -119,15 +115,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             if (report.X_test is None) or (report.y_test is None):
                 raise ValueError("Cannot compare reports without testing data")
 
-        test_dataset_hashes = {
-            report: joblib.hash((report.X_test, report.y_test)) for report in reports
-        }
-        if len(set(test_dataset_hashes.values())) > 1:
-            raise ValueError(
-                "Expected all estimators to have the same testing data; "
-                f"got {test_dataset_hashes}"
-            )
-
         ml_tasks = {report: report._ml_task for report in reports}
         if len(set(ml_tasks.values())) > 1:
             raise ValueError(
@@ -139,6 +126,9 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             self.report_names_ = [report.estimator_name_ for report in reports]
         else:
             self.report_names_ = report_names
+
+        # used to know if a parent launch a progress bar manager
+        self._parent_progress = None
 
         self.estimator_reports_ = deepcopy(reports)
 
