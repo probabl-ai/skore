@@ -147,11 +147,6 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
         despine : bool, default=True
             Whether to remove the top and right spines from the plot.
 
-        Returns
-        -------
-        display : PrecisionRecallCurveDisplay
-            Object that stores computed values.
-
         Notes
         -----
         The average precision (cf. :func:`~sklearn.metrics.average_precision_score`)
@@ -415,7 +410,7 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
 
         Returns
         -------
-        display : :class:`~sklearn.metrics.PrecisionRecallDisplay`
+        display : PrecisionRecallCurveDisplay
         """
         pos_label_validated = cls._validate_from_predictions_params(
             y_true, y_pred, ml_task=ml_task, pos_label=pos_label
