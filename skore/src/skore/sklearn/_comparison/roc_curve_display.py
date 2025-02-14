@@ -191,7 +191,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
                     tpr[class_].append(tpr_class_i)
                     roc_auc[class_].append(auc(fpr_class_i, tpr_class_i))
         else:
-            raise ValueError
+            raise ValueError("Only binary or multiclass classification is allowed")
 
         return cls(
             fpr=dict(fpr),

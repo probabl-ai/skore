@@ -187,7 +187,7 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
                         )
                     )
         else:
-            raise ValueError
+            raise ValueError("Only binary or multiclass classification is allowed")
 
         return cls(
             precision=precision,
