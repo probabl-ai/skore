@@ -299,6 +299,11 @@ results = pd.concat(
 results
 
 # %%
+# .. note::
+#   We could have also used the :class:`skore.ComparisonReport` to compare estimator
+#   reports.
+
+# %%
 #
 # Finally, we can even get the individual :class:`~skore.EstimatorReport` for each fold
 # from the cross-validation to make further analysis.
