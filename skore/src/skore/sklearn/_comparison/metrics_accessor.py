@@ -1142,7 +1142,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     [estimator_report_1, estimator_report_2]
         ... )
         >>> display = comparison_report.metrics.roc()
-        >>> display.plot(roc_curve_kwargs={"color": "tab:red"})
+        >>> display.plot()
         """
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
@@ -1279,7 +1279,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     [estimator_report_1, estimator_report_2]
         ... )
         >>> display = comparison_report.metrics.prediction_error()
-        >>> display.plot(kind="actual_vs_predicted", line_kwargs={"color": "tab:red"})
+        >>> display.plot(kind="actual_vs_predicted")
         """
         display_kwargs = {"subsample": subsample, "random_state": random_state}
         return self._get_display(
