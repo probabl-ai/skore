@@ -35,6 +35,62 @@ LINESTYLE = [
 
 
 class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
+    """ROC Curve visualization for comparison report.
+
+    An instance of this class is should created by `ComparisonReport.metrics.roc()`.
+    You should not create an instance of this class directly.
+
+    Parameters
+    ----------
+    fpr : dict of list of ndarray
+        False positive rate. The structure is:
+
+        - for binary classification:
+            - the key is the positive label.
+            - the value is a list of `ndarray`, each `ndarray` being the false
+              positive rate.
+        - for multiclass classification:
+            - the key is the class of interest in an OvR fashion.
+            - the value is a list of `ndarray`, each `ndarray` being the false
+              positive rate.
+
+    tpr : dict of list of ndarray
+        True positive rate. The structure is:
+
+        - for binary classification:
+            - the key is the positive label
+            - the value is a list of `ndarray`, each `ndarray` being the true
+              positive rate.
+        - for multiclass classification:
+            - the key is the class of interest in an OvR fashion.
+            - the value is a list of `ndarray`, each `ndarray` being the true
+              positive rate.
+
+    roc_auc : dict of list of float
+        Area under the ROC curve. The structure is:
+
+        - for binary classification:
+            - the key is the positive label
+            - the value is a list of `float`, each `float` being the area under
+              the ROC curve.
+        - for multiclass classification:
+            - the key is the class of interest in an OvR fashion.
+            - the value is a list of `float`, each `float` being the area under
+              the ROC curve.
+
+    estimator_names : str
+        Name of the estimators.
+
+    ml_task : str
+        Type of ML task.
+
+    pos_label : int, float, bool or str, default=None
+        The class considered as positive. Only meaningful for binary classification.
+
+    data_source : {"train", "test", "X_y"}, default=None
+        The data source used to compute the ROC curve.
+    """
+
     def __init__(
         self,
         *,
@@ -60,6 +116,15 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         plot_chance_level=True,
         despine=True,
     ):
+        """Plot visualization.
+
+        Parameters
+        ----------
+        plot_chance_level : bool, default=True
+            Whether to plot the chance level.
+        despine : bool, default=True
+            Whether to remove the top and right spines from the plot.
+        """
         _, ax = plt.subplots()
 
         if self.ml_task == "binary-classification":
@@ -142,16 +207,51 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
     @classmethod
     def _from_predictions(
         cls,
-        y_true: list[list],
-        y_pred: list[list],
+        y_true,
+        y_pred,
         *,
-        estimators: list,
-        estimator_names: list[str],
+        estimators,
+        estimator_names,
         ml_task,
         data_source=None,
         pos_label=None,
         drop_intermediate=True,
     ):
+        """Private factory to create a RocCurveDisplay from predictions.
+
+        Parameters
+        ----------
+        y_true : list of array-like of shape (n_samples,)
+            True binary labels in binary classification.
+
+        y_pred : list of array-like of shape (n_samples,)
+            Target scores, can either be probability estimates of the positive class,
+            confidence values, or non-thresholded measure of decisions (as returned by
+            “decision_function” on some classifiers).
+
+        estimators : list of estimator instances
+            The estimators from which `y_pred` is obtained.
+
+        estimator_names : list[str]
+            Name of the estimators used to plot the ROC curve.
+
+        ml_task : {"binary-classification", "multiclass-classification"}
+            The machine learning task.
+
+        data_source : {"train", "test", "X_y"}, default=None
+            The data source used to compute the ROC curve.
+
+        pos_label : int, float, bool or str, default=None
+            The class considered as the positive class when computing the
+            precision and recall metrics.
+
+        drop_intermediate : bool, default=True
+            Whether to drop intermediate points with identical value.
+
+        Returns
+        -------
+        display : RocCurveDisplay
+        """
         estimator_classes = map(attrgetter("classes_"), estimators)
         fpr, tpr, roc_auc = (defaultdict(list) for _ in range(3))
         pos_label_validated = cls._validate_from_predictions_params(

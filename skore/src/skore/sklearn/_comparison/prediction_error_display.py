@@ -12,6 +12,31 @@ from skore.sklearn._plot.utils import (
 
 
 class PredictionErrorDisplay(HelpDisplayMixin):
+    """Prediction error visualization for comparison report.
+
+    This tool can display "residuals vs predicted" or "actual vs predicted"
+    using scatter plots to qualitatively assess the behavior of a regressor,
+    preferably on held-out data points.
+
+    An instance of this class is should created by
+    `ComparisonReport.metrics.prediction_error()`.
+    You should not create an instance of this class directly.
+
+    Parameters
+    ----------
+    y_true : list of ndarray of shape (n_samples,)
+        True values.
+
+    y_pred : list of ndarray of shape (n_samples,)
+        Prediction values.
+
+    estimator_names : str
+        Name of the estimators.
+
+    data_source : {"train", "test", "X_y"}, default=None
+        The data source used to display the prediction error.
+    """
+
     def __init__(self, *, y_true, y_pred, estimator_names, data_source=None):
         self.y_true = y_true
         self.y_pred = y_pred
@@ -20,11 +45,27 @@ class PredictionErrorDisplay(HelpDisplayMixin):
 
     def plot(
         self,
-        ax=None,
         *,
         kind="residual_vs_predicted",
         despine=True,
     ):
+        """Plot visualization.
+
+        Parameters
+        ----------
+        kind : {"actual_vs_predicted", "residual_vs_predicted"}, \
+                default="residual_vs_predicted"
+            The type of plot to draw:
+
+            - "actual_vs_predicted" draws the observed values (y-axis) vs.
+              the predicted values (x-axis).
+            - "residual_vs_predicted" draws the residuals, i.e. difference
+              between observed and predicted values, (y-axis) vs. the predicted
+              values (x-axis).
+
+        despine : bool, default=True
+            Whether to remove the top and right spines from the plot.
+        """
         expected_kind = ("actual_vs_predicted", "residual_vs_predicted")
         if kind not in expected_kind:
             raise ValueError(
@@ -36,8 +77,7 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         else:  # kind == "residual_vs_predicted"
             xlabel, ylabel = "Predicted values", "Residuals (actual - predicted)"
 
-        if ax is None:
-            _, ax = plt.subplots()
+        _, ax = plt.subplots()
 
         for report_idx, report_name in enumerate(self.estimator_names):
             ax.scatter(
@@ -104,6 +144,40 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         random_state=None,
         **kwargs,
     ):
+        """Private factory to create a PredictionErrorDisplay from predictions.
+
+        Parameters
+        ----------
+        y_true : list of array-like of shape (n_samples,)
+            True target values.
+
+        y_pred : list of array-like of shape (n_samples,)
+            Predicted target values.
+
+        estimator_names : list[str]
+            Name of the estimators used to plot the ROC curve.
+
+        ml_task : {"binary-classification", "multiclass-classification"}
+            The machine learning task.
+
+        data_source : {"train", "test", "X_y"}, default=None
+            The data source used to compute the ROC curve.
+
+        subsample : float, int or None, default=1_000
+            Sampling the samples to be shown on the scatter plot. If `float`,
+            it should be between 0 and 1 and represents the proportion of the
+            original dataset. If `int`, it represents the number of samples
+            display on the scatter plot. If `None`, no subsampling will be
+            applied. by default, 1000 samples or less will be displayed.
+
+        random_state : int or RandomState, default=None
+            Controls the randomness when `subsample` is not `None`.
+            See :term:`Glossary <random_state>` for details.
+
+        Returns
+        -------
+        display : PredictionErrorDisplay
+        """
         if ml_task != "regression":
             raise ValueError("Only regression is allowed")
 

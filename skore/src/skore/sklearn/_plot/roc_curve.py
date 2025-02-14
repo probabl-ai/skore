@@ -157,11 +157,6 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         despine : bool, default=True
             Whether to remove the top and right spines from the plot.
 
-        Returns
-        -------
-        display : :class:`~sklearn.metrics.RocCurveDisplay`
-            Object that stores computed values.
-
         Examples
         --------
         >>> from sklearn.datasets import load_breast_cancer

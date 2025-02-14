@@ -16,6 +16,57 @@ from skore.sklearn._plot.utils import (
 
 
 class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
+    """Precision Recall visualization.
+
+    An instance of this class is should created by
+    `ComparisonReport.metrics.precision_recall()`.
+    You should not create an instance of this class directly.
+
+    Parameters
+    ----------
+    precision : dict of list of ndarray
+        Precision values. The structure is:
+
+        - for binary classification:
+            - the key is the positive label.
+            - the value is a list of `ndarray`, each `ndarray` being the precision.
+        - for multiclass classification:
+            - the key is the class of interest in an OvR fashion.
+            - the value is a list of `ndarray`, each `ndarray` being the precision.
+
+    recall : dict of list of ndarray
+        Recall values. The structure is:
+
+        - for binary classification:
+            - the key is the positive label.
+            - the value is a list of `ndarray`, each `ndarray` being the recall.
+        - for multiclass classification:
+            - the key is the class of interest in an OvR fashion.
+            - the value is a list of `ndarray`, each `ndarray` being the recall.
+
+    average_precision : dict of list of float
+        Average precision. The structure is:
+
+        - for binary classification:
+            - the key is the positive label.
+            - the value is a list of `float`, each `float` being the average
+              precision.
+        - for multiclass classification:
+            - the key is the class of interest in an OvR fashion.
+            - the value is a list of `float`, each `float` being the average
+              precision.
+
+    estimator_names : list[str]
+        Name of the estimators.
+
+    pos_label : int, float, bool or str, default=None
+        The class considered as the positive class. If None, the class will not
+        be shown in the legend.
+
+    data_source : {"train", "test", "X_y"}, default=None
+        The data source used to compute the precision recall curve.
+    """
+
     def __init__(
         self,
         precision,
@@ -37,15 +88,24 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
 
     def plot(
         self,
-        ax=None,
         *,
         despine=True,
     ):
-        if ax is None:
-            _, ax = plt.subplots()
+        """Plot visualization.
 
-        self.lines_ = []
-        self.chance_levels_ = []
+        Parameters
+        ----------
+        despine : bool, default=True
+            Whether to remove the top and right spines from the plot.
+
+        Notes
+        -----
+        The average precision (cf. :func:`~sklearn.metrics.average_precision_score`)
+        in scikit-learn is computed without any interpolation. To be consistent
+        with this metric, the precision-recall curve is plotted without any
+        interpolation as well (step-wise style).
+        """
+        _, ax = plt.subplots()
 
         if self.ml_task == "binary-classification":
             for report_idx, report_name in enumerate(self.estimator_names):
@@ -63,8 +123,6 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
                         f"(AP = {average_precision:0.2f})"
                     ),
                 )
-
-                self.lines_.append(line_)
 
             info_pos_label = (
                 f"\n(Positive label: {self.pos_label})"
@@ -99,8 +157,6 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
                             f"(AP = {np.mean(average_precision_class):0.2f})"
                         ),
                     )
-
-                    self.lines_.append(line_)
 
         xlabel = "Recall"
         ylabel = "Precision"
@@ -137,6 +193,43 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
         pos_label=None,
         drop_intermediate=True,
     ):
+        """Private factory to create a PrecisionRecallCurveDisplay from predictions.
+
+        Parameters
+        ----------
+        y_true : array-like of shape (n_samples,)
+            True binary labels.
+
+        y_pred : array-like of shape (n_samples,)
+            Target scores, can either be probability estimates of the positive class,
+            confidence values, or non-thresholded measure of decisions (as returned by
+            “decision_function” on some classifiers).
+
+        estimators : list of estimator instances
+            The estimators from which `y_pred` is obtained.
+
+        estimator_names : list[str]
+            Name of the estimators used to plot the ROC curve.
+
+        ml_task : {"binary-classification", "multiclass-classification"}
+            The machine learning task.
+
+        data_source : {"train", "test", "X_y"}, default=None
+            The data source used to compute the ROC curve.
+
+        pos_label : int, float, bool or str, default=None
+            The class considered as the positive class when computing the
+            precision and recall metrics.
+
+        drop_intermediate : bool, default=False
+            Whether to drop some suboptimal thresholds which would not appear
+            on a plotted precision-recall curve. This is useful in order to
+            create lighter precision-recall curves.
+
+        Returns
+        -------
+        display : PrecisionRecallCurveDisplay
+        """
         estimator_classes = map(attrgetter("classes_"), estimators)
         precision, recall, average_precision = (defaultdict(list) for _ in range(3))
         pos_label_validated = cls._validate_from_predictions_params(
