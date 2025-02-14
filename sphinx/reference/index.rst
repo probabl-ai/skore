@@ -12,4 +12,5 @@ This page lists all the public functions and classes of the skore package.
 .. toctree::
    :maxdepth: 2
 
+   project
    report/index
