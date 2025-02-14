@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import shutil
 from collections.abc import Iterator
 from logging import INFO, NullHandler, getLogger
 from pathlib import Path
@@ -102,8 +103,18 @@ class Project:
 
         self._server_info = ServerInfo.rejoin(self)
 
-    def clear(self):
-        """Clear the project."""
+    def clear(self, delete_project=False):
+        """Remove all items from the project.
+
+        Parameters
+        ----------
+        delete_project : bool
+            If set, the project will be deleted entirely.
+        """
+        if delete_project is True:
+            shutil.rmtree(self.path)
+            return
+
         for item_key in self._item_repository:
             self._item_repository.delete_item(item_key)
 
