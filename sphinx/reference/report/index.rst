@@ -16,3 +16,14 @@ scikit-learn estimators, including metrics, visualizations, and evaluation tools
    :hidden:
 
    estimator_report
+
+Cross-validation Report
+-----------------------
+
+:class:`skore.CrossValidationReport` provides comprehensive capabilities for evaluating scikit-learn estimators by cross-validation, and reporting the results.
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+
+   cross_validation_report
