@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import time
+from collections.abc import Iterable
 from copy import deepcopy
-from typing import Optional
+from typing import Optional, Union
 
 import joblib
 import numpy as np
@@ -12,33 +13,16 @@ from skore.sklearn._base import _BaseReport
 from skore.sklearn._estimator.report import EstimatorReport
 
 
-def warn(title, message):
-    from rich.panel import Panel
-
-    from skore import console
-
-    console.print(
-        Panel(
-            title=title,
-            renderable=message,
-            style="orange1",
-            border_style="cyan",
-        )
-    )
-
-
 class ComparisonReport(_BaseReport, DirNamesMixin):
     """Report for comparison of :class:`skore.EstimatorReport`.
 
     Parameters
     ----------
-    reports : list of :class:`skore.EstimatorReport`s
+    reports : list of :class:`skore.EstimatorReport`s or dict with estimator names as
+    keys and :class:`skore.EstimatorReport`s as values
         Estimator reports to compare.
-
-    report_names : list of str, default=None
-        Used to name the compared reports. It should be of
-        the same length as the `reports` parameter.
-        If None, each report is named after its estimator's class.
+        If `reports` is a dict and the keys are not strings, they will be converted to
+        strings.
 
     n_jobs : int, default=None
         Number of jobs to run in parallel. Training the estimators and computing
@@ -53,10 +37,16 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     estimator_reports_ : list of EstimatorReport
         The estimator reports for each split.
 
+    report_names_ : list of str
+        The names of the compared estimator reports.
+
     See Also
     --------
-    skore.sklearn.estimator.report.EstimatorReport
+    skore.EstimatorReport
         Report for a fitted estimator.
+
+    skore.CrossValidationReport
+        Report for the cross-validation of an estimator.
 
     Examples
     --------
@@ -84,6 +74,10 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     ... )
     >>> report = ComparisonReport([estimator_report_1, estimator_report_2])
     ...
+    >>> report = ComparisonReport(
+    ...     {"model1": estimator_report_1, "model2": estimator_report_2}
+    ... )
+    ...
     """
 
     _ACCESSOR_CONFIG = {
@@ -92,9 +86,8 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     def __init__(
         self,
-        reports: list[EstimatorReport],
+        reports: Union[list[EstimatorReport], dict[str, EstimatorReport]],
         *,
-        report_names: Optional[list[str]] = None,
         n_jobs: Optional[int] = None,
     ):
         """
@@ -108,36 +101,44 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         - all estimators have non-empty X_test and y_test,
         - all estimators have the same X_test and y_test.
         """
+        if not isinstance(reports, Iterable):
+            raise TypeError(f"Expected reports to be an iterable; got {type(reports)}")
+
         if len(reports) < 2:
             raise ValueError("At least 2 instances of EstimatorReport are needed")
 
-        ml_tasks = set()
-        test_dataset_hashes = set()
+        report_names = (
+            list(map(str, reports.keys())) if isinstance(reports, dict) else None
+        )
+        reports = list(reports.values()) if isinstance(reports, dict) else reports
+
+        if not all(isinstance(report, EstimatorReport) for report in reports):
+            raise TypeError("Expected instances of EstimatorReport")
 
         for report in reports:
-            if not isinstance(report, EstimatorReport):
-                raise TypeError("Only instances of EstimatorReport are allowed")
-
             if (report.X_test is None) or (report.y_test is None):
                 raise ValueError("Cannot compare reports without testing data")
 
-            ml_tasks.add(report._ml_task)
-            test_dataset_hashes.add(joblib.hash((report.X_test, report.y_test)))
+        test_dataset_hashes = {
+            report: joblib.hash((report.X_test, report.y_test)) for report in reports
+        }
+        if len(set(test_dataset_hashes.values())) > 1:
+            raise ValueError(
+                "Expected all estimators to have the same testing data; "
+                f"got {test_dataset_hashes}"
+            )
 
-            if len(ml_tasks) > 1:
-                raise ValueError("Not all estimators are in the same ML usecase")
-
-            if len(test_dataset_hashes) > 1:
-                raise ValueError("Not all estimators have the same testing data")
+        ml_tasks = {report: report._ml_task for report in reports}
+        if len(set(ml_tasks.values())) > 1:
+            raise ValueError(
+                f"Expected all estimators to have the same ML usecase; "
+                f"got {ml_tasks}"
+            )
 
         if report_names is None:
             self.report_names_ = [report.estimator_name_ for report in reports]
-        elif len(report_names) == len(reports):
-            self.report_names_ = report_names
         else:
-            raise ValueError(
-                "There should be as many report names as there are reports"
-            )
+            self.report_names_ = report_names
 
         self.estimator_reports_ = deepcopy(reports)
 
@@ -163,7 +164,5 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         )
 
     def __repr__(self):
-        """Return a string representation using rich."""
-        return self._rich_repr(
-            class_name="skore.ComparisonReport", help_method_name="help()"
-        )
+        """Return a string representation."""
+        return f"{self.__class__.__name__}(...)"

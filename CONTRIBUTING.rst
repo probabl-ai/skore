@@ -9,6 +9,26 @@ everyone and appreciate you taking the time to get involved.
 
 This project is hosted on https://github.com/probabl-ai/skore.
 
+.. topic:: **Our community, our values**
+
+    We are a community based on openness and friendly, didactic
+    discussions.
+
+    We aspire to treat everybody equally, and value their contributions.  We
+    are particularly seeking people from underrepresented backgrounds in Open
+    Source Software to participate and contribute their expertise and experience.
+
+    Decisions are made based on technical merit and consensus.
+
+    Code is not the only way to help the project. Reviewing pull
+    requests, answering questions to help others on mailing lists or
+    issues, organizing and teaching tutorials, working on the website,
+    improving the documentation, are all priceless contributions.
+
+    We abide by the principles of openness, respect, and consideration of
+    others of the Python Software Foundation:
+    https://www.python.org/psf/codeofconduct/
+
 Below are some guidelines to help you get started.
 
 Questions, bugs and feature requests
@@ -85,6 +105,8 @@ Then, to use the skore-ui
     make build-skore-ui
     make serve-skore-ui
 
+Do not forget to do a hard refresh when changing the front-end (meta+shift+R) if the expected changes do not appear.
+
 PR format
 ---------
 
@@ -95,6 +117,38 @@ Generally the description of a commit should start with a verb in the imperative
 
 Examples of correct PR titles: ``docs: Update the docstrings`` or ``feat: Remove CrossValidationAggregationItem.``
 
+Tests
+-----
+
+To run the tests locally, you may run
+
+.. code-block:: bash
+
+    make test
+
+To run only back-end tests, use:
+
+.. code-block:: bash
+
+    make test-backend
+
+To run only front-end tests, use:
+
+.. code-block:: bash
+
+    make test-frontend
+
+
+Linting
+-------
+
+We use the linter ruff to make sure that the code is formatted correctly.
+
+.. code-block:: bash
+
+    make lint
+
+
 Documentation
 =============
 
@@ -102,10 +156,6 @@ Setup
 -----
 
 Our documentation uses `PyData Sphinx Theme <https://pydata-sphinx-theme.readthedocs.io/>`_.
-
-.. warning::
-
-    Modifications are to be done in the ``sphinx`` folder. The ``docs`` folder must *not* be touched!
 
 To build the docs:
 
@@ -120,6 +170,8 @@ Then, you can access the local build via:
 
     open build/html/index.html
 
+The PR will also build the documentation and a bot will automatically add a comment with a link to the documentation preview to easily check the results.
+
 Contributing to the docstrings
 ------------------------------
 
@@ -132,3 +184,20 @@ When writing documentation, whether it be online, docstrings or help messages in
 #. Text is written in US english ("visualize" rather than "visualise")
 #. In the CLI, positional arguments are written in snake case (``snake_case``), keyword arguments in kebab case (``kebab-case``)
 #. When there is a default argument, it should be shown in the help message, typically with ``(default: <default value>)`` at the end of the message
+
+
+Contributing to the examples
+----------------------------
+
+The examples are stored in the folder called `examples`. They are classified in subcategories.
+They should be written in a python file, with cells marked by `# %%`. They will be automatically converted to rst files in the subfolder `sphinx/auto_examples`. This subfolder is listed in the gitignore, and cannot be pushed.
+
+The python file should start by a docstring indicating the example name and the title.
+
+No example should require to have large files in this repository. For example, no dataset should be stored, it should be downloaded in the script.
+
+Contributing to the ReadMe
+--------------------------
+
+The README.md file can be modified and is part of the documentation.
+This file is used to be presented on [PyPI](https://pypi.org/project/skore/#description).

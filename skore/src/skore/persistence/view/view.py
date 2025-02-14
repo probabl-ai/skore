@@ -12,6 +12,7 @@ class View:
 
     Examples
     --------
+    >>> from skore.persistence.view import View
     >>> View(layout=["a", "b"])
     View(...)
     """

@@ -86,8 +86,10 @@ jobs:
 
       - name: Setup Python
         uses: actions/setup-python@v5
+        id: setup-python
         with:
           python-version: ${{ matrix.python }}
+          check-latest: True
           cache: pip
 
       - name: Restore python-venv
@@ -98,7 +100,7 @@ jobs:
           key: >-
             python-venv
             -${{ matrix.os }}
-            -${{ matrix.python }}
+            -${{ steps.setup-python.outputs.python-version }}
             -${{ hashFiles(format('skore/ci/requirements/python-{0}/scikit-learn-{1}/test-requirements.txt', matrix.python, matrix.scikit-learn)) }}
 
       - name: Setup python-venv

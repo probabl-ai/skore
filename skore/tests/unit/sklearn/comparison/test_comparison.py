@@ -1,38 +1,36 @@
 from io import BytesIO
-from typing import Literal, Optional
 
 import joblib
-import numpy as np
 import pandas as pd
 import pytest
-from sklearn.datasets import make_classification, make_regression
+from sklearn.datasets import make_classification
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
 from skore import ComparisonReport, EstimatorReport
 
 
-def usecase(
-    type: Literal["binary-logisitic-regression", "linear-regression"],
-    random_state: Optional[int] = 42,
-):
-    if type == "binary-logistic-regression":
-        X, y = make_classification(n_classes=2, random_state=random_state)
-        estimator = LogisticRegression()
-    elif type == "linear-regression":
-        X, y = make_regression(random_state=random_state)
-        estimator = LinearRegression()
-    else:
-        raise ValueError
+@pytest.fixture
+def binary_classification_model():
+    """Create a binary classification dataset and return fitted estimator and data."""
+    X, y = make_classification(random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=random_state)
-
-    return estimator, X_train, X_test, y_train, y_test
+    return LogisticRegression(random_state=42), X_train, X_test, y_train, y_test
 
 
-def test_comparison_report_init_wrong_parameters():
+@pytest.fixture
+def regression_model():
+    """Create a binary classification dataset and return fitted estimator and data."""
+    X, y = make_classification(random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+
+    return LinearRegression(), X_train, X_test, y_train, y_test
+
+
+def test_comparison_report_init_wrong_parameters(binary_classification_model):
     """If the input is not valid, raise."""
 
-    estimator, _, X_test, _, y_test = usecase("binary-logistic-regression")
+    estimator, _, X_test, _, y_test = binary_classification_model
     estimator_report = EstimatorReport(
         estimator,
         fit=False,
@@ -40,9 +38,7 @@ def test_comparison_report_init_wrong_parameters():
         y_test=y_test,
     )
 
-    with pytest.raises(
-        TypeError, match="object of type 'EstimatorReport' has no len()"
-    ):
+    with pytest.raises(TypeError, match="Expected reports to be an iterable"):
         ComparisonReport(estimator_report)
 
     with pytest.raises(
@@ -50,21 +46,14 @@ def test_comparison_report_init_wrong_parameters():
     ):
         ComparisonReport([estimator_report])
 
-    with pytest.raises(
-        TypeError, match="Only instances of EstimatorReport are allowed"
-    ):
-        ComparisonReport([estimator_report, None])
-
-    with pytest.raises(
-        TypeError, match="Only instances of EstimatorReport are allowed"
-    ):
+    with pytest.raises(TypeError, match="Expected instances of EstimatorReport"):
         ComparisonReport([None, estimator_report])
 
 
-def test_comparison_report_init_deepcopy():
+def test_comparison_report_init_deepcopy(binary_classification_model):
     """If an estimator report is modified outside of the comparator, it is not modified
     inside the comparator."""
-    estimator, _, X_test, _, y_test = usecase("binary-logistic-regression")
+    estimator, _, X_test, _, y_test = binary_classification_model
     estimator_report = EstimatorReport(
         estimator,
         fit=False,
@@ -85,18 +74,20 @@ def test_comparison_report_init_deepcopy():
     assert comp.estimator_reports_[0]._hash != 0
 
 
-def test_comparison_report_init_without_testing_data():
+def test_comparison_report_init_without_testing_data(binary_classification_model):
     """Raise a warning if there is no test data (`None`) for any estimator
     report."""
-    estimator, _, _, _, _ = usecase("binary-logistic-regression")
+    estimator, _, _, _, _ = binary_classification_model
     estimator_report = EstimatorReport(estimator, fit=False)
 
     with pytest.raises(ValueError, match="Cannot compare reports without testing data"):
         ComparisonReport([estimator_report, estimator_report])
 
 
-def test_comparison_report_init_different_ml_usecases():
-    linear_regression_estimator, _, X_test, _, y_test = usecase("linear-regression")
+def test_comparison_report_init_different_ml_usecases(
+    binary_classification_model, regression_model
+):
+    linear_regression_estimator, _, X_test, _, y_test = regression_model
     linear_regression_report = EstimatorReport(
         linear_regression_estimator,
         fit=False,
@@ -104,9 +95,7 @@ def test_comparison_report_init_different_ml_usecases():
         y_test=y_test,
     )
 
-    logistic_regression_estimator, _, X_test, _, y_test = usecase(
-        "binary-logistic-regression"
-    )
+    logistic_regression_estimator, _, X_test, _, y_test = binary_classification_model
     logistic_regression_report = EstimatorReport(
         logistic_regression_estimator,
         fit=False,
@@ -115,16 +104,16 @@ def test_comparison_report_init_different_ml_usecases():
     )
 
     with pytest.raises(
-        ValueError, match="Not all estimators are in the same ML usecase"
+        ValueError, match="Expected all estimators to have the same ML usecase"
     ):
         ComparisonReport([linear_regression_report, logistic_regression_report])
 
 
-def test_comparison_report_init_different_test_data():
-    estimator, _, X_test, _, y_test = usecase("binary-logistic-regression")
+def test_comparison_report_init_different_test_data(binary_classification_model):
+    estimator, _, X_test, _, y_test = binary_classification_model
 
     with pytest.raises(
-        ValueError, match="Not all estimators have the same testing data"
+        ValueError, match="Expected all estimators to have the same testing data"
     ):
         ComparisonReport(
             [
@@ -144,8 +133,8 @@ def test_comparison_report_init_different_test_data():
         )
 
 
-def test_comparison_report_init_with_report_names():
-    estimator, X_train, X_test, y_train, y_test = usecase("binary-logistic-regression")
+def test_comparison_report_init_with_report_names(binary_classification_model):
+    estimator, X_train, X_test, y_train, y_test = binary_classification_model
     estimator_report = EstimatorReport(
         estimator,
         X_train=X_train,
@@ -154,18 +143,16 @@ def test_comparison_report_init_with_report_names():
         y_test=y_test,
     )
 
-    comp = ComparisonReport(
-        [estimator_report, estimator_report], report_names=["r1", "r2"]
-    )
+    comp = ComparisonReport({"r1": estimator_report, "r2": estimator_report})
 
     pd.testing.assert_index_equal(
-        comp.metrics.accuracy().index,
-        pd.MultiIndex.from_tuples(enumerate(["r1", "r2"]), names=[None, "Estimator"]),
+        comp.metrics.accuracy().columns,
+        pd.Index(["r1", "r2"], name="Estimator"),
     )
 
 
-def test_comparison_report_init_without_report_names():
-    estimator, X_train, X_test, y_train, y_test = usecase("binary-logistic-regression")
+def test_comparison_report_init_without_report_names(binary_classification_model):
+    estimator, X_train, X_test, y_train, y_test = binary_classification_model
     estimator_report = EstimatorReport(
         estimator,
         X_train=X_train,
@@ -177,16 +164,13 @@ def test_comparison_report_init_without_report_names():
     comp = ComparisonReport([estimator_report, estimator_report])
 
     pd.testing.assert_index_equal(
-        comp.metrics.accuracy().index,
-        pd.MultiIndex.from_tuples(
-            enumerate(["LogisticRegression", "LogisticRegression"]),
-            names=[None, "Estimator"],
-        ),
+        comp.metrics.accuracy().columns,
+        pd.Index(["LogisticRegression", "LogisticRegression"], name="Estimator"),
     )
 
 
-def test_comparison_report_init_with_invalid_report_names():
-    estimator, _, X_test, _, y_test = usecase("binary-logistic-regression")
+def test_comparison_report_non_string_report_names(binary_classification_model):
+    estimator, _, X_test, _, y_test = binary_classification_model
     estimator_report = EstimatorReport(
         estimator,
         fit=False,
@@ -194,14 +178,12 @@ def test_comparison_report_init_with_invalid_report_names():
         y_test=y_test,
     )
 
-    with pytest.raises(
-        ValueError, match="There should be as many report names as there are reports"
-    ):
-        ComparisonReport([estimator_report, estimator_report], report_names=["r1"])
+    report = ComparisonReport({0: estimator_report, "1": estimator_report})
+    assert report.report_names_ == ["0", "1"]
 
 
-def test_comparison_report_help(capsys):
-    estimator, _, X_test, _, y_test = usecase("binary-logistic-regression")
+def test_comparison_report_help(capsys, binary_classification_model):
+    estimator, _, X_test, _, y_test = binary_classification_model
     estimator_report = EstimatorReport(
         estimator,
         fit=False,
@@ -214,8 +196,8 @@ def test_comparison_report_help(capsys):
     assert "Tools to compare estimators" in capsys.readouterr().out
 
 
-def test_comparison_report_repr():
-    estimator, _, X_test, _, y_test = usecase("binary-logistic-regression")
+def test_comparison_report_repr(binary_classification_model):
+    estimator, _, X_test, _, y_test = binary_classification_model
     estimator_report = EstimatorReport(
         estimator,
         fit=False,
@@ -225,13 +207,12 @@ def test_comparison_report_repr():
 
     repr_str = repr(ComparisonReport([estimator_report, estimator_report]))
 
-    assert "skore.ComparisonReport" in repr_str
-    assert "help()" in repr_str
+    assert "ComparisonReport" in repr_str
 
 
-def test_comparison_report_pickle(tmp_path):
+def test_comparison_report_pickle(tmp_path, binary_classification_model):
     """Check that we can pickle a comparison report."""
-    estimator, _, X_test, _, y_test = usecase("binary-logistic-regression")
+    estimator, _, X_test, _, y_test = binary_classification_model
     estimator_report = EstimatorReport(
         estimator,
         fit=False,
@@ -244,30 +225,170 @@ def test_comparison_report_pickle(tmp_path):
 
 
 @pytest.mark.parametrize(
-    "metric_name,metric_value",
+    "metric_name, expected, data_source",
     [
-        ("accuracy", 1),
-        ("precision", 2),
-        ("recall", 3),
-        ("brier_score", 4),
-        ("roc_auc", 5),
-        ("log_loss", 6),
+        (
+            "accuracy",
+            pd.DataFrame(
+                [[1.0, 1.0]],
+                columns=pd.Index(
+                    ["LogisticRegression", "LogisticRegression"],
+                    name="Estimator",
+                ),
+                index=pd.Index(["Accuracy (↗︎)"], dtype="object", name="Metric"),
+            ),
+            "test",
+        ),
+        (
+            "accuracy",
+            pd.DataFrame(
+                [[1.0, 1.0]],
+                columns=pd.Index(
+                    ["LogisticRegression", "LogisticRegression"],
+                    name="Estimator",
+                ),
+                index=pd.Index(["Accuracy (↗︎)"], dtype="object", name="Metric"),
+            ),
+            "X_y",
+        ),
+        (
+            "precision",
+            pd.DataFrame(
+                [[1.0, 1.0], [1.0, 1.0]],
+                columns=pd.Index(
+                    ["LogisticRegression", "LogisticRegression"],
+                    name="Estimator",
+                ),
+                index=pd.MultiIndex.from_tuples(
+                    [("Precision (↗︎)", 0), ("Precision (↗︎)", 1)],
+                    names=["Metric", "Label / Average"],
+                ),
+            ),
+            "test",
+        ),
+        (
+            "precision",
+            pd.DataFrame(
+                [[1.0, 1.0], [1.0, 1.0]],
+                columns=pd.Index(
+                    ["LogisticRegression", "LogisticRegression"],
+                    name="Estimator",
+                ),
+                index=pd.MultiIndex.from_tuples(
+                    [("Precision (↗︎)", 0), ("Precision (↗︎)", 1)],
+                    names=["Metric", "Label / Average"],
+                ),
+            ),
+            "X_y",
+        ),
+        (
+            "recall",
+            pd.DataFrame(
+                [[1.0, 1.0], [1.0, 1.0]],
+                columns=pd.Index(
+                    ["LogisticRegression", "LogisticRegression"],
+                    name="Estimator",
+                ),
+                index=pd.MultiIndex.from_tuples(
+                    [("Recall (↗︎)", 0), ("Recall (↗︎)", 1)],
+                    names=["Metric", "Label / Average"],
+                ),
+            ),
+            "test",
+        ),
+        (
+            "recall",
+            pd.DataFrame(
+                [[1.0, 1.0], [1.0, 1.0]],
+                columns=pd.Index(
+                    ["LogisticRegression", "LogisticRegression"],
+                    name="Estimator",
+                ),
+                index=pd.MultiIndex.from_tuples(
+                    [("Recall (↗︎)", 0), ("Recall (↗︎)", 1)],
+                    names=["Metric", "Label / Average"],
+                ),
+            ),
+            "X_y",
+        ),
+        (
+            "brier_score",
+            pd.DataFrame(
+                [[0.026684, 0.026684]],
+                columns=pd.Index(
+                    ["LogisticRegression", "LogisticRegression"],
+                    name="Estimator",
+                ),
+                index=pd.Index(["Brier score (↘︎)"], dtype="object", name="Metric"),
+            ),
+            "test",
+        ),
+        (
+            "brier_score",
+            pd.DataFrame(
+                [[0.026684, 0.026684]],
+                columns=pd.Index(
+                    ["LogisticRegression", "LogisticRegression"],
+                    name="Estimator",
+                ),
+                index=pd.Index(["Brier score (↘︎)"], dtype="object", name="Metric"),
+            ),
+            "X_y",
+        ),
+        (
+            "roc_auc",
+            pd.DataFrame(
+                [[1.0, 1.0]],
+                columns=pd.Index(
+                    ["LogisticRegression", "LogisticRegression"],
+                    name="Estimator",
+                ),
+                index=pd.Index(["ROC AUC (↗︎)"], dtype="object", name="Metric"),
+            ),
+            "test",
+        ),
+        (
+            "roc_auc",
+            pd.DataFrame(
+                [[1.0, 1.0]],
+                columns=pd.Index(
+                    ["LogisticRegression", "LogisticRegression"],
+                    name="Estimator",
+                ),
+                index=pd.Index(["ROC AUC (↗︎)"], dtype="object", name="Metric"),
+            ),
+            "X_y",
+        ),
+        (
+            "log_loss",
+            pd.DataFrame(
+                [[0.113233, 0.113233]],
+                columns=pd.Index(
+                    ["LogisticRegression", "LogisticRegression"],
+                    name="Estimator",
+                ),
+                index=pd.Index(["Log loss (↘︎)"], dtype="object", name="Metric"),
+            ),
+            "test",
+        ),
+        (
+            "log_loss",
+            pd.DataFrame(
+                [[0.113233, 0.113233]],
+                columns=pd.Index(
+                    ["LogisticRegression", "LogisticRegression"],
+                    name="Estimator",
+                ),
+                index=pd.Index(["Log loss (↘︎)"], dtype="object", name="Metric"),
+            ),
+            "X_y",
+        ),
     ],
 )
 def test_estimator_report_metrics_binary_classification(
-    monkeypatch,
-    metric_name,
-    metric_value,
+    metric_name, expected, data_source, binary_classification_model
 ):
-    def dummy(*args, **kwargs):
-        return pd.DataFrame([[metric_value]])
-
-    monkeypatch.setattr(
-        f"skore.sklearn._estimator.metrics_accessor._MetricsAccessor.{metric_name}",
-        dummy,
-    )
-
-    estimator, X_train, X_test, y_train, y_test = usecase("binary-logistic-regression")
+    estimator, X_train, X_test, y_train, y_test = binary_classification_model
     estimator_report = EstimatorReport(
         estimator,
         X_train=X_train,
@@ -279,35 +400,81 @@ def test_estimator_report_metrics_binary_classification(
     comp = ComparisonReport([estimator_report, estimator_report])
 
     # ensure metric is valid
-    result = getattr(comp.metrics, metric_name)()
-    np.testing.assert_array_equal(result.to_numpy(), [[metric_value], [metric_value]])
+    if data_source == "X_y":
+        result = getattr(comp.metrics, metric_name)(
+            data_source=data_source, X=X_test, y=y_test
+        )
+    else:
+        result = getattr(comp.metrics, metric_name)(data_source=data_source)
+    pd.testing.assert_frame_equal(result, expected)
 
     # ensure metric is valid even from the cache
-    result = getattr(comp.metrics, metric_name)()
-    np.testing.assert_array_equal(result.to_numpy(), [[metric_value], [metric_value]])
+    if data_source == "X_y":
+        result = getattr(comp.metrics, metric_name)(
+            data_source=data_source, X=X_test, y=y_test
+        )
+    else:
+        result = getattr(comp.metrics, metric_name)(data_source=data_source)
+    pd.testing.assert_frame_equal(result, expected)
 
 
 @pytest.mark.parametrize(
-    "metric_name,metric_value",
+    "metric_name, expected, data_source",
     [
-        ("rmse", 1),
-        ("r2", 2),
+        (
+            "rmse",
+            pd.DataFrame(
+                [[0.27699, 0.27699]],
+                columns=pd.Index(
+                    ["LinearRegression", "LinearRegression"],
+                    name="Estimator",
+                ),
+                index=pd.Index(["RMSE (↘︎)"], dtype="object", name="Metric"),
+            ),
+            "test",
+        ),
+        (
+            "rmse",
+            pd.DataFrame(
+                [[0.27699, 0.27699]],
+                columns=pd.Index(
+                    ["LinearRegression", "LinearRegression"],
+                    name="Estimator",
+                ),
+                index=pd.Index(["RMSE (↘︎)"], dtype="object", name="Metric"),
+            ),
+            "X_y",
+        ),
+        (
+            "r2",
+            pd.DataFrame(
+                [[0.680319, 0.680319]],
+                columns=pd.Index(
+                    ["LinearRegression", "LinearRegression"],
+                    name="Estimator",
+                ),
+                index=pd.Index(["R² (↗︎)"], dtype="object", name="Metric"),
+            ),
+            "test",
+        ),
+        (
+            "r2",
+            pd.DataFrame(
+                [[0.680319, 0.680319]],
+                columns=pd.Index(
+                    ["LinearRegression", "LinearRegression"],
+                    name="Estimator",
+                ),
+                index=pd.Index(["R² (↗︎)"], dtype="object", name="Metric"),
+            ),
+            "X_y",
+        ),
     ],
 )
 def test_estimator_report_metrics_linear_regression(
-    monkeypatch,
-    metric_name,
-    metric_value,
+    metric_name, expected, data_source, regression_model
 ):
-    def dummy(*args, **kwargs):
-        return pd.DataFrame([[metric_value]])
-
-    monkeypatch.setattr(
-        f"skore.sklearn._estimator.metrics_accessor._MetricsAccessor.{metric_name}",
-        dummy,
-    )
-
-    estimator, X_train, X_test, y_train, y_test = usecase("linear-regression")
+    estimator, X_train, X_test, y_train, y_test = regression_model
     estimator_report = EstimatorReport(
         estimator,
         X_train=X_train,
@@ -319,9 +486,114 @@ def test_estimator_report_metrics_linear_regression(
     comp = ComparisonReport([estimator_report, estimator_report])
 
     # ensure metric is valid
-    result = getattr(comp.metrics, metric_name)()
-    np.testing.assert_array_equal(result.to_numpy(), [[metric_value], [metric_value]])
+    if data_source == "X_y":
+        result = getattr(comp.metrics, metric_name)(
+            data_source=data_source, X=X_test, y=y_test
+        )
+    else:
+        result = getattr(comp.metrics, metric_name)()
+    pd.testing.assert_frame_equal(result, expected)
 
     # ensure metric is valid even from the cache
-    result = getattr(comp.metrics, metric_name)()
-    np.testing.assert_array_equal(result.to_numpy(), [[metric_value], [metric_value]])
+    if data_source == "X_y":
+        result = getattr(comp.metrics, metric_name)(
+            data_source=data_source, X=X_test, y=y_test
+        )
+    else:
+        result = getattr(comp.metrics, metric_name)()
+    pd.testing.assert_frame_equal(result, expected)
+
+
+def test_comparison_report_report_metrics_X_y(binary_classification_model):
+    estimator, X_train, X_test, y_train, y_test = binary_classification_model
+    estimator_report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+    comp = ComparisonReport([estimator_report, estimator_report])
+
+    result = comp.metrics.report_metrics(
+        data_source="X_y",
+        X=X_train[:10],
+        y=y_train[:10],
+    )
+
+    expected = pd.DataFrame(
+        [
+            [1.0, 1.0],
+            [1.0, 1.0],
+            [1.0, 1.0],
+            [1.0, 1.0],
+            [1.0, 1.0],
+            [0.01514976, 0.01514976],
+        ],
+        columns=pd.Index(
+            ["LogisticRegression", "LogisticRegression"],
+            name="Estimator",
+        ),
+        index=pd.MultiIndex.from_tuples(
+            [
+                ("Precision (↗︎)", 0),
+                ("Precision (↗︎)", 1),
+                ("Recall (↗︎)", 0),
+                ("Recall (↗︎)", 1),
+                ("ROC AUC (↗︎)", ""),
+                ("Brier score (↘︎)", ""),
+            ],
+            names=["Metric", "Label / Average"],
+        ),
+    )
+    pd.testing.assert_frame_equal(result, expected)
+
+    assert len(comp._cache) == 1
+    cached_result = list(comp._cache.values())[0]
+    pd.testing.assert_frame_equal(cached_result, expected)
+
+
+def test_comparison_report_custom_metric_X_y(binary_classification_model):
+    from sklearn.metrics import mean_absolute_error
+
+    estimator, X_train, X_test, y_train, y_test = binary_classification_model
+    estimator_report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+    comp = ComparisonReport([estimator_report, estimator_report])
+
+    expected = pd.DataFrame(
+        [[0.0, 0.0]],
+        columns=pd.Index(
+            ["LogisticRegression", "LogisticRegression"], name="Estimator"
+        ),
+        index=pd.Index(["MAE (↗︎)"], name="Metric"),
+    )
+
+    # ensure metric is valid
+    result = comp.metrics.custom_metric(
+        metric_function=mean_absolute_error,
+        response_method="predict",
+        metric_name="MAE (↗︎)",
+        data_source="X_y",
+        X=X_test,
+        y=y_test,
+    )
+    pd.testing.assert_frame_equal(result, expected)
+
+    # ensure metric is valid even from the cache
+    result = comp.metrics.custom_metric(
+        metric_function=mean_absolute_error,
+        response_method="predict",
+        metric_name="MAE (↗︎)",
+        data_source="X_y",
+        X=X_test,
+        y=y_test,
+    )
+    pd.testing.assert_frame_equal(result, expected)

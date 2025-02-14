@@ -55,7 +55,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
     ) -> PredictionErrorDisplay: ...
 
 class _MetricsAccessor(_BaseAccessor):
-    _SCORE_OR_LOSS_ICONS: dict[str, str]
+    _SCORE_OR_LOSS_INFO: dict[str, dict[str, str]]
     plot: _PlotMetricsAccessor
 
     def _compute_metric_scores(
