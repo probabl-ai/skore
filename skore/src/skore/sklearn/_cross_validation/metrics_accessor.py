@@ -47,6 +47,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         scoring_names=None,
         pos_label=None,
         scoring_kwargs=None,
+        indicator_favorability=False,
         aggregate=None,
     ):
         """Report a set of metrics for our estimator.
@@ -78,6 +79,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         scoring_kwargs : dict, default=None
             The keyword arguments to pass to the scoring functions.
 
+        indicator_favorability : bool, default=False
+            Whether or not to add an indicator of the favorability of the metric as
+            an extra column in the returned DataFrame.
+
         aggregate : {"mean", "std"} or list of such str, default=None
             Function to aggregate the scores across the cross-validation splits.
 
@@ -100,10 +105,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                     LogisticRegression
                                     mean       std
         Metric
-        Precision (↗︎)            0.94...  0.024...
-        Recall (↗︎)               0.96...  0.027...
+        Precision                0.94...  0.024...
+        Recall                   0.96...  0.027...
         """
-        return self._compute_metric_scores(
+        results = self._compute_metric_scores(
             report_metric_name="report_metrics",
             data_source=data_source,
             aggregate=aggregate,
@@ -111,7 +116,16 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             pos_label=pos_label,
             scoring_kwargs=scoring_kwargs,
             scoring_names=scoring_names,
+            indicator_favorability=indicator_favorability,
         )
+        if indicator_favorability:
+            # the previous call will add the "Favorability" column for each split or
+            # aggregate. We need to only keep one of them and add it to the final
+            # column.
+            favorability = results.pop("Favorability")
+            results["Favorability"] = favorability.iloc[:, 0]
+
+        return results
 
     @progress_decorator(description="Compute metric for each split")
     def _compute_metric_scores(
@@ -214,7 +228,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                     LogisticRegression
                                 Split #0  Split #1
         Metric
-        Accuracy (↗︎)            0.94...   0.94...
+        Accuracy                0.94...   0.94...
         """
         return self.report_metrics(
             scoring=["accuracy"],
@@ -293,7 +307,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                                     LogisticRegression
                                                 Split #0  Split #1
         Metric         Label / Average
-        Precision (↗︎) 0                         0.96...   0.90...
+        Precision     0                         0.96...   0.90...
                       1                         0.93...   0.96...
         """
         return self.report_metrics(
@@ -376,7 +390,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                                     LogisticRegression
                                             Split #0  Split #1
         Metric      Label / Average
-        Recall (↗︎) 0                         0.87...  0.94...
+        Recall     0                         0.87...  0.94...
                    1                         0.98...  0.94...
         """
         return self.report_metrics(
@@ -421,7 +435,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                         LogisticRegression
                                 Split #0  Split #1
         Metric
-        Brier score (↘︎)         0.04...   0.04...
+        Brier score             0.04...   0.04...
         """
         return self.report_metrics(
             scoring=["brier_score"],
@@ -505,7 +519,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                     LogisticRegression
                             Split #0  Split #1
         Metric
-        ROC AUC (↗︎)         0.99...   0.98...
+        ROC AUC             0.99...   0.98...
         """
         return self.report_metrics(
             scoring=["roc_auc"],
@@ -550,7 +564,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                     LogisticRegression
                                 Split #0  Split #1
         Metric
-        Log loss (↘︎)           0.1...     0.1...
+        Log loss                0.1...     0.1...
         """
         return self.report_metrics(
             scoring=["log_loss"],
@@ -606,7 +620,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                     Ridge
                 Split #0  Split #1
         Metric
-        R² (↗︎)  0.36...   0.39...
+        R²      0.36...   0.39...
         """
         return self.report_metrics(
             scoring=["r2"],
@@ -663,7 +677,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                     Ridge
                     Split #0   Split #1
         Metric
-        RMSE (↘︎)    59.9...    61.4...
+        RMSE        59.9...    61.4...
         """
         return self.report_metrics(
             scoring=["rmse"],
@@ -737,12 +751,12 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> report.metrics.custom_metric(
         ...     metric_function=mean_absolute_error,
         ...     response_method="predict",
-        ...     metric_name="MAE (↗︎)",
+        ...     metric_name="MAE",
         ... )
                     Ridge
                 Split #0   Split #1
         Metric
-        MAE (↗︎) 50.1...   52.6...
+        MAE     50.1...   52.6...
         """
         # create a scorer with `greater_is_better=True` to not alter the output of
         # `metric_function`
