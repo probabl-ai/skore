@@ -49,6 +49,11 @@ def test_clear(tmp_path):
     assert project.keys() == []
     assert project._item_repository.keys() == []
 
+    assert dirpath.exists()
+
+    project.clear(delete_project=True)
+    assert not dirpath.exists()
+
 
 def test_put_string_item(in_memory_project):
     in_memory_project.put("string_item", "Hello, World!")
