@@ -177,7 +177,7 @@ Skipping examples when building the docs
 
 The examples can take a long time to build, so if you are not working on them you can instead run `make html-noplot` to avoid building them altogether.
 
-If you are working on an example and wish to only build that one, you can do so by temporarily editing `sphinx/conf.py`. Follow `the sphinx-gallery documentation https://sphinx-gallery.github.io/stable/configuration.html#parsing-and-executing-examples-via-matching-patterns` for more information.
+If you are working on an example and wish to only build that one, you can do so by temporarily editing `sphinx/conf.py`. Follow `the sphinx-gallery documentation <https://sphinx-gallery.github.io/stable/configuration.html#parsing-and-executing-examples-via-matching-patterns>`_ for more information.
 By default, the examples that are built are Python files that start with `plot_`.
 
 Note that by default, if an example has not changed since the last time you built it, it will not be re-built.
@@ -210,4 +210,4 @@ Contributing to the ReadMe
 --------------------------
 
 The README.md file can be modified and is part of the documentation.
-This file is used to be presented on [PyPI](https://pypi.org/project/skore/#description).
+This file is used to be presented on `PyPI <https://pypi.org/project/skore/#description>`_.
