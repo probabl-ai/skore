@@ -22,7 +22,7 @@ def _is_classification(y) -> bool:
     the task to be multiclass classification.
     This function makes the analysis finer.
     """
-    y = y.flatten()
+    y = np.array(y).flatten()
     return _is_sequential(y) and 0 in y
 
 
