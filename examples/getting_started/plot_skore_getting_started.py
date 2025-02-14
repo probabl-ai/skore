@@ -139,9 +139,9 @@ df_log_reg_report_fold_metrics
 # Comparing estimators reports
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
-# Skore has implemented a :func:`skore.ComparisonReport` feature that enables users to
-# compare several estimator reports (corresponding to several estimators) on a same
-# test, as in a benchmark of estimators.
+# :func:`skore.ComparisonReport` enables users to compare several estimator reports
+# (corresponding to several estimators) on a same test set, as in a benchmark of
+# estimators.
 #
 # Apart from the previous ``log_reg_report``, let use define another estimator report:
 
@@ -160,26 +160,21 @@ rf_report = EstimatorReport(
 # %%
 from skore import ComparisonReport
 
-comp_report = ComparisonReport(
-    reports=[
-        log_reg_report,
-        rf_report,
-    ]
-)
+comparator = ComparisonReport(reports=[log_reg_report, rf_report])
 
 # %%
 # As for the :class:`~skore.EstimatorReport` and the
 # :class:`~skore.CrossValidationReport`, we have a helper:
 
 # %%
-comp_report.help()
+comparator.help()
 
 # %%
 # Let us display the result of our benchmark:
 
 # %%
-df_comp_report_metrics = comp_report.metrics.report_metrics()
-df_comp_report_metrics
+benchmark_metrics = comparator.metrics.report_metrics()
+benchmark_metrics
 
 # %%
 # We have the result of our benchmark.
