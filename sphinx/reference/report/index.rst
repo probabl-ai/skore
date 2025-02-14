@@ -3,7 +3,18 @@ ML Assistance
 
 .. currentmodule:: skore
 
-This section contains documentation for different types of reports available in skore.
+This section contains documentation for skore features that enhance the ML development process.
+
+Get assistance when developing ML/DS projects
+---------------------------------------------
+
+These functions and classes build upon scikit-learn's functionality.
+
+.. autosummary::
+    :toctree: ../api/
+    :template: base.rst
+
+    train_test_split
 
 Single Estimator Report
 -----------------------
