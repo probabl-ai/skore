@@ -1,5 +1,5 @@
 Report for a single estimator
-============================
+=============================
 
 .. currentmodule:: skore
 
