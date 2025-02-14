@@ -1,4 +1,5 @@
 import numpy
+import pandas
 import pytest
 from sklearn.cluster import KMeans
 from sklearn.datasets import (
@@ -85,3 +86,11 @@ def test_find_ml_task_unfitted_estimator():
 
     estimator = DummyClassifier()
     assert _find_ml_task(None, estimator) == "unknown"
+
+
+def test_find_ml_task_pandas():
+    y = pandas.Series([0, 1, 2])
+    assert _find_ml_task(y, None) == "multiclass-classification"
+
+    y = pandas.DataFrame([0, 1, 2])
+    assert _find_ml_task(y, None) == "multiclass-classification"
