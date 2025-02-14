@@ -105,7 +105,7 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         **kwargs,
     ):
         if ml_task != "regression":
-            raise ValueError
+            raise ValueError("Only regression is allowed")
 
         random_state = check_random_state(random_state)
         if isinstance(subsample, numbers.Integral):
