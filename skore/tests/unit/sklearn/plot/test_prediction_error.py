@@ -73,6 +73,8 @@ def test_prediction_error_display_regression(pyplot, regression_data, subsample)
     assert display.ax_.get_xlabel() == "Predicted values"
     assert display.ax_.get_ylabel() == "Residuals (actual - predicted)"
 
+    assert display.ax_.get_aspect() not in ("equal", 1.0)
+
 
 def test_prediction_error_cross_validation_display_regression(
     pyplot, regression_data_no_split
@@ -104,6 +106,8 @@ def test_prediction_error_cross_validation_display_regression(
 
     assert display.ax_.get_xlabel() == "Predicted values"
     assert display.ax_.get_ylabel() == "Residuals (actual - predicted)"
+
+    assert display.ax_.get_aspect() not in ("equal", 1.0)
 
 
 def test_prediction_error_display_regression_kind(pyplot, regression_data):
@@ -163,6 +167,8 @@ def test_prediction_error_cross_validation_display_regression_kind(
 
     assert display.ax_.get_xlabel() == "Predicted values"
     assert display.ax_.get_ylabel() == "Actual values"
+
+    assert display.ax_.get_aspect() in ("equal", 1.0)
 
 
 def test_prediction_error_display_data_source(pyplot, regression_data):
