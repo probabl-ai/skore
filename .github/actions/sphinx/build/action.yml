@@ -27,4 +27,4 @@ runs:
         SPHINX_VERSION=${{ inputs.SPHINX_VERSION }}
         SPHINX_RELEASE=${{ inputs.SPHINX_RELEASE }}
         SPHINX_DOMAIN=${{ inputs.SPHINX_DOMAIN }}
-        pixi run -e doc docs
+        pixi run -e doc build-docs
