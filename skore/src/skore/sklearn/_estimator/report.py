@@ -2,10 +2,12 @@ import copy
 import time
 import warnings
 from itertools import product
+from typing import Literal, Optional, Union
 
 import joblib
 import numpy as np
-from sklearn.base import clone
+from numpy.typing import ArrayLike
+from sklearn.base import BaseEstimator, clone
 from sklearn.exceptions import NotFittedError
 from sklearn.pipeline import Pipeline
 from sklearn.utils.validation import check_is_fitted
@@ -71,12 +73,14 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     >>> report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     """
 
-    _ACCESSOR_CONFIG = {
+    _ACCESSOR_CONFIG: dict[str, dict[str, str]] = {
         "metrics": {"name": "metrics"},
     }
 
     @staticmethod
-    def _fit_estimator(estimator, X_train, y_train):
+    def _fit_estimator(
+        estimator: BaseEstimator, X_train: ArrayLike, y_train: Optional[ArrayLike]
+    ) -> BaseEstimator:
         if X_train is None or (y_train is None and not is_clusterer(estimator)):
             raise ValueError(
                 "The training data is required to fit the estimator. "
@@ -85,7 +89,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         return clone(estimator).fit(X_train, y_train)
 
     @classmethod
-    def _copy_estimator(cls, estimator):
+    def _copy_estimator(cls, estimator: BaseEstimator) -> BaseEstimator:
         try:
             return copy.deepcopy(estimator)
         except Exception as e:
@@ -101,14 +105,14 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     def __init__(
         self,
-        estimator,
+        estimator: BaseEstimator,
         *,
-        fit="auto",
-        X_train=None,
-        y_train=None,
-        X_test=None,
-        y_test=None,
-    ):
+        fit: Union[Literal["auto"], bool] = "auto",
+        X_train: Optional[ArrayLike] = None,
+        y_train: Optional[ArrayLike] = None,
+        X_test: Optional[ArrayLike] = None,
+        y_test: Optional[ArrayLike] = None,
+    ) -> None:
         # used to know if a parent launch a progress bar manager
         self._parent_progress = None
 
@@ -132,7 +136,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
         self._initialize_state()
 
-    def _initialize_state(self):
+    def _initialize_state(self) -> None:
         """Initialize/reset the random number generator, hash, and cache."""
         self._rng = np.random.default_rng(time.time_ns())
         self._hash = self._rng.integers(
@@ -145,7 +149,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     # For the moment, we do not allow to alter the estimator and the training data.
     # For the validation set, we allow it and we invalidate the cache.
 
-    def clear_cache(self):
+    def clear_cache(self) -> None:
         """Clear the cache.
 
         Examples
@@ -173,7 +177,11 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self._cache = {}
 
     @progress_decorator(description="Caching predictions")
-    def cache_predictions(self, response_methods="auto", n_jobs=None):
+    def cache_predictions(
+        self,
+        response_methods: Union[Literal["auto"], list[str]] = "auto",
+        n_jobs: Optional[int] = None,
+    ) -> None:
         """Cache estimator's predictions.
 
         Parameters
@@ -252,7 +260,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             progress.update(task, advance=1, refresh=True)
 
     @property
-    def estimator_(self):
+    def estimator_(self) -> BaseEstimator:
         return self._estimator
 
     @estimator_.setter
@@ -263,7 +271,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         )
 
     @property
-    def X_train(self):
+    def X_train(self) -> Optional[ArrayLike]:
         return self._X_train
 
     @X_train.setter
@@ -274,7 +282,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         )
 
     @property
-    def y_train(self):
+    def y_train(self) -> Optional[ArrayLike]:
         return self._y_train
 
     @y_train.setter
@@ -285,7 +293,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         )
 
     @property
-    def X_test(self):
+    def X_test(self) -> Optional[ArrayLike]:
         return self._X_test
 
     @X_test.setter
@@ -294,7 +302,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self._initialize_state()
 
     @property
-    def y_test(self):
+    def y_test(self) -> Optional[ArrayLike]:
         return self._y_test
 
     @y_test.setter
@@ -303,7 +311,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self._initialize_state()
 
     @property
-    def estimator_name_(self):
+    def estimator_name_(self) -> str:
         if isinstance(self._estimator, Pipeline):
             name = self._estimator[-1].__class__.__name__
         else:
@@ -314,17 +322,17 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     # Methods related to the help and repr
     ####################################################################################
 
-    def _get_help_panel_title(self):
+    def _get_help_panel_title(self) -> str:
         return (
             f"[bold cyan]Tools to diagnose estimator "
             f"{self.estimator_name_}[/bold cyan]"
         )
 
-    def _get_help_legend(self):
+    def _get_help_legend(self) -> str:
         return (
             "[cyan](↗︎)[/cyan] higher is better [orange1](↘︎)[/orange1] lower is better"
         )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Return a string representation."""
         return f"{self.__class__.__name__}(estimator={self.estimator_}, ...)"

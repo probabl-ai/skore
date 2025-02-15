@@ -1,9 +1,12 @@
 import time
+from collections.abc import Generator
+from typing import Any, Optional, Union
 
 import joblib
 import numpy as np
+from numpy.typing import ArrayLike
 from rich.panel import Panel
-from sklearn.base import clone, is_classifier
+from sklearn.base import BaseEstimator, clone, is_classifier
 from sklearn.model_selection import check_cv
 from sklearn.pipeline import Pipeline
 
@@ -12,10 +15,17 @@ from skore.externals._sklearn_compat import _safe_indexing
 from skore.sklearn._base import _BaseReport
 from skore.sklearn._estimator.report import EstimatorReport
 from skore.sklearn.find_ml_task import _find_ml_task
+from skore.sklearn.types import SKLearnCrossValidator
 from skore.utils._progress_bar import progress_decorator
 
 
-def _generate_estimator_report(estimator, X, y, train_indices, test_indices):
+def _generate_estimator_report(
+    estimator: BaseEstimator,
+    X: ArrayLike,
+    y: Optional[ArrayLike],
+    train_indices: ArrayLike,
+    test_indices: ArrayLike,
+) -> EstimatorReport:
     return EstimatorReport(
         estimator,
         fit=True,
@@ -98,18 +108,18 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     >>> report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=2)
     """
 
-    _ACCESSOR_CONFIG = {
+    _ACCESSOR_CONFIG: dict[str, dict[str, str]] = {
         "metrics": {"name": "metrics"},
     }
 
     def __init__(
         self,
-        estimator,
-        X,
-        y=None,
-        cv_splitter=None,
-        n_jobs=None,
-    ):
+        estimator: BaseEstimator,
+        X: ArrayLike,
+        y: Optional[ArrayLike] = None,
+        cv_splitter: Optional[Union[int, SKLearnCrossValidator, Generator]] = None,
+        n_jobs: Optional[int] = None,
+    ) -> None:
         # used to know if a parent launch a progress bar manager
         self._parent_progress = None
 
@@ -140,7 +150,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             f"Processing cross-validation\nfor {self.estimator_name_}"
         )
     )
-    def _fit_estimator_reports(self):
+    def _fit_estimator_reports(self) -> list[EstimatorReport]:
         """Fit the estimator reports.
 
         This function is created to be able to use the progress bar. It works well
@@ -203,7 +213,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
         return estimator_reports
 
-    def clear_cache(self):
+    def clear_cache(self) -> None:
         """Clear the cache.
 
         Examples
@@ -224,7 +234,11 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         self._cache = {}
 
     @progress_decorator(description="Cross-validation predictions")
-    def cache_predictions(self, response_methods="auto", n_jobs=None):
+    def cache_predictions(
+        self,
+        response_methods: str = "auto",
+        n_jobs: Optional[int] = None,
+    ) -> None:
         """Cache the predictions for sub-estimators reports.
 
         Parameters
@@ -267,18 +281,18 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             progress.update(main_task, advance=1, refresh=True)
 
     @property
-    def estimator_(self):
+    def estimator_(self) -> BaseEstimator:
         return self._estimator
 
     @estimator_.setter
-    def estimator_(self, value):
+    def estimator_(self, value: Any) -> None:
         raise AttributeError(
             "The estimator attribute is immutable. "
             f"Call the constructor of {self.__class__.__name__} to create a new report."
         )
 
     @property
-    def estimator_name_(self):
+    def estimator_name_(self) -> str:
         if isinstance(self._estimator, Pipeline):
             name = self._estimator[-1].__class__.__name__
         else:
@@ -286,22 +300,22 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         return name
 
     @property
-    def X(self):
+    def X(self) -> ArrayLike:
         return self._X
 
     @X.setter
-    def X(self, value):
+    def X(self, value: Any) -> None:
         raise AttributeError(
             "The X attribute is immutable. "
             f"Call the constructor of {self.__class__.__name__} to create a new report."
         )
 
     @property
-    def y(self):
+    def y(self) -> Optional[ArrayLike]:
         return self._y
 
     @y.setter
-    def y(self, value):
+    def y(self, value: Any) -> None:
         raise AttributeError(
             "The y attribute is immutable. "
             f"Call the constructor of {self.__class__.__name__} to create a new report."
@@ -311,17 +325,17 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     # Methods related to the help and repr
     ####################################################################################
 
-    def _get_help_panel_title(self):
+    def _get_help_panel_title(self) -> str:
         return (
             f"[bold cyan]Tools to diagnose estimator "
             f"{self.estimator_name_}[/bold cyan]"
         )
 
-    def _get_help_legend(self):
+    def _get_help_legend(self) -> str:
         return (
             "[cyan](↗︎)[/cyan] higher is better [orange1](↘︎)[/orange1] lower is better"
         )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Return a string representation."""
         return f"{self.__class__.__name__}(estimator={self.estimator_}, ...)"

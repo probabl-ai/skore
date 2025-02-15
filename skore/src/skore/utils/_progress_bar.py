@@ -1,4 +1,5 @@
 from functools import wraps
+from typing import Any, Callable, TypeVar, Union
 
 from rich.progress import (
     BarColumn,
@@ -7,8 +8,13 @@ from rich.progress import (
     TextColumn,
 )
 
+T = TypeVar("T")
+DescriptionType = Union[str, Callable[..., str]]
 
-def progress_decorator(description):
+
+def progress_decorator(
+    description: DescriptionType,
+) -> Callable[[Callable[..., T]], Callable[..., T]]:
     """Decorate class methods to add a progress bar.
 
     This decorator adds a Rich progress bar to class methods, displaying progress
@@ -26,10 +32,10 @@ def progress_decorator(description):
         A decorator that wraps the input function and adds a progress bar to it.
     """
 
-    def decorator(func):
+    def decorator(func: Callable[..., T]) -> Callable[..., T]:
         @wraps(func)
-        def wrapper(*args, **kwargs):
-            self_obj = args[0]
+        def wrapper(*args: Any, **kwargs: Any) -> T:
+            self_obj: Any = args[0]
 
             desc = description(self_obj) if callable(description) else description
 
