@@ -49,8 +49,6 @@ def set_config(
 ):
     """Set global skore configuration.
 
-    .. versionadded:: 0.19
-
     Parameters
     ----------
     show_progress : bool, default=None
