@@ -1,7 +1,11 @@
 import numbers
+from typing import Any, Literal, Optional, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.axes import Axes
+from numpy.typing import ArrayLike
+from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_random_state
 
 from skore.externals._sklearn_compat import _safe_indexing
@@ -11,6 +15,7 @@ from skore.sklearn._plot.utils import (
     _validate_style_kwargs,
     sample_mpl_colormap,
 )
+from skore.sklearn.types import MLTask
 
 
 class PredictionErrorDisplay(HelpDisplayMixin):
@@ -78,7 +83,14 @@ class PredictionErrorDisplay(HelpDisplayMixin):
     >>> display.plot(kind="actual_vs_predicted")
     """
 
-    def __init__(self, *, y_true, y_pred, estimator_name, data_source=None):
+    def __init__(
+        self,
+        *,
+        y_true: list[ArrayLike],
+        y_pred: list[ArrayLike],
+        estimator_name: str,
+        data_source: Optional[Literal["train", "test", "X_y"]] = None,
+    ):
         self.y_true = y_true
         self.y_pred = y_pred
         self.estimator_name = estimator_name
@@ -86,13 +98,15 @@ class PredictionErrorDisplay(HelpDisplayMixin):
 
     def plot(
         self,
-        ax=None,
+        ax: Optional[Axes] = None,
         *,
-        estimator_name=None,
-        kind="residual_vs_predicted",
-        scatter_kwargs=None,
-        line_kwargs=None,
-        despine=True,
+        estimator_name: Optional[str] = None,
+        kind: Literal[
+            "actual_vs_predicted", "residual_vs_predicted"
+        ] = "residual_vs_predicted",
+        scatter_kwargs: Optional[dict[str, Any]] = None,
+        line_kwargs: Optional[dict[str, Any]] = None,
+        despine: bool = True,
     ):
         """Plot visualization.
 
@@ -284,15 +298,15 @@ class PredictionErrorDisplay(HelpDisplayMixin):
     @classmethod
     def _from_predictions(
         cls,
-        y_true,
-        y_pred,
+        y_true: list[ArrayLike],
+        y_pred: list[ArrayLike],
         *,
-        estimator,  # currently only for consistency with other plots
-        estimator_name,
-        ml_task,  # FIXME: to be used when having single-output vs. multi-output
-        data_source=None,
-        subsample=1_000,
-        random_state=None,
+        estimator: BaseEstimator,  # currently only for consistency with other plots
+        estimator_name: str,
+        ml_task: MLTask,  # FIXME: to be used when having single-output vs. multi-output
+        data_source: Optional[Literal["train", "test", "X_y"]] = None,
+        subsample: Union[float, int, None] = 1_000,
+        random_state: Optional[int] = None,
     ):
         """Plot the prediction error given the true and predicted targets.
 
