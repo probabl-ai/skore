@@ -5,6 +5,7 @@ import numpy as np
 from sklearn.metrics import auc, roc_curve
 from sklearn.preprocessing import LabelBinarizer
 
+from skore.sklearn._plot.style import StyleDisplayMixin
 from skore.sklearn._plot.utils import (
     HelpDisplayMixin,
     _ClassifierCurveDisplayMixin,
@@ -14,7 +15,9 @@ from skore.sklearn._plot.utils import (
 )
 
 
-class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
+class RocCurveDisplay(
+    HelpDisplayMixin, _ClassifierCurveDisplayMixin, StyleDisplayMixin
+):
     """ROC Curve visualization.
 
     An instance of this class is should created by `EstimatorReport.metrics.roc()`.
@@ -102,6 +105,9 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
     >>> display.plot(roc_curve_kwargs={"color": "tab:red"})
     """
 
+    _default_roc_curve_kwargs = None
+    _default_chance_level_kwargs = None
+
     def __init__(
         self,
         *,
@@ -186,6 +192,12 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
             ax=ax, estimator_name=estimator_name
         )
 
+        if roc_curve_kwargs is None:
+            roc_curve_kwargs = self._default_roc_curve_kwargs
+        if chance_level_kwargs is None:
+            chance_level_kwargs = self._default_chance_level_kwargs
+
+        self.lines_ = []
         self.lines_ = []
         if len(self.fpr) == 1:  # binary-classification
             if len(self.fpr[self.pos_label]) == 1:  # single-split
