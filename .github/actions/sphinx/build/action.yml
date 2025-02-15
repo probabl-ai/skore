@@ -22,6 +22,7 @@ runs:
 
     - name: Make docs
       working-directory: skore/
+      shell: bash
       run: |
         SPHINX_VERSION=${{ inputs.SPHINX_VERSION }}
         SPHINX_RELEASE=${{ inputs.SPHINX_RELEASE }}
