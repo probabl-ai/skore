@@ -1,7 +1,11 @@
 from collections import defaultdict
+from typing import Any, Literal, Optional, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.axes import Axes
+from numpy.typing import ArrayLike
+from sklearn.base import BaseEstimator
 from sklearn.metrics import auc, roc_curve
 from sklearn.preprocessing import LabelBinarizer
 
@@ -12,6 +16,7 @@ from skore.sklearn._plot.utils import (
     _validate_style_kwargs,
     sample_mpl_colormap,
 )
+from skore.sklearn.types import MLTask
 
 
 class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
@@ -105,12 +110,12 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
     def __init__(
         self,
         *,
-        fpr,
-        tpr,
-        roc_auc,
-        estimator_name,
-        pos_label=None,
-        data_source=None,
+        fpr: dict[str, list[ArrayLike]],
+        tpr: dict[str, list[ArrayLike]],
+        roc_auc: dict[str, list[float]],
+        estimator_name: str,
+        pos_label: Optional[Union[int, float, bool, str]] = None,
+        data_source: Optional[Literal["train", "test", "X_y"]] = None,
     ):
         self.estimator_name = estimator_name
         self.fpr = fpr
@@ -121,13 +126,13 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
 
     def plot(
         self,
-        ax=None,
+        ax: Optional[Axes] = None,
         *,
-        estimator_name=None,
-        roc_curve_kwargs=None,
-        plot_chance_level=True,
-        chance_level_kwargs=None,
-        despine=True,
+        estimator_name: Optional[str] = None,
+        roc_curve_kwargs: Optional[dict[str, Any]] = None,
+        plot_chance_level: bool = True,
+        chance_level_kwargs: Optional[dict[str, Any]] = None,
+        despine: bool = True,
     ):
         """Plot visualization.
 
@@ -380,13 +385,13 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
     @classmethod
     def _from_predictions(
         cls,
-        y_true,
-        y_pred,
+        y_true: list[ArrayLike],
+        y_pred: list[ArrayLike],
         *,
-        estimator,
-        estimator_name,
-        ml_task,
-        data_source=None,
+        estimator: BaseEstimator,
+        estimator_name: str,
+        ml_task: MLTask,
+        data_source: Optional[Literal["train", "test", "X_y"]] = None,
         pos_label=None,
         drop_intermediate=True,
     ):
