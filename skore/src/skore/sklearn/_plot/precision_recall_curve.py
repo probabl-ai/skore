@@ -1,7 +1,11 @@
 from collections import defaultdict
+from typing import Any, Literal, Optional, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.axes import Axes
+from numpy.typing import ArrayLike, NDArray
+from sklearn.base import BaseEstimator
 from sklearn.metrics import average_precision_score, precision_recall_curve
 from sklearn.preprocessing import LabelBinarizer
 
@@ -12,6 +16,7 @@ from skore.sklearn._plot.utils import (
     _validate_style_kwargs,
     sample_mpl_colormap,
 )
+from skore.sklearn.types import MLTask
 
 
 class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
@@ -103,13 +108,13 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
 
     def __init__(
         self,
-        precision,
-        recall,
+        precision: dict[Any, list[NDArray]],
+        recall: dict[Any, list[NDArray]],
         *,
-        average_precision,
-        estimator_name,
-        pos_label=None,
-        data_source=None,
+        average_precision: dict[Any, list[float]],
+        estimator_name: str,
+        pos_label: Optional[Union[int, float, bool, str]] = None,
+        data_source: Optional[Literal["train", "test", "X_y"]] = None,
     ):
         self.precision = precision
         self.recall = recall
@@ -120,12 +125,12 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
 
     def plot(
         self,
-        ax=None,
+        ax: Optional[Axes] = None,
         *,
-        estimator_name=None,
-        pr_curve_kwargs=None,
-        despine=True,
-    ):
+        estimator_name: Optional[str] = None,
+        pr_curve_kwargs: Optional[Union[dict[str, Any], list[dict[str, Any]]]] = None,
+        despine: bool = True,
+    ) -> "PrecisionRecallCurveDisplay":
         """Plot visualization.
 
         Extra keyword arguments will be passed to matplotlib's `plot`.
@@ -367,30 +372,32 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
 
         self.ax_.legend(loc="lower left", title=estimator_name)
 
+        return self
+
     @classmethod
     def _from_predictions(
         cls,
-        y_true,
-        y_pred,
+        y_true: list[ArrayLike],
+        y_pred: list[ArrayLike],
         *,
-        estimator,
-        estimator_name,
-        ml_task,
-        data_source=None,
-        pos_label=None,
-        drop_intermediate=False,
-    ):
+        estimator: BaseEstimator,
+        estimator_name: str,
+        ml_task: MLTask,
+        data_source: Optional[Literal["train", "test", "X_y"]] = None,
+        pos_label: Optional[Union[int, float, bool, str]] = None,
+        drop_intermediate: bool = False,
+    ) -> "PrecisionRecallCurveDisplay":
         """Plot precision-recall curve given binary class predictions.
 
         Parameters
         ----------
-        y_true : array-like of shape (n_samples,)
+        y_true : list of array-like of shape (n_samples,)
             True binary labels.
 
-        y_pred : array-like of shape (n_samples,)
+        y_pred : list of array-like of shape (n_samples,)
             Target scores, can either be probability estimates of the positive class,
             confidence values, or non-thresholded measure of decisions (as returned by
-            “decision_function” on some classifiers).
+            "decision_function" on some classifiers).
 
         estimator : estimator instance
             The estimator from which `y_pred` is obtained.
