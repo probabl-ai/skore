@@ -45,7 +45,9 @@ jobs:
 
       - name: Run tests
         working-directory: skore/
-        run: pixi run -e ${{ matrix.environment }} tests
+        run: |
+          pixi run -e ${{ matrix.environment }} setup-skore-ui
+          pixi run -e ${{ matrix.environment }} tests
 
       # - name: Upload coverage reports
       #   if: ${{ github.event_name == 'pull_request' }}

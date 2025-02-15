@@ -204,6 +204,12 @@ python = "~=3.13.0"
 [tool.pixi.pypi-dependencies]
 skore = { path = ".", editable = true }
 
+[tool.pixi.tasks]
+clean-skore-ui = { cmd = "rm -rf skore-ui/dist/ && rm -rf skore/src/skore/ui/static/", cwd = "../" }
+build-skore-ui = { cmd = "npm install && npm run build", cwd = "../skore-ui" }
+move-skore-ui = { cmd = "mv skore-ui/dist/ skore/src/skore/ui/static/", cwd = "../" }
+setup-skore-ui = { cmd = "echo 'Skore UI setup complete'", cwd = "../", depends-on = ["clean-skore-ui", "build-skore-ui", "move-skore-ui"] }
+
 [tool.pixi.feature.doc.tasks]
 build-docs = { cmd = "make html", cwd = "../sphinx" }
 build-docs-quick = { cmd = "make html-noplot", cwd = "../sphinx" }
