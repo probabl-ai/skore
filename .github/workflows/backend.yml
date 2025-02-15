@@ -26,7 +26,11 @@ jobs:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
         environment: [
-            dev
+            ci-py309-min-deps,
+            ci-py310-latest-deps,
+            ci-py311-latest-deps,
+            ci-py312-latest-deps,
+            ci-py313-latest-deps,
         ]
     runs-on: ${{ matrix.os }}
     steps:
@@ -43,9 +47,9 @@ jobs:
         working-directory: skore/
         run: pixi run -e ${{ matrix.environment }} tests
 
-      - name: Upload coverage reports
-        if: ${{ github.event_name == 'pull_request' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-coverage
-          path: skore/coverage/
+      # - name: Upload coverage reports
+      #   if: ${{ github.event_name == 'pull_request' }}
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: backend-coverage
+      #     path: skore/coverage/

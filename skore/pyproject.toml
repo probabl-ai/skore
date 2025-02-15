@@ -164,6 +164,43 @@ ipykernel = "*"
 ipython = "*"
 jupyterlab = "*"
 
+[tool.pixi.feature.min-dependencies.dependencies]
+# Apply SPEC0 rule:
+# 1. Support for Python versions be dropped 3 years after their initial release.
+# 2. Support for core package dependencies be dropped 2 years after their initial
+#    release.
+numpy = "~=1.25.0"
+scipy = "~=1.11.0"
+pandas = "~=2.0.0"
+joblib = "~=1.1.0"
+scikit-learn = "~=1.2.0"
+matplotlib = "~=3.7.0"
+diskcache = "~=5.6.0"
+fastapi = "~=0.92.0"
+orjson = "~=3.8.0"
+platformdirs = "~=3.0.0"
+plotly = "~=5.13.0"
+psutil = "~=5.9.0"
+pyarrow = "~=12.0.0"
+rich = "~=13.3.0"
+skops = "~=0.8.0"
+uvicorn = "~=0.21.0"
+
+[tool.pixi.feature.py309.dependencies]
+python = "~=3.9.0"
+
+[tool.pixi.feature.py310.dependencies]
+python = "~=3.10.0"
+
+[tool.pixi.feature.py311.dependencies]
+python = "~=3.11.0"
+
+[tool.pixi.feature.py312.dependencies]
+python = "~=3.12.0"
+
+[tool.pixi.feature.py313.dependencies]
+python = "~=3.13.0"
+
 [tool.pixi.pypi-dependencies]
 skore = { path = ".", editable = true }
 
@@ -183,6 +220,11 @@ lint = ["lint"]
 doc = ["doc"]
 test = ["test"]
 dev = ["dev", "doc", "lint", "test"]
+ci-py309-min-deps = ["py309", "min-dependencies", "test"]
+ci-py310-latest-deps = ["py310", "test"]
+ci-py311-latest-deps = ["py311", "test"]
+ci-py312-latest-deps = ["py312", "test"]
+ci-py313-latest-deps = ["py313", "test"]
 
 [tool.pytest.ini_options]
 addopts = [
