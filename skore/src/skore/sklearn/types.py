@@ -1,6 +1,6 @@
 """Types between parts of the sklearn module."""
 
-from typing import Literal
+from typing import Any, Callable, Literal, Protocol, Union
 
 MLTask = Literal[
     "binary-classification",
@@ -12,3 +12,11 @@ MLTask = Literal[
     "regression",
     "unknown",
 ]
+
+
+class SKLearnScorer(Protocol):
+    """Protocol defining the interface of scikit-learn's _BaseScorer."""
+
+    _score_func: Callable
+    _response_method: Union[str, list[str]]
+    _kwargs: dict[str, Any]
