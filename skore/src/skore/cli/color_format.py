@@ -3,7 +3,7 @@
 import re
 import shutil
 from argparse import ArgumentParser, HelpFormatter
-from typing import Any
+from typing import Any, Optional, Union
 
 from rich.console import Console
 from rich.theme import Theme
@@ -25,7 +25,7 @@ class RichColorHelpFormatter(HelpFormatter):
         prog: str,
         indent_increment: int = 2,
         max_help_position: int = 24,
-        width: int | None = None,
+        width: Optional[int] = None,
     ):
         width = shutil.get_terminal_size()[0] if width is None else width
         super().__init__(prog, indent_increment, max_help_position, width)
@@ -56,7 +56,7 @@ class RichColorHelpFormatter(HelpFormatter):
         usage: str,
         actions: list[Any],
         groups: list[Any],
-        prefix: str | None,
+        prefix: Union[str, None],
     ) -> str:
         """Format the usage line."""
         if prefix is None:
