@@ -38,6 +38,7 @@ pip-log.txt
 pip-delete-this-directory.txt
 
 # Unit test / coverage reports
+skore/coverage/
 htmlcov/
 .tox/
 .nox/
@@ -195,3 +196,6 @@ examples/plot_*.png
 
 # Exclude hatch artifacts
 skore/LICENSE
+
+# pixi environments
+skore/.pixi/

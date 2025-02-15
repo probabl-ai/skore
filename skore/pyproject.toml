@@ -5,10 +5,8 @@ dynamic = [
   "license",
   "readme",
   "version",
-  "dependencies",
-  "optional-dependencies",
 ]
-requires-python = ">=3.9, <3.13"
+requires-python = ">=3.9"
 maintainers = [{ name = "skore developers", email = "skore@signal.probabl.ai" }]
 classifiers = [
   "Intended Audience :: Science/Research",
@@ -27,6 +25,59 @@ classifiers = [
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
+dependencies = [
+  "diskcache",
+  "fastapi",
+  "joblib",
+  "matplotlib",
+  "numpy",
+  "orjson",
+  "pandas",
+  "platformdirs",
+  "plotly>=5,<6",
+  "psutil",
+  "pyarrow",
+  "rich",
+  "scikit-learn",
+  "skops",
+  "uvicorn",
+]
+
+[project.optional-dependencies]
+doc = [
+  "IPython",
+  "altair",
+  "numpydoc",
+  "polars",
+  "kaleido",
+  "pydata-sphinx-theme",
+  "sentence-transformers",
+  "sphinx",
+  "sphinx-autosummary-accessors",
+  "sphinx-design",
+  "sphinx-gallery",
+  "sphinx-copybutton",
+  "sphinx-tabs",
+  "skrub",
+]
+lint = [
+  "pre-commit",
+  "ruff",
+]
+test = [
+  "altair>=5,<6",
+  "httpx",
+  "pillow",
+  "plotly",
+  "polars",
+  "pytest",
+  "pytest-cov",
+  "pytest-order",
+  "pytest-randomly",
+  "pytest-xdist",
+  "skrub",
 ]
 
 [project.urls]
@@ -48,9 +99,6 @@ path = "hatch/metadata.py"
 version-default = "0.0.0+unknown"
 license = { "file" = "../LICENSE" }
 readme = { "file" = "../README.md" }
-dependencies = { "file" = "requirements.in" }
-optional-dependencies.test = { "file" = "test-requirements.in" }
-optional-dependencies.sphinx = { "file" = "sphinx-requirements.in" }
 
 [tool.hatch.build.targets.sdist]
 only-include = ["src/", "hatch/"]
@@ -59,6 +107,82 @@ artifacts = ["src/skore/ui/static/"]
 [tool.hatch.build.targets.wheel]
 package = ["src/skore/"]
 artifacts = ["src/skore/ui/static/"]
+
+[tool.pixi.project]
+channels = ["conda-forge", "pytorch"]
+platforms = ["linux-64", "osx-arm64", "osx-64", "win-64"]
+
+[tool.pixi.dependencies]
+diskcache = "*"
+fastapi = "*"
+joblib = "*"
+matplotlib = "*"
+numpy = "*"
+orjson = "*"
+pandas = "*"
+platformdirs = "*"
+plotly = ">=5,<6"
+psutil = "*"
+pyarrow = "*"
+rich = "*"
+scikit-learn = "*"
+skops = "*"
+uvicorn = "*"
+
+[tool.pixi.feature.doc]
+# pytorch is not anymore released on osx-64 platform
+platforms = ["linux-64", "osx-arm64", "win-64"]
+
+[tool.pixi.feature.doc.dependencies]
+altair = ">=5,<6"
+httpx = "*"
+pillow = "*"
+plotly = "*"
+polars = "*"
+pytest = "*"
+pytest-cov = "*"
+pytest-order = "*"
+pytest-randomly = "*"
+pytest-xdist = "*"
+skrub = "*"
+
+[tool.pixi.feature.test.dependencies]
+altair = ">=5,<6"
+httpx = "*"
+pillow = "*"
+plotly = "*"
+polars = "*"
+pytest = "*"
+pytest-cov = "*"
+pytest-order = "*"
+pytest-randomly = "*"
+pytest-xdist = "*"
+skrub = "*"
+
+[tool.pixi.feature.dev.dependencies]
+ipykernel = "*"
+ipython = "*"
+jupyterlab = "*"
+
+[tool.pixi.pypi-dependencies]
+skore = { path = ".", editable = true }
+
+[tool.pixi.feature.doc.tasks]
+build-docs = { cmd = "make html", cwd = "../sphinx" }
+build-docs-quick = { cmd = "make html-noplot", cwd = "../sphinx" }
+clean-docs = { cmd = "rm -rf build/ && rm -rf auto_examples/ && rm -rf reference/api/", cwd = "../sphinx" }
+
+[tool.pixi.feature.lint.tasks]
+lint = { cmd = "pre-commit install && pre-commit run -v --all-files --show-diff-on-failure", cwd = "../" }
+
+[tool.pixi.feature.test.tasks]
+tests = { cmd = "mkdir -p coverage && python -m pytest -n auto src/ tests/ --junitxml=coverage/coverage.xml --cov-config=pyproject.toml --cov | tee coverage/coverage.txt" }
+
+[tool.pixi.environments]
+lint = ["lint"]
+doc = ["doc"]
+test = ["test"]
+dev = ["dev", "doc", "lint", "test"]
 
 [tool.pytest.ini_options]
 addopts = [
