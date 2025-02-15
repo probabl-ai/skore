@@ -40,6 +40,7 @@ jobs:
           frozen: true
 
       - name: Run tests
+        working-directory: skore/
         run: pixi run -e ${{ matrix.environment }} tests
   # backend-lint:
   #   runs-on: "ubuntu-latest"
