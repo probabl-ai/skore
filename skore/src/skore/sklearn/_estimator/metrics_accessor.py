@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike
 from sklearn import metrics
+from sklearn.metrics._scorer import _BaseScorer
 from sklearn.utils.metaestimators import available_if
 
 from skore.externals._pandas_accessors import DirNamesMixin
@@ -170,7 +171,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         for metric_name, metric in zip(scoring_names, scoring):
             # NOTE: we have to check specifically for `_BaseScorer` first because this
             # is also a callable but it has a special private API that we can leverage
-            if isinstance(metric, SKLearnScorer):
+            if isinstance(metric, _BaseScorer):
                 # scorers have the advantage to have scoped defined kwargs
                 metric_fn = partial(
                     self._custom_metric,

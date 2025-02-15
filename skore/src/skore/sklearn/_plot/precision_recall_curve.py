@@ -130,7 +130,7 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
         estimator_name: Optional[str] = None,
         pr_curve_kwargs: Optional[Union[dict[str, Any], list[dict[str, Any]]]] = None,
         despine: bool = True,
-    ) -> "PrecisionRecallCurveDisplay":
+    ) -> None:
         """Plot visualization.
 
         Extra keyword arguments will be passed to matplotlib's `plot`.
@@ -371,8 +371,6 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
             _despine_matplotlib_axis(self.ax_)
 
         self.ax_.legend(loc="lower left", title=estimator_name)
-
-        return self
 
     @classmethod
     def _from_predictions(

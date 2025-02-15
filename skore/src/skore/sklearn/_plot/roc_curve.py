@@ -394,7 +394,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         data_source: Optional[Literal["train", "test", "X_y"]] = None,
         pos_label=None,
         drop_intermediate=True,
-    ):
+    ) -> "RocCurveDisplay":
         """Private method to create a RocCurveDisplay from predictions.
 
         Parameters

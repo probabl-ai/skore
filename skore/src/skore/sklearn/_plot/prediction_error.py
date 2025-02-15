@@ -107,7 +107,7 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         scatter_kwargs: Optional[dict[str, Any]] = None,
         line_kwargs: Optional[dict[str, Any]] = None,
         despine: bool = True,
-    ):
+    ) -> None:
         """Plot visualization.
 
         Extra keyword arguments will be passed to matplotlib's ``plot``.
@@ -307,7 +307,7 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         data_source: Optional[Literal["train", "test", "X_y"]] = None,
         subsample: Union[float, int, None] = 1_000,
         random_state: Optional[int] = None,
-    ):
+    ) -> "PredictionErrorDisplay":
         """Plot the prediction error given the true and predicted targets.
 
         Parameters
