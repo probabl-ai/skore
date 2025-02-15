@@ -5,10 +5,8 @@ dynamic = [
   "license",
   "readme",
   "version",
-  "dependencies",
-  "optional-dependencies",
 ]
-requires-python = ">=3.9, <3.13"
+requires-python = ">=3.9"
 maintainers = [{ name = "skore developers", email = "skore@signal.probabl.ai" }]
 classifiers = [
   "Intended Audience :: Science/Research",
@@ -27,6 +25,59 @@ classifiers = [
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
+dependencies = [
+  "diskcache",
+  "fastapi",
+  "joblib",
+  "matplotlib",
+  "numpy",
+  "orjson",
+  "pandas",
+  "platformdirs",
+  "plotly>=5,<6",
+  "psutil",
+  "pyarrow",
+  "rich",
+  "scikit-learn",
+  "skops",
+  "uvicorn",
+]
+
+[project.optional-dependencies]
+doc = [
+  "IPython",
+  "altair",
+  "numpydoc",
+  "polars",
+  "kaleido",
+  "pydata-sphinx-theme",
+  "sentence-transformers",
+  "sphinx",
+  "sphinx-autosummary-accessors",
+  "sphinx-design",
+  "sphinx-gallery",
+  "sphinx-copybutton",
+  "sphinx-tabs",
+  "skrub",
+]
+lint = [
+  "pre-commit",
+  "ruff",
+]
+test = [
+  "altair>=5,<6",
+  "httpx",
+  "pillow",
+  "plotly",
+  "polars",
+  "pytest",
+  "pytest-cov",
+  "pytest-order",
+  "pytest-randomly",
+  "pytest-xdist",
+  "skrub",
 ]
 
 [project.urls]
@@ -48,9 +99,6 @@ path = "hatch/metadata.py"
 version-default = "0.0.0+unknown"
 license = { "file" = "../LICENSE" }
 readme = { "file" = "../README.md" }
-dependencies = { "file" = "requirements.in" }
-optional-dependencies.test = { "file" = "test-requirements.in" }
-optional-dependencies.sphinx = { "file" = "sphinx-requirements.in" }
 
 [tool.hatch.build.targets.sdist]
 only-include = ["src/", "hatch/"]
@@ -59,6 +107,130 @@ artifacts = ["src/skore/ui/static/"]
 [tool.hatch.build.targets.wheel]
 package = ["src/skore/"]
 artifacts = ["src/skore/ui/static/"]
+
+[tool.pixi.project]
+channels = ["conda-forge", "pytorch"]
+platforms = ["linux-64", "osx-arm64", "osx-64", "win-64"]
+
+[tool.pixi.dependencies]
+diskcache = "*"
+fastapi = "*"
+joblib = "*"
+matplotlib = "*"
+numpy = "*"
+orjson = "*"
+pandas = "*"
+platformdirs = "*"
+plotly = ">=5,<6"
+psutil = "*"
+pyarrow = "*"
+rich = "*"
+scikit-learn = "*"
+skops = "*"
+uvicorn = "*"
+
+[tool.pixi.feature.doc]
+# pytorch is not anymore released on osx-64 platform
+platforms = ["linux-64", "osx-arm64", "win-64"]
+
+[tool.pixi.feature.doc.dependencies]
+altair = ">=5,<6"
+httpx = "*"
+pillow = "*"
+plotly = "*"
+polars = "*"
+pytest = "*"
+pytest-cov = "*"
+pytest-order = "*"
+pytest-randomly = "*"
+pytest-xdist = "*"
+skrub = "*"
+
+[tool.pixi.feature.test.dependencies]
+altair = ">=5,<6"
+httpx = "*"
+pillow = "*"
+plotly = "*"
+polars = "*"
+pytest = "*"
+pytest-cov = "*"
+pytest-order = "*"
+pytest-randomly = "*"
+pytest-xdist = "*"
+skrub = "*"
+
+[tool.pixi.feature.dev.dependencies]
+ipykernel = "*"
+ipython = "*"
+jupyterlab = "*"
+
+[tool.pixi.feature.min-dependencies.dependencies]
+# Apply SPEC0 rule:
+# 1. Support for Python versions be dropped 3 years after their initial release.
+# 2. Support for core package dependencies be dropped 2 years after their initial
+#    release.
+numpy = "~=1.25.0"
+scipy = "~=1.11.0"
+pandas = "~=2.0.0"
+joblib = "~=1.1.0"
+scikit-learn = "~=1.2.0"
+matplotlib = "~=3.7.0"
+diskcache = "~=5.6.0"
+fastapi = "~=0.92.0"
+orjson = "~=3.8.0"
+platformdirs = "~=3.0.0"
+plotly = "~=5.13.0"
+psutil = "~=5.9.0"
+pyarrow = "~=12.0.0"
+rich = "~=13.3.0"
+skops = "~=0.8.0"
+uvicorn = "~=0.21.0"
+
+[tool.pixi.feature.py309.dependencies]
+python = "~=3.9.0"
+
+[tool.pixi.feature.py310.dependencies]
+python = "~=3.10.0"
+
+[tool.pixi.feature.py311.dependencies]
+python = "~=3.11.0"
+
+[tool.pixi.feature.py312.dependencies]
+python = "~=3.12.0"
+
+[tool.pixi.feature.py313.dependencies]
+python = "~=3.13.0"
+
+[tool.pixi.pypi-dependencies]
+skore = { path = ".", editable = true }
+
+[tool.pixi.tasks]
+clean-skore-ui = { cmd = "rm -rf skore-ui/dist/ && rm -rf skore/src/skore/ui/static/", cwd = "../" }
+build-skore-ui = { cmd = "npm install && npm run build", cwd = "../skore-ui" }
+move-skore-ui = { cmd = "mv skore-ui/dist/ skore/src/skore/ui/static/", cwd = "../" }
+setup-skore-ui = { cmd = "echo 'Skore UI setup complete'", cwd = "../", depends-on = ["clean-skore-ui", "build-skore-ui", "move-skore-ui"] }
+
+[tool.pixi.feature.doc.tasks]
+build-docs = { cmd = "make html", cwd = "../sphinx" }
+build-docs-quick = { cmd = "make html-noplot", cwd = "../sphinx" }
+clean-docs = { cmd = "rm -rf build/ && rm -rf auto_examples/ && rm -rf reference/api/", cwd = "../sphinx" }
+
+[tool.pixi.feature.lint.tasks]
+lint = { cmd = "pre-commit install && pre-commit run -v --all-files --show-diff-on-failure", cwd = "../" }
+
+[tool.pixi.feature.test.tasks]
+tests = { cmd = "mkdir -p coverage && python -m pytest -n auto src/ tests/ --junitxml=coverage/coverage.xml --cov-config=pyproject.toml --cov | tee coverage/coverage.txt" }
+
+[tool.pixi.environments]
+lint = ["lint"]
+doc = ["doc"]
+test = ["test"]
+dev = ["dev", "doc", "lint", "test"]
+ci-py309-min-deps = ["py309", "min-dependencies", "test"]
+ci-py310-latest-deps = ["py310", "test"]
+ci-py311-latest-deps = ["py311", "test"]
+ci-py312-latest-deps = ["py312", "test"]
+ci-py313-latest-deps = ["py313", "test"]
 
 [tool.pytest.ini_options]
 addopts = [
@@ -83,7 +255,7 @@ concurrency = ["thread", "multiprocessing"]
 parallel = true
 
 [tool.coverage.report]
-omit = ["*/externals/*", "src/*", "tests/*"]
+omit = ["*/externals/*"]
 show_missing = true
 
 [tool.ruff]
