@@ -14731,7 +14731,7 @@ packages:
 - pypi: .
   name: skore
   version: 0.0.0+unknown
-  sha256: 0ce33f4ffecca686d35979fcbf491417f6f0cfca5ff26defe37aaf96c7c37882
+  sha256: db63a56c8fc0df405b3491b4d63c5930faa5451ddfd23aa4d27b69fc932dba3c
   requires_dist:
   - diskcache
   - fastapi
