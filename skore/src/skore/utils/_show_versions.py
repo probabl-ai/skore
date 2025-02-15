@@ -8,9 +8,10 @@ import importlib
 import platform
 import re
 import sys
+from typing import Any
 
 
-def _get_sys_info():
+def _get_sys_info() -> dict[str, Any]:
     """System information.
 
     Returns
@@ -30,7 +31,7 @@ def _get_sys_info():
     return dict(blob)
 
 
-def _get_deps_info():
+def _get_deps_info() -> dict[str, Any]:
     """Overview of the installed version of main dependencies.
 
     This function does not import the modules to collect the version numbers
@@ -64,7 +65,7 @@ def _get_deps_info():
     return deps_info
 
 
-def show_versions():
+def show_versions() -> None:
     """Print useful debugging information.
 
     Examples
