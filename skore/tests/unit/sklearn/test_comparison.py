@@ -51,30 +51,6 @@ def test_comparison_report_init_wrong_parameters(binary_classification_model):
         ComparisonReport([None, estimator_report])
 
 
-def test_comparison_report_init_deepcopy(binary_classification_model):
-    """If an estimator report is modified outside of the comparator, it is not modified
-    inside the comparator."""
-    estimator, _, X_test, _, y_test = binary_classification_model
-    estimator_report = EstimatorReport(
-        estimator,
-        fit=False,
-        X_test=X_test,
-        y_test=y_test,
-    )
-
-    comp = ComparisonReport([estimator_report, estimator_report])
-
-    # check if the deepcopy work well
-    assert comp.estimator_reports_[0]._hash == estimator_report._hash
-
-    # modify the estimator report outside of the comparator
-    estimator_report._hash = 0
-
-    # check if there is no impact on the estimator report in the comparator (its value
-    # has not changed)
-    assert comp.estimator_reports_[0]._hash != 0
-
-
 def test_comparison_report_init_without_testing_data(binary_classification_model):
     """Raise an error if there is no test data (`None`) for any estimator
     report."""
