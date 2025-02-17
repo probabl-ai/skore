@@ -1052,11 +1052,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             "icon"
         ] in ("(↗︎)", "(↘︎)"):
             if self._SCORE_OR_LOSS_INFO[name]["icon"] == "(↗︎)":
-                method_name += f"[cyan]{self._SCORE_OR_LOSS_INFO[name]['name']}[/cyan]"
+                method_name += f"[cyan]{self._SCORE_OR_LOSS_INFO[name]['icon']}[/cyan]"
                 return method_name.ljust(43)
             else:  # (↘︎)
                 method_name += (
-                    f"[orange1]{self._SCORE_OR_LOSS_INFO[name]['name']}[/orange1]"
+                    f"[orange1]{self._SCORE_OR_LOSS_INFO[name]['icon']}[/orange1]"
                 )
                 return method_name.ljust(49)
         else:

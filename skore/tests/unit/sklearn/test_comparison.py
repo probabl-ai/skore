@@ -1,3 +1,4 @@
+import re
 from io import BytesIO
 
 import joblib
@@ -202,7 +203,13 @@ def test_comparison_report_help(capsys, binary_classification_model):
 
     ComparisonReport([estimator_report, estimator_report]).help()
 
-    assert "Tools to compare estimators" in capsys.readouterr().out
+    captured = capsys.readouterr()
+    assert "Tools to compare estimators" in captured.out
+
+    # Check that we have a line with accuracy and the arrow associated with it
+    assert re.search(
+        r"\.accuracy\([^)]*\).*\(↗︎\).*-.*accuracy", captured.out, re.MULTILINE
+    )
 
 
 def test_comparison_report_repr(binary_classification_model):
