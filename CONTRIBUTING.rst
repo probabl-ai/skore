@@ -9,7 +9,7 @@ everyone and appreciate you taking the time to get involved.
 
 This project is hosted on https://github.com/probabl-ai/skore.
 
-.. topic:: **Our community, our values**
+.. topic:: **Our values**
 
     We aspire to treat everybody equally, and value their contributions.
     We are particularly seeking people from underrepresented backgrounds in Open Source
