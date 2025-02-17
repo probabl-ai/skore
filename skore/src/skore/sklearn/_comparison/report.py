@@ -115,10 +115,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             report: joblib.hash((report.X_test, report.y_test)) for report in reports
         }
         if len(set(test_dataset_hashes.values())) > 1:
-            raise ValueError(
-                "Expected all estimators to have the same testing data; "
-                f"got {test_dataset_hashes}"
-            )
+            raise ValueError("Expected all estimators to have the same testing data.")
 
         ml_tasks = {report: report._ml_task for report in reports}
         if len(set(ml_tasks.values())) > 1:
