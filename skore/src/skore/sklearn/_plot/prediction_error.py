@@ -129,11 +129,6 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         despine : bool, default=True
             Whether to remove the top and right spines from the plot.
 
-        Returns
-        -------
-        display : PredictionErrorDisplay
-            Object that stores computed values.
-
         Examples
         --------
         >>> from sklearn.datasets import load_diabetes
@@ -330,7 +325,6 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         Returns
         -------
         display : PredictionErrorDisplay
-            Object that stores the computed values.
         """
         random_state = check_random_state(random_state)
         if isinstance(subsample, numbers.Integral):
