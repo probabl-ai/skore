@@ -17,6 +17,8 @@ Skore: getting started
 #       *   :class:`skore.CrossValidationReport`: get an insightful report on your
 #           cross-validation results
 #
+#       *   :class:`skore.ComparisonReport`: benchmark your skore estimator reports
+#
 #       *   :func:`skore.train_test_split`: get diagnostics when splitting your data
 #
 # #.    Track your ML/DS results using skore's :class:`~skore.Project`
