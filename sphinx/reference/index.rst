@@ -14,3 +14,4 @@ This page lists all the public functions and classes of the skore package.
 
    Managing a project <project>
    ML Assistance <report/index>
+   Utilities <utils>
