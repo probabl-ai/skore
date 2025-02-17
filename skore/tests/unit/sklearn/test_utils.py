@@ -94,3 +94,7 @@ def test_find_ml_task_pandas():
 
     y = pandas.DataFrame([0, 1, 2])
     assert _find_ml_task(y, None) == "multiclass-classification"
+
+
+def test_find_ml_task_string():
+    assert _find_ml_task(["0", "1", "2"], None) == "multiclass-classification"

@@ -10,7 +10,7 @@ from skore.sklearn.types import MLTask
 
 def _is_sequential(y) -> bool:
     """Check whether ``y`` is vector of sequential integer values."""
-    y_values = np.sort(np.unique(y))
+    y_values = np.unique(y)
     sequential = np.arange(y_values[0], y_values[-1] + 1)
     return np.array_equal(y_values, sequential)
 
@@ -18,12 +18,17 @@ def _is_sequential(y) -> bool:
 def _is_classification(y) -> bool:
     """Determine if `y` is a target for a classification task.
 
-    If `y` contains integers, sklearn's `type_of_target` considers
-    the task to be multiclass classification.
-    This function makes the analysis finer.
+    If `y` contains integers, sklearn's `type_of_target` considers the task
+    to be multiclass classification. This might not be the case, so we add the
+    constraints that `y` must contain sequential values and contain 0.
+
+    If `y` does not contain numbers (e.g. strings), then this function returns True.
     """
     y = np.array(y).flatten()
-    return _is_sequential(y) and 0 in y
+    try:
+        return _is_sequential(y) and 0 in y
+    except TypeError:
+        return True
 
 
 def _find_ml_task(y, estimator=None) -> MLTask:
