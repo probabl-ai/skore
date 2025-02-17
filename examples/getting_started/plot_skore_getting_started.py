@@ -141,7 +141,7 @@ df_log_reg_report_fold_metrics
 # Comparing estimators reports
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
-# :func:`skore.ComparisonReport` enables users to compare several estimator reports
+# :class:`skore.ComparisonReport` enables users to compare several estimator reports
 # (corresponding to several estimators) on a same test set, as in a benchmark of
 # estimators.
 #
