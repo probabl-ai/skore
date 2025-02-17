@@ -52,3 +52,15 @@ Comparison Report
    :hidden:
 
    comparison_report
+
+Visualization Displays
+----------------------
+
+A set of displays are available through the different reports. Find in this section
+the API of each display.
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+
+   displays
