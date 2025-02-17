@@ -191,7 +191,7 @@ Contributing to the examples
 The examples are stored in the `examples` folder:
 
 - They are classified in subcategories.
-- They should be written in a python script (`.py`), with cells marked by `# %%`.
+- They should be written in a python script (`.py`), with cells marked by `# %%`, to separate code cells and markdown cells, as they will be rendered as notebooks (`.ipynb`).
 - The file should start with a docstring giving the example title.
 - No example should require to have large files stored in this repository. For example, no dataset should be stored, it should be downloaded in the script.
 - When built (using `make html` for example), these examples will automatically be converted into rst files in the `sphinx/auto_examples` subfolder. This subfolder is listed in the gitignore and cannot be pushed.
@@ -199,5 +199,5 @@ The examples are stored in the `examples` folder:
 Contributing to the README
 --------------------------
 
-The `README.md` file can be modified and is part of the documentation.
+The `README.md` file can be modified and is part of the documentation (although it is not included in the online documentation).
 This file is used to be presented on `PyPI <https://pypi.org/project/skore/#description>`_.
