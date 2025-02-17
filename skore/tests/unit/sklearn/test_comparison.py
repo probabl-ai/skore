@@ -217,6 +217,38 @@ def test_comparison_report_pickle(tmp_path, binary_classification_model):
         joblib.dump(ComparisonReport([estimator_report, estimator_report]), stream)
 
 
+def test_comparison_report_metrics_help(capsys, binary_classification_model):
+    """Check that the help method writes to the console."""
+    estimator, _, X_test, _, y_test = binary_classification_model
+    estimator_report = EstimatorReport(
+        estimator,
+        fit=False,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    report = ComparisonReport([estimator_report, estimator_report])
+
+    report.metrics.help()
+    captured = capsys.readouterr()
+    assert "Available metrics methods" in captured.out
+
+
+def test_comparison_report_metrics_repr(binary_classification_model):
+    """Check the repr method."""
+    estimator, _, X_test, _, y_test = binary_classification_model
+    estimator_report = EstimatorReport(
+        estimator,
+        fit=False,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    report = ComparisonReport([estimator_report, estimator_report])
+
+    repr_str = repr(report.metrics)
+    assert "skore.ComparisonReport.metrics" in repr_str
+    assert "report.metrics.help()" in repr_str
+
+
 @pytest.mark.parametrize(
     "metric_name, expected, data_source",
     [
