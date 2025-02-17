@@ -38,3 +38,14 @@ Cross-validation Report
    :hidden:
 
    cross_validation_report
+
+Comparison Report
+-----------------------
+
+:class:`skore.ComparisonReport` provides comprehensive capabilities for comparing instances :class:`skore.EstimatorReport`, and reporting the results.
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+
+   comparison_report
