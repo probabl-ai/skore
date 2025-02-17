@@ -2,6 +2,7 @@ import pytest
 from skore import config_context, get_config, set_config
 
 
+@pytest.mark.xdist_group(name="config-tests")
 def test_config_context():
     assert get_config() == {
         "show_progress": True,
@@ -51,6 +52,7 @@ def test_config_context():
         config_context(do_something_else=True).__enter__()
 
 
+@pytest.mark.xdist_group(name="config-tests")
 def test_config_context_exception():
     assert get_config()["show_progress"] is True
     try:
@@ -62,6 +64,7 @@ def test_config_context_exception():
     assert get_config()["show_progress"] is True
 
 
+@pytest.mark.xdist_group(name="config-tests")
 def test_set_config():
     assert get_config()["show_progress"] is True
     set_config(show_progress=None)
