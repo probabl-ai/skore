@@ -75,7 +75,7 @@ def test_comparison_report_init_deepcopy(binary_classification_model):
 
 
 def test_comparison_report_init_without_testing_data(binary_classification_model):
-    """Raise a warning if there is no test data (`None`) for any estimator
+    """Raise an error if there is no test data (`None`) for any estimator
     report."""
     estimator, _, _, _, _ = binary_classification_model
     estimator_report = EstimatorReport(estimator, fit=False)
@@ -87,6 +87,7 @@ def test_comparison_report_init_without_testing_data(binary_classification_model
 def test_comparison_report_init_different_ml_usecases(
     binary_classification_model, regression_model
 ):
+    """Raise an error if the passed estimators do not have the same ML usecase."""
     linear_regression_estimator, _, X_test, _, y_test = regression_model
     linear_regression_report = EstimatorReport(
         linear_regression_estimator,
@@ -110,6 +111,7 @@ def test_comparison_report_init_different_ml_usecases(
 
 
 def test_comparison_report_init_different_test_data(binary_classification_model):
+    """Raise an error if the passed estimators do not have the same testing data."""
     estimator, _, X_test, _, y_test = binary_classification_model
 
     with pytest.raises(
@@ -134,6 +136,8 @@ def test_comparison_report_init_different_test_data(binary_classification_model)
 
 
 def test_comparison_report_init_with_report_names(binary_classification_model):
+    """If the estimators are passed as a dict,
+    then the estimator names are the dict keys."""
     estimator, X_train, X_test, y_train, y_test = binary_classification_model
     estimator_report = EstimatorReport(
         estimator,
@@ -152,6 +156,8 @@ def test_comparison_report_init_with_report_names(binary_classification_model):
 
 
 def test_comparison_report_init_without_report_names(binary_classification_model):
+    """If the estimators are passed as a list,
+    then the estimator names are the estimator class names."""
     estimator, X_train, X_test, y_train, y_test = binary_classification_model
     estimator_report = EstimatorReport(
         estimator,
@@ -170,6 +176,8 @@ def test_comparison_report_init_without_report_names(binary_classification_model
 
 
 def test_comparison_report_non_string_report_names(binary_classification_model):
+    """If the estimators are passed as a dict with non-string keys,
+    then the estimator names are the dict keys converted to strings."""
     estimator, _, X_test, _, y_test = binary_classification_model
     estimator_report = EstimatorReport(
         estimator,
@@ -183,6 +191,7 @@ def test_comparison_report_non_string_report_names(binary_classification_model):
 
 
 def test_comparison_report_help(capsys, binary_classification_model):
+    """Check the help menu works."""
     estimator, _, X_test, _, y_test = binary_classification_model
     estimator_report = EstimatorReport(
         estimator,
@@ -197,6 +206,7 @@ def test_comparison_report_help(capsys, binary_classification_model):
 
 
 def test_comparison_report_repr(binary_classification_model):
+    """Check the `__repr__` works."""
     estimator, _, X_test, _, y_test = binary_classification_model
     estimator_report = EstimatorReport(
         estimator,
@@ -388,6 +398,7 @@ def test_comparison_report_pickle(tmp_path, binary_classification_model):
 def test_estimator_report_metrics_binary_classification(
     metric_name, expected, data_source, binary_classification_model
 ):
+    """Check the metrics work."""
     estimator, X_train, X_test, y_train, y_test = binary_classification_model
     estimator_report = EstimatorReport(
         estimator,
@@ -474,6 +485,7 @@ def test_estimator_report_metrics_binary_classification(
 def test_estimator_report_metrics_linear_regression(
     metric_name, expected, data_source, regression_model
 ):
+    """Check the metrics work."""
     estimator, X_train, X_test, y_train, y_test = regression_model
     estimator_report = EstimatorReport(
         estimator,
@@ -505,6 +517,7 @@ def test_estimator_report_metrics_linear_regression(
 
 
 def test_comparison_report_report_metrics_X_y(binary_classification_model):
+    """Check that `report_metrics` works with an "X_y" data source."""
     estimator, X_train, X_test, y_train, y_test = binary_classification_model
     estimator_report = EstimatorReport(
         estimator,
@@ -555,6 +568,7 @@ def test_comparison_report_report_metrics_X_y(binary_classification_model):
 
 
 def test_comparison_report_custom_metric_X_y(binary_classification_model):
+    """Check that `custom_metric` works with an "X_y" data source."""
     from sklearn.metrics import mean_absolute_error
 
     estimator, X_train, X_test, y_train, y_test = binary_classification_model
