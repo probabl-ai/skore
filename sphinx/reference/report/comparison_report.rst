@@ -6,20 +6,20 @@ Report for a comparison of :class:`EstimatorReport`
 The class :class:`ComparisonReport` provides a report allowing to compare :class:`EstimatorReport` instances in an interactive way. The functionalities of the report are accessible through accessors.
 
 .. autosummary::
-    :toctree: generated/
+    :toctree: ../api/
     :template: base.rst
 
     ComparisonReport
 
 .. autosummary::
-    :toctree: generated/
+    :toctree: ../api/
     :nosignatures:
     :template: autosummary/accessor_method.rst
 
     ComparisonReport.help
 
 .. autosummary::
-    :toctree: generated/
+    :toctree: ../api/
     :nosignatures:
     :template: autosummary/accessor.rst
 

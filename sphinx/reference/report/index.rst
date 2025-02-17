@@ -3,7 +3,8 @@ ML Assistance
 
 .. currentmodule:: skore
 
-This section contains documentation for skore features that enhance the ML development process.
+This section contains documentation for skore features that enhance the ML development
+process.
 
 Get assistance when developing ML/DS projects
 ---------------------------------------------
@@ -19,8 +20,9 @@ These functions and classes build upon scikit-learn's functionality.
 Single Estimator Report
 -----------------------
 
-:class:`skore.EstimatorReport` provides comprehensive reporting capabilities for individual
-scikit-learn estimators, including metrics, visualizations, and evaluation tools.
+:class:`skore.EstimatorReport` provides comprehensive reporting capabilities for
+individual scikit-learn estimators, including metrics, visualizations, and evaluation
+tools.
 
 .. toctree::
    :maxdepth: 2
@@ -31,7 +33,8 @@ scikit-learn estimators, including metrics, visualizations, and evaluation tools
 Cross-validation Report
 -----------------------
 
-:class:`skore.CrossValidationReport` provides comprehensive capabilities for evaluating scikit-learn estimators by cross-validation, and reporting the results.
+:class:`skore.CrossValidationReport` provides comprehensive capabilities for evaluating
+scikit-learn estimators by cross-validation, and reporting the results.
 
 .. toctree::
    :maxdepth: 2
@@ -42,7 +45,7 @@ Cross-validation Report
 Comparison Report
 -----------------------
 
-:class:`skore.ComparisonReport` provides comprehensive capabilities for comparing instances :class:`skore.EstimatorReport`, and reporting the results.
+:class:`skore.ComparisonReport` provides comprehensive capabilities for comparing :class:`skore.EstimatorReport` instances, and reporting the results.
 
 .. toctree::
    :maxdepth: 2
