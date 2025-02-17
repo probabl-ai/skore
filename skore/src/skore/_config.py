@@ -2,7 +2,7 @@
 
 import threading
 import time
-from contextlib import contextmanager as contextmanager
+from contextlib import contextmanager
 
 _global_config = {
     "show_progress": True,
@@ -123,7 +123,8 @@ def config_context(
 def _set_show_progress_for_testing(show_progress, sleep_duration):
     """Set the value of show_progress for testing purposes after some waiting.
 
-    This function show exist in a Python module to be pickable.
+    This function should exist in a Python module rather than in tests, otherwise
+    joblib will not be able to pickle it.
     """
     with config_context(show_progress=show_progress):
         time.sleep(sleep_duration)

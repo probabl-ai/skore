@@ -89,10 +89,10 @@ def test_set_config():
 @pytest.mark.parametrize("backend", ["loky", "multiprocessing", "threading"])
 def test_config_threadsafe_joblib(backend):
     """Test that the global config is threadsafe with all joblib backends.
-    Two jobs are spawned and sets assume_finite to two different values.
-    When the job with a duration 0.1s completes, the assume_finite value
+    Two jobs are spawned and each sets `show_progress` to two different values.
+    When the job with a duration of 0.1s completes, the `show_progress` value
     should be the same as the value passed to the function. In other words,
-    it is not influenced by the other job setting assume_finite to True.
+    it is not influenced by the other job setting `show_progress` to True.
     """
     show_progresses = [False, True, False, True]
     sleep_durations = [0.1, 0.2, 0.1, 0.2]
