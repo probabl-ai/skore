@@ -5,7 +5,7 @@ import sys
 from skore.cli.cli import cli
 
 
-def main():
+def main() -> None:
     """Entry point to Skore CLI."""
     import rich.traceback
 
