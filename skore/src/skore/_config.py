@@ -1,6 +1,7 @@
 """Global configuration state and functions for management."""
 
 import threading
+import time
 from contextlib import contextmanager as contextmanager
 
 _global_config = {
@@ -117,3 +118,13 @@ def config_context(
         yield
     finally:
         set_config(**old_config)
+
+
+def _set_show_progress_for_testing(show_progress, sleep_duration):
+    """Set the value of show_progress for testing purposes after some waiting.
+
+    This function show exist in a Python module to be pickable.
+    """
+    with config_context(show_progress=show_progress):
+        time.sleep(sleep_duration)
+        return get_config()["show_progress"]

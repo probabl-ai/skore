@@ -1,5 +1,9 @@
+from concurrent.futures import ThreadPoolExecutor
+
 import pytest
 from skore import config_context, get_config, set_config
+from skore._config import _set_show_progress_for_testing
+from skore.utils._parallel import Parallel, delayed
 
 
 def test_config_context():
@@ -80,3 +84,41 @@ def test_set_config():
     # reset the context to default for other tests
     set_config(show_progress=True)
     assert get_config()["show_progress"] is True
+
+
+@pytest.mark.parametrize("backend", ["loky", "multiprocessing", "threading"])
+def test_config_threadsafe_joblib(backend):
+    """Test that the global config is threadsafe with all joblib backends.
+    Two jobs are spawned and sets assume_finite to two different values.
+    When the job with a duration 0.1s completes, the assume_finite value
+    should be the same as the value passed to the function. In other words,
+    it is not influenced by the other job setting assume_finite to True.
+    """
+    show_progresses = [False, True, False, True]
+    sleep_durations = [0.1, 0.2, 0.1, 0.2]
+
+    items = Parallel(backend=backend, n_jobs=2)(
+        delayed(_set_show_progress_for_testing)(show_progress, sleep_duration)
+        for show_progress, sleep_duration in zip(show_progresses, sleep_durations)
+    )
+
+    assert items == [False, True, False, True]
+
+
+def test_config_threadsafe():
+    """Uses threads directly to test that the global config does not change
+    between threads. Same test as `test_config_threadsafe_joblib` but with
+    `ThreadPoolExecutor`."""
+
+    show_progresses = [False, True, False, True]
+    sleep_durations = [0.1, 0.2, 0.1, 0.2]
+
+    with ThreadPoolExecutor(max_workers=2) as e:
+        items = [
+            output
+            for output in e.map(
+                _set_show_progress_for_testing, show_progresses, sleep_durations
+            )
+        ]
+
+    assert items == [False, True, False, True]
