@@ -18,9 +18,10 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     Parameters
     ----------
-    reports : list of :class:`skore.EstimatorReport`s or dict with estimator names as
-    keys and :class:`skore.EstimatorReport`s as values
+    reports : list of :class:`skore.EstimatorReport`s or dict with estimator names as \
+            keys and :class:`skore.EstimatorReport`s as values
         Estimator reports to compare.
+        If `reports` is a list, the class name of each estimator is used.
         If `reports` is a dict and the keys are not strings, they will be converted to
         strings.
 
