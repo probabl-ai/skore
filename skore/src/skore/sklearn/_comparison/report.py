@@ -132,7 +132,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         else:
             self.report_names_ = report_names
 
-        self.estimator_reports_ = deepcopy(reports)
+        self.estimator_reports_ = reports
 
         # NEEDED FOR METRICS ACCESSOR
         self.n_jobs = n_jobs
