@@ -5,6 +5,7 @@ import logging
 from rich.console import Console
 from rich.theme import Theme
 
+from skore._config import config_context, get_config, set_config
 from skore.project import Project, open
 from skore.sklearn import (
     CrossValidationReport,
@@ -27,6 +28,9 @@ __all__ = [
     "open",
     "show_versions",
     "train_test_split",
+    "config_context",
+    "get_config",
+    "set_config",
 ]
 
 logger = logging.getLogger(__name__)
