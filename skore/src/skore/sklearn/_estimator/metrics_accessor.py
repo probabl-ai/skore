@@ -21,6 +21,7 @@ from skore.sklearn._plot import (
 )
 from skore.sklearn.types import SKLearnScorer
 from skore.utils._accessor import _check_supported_ml_task
+from skore.utils._accessor import _check_is_linear_regression, _check_supported_ml_task
 from skore.utils._index import flatten_multi_index
 
 DataSource = Literal["test", "train", "X_y"]
@@ -1873,3 +1874,61 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         )
         assert isinstance(display, PredictionErrorDisplay)
         return display
+
+    @available_if(_check_is_linear_regression)
+    def model_weights(self):
+        """Retrieve the coefficients of a regression, including the intercept.
+
+        Only works for LinearRegression, Ridge, and Lasso scikit-learn estimators.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_diabetes
+        >>> from sklearn.linear_model import Ridge
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_diabetes(return_X_y=True), random_state=0
+        ... )
+        >>> regressor = Ridge()
+        >>> report = EstimatorReport(
+        ...     regressor,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> report.metrics.model_weights()
+                   Coefficient
+        Feature
+        intercept   152.447736
+        0            21.200004
+        1           -60.476431
+        2           302.876805
+        3           179.410255
+        4             8.909560
+        5           -28.807673
+        6          -149.307189
+        7           112.672129
+        8           250.535095
+        9            99.577694
+        """
+        reg = self._parent.estimator_
+
+        feature_names = (
+            reg.feature_names_in_
+            if hasattr(reg, "feature_names_in_")
+            else range(reg.n_features_in_)
+        )
+
+        intercept = reg.intercept_
+        coef = reg.coef_.flatten()
+
+        df = pd.DataFrame(
+            [intercept] + list(coef),
+            index=["intercept"] + list(feature_names),
+        )
+        df.index.name = "Feature"
+        df.columns = ["Coefficient"]
+
+        return df

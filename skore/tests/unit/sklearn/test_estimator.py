@@ -1193,3 +1193,72 @@ def test_estimator_has_no_deep_copy():
             y_train=y_train,
             y_test=y_test,
         )
+
+
+########################################################################################
+# Check the feature importance
+########################################################################################
+
+
+def test_estimator_report_model_weights_numpy_arrays():
+    X, y = make_regression(n_features=5, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+    linear_regression = LinearRegression().fit(X_train, y_train)
+
+    report = EstimatorReport(linear_regression)
+    result = report.metrics.model_weights()
+
+    expected = pd.DataFrame(
+        data=[
+            -1.776357e-15,
+            6.459172e01,
+            9.865152e01,
+            5.707783e01,
+            6.057748e01,
+            3.560967e01,
+        ],
+        index=pd.Index(["intercept", 0, 1, 2, 3, 4], name="Feature"),
+        columns=["Coefficient"],
+    )
+    pd.testing.assert_frame_equal(result, expected)
+
+
+def test_estimator_report_model_weights_pandas_dataframe():
+    """If provided, the model weights dataframe uses the feature names."""
+    X, y = make_regression(n_features=5, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+    X_train = pd.DataFrame(
+        X_train, columns=[f"feature_{i}" for i in range(X_train.shape[1])]
+    )
+    linear_regression = LinearRegression().fit(X_train, y_train)
+
+    report = EstimatorReport(linear_regression)
+    result = report.metrics.model_weights()
+
+    expected = pd.DataFrame(
+        data=[
+            -1.776357e-15,
+            6.459172e01,
+            9.865152e01,
+            5.707783e01,
+            6.057748e01,
+            3.560967e01,
+        ],
+        index=pd.Index(
+            [
+                "intercept",
+                "feature_0",
+                "feature_1",
+                "feature_2",
+                "feature_3",
+                "feature_4",
+            ],
+            name="Feature",
+        ),
+        columns=["Coefficient"],
+    )
+    pd.testing.assert_frame_equal(result, expected)

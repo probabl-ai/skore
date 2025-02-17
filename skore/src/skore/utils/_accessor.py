@@ -16,3 +16,15 @@ def _check_supported_ml_task(supported_ml_tasks: list[str]) -> Callable:
         return True
 
     return check
+
+
+def _check_is_linear_regression(accessor):
+    """Check if the estimator is a linear regression, Ridge, or Lasso."""
+    from sklearn.linear_model import Lasso, LinearRegression, Ridge
+
+    if isinstance(accessor._parent.estimator_, (LinearRegression, Ridge, Lasso)):
+        return True
+    raise AttributeError(
+        f"Estimator {accessor._parent.estimator_} is not a supported estimator by "
+        "the function called."
+    )
