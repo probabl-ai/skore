@@ -72,7 +72,7 @@ addopts = [
   "--ignore=doc",
   "--ignore=examples",
   "--ignore=notebooks",
-  "--dist=loadgroup",
+  "--dist=loadscope",
 ]
 doctest_optionflags = ["ELLIPSIS", "NORMALIZE_WHITESPACE"]
 
