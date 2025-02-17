@@ -284,6 +284,11 @@ def test_estimator_report_help(capsys, binary_classification_data):
     captured = capsys.readouterr()
     assert f"Tools to diagnose estimator {estimator.__class__.__name__}" in captured.out
 
+    # Check that we have a line with accuracy and the arrow associated with it
+    assert re.search(
+        r"\.accuracy\([^)]*\).*\(↗︎\).*-.*accuracy", captured.out, re.MULTILINE
+    )
+
 
 def test_estimator_report_repr(binary_classification_data):
     """Check that __repr__ returns a string starting with the expected prefix."""
