@@ -95,7 +95,7 @@ sphinx_gallery_conf = {
         # The module you locally document uses None
         "skore": None,
     },
-    "backreferences_dir": "generated",
+    "backreferences_dir": "reference/api",
     "doc_module": "skore",
     "reset_modules": (reset_mpl, "seaborn"),
     "abort_on_example_error": True,
