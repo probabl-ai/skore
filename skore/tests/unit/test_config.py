@@ -79,3 +79,7 @@ def test_set_config():
     # No unknown arguments
     with pytest.raises(TypeError):
         set_config(do_something_else=True)
+
+    # reset the context to default for other tests
+    set_config(show_progress=True)
+    assert get_config()["show_progress"] is True
