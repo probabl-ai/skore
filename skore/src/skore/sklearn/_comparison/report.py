@@ -32,14 +32,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         ``None`` means 1 unless in a :obj:`joblib.parallel_backend` context.
         ``-1`` means using all processors.
 
-    Attributes
-    ----------
-    estimator_reports_ : list of EstimatorReport
-        The estimator reports for each split.
-
-    report_names_ : list of str
-        The names of the compared estimator reports.
-
     See Also
     --------
     skore.EstimatorReport
