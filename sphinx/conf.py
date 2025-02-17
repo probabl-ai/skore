@@ -85,6 +85,7 @@ def reset_mpl(gallery_conf, fname):
 sphinx_gallery_conf = {
     "examples_dirs": "../examples",  # path to example scripts
     "gallery_dirs": "auto_examples",  # path to gallery generated output
+    "filename_pattern": "plot_",  # pattern to select examples; change this to only build some of the examples
     "subsection_order": ExplicitOrder(subsections_order),  # sorting gallery subsections
     # see https://sphinx-gallery.github.io/stable/configuration.html#sub-gallery-order
     "within_subsection_order": "ExampleTitleSortKey",  # See https://sphinx-gallery.github.io/stable/configuration.html#sorting-gallery-examples for alternatives
@@ -94,7 +95,7 @@ sphinx_gallery_conf = {
         # The module you locally document uses None
         "skore": None,
     },
-    "backreferences_dir": "generated",
+    "backreferences_dir": "reference/api",
     "doc_module": "skore",
     "reset_modules": (reset_mpl, "seaborn"),
     "abort_on_example_error": True,

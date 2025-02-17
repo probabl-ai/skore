@@ -92,7 +92,8 @@ onBeforeUnmount(() => {
   border: 2px solid var(--toast-border-color);
   border-radius: var(--radius-xl);
   background-color: var(--toast-background-color);
-  background-image: linear-gradient(to right, var(--toast-background-color) 20%, transparent 100%),
+  background-image:
+    linear-gradient(to right, var(--toast-background-color) 20%, transparent 100%),
     repeating-linear-gradient(
       45deg,
       var(--toast-stripe-color),

@@ -12,6 +12,7 @@ from skore.sklearn._plot import (
     RocCurveDisplay,
 )
 from skore.utils._accessor import _check_supported_ml_task
+from skore.utils._parallel import Parallel, delayed
 from skore.utils._progress_bar import progress_decorator
 
 
@@ -145,13 +146,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         if cache_key in self._parent._cache:
             results = self._parent._cache[cache_key]
         else:
-            parallel = joblib.Parallel(
+            parallel = Parallel(
                 n_jobs=self._parent.n_jobs,
                 return_as="generator",
                 require="sharedmem",
             )
             generator = parallel(
-                joblib.delayed(getattr(report.metrics, report_metric_name))(
+                delayed(getattr(report.metrics, report_metric_name))(
                     data_source=data_source, **metric_kwargs
                 )
                 for report in self._parent.estimator_reports_
@@ -789,11 +790,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             "icon"
         ] in ("(↗︎)", "(↘︎)"):
             if self._SCORE_OR_LOSS_INFO[name]["icon"] == "(↗︎)":
-                method_name += f"[cyan]{self._SCORE_OR_LOSS_INFO[name]['name']}[/cyan]"
+                method_name += f"[cyan]{self._SCORE_OR_LOSS_INFO[name]['icon']}[/cyan]"
                 return method_name.ljust(43)
             else:  # (↘︎)
                 method_name += (
-                    f"[orange1]{self._SCORE_OR_LOSS_INFO[name]['name']}[/orange1]"
+                    f"[orange1]{self._SCORE_OR_LOSS_INFO[name]['icon']}[/orange1]"
                 )
                 return method_name.ljust(49)
         else:
