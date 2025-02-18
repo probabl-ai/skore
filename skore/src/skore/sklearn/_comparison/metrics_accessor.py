@@ -5,12 +5,7 @@ from sklearn.metrics import make_scorer
 from sklearn.utils.metaestimators import available_if
 
 from skore.externals._pandas_accessors import DirNamesMixin
-from skore.sklearn._base import _BaseAccessor, _get_cached_response_values
-from skore.sklearn._plot import (
-    PrecisionRecallCurveDisplay,
-    PredictionErrorDisplay,
-    RocCurveDisplay,
-)
+from skore.sklearn._base import _BaseAccessor
 from skore.utils._accessor import _check_supported_ml_task
 from skore.utils._progress_bar import progress_decorator
 
