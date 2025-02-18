@@ -1,5 +1,6 @@
 """Enhance `sklearn` functions."""
 
+from skore.sklearn._comparison import ComparisonReport
 from skore.sklearn._cross_validation import CrossValidationReport
 from skore.sklearn._estimator import EstimatorReport
 from skore.sklearn._plot import (
@@ -13,6 +14,7 @@ __all__ = [
     "train_test_split",
     "CrossValidationReport",
     "EstimatorReport",
+    "ComparisonReport",
     "RocCurveDisplay",
     "PrecisionRecallCurveDisplay",
     "PredictionErrorDisplay",

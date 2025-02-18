@@ -41,8 +41,10 @@ Key features
       All these are computed and generated for you in 1 line of code.
       Under the hood, we use efficient caching to make the computations blazing fast.
 
-   -  :class:`skore.CrossValidationReport`: Get a skore estimator report for each fold
+   -  :class:`skore.CrossValidationReport`: get a skore estimator report for each fold
       of your cross-validation.
+
+   -  :class:`skore.ComparisonReport`: benchmark your skore estimator reports.
 
 What's next?
 """"""""""""
