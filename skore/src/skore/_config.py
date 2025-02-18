@@ -30,7 +30,7 @@ def get_config():
 
     See Also
     --------
-    config_context : Context manager for global skore configuration.
+    config_context : Context manager for local skore configuration.
     set_config : Set global skore configuration.
 
     Examples
@@ -57,7 +57,7 @@ def set_config(
 
     See Also
     --------
-    config_context : Context manager for global skore configuration.
+    config_context : Context manager for local skore configuration.
     get_config : Retrieve current values of the global configuration.
 
     Examples
@@ -76,7 +76,7 @@ def config_context(
     *,
     show_progress: bool = None,
 ):
-    """Context manager for global skore configuration.
+    """Context manager for local skore configuration.
 
     Parameters
     ----------
