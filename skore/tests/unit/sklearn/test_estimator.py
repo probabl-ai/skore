@@ -1,5 +1,6 @@
 import re
 from copy import deepcopy
+from numbers import Real
 
 import joblib
 import numpy as np
@@ -268,10 +269,10 @@ def test_estimator_report_check_support_plot(
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
     for supported_plot_method in supported_plot_methods:
-        assert hasattr(report.metrics.plot, supported_plot_method)
+        assert hasattr(report.metrics, supported_plot_method)
 
     for not_supported_plot_method in not_supported_plot_methods:
-        assert not hasattr(report.metrics.plot, not_supported_plot_method)
+        assert not hasattr(report.metrics, not_supported_plot_method)
 
 
 def test_estimator_report_help(capsys, binary_classification_data):
@@ -283,6 +284,11 @@ def test_estimator_report_help(capsys, binary_classification_data):
     captured = capsys.readouterr()
     assert f"Tools to diagnose estimator {estimator.__class__.__name__}" in captured.out
 
+    # Check that we have a line with accuracy and the arrow associated with it
+    assert re.search(
+        r"\.accuracy\([^)]*\).*\(↗︎\).*-.*accuracy", captured.out, re.MULTILINE
+    )
+
 
 def test_estimator_report_repr(binary_classification_data):
     """Check that __repr__ returns a string starting with the expected prefix."""
@@ -290,8 +296,7 @@ def test_estimator_report_repr(binary_classification_data):
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
     repr_str = repr(report)
-    assert "skore.EstimatorReport" in repr_str
-    assert "help()" in repr_str
+    assert "EstimatorReport" in repr_str
 
 
 @pytest.mark.parametrize(
@@ -347,31 +352,11 @@ def test_estimator_report_pickle(tmp_path, binary_classification_data):
 ########################################################################################
 
 
-def test_estimator_report_plot_help(capsys, binary_classification_data):
-    """Check that the help method writes to the console."""
-    estimator, X_test, y_test = binary_classification_data
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-
-    report.metrics.plot.help()
-    captured = capsys.readouterr()
-    assert "Available plot methods" in captured.out
-
-
-def test_estimator_report_plot_repr(binary_classification_data):
-    """Check that __repr__ returns a string starting with the expected prefix."""
-    estimator, X_test, y_test = binary_classification_data
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-
-    repr_str = repr(report.metrics.plot)
-    assert "skore.EstimatorReport.metrics.plot" in repr_str
-    assert "report.metrics.plot.help()" in repr_str
-
-
 def test_estimator_report_plot_roc(binary_classification_data):
     """Check that the ROC plot method works."""
     estimator, X_test, y_test = binary_classification_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    assert isinstance(report.metrics.plot.roc(), RocCurveDisplay)
+    assert isinstance(report.metrics.roc(), RocCurveDisplay)
 
 
 @pytest.mark.parametrize("display", ["roc", "precision_recall"])
@@ -381,10 +366,10 @@ def test_estimator_report_display_binary_classification(
     """General behaviour of the function creating display on binary classification."""
     estimator, X_test, y_test = binary_classification_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    assert hasattr(report.metrics.plot, display)
-    display_first_call = getattr(report.metrics.plot, display)()
+    assert hasattr(report.metrics, display)
+    display_first_call = getattr(report.metrics, display)()
     assert report._cache != {}
-    display_second_call = getattr(report.metrics.plot, display)()
+    display_second_call = getattr(report.metrics, display)()
     assert display_first_call is display_second_call
 
 
@@ -393,10 +378,10 @@ def test_estimator_report_display_regression(pyplot, regression_data, display):
     """General behaviour of the function creating display on regression."""
     estimator, X_test, y_test = regression_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    assert hasattr(report.metrics.plot, display)
-    display_first_call = getattr(report.metrics.plot, display)()
+    assert hasattr(report.metrics, display)
+    display_first_call = getattr(report.metrics, display)()
     assert report._cache != {}
-    display_second_call = getattr(report.metrics.plot, display)()
+    display_second_call = getattr(report.metrics, display)()
     assert display_first_call is display_second_call
 
 
@@ -409,12 +394,12 @@ def test_estimator_report_display_binary_classification_external_data(
     """
     estimator, X_test, y_test = binary_classification_data
     report = EstimatorReport(estimator)
-    assert hasattr(report.metrics.plot, display)
-    display_first_call = getattr(report.metrics.plot, display)(
+    assert hasattr(report.metrics, display)
+    display_first_call = getattr(report.metrics, display)(
         data_source="X_y", X=X_test, y=y_test
     )
     assert report._cache != {}
-    display_second_call = getattr(report.metrics.plot, display)(
+    display_second_call = getattr(report.metrics, display)(
         data_source="X_y", X=X_test, y=y_test
     )
     assert display_first_call is display_second_call
@@ -429,12 +414,12 @@ def test_estimator_report_display_regression_external_data(
     """
     estimator, X_test, y_test = regression_data
     report = EstimatorReport(estimator)
-    assert hasattr(report.metrics.plot, display)
-    display_first_call = getattr(report.metrics.plot, display)(
+    assert hasattr(report.metrics, display)
+    display_first_call = getattr(report.metrics, display)(
         data_source="X_y", X=X_test, y=y_test
     )
     assert report._cache != {}
-    display_second_call = getattr(report.metrics.plot, display)(
+    display_second_call = getattr(report.metrics, display)(
         data_source="X_y", X=X_test, y=y_test
     )
     assert display_first_call is display_second_call
@@ -449,12 +434,12 @@ def test_estimator_report_display_binary_classification_switching_data_source(
     report = EstimatorReport(
         estimator, X_train=X_test, y_train=y_test, X_test=X_test, y_test=y_test
     )
-    assert hasattr(report.metrics.plot, display)
-    display_first_call = getattr(report.metrics.plot, display)(data_source="test")
+    assert hasattr(report.metrics, display)
+    display_first_call = getattr(report.metrics, display)(data_source="test")
     assert report._cache != {}
-    display_second_call = getattr(report.metrics.plot, display)(data_source="train")
+    display_second_call = getattr(report.metrics, display)(data_source="train")
     assert display_first_call is not display_second_call
-    display_third_call = getattr(report.metrics.plot, display)(
+    display_third_call = getattr(report.metrics, display)(
         data_source="X_y", X=X_test, y=y_test
     )
     assert display_first_call is not display_third_call
@@ -470,12 +455,12 @@ def test_estimator_report_display_regression_switching_data_source(
     report = EstimatorReport(
         estimator, X_train=X_test, y_train=y_test, X_test=X_test, y_test=y_test
     )
-    assert hasattr(report.metrics.plot, display)
-    display_first_call = getattr(report.metrics.plot, display)(data_source="test")
+    assert hasattr(report.metrics, display)
+    display_first_call = getattr(report.metrics, display)(data_source="test")
     assert report._cache != {}
-    display_second_call = getattr(report.metrics.plot, display)(data_source="train")
+    display_second_call = getattr(report.metrics, display)(data_source="train")
     assert display_first_call is not display_second_call
-    display_third_call = getattr(report.metrics.plot, display)(
+    display_third_call = getattr(report.metrics, display)(
         data_source="X_y", X=X_test, y=y_test
     )
     assert display_first_call is not display_third_call
@@ -507,9 +492,7 @@ def test_estimator_report_metrics_repr(binary_classification_data):
     assert "report.metrics.help()" in repr_str
 
 
-@pytest.mark.parametrize(
-    "metric", ["accuracy", "precision", "recall", "brier_score", "roc_auc", "log_loss"]
-)
+@pytest.mark.parametrize("metric", ["accuracy", "brier_score", "roc_auc", "log_loss"])
 def test_estimator_report_metrics_binary_classification(
     binary_classification_data, metric
 ):
@@ -520,10 +503,10 @@ def test_estimator_report_metrics_binary_classification(
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     assert hasattr(report.metrics, metric)
     result = getattr(report.metrics, metric)()
-    assert isinstance(result, pd.DataFrame)
+    assert isinstance(result, float)
     # check that we hit the cache
     result_with_cache = getattr(report.metrics, metric)()
-    pd.testing.assert_frame_equal(result, result_with_cache)
+    assert result == pytest.approx(result_with_cache)
 
     # check that something was written to the cache
     assert report._cache != {}
@@ -534,8 +517,38 @@ def test_estimator_report_metrics_binary_classification(
     result_external_data = getattr(report.metrics, metric)(
         data_source="X_y", X=X_test, y=y_test
     )
-    assert isinstance(result_external_data, pd.DataFrame)
-    pd.testing.assert_frame_equal(result, result_external_data)
+    assert isinstance(result_external_data, float)
+    assert result == pytest.approx(result_external_data)
+    assert report._cache != {}
+
+
+@pytest.mark.parametrize("metric", ["precision", "recall"])
+def test_estimator_report_metrics_binary_classification_pr(
+    binary_classification_data, metric
+):
+    """Check the behaviour of the precision and recall metrics available for binary
+    classification.
+    """
+    estimator, X_test, y_test = binary_classification_data
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    assert hasattr(report.metrics, metric)
+    result = getattr(report.metrics, metric)()
+    assert isinstance(result, dict)
+    # check that we hit the cache
+    result_with_cache = getattr(report.metrics, metric)()
+    assert result == result_with_cache
+
+    # check that something was written to the cache
+    assert report._cache != {}
+    report.clear_cache()
+
+    # check that passing using data outside from the report works and that we they
+    # don't come from the cache
+    result_external_data = getattr(report.metrics, metric)(
+        data_source="X_y", X=X_test, y=y_test
+    )
+    assert isinstance(result_external_data, dict)
+    assert result == result_external_data
     assert report._cache != {}
 
 
@@ -546,10 +559,10 @@ def test_estimator_report_metrics_regression(regression_data, metric):
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     assert hasattr(report.metrics, metric)
     result = getattr(report.metrics, metric)()
-    assert isinstance(result, pd.DataFrame)
+    assert isinstance(result, float)
     # check that we hit the cache
     result_with_cache = getattr(report.metrics, metric)()
-    pd.testing.assert_frame_equal(result, result_with_cache)
+    assert result == pytest.approx(result_with_cache)
 
     # check that something was written to the cache
     assert report._cache != {}
@@ -560,8 +573,8 @@ def test_estimator_report_metrics_regression(regression_data, metric):
     result_external_data = getattr(report.metrics, metric)(
         data_source="X_y", X=X_test, y=y_test
     )
-    assert isinstance(result_external_data, pd.DataFrame)
-    pd.testing.assert_frame_equal(result, result_external_data)
+    assert isinstance(result_external_data, float)
+    assert result == pytest.approx(result_external_data)
     assert report._cache != {}
 
 
@@ -576,12 +589,12 @@ def _normalize_metric_name(column):
 
 def _check_results_report_metrics(result, expected_metrics, expected_nb_stats):
     assert isinstance(result, pd.DataFrame)
-    assert len(result.columns) == expected_nb_stats
+    assert len(result.index) == expected_nb_stats
 
     normalized_expected = {
         _normalize_metric_name(metric) for metric in expected_metrics
     }
-    for column in result.columns:
+    for column in result.index:
         normalized_column = _normalize_metric_name(column)
         matches = [
             metric for metric in normalized_expected if metric == normalized_column
@@ -694,17 +707,17 @@ def test_estimator_report_report_metrics_scoring_kwargs(
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     assert hasattr(report.metrics, "report_metrics")
     result = report.metrics.report_metrics(scoring_kwargs={"multioutput": "raw_values"})
-    assert result.shape == (1, 4)
-    assert isinstance(result.columns, pd.MultiIndex)
-    assert result.columns.names == ["Metric", "Output"]
+    assert result.shape == (4, 1)
+    assert isinstance(result.index, pd.MultiIndex)
+    assert result.index.names == ["Metric", "Output"]
 
     estimator, X_test, y_test = multiclass_classification_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     assert hasattr(report.metrics, "report_metrics")
     result = report.metrics.report_metrics(scoring_kwargs={"average": None})
-    assert result.shape == (1, 10)
-    assert isinstance(result.columns, pd.MultiIndex)
-    assert result.columns.names == ["Metric", "Class label"]
+    assert result.shape == (10, 1)
+    assert isinstance(result.index, pd.MultiIndex)
+    assert result.index.names == ["Metric", "Label / Average"]
 
 
 @pytest.mark.parametrize(
@@ -736,15 +749,15 @@ def test_estimator_report_report_metrics_overwrite_scoring_names(
     estimator, X_test, y_test = request.getfixturevalue(fixture_name)
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     result = report.metrics.report_metrics(scoring_names=scoring_names)
-    assert result.shape == (1, len(expected_columns))
+    assert result.shape == (len(expected_columns), 1)
 
     # Get level 0 names if MultiIndex, otherwise get column names
-    result_columns = (
-        result.columns.get_level_values(0).tolist()
-        if isinstance(result.columns, pd.MultiIndex)
-        else result.columns.tolist()
+    result_index = (
+        result.index.get_level_values(0).tolist()
+        if isinstance(result.index, pd.MultiIndex)
+        else result.index.tolist()
     )
-    assert result_columns == expected_columns
+    assert result_index == expected_columns
 
 
 def test_estimator_report_interaction_cache_metrics(regression_multioutput_data):
@@ -765,7 +778,7 @@ def test_estimator_report_interaction_cache_metrics(regression_multioutput_data)
     assert (
         not should_raise
     ), f"The value {multioutput} should be stored in one of the cache keys"
-    assert result_r2_raw_values.shape == (1, 2)
+    assert result_r2_raw_values.shape == (2,)
 
     multioutput = "uniform_average"
     result_r2_uniform_average = report.metrics.r2(multioutput=multioutput)
@@ -777,7 +790,7 @@ def test_estimator_report_interaction_cache_metrics(regression_multioutput_data)
     assert (
         not should_raise
     ), f"The value {multioutput} should be stored in one of the cache keys"
-    assert result_r2_uniform_average.shape == (1, 1)
+    assert isinstance(result_r2_uniform_average, float)
 
 
 def test_estimator_report_custom_metric(regression_data):
@@ -792,7 +805,6 @@ def test_estimator_report_custom_metric(regression_data):
     threshold = 1
     result = report.metrics.custom_metric(
         metric_function=custom_metric,
-        metric_name="Custom Metric",
         response_method="predict",
         threshold=threshold,
     )
@@ -805,15 +817,14 @@ def test_estimator_report_custom_metric(regression_data):
         not should_raise
     ), f"The value {threshold} should be stored in one of the cache keys"
 
-    assert result.columns.tolist() == ["Custom Metric"]
-    assert result.to_numpy()[0, 0] == pytest.approx(
+    assert isinstance(result, float)
+    assert result == pytest.approx(
         custom_metric(y_test, estimator.predict(X_test), threshold)
     )
 
     threshold = 100
     result = report.metrics.custom_metric(
         metric_function=custom_metric,
-        metric_name="Custom Metric",
         response_method="predict",
         threshold=threshold,
     )
@@ -826,8 +837,8 @@ def test_estimator_report_custom_metric(regression_data):
         not should_raise
     ), f"The value {threshold} should be stored in one of the cache keys"
 
-    assert result.columns.tolist() == ["Custom Metric"]
-    assert result.to_numpy()[0, 0] == pytest.approx(
+    assert isinstance(result, float)
+    assert result == pytest.approx(
         custom_metric(y_test, estimator.predict(X_test), threshold)
     )
 
@@ -858,7 +869,6 @@ def test_estimator_report_custom_function_kwargs_numpy_array(regression_data):
 
     result = report.metrics.custom_metric(
         metric_function=custom_metric,
-        metric_name="Custom Metric",
         response_method="predict",
         some_weights=weights,
     )
@@ -871,8 +881,8 @@ def test_estimator_report_custom_function_kwargs_numpy_array(regression_data):
         not should_raise
     ), "The hash of the weights should be stored in one of the cache keys"
 
-    assert result.columns.tolist() == ["Custom Metric"]
-    assert result.to_numpy()[0, 0] == pytest.approx(
+    assert isinstance(result, float)
+    assert result == pytest.approx(
         custom_metric(y_test, estimator.predict(X_test), weights)
     )
 
@@ -891,14 +901,12 @@ def test_estimator_report_report_metrics_with_custom_metric(regression_data):
         scoring=["r2", custom_metric],
         scoring_kwargs={"some_weights": weights, "response_method": "predict"},
     )
-    assert result.shape == (1, 2)
+    assert result.shape == (2, 1)
     np.testing.assert_allclose(
         result.to_numpy(),
         [
-            [
-                r2_score(y_test, estimator.predict(X_test)),
-                custom_metric(y_test, estimator.predict(X_test), weights),
-            ]
+            [r2_score(y_test, estimator.predict(X_test))],
+            [custom_metric(y_test, estimator.predict(X_test), weights)],
         ],
     )
 
@@ -923,15 +931,13 @@ def test_estimator_report_report_metrics_with_scorer(regression_data):
         scoring=[r2_score, median_absolute_error_scorer, custom_metric_scorer],
         scoring_kwargs={"response_method": "predict"},  # only dispatched to r2_score
     )
-    assert result.shape == (1, 3)
+    assert result.shape == (3, 1)
     np.testing.assert_allclose(
         result.to_numpy(),
         [
-            [
-                r2_score(y_test, estimator.predict(X_test)),
-                median_absolute_error(y_test, estimator.predict(X_test)),
-                custom_metric(y_test, estimator.predict(X_test), weights),
-            ]
+            [r2_score(y_test, estimator.predict(X_test))],
+            [median_absolute_error(y_test, estimator.predict(X_test))],
+            [custom_metric(y_test, estimator.predict(X_test), weights)],
         ],
     )
 
@@ -960,11 +966,10 @@ def test_estimator_report_custom_metric_compatible_estimator(
     report = EstimatorReport(estimator, fit=False, X_test=X_test, y_test=y_test)
     result = report.metrics.custom_metric(
         metric_function=lambda y_true, y_pred: 1,
-        metric_name="Custom Metric",
         response_method="predict",
     )
-    assert result.columns.tolist() == ["Custom Metric"]
-    assert result.to_numpy()[0, 0] == 1
+    assert isinstance(result, Real)
+    assert result == pytest.approx(1)
 
 
 @pytest.mark.parametrize(
@@ -1000,17 +1005,13 @@ def test_estimator_report_report_metrics_with_scorer_binary_classification(
     result = report.metrics.report_metrics(
         scoring=["accuracy", accuracy_score, scorer],
     )
-    assert result.shape == (1, 3)
+    assert result.shape == (3, 1)
     np.testing.assert_allclose(
         result.to_numpy(),
         [
-            [
-                accuracy_score(y_test, estimator.predict(X_test)),
-                accuracy_score(y_test, estimator.predict(X_test)),
-                f1_score(
-                    y_test, estimator.predict(X_test), average="macro", pos_label=1
-                ),
-            ]
+            [accuracy_score(y_test, estimator.predict(X_test))],
+            [accuracy_score(y_test, estimator.predict(X_test))],
+            [f1_score(y_test, estimator.predict(X_test), average="macro", pos_label=1)],
         ],
     )
 

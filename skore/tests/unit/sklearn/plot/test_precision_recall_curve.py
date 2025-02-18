@@ -45,7 +45,7 @@ def test_precision_recall_curve_display_binary_classification(
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = report.metrics.plot.precision_recall()
+    display = report.metrics.precision_recall()
     assert isinstance(display, PrecisionRecallCurveDisplay)
 
     # check the structure of the attributes
@@ -59,6 +59,7 @@ def test_precision_recall_curve_display_binary_classification(
         assert isinstance(attr[estimator.classes_[1]], list)
         assert len(attr[estimator.classes_[1]]) == 1
 
+    display.plot()
     assert isinstance(display.lines_, list)
     assert len(display.lines_) == 1
     precision_recall_curve_mpl = display.lines_[0]
@@ -89,7 +90,7 @@ def test_precision_recall_curve_cross_validation_display_binary_classification(
     """
     (estimator, X, y), cv = binary_classification_data_no_split, 3
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
-    display = report.metrics.plot.precision_recall()
+    display = report.metrics.precision_recall()
     assert isinstance(display, PrecisionRecallCurveDisplay)
 
     # check the structure of the attributes
@@ -104,6 +105,7 @@ def test_precision_recall_curve_cross_validation_display_binary_classification(
         assert isinstance(attr[pos_label], list)
         assert len(attr[pos_label]) == cv
 
+    display.plot()
     assert isinstance(display.lines_, list)
     assert len(display.lines_) == cv
     expected_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
@@ -135,12 +137,12 @@ def test_precision_recall_curve_display_data_source(pyplot, binary_classificatio
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = report.metrics.plot.precision_recall(data_source="train")
+    display = report.metrics.precision_recall(data_source="train")
+    display.plot()
     assert display.lines_[0].get_label() == "Train set (AP = 1.00)"
 
-    display = report.metrics.plot.precision_recall(
-        data_source="X_y", X=X_train, y=y_train
-    )
+    display = report.metrics.precision_recall(data_source="X_y", X=X_train, y=y_train)
+    display.plot()
     assert display.lines_[0].get_label() == "AP = 1.00"
 
 
@@ -154,7 +156,7 @@ def test_precision_recall_curve_display_multiclass_classification(
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = report.metrics.plot.precision_recall()
+    display = report.metrics.precision_recall()
     assert isinstance(display, PrecisionRecallCurveDisplay)
 
     # check the structure of the attributes
@@ -167,6 +169,7 @@ def test_precision_recall_curve_display_multiclass_classification(
             assert isinstance(attr[class_label], list)
             assert len(attr[class_label]) == 1
 
+    display.plot()
     assert isinstance(display.lines_, list)
     assert len(display.lines_) == len(estimator.classes_)
     default_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
@@ -199,7 +202,7 @@ def test_precision_recall_curve_cross_validation_display_multiclass_classificati
     """
     (estimator, X, y), cv = multiclass_classification_data_no_split, 3
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
-    display = report.metrics.plot.precision_recall()
+    display = report.metrics.precision_recall()
     assert isinstance(display, PrecisionRecallCurveDisplay)
 
     # check the structure of the attributes
@@ -213,6 +216,7 @@ def test_precision_recall_curve_cross_validation_display_multiclass_classificati
             assert isinstance(attr[class_label], list)
             assert len(attr[class_label]) == cv
 
+    display.plot()
     assert isinstance(display.lines_, list)
     assert len(display.lines_) == len(class_labels) * cv
     default_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
@@ -248,7 +252,7 @@ def test_precision_recall_curve_display_pr_curve_kwargs(
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = report.metrics.plot.precision_recall()
+    display = report.metrics.precision_recall()
     for pr_curve_kwargs in ({"color": "red"}, [{"color": "red"}]):
         display.plot(pr_curve_kwargs=pr_curve_kwargs)
 
@@ -258,7 +262,7 @@ def test_precision_recall_curve_display_pr_curve_kwargs(
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = report.metrics.plot.precision_recall()
+    display = report.metrics.precision_recall()
     display.plot(
         pr_curve_kwargs=[dict(color="red"), dict(color="blue"), dict(color="green")],
     )
@@ -281,7 +285,7 @@ def test_precision_recall_curve_display_plot_error_wrong_pr_curve_kwargs(
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = report.metrics.plot.precision_recall()
+    display = report.metrics.precision_recall()
     err_msg = (
         "You intend to plot a single precision-recall curve and provide multiple "
         "precision-recall curve keyword arguments"
@@ -293,7 +297,7 @@ def test_precision_recall_curve_display_plot_error_wrong_pr_curve_kwargs(
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = report.metrics.plot.precision_recall()
+    display = report.metrics.precision_recall()
     err_msg = "You intend to plot multiple precision-recall curves."
     with pytest.raises(ValueError, match=err_msg):
         display.plot(pr_curve_kwargs=[{}, {}])
@@ -315,7 +319,7 @@ def test_pr_curve_display_cross_validation_multiple_roc_curve_kwargs_error(
     (estimator, X, y), cv = request.getfixturevalue(fixture_name), 3
 
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
-    display = report.metrics.plot.precision_recall()
+    display = report.metrics.precision_recall()
     err_msg = "You intend to plot multiple precision-recall curves"
     with pytest.raises(ValueError, match=err_msg):
         display.plot(pr_curve_kwargs=pr_curve_kwargs)
@@ -330,10 +334,10 @@ def test_precision_recall_curve_display_data_source_binary_classification(
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = report.metrics.plot.precision_recall(data_source="train")
+    display = report.metrics.precision_recall(data_source="train")
+    display.plot()
     assert display.lines_[0].get_label() == "Train set (AP = 1.00)"
 
-    display = report.metrics.plot.precision_recall(
-        data_source="X_y", X=X_train, y=y_train
-    )
+    display = report.metrics.precision_recall(data_source="X_y", X=X_train, y=y_train)
+    display.plot()
     assert display.lines_[0].get_label() == "AP = 1.00"

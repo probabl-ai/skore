@@ -1,6 +1,7 @@
 import joblib
 import numpy as np
 import pandas as pd
+from sklearn.metrics import make_scorer
 from sklearn.utils.metaestimators import available_if
 
 from skore.externals._pandas_accessors import DirNamesMixin
@@ -11,12 +12,9 @@ from skore.sklearn._plot import (
     RocCurveDisplay,
 )
 from skore.utils._accessor import _check_supported_ml_task
-from skore.utils._index import flatten_multiindex
+from skore.utils._index import flatten_multi_index
+from skore.utils._parallel import Parallel, delayed
 from skore.utils._progress_bar import progress_decorator
-
-###############################################################################
-# Metrics accessor
-###############################################################################
 
 
 class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
@@ -25,17 +23,17 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     You can access this accessor using the `metrics` attribute.
     """
 
-    _SCORE_OR_LOSS_ICONS = {
-        "accuracy": "(↗︎)",
-        "precision": "(↗︎)",
-        "recall": "(↗︎)",
-        "brier_score": "(↘︎)",
-        "roc_auc": "(↗︎)",
-        "log_loss": "(↘︎)",
-        "r2": "(↗︎)",
-        "rmse": "(↘︎)",
-        "report_metrics": "",
-        "custom_metric": "",
+    _SCORE_OR_LOSS_INFO = {
+        "accuracy": {"name": "Accuracy", "icon": "(↗︎)"},
+        "precision": {"name": "Precision", "icon": "(↗︎)"},
+        "recall": {"name": "Recall", "icon": "(↗︎)"},
+        "brier_score": {"name": "Brier score", "icon": "(↘︎)"},
+        "roc_auc": {"name": "ROC AUC", "icon": "(↗︎)"},
+        "log_loss": {"name": "Log loss", "icon": "(↘︎)"},
+        "r2": {"name": "R²", "icon": "(↗︎)"},
+        "rmse": {"name": "RMSE", "icon": "(↘︎)"},
+        "custom_metric": {"name": "Custom metric", "icon": ""},
+        "report_metrics": {"name": "Report metrics", "icon": ""},
     }
 
     def __init__(self, parent):
@@ -87,7 +85,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             Function to aggregate the scores across the cross-validation splits.
 
         flat_index : bool, default=False
-            Whether to flatten the multiindex columns.
+            Whether to flatten the `MultiIndex` columns.
 
         Returns
         -------
@@ -105,9 +103,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> report.metrics.report_metrics(
         ...     scoring=["precision", "recall"], pos_label=1, aggregate=["mean", "std"]
         ... )
-        Metric                   Precision (↗︎)  Recall (↗︎)
-        LogisticRegression mean        0.94...     0.96...
-                           std         0.02...     0.02...
+                    LogisticRegression
+                                    mean       std
+        Metric
+        Precision (↗︎)            0.94...  0.024...
+        Recall (↗︎)               0.96...  0.027...
         """
         results = self._compute_metric_scores(
             report_metric_name="report_metrics",
@@ -120,9 +120,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         )
         if flat_index:
             if isinstance(results.columns, pd.MultiIndex):
-                results.columns = flatten_multiindex(results.columns)
+                results.columns = flatten_multi_index(results.columns)
             if isinstance(results.index, pd.MultiIndex):
-                results.index = flatten_multiindex(results.index)
+                results.index = flatten_multi_index(results.index)
         return results
 
     @progress_decorator(description="Compute metric for each split")
@@ -157,13 +157,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         if cache_key in self._parent._cache:
             results = self._parent._cache[cache_key]
         else:
-            parallel = joblib.Parallel(
+            parallel = Parallel(
                 n_jobs=self._parent.n_jobs,
                 return_as="generator",
                 require="sharedmem",
             )
             generator = parallel(
-                joblib.delayed(getattr(report.metrics, report_metric_name))(
+                delayed(getattr(report.metrics, report_metric_name))(
                     data_source=data_source, **metric_kwargs
                 )
                 for report in self._parent.estimator_reports_
@@ -175,15 +175,17 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
             results = pd.concat(
                 results,
-                axis=0,
+                axis=1,
                 keys=[f"Split #{i}" for i in range(len(results))],
             )
-            results = results.swaplevel(0, 1)
+            results = results.swaplevel(0, 1, axis=1)
             if aggregate:
                 if isinstance(aggregate, str):
                     aggregate = [aggregate]
-                results = results.aggregate(func=aggregate, axis=0)
-                results = pd.concat([results], keys=[self._parent.estimator_name_])
+                results = results.aggregate(func=aggregate, axis=1)
+                results = pd.concat(
+                    [results], keys=[self._parent.estimator_name_], axis=1
+                )
 
             self._parent._cache[cache_key] = results
         return results
@@ -221,12 +223,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         >>> report.metrics.accuracy()
-        Metric                       Accuracy (↗︎)
-        LogisticRegression Split #0       0.94...
-                           Split #1       0.94...
+                    LogisticRegression
+                                Split #0  Split #1
+        Metric
+        Accuracy (↗︎)            0.94...   0.94...
         """
-        return self._compute_metric_scores(
-            report_metric_name="accuracy",
+        return self.report_metrics(
+            scoring=["accuracy"],
             data_source=data_source,
             aggregate=aggregate,
         )
@@ -299,17 +302,18 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         >>> report.metrics.precision()
-        Metric                      Precision (↗︎)
-        Class label                              0         1
-        LogisticRegression Split #0       0.96...   0.93...
-                           Split #1       0.90...   0.96...
+                                    LogisticRegression
+                                                Split #0  Split #1
+        Metric         Label / Average
+        Precision (↗︎) 0                         0.96...   0.90...
+                      1                         0.93...   0.96...
         """
-        return self._compute_metric_scores(
-            report_metric_name="precision",
+        return self.report_metrics(
+            scoring=["precision"],
             data_source=data_source,
             aggregate=aggregate,
-            average=average,
             pos_label=pos_label,
+            scoring_kwargs={"average": average},
         )
 
     @available_if(
@@ -381,17 +385,18 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         >>> report.metrics.recall()
-        Metric                      Recall (↗︎)
-        Class label                           0        1
-        LogisticRegression Split #0    0.87...   0.98...
-                           Split #1    0.94...   0.94...
+                                    LogisticRegression
+                                            Split #0  Split #1
+        Metric      Label / Average
+        Recall (↗︎) 0                         0.87...  0.94...
+                   1                         0.98...  0.94...
         """
-        return self._compute_metric_scores(
-            report_metric_name="recall",
+        return self.report_metrics(
+            scoring=["recall"],
             data_source=data_source,
             aggregate=aggregate,
-            average=average,
             pos_label=pos_label,
+            scoring_kwargs={"average": average},
         )
 
     @available_if(
@@ -425,12 +430,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         >>> report.metrics.brier_score()
-        Metric                       Brier score (↘︎)
-        LogisticRegression Split #0          0.04...
-                           Split #1          0.04...
+                        LogisticRegression
+                                Split #0  Split #1
+        Metric
+        Brier score (↘︎)         0.04...   0.04...
         """
-        return self._compute_metric_scores(
-            report_metric_name="brier_score",
+        return self.report_metrics(
+            scoring=["brier_score"],
             data_source=data_source,
             aggregate=aggregate,
         )
@@ -458,8 +464,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
 
-        average : {"auto", "macro", "micro", "weighted", "samples"}, \
-                default=None
+        average : {"macro", "micro", "weighted", "samples"}, default=None
             Average to compute the ROC AUC score in a multiclass setting. By default,
             no average is computed. Otherwise, this determines the type of averaging
             performed on the data.
@@ -509,16 +514,16 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         >>> report.metrics.roc_auc()
-        Metric                       ROC AUC (↗︎)
-        LogisticRegression Split #0      0.99...
-                           Split #1      0.98...
+                    LogisticRegression
+                            Split #0  Split #1
+        Metric
+        ROC AUC (↗︎)         0.99...   0.98...
         """
-        return self._compute_metric_scores(
-            report_metric_name="roc_auc",
+        return self.report_metrics(
+            scoring=["roc_auc"],
             data_source=data_source,
             aggregate=aggregate,
-            average=average,
-            multi_class=multi_class,
+            scoring_kwargs={"average": average, "multi_class": multi_class},
         )
 
     @available_if(
@@ -554,12 +559,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         >>> report.metrics.log_loss()
-        Metric                       Log loss (↘︎)
-        LogisticRegression Split #0       0.1...
-                           Split #1       0.1...
+                    LogisticRegression
+                                Split #0  Split #1
+        Metric
+        Log loss (↘︎)           0.1...     0.1...
         """
-        return self._compute_metric_scores(
-            report_metric_name="log_loss",
+        return self.report_metrics(
+            scoring=["log_loss"],
             data_source=data_source,
             aggregate=aggregate,
         )
@@ -609,15 +615,16 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> regressor = Ridge()
         >>> report = CrossValidationReport(regressor, X=X, y=y, cv_splitter=2)
         >>> report.metrics.r2()
-        Metric           R² (↗︎)
-        Ridge Split #0  0.36...
-              Split #1  0.39...
+                    Ridge
+                Split #0  Split #1
+        Metric
+        R² (↗︎)  0.36...   0.39...
         """
-        return self._compute_metric_scores(
-            report_metric_name="r2",
+        return self.report_metrics(
+            scoring=["r2"],
             data_source=data_source,
             aggregate=aggregate,
-            multioutput=multioutput,
+            scoring_kwargs={"multioutput": multioutput},
         )
 
     @available_if(_check_supported_ml_task(supported_ml_tasks=["regression"]))
@@ -665,15 +672,16 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> regressor = Ridge()
         >>> report = CrossValidationReport(regressor, X=X, y=y, cv_splitter=2)
         >>> report.metrics.rmse()
-        Metric          RMSE (↘︎)
-        Ridge Split #0  59.9...
-              Split #1  61.4...
+                    Ridge
+                    Split #0   Split #1
+        Metric
+        RMSE (↘︎)    59.9...    61.4...
         """
-        return self._compute_metric_scores(
-            report_metric_name="rmse",
+        return self.report_metrics(
+            scoring=["rmse"],
             data_source=data_source,
             aggregate=aggregate,
-            multioutput=multioutput,
+            scoring_kwargs={"multioutput": multioutput},
         )
 
     def custom_metric(
@@ -743,18 +751,24 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     response_method="predict",
         ...     metric_name="MAE (↗︎)",
         ... )
-        Metric           MAE (↗︎)
-        Ridge Split #0  50.1...
-              Split #1  52.6...
+                    Ridge
+                Split #0   Split #1
+        Metric
+        MAE (↗︎) 50.1...   52.6...
         """
-        return self._compute_metric_scores(
-            report_metric_name="custom_metric",
+        # create a scorer with `greater_is_better=True` to not alter the output of
+        # `metric_function`
+        scorer = make_scorer(
+            metric_function,
+            greater_is_better=True,
+            response_method=response_method,
+            **kwargs,
+        )
+        return self.report_metrics(
+            scoring=[scorer],
             data_source=data_source,
             aggregate=aggregate,
-            metric_function=metric_function,
-            response_method=response_method,
-            metric_name=metric_name,
-            **kwargs,
+            scoring_names=[metric_name],
         )
 
     ####################################################################################
@@ -783,12 +797,16 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         """Override format method for metrics-specific naming."""
         method_name = f"{name}(...)"
         method_name = method_name.ljust(22)
-        if self._SCORE_OR_LOSS_ICONS[name] in ("(↗︎)", "(↘︎)"):
-            if self._SCORE_OR_LOSS_ICONS[name] == "(↗︎)":
-                method_name += f"[cyan]{self._SCORE_OR_LOSS_ICONS[name]}[/cyan]"
+        if name in self._SCORE_OR_LOSS_INFO and self._SCORE_OR_LOSS_INFO[name][
+            "icon"
+        ] in ("(↗︎)", "(↘︎)"):
+            if self._SCORE_OR_LOSS_INFO[name]["icon"] == "(↗︎)":
+                method_name += f"[cyan]{self._SCORE_OR_LOSS_INFO[name]['icon']}[/cyan]"
                 return method_name.ljust(43)
             else:  # (↘︎)
-                method_name += f"[orange1]{self._SCORE_OR_LOSS_ICONS[name]}[/orange1]"
+                method_name += (
+                    f"[orange1]{self._SCORE_OR_LOSS_INFO[name]['icon']}[/orange1]"
+                )
                 return method_name.ljust(49)
         else:
             return method_name.ljust(29)
@@ -797,22 +815,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         """Override to exclude the plot accessor from methods list."""
         methods = super()._get_methods_for_help()
         return [(name, method) for name, method in methods if name != "plot"]
-
-    def _create_help_tree(self):
-        """Override to include plot methods in a separate branch."""
-        tree = super()._create_help_tree()
-
-        # Add plot methods in a separate branch
-        plot_branch = tree.add("[bold cyan].plot :art:[/bold cyan]")
-        plot_methods = self.plot._get_methods_for_help()
-        plot_methods = self.plot._sort_methods_for_help(plot_methods)
-
-        for name, method in plot_methods:
-            displayed_name = self.plot._format_method_name(name)
-            description = self.plot._get_method_description(method)
-            plot_branch.add(f".{displayed_name}".ljust(27) + f"- {description}")
-
-        return tree
 
     def _get_help_panel_title(self):
         return "[bold cyan]Available metrics methods[/bold cyan]"
@@ -832,21 +834,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             help_method_name="report.metrics.help()",
         )
 
-
-########################################################################################
-# Sub-accessors
-# Plotting
-########################################################################################
-
-
-class _PlotMetricsAccessor(_BaseAccessor):
-    """Plotting methods for the metrics accessor."""
-
-    def __init__(self, parent):
-        super().__init__(parent._parent)
-        self._metrics_parent = parent
-        self._parent_progress = None
-
     @progress_decorator(description="Computing predictions for display")
     def _get_display(
         self,
@@ -855,7 +842,6 @@ class _PlotMetricsAccessor(_BaseAccessor):
         response_method,
         display_class,
         display_kwargs,
-        display_plot_kwargs,
     ):
         """Get the display from the cache or compute it.
 
@@ -876,9 +862,6 @@ class _PlotMetricsAccessor(_BaseAccessor):
         display_kwargs : dict
             The display kwargs used by `display_class._from_predictions`.
 
-        display_plot_kwargs : dict
-            The display kwargs used by `display.plot`.
-
         Returns
         -------
         display : display_class
@@ -895,7 +878,6 @@ class _PlotMetricsAccessor(_BaseAccessor):
 
         if cache_key in self._parent._cache:
             display = self._parent._cache[cache_key]
-            display.plot(**display_plot_kwargs)
         else:
             y_true, y_pred = [], []
             for report in self._parent.estimator_reports_:
@@ -925,7 +907,6 @@ class _PlotMetricsAccessor(_BaseAccessor):
                 ml_task=self._parent._ml_task,
                 data_source=data_source,
                 **display_kwargs,
-                **display_plot_kwargs,
             )
             self._parent._cache[cache_key] = display
 
@@ -936,7 +917,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def roc(self, *, data_source="test", pos_label=None, ax=None):
+    def roc(self, *, data_source="test", pos_label=None):
         """Plot the ROC curve.
 
         Parameters
@@ -949,9 +930,6 @@ class _PlotMetricsAccessor(_BaseAccessor):
 
         pos_label : int, float, bool or str, default=None
             The positive class.
-
-        ax : matplotlib.axes.Axes, default=None
-            The axes to plot on.
 
         Returns
         -------
@@ -966,18 +944,16 @@ class _PlotMetricsAccessor(_BaseAccessor):
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
-        >>> display = report.metrics.plot.roc()
+        >>> display = report.metrics.roc()
         >>> display.plot(roc_curve_kwargs={"color": "tab:red"})
         """
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
-        display_plot_kwargs = {"ax": ax, "plot_chance_level": True, "despine": True}
         return self._get_display(
             data_source=data_source,
             response_method=response_method,
             display_class=RocCurveDisplay,
             display_kwargs=display_kwargs,
-            display_plot_kwargs=display_plot_kwargs,
         )
 
     @available_if(
@@ -985,7 +961,7 @@ class _PlotMetricsAccessor(_BaseAccessor):
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def precision_recall(self, *, data_source="test", pos_label=None, ax=None):
+    def precision_recall(self, *, data_source="test", pos_label=None):
         """Plot the precision-recall curve.
 
         Parameters
@@ -998,9 +974,6 @@ class _PlotMetricsAccessor(_BaseAccessor):
 
         pos_label : int, float, bool or str, default=None
             The positive class.
-
-        ax : matplotlib.axes.Axes, default=None
-            The axes to plot on.
 
         Returns
         -------
@@ -1015,18 +988,16 @@ class _PlotMetricsAccessor(_BaseAccessor):
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
-        >>> display = report.metrics.plot.precision_recall()
+        >>> display = report.metrics.precision_recall()
         >>> display.plot()
         """
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
-        display_plot_kwargs = {"ax": ax, "despine": True}
         return self._get_display(
             data_source=data_source,
             response_method=response_method,
             display_class=PrecisionRecallCurveDisplay,
             display_kwargs=display_kwargs,
-            display_plot_kwargs=display_plot_kwargs,
         )
 
     @available_if(_check_supported_ml_task(supported_ml_tasks=["regression"]))
@@ -1034,8 +1005,6 @@ class _PlotMetricsAccessor(_BaseAccessor):
         self,
         *,
         data_source="test",
-        ax=None,
-        kind="residual_vs_predicted",
         subsample=1_000,
         random_state=None,
     ):
@@ -1050,20 +1019,6 @@ class _PlotMetricsAccessor(_BaseAccessor):
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-
-        ax : matplotlib axes, default=None
-            Axes object to plot on. If `None`, a new figure and axes is
-            created.
-
-        kind : {"actual_vs_predicted", "residual_vs_predicted"}, \
-                default="residual_vs_predicted"
-            The type of plot to draw:
-
-            - "actual_vs_predicted" draws the observed values (y-axis) vs.
-              the predicted values (x-axis).
-            - "residual_vs_predicted" draws the residuals, i.e. difference
-              between observed and predicted values, (y-axis) vs. the predicted
-              values (x-axis).
 
         subsample : float, int or None, default=1_000
             Sampling the samples to be shown on the scatter plot. If `float`,
@@ -1088,30 +1043,13 @@ class _PlotMetricsAccessor(_BaseAccessor):
         >>> X, y = load_diabetes(return_X_y=True)
         >>> regressor = Ridge()
         >>> report = CrossValidationReport(regressor, X=X, y=y, cv_splitter=2)
-        >>> display = report.metrics.plot.prediction_error(
-        ...     kind="actual_vs_predicted"
-        ... )
-        >>> display.plot(line_kwargs={"color": "tab:red"})
+        >>> display = report.metrics.prediction_error()
+        >>> display.plot(kind="actual_vs_predicted", line_kwargs={"color": "tab:red"})
         """
         display_kwargs = {"subsample": subsample, "random_state": random_state}
-        display_plot_kwargs = {"ax": ax, "kind": kind}
         return self._get_display(
             data_source=data_source,
             response_method="predict",
             display_class=PredictionErrorDisplay,
             display_kwargs=display_kwargs,
-            display_plot_kwargs=display_plot_kwargs,
-        )
-
-    def _get_help_panel_title(self):
-        return "[bold cyan]Available plot methods[/bold cyan]"
-
-    def _get_help_tree_title(self):
-        return "[bold cyan]report.metrics.plot[/bold cyan]"
-
-    def __repr__(self):
-        """Return a string representation using rich."""
-        return self._rich_repr(
-            class_name="skore.CrossValidationReport.metrics.plot",
-            help_method_name="report.metrics.plot.help()",
         )

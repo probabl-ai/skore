@@ -36,6 +36,7 @@ set -eu
     # Move to `TMPDIR` to avoid absolute paths in requirements file
     cd "${TMPDIR}"
 
+    counter=1
     for combination in "${COMBINATIONS[@]}"
     do
         IFS=";" read -r -a combination <<< "${combination}"
@@ -44,12 +45,24 @@ set -eu
         scikit_learn="${combination[1]}"
         filepath="${CWD}/requirements/python-${python}/scikit-learn-${scikit_learn}/test-requirements.txt"
 
-        echo "Generating requirements: python ==${python} | scikit-learn ==${scikit_learn}"
+        echo "Generating requirements: python==${python} | scikit-learn==${scikit_learn} (${counter}/${#COMBINATIONS[@]})"
 
-        # Force the `python` version by creating the appropriate virtual environment
-        pyenv local "${python}"
-        python -m venv "python-${python}"
-        source "python-${python}/bin/activate"
+        # Install the `python` version using pyenv
+        pyenv install --skip-existing "${python}"
+
+        # Force the `python` version with pyenv, overriding application-specific/global versions
+        export PYENV_VERSION="${python}"
+
+        # Ensure the pyenv `python` version is well set
+        pyenv_version=$(pyenv version-name)
+
+        if [[ "${pyenv_version}" != "${python}."* ]]; then
+            echo -e "\033[0;31mSomething wrong setting 'python-${python}', get '${pyenv_version%.*}'\033[0m"
+            exit 1
+        fi
+
+        # Create the appropriate virtual environment
+        python -m venv "python-${python}"; source "python-${python}/bin/activate"
 
         # Force the `scikit-learn` version by overloading test requirements
         sed -i "s/scikit-learn.*/scikit-learn==${scikit_learn}.*/g" skore/test-requirements.in
@@ -67,5 +80,7 @@ set -eu
                --output-file="${filepath}" \
                "${@:2}" \
                skore/pyproject.toml
+
+        let counter++
     done
 )

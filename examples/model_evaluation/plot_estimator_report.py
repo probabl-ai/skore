@@ -13,8 +13,9 @@ quickly get insights from any scikit-learn estimator.
 # Loading our dataset and defining our estimator
 # ==============================================
 #
-# First, we load a dataset from skrub. Our goal is to predict if a company paid a physician. The ultimate goal is to
-# detect potential conflict of interest when it comes to the actual problem that we want to solve.
+# First, we load a dataset from skrub. Our goal is to predict if a company paid a
+# physician. The ultimate goal is to detect potential conflict of interest when it comes
+# to the actual problem that we want to solve.
 
 # %%
 from skrub.datasets import fetch_open_payments
@@ -79,24 +80,18 @@ from skore import EstimatorReport
 report = EstimatorReport(
     estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
 )
-report
 
 # %%
 #
 # Once the report is created, we get some information regarding the available tools
-# allowing us to get some insights from our specific model on our specific task.
-#
-# We can get a similar information if we call the :meth:`~skore.EstimatorReport.help`
-# method.
+# allowing us to get some insights from our specific model on our specific task by
+# calling the :meth:`~skore.EstimatorReport.help` method.
 report.help()
 
 # %%
 #
 # Be aware that we can access the help for each individual sub-accessor. For instance:
 report.metrics.help()
-
-# %%
-report.metrics.plot.help()
 
 # %%
 #
@@ -142,7 +137,7 @@ print(f"Time taken to compute the metrics: {end - start:.2f} seconds")
 # pandas.
 import matplotlib.pyplot as plt
 
-ax = metric_report.T.plot.barh()
+ax = metric_report.plot.barh()
 ax.set_title("Metrics report")
 plt.tight_layout()
 
@@ -260,10 +255,7 @@ report.metrics.accuracy()
 # We can now compute the cost of our operational decision.
 start = time.time()
 cost = report.metrics.custom_metric(
-    metric_function=operational_decision_cost,
-    metric_name="Operational Decision Cost",
-    response_method="predict",
-    amount=amount,
+    metric_function=operational_decision_cost, response_method="predict", amount=amount
 )
 end = time.time()
 cost
@@ -279,10 +271,7 @@ report.clear_cache()
 # %%
 start = time.time()
 cost = report.metrics.custom_metric(
-    metric_function=operational_decision_cost,
-    metric_name="Operational Decision Cost",
-    response_method="predict",
-    amount=amount,
+    metric_function=operational_decision_cost, response_method="predict", amount=amount
 )
 end = time.time()
 cost
@@ -297,12 +286,9 @@ print(f"Time taken to compute the cost: {end - start:.2f} seconds")
 # the predictions.
 report.metrics.report_metrics(
     scoring=["precision", "recall", operational_decision_cost],
+    scoring_names=["Precision", "Recall", "Operational Decision Cost"],
     pos_label=pos_label,
-    scoring_kwargs={
-        "amount": amount,
-        "response_method": "predict",
-        "metric_name": "Operational Decision Cost",
-    },
+    scoring_kwargs={"amount": amount, "response_method": "predict"},
 )
 
 # %%
@@ -313,16 +299,14 @@ report.metrics.report_metrics(
 # function.
 from sklearn.metrics import make_scorer, f1_score
 
-f1_scorer = make_scorer(
-    f1_score, response_method="predict", metric_name="F1 Score", pos_label=pos_label
-)
+f1_scorer = make_scorer(f1_score, response_method="predict", pos_label=pos_label)
 operational_decision_cost_scorer = make_scorer(
-    operational_decision_cost,
-    response_method="predict",
-    metric_name="Operational Decision Cost",
-    amount=amount,
+    operational_decision_cost, response_method="predict", amount=amount
 )
-report.metrics.report_metrics(scoring=[f1_scorer, operational_decision_cost_scorer])
+report.metrics.report_metrics(
+    scoring=[f1_scorer, operational_decision_cost_scorer],
+    scoring_names=["F1 Score", "Operational Decision Cost"],
+)
 
 # %%
 #
@@ -332,12 +316,13 @@ report.metrics.report_metrics(scoring=[f1_scorer, operational_decision_cost_scor
 # The :class:`skore.EstimatorReport` class also provides a plotting interface that
 # allows to plot *defacto* the most common plots. As for the metrics, we only
 # provide the meaningful set of plots for the provided estimator.
-report.metrics.plot.help()
+report.metrics.help()
 
 # %%
 #
 # Let's start by plotting the ROC curve for our binary classification task.
-display = report.metrics.plot.roc(pos_label=pos_label)
+display = report.metrics.roc(pos_label=pos_label)
+display.plot()
 plt.tight_layout()
 
 # %%
@@ -365,7 +350,8 @@ plt.tight_layout()
 # performance gain we can get.
 start = time.time()
 # we already trigger the computation of the predictions in a previous call
-report.metrics.plot.roc(pos_label=pos_label)
+display = report.metrics.roc(pos_label=pos_label)
+display.plot()
 plt.tight_layout()
 end = time.time()
 
@@ -379,7 +365,8 @@ report.clear_cache()
 
 # %%
 start = time.time()
-report.metrics.plot.roc(pos_label=pos_label)
+display = report.metrics.roc(pos_label=pos_label)
+display.plot()
 plt.tight_layout()
 end = time.time()
 

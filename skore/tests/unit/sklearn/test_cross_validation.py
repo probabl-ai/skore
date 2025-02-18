@@ -4,7 +4,7 @@ import joblib
 import numpy as np
 import pandas as pd
 import pytest
-from sklearn.base import BaseEstimator, clone
+from sklearn.base import BaseEstimator, ClassifierMixin, clone
 from sklearn.datasets import make_classification, make_regression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.exceptions import NotFittedError
@@ -162,6 +162,11 @@ def test_cross_validation_report_help(capsys, binary_classification_data):
     captured = capsys.readouterr()
     assert f"Tools to diagnose estimator {estimator.__class__.__name__}" in captured.out
 
+    # Check that we have a line with accuracy and the arrow associated with it
+    assert re.search(
+        r"\.accuracy\([^)]*\).*\(↗︎\).*-.*accuracy", captured.out, re.MULTILINE
+    )
+
 
 def test_cross_validation_report_repr(binary_classification_data):
     """Check that __repr__ returns a string starting with the expected prefix."""
@@ -169,8 +174,7 @@ def test_cross_validation_report_repr(binary_classification_data):
     report = CrossValidationReport(estimator, X, y)
 
     repr_str = repr(report)
-    assert "skore.CrossValidationReport" in repr_str
-    assert "help()" in repr_str
+    assert "CrossValidationReport" in repr_str
 
 
 @pytest.mark.parametrize(
@@ -220,31 +224,11 @@ def test_cross_validation_report_pickle(tmp_path, binary_classification_data):
 ########################################################################################
 
 
-def test_cross_validation_report_plot_help(capsys, binary_classification_data):
-    """Check that the help method writes to the console."""
-    estimator, X, y = binary_classification_data
-    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
-
-    report.metrics.plot.help()
-    captured = capsys.readouterr()
-    assert "Available plot methods" in captured.out
-
-
-def test_cross_validation_report_plot_repr(binary_classification_data):
-    """Check that __repr__ returns a string starting with the expected prefix."""
-    estimator, X, y = binary_classification_data
-    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
-
-    repr_str = repr(report.metrics.plot)
-    assert "skore.CrossValidationReport.metrics.plot" in repr_str
-    assert "report.metrics.plot.help()" in repr_str
-
-
 def test_cross_validation_report_plot_roc(binary_classification_data):
     """Check that the ROC plot method works."""
     estimator, X, y = binary_classification_data
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
-    assert isinstance(report.metrics.plot.roc(), RocCurveDisplay)
+    assert isinstance(report.metrics.roc(), RocCurveDisplay)
 
 
 @pytest.mark.parametrize("display", ["roc", "precision_recall"])
@@ -254,10 +238,10 @@ def test_cross_validation_report_display_binary_classification(
     """General behaviour of the function creating display on binary classification."""
     estimator, X, y = binary_classification_data
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
-    assert hasattr(report.metrics.plot, display)
-    display_first_call = getattr(report.metrics.plot, display)()
+    assert hasattr(report.metrics, display)
+    display_first_call = getattr(report.metrics, display)()
     assert report._cache != {}
-    display_second_call = getattr(report.metrics.plot, display)()
+    display_second_call = getattr(report.metrics, display)()
     assert display_first_call is display_second_call
 
 
@@ -266,10 +250,10 @@ def test_cross_validation_report_display_regression(pyplot, regression_data, dis
     """General behaviour of the function creating display on regression."""
     estimator, X, y = regression_data
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
-    assert hasattr(report.metrics.plot, display)
-    display_first_call = getattr(report.metrics.plot, display)()
+    assert hasattr(report.metrics, display)
+    display_first_call = getattr(report.metrics, display)()
     assert report._cache != {}
-    display_second_call = getattr(report.metrics.plot, display)()
+    display_second_call = getattr(report.metrics, display)()
     assert display_first_call is display_second_call
 
 
@@ -298,11 +282,11 @@ def test_cross_validation_report_metrics_repr(binary_classification_data):
     assert "report.metrics.help()" in repr_str
 
 
-def _normalize_metric_name(column):
-    """Helper to normalize the metric name present in a pandas column that could be
+def _normalize_metric_name(index):
+    """Helper to normalize the metric name present in a pandas index that could be
     a multi-index or single-index."""
     # if we have a multi-index, then the metric name is on level 0
-    s = column[0] if isinstance(column, tuple) else column
+    s = index[0] if isinstance(index, tuple) else index
     # Remove spaces and underscores
     return re.sub(r"[^a-zA-Z]", "", s.lower())
 
@@ -311,13 +295,13 @@ def _check_results_single_metric(report, metric, expected_n_splits, expected_nb_
     assert hasattr(report.metrics, metric)
     result = getattr(report.metrics, metric)()
     assert isinstance(result, pd.DataFrame)
-    assert result.shape[0] == expected_n_splits
+    assert result.shape[1] == expected_n_splits
     # check that we hit the cache
     result_with_cache = getattr(report.metrics, metric)()
     pd.testing.assert_frame_equal(result, result_with_cache)
 
-    # check that the index contains the expected split names
-    split_names = result.index.get_level_values(1).unique()
+    # check that the columns contains the expected split names
+    split_names = result.columns.get_level_values(1).unique()
     expected_split_names = [f"Split #{i}" for i in range(expected_n_splits)]
     assert list(split_names) == expected_split_names
 
@@ -330,14 +314,14 @@ def _check_results_single_metric(report, metric, expected_n_splits, expected_nb_
     # check the aggregate parameter
     stats = ["mean", "std"]
     result = getattr(report.metrics, metric)(aggregate=stats)
-    # check that the index contains the expected split names
-    split_names = result.index.get_level_values(1).unique()
+    # check that the columns contains the expected split names
+    split_names = result.columns.get_level_values(1).unique()
     assert list(split_names) == stats
 
     stats = "mean"
     result = getattr(report.metrics, metric)(aggregate=stats)
-    # check that the index contains the expected split names
-    split_names = result.index.get_level_values(1).unique()
+    # check that the columns contains the expected split names
+    split_names = result.columns.get_level_values(1).unique()
     assert list(split_names) == [stats]
 
 
@@ -346,13 +330,13 @@ def _check_results_report_metric(
 ):
     result = report.metrics.report_metrics(**params)
     assert isinstance(result, pd.DataFrame)
-    assert result.shape[0] == expected_n_splits
+    assert result.shape[1] == expected_n_splits
     # check that we hit the cache
     result_with_cache = report.metrics.report_metrics(**params)
     pd.testing.assert_frame_equal(result, result_with_cache)
 
-    # check that the index contains the expected split names
-    split_names = result.index.get_level_values(1).unique()
+    # check that the columns contains the expected split names
+    split_names = result.columns.get_level_values(1).unique()
     expected_split_names = [f"Split #{i}" for i in range(expected_n_splits)]
     assert list(split_names) == expected_split_names
 
@@ -361,31 +345,29 @@ def _check_results_report_metric(
     # check the aggregate parameter
     stats = ["mean", "std"]
     result = report.metrics.report_metrics(aggregate=stats, **params)
-    # check that the index contains the expected split names
-    split_names = result.index.get_level_values(1).unique()
+    # check that the columns contains the expected split names
+    split_names = result.columns.get_level_values(1).unique()
     assert list(split_names) == stats
 
     stats = "mean"
     result = report.metrics.report_metrics(aggregate=stats, **params)
-    # check that the index contains the expected split names
-    split_names = result.index.get_level_values(1).unique()
+    # check that the columns contains the expected split names
+    split_names = result.columns.get_level_values(1).unique()
     assert list(split_names) == [stats]
 
 
 def _check_metrics_names(result, expected_metrics, expected_nb_stats):
     assert isinstance(result, pd.DataFrame)
-    assert len(result.columns) == expected_nb_stats
+    assert len(result.index) == expected_nb_stats
 
     normalized_expected = {
         _normalize_metric_name(metric) for metric in expected_metrics
     }
-    for column in result.columns:
-        normalized_column = _normalize_metric_name(column)
-        matches = [
-            metric for metric in normalized_expected if metric == normalized_column
-        ]
+    for idx in result.index:
+        normalized_idx = _normalize_metric_name(idx)
+        matches = [metric for metric in normalized_expected if metric == normalized_idx]
         assert len(matches) == 1, (
-            f"No match found for column '{column}' in expected metrics: "
+            f"No match found for index '{idx}' in expected metrics: "
             f" {expected_metrics}"
         )
 
@@ -566,21 +548,21 @@ def test_cross_validation_report_report_metrics_scoring_kwargs(
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
     assert hasattr(report.metrics, "report_metrics")
     result = report.metrics.report_metrics(scoring_kwargs={"multioutput": "raw_values"})
-    assert result.shape == (2, 4)
-    assert isinstance(result.columns, pd.MultiIndex)
-    assert result.columns.names == ["Metric", "Output"]
+    assert result.shape == (4, 2)
+    assert isinstance(result.index, pd.MultiIndex)
+    assert result.index.names == ["Metric", "Output"]
 
     estimator, X, y = multiclass_classification_data
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
     assert hasattr(report.metrics, "report_metrics")
     result = report.metrics.report_metrics(scoring_kwargs={"average": None})
-    assert result.shape == (2, 10)
-    assert isinstance(result.columns, pd.MultiIndex)
-    assert result.columns.names == ["Metric", "Class label"]
+    assert result.shape == (10, 2)
+    assert isinstance(result.index, pd.MultiIndex)
+    assert result.index.names == ["Metric", "Label / Average"]
 
 
 @pytest.mark.parametrize(
-    "fixture_name, scoring_names, expected_columns",
+    "fixture_name, scoring_names, expected_index",
     [
         ("regression_data", ["R2", "RMSE"], ["R2", "RMSE"]),
         (
@@ -602,21 +584,21 @@ def test_cross_validation_report_report_metrics_scoring_kwargs(
     ],
 )
 def test_cross_validation_report_report_metrics_overwrite_scoring_names(
-    request, fixture_name, scoring_names, expected_columns
+    request, fixture_name, scoring_names, expected_index
 ):
     """Test that we can overwrite the scoring names in report_metrics."""
     estimator, X, y = request.getfixturevalue(fixture_name)
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
     result = report.metrics.report_metrics(scoring_names=scoring_names)
-    assert result.shape == (2, len(expected_columns))
+    assert result.shape == (len(expected_index), 2)
 
     # Get level 0 names if MultiIndex, otherwise get column names
-    result_columns = (
-        result.columns.get_level_values(0).tolist()
-        if isinstance(result.columns, pd.MultiIndex)
-        else result.columns.tolist()
+    result_index = (
+        result.index.get_level_values(0).tolist()
+        if isinstance(result.index, pd.MultiIndex)
+        else result.index.tolist()
     )
-    assert result_columns == expected_columns
+    assert result_index == expected_index
 
 
 @pytest.mark.parametrize("scoring", ["public_metric", "_private_metric"])
@@ -658,7 +640,7 @@ def test_cross_validation_report_report_metrics_with_scorer(regression_data):
     ]
     np.testing.assert_allclose(
         result.to_numpy(),
-        expected_result,
+        np.transpose(expected_result),
     )
 
 
@@ -695,7 +677,7 @@ def test_cross_validation_report_report_metrics_with_scorer_binary_classificatio
     result = report.metrics.report_metrics(
         scoring=["accuracy", accuracy_score, scorer],
     )
-    assert result.shape == (2, 3)
+    assert result.shape == (3, 2)
 
 
 def test_cross_validation_report_report_metrics_with_scorer_pos_label_error(
@@ -735,8 +717,8 @@ def test_cross_validation_report_custom_metric(binary_classification_data):
         metric_function=accuracy_score,
         response_method="predict",
     )
-    assert result.shape == (2, 1)
-    assert result.columns == ["accuracy_score"]
+    assert result.shape == (1, 2)
+    assert result.index == ["accuracy_score"]
 
 
 @pytest.mark.parametrize(
@@ -752,7 +734,7 @@ def test_cross_validation_report_interrupted(
     """Check that we can interrupt cross-validation without losing all
     data."""
 
-    class MockEstimator(BaseEstimator):
+    class MockEstimator(ClassifierMixin, BaseEstimator):
         def __init__(self, n_call=0, fail_after_n_clone=3):
             self.n_call = n_call
             self.fail_after_n_clone = fail_after_n_clone
@@ -760,6 +742,7 @@ def test_cross_validation_report_interrupted(
         def fit(self, X, y):
             if self.n_call > self.fail_after_n_clone:
                 raise error
+            self.classes_ = np.unique(y)
             return self
 
         def __sklearn_clone__(self):
@@ -786,4 +769,4 @@ def test_cross_validation_report_interrupted(
         response_method="predict",
     )
     assert result.shape == (1, 1)
-    assert result.columns == ["accuracy_score"]
+    assert result.index == ["accuracy_score"]

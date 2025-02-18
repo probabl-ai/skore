@@ -3,7 +3,6 @@ import time
 import warnings
 from itertools import product
 
-import joblib
 import numpy as np
 from sklearn.base import clone
 from sklearn.exceptions import NotFittedError
@@ -14,6 +13,7 @@ from skore.externals._pandas_accessors import DirNamesMixin
 from skore.externals._sklearn_compat import is_clusterer
 from skore.sklearn._base import _BaseReport, _get_cached_response_values
 from skore.sklearn.find_ml_task import _find_ml_task
+from skore.utils._parallel import Parallel, delayed
 from skore.utils._progress_bar import progress_decorator
 
 
@@ -226,11 +226,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         if self._X_train is not None:
             data_sources += [("train", self._X_train)]
 
-        parallel = joblib.Parallel(
-            n_jobs=n_jobs, return_as="generator", require="sharedmem"
-        )
+        parallel = Parallel(n_jobs=n_jobs, return_as="generator", require="sharedmem")
         generator = parallel(
-            joblib.delayed(_get_cached_response_values)(
+            delayed(_get_cached_response_values)(
                 cache=self._cache,
                 estimator_hash=self._hash,
                 estimator=self._estimator,
@@ -326,7 +324,5 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         )
 
     def __repr__(self):
-        """Return a string representation using rich."""
-        return self._rich_repr(
-            class_name="skore.EstimatorReport", help_method_name="help()"
-        )
+        """Return a string representation."""
+        return f"{self.__class__.__name__}(estimator={self.estimator_}, ...)"
