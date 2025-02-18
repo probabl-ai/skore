@@ -92,7 +92,7 @@ You can find information on the latest version [here](https://anaconda.org/conda
     ```python
     # Display the ROC curve that was generated for you:
     roc_plot = cv_report.metrics.roc()
-    roc_plot
+    roc_plot.plot()
     ```
 
 1. Store your results for safe-keeping.
@@ -110,7 +110,8 @@ You can find information on the latest version [here](https://anaconda.org/conda
 
     ```python
     # Get your results
-    df_get = my_project.put("df_cv_report_metrics")
+    df_get = my_project.get("df_cv_report_metrics")
+    df_get
     ```
 
 Learn more in our [documentation](https://skore.probabl.ai).
