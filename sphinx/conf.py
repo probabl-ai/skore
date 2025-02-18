@@ -177,7 +177,7 @@ html_theme_options["analytics"] = {
 html_sidebars = {
     "index": [],
     "install": [],
-    "contributing_link": [],
+    "contributing": [],
 }
 
 # Sphinx-Copybutton configuration
