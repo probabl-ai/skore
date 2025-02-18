@@ -89,6 +89,17 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
 
     data_source : {"train", "test", "X_y"}, default=None
         The data source used to compute the ROC curve.
+
+    Attributes
+    ----------
+    ax_ : matplotlib axes
+        The axes on which the ROC curve is plotted, available after calling `plot`.
+
+    figure_ : matplotlib figure
+        The figure on which the ROC curve is plotted, available after calling `plot`.
+
+    lines_ : list of matplotlib lines
+        The lines of the ROC curve, available after calling `plot`.
     """
 
     def __init__(
@@ -112,6 +123,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
 
     def plot(
         self,
+        ax=None,
         *,
         plot_chance_level=True,
         despine=True,
@@ -120,12 +132,15 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
 
         Parameters
         ----------
+        ax : matplotlib axes, default=None
+            Axes object to plot on. If `None`, a new figure and axes is created.
         plot_chance_level : bool, default=True
             Whether to plot the chance level.
         despine : bool, default=True
             Whether to remove the top and right spines from the plot.
         """
-        _, ax = plt.subplots()
+        self.figure_, self.ax_ = (ax.figure, ax) if ax else plt.subplots()
+        self.line_ = []
 
         if self.ml_task == "binary-classification":
             for report_idx, report_name in enumerate(self.estimator_names):
@@ -133,7 +148,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
                 tpr = self.tpr[self.pos_label][report_idx]
                 roc_auc = self.roc_auc[self.pos_label][report_idx]
 
-                ax.plot(
+                self.line_ += self.ax_.plot(
                     fpr,
                     tpr,
                     alpha=0.6,
@@ -161,7 +176,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
                     roc_auc_mean = np.mean(self.roc_auc[class_])
                     class_linestyle = LINESTYLE[(class_idx % len(LINESTYLE))][1]
 
-                    ax.plot(
+                    self.line_ += self.ax_.plot(
                         fpr,
                         tpr,
                         alpha=0.6,
@@ -179,7 +194,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
             xlabel += info_pos_label
             ylabel += info_pos_label
 
-        ax.set(
+        self.ax_.set(
             xlabel=xlabel,
             xlim=(-0.01, 1.01),
             ylabel=ylabel,
@@ -188,7 +203,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         )
 
         if plot_chance_level:
-            ax.plot(
+            self.ax_.plot(
                 (0, 1),
                 (0, 1),
                 label="Chance level (AUC = 0.5)",
@@ -197,9 +212,9 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
             )
 
         if despine:
-            _despine_matplotlib_axis(ax)
+            _despine_matplotlib_axis(self.ax_)
 
-        ax.legend(
+        self.ax_.legend(
             loc="lower right",
             title=f"{self.ml_task.title()} on $\\bf{{{self.data_source}}}$ set",
         )
