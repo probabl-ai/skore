@@ -33,7 +33,7 @@ compared estimators. In addition, we provide a sub-accessor `plot`, to
 get the common performance metric representations.
 
 .. autosummary::
-    :toctree: generated/
+    :toctree: ../api/
     :nosignatures:
     :template: autosummary/accessor_method.rst
 
