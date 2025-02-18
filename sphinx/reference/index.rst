@@ -1,3 +1,7 @@
+:orphan:
+
+.. _reference:
+
 API
 ===
 
