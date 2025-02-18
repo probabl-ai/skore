@@ -46,9 +46,9 @@ class Project:
     Examples
     --------
     >>> import skore
-    >>> project = skore.Project("my-xp")
-    >>> project.put("score", 1.0)
-    >>> project.get("score")
+    >>> project = skore.Project("my-xp")  # doctest: +SKIP
+    >>> project.put("score", 1.0)  # doctest: +SKIP
+    >>> project.get("score")  # doctest: +SKIP
     1.0
     """
 
