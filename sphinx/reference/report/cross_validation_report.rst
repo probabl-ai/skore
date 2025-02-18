@@ -3,7 +3,9 @@ Report for a cross-validation of an estimator
 
 .. currentmodule:: skore
 
-The class :class:`CrossValidationReport` performs cross-validation and provides a report to inspect and evaluate a scikit-learn estimator in an interactive way. The functionalities of the report are exposed through accessors.
+The class :class:`CrossValidationReport` performs cross-validation and provides a report
+to inspect and evaluate a scikit-learn estimator in an interactive way. The
+functionalities of the report are exposed through accessors.
 
 .. autosummary::
    :toctree: ../api/

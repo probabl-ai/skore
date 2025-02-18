@@ -10,6 +10,9 @@ from skore.project import Project, open
 from skore.sklearn import (
     CrossValidationReport,
     EstimatorReport,
+    PrecisionRecallCurveDisplay,
+    PredictionErrorDisplay,
+    RocCurveDisplay,
     train_test_split,
 )
 from skore.utils._patch import setup_jupyter_display
@@ -18,7 +21,10 @@ from skore.utils._show_versions import show_versions
 __all__ = [
     "CrossValidationReport",
     "EstimatorReport",
+    "PrecisionRecallCurveDisplay",
+    "PredictionErrorDisplay",
     "Project",
+    "RocCurveDisplay",
     "open",
     "show_versions",
     "train_test_split",
