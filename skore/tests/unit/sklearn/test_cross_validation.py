@@ -219,6 +219,31 @@ def test_cross_validation_report_pickle(tmp_path, binary_classification_data):
     joblib.dump(report, tmp_path / "report.joblib")
 
 
+def test_cross_validation_report_flat_index(binary_classification_data):
+    """Check that the index is flattened when `flat_index` is True.
+
+    Since `pos_label` is None, then by default a MultiIndex would be returned.
+    Here, we force to have a single-index by passing `flat_index=True`.
+    """
+    estimator, X, y = binary_classification_data
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=2)
+    result = report.metrics.report_metrics(flat_index=True)
+    assert result.shape == (6, 2)
+    assert isinstance(result.index, pd.Index)
+    assert result.index.tolist() == [
+        "Precision (↗︎)_0",
+        "Precision (↗︎)_1",
+        "Recall (↗︎)_0",
+        "Recall (↗︎)_1",
+        "ROC AUC (↗︎)",
+        "Brier score (↘︎)",
+    ]
+    assert result.columns.tolist() == [
+        "RandomForestClassifier_Split #0",
+        "RandomForestClassifier_Split #1",
+    ]
+
+
 ########################################################################################
 # Check the plot methods
 ########################################################################################

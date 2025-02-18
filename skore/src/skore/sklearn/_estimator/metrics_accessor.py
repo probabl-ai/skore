@@ -331,7 +331,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                         names=name_index,
                     )
 
-        results = pd.concat(scores, axis=1)
+        results = pd.concat(scores, axis=0)
         if flat_index:
             if isinstance(results.columns, pd.MultiIndex):
                 results.columns = flatten_multi_index(results.columns)
