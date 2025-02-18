@@ -100,13 +100,16 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         >>> report.metrics.report_metrics(
-        ...     scoring=["precision", "recall"], pos_label=1, aggregate=["mean", "std"]
+        ...     scoring=["precision", "recall"],
+        ...     pos_label=1,
+        ...     aggregate=["mean", "std"],
+        ...     indicator_favorability=True,
         ... )
-                    LogisticRegression
-                                    mean       std
+                  LogisticRegression           Favorability
+                                mean       std
         Metric
-        Precision                0.94...  0.024...
-        Recall                   0.96...  0.027...
+        Precision           0.94...  0.02...         (↗︎)
+        Recall              0.96...  0.02...         (↗︎)
         """
         results = self._compute_metric_scores(
             report_metric_name="report_metrics",
@@ -118,12 +121,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             scoring_names=scoring_names,
             indicator_favorability=indicator_favorability,
         )
-        if indicator_favorability:
-            # the previous call will add the "Favorability" column for each split or
-            # aggregate. We need to only keep one of them and add it to the final
-            # column.
-            favorability = results.pop("Favorability")
-            results["Favorability"] = favorability.iloc[:, 0]
 
         return results
 
@@ -181,13 +178,26 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 keys=[f"Split #{i}" for i in range(len(results))],
             )
             results = results.swaplevel(0, 1, axis=1)
+
+            # pop the favorability column if it exist to:
+            # - no use it in the aggregate operation
+            # - later to only report a single column and not by split columns
+            if metric_kwargs.get("indicator_favorability", False):
+                favorability = results.pop("Favorability").iloc[:, 0]
+            else:
+                favorability = None
+
             if aggregate:
                 if isinstance(aggregate, str):
                     aggregate = [aggregate]
+
                 results = results.aggregate(func=aggregate, axis=1)
                 results = pd.concat(
                     [results], keys=[self._parent.estimator_name_], axis=1
                 )
+
+            if favorability is not None:
+                results["Favorability"] = favorability
 
             self._parent._cache[cache_key] = results
         return results

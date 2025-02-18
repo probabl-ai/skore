@@ -704,15 +704,19 @@ def test_cross_validation_report_report_metrics_invalid_metric_type(regression_d
         report.metrics.report_metrics(scoring=[1])
 
 
+@pytest.mark.parametrize("aggregate", [None, "mean", ["mean", "std"]])
 def test_cross_validation_report_report_metrics_indicator_favorability(
-    binary_classification_data,
+    binary_classification_data, aggregate
 ):
     """Check that the behaviour of `indicator_favorability` is correct."""
     estimator, X, y = binary_classification_data
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
-    result = report.metrics.report_metrics(indicator_favorability=True)
+    result = report.metrics.report_metrics(
+        indicator_favorability=True, aggregate=aggregate
+    )
     assert "Favorability" in result.columns
     indicator = result["Favorability"]
+    assert indicator.shape == (6,)
     assert indicator["Precision"].tolist() == ["(↗︎)", "(↗︎)"]
     assert indicator["Recall"].tolist() == ["(↗︎)", "(↗︎)"]
     assert indicator["ROC AUC"].tolist() == ["(↗︎)"]

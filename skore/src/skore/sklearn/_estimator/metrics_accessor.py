@@ -116,13 +116,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     X_test=X_test,
         ...     y_test=y_test,
         ... )
-        >>> report.metrics.report_metrics(pos_label=1)
-                        LogisticRegression
+        >>> report.metrics.report_metrics(pos_label=1, indicator_favorability=True)
+                    LogisticRegression Favorability
         Metric
-        Precision                  0.98...
-        Recall                     0.93...
-        ROC AUC                    0.99...
-        Brier score                0.03...
+        Precision              0.98...         (↗︎)
+        Recall                 0.93...         (↗︎)
+        ROC AUC                0.99...         (↗︎)
+        Brier score            0.03...         (↘︎)
         """
         if data_source == "X_y":
             # optimization of the hash computation to avoid recomputing it
