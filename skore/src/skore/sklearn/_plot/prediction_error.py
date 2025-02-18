@@ -5,6 +5,7 @@ import numpy as np
 from sklearn.utils.validation import check_random_state
 
 from skore.externals._sklearn_compat import _safe_indexing
+from skore.sklearn._plot.style import StyleDisplayMixin
 from skore.sklearn._plot.utils import (
     HelpDisplayMixin,
     _despine_matplotlib_axis,
@@ -13,7 +14,7 @@ from skore.sklearn._plot.utils import (
 )
 
 
-class PredictionErrorDisplay(HelpDisplayMixin):
+class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
     """Visualization of the prediction error of a regression model.
 
     This tool can display "residuals vs predicted" or "actual vs predicted"
@@ -77,6 +78,9 @@ class PredictionErrorDisplay(HelpDisplayMixin):
     >>> display = report.metrics.prediction_error()
     >>> display.plot(kind="actual_vs_predicted")
     """
+
+    _default_scatter_kwargs = None
+    _default_line_kwargs = None
 
     def __init__(self, *, y_true, y_pred, estimator_name, data_source=None):
         self.y_true = y_true
@@ -165,10 +169,12 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         else:  # kind == "residual_vs_predicted"
             xlabel, ylabel = "Predicted values", "Residuals (actual - predicted)"
 
-        if scatter_kwargs is None:
-            scatter_kwargs = {}
-        if line_kwargs is None:
-            line_kwargs = {}
+        scatter_kwargs = (
+            self._default_scatter_kwargs if scatter_kwargs is None else scatter_kwargs
+        ) or {}
+        line_kwargs = (
+            self._default_line_kwargs if line_kwargs is None else line_kwargs
+        ) or {}
 
         if estimator_name is None:
             estimator_name = self.estimator_name

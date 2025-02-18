@@ -5,6 +5,7 @@ import numpy as np
 from sklearn.metrics import average_precision_score, precision_recall_curve
 from sklearn.preprocessing import LabelBinarizer
 
+from skore.sklearn._plot.style import StyleDisplayMixin
 from skore.sklearn._plot.utils import (
     HelpDisplayMixin,
     _ClassifierCurveDisplayMixin,
@@ -14,7 +15,9 @@ from skore.sklearn._plot.utils import (
 )
 
 
-class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
+class PrecisionRecallCurveDisplay(
+    HelpDisplayMixin, _ClassifierCurveDisplayMixin, StyleDisplayMixin
+):
     """Precision Recall visualization.
 
     An instance of this class is should created by
@@ -101,6 +104,8 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
     >>> display.plot(pr_curve_kwargs={"color": "tab:red"})
     """
 
+    _default_pr_curve_kwargs = None
+
     def __init__(
         self,
         precision,
@@ -186,6 +191,9 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
         self.ax_, self.figure_, estimator_name = self._validate_plot_params(
             ax=ax, estimator_name=estimator_name
         )
+
+        if pr_curve_kwargs is None:
+            pr_curve_kwargs = self._default_pr_curve_kwargs
 
         self.lines_ = []
         self.chance_levels_ = []
