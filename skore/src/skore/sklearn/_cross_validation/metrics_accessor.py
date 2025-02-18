@@ -111,7 +111,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Precision           0.94...  0.02...         (↗︎)
         Recall              0.96...  0.02...         (↗︎)
         """
-        results = self._compute_metric_scores(
+        return self._compute_metric_scores(
             report_metric_name="report_metrics",
             data_source=data_source,
             aggregate=aggregate,
@@ -121,8 +121,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             scoring_names=scoring_names,
             indicator_favorability=indicator_favorability,
         )
-
-        return results
 
     @progress_decorator(description="Compute metric for each split")
     def _compute_metric_scores(
