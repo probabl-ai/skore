@@ -30,8 +30,8 @@ class TestPrecisionRecallCurveDisplay:
 
         assert_equal(display.y_true, [(-1, 0, 1), (-1, 0, 1)])
         assert_equal(display.y_pred, [(0, 0.2, 0.8), (0.8, 0.2, 0)])
-        assert_equal(display.estimator_names, ["R-E1", "R-E2"])
-        assert_equal(display.data_source, "test")
+        assert display.estimator_names == ["R-E1", "R-E2"]
+        assert display.data_source == "test"
 
     @pytest.mark.parametrize("kind", ("actual_vs_predicted", "residual_vs_predicted"))
     def test_plot(self, tmp_path, regression_display, kind):

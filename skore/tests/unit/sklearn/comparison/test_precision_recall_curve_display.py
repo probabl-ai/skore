@@ -63,10 +63,10 @@ class TestPrecisionRecallCurveDisplay:
         assert_equal(display.precision, {1: [(0.5, 1, 1), (0.5, 0, 1)]})
         assert_equal(display.recall, {1: [(1, 1, 0), (1, 0, 0)]})
         assert_equal(display.average_precision, {1: [1, 0.5]})
-        assert_equal(display.estimator_names, ["BC-E1", "BC-E2"])
-        assert_equal(display.ml_task, "binary-classification")
-        assert_equal(display.pos_label, 1)
-        assert_equal(display.data_source, "test")
+        assert display.estimator_names == ["BC-E1", "BC-E2"]
+        assert display.ml_task == "binary-classification"
+        assert display.pos_label == 1
+        assert display.data_source == "test"
 
     def test_from_predictions_multiclass_classification(
         self, multiclass_classification_display
@@ -93,10 +93,10 @@ class TestPrecisionRecallCurveDisplay:
             display.average_precision,
             {0: (1, 1 / 3), 1: (1, 1 / 3), 2: (1, 1 / 3)},
         )
-        assert_equal(display.estimator_names, ["MC-E1", "MC-E2"])
-        assert_equal(display.ml_task, "multiclass-classification")
-        assert_equal(display.pos_label, None)
-        assert_equal(display.data_source, "test")
+        assert display.estimator_names == ["MC-E1", "MC-E2"]
+        assert display.ml_task == "multiclass-classification"
+        assert display.pos_label is None
+        assert display.data_source == "test"
 
     def test_plot_binary_classification(self, tmp_path, binary_classification_display):
         display = binary_classification_display

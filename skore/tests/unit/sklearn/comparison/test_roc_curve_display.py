@@ -61,10 +61,10 @@ class TestRocCurveDisplay:
         assert_equal(display.fpr, {1: [(0, 0, 1), (0, 1, 1)]})
         assert_equal(display.tpr, {1: [(0, 1, 1), (0, 0, 1)]})
         assert_equal(display.roc_auc, {1: [1, 0]})
-        assert_equal(display.estimator_names, ["BC-E1", "BC-E2"])
-        assert_equal(display.ml_task, "binary-classification")
-        assert_equal(display.pos_label, 1)
-        assert_equal(display.data_source, "test")
+        assert display.estimator_names == ["BC-E1", "BC-E2"]
+        assert display.ml_task == "binary-classification"
+        assert display.pos_label == 1
+        assert display.data_source == "test"
 
     def test_from_predictions_multiclass_classification(
         self, multiclass_classification_display
@@ -88,10 +88,10 @@ class TestRocCurveDisplay:
             },
         )
         assert_equal(display.roc_auc, {0: [1.0, 0.0], 1: [1.0, 0.0], 2: [1.0, 0.0]})
-        assert_equal(display.estimator_names, ["MC-E1", "MC-E2"])
-        assert_equal(display.ml_task, "multiclass-classification")
-        assert_equal(display.pos_label, None)
-        assert_equal(display.data_source, "test")
+        assert display.estimator_names, ["MC-E1", "MC-E2"]
+        assert display.ml_task == "multiclass-classification"
+        assert display.pos_label is None
+        assert display.data_source == "test"
 
     def test_plot_binary_classification(self, tmp_path, binary_classification_display):
         display = binary_classification_display
