@@ -144,7 +144,7 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
                     recall = self.recall[class_][report_idx]
                     average_precision_class = self.average_precision[class_]
                     average_precision = average_precision_class[report_idx]
-                    class_linestyle = LINESTYLE[(class_idx % len(LINESTYLE))]
+                    class_linestyle = LINESTYLE[(class_idx % len(LINESTYLE))][1]
 
                     (line_,) = ax.plot(
                         recall,

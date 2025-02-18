@@ -14,23 +14,23 @@ from skore.sklearn._plot.utils import (
 )
 
 LINESTYLE = [
-    "solid",
-    "dotted",
-    "dashed",
-    "dashdot",
-    (0, (1, 10)),
-    (0, (1, 5)),
-    (0, (1, 1)),
-    (5, (10, 3)),
-    (0, (5, 10)),
-    (0, (5, 5)),
-    (0, (5, 1)),
-    (0, (3, 10, 1, 10)),
-    (0, (3, 5, 1, 5)),
-    (0, (3, 1, 1, 1)),
-    (0, (3, 5, 1, 5, 1, 5)),
-    (0, (3, 10, 1, 10, 1, 10)),
-    (0, (3, 1, 1, 1, 1, 1)),
+    ("solid", "solid"),
+    ("dotted", "dotted"),
+    ("dashed", "dashed"),
+    ("dashdot", "dashdot"),
+    ("loosely dotted", (0, (1, 10))),
+    ("dotted", (0, (1, 5))),
+    ("densely dotted", (0, (1, 1))),
+    ("long dash with offset", (5, (10, 3))),
+    ("loosely dashed", (0, (5, 10))),
+    ("dashed", (0, (5, 5))),
+    ("densely dashed", (0, (5, 1))),
+    ("loosely dashdotted", (0, (3, 10, 1, 10))),
+    ("dashdotted", (0, (3, 5, 1, 5))),
+    ("densely dashdotted", (0, (3, 1, 1, 1))),
+    ("dashdotdotted", (0, (3, 5, 1, 5, 1, 5))),
+    ("loosely dashdotdotted", (0, (3, 10, 1, 10, 1, 10))),
+    ("densely dashdotdotted", (0, (3, 1, 1, 1, 1, 1))),
 ]
 
 
@@ -159,7 +159,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
                     fpr = self.fpr[class_][report_idx]
                     tpr = self.tpr[class_][report_idx]
                     roc_auc_mean = np.mean(self.roc_auc[class_])
-                    class_linestyle = LINESTYLE[(class_idx % len(LINESTYLE))]
+                    class_linestyle = LINESTYLE[(class_idx % len(LINESTYLE))][1]
 
                     ax.plot(
                         fpr,
