@@ -58,8 +58,7 @@ onBeforeMount(() => {
     padding: var(--spacing-6) var(--spacing-16);
     border: solid 1px var(--color-background-branding);
     background-color: var(--color-background-branding);
-    background-image:
-      linear-gradient(to bottom, transparent, var(--color-background-branding)),
+    background-image: linear-gradient(to bottom, transparent, var(--color-background-branding)),
       url("../assets/images/button-background.png");
     background-position:
       var(--background-offset-x) var(--background-offset-y),
