@@ -65,6 +65,17 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
 
     data_source : {"train", "test", "X_y"}, default=None
         The data source used to compute the precision recall curve.
+
+    Attributes
+    ----------
+    ax_ : matplotlib Axes
+        Axes with precision recall curve, available after calling `plot`.
+
+    figure_ : matplotlib Figure
+        Figure containing the curve, available after calling `plot`.
+
+    lines_ : list of matplotlib lines
+        The lines of the precision recall curve, available after calling `plot`.
     """
 
     def __init__(
@@ -88,6 +99,7 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
 
     def plot(
         self,
+        ax=None,
         *,
         despine=True,
     ):
@@ -95,6 +107,10 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
 
         Parameters
         ----------
+        ax : Matplotlib Axes, default=None
+            Axes object to plot on. If `None`, a new figure and axes is
+            created.
+
         despine : bool, default=True
             Whether to remove the top and right spines from the plot.
 
@@ -105,7 +121,8 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
         with this metric, the precision-recall curve is plotted without any
         interpolation as well (step-wise style).
         """
-        _, ax = plt.subplots()
+        self.figure_, self.ax_ = (ax.figure, ax) if ax else plt.subplots()
+        self.lines_ = []
 
         if self.ml_task == "binary-classification":
             for report_idx, report_name in enumerate(self.estimator_names):
@@ -113,7 +130,7 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
                 recall = self.recall[self.pos_label][report_idx]
                 average_precision = self.average_precision[self.pos_label][report_idx]
 
-                (line_,) = ax.plot(
+                self.lines_ += self.ax_.plot(
                     recall,
                     precision,
                     drawstyle="steps-post",
@@ -146,7 +163,7 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
                     average_precision = average_precision_class[report_idx]
                     class_linestyle = LINESTYLE[(class_idx % len(LINESTYLE))][1]
 
-                    (line_,) = ax.plot(
+                    self.lines_ += self.ax_.plot(
                         recall,
                         precision,
                         color=report_color,
@@ -164,7 +181,7 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
             xlabel += info_pos_label
             ylabel += info_pos_label
 
-        ax.set(
+        self.ax_.set(
             xlabel=xlabel,
             xlim=(-0.01, 1.01),
             ylabel=ylabel,
@@ -173,9 +190,9 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
         )
 
         if despine:
-            _despine_matplotlib_axis(ax)
+            _despine_matplotlib_axis(self.ax_)
 
-        ax.legend(
+        self.ax_.legend(
             loc="lower right",
             title=f"{self.ml_task.title()} on $\\bf{{{self.data_source}}}$ set",
         )

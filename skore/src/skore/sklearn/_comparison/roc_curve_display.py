@@ -140,7 +140,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
             Whether to remove the top and right spines from the plot.
         """
         self.figure_, self.ax_ = (ax.figure, ax) if ax else plt.subplots()
-        self.line_ = []
+        self.lines_ = []
 
         if self.ml_task == "binary-classification":
             for report_idx, report_name in enumerate(self.estimator_names):
@@ -148,7 +148,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
                 tpr = self.tpr[self.pos_label][report_idx]
                 roc_auc = self.roc_auc[self.pos_label][report_idx]
 
-                self.line_ += self.ax_.plot(
+                self.lines_ += self.ax_.plot(
                     fpr,
                     tpr,
                     alpha=0.6,
@@ -176,7 +176,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
                     roc_auc_mean = np.mean(self.roc_auc[class_])
                     class_linestyle = LINESTYLE[(class_idx % len(LINESTYLE))][1]
 
-                    self.line_ += self.ax_.plot(
+                    self.lines_ += self.ax_.plot(
                         fpr,
                         tpr,
                         alpha=0.6,
