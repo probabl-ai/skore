@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import functools
 import shutil
 from collections.abc import Iterator
 from logging import INFO, NullHandler, getLogger
@@ -28,7 +29,8 @@ def _raise_if_deleted(method):
     still exists.
     """
 
-    def run(self, *args, **kwargs):
+    @functools.wraps(method)
+    def wrapper(self, *args, **kwargs):
         if self._storage_initialized is not True:
             raise ProjectDeletedError(
                 "This Project instance is marked as deleted. "
@@ -37,7 +39,7 @@ def _raise_if_deleted(method):
 
         return method(self, *args, **kwargs)
 
-    return run
+    return wrapper
 
 
 class Project:
