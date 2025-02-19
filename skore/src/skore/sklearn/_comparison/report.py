@@ -123,11 +123,11 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             raise TypeError("Expected instances of EstimatorReport")
 
         test_dataset_hashes = {
-            report: joblib.hash((report.X_test, report.y_test))
+            joblib.hash((report.X_test, report.y_test))
             for report in reports
             if not ((report.X_test is None) and (report.y_test is None))
         }
-        if len(set(test_dataset_hashes.values())) > 1:
+        if len(test_dataset_hashes) > 1:
             raise ValueError("Expected all estimators to have the same testing data.")
 
         ml_tasks = {report: report._ml_task for report in reports}
