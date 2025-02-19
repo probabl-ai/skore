@@ -23,13 +23,13 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     Parameters
     ----------
-    reports : list of :class:`skore.EstimatorReport` instances \
-            or dict with estimator names as keys \
-            and :class:`skore.EstimatorReport` instances as values
+    reports : list of :class:`~skore.EstimatorReport` instances or dict
         Estimator reports to compare.
-        If `reports` is a list, the class name of each estimator is used.
-        If `reports` is a dict and the keys are not strings, they will be converted to
-        strings.
+
+        * If `reports` is a list, the class name of each estimator is used.
+        * If `reports` is a dict, it is expected to have estimator names as keys \
+        and :class:`~skore.EstimatorReport` instances as values. \
+        If the keys are not strings, they will be converted to strings.
 
     n_jobs : int, default=None
         Number of jobs to run in parallel. Training the estimators and computing
