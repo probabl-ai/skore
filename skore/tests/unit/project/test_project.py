@@ -12,6 +12,7 @@ from matplotlib.testing.compare import compare_images
 from PIL import Image
 from sklearn.ensemble import RandomForestClassifier
 from skore import Project
+from skore.project.project import ProjectDeletedError
 
 
 @pytest.fixture(autouse=True)
@@ -51,8 +52,18 @@ def test_clear(tmp_path):
 
     assert dirpath.exists()
 
+
+def test_clear_delete_project(tmp_path):
+    dirpath = tmp_path / "my-project.skore"
+    project = Project(dirpath)
+
     project.clear(delete_project=True)
     assert not dirpath.exists()
+
+    with pytest.raises(
+        ProjectDeletedError, match="This Project instance is marked as deleted"
+    ):
+        project.keys()
 
 
 def test_put_string_item(in_memory_project):

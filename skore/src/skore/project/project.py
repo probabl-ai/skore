@@ -17,6 +17,29 @@ logger.addHandler(NullHandler())  # Default to no output
 logger.setLevel(INFO)
 
 
+class ProjectDeletedError(Exception):
+    """A method of a Project was called but the Project is marked as deleted."""
+
+
+def _raise_if_deleted(method):
+    """Raise if the underlying Project has been deleted, otherwise execute `method`.
+
+    This wrapper makes it safe to "delete" a Project, even if the Project instance
+    still exists.
+    """
+
+    def run(self, *args, **kwargs):
+        if self._storage_initialized is not True:
+            raise ProjectDeletedError(
+                "This Project instance is marked as deleted. "
+                "Please re-create a Project and discard the current one."
+            )
+
+        return method(self, *args, **kwargs)
+
+    return run
+
+
 class Project:
     """
     A collection of items persisted in a storage.
@@ -98,11 +121,14 @@ class Project:
         # Initialize repositories with dedicated storages
         self._item_repository = ItemRepository(DiskCacheStorage(item_storage_dirpath))
 
+        self._storage_initialized = True
+
         # Check if the project should rejoin a server
         from skore.project._launch import ServerInfo  # avoid circular import
 
         self._server_info = ServerInfo.rejoin(self)
 
+    @_raise_if_deleted
     def clear(self, delete_project=False):
         """Remove all items from the project.
 
@@ -112,12 +138,15 @@ class Project:
             If set, the project will be deleted entirely.
         """
         if delete_project is True:
+            self._storage_initialized = False
+            del self._item_repository
             shutil.rmtree(self.path)
             return
 
         for item_key in self._item_repository:
             self._item_repository.delete_item(item_key)
 
+    @_raise_if_deleted
     def put(
         self,
         key: str,
@@ -163,6 +192,7 @@ class Project:
             ),
         )
 
+    @_raise_if_deleted
     def get(
         self,
         key: str,
@@ -224,6 +254,7 @@ class Project:
 
         raise ValueError('`version` should be -1, "all", or an integer')
 
+    @_raise_if_deleted
     def keys(self) -> list[str]:
         """
         Get all keys of items stored in the project.
@@ -235,6 +266,7 @@ class Project:
         """
         return self._item_repository.keys()
 
+    @_raise_if_deleted
     def __iter__(self) -> Iterator[str]:
         """
         Yield the keys of items stored in the project.
@@ -246,6 +278,7 @@ class Project:
         """
         yield from self._item_repository
 
+    @_raise_if_deleted
     def delete(self, key: str):
         """Delete the item corresponding to ``key`` from the Project.
 
@@ -261,6 +294,7 @@ class Project:
         """
         self._item_repository.delete_item(key)
 
+    @_raise_if_deleted
     def set_note(self, key: str, note: str, *, version=-1):
         """Attach a note to key ``key``.
 
@@ -291,6 +325,7 @@ class Project:
         """
         return self._item_repository.set_item_note(key=key, note=note, version=version)
 
+    @_raise_if_deleted
     def get_note(self, key: str, *, version=-1) -> Union[str, None]:
         """Retrieve a note previously attached to key ``key``.
 
@@ -321,6 +356,7 @@ class Project:
         """
         return self._item_repository.get_item_note(key=key, version=version)
 
+    @_raise_if_deleted
     def delete_note(self, key: str, *, version=-1):
         """Delete a note previously attached to key ``key``.
 
@@ -349,6 +385,7 @@ class Project:
         """
         return self._item_repository.delete_item_note(key=key, version=version)
 
+    @_raise_if_deleted
     def shutdown_web_ui(self):
         """Shutdown the web UI server if it is running."""
         if self._server_info is None:
