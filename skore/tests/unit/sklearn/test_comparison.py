@@ -51,14 +51,55 @@ def test_comparison_report_init_wrong_parameters(binary_classification_model):
         ComparisonReport([None, estimator_report])
 
 
-def test_comparison_report_init_without_testing_data(binary_classification_model):
-    """Raise an error if there is no test data (`None`) for any estimator
-    report."""
+def test_comparison_report_without_testing_data(binary_classification_model):
+    """If there is no test data (`None`) for some estimator report,
+    initialization works, but computing metrics can fail.
+    """
     estimator, _, _, _, _ = binary_classification_model
     estimator_report = EstimatorReport(estimator, fit=False)
 
-    with pytest.raises(ValueError, match="Cannot compare reports without testing data"):
-        ComparisonReport([estimator_report, estimator_report])
+    report = ComparisonReport([estimator_report, estimator_report])
+
+    with pytest.raises(ValueError, match="No test data"):
+        report.metrics.report_metrics(data_source="test")
+
+
+def test_comparison_report_different_test_data(binary_classification_model):
+    """Raise an error if the passed estimators do not have the same testing data."""
+    estimator, X_train, X_test, y_train, y_test = binary_classification_model
+    estimator.fit(X_train, y_train)
+
+    # The estimators that have testing data, need to have the same testing data
+    # The estimators that do not have testing data do not count
+    with pytest.raises(
+        ValueError, match="Expected all estimators to have the same testing data"
+    ):
+        ComparisonReport(
+            [
+                EstimatorReport(estimator, X_test=X_test, y_test=y_test),
+                EstimatorReport(estimator, X_test=X_test[1:], y_test=y_test[1:]),
+            ]
+        )
+
+    # The estimators without testing data (i.e. no X_test and no y_test) do not count
+    ComparisonReport(
+        [
+            EstimatorReport(estimator, X_test=X_test, y_test=y_test),
+            EstimatorReport(estimator, X_test=X_test, y_test=y_test),
+            EstimatorReport(estimator),
+        ]
+    )
+
+    # If there is an X_test but no y_test, it counts
+    with pytest.raises(
+        ValueError, match="Expected all estimators to have the same testing data"
+    ):
+        ComparisonReport(
+            [
+                EstimatorReport(estimator, fit=False, X_test=X_test, y_test=y_test),
+                EstimatorReport(estimator, fit=False, X_test=X_test),
+            ]
+        )
 
 
 def test_comparison_report_init_different_ml_usecases(
@@ -85,31 +126,6 @@ def test_comparison_report_init_different_ml_usecases(
         ValueError, match="Expected all estimators to have the same ML usecase"
     ):
         ComparisonReport([linear_regression_report, logistic_regression_report])
-
-
-def test_comparison_report_init_different_test_data(binary_classification_model):
-    """Raise an error if the passed estimators do not have the same testing data."""
-    estimator, _, X_test, _, y_test = binary_classification_model
-
-    with pytest.raises(
-        ValueError, match="Expected all estimators to have the same testing data"
-    ):
-        ComparisonReport(
-            [
-                EstimatorReport(
-                    estimator,
-                    fit=False,
-                    X_test=X_test,
-                    y_test=y_test,
-                ),
-                EstimatorReport(
-                    estimator,
-                    fit=False,
-                    X_test=X_test[:-1],
-                    y_test=y_test[:-1],
-                ),
-            ]
-        )
 
 
 def test_comparison_report_init_with_report_names(binary_classification_model):
