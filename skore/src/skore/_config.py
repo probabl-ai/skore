@@ -30,8 +30,8 @@ def get_config():
 
     See Also
     --------
-    config_context : Context manager for global skore configuration.
-    set_config : Set global skore configuration.
+    config_context : Context manager for skore configuration.
+    set_config : Set skore configuration.
 
     Examples
     --------
@@ -48,7 +48,11 @@ def get_config():
 def set_config(
     show_progress: bool = None,
 ):
-    """Set global skore configuration.
+    """Set skore configuration.
+
+    Setting the configuration affects global settings meaning that it will be used
+    by all skore functions and classes, even in the processes and threads spawned by
+    skore.
 
     Parameters
     ----------
@@ -57,8 +61,8 @@ def set_config(
 
     See Also
     --------
-    config_context : Context manager for global skore configuration.
-    get_config : Retrieve current values of the global configuration.
+    config_context : Context manager for skore configuration.
+    get_config : Retrieve current values of the configuration.
 
     Examples
     --------
@@ -76,7 +80,11 @@ def config_context(
     *,
     show_progress: bool = None,
 ):
-    """Context manager for global skore configuration.
+    """Context manager for skore configuration.
+
+    Setting the configuration affects global settings meaning that it will be used
+    by all skore functions and classes, even in the processes and threads spawned by
+    skore.
 
     Parameters
     ----------
@@ -89,8 +97,8 @@ def config_context(
 
     See Also
     --------
-    set_config : Set global skore configuration.
-    get_config : Retrieve current values of the global configuration.
+    set_config : Set skore configuration.
+    get_config : Retrieve current values of the configuration.
 
     Notes
     -----
