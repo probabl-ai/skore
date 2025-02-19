@@ -110,17 +110,16 @@ div.docutils.container.index-box {
 
 
 /* Change the colors to the orange and blue of skore */
-
 html[data-theme="dark"]{
-    --pst-color-primary: #F89A36;
-    --pst-color-secondary: #3499CD;
+    --pst-color-primary: #f89a36;
+    --pst-color-secondary: #3499cd;
+    --pst-color-inline-code-links: var(--pst-color-primary);
 }
 
 /* 
-choose darker colors for light to ensure at least AA contrast https://www.w3.org/TR/WCAG20/#visual-audio-contrast-contrast 
+Choose darker colors for light to ensure at least AA contrast https://www.w3.org/TR/WCAG20/#visual-audio-contrast-contrast 
 Tool to test: https://docusaurus.io/docs/styling-layout
 */
-
 html[data-theme="light"]{
     --pst-color-primary: #ad5d06;
     --pst-color-secondary: #297ba6;

@@ -17,6 +17,11 @@ SPHINXBUILD ?= sphinx-build
 SOURCEDIR   = .
 BUILDDIR    = build
 
+# Build the docs without the examples, which can take a long time to run
+# From https://sphinx-gallery.github.io/stable/advanced.html#id4
+html-noplot:
+	@$(SPHINXBUILD) --builder html --define plot_gallery=0 "$(SOURCEDIR)" "$(BUILDDIR)/html" $(SPHINXOPTS) $(O)
+
 # Put it first so that "make" without argument is like "make help".
 help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
