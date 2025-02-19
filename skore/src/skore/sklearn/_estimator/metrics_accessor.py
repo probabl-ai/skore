@@ -363,18 +363,18 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         metric_params = inspect.signature(metric_fn).parameters
         if "pos_label" in metric_params:
             cache_key += (pos_label,)
-        if metric_kwargs != {}:
-            # we need to enforce the order of the parameter for a specific metric
-            # to make sure that we hit the cache in a consistent way
-            ordered_metric_kwargs = sorted(metric_kwargs.keys())
-            cache_key += tuple(
-                (
-                    joblib.hash(metric_kwargs[key])
-                    if isinstance(metric_kwargs[key], np.ndarray)
-                    else metric_kwargs[key]
-                )
-                for key in ordered_metric_kwargs
+
+        # we need to enforce the order of the parameter for a specific metric
+        # to make sure that we hit the cache in a consistent way
+        ordered_metric_kwargs = sorted(metric_kwargs.keys())
+        cache_key += tuple(
+            (
+                joblib.hash(metric_kwargs[key])
+                if isinstance(metric_kwargs[key], np.ndarray)
+                else metric_kwargs[key]
             )
+            for key in ordered_metric_kwargs
+        )
 
         if cache_key in self._parent._cache:
             score = self._parent._cache[cache_key]
