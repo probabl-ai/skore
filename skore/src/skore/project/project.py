@@ -143,7 +143,7 @@ class Project:
         delete_project : bool
             If set, the project will be deleted entirely.
         """
-        if delete_project is True:
+        if delete_project:
             self._storage_initialized = False
             del self._item_repository
             shutil.rmtree(self.path)
