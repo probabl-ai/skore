@@ -132,6 +132,12 @@ class Project:
     def clear(self, delete_project=False):
         """Remove all items from the project.
 
+        .. warning::
+           Clearing the project with `delete_project=True` will invalidate the whole
+           `Project` instance, making it unusable.
+           A new Project instance can be created using the :class:`skore.Project`
+           constructor or the :func:`skore.open` function.
+
         Parameters
         ----------
         delete_project : bool
