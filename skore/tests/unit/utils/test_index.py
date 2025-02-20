@@ -24,10 +24,22 @@ from skore.utils._index import flatten_multi_index
         pytest.param(
             [("a@b", "1#2"), ("c&d", "3$4")],
             ["letter", "number"],
-            ["a@b_1#2", "c&d_3$4"],
+            ["a@b_12", "c&d_3$4"],
             id="special_chars",
         ),
         pytest.param([], ["letter", "number"], [], id="empty"),
+        pytest.param(
+            [("hello world", "a b"), ("space test", "x y")],
+            ["text", "more"],
+            ["hello_world_a_b", "space_test_x_y"],
+            id="spaces",
+        ),
+        pytest.param(
+            [("a#b#c", "1#2#3"), ("x#y", "5#6")],
+            ["text", "numbers"],
+            ["abc_123", "xy_56"],
+            id="hash_symbols",
+        ),
     ],
 )
 def test_flatten_multi_index(input_tuples, names, expected_values):

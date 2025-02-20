@@ -5,7 +5,8 @@ def flatten_multi_index(index: pd.MultiIndex) -> pd.Index:
     """Flatten a pandas MultiIndex into a single-level Index.
 
     Flatten a pandas `MultiIndex` into a single-level Index by joining the levels
-    with underscores. Empty strings are skipped when joining.
+    with underscores. Empty strings are skipped when joining. Spaces are replaced by
+    an underscore and "#" are skipped.
 
     Parameters
     ----------
@@ -29,4 +30,9 @@ def flatten_multi_index(index: pd.MultiIndex) -> pd.Index:
     if not isinstance(index, pd.MultiIndex):
         raise ValueError("`index` must be a MultiIndex.")
 
-    return pd.Index(["_".join(filter(bool, map(str, values))) for values in index])
+    return pd.Index(
+        [
+            "_".join(filter(bool, map(str, values))).replace(" ", "_").replace("#", "")
+            for values in index
+        ]
+    )
