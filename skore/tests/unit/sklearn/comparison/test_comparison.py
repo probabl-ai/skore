@@ -4,10 +4,16 @@ from io import BytesIO
 import joblib
 import pandas as pd
 import pytest
+from numpy.testing import assert_allclose
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
 from skore import ComparisonReport, EstimatorReport
+from skore.sklearn._comparison.metrics_accessor import (
+    PrecisionRecallCurveDisplay,
+    PredictionErrorDisplay,
+    RocCurveDisplay,
+)
 
 
 @pytest.fixture
@@ -534,3 +540,114 @@ def test_comparison_report_custom_metric_X_y(binary_classification_model):
         y=y_test,
     )
     pd.testing.assert_frame_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    "ml_task, plot_name, plot_cls, plot_attributes",
+    [
+        (
+            "binary_classification",
+            "roc",
+            RocCurveDisplay,
+            {
+                "fpr": {1: [[0, 0, 0, 1], [0, 0, 0, 1]]},
+                "tpr": {1: [[0, 0.1, 1, 1], [0, 0.1, 1, 1]]},
+                "roc_auc": {1: [1, 1]},
+            },
+        ),
+        (
+            "binary_classification",
+            "precision_recall",
+            PrecisionRecallCurveDisplay,
+            {
+                "precision": {
+                    1: [
+                        [0.4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                        [0.4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                    ],
+                },
+                "recall": {
+                    1: [
+                        [1, 1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0],
+                        [1, 1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0],
+                    ]
+                },
+                "average_precision": {1: [0.99, 0.99]},
+            },
+        ),
+        (
+            "regression",
+            "prediction_error",
+            PredictionErrorDisplay,
+            {
+                "y_true": [
+                    (
+                        [0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0]
+                        + [1, 1, 1, 0]
+                    ),
+                    (
+                        [0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0]
+                        + [1, 1, 1, 0]
+                    ),
+                ],
+                "y_pred": [
+                    (
+                        [0.32, 1.25, 0.94, 0.77, -0.58, 0.89, 0.12, 0.51, 0.70, 0.52]
+                        + [0.44, 0.14, 0.15, -0.13, -0.27, 0.24, 0.90, 0.22, 0.04]
+                        + [-0.18, 0.20, 0.66, 0.99, 0.70, -0.03]
+                    ),
+                    (
+                        [0.32, 1.25, 0.94, 0.77, -0.58, 0.89, 0.12, 0.51, 0.70, 0.52]
+                        + [0.44, 0.14, 0.15, -0.13, -0.27, 0.24, 0.90, 0.22, 0.04]
+                        + [-0.18, 0.20, 0.66, 0.99, 0.70, -0.03]
+                    ),
+                ],
+            },
+        ),
+    ],
+)
+def test_comparison_report_plots(
+    ml_task,
+    plot_name,
+    plot_cls,
+    plot_attributes,
+    binary_classification_model,
+    regression_model,
+):
+    estimator, X_train, X_test, y_train, y_test = (
+        binary_classification_model
+        if ml_task == "binary_classification"
+        else regression_model
+    )
+    estimator_report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+    comp = ComparisonReport([estimator_report, estimator_report])
+
+    # Ensure display object is available
+    display = getattr(comp.metrics, plot_name)()
+
+    # Ensure display object is of good type
+    assert isinstance(display, plot_cls)
+
+    # Ensure all attributes are well set
+    for attribute, value in plot_attributes.items():
+        display_attribute_value = getattr(display, attribute)
+
+        if isinstance(value, dict):
+            for k, v in value.items():
+                assert isinstance(display_attribute_value, dict)
+                assert k in display_attribute_value
+                assert_allclose(display_attribute_value[k], v, atol=1e-2)
+        elif isinstance(value, list):
+            assert_allclose(display_attribute_value, value, atol=1e-2)
+        else:
+            raise NotImplementedError
+
+    # Ensure plot is callable
+    display.plot()
