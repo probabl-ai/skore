@@ -1,5 +1,6 @@
 import re
 from copy import deepcopy
+from io import BytesIO
 from numbers import Real
 
 import joblib
@@ -284,6 +285,11 @@ def test_estimator_report_help(capsys, binary_classification_data):
     captured = capsys.readouterr()
     assert f"Tools to diagnose estimator {estimator.__class__.__name__}" in captured.out
 
+    # Check that we have a line with accuracy and the arrow associated with it
+    assert re.search(
+        r"\.accuracy\([^)]*\).*\(↗︎\).*-.*accuracy", captured.out, re.MULTILINE
+    )
+
 
 def test_estimator_report_repr(binary_classification_data):
     """Check that __repr__ returns a string starting with the expected prefix."""
@@ -330,7 +336,7 @@ def test_estimator_report_cache_predictions(
     assert report._cache.keys() == stored_cache.keys()
 
 
-def test_estimator_report_pickle(tmp_path, binary_classification_data):
+def test_estimator_report_pickle(binary_classification_data):
     """Check that we can pickle an estimator report.
 
     In particular, the progress bar from rich are pickable, therefore we trigger
@@ -339,7 +345,9 @@ def test_estimator_report_pickle(tmp_path, binary_classification_data):
     estimator, X_test, y_test = binary_classification_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     report.cache_predictions()
-    joblib.dump(report, tmp_path / "report.joblib")
+
+    with BytesIO() as stream:
+        joblib.dump(report, stream)
 
 
 ########################################################################################
@@ -619,6 +627,7 @@ def test_estimator_report_report_metrics_binary(
     result = report.metrics.report_metrics(
         pos_label=pos_label, data_source=data_source, **kwargs
     )
+    assert "Favorability" not in result.columns
     expected_metrics = ("precision", "recall", "roc_auc", "brier_score")
     # depending on `pos_label`, we report a stats for each class or not for
     # precision and recall
@@ -666,6 +675,7 @@ def test_estimator_report_report_metrics_multiclass(
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
     result = report.metrics.report_metrics(data_source=data_source, **kwargs)
+    assert "Favorability" not in result.columns
     expected_metrics = ("precision", "recall", "roc_auc", "log_loss")
     # since we are not averaging by default, we report 3 statistics for
     # precision, recall and roc_auc
@@ -690,6 +700,7 @@ def test_estimator_report_report_metrics_regression(regression_data, data_source
     kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     result = report.metrics.report_metrics(data_source=data_source, **kwargs)
+    assert "Favorability" not in result.columns
     expected_metrics = ("r2", "rmse")
     _check_results_report_metrics(result, expected_metrics, len(expected_metrics))
 
@@ -753,6 +764,21 @@ def test_estimator_report_report_metrics_overwrite_scoring_names(
         else result.index.tolist()
     )
     assert result_index == expected_columns
+
+
+def test_estimator_report_report_metrics_indicator_favorability(
+    binary_classification_data,
+):
+    """Check that the behaviour of `indicator_favorability` is correct."""
+    estimator, X_test, y_test = binary_classification_data
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    result = report.metrics.report_metrics(indicator_favorability=True)
+    assert "Favorability" in result.columns
+    indicator = result["Favorability"]
+    assert indicator["Precision"].tolist() == ["(↗︎)", "(↗︎)"]
+    assert indicator["Recall"].tolist() == ["(↗︎)", "(↗︎)"]
+    assert indicator["ROC AUC"].tolist() == ["(↗︎)"]
+    assert indicator["Brier score"].tolist() == ["(↘︎)"]
 
 
 def test_estimator_report_interaction_cache_metrics(regression_multioutput_data):

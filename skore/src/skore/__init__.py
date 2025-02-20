@@ -5,10 +5,15 @@ import logging
 from rich.console import Console
 from rich.theme import Theme
 
+from skore._config import config_context, get_config, set_config
 from skore.project import Project, open
 from skore.sklearn import (
+    ComparisonReport,
     CrossValidationReport,
     EstimatorReport,
+    PrecisionRecallCurveDisplay,
+    PredictionErrorDisplay,
+    RocCurveDisplay,
     train_test_split,
 )
 from skore.utils._patch import setup_jupyter_display
@@ -16,11 +21,18 @@ from skore.utils._show_versions import show_versions
 
 __all__ = [
     "CrossValidationReport",
+    "ComparisonReport",
     "EstimatorReport",
+    "PrecisionRecallCurveDisplay",
+    "PredictionErrorDisplay",
     "Project",
+    "RocCurveDisplay",
     "open",
     "show_versions",
     "train_test_split",
+    "config_context",
+    "get_config",
+    "set_config",
 ]
 
 logger = logging.getLogger(__name__)

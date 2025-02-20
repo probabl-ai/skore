@@ -8,6 +8,8 @@ from rich.progress import (
     TextColumn,
 )
 
+from skore._config import get_config
+
 T = TypeVar("T")
 DescriptionType = Union[str, Callable[..., str]]
 
@@ -53,6 +55,7 @@ def progress_decorator(
                     TextColumn("[orange1]{task.percentage:>3.0f}%"),
                     expand=False,
                     transient=True,
+                    disable=not get_config()["show_progress"],
                 )
                 progress.start()
 

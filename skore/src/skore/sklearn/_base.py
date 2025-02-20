@@ -136,7 +136,7 @@ class _BaseReport(_HelpMixin):
 
     def _create_help_tree(self) -> Tree:
         """Create a rich Tree with the available tools and accessor methods."""
-        tree = Tree("report")
+        tree = Tree(self.__class__.__name__)
 
         # Add accessor methods first
         for accessor_attr, config in self._ACCESSOR_CONFIG.items():

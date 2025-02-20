@@ -273,7 +273,6 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         else:
             self.line_ = ax.plot(x_range_perfect_pred, [0, 0], **perfect_line_kwargs)[0]
             ax.set(
-                aspect="equal",
                 xlim=x_range_perfect_pred,
                 ylim=y_range_perfect_pred,
                 xticks=np.linspace(

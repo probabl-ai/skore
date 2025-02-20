@@ -1,4 +1,5 @@
 import inspect
+import typing
 from functools import partial
 from typing import Any, Callable, Literal, Optional, Union
 
@@ -19,6 +20,9 @@ from skore.sklearn._plot import (
 )
 from skore.sklearn.types import SKLearnScorer
 from skore.utils._accessor import _check_supported_ml_task
+
+if typing.TYPE_CHECKING:
+    from skore.sklearn._estimator.report import EstimatorReport
 
 DataSource = Literal["test", "train", "X_y"]
 
@@ -42,7 +46,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         "report_metrics": {"name": "Report metrics", "icon": ""},
     }
 
-    def __init__(self, parent: Any) -> None:
+    def __init__(self, parent: EstimatorReport) -> None:
         super().__init__(parent)
 
     def report_metrics(
@@ -55,6 +59,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         scoring_names: Optional[list[str]] = None,
         pos_label: Optional[Union[int, float, bool, str]] = None,
         scoring_kwargs: Optional[dict[str, Any]] = None,
+        indicator_favorability: bool = False,
     ) -> pd.DataFrame:
         """Report a set of metrics for our estimator.
 
@@ -94,6 +99,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         scoring_kwargs : dict, default=None
             The keyword arguments to pass to the scoring functions.
 
+        indicator_favorability : bool, default=False
+            Whether or not to add an indicator of the favorability of the metric as
+            an extra column in the returned DataFrame.
+
         Returns
         -------
         pd.DataFrame
@@ -116,13 +125,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     X_test=X_test,
         ...     y_test=y_test,
         ... )
-        >>> report.metrics.report_metrics(pos_label=1)
-                        LogisticRegression
+        >>> report.metrics.report_metrics(pos_label=1, indicator_favorability=True)
+                    LogisticRegression Favorability
         Metric
-        Precision (↗︎)              0.98...
-        Recall (↗︎)                 0.93...
-        ROC AUC (↗︎)                0.99...
-        Brier score (↘︎)            0.03...
+        Precision              0.98...         (↗︎)
+        Recall                 0.93...         (↗︎)
+        ROC AUC                0.99...         (↗︎)
+        Brier score            0.03...         (↘︎)
         """
         if data_source == "X_y":
             # optimization of the hash computation to avoid recomputing it
@@ -168,6 +177,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             scoring_names = [None] * len(scoring)
 
         scores = []
+        favorability_indicator = []
         for metric_name, metric in zip(scoring_names, scoring):
             # NOTE: we have to check specifically for `_BaseScorer` first because this
             # is also a callable but it has a special private API that we can leverage
@@ -195,6 +205,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                         metrics_kwargs["pos_label"] = pos_label
                 if metric_name is None:
                     metric_name = metric._score_func.__name__
+                metric_favorability = "↗︎" if metric._sign == 1 else "↘︎"
+                favorability_indicator.append(metric_favorability)
             elif isinstance(metric, str) or callable(metric):
                 if isinstance(metric, str):
                     err_msg = (
@@ -214,10 +226,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                     metric_fn = getattr(self, metric)
                     metrics_kwargs = {"data_source_hash": data_source_hash}
                     if metric_name is None:
-                        metric_name = (
-                            f"{self._SCORE_OR_LOSS_INFO[metric[1:]]['name']} "
-                            f"{self._SCORE_OR_LOSS_INFO[metric[1:]]['icon']}"
-                        )
+                        metric_name = f"{self._SCORE_OR_LOSS_INFO[metric[1:]]['name']}"
+                    metric_favorability = self._SCORE_OR_LOSS_INFO[metric[1:]]["icon"]
+                    favorability_indicator.append(metric_favorability)
                 else:
                     metric_fn = partial(self._custom_metric, metric_function=metric)
                     if scoring_kwargs is None:
@@ -234,6 +245,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                     metrics_kwargs["data_source_hash"] = data_source_hash
                     if metric_name is None:
                         metric_name = metric.__name__
+                    metric_favorability = ""
+                    favorability_indicator.append(metric_favorability)
                 metrics_params = inspect.signature(metric_fn).parameters
                 if scoring_kwargs is not None:
                     for param in metrics_params:
@@ -306,9 +319,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             else:  # unknown task - try our best
                 index = [metric_name] if len(score) == 1 else None
 
-            scores.append(
-                pd.DataFrame(score, index=index, columns=[self._parent.estimator_name_])
+            score = pd.DataFrame(
+                score, index=index, columns=[self._parent.estimator_name_]
             )
+            if indicator_favorability:
+                score["Favorability"] = metric_favorability
+
+            scores.append(score)
 
         has_multilevel = any(
             isinstance(score, pd.DataFrame) and isinstance(score.index, pd.MultiIndex)
@@ -357,18 +374,18 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         metric_params = inspect.signature(metric_fn).parameters
         if "pos_label" in metric_params:
             cache_key += (pos_label,)
-        if metric_kwargs != {}:
-            # we need to enforce the order of the parameter for a specific metric
-            # to make sure that we hit the cache in a consistent way
-            ordered_metric_kwargs = sorted(metric_kwargs.keys())
-            cache_key += tuple(
-                (
-                    joblib.hash(metric_kwargs[key])
-                    if isinstance(metric_kwargs[key], np.ndarray)
-                    else metric_kwargs[key]
-                )
-                for key in ordered_metric_kwargs
+
+        # we need to enforce the order of the parameter for a specific metric
+        # to make sure that we hit the cache in a consistent way
+        ordered_metric_kwargs = sorted(metric_kwargs.keys())
+        cache_key += tuple(
+            (
+                joblib.hash(metric_kwargs[key])
+                if isinstance(metric_kwargs[key], np.ndarray)
+                else metric_kwargs[key]
             )
+            for key in ordered_metric_kwargs
+        )
 
         if cache_key in self._parent._cache:
             score = self._parent._cache[cache_key]

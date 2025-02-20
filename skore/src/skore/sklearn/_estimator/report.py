@@ -4,7 +4,6 @@ import warnings
 from itertools import product
 from typing import Literal, Optional, Union
 
-import joblib
 import numpy as np
 from numpy.typing import ArrayLike
 from sklearn.base import BaseEstimator, clone
@@ -16,6 +15,7 @@ from skore.externals._pandas_accessors import DirNamesMixin
 from skore.externals._sklearn_compat import is_clusterer
 from skore.sklearn._base import _BaseReport, _get_cached_response_values
 from skore.sklearn.find_ml_task import _find_ml_task
+from skore.utils._parallel import Parallel, delayed
 from skore.utils._progress_bar import progress_decorator
 
 
@@ -234,11 +234,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         if self._X_train is not None:
             data_sources += [("train", self._X_train)]
 
-        parallel = joblib.Parallel(
-            n_jobs=n_jobs, return_as="generator", require="sharedmem"
-        )
+        parallel = Parallel(n_jobs=n_jobs, return_as="generator", require="sharedmem")
         generator = parallel(
-            joblib.delayed(_get_cached_response_values)(
+            delayed(_get_cached_response_values)(
                 cache=self._cache,
                 estimator_hash=self._hash,
                 estimator=self._estimator,
