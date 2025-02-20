@@ -1200,29 +1200,97 @@ def test_estimator_has_no_deep_copy():
 ########################################################################################
 
 
-def test_estimator_report_model_weights_numpy_arrays():
+@pytest.mark.parametrize(
+    "data, expected",
+    [
+        (
+            make_regression(n_features=5, random_state=42),
+            pd.DataFrame(
+                data=[
+                    -1.776357e-15,
+                    6.459172e01,
+                    9.865152e01,
+                    5.707783e01,
+                    6.057748e01,
+                    3.560967e01,
+                ],
+                index=[
+                    "Intercept",
+                    "Feature #0",
+                    "Feature #1",
+                    "Feature #2",
+                    "Feature #3",
+                    "Feature #4",
+                ],
+                columns=["Coefficient"],
+            ),
+        ),
+        (
+            make_regression(n_features=5, n_targets=3, random_state=42),
+            pd.DataFrame(
+                data=[
+                    [-8.88178420e-16, 8.21565038e-15, -1.60982339e-15],
+                    [1.60681373e01, 1.86567024e01, 2.85095169e01],
+                    [1.01782473e01, 1.52859139e01, 2.45957728e01],
+                    [1.73373595e01, 8.96765425e01, 8.02337457e00],
+                    [6.45917241e01, 5.70778305e01, 3.56096726e01],
+                    [9.86515249e01, 6.05774819e01, 2.37226792e01],
+                ],
+                index=[
+                    "Intercept",
+                    "Feature #0",
+                    "Feature #1",
+                    "Feature #2",
+                    "Feature #3",
+                    "Feature #4",
+                ],
+                columns=["Target #0", "Target #1", "Target #2"],
+            ),
+        ),
+    ],
+)
+def test_estimator_report_model_weights_numpy_arrays(data, expected):
+    X, y = data
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+
+    linear_regression = LinearRegression().fit(X_train, y_train)
+
+    report = EstimatorReport(linear_regression)
+    result = report.feature_importance.model_weights()
+
+    pd.testing.assert_frame_equal(result, expected)
+
+
+def test_estimator_report_model_weights_pipeline():
     X, y = make_regression(n_features=5, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42
     )
-    linear_regression = LinearRegression().fit(X_train, y_train)
+    estimator = Pipeline([("scaler", StandardScaler()), ("reg", LinearRegression())])
 
-    report = EstimatorReport(linear_regression)
-    result = report.metrics.model_weights()
+    estimator.fit(X_train, y_train)
 
-    expected = pd.DataFrame(
-        data=[
-            -1.776357e-15,
-            6.459172e01,
-            9.865152e01,
-            5.707783e01,
-            6.057748e01,
-            3.560967e01,
-        ],
-        index=pd.Index(["intercept", 0, 1, 2, 3, 4], name="Feature"),
-        columns=["Coefficient"],
-    )
+    report = EstimatorReport(estimator)
+    result = report.feature_importance.model_weights()
+
+    expected = None
     pd.testing.assert_frame_equal(result, expected)
+
+
+def test_estimator_report_model_weights_logistic_regression():
+    """If the estimator has a coef_ attribute but is not a regressor, the
+    model_weights is not available.
+
+    In particular, logistic regression is not a regressor.
+    """
+
+    X, y = make_classification(random_state=42)
+    logistic_regression = LogisticRegression().fit(X, y)
+    report = EstimatorReport(logistic_regression)
+    with pytest.raises(AttributeError, match="no attribute 'model_weights'"):
+        report.feature_importance.model_weights()
 
 
 def test_estimator_report_model_weights_pandas_dataframe():
@@ -1232,12 +1300,12 @@ def test_estimator_report_model_weights_pandas_dataframe():
         X, y, test_size=0.2, random_state=42
     )
     X_train = pd.DataFrame(
-        X_train, columns=[f"feature_{i}" for i in range(X_train.shape[1])]
+        X_train, columns=[f"my_feature_{i}" for i in range(X_train.shape[1])]
     )
     linear_regression = LinearRegression().fit(X_train, y_train)
 
     report = EstimatorReport(linear_regression)
-    result = report.metrics.model_weights()
+    result = report.feature_importance.model_weights()
 
     expected = pd.DataFrame(
         data=[
@@ -1248,17 +1316,14 @@ def test_estimator_report_model_weights_pandas_dataframe():
             6.057748e01,
             3.560967e01,
         ],
-        index=pd.Index(
-            [
-                "intercept",
-                "feature_0",
-                "feature_1",
-                "feature_2",
-                "feature_3",
-                "feature_4",
-            ],
-            name="Feature",
-        ),
+        index=[
+            "Intercept",
+            "my_feature_0",
+            "my_feature_1",
+            "my_feature_2",
+            "my_feature_3",
+            "my_feature_4",
+        ],
         columns=["Coefficient"],
     )
     pd.testing.assert_frame_equal(result, expected)
