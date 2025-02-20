@@ -534,3 +534,31 @@ def test_comparison_report_custom_metric_X_y(binary_classification_model):
         y=y_test,
     )
     pd.testing.assert_frame_equal(result, expected)
+
+
+def test_cross_validation_report_flat_index(binary_classification_model):
+    """Check that the index is flattened when `flat_index` is True.
+
+    Since `pos_label` is None, then by default a MultiIndex would be returned.
+    Here, we force to have a single-index by passing `flat_index=True`.
+    """
+    estimator, X_train, X_test, y_train, y_test = binary_classification_model
+    report_1 = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report_2 = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report = ComparisonReport({"report_1": report_1, "report_2": report_2})
+    result = report.metrics.report_metrics(flat_index=True)
+    assert result.shape == (6, 2)
+    assert isinstance(result.index, pd.Index)
+    assert result.index.tolist() == [
+        "Precision (↗︎)_0",
+        "Precision (↗︎)_1",
+        "Recall (↗︎)_0",
+        "Recall (↗︎)_1",
+        "ROC AUC (↗︎)",
+        "Brier score (↘︎)",
+    ]
+    assert result.columns.tolist() == ["report_1", "report_2"]
