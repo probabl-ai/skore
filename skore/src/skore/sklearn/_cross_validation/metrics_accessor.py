@@ -1,4 +1,3 @@
-import typing
 from typing import Any, Callable, Literal, Optional, Union
 
 import joblib
@@ -11,6 +10,7 @@ from sklearn.utils.metaestimators import available_if
 
 from skore.externals._pandas_accessors import DirNamesMixin
 from skore.sklearn._base import _BaseAccessor, _get_cached_response_values
+from skore.sklearn._cross_validation.report import CrossValidationReport
 from skore.sklearn._plot import (
     PrecisionRecallCurveDisplay,
     PredictionErrorDisplay,
@@ -20,10 +20,6 @@ from skore.utils._accessor import _check_supported_ml_task
 from skore.utils._index import flatten_multi_index
 from skore.utils._parallel import Parallel, delayed
 from skore.utils._progress_bar import progress_decorator
-
-if typing.TYPE_CHECKING:
-    from skore.sklearn._cross_validation.report import CrossValidationReport
-
 
 DataSource = Literal["test", "train"]
 

@@ -1,5 +1,4 @@
 import inspect
-import typing
 from functools import partial
 from typing import Any, Callable, Literal, Optional, Union
 
@@ -13,6 +12,7 @@ from sklearn.utils.metaestimators import available_if
 
 from skore.externals._pandas_accessors import DirNamesMixin
 from skore.sklearn._base import _BaseAccessor, _get_cached_response_values
+from skore.sklearn._estimator.report import EstimatorReport
 from skore.sklearn._plot import (
     PrecisionRecallCurveDisplay,
     PredictionErrorDisplay,
@@ -21,9 +21,6 @@ from skore.sklearn._plot import (
 from skore.sklearn.types import SKLearnScorer
 from skore.utils._accessor import _check_supported_ml_task
 from skore.utils._index import flatten_multi_index
-
-if typing.TYPE_CHECKING:
-    from skore.sklearn._estimator.report import EstimatorReport
 
 DataSource = Literal["test", "train", "X_y"]
 
@@ -1466,8 +1463,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     def _get_display(
         self,
         *,
-        X: Optional[ArrayLike],
-        y: Optional[ArrayLike],
+        X: Union[ArrayLike, None],
+        y: Union[ArrayLike, None],
         data_source: DataSource,
         response_method: Union[str, list[str]],
         display_class: type,

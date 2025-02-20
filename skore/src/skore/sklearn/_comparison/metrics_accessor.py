@@ -1,4 +1,3 @@
-import typing
 from typing import Any, Callable, Literal, Optional, Union
 
 import joblib
@@ -16,14 +15,11 @@ from skore.sklearn._comparison.precision_recall_curve_display import (
     PrecisionRecallCurveDisplay,
 )
 from skore.sklearn._comparison.prediction_error_display import PredictionErrorDisplay
+from skore.sklearn._comparison.report import ComparisonReport
 from skore.sklearn._comparison.roc_curve_display import RocCurveDisplay
 from skore.utils._accessor import _check_supported_ml_task
 from skore.utils._index import flatten_multi_index
 from skore.utils._progress_bar import progress_decorator
-
-if typing.TYPE_CHECKING:
-    from skore.sklearn._comparison.report import ComparisonReport
-
 
 DataSource = Literal["test", "train", "X_y"]
 
