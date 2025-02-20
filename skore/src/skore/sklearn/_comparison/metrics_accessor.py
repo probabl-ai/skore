@@ -13,6 +13,7 @@ from sklearn.utils.metaestimators import available_if
 from skore.externals._pandas_accessors import DirNamesMixin
 from skore.sklearn._base import _BaseAccessor
 from skore.utils._accessor import _check_supported_ml_task
+from skore.utils._index import flatten_multi_index
 from skore.utils._progress_bar import progress_decorator
 
 if typing.TYPE_CHECKING:
@@ -54,9 +55,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         y: Optional[ArrayLike] = None,
         scoring: Optional[Union[list[str], Callable, SKLearnScorer]] = None,
         scoring_names: Optional[list[str]] = None,
-        pos_label: Optional[Union[int, float, bool, str]] = None,
         scoring_kwargs: Optional[dict[str, Any]] = None,
+        pos_label: Optional[Union[int, float, bool, str]] = None,
         indicator_favorability: bool = False,
+        flat_index: bool = False,
     ):
         """Report a set of metrics for the estimators.
 
@@ -90,15 +92,19 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             Used to overwrite the default scoring names in the report. It should be of
             the same length as the ``scoring`` parameter.
 
-        pos_label : int, float, bool or str, default=None
-            The positive class.
-
         scoring_kwargs : dict, default=None
             The keyword arguments to pass to the scoring functions.
+
+        pos_label : int, float, bool or str, default=None
+            The positive class.
 
         indicator_favorability : bool, default=False
             Whether or not to add an indicator of the favorability of the metric as
             an extra column in the returned DataFrame.
+
+        flat_index : bool, default=False
+            Whether to flatten the `MultiIndex` columns. Flat index will always be lower
+            case, do not include spaces and remove the hash symbol to ease indexing.
 
         Returns
         -------
@@ -141,7 +147,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Precision                  0.96...             0.96...
         Recall                     0.97...             0.97...
         """
-        return self._compute_metric_scores(
+        results = self._compute_metric_scores(
             report_metric_name="report_metrics",
             data_source=data_source,
             X=X,
@@ -152,6 +158,12 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             scoring_names=scoring_names,
             indicator_favorability=indicator_favorability,
         )
+        if flat_index:
+            if isinstance(results.columns, pd.MultiIndex):
+                results.columns = flatten_multi_index(results.columns)
+            if isinstance(results.index, pd.MultiIndex):
+                results.index = flatten_multi_index(results.index)
+        return results
 
     @progress_decorator(description="Compute metric for each split")
     def _compute_metric_scores(
