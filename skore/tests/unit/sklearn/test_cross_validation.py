@@ -219,6 +219,31 @@ def test_cross_validation_report_pickle(tmp_path, binary_classification_data):
     joblib.dump(report, tmp_path / "report.joblib")
 
 
+def test_cross_validation_report_flat_index(binary_classification_data):
+    """Check that the index is flattened when `flat_index` is True.
+
+    Since `pos_label` is None, then by default a MultiIndex would be returned.
+    Here, we force to have a single-index by passing `flat_index=True`.
+    """
+    estimator, X, y = binary_classification_data
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=2)
+    result = report.metrics.report_metrics(flat_index=True)
+    assert result.shape == (6, 2)
+    assert isinstance(result.index, pd.Index)
+    assert result.index.tolist() == [
+        "precision_0",
+        "precision_1",
+        "recall_0",
+        "recall_1",
+        "roc_auc",
+        "brier_score",
+    ]
+    assert result.columns.tolist() == [
+        "randomforestclassifier_split_0",
+        "randomforestclassifier_split_1",
+    ]
+
+
 ########################################################################################
 # Check the plot methods
 ########################################################################################
@@ -330,6 +355,7 @@ def _check_results_report_metric(
 ):
     result = report.metrics.report_metrics(**params)
     assert isinstance(result, pd.DataFrame)
+    assert "Favorability" not in result.columns
     assert result.shape[1] == expected_n_splits
     # check that we hit the cache
     result_with_cache = report.metrics.report_metrics(**params)
@@ -706,6 +732,25 @@ def test_cross_validation_report_report_metrics_invalid_metric_type(regression_d
     err_msg = re.escape("Invalid type of metric: <class 'int'> for 1")
     with pytest.raises(ValueError, match=err_msg):
         report.metrics.report_metrics(scoring=[1])
+
+
+@pytest.mark.parametrize("aggregate", [None, "mean", ["mean", "std"]])
+def test_cross_validation_report_report_metrics_indicator_favorability(
+    binary_classification_data, aggregate
+):
+    """Check that the behaviour of `indicator_favorability` is correct."""
+    estimator, X, y = binary_classification_data
+    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
+    result = report.metrics.report_metrics(
+        indicator_favorability=True, aggregate=aggregate
+    )
+    assert "Favorability" in result.columns
+    indicator = result["Favorability"]
+    assert indicator.shape == (6,)
+    assert indicator["Precision"].tolist() == ["(↗︎)", "(↗︎)"]
+    assert indicator["Recall"].tolist() == ["(↗︎)", "(↗︎)"]
+    assert indicator["ROC AUC"].tolist() == ["(↗︎)"]
+    assert indicator["Brier score"].tolist() == ["(↘︎)"]
 
 
 def test_cross_validation_report_custom_metric(binary_classification_data):

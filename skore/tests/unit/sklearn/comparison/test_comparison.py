@@ -7,6 +7,7 @@ import pytest
 from numpy.testing import assert_allclose
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import train_test_split
 from skore import ComparisonReport, EstimatorReport
 from skore.sklearn._comparison.metrics_accessor import (
@@ -283,7 +284,7 @@ def test_comparison_report_metrics_repr(binary_classification_model):
                     ["LogisticRegression", "LogisticRegression"],
                     name="Estimator",
                 ),
-                index=pd.Index(["Accuracy (↗︎)"], dtype="object", name="Metric"),
+                index=pd.Index(["Accuracy"], dtype="object", name="Metric"),
             ),
         ),
         (
@@ -295,7 +296,7 @@ def test_comparison_report_metrics_repr(binary_classification_model):
                     name="Estimator",
                 ),
                 index=pd.MultiIndex.from_tuples(
-                    [("Precision (↗︎)", 0), ("Precision (↗︎)", 1)],
+                    [("Precision", 0), ("Precision", 1)],
                     names=["Metric", "Label / Average"],
                 ),
             ),
@@ -309,7 +310,7 @@ def test_comparison_report_metrics_repr(binary_classification_model):
                     name="Estimator",
                 ),
                 index=pd.MultiIndex.from_tuples(
-                    [("Recall (↗︎)", 0), ("Recall (↗︎)", 1)],
+                    [("Recall", 0), ("Recall", 1)],
                     names=["Metric", "Label / Average"],
                 ),
             ),
@@ -322,7 +323,7 @@ def test_comparison_report_metrics_repr(binary_classification_model):
                     ["LogisticRegression", "LogisticRegression"],
                     name="Estimator",
                 ),
-                index=pd.Index(["Brier score (↘︎)"], dtype="object", name="Metric"),
+                index=pd.Index(["Brier score"], dtype="object", name="Metric"),
             ),
         ),
         (
@@ -333,7 +334,7 @@ def test_comparison_report_metrics_repr(binary_classification_model):
                     ["LogisticRegression", "LogisticRegression"],
                     name="Estimator",
                 ),
-                index=pd.Index(["ROC AUC (↗︎)"], dtype="object", name="Metric"),
+                index=pd.Index(["ROC AUC"], dtype="object", name="Metric"),
             ),
         ),
         (
@@ -344,7 +345,7 @@ def test_comparison_report_metrics_repr(binary_classification_model):
                     ["LogisticRegression", "LogisticRegression"],
                     name="Estimator",
                 ),
-                index=pd.Index(["Log loss (↘︎)"], dtype="object", name="Metric"),
+                index=pd.Index(["Log loss"], dtype="object", name="Metric"),
             ),
         ),
     ],
@@ -395,7 +396,7 @@ def test_comparison_report_metrics_binary_classification(
                     ["LinearRegression", "LinearRegression"],
                     name="Estimator",
                 ),
-                index=pd.Index(["RMSE (↘︎)"], dtype="object", name="Metric"),
+                index=pd.Index(["RMSE"], dtype="object", name="Metric"),
             ),
         ),
         (
@@ -406,7 +407,7 @@ def test_comparison_report_metrics_binary_classification(
                     ["LinearRegression", "LinearRegression"],
                     name="Estimator",
                 ),
-                index=pd.Index(["R² (↗︎)"], dtype="object", name="Metric"),
+                index=pd.Index(["R²"], dtype="object", name="Metric"),
             ),
         ),
     ],
@@ -463,6 +464,7 @@ def test_comparison_report_report_metrics_X_y(binary_classification_model):
         X=X_train[:10],
         y=y_train[:10],
     )
+    assert "Favorability" not in result.columns
 
     expected = pd.DataFrame(
         [
@@ -479,12 +481,12 @@ def test_comparison_report_report_metrics_X_y(binary_classification_model):
         ),
         index=pd.MultiIndex.from_tuples(
             [
-                ("Precision (↗︎)", 0),
-                ("Precision (↗︎)", 1),
-                ("Recall (↗︎)", 0),
-                ("Recall (↗︎)", 1),
-                ("ROC AUC (↗︎)", ""),
-                ("Brier score (↘︎)", ""),
+                ("Precision", 0),
+                ("Precision", 1),
+                ("Recall", 0),
+                ("Recall", 1),
+                ("ROC AUC", ""),
+                ("Brier score", ""),
             ],
             names=["Metric", "Label / Average"],
         ),
@@ -498,8 +500,6 @@ def test_comparison_report_report_metrics_X_y(binary_classification_model):
 
 def test_comparison_report_custom_metric_X_y(binary_classification_model):
     """Check that `custom_metric` works with an "X_y" data source."""
-    from sklearn.metrics import mean_absolute_error
-
     estimator, X_train, X_test, y_train, y_test = binary_classification_model
     estimator_report = EstimatorReport(
         estimator,
@@ -516,14 +516,14 @@ def test_comparison_report_custom_metric_X_y(binary_classification_model):
         columns=pd.Index(
             ["LogisticRegression", "LogisticRegression"], name="Estimator"
         ),
-        index=pd.Index(["MAE (↗︎)"], name="Metric"),
+        index=pd.Index(["MAE"], name="Metric"),
     )
 
     # ensure metric is valid
     result = comp.metrics.custom_metric(
         metric_function=mean_absolute_error,
         response_method="predict",
-        metric_name="MAE (↗︎)",
+        metric_name="MAE",
         data_source="X_y",
         X=X_test,
         y=y_test,
@@ -534,12 +534,63 @@ def test_comparison_report_custom_metric_X_y(binary_classification_model):
     result = comp.metrics.custom_metric(
         metric_function=mean_absolute_error,
         response_method="predict",
-        metric_name="MAE (↗︎)",
+        metric_name="MAE",
         data_source="X_y",
         X=X_test,
         y=y_test,
     )
     pd.testing.assert_frame_equal(result, expected)
+
+
+def test_cross_validation_report_flat_index(binary_classification_model):
+    """Check that the index is flattened when `flat_index` is True.
+
+    Since `pos_label` is None, then by default a MultiIndex would be returned.
+    Here, we force to have a single-index by passing `flat_index=True`.
+    """
+    estimator, X_train, X_test, y_train, y_test = binary_classification_model
+    report_1 = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report_2 = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report = ComparisonReport({"report_1": report_1, "report_2": report_2})
+    result = report.metrics.report_metrics(flat_index=True)
+    assert result.shape == (6, 2)
+    assert isinstance(result.index, pd.Index)
+    assert result.index.tolist() == [
+        "precision_0",
+        "precision_1",
+        "recall_0",
+        "recall_1",
+        "roc_auc",
+        "brier_score",
+    ]
+    assert result.columns.tolist() == ["report_1", "report_2"]
+
+
+def test_estimator_report_report_metrics_indicator_favorability(
+    binary_classification_model,
+):
+    """Check that the behaviour of `indicator_favorability` is correct."""
+    estimator, X_train, X_test, y_train, y_test = binary_classification_model
+    estimator_report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+    comp = ComparisonReport([estimator_report, estimator_report])
+    result = comp.metrics.report_metrics(indicator_favorability=True)
+    assert "Favorability" in result.columns
+    indicator = result["Favorability"]
+    assert indicator["Precision"].tolist() == ["(↗︎)", "(↗︎)"]
+    assert indicator["Recall"].tolist() == ["(↗︎)", "(↗︎)"]
+    assert indicator["ROC AUC"].tolist() == ["(↗︎)"]
+    assert indicator["Brier score"].tolist() == ["(↘︎)"]
 
 
 @pytest.mark.parametrize("plot_data_source", ["test", "X_y"])
