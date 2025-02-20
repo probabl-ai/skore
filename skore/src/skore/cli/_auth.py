@@ -1,95 +1,100 @@
+from __future__ import annotations
+
 import json
+import pathlib
+import tempfile
 import time
 import webbrowser
-from pathlib import Path
+from urllib.parse import urljoin
 
 import httpx
 
-skore_hub_uri = "https://skh.k.probabl.dev"
-config_dir = Path.home() / ".skore"
-token_file = config_dir / "tokens.json"
 
+class Client(httpx.Client):
+    URI = "https://skh.k.probabl.dev"
 
-def save_token(atoken: str, rtoken: str):
-    # Create .skore directory in user's home if it doesn't exist
-    config_dir.mkdir(exist_ok=True)
-
-    # Save tokens to tokens.json file
-    with open(token_file, "w") as f:
-        json.dump({"access_token": atoken, "refresh_token": rtoken}, f, indent=4)
-
-
-def read_token() -> str:
-    with open(token_file) as f:
-        tokens = json.load(f)
-        return tokens.get("access_token")
-
-
-def refresh_token() -> str:
-    with open(token_file) as f:
-        tokens = json.load(f)
-
-        access_token = tokens.get("access_token")
-        refresh_token = tokens.get("refresh_token")
-
-        with httpx.Client() as client:
-            headers = {
-                "Authorization": f"Bearer {access_token}",
-                "Content-Type": "application/json",
-            }
-            data = {
-                "refresh_token": refresh_token,
-            }
-            response = client.post(
-                f"{skore_hub_uri}/identity/oauth/token/refresh",
-                headers=headers,
-                json=data,
-            )
-            response.raise_for_status()
-
-            # breakpoint()
-            token = response.json().get("token", {})
-            access_token = token.get("access_token")
-            refresh_token = token.get("refresh_token")
-
-            save_token(access_token, refresh_token)
-            return access_token
-
-
-def start_authentication_process():
-    with httpx.Client() as client:
-        # Request a new authorization URL
-        response = client.get(f"{skore_hub_uri}/identity/oauth/device/login")
+    def request(self, method: str, url: httpx.URL | str, **kwargs) -> httpx.Response:
+        response = super().request(method, urljoin(self.URI, url), **kwargs)
         response.raise_for_status()
-        data = response.json()
 
-        authorization_url = data["authorization_url"]
-        device_code = data["device_code"]
-        user_code = data["user_code"]
+        return response.json()
 
-        print(f"Your users code is {user_code}")
 
-        webbrowser.open(authorization_url)
+class AuthenticationToken:
+    FILEPATH = pathlib.Path(tempfile.gettempdir(), "skore.token")
 
-        # Start polling Skore-Hub, waiting for the token
-        while True:
-            response = client.get(
-                f"{skore_hub_uri}/identity/oauth/device/token?device_code={device_code}"
+    def __init__(self):
+        try:
+            self.__access, self.__refreshment = json.loads(self.FILEPATH.read_text())
+        except FileNotFoundError:
+            self.__create()
+
+    def __create(self):
+        with Client() as client:
+            # Request a new authorization URL
+            response = client.get("identity/oauth/device/login")
+            authorization_url = response["authorization_url"]
+            device_code = response["device_code"]
+            user_code = response["user_code"]
+
+            # Display authentication info to the user
+            print(
+                "Attempting to automatically open the SSO authorization page in your "
+                "default browser."
             )
-            if response.is_error:
-                time.sleep(1)
-            else:
-                r = response.json()
-                token = r.get("token", {})
-                save_token(
-                    token.get("access_token"),
-                    token.get("refresh_token"),
-                )
-                print(read_token())
-                print("Authenticated, token is available:")
-                print(json.dumps(response.json(), indent=4))
-                break
+            print(
+                "If the browser does not open or you wish to use a different device to "
+                "authorize this request, open the following URL:"
+            )
+            print()
+            print(authorization_url)
+            print()
+            print("Then enter the code:")
+            print()
+            print(user_code)
+            print()
 
+            # Open the default browser
+            webbrowser.open(authorization_url)
 
-if __name__ == "__main__":
-    start_authentication_process()
+            # Start polling Skore-Hub, waiting for the token
+            while True:
+                try:
+                    response = client.get(
+                        f"identity/oauth/device/token?device_code={device_code}"
+                    )
+                except httpx.HTTPError:
+                    time.sleep(0.5)
+                else:
+                    tokens = response["token"]
+
+                    self.__access = tokens["access_token"]
+                    self.__refreshment = tokens["refresh_token"]
+                    self.__save()
+                    break
+
+    def __save(self):
+        self.FILEPATH.write_text(json.dumps((self.__access, self.__refreshment)))
+
+    def refresh(self):
+        with Client() as client:
+            response = client.post(
+                "identity/oauth/token/refresh",
+                headers={
+                    "Authorization": f"Bearer {self.__access}",
+                    "Content-Type": "application/json",
+                },
+                json={"refresh_token": self.__refreshment},
+            )
+
+            tokens = response["token"]
+
+            self.__access = tokens["access_token"]
+            self.__refreshment = tokens["refresh_token"]
+            self.__save()
+
+    def __str__(self):
+        return self.__access
+
+    def __repr__(self):
+        return f"AuthenticationToken('{self.__access:.10}[...]')"
