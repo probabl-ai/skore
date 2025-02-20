@@ -1,3 +1,5 @@
+from typing import Any
+
 import numpy as np
 import pandas as pd
 from sklearn.pipeline import Pipeline
@@ -14,11 +16,11 @@ class _FeatureImportanceAccessor(_BaseAccessor, DirNamesMixin):
     You can access this accessor using the `feature_importance` attribute.
     """
 
-    def __init__(self, parent):
+    def __init__(self, parent: Any) -> None:
         super().__init__(parent)
 
     @available_if(_check_is_regressor_coef_task)
-    def model_weights(self):
+    def model_weights(self) -> pd.DataFrame:
         """Report the coefficients of a regression estimator.
 
         Only works for LinearRegression, Ridge, and Lasso scikit-learn estimators.
@@ -87,16 +89,16 @@ class _FeatureImportanceAccessor(_BaseAccessor, DirNamesMixin):
     # Methods related to the help tree
     ####################################################################################
 
-    def _format_method_name(self, name):
+    def _format_method_name(self, name: str) -> str:
         return f"{name}(...)".ljust(29)
 
-    def _get_help_panel_title(self):
+    def _get_help_panel_title(self) -> str:
         return "[bold cyan]Available feature importance methods[/bold cyan]"
 
-    def _get_help_tree_title(self):
+    def _get_help_tree_title(self) -> str:
         return "[bold cyan]report.feature_importance[/bold cyan]"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Return a string representation using rich."""
         return self._rich_repr(
             class_name="skore.EstimatorReport.feature_importance",
