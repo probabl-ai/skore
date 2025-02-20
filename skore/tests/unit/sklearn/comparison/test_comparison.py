@@ -542,8 +542,9 @@ def test_comparison_report_custom_metric_X_y(binary_classification_model):
     pd.testing.assert_frame_equal(result, expected)
 
 
+@pytest.mark.parametrize("plot_data_source", ["test", "X_y"])
 @pytest.mark.parametrize(
-    "ml_task, plot_name, plot_cls, plot_attributes",
+    "plot_ml_task, plot_name, plot_cls, plot_attributes",
     [
         (
             "binary_classification",
@@ -607,7 +608,8 @@ def test_comparison_report_custom_metric_X_y(binary_classification_model):
     ],
 )
 def test_comparison_report_plots(
-    ml_task,
+    plot_data_source,
+    plot_ml_task,
     plot_name,
     plot_cls,
     plot_attributes,
@@ -616,7 +618,7 @@ def test_comparison_report_plots(
 ):
     estimator, X_train, X_test, y_train, y_test = (
         binary_classification_model
-        if ml_task == "binary_classification"
+        if plot_ml_task == "binary_classification"
         else regression_model
     )
     estimator_report = EstimatorReport(
@@ -629,13 +631,21 @@ def test_comparison_report_plots(
 
     comp = ComparisonReport([estimator_report, estimator_report])
 
+    if plot_data_source == "X_y":
+        arguments = {"data_source": plot_data_source, "X": X_test, "y": y_test}
+    else:
+        arguments = {"data_source": plot_data_source}
+
     # Ensure display object is available
-    display = getattr(comp.metrics, plot_name)()
+    display = getattr(comp.metrics, plot_name)(**arguments)
 
     # Ensure display object is of good type
     assert isinstance(display, plot_cls)
 
-    # Ensure all attributes are well set
+    # Ensure data source is well set
+    assert display.data_source == plot_data_source
+
+    # Ensure all attributes to test are well set
     for attribute, value in plot_attributes.items():
         display_attribute_value = getattr(display, attribute)
 
