@@ -1253,6 +1253,29 @@ def test_estimator_report_feature_importance_repr(regression_data):
             ),
         ),
         (
+            make_classification(n_features=5, random_state=42),
+            LogisticRegression(),
+            pd.DataFrame(
+                data=[
+                    0.069455,
+                    -1.034753,
+                    -1.495166,
+                    -0.655735,
+                    2.102900,
+                    0.530756,
+                ],
+                index=[
+                    "Intercept",
+                    "Feature #0",
+                    "Feature #1",
+                    "Feature #2",
+                    "Feature #3",
+                    "Feature #4",
+                ],
+                columns=["Coefficient"],
+            ),
+        ),
+        (
             make_regression(n_features=5, random_state=42),
             Pipeline([("scaler", StandardScaler()), ("reg", LinearRegression())]),
             pd.DataFrame(
@@ -1312,20 +1335,6 @@ def test_estimator_report_model_weights_numpy_arrays(data, estimator, expected):
     result = report.feature_importance.model_weights()
 
     pd.testing.assert_frame_equal(result, expected)
-
-
-def test_estimator_report_model_weights_logistic_regression():
-    """If the estimator has a coef_ attribute but is not a regressor, the
-    model_weights is not available.
-
-    In particular, logistic regression is not a regressor.
-    """
-
-    X, y = make_classification(random_state=42)
-    logistic_regression = LogisticRegression().fit(X, y)
-    report = EstimatorReport(logistic_regression)
-    with pytest.raises(AttributeError, match="no attribute 'model_weights'"):
-        report.feature_importance.model_weights()
 
 
 def test_estimator_report_model_weights_pandas_dataframe():
