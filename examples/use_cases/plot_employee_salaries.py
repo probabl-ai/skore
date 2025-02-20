@@ -199,7 +199,7 @@ my_project.put("Linear model report", report)
 
 # %%
 # We can now have a look at the performance of the model with some standard metrics.
-report.metrics.report_metrics(aggregate=["mean", "std"])
+report.metrics.report_metrics(aggregate=["mean", "std"], indicator_favorability=True)
 
 # %%
 # Second model

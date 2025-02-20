@@ -330,6 +330,7 @@ def _check_results_report_metric(
 ):
     result = report.metrics.report_metrics(**params)
     assert isinstance(result, pd.DataFrame)
+    assert "Favorability" not in result.columns
     assert result.shape[1] == expected_n_splits
     # check that we hit the cache
     result_with_cache = report.metrics.report_metrics(**params)
@@ -706,6 +707,25 @@ def test_cross_validation_report_report_metrics_invalid_metric_type(regression_d
     err_msg = re.escape("Invalid type of metric: <class 'int'> for 1")
     with pytest.raises(ValueError, match=err_msg):
         report.metrics.report_metrics(scoring=[1])
+
+
+@pytest.mark.parametrize("aggregate", [None, "mean", ["mean", "std"]])
+def test_cross_validation_report_report_metrics_indicator_favorability(
+    binary_classification_data, aggregate
+):
+    """Check that the behaviour of `indicator_favorability` is correct."""
+    estimator, X, y = binary_classification_data
+    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
+    result = report.metrics.report_metrics(
+        indicator_favorability=True, aggregate=aggregate
+    )
+    assert "Favorability" in result.columns
+    indicator = result["Favorability"]
+    assert indicator.shape == (6,)
+    assert indicator["Precision"].tolist() == ["(↗︎)", "(↗︎)"]
+    assert indicator["Recall"].tolist() == ["(↗︎)", "(↗︎)"]
+    assert indicator["ROC AUC"].tolist() == ["(↗︎)"]
+    assert indicator["Brier score"].tolist() == ["(↘︎)"]
 
 
 def test_cross_validation_report_custom_metric(binary_classification_data):

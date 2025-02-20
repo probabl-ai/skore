@@ -50,6 +50,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         scoring_names=None,
         pos_label=None,
         scoring_kwargs=None,
+        indicator_favorability=False,
     ):
         """Report a set of metrics for our estimator.
 
@@ -89,6 +90,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         scoring_kwargs : dict, default=None
             The keyword arguments to pass to the scoring functions.
 
+        indicator_favorability : bool, default=False
+            Whether or not to add an indicator of the favorability of the metric as
+            an extra column in the returned DataFrame.
+
         Returns
         -------
         pd.DataFrame
@@ -111,13 +116,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     X_test=X_test,
         ...     y_test=y_test,
         ... )
-        >>> report.metrics.report_metrics(pos_label=1)
-                        LogisticRegression
+        >>> report.metrics.report_metrics(pos_label=1, indicator_favorability=True)
+                    LogisticRegression Favorability
         Metric
-        Precision (↗︎)              0.98...
-        Recall (↗︎)                 0.93...
-        ROC AUC (↗︎)                0.99...
-        Brier score (↘︎)            0.03...
+        Precision              0.98...         (↗︎)
+        Recall                 0.93...         (↗︎)
+        ROC AUC                0.99...         (↗︎)
+        Brier score            0.03...         (↘︎)
         """
         if data_source == "X_y":
             # optimization of the hash computation to avoid recomputing it
@@ -163,6 +168,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             scoring_names = [None] * len(scoring)
 
         scores = []
+        favorability_indicator = []
         for metric_name, metric in zip(scoring_names, scoring):
             # NOTE: we have to check specifically for `_BaseScorer` first because this
             # is also a callable but it has a special private API that we can leverage
@@ -190,6 +196,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                         metrics_kwargs["pos_label"] = pos_label
                 if metric_name is None:
                     metric_name = metric._score_func.__name__
+                metric_favorability = "↗︎" if metric._sign == 1 else "↘︎"
+                favorability_indicator.append(metric_favorability)
             elif isinstance(metric, str) or callable(metric):
                 if isinstance(metric, str):
                     err_msg = (
@@ -209,10 +217,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                     metric_fn = getattr(self, metric)
                     metrics_kwargs = {"data_source_hash": data_source_hash}
                     if metric_name is None:
-                        metric_name = (
-                            f"{self._SCORE_OR_LOSS_INFO[metric[1:]]['name']} "
-                            f"{self._SCORE_OR_LOSS_INFO[metric[1:]]['icon']}"
-                        )
+                        metric_name = f"{self._SCORE_OR_LOSS_INFO[metric[1:]]['name']}"
+                    metric_favorability = self._SCORE_OR_LOSS_INFO[metric[1:]]["icon"]
+                    favorability_indicator.append(metric_favorability)
                 else:
                     metric_fn = partial(self._custom_metric, metric_function=metric)
                     if scoring_kwargs is None:
@@ -229,6 +236,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                     metrics_kwargs["data_source_hash"] = data_source_hash
                     if metric_name is None:
                         metric_name = metric.__name__
+                    metric_favorability = ""
+                    favorability_indicator.append(metric_favorability)
                 metrics_params = inspect.signature(metric_fn).parameters
                 if scoring_kwargs is not None:
                     for param in metrics_params:
@@ -301,9 +310,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             else:  # unknown task - try our best
                 index = [metric_name] if len(score) == 1 else None
 
-            scores.append(
-                pd.DataFrame(score, index=index, columns=[self._parent.estimator_name_])
+            score = pd.DataFrame(
+                score, index=index, columns=[self._parent.estimator_name_]
             )
+            if indicator_favorability:
+                score["Favorability"] = metric_favorability
+
+            scores.append(score)
 
         has_multilevel = any(
             isinstance(score, pd.DataFrame) and isinstance(score.index, pd.MultiIndex)
