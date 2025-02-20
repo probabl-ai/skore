@@ -44,6 +44,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         scoring_names=None,
         pos_label=None,
         scoring_kwargs=None,
+        indicator_favorability=False,
     ):
         """Report a set of metrics for the estimators.
 
@@ -83,6 +84,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         scoring_kwargs : dict, default=None
             The keyword arguments to pass to the scoring functions.
 
+        indicator_favorability : bool, default=False
+            Whether or not to add an indicator of the favorability of the metric as
+            an extra column in the returned DataFrame.
+
         Returns
         -------
         pd.DataFrame
@@ -121,8 +126,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ... )
         Estimator       LogisticRegression  LogisticRegression
         Metric
-        Precision (↗︎)              0.96...             0.96...
-        Recall (↗︎)                 0.97...             0.97...
+        Precision                  0.96...             0.96...
+        Recall                     0.97...             0.97...
         """
         return self._compute_metric_scores(
             report_metric_name="report_metrics",
@@ -133,6 +138,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             pos_label=pos_label,
             scoring_kwargs=scoring_kwargs,
             scoring_names=scoring_names,
+            indicator_favorability=indicator_favorability,
         )
 
     @progress_decorator(description="Compute metric for each split")
@@ -186,7 +192,19 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 progress.update(main_task, advance=1, refresh=True)
 
             results = pd.concat(results, axis=1)
+
+            # Pop the favorability column if it exists, to:
+            # - not use it in the aggregate operation
+            # - later to only report a single column and not by split columns
+            if metric_kwargs.get("indicator_favorability", False):
+                favorability = results.pop("Favorability").iloc[:, 0]
+            else:
+                favorability = None
+
             results.columns = pd.Index(self._parent.report_names_, name="Estimator")
+
+            if favorability is not None:
+                results["Favorability"] = favorability
 
             self._parent._cache[cache_key] = results
         return results
@@ -251,7 +269,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> comparison_report.metrics.accuracy()
         Estimator      LogisticRegression  LogisticRegression
         Metric
-        Accuracy (↗︎)              0.96...             0.96...
+        Accuracy                  0.96...             0.96...
         """
         return self.report_metrics(
             scoring=["accuracy"],
@@ -356,7 +374,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> comparison_report.metrics.precision()
         Estimator                    LogisticRegression  LogisticRegression
         Metric      Label / Average
-        Precision (↗︎)             0             0.96...             0.96...
+        Precision                 0             0.96...             0.96...
                                   1             0.96...             0.96...
         """
         return self.report_metrics(
@@ -465,7 +483,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> comparison_report.metrics.recall()
         Estimator                    LogisticRegression  LogisticRegression
         Metric      Label / Average
-        Recall (↗︎)                0            0.944...            0.944...
+        Recall                    0            0.944...            0.944...
                                   1            0.977...            0.977...
         """
         return self.report_metrics(
@@ -541,7 +559,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> comparison_report.metrics.brier_score()
         Estimator         LogisticRegression  LogisticRegression
         Metric
-        Brier score (↘︎)              0.025...            0.025...
+        Brier score                  0.025...            0.025...
         """
         return self.report_metrics(
             scoring=["brier_score"],
@@ -652,7 +670,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> comparison_report.metrics.roc_auc()
         Estimator      LogisticRegression  LogisticRegression
         Metric
-        ROC AUC (↗︎)               0.99...             0.99...
+        ROC AUC                   0.99...             0.99...
         """
         return self.report_metrics(
             scoring=["roc_auc"],
@@ -728,7 +746,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> comparison_report.metrics.log_loss()
         Estimator      LogisticRegression  LogisticRegression
         Metric
-        Log loss (↘︎)             0.082...            0.082...
+        Log loss                 0.082...            0.082...
         """
         return self.report_metrics(
             scoring=["log_loss"],
@@ -810,7 +828,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> comparison_report.metrics.r2()
         Estimator     Ridge    Ridge
         Metric
-        R² (↗︎)      0.43...  0.43...
+        R²          0.43...  0.43...
         """
         return self.report_metrics(
             scoring=["r2"],
@@ -893,7 +911,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> comparison_report.metrics.rmse()
         Estimator       Ridge       Ridge
         Metric
-        RMSE (↘︎)    55.726...   55.726...
+        RMSE        55.726...   55.726...
         """
         return self.report_metrics(
             scoring=["rmse"],
@@ -994,11 +1012,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> comparison_report.metrics.custom_metric(
         ...     metric_function=mean_absolute_error,
         ...     response_method="predict",
-        ...     metric_name="MAE (↗︎)",
+        ...     metric_name="MAE",
         ... )
         Estimator      Ridge      Ridge
         Metric
-        MAE (↗︎)     45.91...   45.91...
+        MAE         45.91...   45.91...
         """
         # create a scorer with `greater_is_better=True` to not alter the output of
         # `metric_function`
