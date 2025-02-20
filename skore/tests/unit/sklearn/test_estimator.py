@@ -1200,6 +1200,32 @@ def test_estimator_has_no_deep_copy():
 ########################################################################################
 
 
+def test_estimator_report_feature_importance_help(capsys, regression_data):
+    """Check that the help method writes to the console."""
+    estimator, X_test, y_test = regression_data
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    report.feature_importance.help()
+    captured = capsys.readouterr()
+    assert "Available feature importance methods" in captured.out
+    assert "model_weights" in captured.out
+
+
+def test_estimator_report_feature_importance_repr(regression_data):
+    """Check that __repr__ returns a string starting with the expected prefix."""
+    estimator, X_test, y_test = regression_data
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    repr_str = repr(report.feature_importance)
+    assert "skore.EstimatorReport.feature_importance" in repr_str
+    assert "report.feature_importance.help()" in repr_str
+
+
+########################################################################################
+# Check the model_weights feature importance metric
+########################################################################################
+
+
 @pytest.mark.parametrize(
     "data, estimator, expected",
     [
