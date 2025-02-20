@@ -1,4 +1,5 @@
 import inspect
+from abc import ABC, abstractmethod
 from io import StringIO
 from typing import Any, Literal, Optional, Union
 
@@ -13,7 +14,7 @@ from sklearn.utils._response import _check_response_method, _get_response_values
 from skore.externals._sklearn_compat import is_clusterer
 
 
-class _HelpMixin:
+class _HelpMixin(ABC):
     """Mixin class providing help for the `help` method and the `__repr__` method."""
 
     def _get_methods_for_help(self) -> list[tuple[str, Any]]:
@@ -51,6 +52,17 @@ class _HelpMixin:
     def _get_help_legend(self) -> Optional[str]:
         """Get the help legend."""
         return None
+
+    @abstractmethod
+    def _create_help_tree(self) -> Tree:
+        """Create the help tree."""
+        pass
+
+    @classmethod
+    @abstractmethod
+    def _get_help_panel_title(cls) -> str:
+        """Get the help panel title."""
+        pass
 
     def _create_help_panel(self) -> Panel:
         """Create the help panel."""
