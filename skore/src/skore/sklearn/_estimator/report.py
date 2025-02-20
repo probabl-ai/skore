@@ -73,6 +73,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     _ACCESSOR_CONFIG = {
         "metrics": {"name": "metrics"},
+        "feature_importance": {"name": "feature_importance"},
     }
 
     @staticmethod
