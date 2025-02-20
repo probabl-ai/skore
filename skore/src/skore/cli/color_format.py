@@ -2,8 +2,9 @@
 
 import re
 import shutil
-from argparse import ArgumentParser, HelpFormatter
-from typing import Any, Optional, Union
+from argparse import Action, ArgumentParser, HelpFormatter
+from collections.abc import Iterable
+from typing import Any, Never, Optional
 
 from rich.console import Console
 from rich.theme import Theme
@@ -53,10 +54,10 @@ class RichColorHelpFormatter(HelpFormatter):
 
     def _format_usage(
         self,
-        usage: str,
-        actions: list[Any],
-        groups: list[Any],
-        prefix: Union[str, None],
+        usage: Optional[str],
+        actions: Iterable[Action],
+        groups: Iterable[Any],
+        prefix: Optional[str],
     ) -> str:
         """Format the usage line."""
         if prefix is None:
@@ -111,14 +112,15 @@ class ColorArgumentParser(ArgumentParser):
     """Custom argument parser for the CLI."""
 
     def __init__(self, *args: Any, **kwargs: Any):
-        super().__init__(*args, **kwargs, formatter_class=RichColorHelpFormatter)
+        kwargs["formatter_class"] = RichColorHelpFormatter
+        super().__init__(*args, **kwargs)
 
     def print_help(self, file: Any = None) -> None:
         """Print the help message."""
         console = Console(file=file)
         console.print(self.format_help())
 
-    def error(self, message: str) -> None:
+    def error(self, message: str) -> Never:
         """Print error message with Rich formatting and exit."""
         console = Console(stderr=True, theme=skore_console_theme)
         console.print(f"[red bold]error:[/red bold] {message}")
