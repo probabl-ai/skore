@@ -1,6 +1,7 @@
 diskcache
 fastapi
 joblib
+httpx
 matplotlib
 numpy
 orjson
