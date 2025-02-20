@@ -1140,16 +1140,20 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             help_method_name="report.metrics.help()",
         )
 
+    ####################################################################################
+    # Methods related to displays
+    ####################################################################################
+
     @progress_decorator(description="Computing predictions for display")
     def _get_display(
         self,
         *,
-        X,
-        y,
-        data_source,
-        response_method,
-        display_class,
-        display_kwargs,
+        X: Union[ArrayLike, None],
+        y: Union[ArrayLike, None],
+        data_source: DataSource,
+        response_method: Union[str, list[str]],
+        display_class: type,
+        display_kwargs: dict[str, Any],
     ):
         """Get the display from the cache or compute it.
 
@@ -1213,7 +1217,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                         response_method=response_method,
                         data_source=data_source,
                         data_source_hash=None,
-                        pos_label=display_kwargs.get("pos_label", None),
+                        pos_label=display_kwargs.get("pos_label"),
                     )
                 )
                 progress.update(main_task, advance=1, refresh=True)
@@ -1236,7 +1240,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def roc(self, *, data_source="test", X=None, y=None, pos_label=None, ax=None):
+    def roc(
+        self,
+        *,
+        data_source: DataSource = "test",
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
+        pos_label: Optional[Union[int, float, bool, str]] = None,
+    ):
         """Plot the ROC curve.
 
         Parameters
@@ -1310,7 +1321,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def precision_recall(self, *, data_source="test", X=None, y=None, pos_label=None):
+    def precision_recall(
+        self,
+        *,
+        data_source: DataSource = "test",
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
+        pos_label: Optional[Union[int, float, bool, str]] = None,
+    ):
         """Plot the precision-recall curve.
 
         Parameters
@@ -1383,11 +1401,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     def prediction_error(
         self,
         *,
-        data_source="test",
-        X=None,
-        y=None,
-        subsample=1_000,
-        random_state=None,
+        data_source: DataSource = "test",
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
+        subsample: int = 1_000,
+        random_state: Optional[int] = None,
     ):
         """Plot the prediction error of a regression model.
 

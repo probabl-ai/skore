@@ -910,6 +910,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             help_method_name="report.metrics.help()",
         )
 
+    ####################################################################################
+    # Methods related to displays
+    ####################################################################################
+
     @progress_decorator(description="Computing predictions for display")
     def _get_display(
         self,
