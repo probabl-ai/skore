@@ -554,11 +554,11 @@ def test_cross_validation_report_flat_index(binary_classification_model):
     assert result.shape == (6, 2)
     assert isinstance(result.index, pd.Index)
     assert result.index.tolist() == [
-        "Precision (↗︎)_0",
-        "Precision (↗︎)_1",
-        "Recall (↗︎)_0",
-        "Recall (↗︎)_1",
-        "ROC AUC (↗︎)",
-        "Brier score (↘︎)",
+        "precision_(↗︎)_0",
+        "precision_(↗︎)_1",
+        "recall_(↗︎)_0",
+        "recall_(↗︎)_1",
+        "roc_auc_(↗︎)",
+        "brier_score_(↘︎)",
     ]
     assert result.columns.tolist() == ["report_1", "report_2"]

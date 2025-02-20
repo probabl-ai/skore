@@ -86,7 +86,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             The positive class.
 
         flat_index : bool, default=False
-            Whether to flatten the `MultiIndex` columns.
+            Whether to flatten the `MultiIndex` columns. Flat index will always be lower
+            case, do not include spaces and remove the hash symbol to ease indexing.
 
         Returns
         -------

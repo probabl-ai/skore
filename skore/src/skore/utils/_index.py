@@ -32,7 +32,10 @@ def flatten_multi_index(index: pd.MultiIndex) -> pd.Index:
 
     return pd.Index(
         [
-            "_".join(filter(bool, map(str, values))).replace(" ", "_").replace("#", "")
+            "_".join(filter(bool, map(str, values)))
+            .replace(" ", "_")
+            .replace("#", "")
+            .lower()
             for values in index
         ]
     )
