@@ -350,6 +350,28 @@ def test_estimator_report_pickle(binary_classification_data):
         joblib.dump(report, stream)
 
 
+def test_estimator_report_flat_index(binary_classification_data):
+    """Check that the index is flattened when `flat_index` is True.
+
+    Since `pos_label` is None, then by default a MultiIndex would be returned.
+    Here, we force to have a single-index by passing `flat_index=True`.
+    """
+    estimator, X_test, y_test = binary_classification_data
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    result = report.metrics.report_metrics(flat_index=True)
+    assert result.shape == (6, 1)
+    assert isinstance(result.index, pd.Index)
+    assert result.index.tolist() == [
+        "precision_0",
+        "precision_1",
+        "recall_0",
+        "recall_1",
+        "roc_auc",
+        "brier_score",
+    ]
+    assert result.columns.tolist() == ["RandomForestClassifier"]
+
+
 ########################################################################################
 # Check the plot methods
 ########################################################################################
