@@ -4,7 +4,7 @@ import threading
 import time
 from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Any
+from typing import Any, Union
 
 _global_config: dict[str, Any] = {
     "show_progress": True,
@@ -48,7 +48,7 @@ def get_config() -> dict[str, Any]:
 
 
 def set_config(
-    show_progress: bool | None = None,
+    show_progress: Union[bool, None] = None,
 ) -> None:
     """Set skore configuration.
 
@@ -80,7 +80,7 @@ def set_config(
 @contextmanager
 def config_context(
     *,
-    show_progress: bool | None = None,
+    show_progress: Union[bool, None] = None,
 ) -> Generator[None, None, None]:
     """Context manager for skore configuration.
 
