@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from sklearn.pipeline import Pipeline
 from sklearn.utils.metaestimators import available_if
 
 from skore.externals._pandas_accessors import DirNamesMixin
@@ -53,16 +54,20 @@ class _FeatureImportanceAccessor(_BaseAccessor, DirNamesMixin):
         Feature #8  250.535095
         Feature #9   99.577694
         """
-        reg = self._parent.estimator_
-
-        feature_names = (
-            reg.feature_names_in_
-            if hasattr(reg, "feature_names_in_")
-            else [f"Feature #{i}" for i in range(reg.n_features_in_)]
+        estimator = (
+            self._parent.estimator_.steps[-1][1]
+            if isinstance(self._parent.estimator_, Pipeline)
+            else self._parent.estimator_
         )
 
-        intercept = np.atleast_2d(reg.intercept_)
-        coef = np.atleast_2d(reg.coef_)
+        feature_names = (
+            estimator.feature_names_in_
+            if hasattr(estimator, "feature_names_in_")
+            else [f"Feature #{i}" for i in range(estimator.n_features_in_)]
+        )
+
+        intercept = np.atleast_2d(estimator.intercept_)
+        coef = np.atleast_2d(estimator.coef_)
 
         data = np.concatenate([intercept, coef.T])
 
