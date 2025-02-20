@@ -2,15 +2,17 @@
 
 import threading
 import time
+from collections.abc import Generator
 from contextlib import contextmanager
+from typing import Any
 
-_global_config = {
+_global_config: dict[str, Any] = {
     "show_progress": True,
 }
 _threadlocal = threading.local()
 
 
-def _get_threadlocal_config():
+def _get_threadlocal_config() -> dict[str, Any]:
     """Get a threadlocal **mutable** configuration.
 
     If the configuration does not exist, copy the default global configuration.
@@ -20,7 +22,7 @@ def _get_threadlocal_config():
     return _threadlocal.global_config
 
 
-def get_config():
+def get_config() -> dict[str, Any]:
     """Retrieve current values for configuration set by :func:`set_config`.
 
     Returns
@@ -46,8 +48,8 @@ def get_config():
 
 
 def set_config(
-    show_progress: bool = None,
-):
+    show_progress: bool | None = None,
+) -> None:
     """Set skore configuration.
 
     Setting the configuration affects global settings meaning that it will be used
@@ -78,8 +80,8 @@ def set_config(
 @contextmanager
 def config_context(
     *,
-    show_progress: bool = None,
-):
+    show_progress: bool | None = None,
+) -> Generator[None, None, None]:
     """Context manager for skore configuration.
 
     Setting the configuration affects global settings meaning that it will be used
@@ -128,7 +130,7 @@ def config_context(
         set_config(**old_config)
 
 
-def _set_show_progress_for_testing(show_progress, sleep_duration):
+def _set_show_progress_for_testing(show_progress: bool, sleep_duration: float) -> bool:
     """Set the value of show_progress for testing purposes after some waiting.
 
     This function should exist in a Python module rather than in tests, otherwise
