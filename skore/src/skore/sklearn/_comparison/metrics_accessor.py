@@ -1088,6 +1088,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     def _get_display(
         self,
         *,
+        X,
+        y,
         data_source,
         response_method,
         display_class,
@@ -1097,11 +1099,18 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train"}, default="test"
+        X : array-like of shape (n_samples, n_features)
+            The data.
+
+        y : array-like of shape (n_samples,)
+            The target.
+
+        data_source : {"test", "train", "X_y"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
 
         response_method : str
             The response method.
@@ -1130,17 +1139,21 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             display = self._parent._cache[cache_key]
         else:
             y_true, y_pred = [], []
+
             for report in self._parent.estimator_reports_:
-                X, y, _ = report.metrics._get_X_y_and_data_source_hash(
-                    data_source=data_source
+                report_X, report_y, _ = report.metrics._get_X_y_and_data_source_hash(
+                    data_source=data_source,
+                    X=X,
+                    y=y,
                 )
-                y_true.append(y)
+
+                y_true.append(report_y)
                 y_pred.append(
                     _get_cached_response_values(
                         cache=report._cache,
                         estimator_hash=report._hash,
                         estimator=report._estimator,
-                        X=X,
+                        X=report_X,
                         response_method=response_method,
                         data_source=data_source,
                         data_source_hash=None,
@@ -1167,7 +1180,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def roc(self, *, data_source="test", pos_label=None, ax=None):
+    def roc(self, *, data_source="test", X=None, y=None, pos_label=None, ax=None):
         """Plot the ROC curve.
 
         Parameters
@@ -1177,6 +1190,15 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the report.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the report.
 
         pos_label : int, float, bool or str, default=None
             The positive class.
@@ -1219,6 +1241,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
         return self._get_display(
+            X=X,
+            y=y,
             data_source=data_source,
             response_method=response_method,
             display_class=RocCurveDisplay,
@@ -1230,7 +1254,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def precision_recall(self, *, data_source="test", pos_label=None):
+    def precision_recall(self, *, data_source="test", X=None, y=None, pos_label=None):
         """Plot the precision-recall curve.
 
         Parameters
@@ -1240,6 +1264,15 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the report.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the report.
 
         pos_label : int, float, bool or str, default=None
             The positive class.
@@ -1282,6 +1315,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
         return self._get_display(
+            X=X,
+            y=y,
             data_source=data_source,
             response_method=response_method,
             display_class=PrecisionRecallCurveDisplay,
@@ -1293,6 +1328,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         self,
         *,
         data_source="test",
+        X=None,
+        y=None,
         subsample=1_000,
         random_state=None,
     ):
@@ -1307,6 +1344,15 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the report.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the report.
 
         subsample : float, int or None, default=1_000
             Sampling the samples to be shown on the scatter plot. If `float`,
@@ -1355,6 +1401,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         """
         display_kwargs = {"subsample": subsample, "random_state": random_state}
         return self._get_display(
+            X=X,
+            y=y,
             data_source=data_source,
             response_method="predict",
             display_class=PredictionErrorDisplay,
