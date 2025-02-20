@@ -6,7 +6,7 @@ from sklearn.utils.metaestimators import available_if
 from skore.externals._pandas_accessors import DirNamesMixin
 from skore.sklearn._base import _BaseAccessor
 from skore.sklearn._estimator.report import EstimatorReport
-from skore.utils._accessor import _check_is_regressor_coef_task
+from skore.utils._accessor import _check_has_coef
 
 
 class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
@@ -18,11 +18,9 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
     def __init__(self, parent: EstimatorReport) -> None:
         super().__init__(parent)
 
-    @available_if(_check_is_regressor_coef_task)
+    @available_if(_check_has_coef)
     def model_weights(self) -> pd.DataFrame:
-        """Report the coefficients of a regression estimator.
-
-        Only works for LinearRegression, Ridge, and Lasso scikit-learn estimators.
+        """Retrieve the coefficients of a linear model, including the intercept.
 
         Examples
         --------
