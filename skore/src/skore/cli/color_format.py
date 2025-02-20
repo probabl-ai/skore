@@ -4,7 +4,7 @@ import re
 import shutil
 from argparse import Action, ArgumentParser, HelpFormatter
 from collections.abc import Iterable
-from typing import Any, Never, Optional
+from typing import Any, NoReturn, Optional
 
 from rich.console import Console
 from rich.theme import Theme
@@ -120,7 +120,7 @@ class ColorArgumentParser(ArgumentParser):
         console = Console(file=file)
         console.print(self.format_help())
 
-    def error(self, message: str) -> Never:
+    def error(self, message: str) -> NoReturn:
         """Print error message with Rich formatting and exit."""
         console = Console(stderr=True, theme=skore_console_theme)
         console.print(f"[red bold]error:[/red bold] {message}")
