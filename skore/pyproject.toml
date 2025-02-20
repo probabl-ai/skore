@@ -136,6 +136,7 @@ ND = "ND"
 
 [tool.mypy]
 ignore_missing_imports = true
+exclude = ["src/skore/externals/.*"]
 
 [[tool.mypy.overrides]]
 module = ["diskcache.*", "sklearn.*"]
