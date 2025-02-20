@@ -231,12 +231,12 @@ def test_cross_validation_report_flat_index(binary_classification_data):
     assert result.shape == (6, 2)
     assert isinstance(result.index, pd.Index)
     assert result.index.tolist() == [
-        "precision_(↗︎)_0",
-        "precision_(↗︎)_1",
-        "recall_(↗︎)_0",
-        "recall_(↗︎)_1",
-        "roc_auc_(↗︎)",
-        "brier_score_(↘︎)",
+        "precision_0",
+        "precision_1",
+        "recall_0",
+        "recall_1",
+        "roc_auc",
+        "brier_score",
     ]
     assert result.columns.tolist() == [
         "randomforestclassifier_split_0",
