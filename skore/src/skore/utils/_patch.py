@@ -1,12 +1,13 @@
 import os
-from typing import Any
+from collections.abc import Iterable
 
 from rich import jupyter
+from rich.segment import Segment
 
 _original_render_segments = jupyter._render_segments
 
 
-def patched_render_segments(segments: list[Any]) -> str:
+def patched_render_segments(segments: Iterable[Segment]) -> str:
     """Patched version of rich.jupyter._render_segments that includes VS Code styling.
 
     This is to make sure that the CSS style exposed by jupyter notebook and used
