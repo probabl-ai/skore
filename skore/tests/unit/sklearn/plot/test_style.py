@@ -8,8 +8,8 @@ class TestDisplay(StyleDisplayMixin):
 
 def test_style_mixin():
     display = TestDisplay()
-    display.style(some_kwargs=1)
+    display.set_style(some_kwargs=1)
     assert display._default_some_kwargs == 1
 
     with pytest.raises(ValueError, match="Unknown style parameter: unknown_param."):
-        display.style(unknown_param=1)
+        display.set_style(unknown_param=1)

@@ -202,7 +202,7 @@ def test_prediction_error_display_kwargs(pyplot, regression_data):
         rtol=1e-3,
     )
     assert display.line_.get_color() == "black"
-    display.style(scatter_kwargs={"color": "red"}, line_kwargs={"color": "blue"})
+    display.set_style(scatter_kwargs={"color": "red"}, line_kwargs={"color": "blue"})
     display.plot()
     np.testing.assert_allclose(display.scatter_.get_facecolor(), [[1, 0, 0, 0.3]])
     assert display.line_.get_color() == "blue"

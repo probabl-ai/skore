@@ -18,7 +18,7 @@ class StyleDisplayMixin:
             if attr.startswith(prefix) and attr.endswith(suffix)
         ]
 
-    def style(self, **kwargs):
+    def set_style(self, **kwargs):
         """Set the style parameters for the display.
 
         Parameters
