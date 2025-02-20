@@ -22,7 +22,7 @@ class PillowImageItem(Item):
         self,
         image_b64_str: str,
         image_mode: str,
-        image_size: tuple[int],
+        image_size: tuple[int, int],
         created_at: Optional[str] = None,
         updated_at: Optional[str] = None,
         note: Optional[str] = None,
@@ -36,7 +36,7 @@ class PillowImageItem(Item):
             The raw bytes of the Pillow image.
         image_mode : str
             The image mode.
-        image_size : tuple[int]
+        image_size : tuple of int
             The image size.
         created_at : str, optional
             The creation timestamp in ISO format.
