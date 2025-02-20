@@ -19,7 +19,7 @@ class _FeatureImportanceAccessor(_BaseAccessor, DirNamesMixin):
 
     @available_if(_check_is_regressor_coef_task)
     def model_weights(self):
-        """Retrieve the coefficients of a regression, including the intercept.
+        """Report the coefficients of a regression estimator.
 
         Only works for LinearRegression, Ridge, and Lasso scikit-learn estimators.
 
@@ -87,61 +87,18 @@ class _FeatureImportanceAccessor(_BaseAccessor, DirNamesMixin):
     # Methods related to the help tree
     ####################################################################################
 
-    def _sort_methods_for_help(self, methods):
-        """Override sort method for metrics-specific ordering.
-
-        In short, we display the `report_metrics` first and then the `custom_metric`.
-        """
-
-        def _sort_key(method):
-            name = method[0]
-            if name == "custom_metric":
-                priority = 1
-            elif name == "report_metrics":
-                priority = 2
-            else:
-                priority = 0
-            return priority, name
-
-        return sorted(methods, key=_sort_key)
-
     def _format_method_name(self, name):
-        """Override format method for metrics-specific naming."""
-        method_name = f"{name}(...)"
-        method_name = method_name.ljust(22)
-        if name in self._SCORE_OR_LOSS_INFO and self._SCORE_OR_LOSS_INFO[name][
-            "icon"
-        ] in ("(↗︎)", "(↘︎)"):
-            if self._SCORE_OR_LOSS_INFO[name]["icon"] == "(↗︎)":
-                method_name += f"[cyan]{self._SCORE_OR_LOSS_INFO[name]['icon']}[/cyan]"
-                return method_name.ljust(43)
-            else:  # (↘︎)
-                method_name += (
-                    f"[orange1]{self._SCORE_OR_LOSS_INFO[name]['icon']}[/orange1]"
-                )
-                return method_name.ljust(49)
-        else:
-            return method_name.ljust(29)
-
-    def _get_methods_for_help(self):
-        """Override to exclude the plot accessor from methods list."""
-        methods = super()._get_methods_for_help()
-        return [(name, method) for name, method in methods if name != "plot"]
+        return f"{name}(...)".ljust(29)
 
     def _get_help_panel_title(self):
-        return "[bold cyan]Available metrics methods[/bold cyan]"
-
-    def _get_help_legend(self):
-        return (
-            "[cyan](↗︎)[/cyan] higher is better [orange1](↘︎)[/orange1] lower is better"
-        )
+        return "[bold cyan]Available feature importance methods[/bold cyan]"
 
     def _get_help_tree_title(self):
-        return "[bold cyan]report.metrics[/bold cyan]"
+        return "[bold cyan]report.feature_importance[/bold cyan]"
 
     def __repr__(self):
         """Return a string representation using rich."""
         return self._rich_repr(
-            class_name="skore.EstimatorReport.metrics",
-            help_method_name="report.metrics.help()",
+            class_name="skore.EstimatorReport.feature_importance",
+            help_method_name="report.feature_importance.help()",
         )
