@@ -362,12 +362,12 @@ def test_estimator_report_flat_index(binary_classification_data):
     assert result.shape == (6, 1)
     assert isinstance(result.index, pd.Index)
     assert result.index.tolist() == [
-        "precision_(↗︎)_0",
-        "precision_(↗︎)_1",
-        "recall_(↗︎)_0",
-        "recall_(↗︎)_1",
-        "roc_auc_(↗︎)",
-        "brier_score_(↘︎)",
+        "precision_0",
+        "precision_1",
+        "recall_0",
+        "recall_1",
+        "roc_auc",
+        "brier_score",
     ]
     assert result.columns.tolist() == ["RandomForestClassifier"]
 
@@ -649,6 +649,7 @@ def test_estimator_report_report_metrics_binary(
     result = report.metrics.report_metrics(
         pos_label=pos_label, data_source=data_source, **kwargs
     )
+    assert "Favorability" not in result.columns
     expected_metrics = ("precision", "recall", "roc_auc", "brier_score")
     # depending on `pos_label`, we report a stats for each class or not for
     # precision and recall
@@ -696,6 +697,7 @@ def test_estimator_report_report_metrics_multiclass(
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
     result = report.metrics.report_metrics(data_source=data_source, **kwargs)
+    assert "Favorability" not in result.columns
     expected_metrics = ("precision", "recall", "roc_auc", "log_loss")
     # since we are not averaging by default, we report 3 statistics for
     # precision, recall and roc_auc
@@ -720,6 +722,7 @@ def test_estimator_report_report_metrics_regression(regression_data, data_source
     kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     result = report.metrics.report_metrics(data_source=data_source, **kwargs)
+    assert "Favorability" not in result.columns
     expected_metrics = ("r2", "rmse")
     _check_results_report_metrics(result, expected_metrics, len(expected_metrics))
 
@@ -783,6 +786,21 @@ def test_estimator_report_report_metrics_overwrite_scoring_names(
         else result.index.tolist()
     )
     assert result_index == expected_columns
+
+
+def test_estimator_report_report_metrics_indicator_favorability(
+    binary_classification_data,
+):
+    """Check that the behaviour of `indicator_favorability` is correct."""
+    estimator, X_test, y_test = binary_classification_data
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    result = report.metrics.report_metrics(indicator_favorability=True)
+    assert "Favorability" in result.columns
+    indicator = result["Favorability"]
+    assert indicator["Precision"].tolist() == ["(↗︎)", "(↗︎)"]
+    assert indicator["Recall"].tolist() == ["(↗︎)", "(↗︎)"]
+    assert indicator["ROC AUC"].tolist() == ["(↗︎)"]
+    assert indicator["Brier score"].tolist() == ["(↘︎)"]
 
 
 def test_estimator_report_interaction_cache_metrics(regression_multioutput_data):
