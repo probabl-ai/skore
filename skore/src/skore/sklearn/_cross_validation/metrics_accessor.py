@@ -178,8 +178,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             )
             results = results.swaplevel(0, 1, axis=1)
 
-            # pop the favorability column if it exist to:
-            # - no use it in the aggregate operation
+            # Pop the favorability column if it exists, to:
+            # - not use it in the aggregate operation
             # - later to only report a single column and not by split columns
             if metric_kwargs.get("indicator_favorability", False):
                 favorability = results.pop("Favorability").iloc[:, 0]
