@@ -1201,10 +1201,11 @@ def test_estimator_has_no_deep_copy():
 
 
 @pytest.mark.parametrize(
-    "data, expected",
+    "data, estimator, expected",
     [
         (
             make_regression(n_features=5, random_state=42),
+            LinearRegression(),
             pd.DataFrame(
                 data=[
                     -1.776357e-15,
@@ -1226,7 +1227,31 @@ def test_estimator_has_no_deep_copy():
             ),
         ),
         (
+            make_regression(n_features=5, random_state=42),
+            Pipeline([("scaler", StandardScaler()), ("reg", LinearRegression())]),
+            pd.DataFrame(
+                data=[
+                    7.813845,
+                    58.075732,
+                    95.531352,
+                    59.158434,
+                    60.605368,
+                    34.323409,
+                ],
+                index=[
+                    "Intercept",
+                    "Feature #0",
+                    "Feature #1",
+                    "Feature #2",
+                    "Feature #3",
+                    "Feature #4",
+                ],
+                columns=["Coefficient"],
+            ),
+        ),
+        (
             make_regression(n_features=5, n_targets=3, random_state=42),
+            LinearRegression(),
             pd.DataFrame(
                 data=[
                     [-8.88178420e-16, 8.21565038e-15, -1.60982339e-15],
@@ -1249,33 +1274,17 @@ def test_estimator_has_no_deep_copy():
         ),
     ],
 )
-def test_estimator_report_model_weights_numpy_arrays(data, expected):
+def test_estimator_report_model_weights_numpy_arrays(data, estimator, expected):
     X, y = data
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42
     )
-
-    linear_regression = LinearRegression().fit(X_train, y_train)
-
-    report = EstimatorReport(linear_regression)
-    result = report.feature_importance.model_weights()
-
-    pd.testing.assert_frame_equal(result, expected)
-
-
-def test_estimator_report_model_weights_pipeline():
-    X, y = make_regression(n_features=5, random_state=42)
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42
-    )
-    estimator = Pipeline([("scaler", StandardScaler()), ("reg", LinearRegression())])
 
     estimator.fit(X_train, y_train)
 
     report = EstimatorReport(estimator)
     result = report.feature_importance.model_weights()
 
-    expected = None
     pd.testing.assert_frame_equal(result, expected)
 
 

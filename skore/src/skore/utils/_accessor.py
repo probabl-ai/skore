@@ -21,13 +21,11 @@ def _check_supported_ml_task(supported_ml_tasks: list[str]) -> Callable:
     return check
 
 
-def _check_is_regressor_coef_task(accessor):
-    """Check if the estimator is regression task and holds a coef_ attribute.
-    Hence, linear regression, ridge regression, etc fall in.
-    """
+def _check_is_regressor_coef_task(accessor: Any) -> bool:
+    """Check if the estimator is a regressor and holds a `coef_` attribute."""
     parent_estimator = accessor._parent.estimator_
     estimator = (
-        parent_estimator.steps[-1]
+        parent_estimator.steps[-1][1]
         if isinstance(parent_estimator, Pipeline)
         else parent_estimator
     )
