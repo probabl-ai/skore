@@ -84,13 +84,12 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
     See Also
     --------
-    skore.sklearn.estimator.report.EstimatorReport :
+    skore.EstimatorReport
         Report for a fitted estimator.
 
     Examples
     --------
     >>> from sklearn.datasets import make_classification
-    >>> from sklearn.model_selection import train_test_split
     >>> from sklearn.linear_model import LogisticRegression
     >>> X, y = make_classification(random_state=42)
     >>> estimator = LogisticRegression()
