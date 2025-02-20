@@ -43,3 +43,4 @@ class ShuffleTrueWarning(TrainTestSplitWarning):
         """
         if shuffle is not False:
             return ShuffleTrueWarning.MSG
+        return None
