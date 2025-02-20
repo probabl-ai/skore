@@ -47,13 +47,15 @@ def _get_deps_info() -> dict[str, Any]:
 
     deps = ["pip", "setuptools"]
 
-    requirements = importlib.metadata.requires("skore")
+    raw_requirements = importlib.metadata.requires("skore")
+    requirements: list[str] = [] if raw_requirements is None else raw_requirements
+
     for requirement in filter(lambda r: "; extra" not in r, requirements):
         # Extract just the package name before any version specifiers
-        package_name = re.split(r"[<>=~!]", requirement)[0].strip()
+        package_name: str = re.split(r"[<>=~!]", requirement)[0].strip()
         deps.append(package_name)
 
-    deps_info = {
+    deps_info: dict[str, str | None] = {
         "skore": version("skore"),
     }
 
