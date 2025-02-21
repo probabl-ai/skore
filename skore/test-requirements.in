@@ -1,5 +1,4 @@
 altair>=5,<6
-httpx
 pillow
 plotly
 polars
