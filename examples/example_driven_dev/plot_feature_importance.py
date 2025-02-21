@@ -6,8 +6,7 @@
 =============================================
 
 .. warning::
-    This toy example is for example-driven development!
-    It is not meant to be released.
+    This example is meant for internal example-driven development!
 
 This example showcases the new ``feature_importance`` accessor of the
 :class:`~skore.EstimatorReport`.
