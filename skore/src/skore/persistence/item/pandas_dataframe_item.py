@@ -6,7 +6,7 @@ which represents a pandas DataFrame item.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Literal, Union
 
 from .item import Item, ItemTypeError
 
@@ -22,7 +22,7 @@ class PandasDataFrameItem(Item):
     creation and update timestamps.
     """
 
-    ORIENT = "split"
+    ORIENT: Literal["split"] = "split"
 
     def __init__(
         self,
@@ -70,9 +70,17 @@ class PandasDataFrameItem(Item):
             io.StringIO(self.index_json) as index_stream,
             io.StringIO(self.dataframe_json) as df_stream,
         ):
-            index = pandas.read_json(index_stream, orient=self.ORIENT, dtype=False)
+            index = pandas.read_json(
+                index_stream,
+                orient=self.ORIENT,
+                dtype=False,  # type: ignore
+            )
             index = index.set_index(list(index.columns))
-            dataframe = pandas.read_json(df_stream, orient=self.ORIENT, dtype=False)
+            dataframe = pandas.read_json(
+                df_stream,
+                orient=self.ORIENT,
+                dtype=False,  # type: ignore
+            )
             dataframe.index = index.index
 
             return dataframe

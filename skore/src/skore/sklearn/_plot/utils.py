@@ -1,8 +1,14 @@
 import inspect
+from collections.abc import Sequence
 from io import StringIO
+from typing import Any, Optional, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.axes import Axes
+from matplotlib.colors import Colormap
+from matplotlib.figure import Figure, SubFigure
+from numpy.typing import ArrayLike
 from rich.console import Console
 from rich.panel import Panel
 from rich.tree import Tree
@@ -15,7 +21,9 @@ from sklearn.utils.validation import (
 class HelpDisplayMixin:
     """Mixin class to add help functionality to a class."""
 
-    def _get_attributes_for_help(self):
+    estimator_name: str  # defined in the concrete display class
+
+    def _get_attributes_for_help(self) -> list[str]:
         """Get the attributes ending with '_' to display in help."""
         attributes = []
         for name in dir(self):
@@ -23,7 +31,7 @@ class HelpDisplayMixin:
                 attributes.append(f".{name}")
         return sorted(attributes)
 
-    def _get_methods_for_help(self):
+    def _get_methods_for_help(self) -> list[tuple[str, Any]]:
         """Get the public methods to display in help."""
         methods = inspect.getmembers(self, predicate=inspect.ismethod)
         filtered_methods = []
@@ -35,7 +43,7 @@ class HelpDisplayMixin:
                 filtered_methods.append((f".{name}(...)", method))
         return sorted(filtered_methods)
 
-    def _create_help_tree(self):
+    def _create_help_tree(self) -> Tree:
         """Create a rich Tree with attributes and methods."""
         tree = Tree("display")
 
@@ -64,7 +72,7 @@ class HelpDisplayMixin:
 
         return tree
 
-    def _create_help_panel(self):
+    def _create_help_panel(self) -> Panel:
         return Panel(
             self._create_help_tree(),
             title=(
@@ -75,15 +83,16 @@ class HelpDisplayMixin:
             expand=False,
         )
 
-    def help(self):
+    def help(self) -> None:
         """Display available attributes and methods using rich."""
         from skore import console  # avoid circular import
 
         console.print(self._create_help_panel())
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Return a string representation using rich."""
-        console = Console(file=StringIO(), force_terminal=False)
+        string_buffer = StringIO()
+        console = Console(file=string_buffer, force_terminal=False)
         console.print(
             Panel(
                 "Get guidance using the display.help() method",
@@ -92,13 +101,14 @@ class HelpDisplayMixin:
                 expand=False,
             )
         )
-        return console.file.getvalue()
+        return string_buffer.getvalue()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Return a string representation using rich."""
-        console = Console(file=StringIO(), force_terminal=False)
+        string_buffer = StringIO()
+        console = Console(file=string_buffer, force_terminal=False)
         console.print(f"[cyan]skore.{self.__class__.__name__}(...)[/cyan]")
-        return console.file.getvalue()
+        return string_buffer.getvalue()
 
 
 class _ClassifierCurveDisplayMixin:
@@ -108,7 +118,11 @@ class _ClassifierCurveDisplayMixin:
     the target and gather the response of the estimator.
     """
 
-    def _validate_plot_params(self, *, ax, estimator_name):
+    estimator_name: str  # defined in the concrete display class
+
+    def _validate_plot_params(
+        self, *, ax: Optional[Axes] = None, estimator_name: Optional[str] = None
+    ) -> tuple[Axes, Union[Figure, SubFigure], str]:
         if ax is None:
             _, ax = plt.subplots()
 
@@ -120,12 +134,12 @@ class _ClassifierCurveDisplayMixin:
     @classmethod
     def _validate_from_predictions_params(
         cls,
-        y_true,
-        y_pred,
+        y_true: Sequence[ArrayLike],
+        y_pred: Sequence[ArrayLike],
         *,
-        ml_task,
-        pos_label=None,
-    ):
+        ml_task: str,
+        pos_label: Optional[Union[int, float, bool, str]] = None,
+    ) -> Union[int, float, bool, str, None]:
         for y_true_i, y_pred_i in zip(y_true, y_pred):
             check_consistent_length(y_true_i, y_pred_i)
 
@@ -135,7 +149,13 @@ class _ClassifierCurveDisplayMixin:
         return pos_label
 
 
-def _despine_matplotlib_axis(ax, *, x_range=(0, 1), y_range=(0, 1), offset=10):
+def _despine_matplotlib_axis(
+    ax: Axes,
+    *,
+    x_range: tuple[float, float] = (0, 1),
+    y_range: tuple[float, float] = (0, 1),
+    offset: float = 10,
+) -> None:
     """Despine the matplotlib axis.
 
     Parameters
@@ -157,7 +177,9 @@ def _despine_matplotlib_axis(ax, *, x_range=(0, 1), y_range=(0, 1), offset=10):
     ax.spines["bottom"].set_position(("outward", offset))
 
 
-def _validate_style_kwargs(default_style_kwargs, user_style_kwargs):
+def _validate_style_kwargs(
+    default_style_kwargs: dict[str, Any], user_style_kwargs: dict[str, Any]
+) -> dict[str, Any]:
     """Create valid style kwargs by avoiding Matplotlib alias errors.
 
     Matplotlib raises an error when, for example, 'color' and 'c', or 'linestyle' and
@@ -219,7 +241,9 @@ def _validate_style_kwargs(default_style_kwargs, user_style_kwargs):
     return valid_style_kwargs
 
 
-def sample_mpl_colormap(cmap, n):
+def sample_mpl_colormap(
+    cmap: Colormap, n: int
+) -> list[tuple[float, float, float, float]]:
     """Sample colors from a Matplotlib colormap.
 
     Parameters

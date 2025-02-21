@@ -1,7 +1,12 @@
 from collections import defaultdict
+from typing import Any, Literal, Optional, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib import colormaps
+from matplotlib.axes import Axes
+from numpy.typing import ArrayLike, NDArray
+from sklearn.base import BaseEstimator
 from sklearn.metrics import average_precision_score, precision_recall_curve
 from sklearn.preprocessing import LabelBinarizer
 
@@ -55,10 +60,10 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
             - the value is a list of `float`, each `float` being the average
               precision.
 
-    estimator_names : list[str]
+    estimator_names : list of str
         Name of the estimators.
 
-    pos_label : int, float, bool or str, default=None
+    pos_label : int, float, bool, str or None
         The class considered as the positive class. If None, the class will not
         be shown in the legend.
 
@@ -79,14 +84,14 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
 
     def __init__(
         self,
-        precision,
-        recall,
         *,
-        average_precision,
-        estimator_names,
-        ml_task,
-        data_source,
-        pos_label=None,
+        precision: dict[Any, list[ArrayLike]],
+        recall: dict[Any, list[ArrayLike]],
+        average_precision: dict[Any, list[float]],
+        estimator_names: list[str],
+        ml_task: Literal["binary-classification", "multiclass-classification"],
+        data_source: Literal["train", "test", "X_y"],
+        pos_label: Any = None,
     ):
         self.precision = precision
         self.recall = recall
@@ -98,9 +103,9 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
 
     def plot(
         self,
-        ax=None,
+        ax: Optional[Axes] = None,
         *,
-        despine=True,
+        despine: bool = True,
     ):
         """Plot visualization.
 
@@ -148,7 +153,7 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
         else:  # multiclass-classification
             info_pos_label = None  # irrelevant for multiclass
             colors = sample_mpl_colormap(
-                plt.cm.tab10,
+                colormaps.get_cmap("tab10"),
                 10 if len(self.estimator_names) < 10 else len(self.estimator_names),
             )
 
@@ -199,15 +204,15 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
     @classmethod
     def _from_predictions(
         cls,
-        y_true: list[list],
-        y_pred: list[list],
+        y_true: list[ArrayLike],
+        y_pred: list[NDArray],
         *,
-        estimators: list,
+        estimators: list[BaseEstimator],
         estimator_names: list[str],
-        ml_task,
-        data_source,
-        pos_label=None,
-        drop_intermediate=True,
+        ml_task: Literal["binary-classification", "multiclass-classification"],
+        data_source: Literal["train", "test", "X_y"],
+        pos_label: Union[int, float, bool, str, None],
+        drop_intermediate: bool = True,
     ):
         """Private factory to create a PrecisionRecallCurveDisplay from predictions.
 

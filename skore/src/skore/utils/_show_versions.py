@@ -8,9 +8,10 @@ import importlib
 import platform
 import re
 import sys
+from typing import Any, Union
 
 
-def _get_sys_info():
+def _get_sys_info() -> dict[str, Any]:
     """System information.
 
     Returns
@@ -30,7 +31,7 @@ def _get_sys_info():
     return dict(blob)
 
 
-def _get_deps_info():
+def _get_deps_info() -> dict[str, Any]:
     """Overview of the installed version of main dependencies.
 
     This function does not import the modules to collect the version numbers
@@ -46,13 +47,15 @@ def _get_deps_info():
 
     deps = ["pip", "setuptools"]
 
-    requirements = importlib.metadata.requires("skore")
+    raw_requirements = importlib.metadata.requires("skore")
+    requirements: list[str] = [] if raw_requirements is None else raw_requirements
+
     for requirement in filter(lambda r: "; extra" not in r, requirements):
         # Extract just the package name before any version specifiers
-        package_name = re.split(r"[<>=~!]", requirement)[0].strip()
+        package_name: str = re.split(r"[<>=~!]", requirement)[0].strip()
         deps.append(package_name)
 
-    deps_info = {
+    deps_info: dict[str, Union[str, None]] = {
         "skore": version("skore"),
     }
 
@@ -64,7 +67,7 @@ def _get_deps_info():
     return deps_info
 
 
-def show_versions():
+def show_versions() -> None:
     """Print useful debugging information.
 
     Examples

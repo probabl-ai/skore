@@ -24,7 +24,7 @@ class TimeBasedColumnWarning(TrainTestSplitWarning):
     """
 
     @staticmethod
-    def _MSG(df_name: str, offending_column_names: list[str]) -> str:
+    def _MSG(df_name: Union[str, None], offending_column_names: list[str]) -> str:
         s = "" if len(offending_column_names) == 1 else "s"
 
         df_name_info = "" if df_name is None else f', dataframe "{df_name}"'
@@ -69,3 +69,5 @@ class TimeBasedColumnWarning(TrainTestSplitWarning):
         if datetime_columns:
             df_name = X.name if hasattr(X, "name") else None
             return TimeBasedColumnWarning._MSG(df_name, datetime_columns)
+
+        return None

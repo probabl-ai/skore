@@ -63,7 +63,7 @@ class MediaItem(Item):
         cls,
         media: str,
         /,
-        media_type: Optional[str] = MediaType.MARKDOWN.value,
+        media_type: str = MediaType.MARKDOWN.value,
         **kwargs,
     ) -> MediaItem:
         """

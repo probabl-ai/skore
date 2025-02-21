@@ -1,7 +1,12 @@
+from typing import Any, Callable, Literal, Optional, Union
+
 import joblib
 import numpy as np
 import pandas as pd
+from numpy.typing import ArrayLike
+from rich.progress import Progress
 from sklearn.metrics import make_scorer
+from sklearn.metrics._scorer import _BaseScorer as SKLearnScorer
 from sklearn.utils.metaestimators import available_if
 
 from skore.externals._pandas_accessors import DirNamesMixin
@@ -10,10 +15,13 @@ from skore.sklearn._comparison.precision_recall_curve_display import (
     PrecisionRecallCurveDisplay,
 )
 from skore.sklearn._comparison.prediction_error_display import PredictionErrorDisplay
+from skore.sklearn._comparison.report import ComparisonReport
 from skore.sklearn._comparison.roc_curve_display import RocCurveDisplay
 from skore.utils._accessor import _check_supported_ml_task
 from skore.utils._index import flatten_multi_index
 from skore.utils._progress_bar import progress_decorator
+
+DataSource = Literal["test", "train", "X_y"]
 
 
 class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
@@ -22,7 +30,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     You can access this accessor using the `metrics` attribute.
     """
 
-    _SCORE_OR_LOSS_INFO = {
+    _SCORE_OR_LOSS_INFO: dict[str, dict[str, str]] = {
         "accuracy": {"name": "Accuracy", "icon": "(↗︎)"},
         "precision": {"name": "Precision", "icon": "(↗︎)"},
         "recall": {"name": "Recall", "icon": "(↗︎)"},
@@ -35,23 +43,23 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         "report_metrics": {"name": "Report metrics", "icon": ""},
     }
 
-    def __init__(self, parent):
+    def __init__(self, parent: ComparisonReport) -> None:
         super().__init__(parent)
 
-        self._parent_progress = None
+        self._parent_progress: Optional[Progress] = None
 
     def report_metrics(
         self,
         *,
-        data_source="test",
-        X=None,
-        y=None,
-        scoring=None,
-        scoring_names=None,
-        scoring_kwargs=None,
-        pos_label=None,
-        indicator_favorability=False,
-        flat_index=False,
+        data_source: DataSource = "test",
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
+        scoring: Optional[Union[list[str], Callable, SKLearnScorer]] = None,
+        scoring_names: Optional[list[str]] = None,
+        scoring_kwargs: Optional[dict[str, Any]] = None,
+        pos_label: Optional[Union[int, float, bool, str]] = None,
+        indicator_favorability: bool = False,
+        flat_index: bool = False,
     ):
         """Report a set of metrics for the estimators.
 
@@ -161,12 +169,12 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     @progress_decorator(description="Compute metric for each split")
     def _compute_metric_scores(
         self,
-        report_metric_name,
+        report_metric_name: str,
         *,
-        data_source="test",
-        X=None,
-        y=None,
-        **metric_kwargs,
+        data_source: DataSource = "test",
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
+        **metric_kwargs: Any,
     ):
         cache_key = (self._parent._hash, report_metric_name, data_source)
 
@@ -231,7 +239,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def accuracy(self, *, data_source="test", X=None, y=None):
+    def accuracy(
+        self,
+        *,
+        data_source: DataSource = "test",
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
+    ):
         """Compute the accuracy score.
 
         Parameters
@@ -303,11 +317,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     def precision(
         self,
         *,
-        data_source="test",
-        X=None,
-        y=None,
-        average=None,
-        pos_label=None,
+        data_source: DataSource = "test",
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
+        average: Optional[
+            Literal["binary", "macro", "micro", "weighted", "samples"]
+        ] = None,
+        pos_label: Optional[Union[int, float, bool, str]] = None,
     ):
         """Compute the precision score.
 
@@ -411,11 +427,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     def recall(
         self,
         *,
-        data_source="test",
-        X=None,
-        y=None,
-        average=None,
-        pos_label=None,
+        data_source: DataSource = "test",
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
+        average: Optional[
+            Literal["binary", "macro", "micro", "weighted", "samples"]
+        ] = None,
+        pos_label: Optional[Union[int, float, bool, str]] = None,
     ):
         """Compute the recall score.
 
@@ -518,9 +536,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     def brier_score(
         self,
         *,
-        data_source="test",
-        X=None,
-        y=None,
+        data_source: DataSource = "test",
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
     ):
         """Compute the Brier score.
 
@@ -593,11 +611,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     def roc_auc(
         self,
         *,
-        data_source="test",
-        X=None,
-        y=None,
-        average=None,
-        multi_class="ovr",
+        data_source: DataSource = "test",
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
+        average: Optional[
+            Literal["auto", "macro", "micro", "weighted", "samples"]
+        ] = None,
+        multi_class: Literal["raise", "ovr", "ovo"] = "ovr",
     ):
         """Compute the ROC AUC score.
 
@@ -705,9 +725,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     def log_loss(
         self,
         *,
-        data_source="test",
-        X=None,
-        y=None,
+        data_source: DataSource = "test",
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
     ):
         """Compute the log loss.
 
@@ -776,10 +796,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     def r2(
         self,
         *,
-        data_source="test",
-        X=None,
-        y=None,
-        multioutput="raw_values",
+        data_source: DataSource = "test",
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
+        multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
     ):
         """Compute the R² score.
 
@@ -859,10 +879,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     def rmse(
         self,
         *,
-        data_source="test",
-        X=None,
-        y=None,
-        multioutput="raw_values",
+        data_source: DataSource = "test",
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
+        multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
     ):
         """Compute the root mean squared error.
 
@@ -940,14 +960,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
     def custom_metric(
         self,
-        metric_function,
-        response_method,
+        metric_function: Callable,
+        response_method: Union[str, list[str]],
         *,
-        metric_name=None,
-        data_source="test",
-        X=None,
-        y=None,
-        **kwargs,
+        metric_name: Optional[str] = None,
+        data_source: DataSource = "test",
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
+        **kwargs: Any,
     ):
         """Compute a custom metric.
 
@@ -1055,7 +1075,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     # Methods related to the help tree
     ####################################################################################
 
-    def _sort_methods_for_help(self, methods):
+    def _sort_methods_for_help(
+        self, methods: list[tuple[str, Callable]]
+    ) -> list[tuple[str, Callable]]:
         """Override sort method for metrics-specific ordering.
 
         In short, we display the `report_metrics` first and then the `custom_metric`.
@@ -1073,7 +1095,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         return sorted(methods, key=_sort_key)
 
-    def _format_method_name(self, name):
+    def _format_method_name(self, name: str) -> str:
         """Override format method for metrics-specific naming."""
         method_name = f"{name}(...)"
         method_name = method_name.ljust(22)
@@ -1091,39 +1113,43 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         else:
             return method_name.ljust(29)
 
-    def _get_methods_for_help(self):
+    def _get_methods_for_help(self) -> list[tuple[str, Callable]]:
         """Override to exclude the plot accessor from methods list."""
         methods = super()._get_methods_for_help()
         return [(name, method) for name, method in methods if name != "plot"]
 
-    def _get_help_panel_title(self):
+    def _get_help_panel_title(self) -> str:
         return "[bold cyan]Available metrics methods[/bold cyan]"
 
-    def _get_help_legend(self):
+    def _get_help_legend(self) -> str:
         return (
             "[cyan](↗︎)[/cyan] higher is better [orange1](↘︎)[/orange1] lower is better"
         )
 
-    def _get_help_tree_title(self):
+    def _get_help_tree_title(self) -> str:
         return "[bold cyan]report.metrics[/bold cyan]"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Return a string representation using rich."""
         return self._rich_repr(
             class_name="skore.ComparisonReport.metrics",
             help_method_name="report.metrics.help()",
         )
 
+    ####################################################################################
+    # Methods related to displays
+    ####################################################################################
+
     @progress_decorator(description="Computing predictions for display")
     def _get_display(
         self,
         *,
-        X,
-        y,
-        data_source,
-        response_method,
-        display_class,
-        display_kwargs,
+        X: Union[ArrayLike, None],
+        y: Union[ArrayLike, None],
+        data_source: DataSource,
+        response_method: Union[str, list[str]],
+        display_class: type,
+        display_kwargs: dict[str, Any],
     ):
         """Get the display from the cache or compute it.
 
@@ -1187,7 +1213,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                         response_method=response_method,
                         data_source=data_source,
                         data_source_hash=None,
-                        pos_label=display_kwargs.get("pos_label", None),
+                        pos_label=display_kwargs.get("pos_label"),
                     )
                 )
                 progress.update(main_task, advance=1, refresh=True)
@@ -1210,7 +1236,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def roc(self, *, data_source="test", X=None, y=None, pos_label=None, ax=None):
+    def roc(
+        self,
+        *,
+        data_source: DataSource = "test",
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
+        pos_label: Optional[Union[int, float, bool, str]] = None,
+    ):
         """Plot the ROC curve.
 
         Parameters
@@ -1284,7 +1317,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def precision_recall(self, *, data_source="test", X=None, y=None, pos_label=None):
+    def precision_recall(
+        self,
+        *,
+        data_source: DataSource = "test",
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
+        pos_label: Optional[Union[int, float, bool, str]] = None,
+    ):
         """Plot the precision-recall curve.
 
         Parameters
@@ -1357,11 +1397,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     def prediction_error(
         self,
         *,
-        data_source="test",
-        X=None,
-        y=None,
-        subsample=1_000,
-        random_state=None,
+        data_source: DataSource = "test",
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
+        subsample: int = 1_000,
+        random_state: Optional[int] = None,
     ):
         """Plot the prediction error of a regression model.
 

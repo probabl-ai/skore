@@ -41,3 +41,4 @@ class StratifyWarning(TrainTestSplitWarning):
         """
         if stratify:
             return StratifyWarning.MSG
+        return None

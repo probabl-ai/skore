@@ -24,6 +24,7 @@ def binary_classification_display():
         estimators=estimators,
         estimator_names=["BC-E1", "BC-E2"],
         ml_task="binary-classification",
+        pos_label=None,
         data_source="test",
     )
 
@@ -46,6 +47,7 @@ def multiclass_classification_display():
         estimators=estimators,
         estimator_names=["MC-E1", "MC-E2"],
         ml_task="multiclass-classification",
+        pos_label=None,
         data_source="test",
     )
 
