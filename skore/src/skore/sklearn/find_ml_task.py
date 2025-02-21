@@ -2,15 +2,18 @@
 
 import numpy as np
 from sklearn.base import is_classifier, is_regressor
+from sklearn.utils import check_array
 from sklearn.utils.multiclass import type_of_target
 
 from skore.externals._sklearn_compat import is_clusterer
 from skore.sklearn.types import MLTask
 
 
-def _is_sequential(y) -> bool:
-    """Check whether ``y`` is vector of sequential integer values."""
+def _column_is_classification(y) -> bool:
+    """Check whether ``y`` is a 1-d array of sequential integer values containing 0."""
     y_values = np.unique(y)
+    if 0 not in y:
+        return False
     sequential = np.arange(y_values[0], y_values[-1] + 1)
     return np.array_equal(y_values, sequential)
 
@@ -24,11 +27,11 @@ def _is_classification(y) -> bool:
 
     If `y` does not contain numbers (e.g. strings), then this function returns True.
     """
-    y = np.array(y).flatten()
     try:
-        return _is_sequential(y) and 0 in y
-    except TypeError:
+        y = check_array(y, dtype="numeric", ensure_2d=False)
+    except ValueError:
         return True
+    return _column_is_classification(y)
 
 
 def _find_ml_task(y, estimator=None) -> MLTask:
