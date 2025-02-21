@@ -1,4 +1,5 @@
 import inspect
+from collections.abc import Sequence
 from io import StringIO
 from typing import Any, Optional, Union
 
@@ -7,6 +8,7 @@ import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.colors import Colormap
 from matplotlib.figure import Figure, SubFigure
+from numpy.typing import ArrayLike
 from rich.console import Console
 from rich.panel import Panel
 from rich.tree import Tree
@@ -132,12 +134,12 @@ class _ClassifierCurveDisplayMixin:
     @classmethod
     def _validate_from_predictions_params(
         cls,
-        y_true: list[np.ndarray],
-        y_pred: list[np.ndarray],
+        y_true: Sequence[ArrayLike],
+        y_pred: Sequence[ArrayLike],
         *,
         ml_task: str,
-        pos_label: Optional[Union[str, int]] = None,
-    ) -> Optional[Union[str, int]]:
+        pos_label: Optional[Union[int, float, bool, str]] = None,
+    ) -> Union[int, float, bool, str, None]:
         for y_true_i, y_pred_i in zip(y_true, y_pred):
             check_consistent_length(y_true_i, y_pred_i)
 
