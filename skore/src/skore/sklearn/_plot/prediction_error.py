@@ -129,11 +129,6 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         despine : bool, default=True
             Whether to remove the top and right spines from the plot.
 
-        Returns
-        -------
-        display : PredictionErrorDisplay
-            Object that stores computed values.
-
         Examples
         --------
         >>> from sklearn.datasets import load_diabetes
@@ -313,7 +308,7 @@ class PredictionErrorDisplay(HelpDisplayMixin):
             The machine learning task.
 
         data_source : {"train", "test", "X_y"}, default=None
-            The data source used to compute the ROC curve.
+            The data source used to compute the prediction error curve.
 
         subsample : float, int or None, default=1_000
             Sampling the samples to be shown on the scatter plot. If `float`,
@@ -329,7 +324,6 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         Returns
         -------
         display : PredictionErrorDisplay
-            Object that stores the computed values.
         """
         random_state = check_random_state(random_state)
         if isinstance(subsample, numbers.Integral):

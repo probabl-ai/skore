@@ -11,11 +11,11 @@ from skore.sklearn._plot import (
 from skore.sklearn.train_test_split.train_test_split import train_test_split
 
 __all__ = [
-    "train_test_split",
+    "ComparisonReport",
     "CrossValidationReport",
     "EstimatorReport",
-    "ComparisonReport",
-    "RocCurveDisplay",
     "PrecisionRecallCurveDisplay",
     "PredictionErrorDisplay",
+    "RocCurveDisplay",
+    "train_test_split",
 ]
