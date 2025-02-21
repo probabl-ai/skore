@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.colors import Colormap
-from matplotlib.figure import Figure
+from matplotlib.figure import Figure, SubFigure
 from rich.console import Console
 from rich.panel import Panel
 from rich.tree import Tree
@@ -18,6 +18,8 @@ from sklearn.utils.validation import (
 
 class HelpDisplayMixin:
     """Mixin class to add help functionality to a class."""
+
+    estimator_name: str  # defined in the concrete display class
 
     def _get_attributes_for_help(self) -> list[str]:
         """Get the attributes ending with '_' to display in help."""
@@ -87,7 +89,8 @@ class HelpDisplayMixin:
 
     def __str__(self) -> str:
         """Return a string representation using rich."""
-        console = Console(file=StringIO(), force_terminal=False)
+        string_buffer = StringIO()
+        console = Console(file=string_buffer, force_terminal=False)
         console.print(
             Panel(
                 "Get guidance using the display.help() method",
@@ -96,13 +99,14 @@ class HelpDisplayMixin:
                 expand=False,
             )
         )
-        return console.file.getvalue()
+        return string_buffer.getvalue()
 
     def __repr__(self) -> str:
         """Return a string representation using rich."""
-        console = Console(file=StringIO(), force_terminal=False)
+        string_buffer = StringIO()
+        console = Console(file=string_buffer, force_terminal=False)
         console.print(f"[cyan]skore.{self.__class__.__name__}(...)[/cyan]")
-        return console.file.getvalue()
+        return string_buffer.getvalue()
 
 
 class _ClassifierCurveDisplayMixin:
@@ -112,9 +116,11 @@ class _ClassifierCurveDisplayMixin:
     the target and gather the response of the estimator.
     """
 
+    estimator_name: str  # defined in the concrete display class
+
     def _validate_plot_params(
         self, *, ax: Optional[Axes] = None, estimator_name: Optional[str] = None
-    ) -> tuple[Axes, Figure, str]:
+    ) -> tuple[Axes, Union[Figure, SubFigure], str]:
         if ax is None:
             _, ax = plt.subplots()
 
