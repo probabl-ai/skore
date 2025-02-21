@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 from collections.abc import Iterable
-from typing import Literal, Optional, Union
+from typing import Any, Literal, Optional, Union
 
 import joblib
 import numpy as np
@@ -146,6 +146,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         self.estimator_reports_ = reports
 
         # used to know if a parent launches a progress bar manager
+        self._progress_info: Optional[dict[str, Any]] = None
         self._parent_progress = None
 
         # NEEDED FOR METRICS ACCESSOR
@@ -154,7 +155,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         self._hash = self._rng.integers(
             low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
         )
-        self._cache = {}
+        self._cache: dict[str, Any] = {}
         self._ml_task = self.estimator_reports_[0]._ml_task
 
     def clear_cache(self) -> None:
@@ -246,6 +247,9 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         if n_jobs is None:
             n_jobs = self.n_jobs
 
+        assert (
+            self._progress_info is not None
+        ), "The rich Progress class was not initialized."
         progress = self._progress_info["current_progress"]
         main_task = self._progress_info["current_task"]
 
