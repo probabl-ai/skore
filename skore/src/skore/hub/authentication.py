@@ -22,7 +22,7 @@ class AuthenticationError(Exception):
 
 
 class AuthenticationToken:
-    """Wrap access, refres and expires_at."""
+    """Wrap access, refresh and expires_at."""
 
     FILEPATH = pathlib.Path(tempfile.gettempdir(), "skore.token")
     EMPTY = object()
