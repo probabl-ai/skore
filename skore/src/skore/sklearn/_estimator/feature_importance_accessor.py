@@ -1,6 +1,10 @@
+from typing import Any, Literal, Optional, Union
+
 import numpy as np
 import pandas as pd
+from numpy.typing import ArrayLike
 from sklearn.base import is_classifier
+from sklearn.inspection import permutation_importance
 from sklearn.pipeline import Pipeline
 from sklearn.utils.metaestimators import available_if
 
@@ -8,6 +12,8 @@ from skore.externals._pandas_accessors import DirNamesMixin
 from skore.sklearn._base import _BaseAccessor
 from skore.sklearn._estimator.report import EstimatorReport
 from skore.utils._accessor import _check_has_coef
+
+DataSource = Literal["test", "train", "X_y"]
 
 
 class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
@@ -86,6 +92,103 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
         )
 
         return df
+
+    def feature_permutation(
+        self,
+        *,
+        data_source: DataSource = "test",
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
+        scoring=None,
+        **kwargs,
+    ) -> pd.DataFrame:
+        """Report the permutation importance of the estimator."""
+        # TODO docs
+        return self._feature_permutation(
+            data_source=data_source,
+            data_source_hash=None,
+            X=X,
+            y=y,
+            scoring=scoring,
+            **kwargs,
+        )
+
+    def _feature_permutation(
+        self,
+        *,
+        data_source: DataSource = "test",
+        data_source_hash: Optional[int] = None,
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
+        scoring: Union[str, list[str]] = None,  # Typing TODO
+        **kwargs,
+    ) -> pd.DataFrame:
+        if data_source_hash is None:
+            X, y_true, data_source_hash = self._get_X_y_and_data_source_hash(
+                data_source=data_source, X=X, y=y
+            )
+
+        # build the cache key components to finally create a tuple that will be used
+        # to check if the metric has already been computed
+        cache_key_parts: list[Any] = [
+            self._parent._hash,
+            "permutation_importance",
+            data_source,
+        ]
+
+        if data_source_hash is not None:
+            cache_key_parts.append(data_source_hash)
+
+        # order arguments by key to ensure cache works
+        # n_jobs variable should not be in the cache
+        for k, v in sorted(kwargs.items()):
+            if k == "n_jobs":
+                continue
+            cache_key_parts.append(v)
+
+        cache_key = tuple(cache_key_parts)
+
+        if cache_key in self._parent._cache:
+            score = self._parent._cache[cache_key]
+        else:
+            sklearn_score = permutation_importance(
+                estimator=self._parent.estimator_,
+                X=X,
+                y=y_true,
+                scoring=scoring,
+                **kwargs,
+            )
+            score = sklearn_score.get("importances")
+            # If there is more than one metric
+            if score is None:
+                data = np.concatenate(
+                    [v["importances"] for v in sklearn_score.values()]
+                )
+                n_features = X.shape[1]
+                n_repeats = data.shape[1]
+                index = pd.MultiIndex.from_product(
+                    [sklearn_score, (f"Feature #{i}" for i in range(n_features))],
+                    names=("Metric", "Feature"),
+                )
+                columns = pd.Index(
+                    (f"Repeat #{i}" for i in range(n_repeats)), name="Repeat"
+                )
+                score = pd.DataFrame(data=data, index=index, columns=columns)
+            else:
+                data = score
+                n_features = X.shape[1]
+                n_repeats = data.shape[1]
+                index = pd.Index(
+                    (f"Feature #{i}" for i in range(n_features)), name="Feature"
+                )
+                columns = pd.Index(
+                    (f"Repeat #{i}" for i in range(n_repeats)), name="Repeat"
+                )
+                score = pd.DataFrame(data=data, index=index, columns=columns)
+
+            self._parent._cache[cache_key] = score
+
+        return score
 
     ####################################################################################
     # Methods related to the help tree
