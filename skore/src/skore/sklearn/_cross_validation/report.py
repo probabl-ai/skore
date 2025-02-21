@@ -120,6 +120,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         n_jobs: Optional[int] = None,
     ) -> None:
         # used to know if a parent launch a progress bar manager
+        self._progress_info: Optional[dict[str, Any]] = None
         self._parent_progress = None
 
         self._estimator = clone(estimator)
@@ -139,7 +140,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         self._hash = self._rng.integers(
             low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
         )
-        self._cache = {}
+        self._cache: dict[str, Any] = {}
         self._ml_task = _find_ml_task(
             y, estimator=self.estimator_reports_[0]._estimator
         )
@@ -160,6 +161,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         estimator_reports : list of EstimatorReport
             The estimator reports.
         """
+        assert (
+            self._progress_info is not None
+        ), "The rich Progress class was not initialized."
         progress = self._progress_info["current_progress"]
         task = self._progress_info["current_task"]
 
@@ -265,6 +269,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         if n_jobs is None:
             n_jobs = self.n_jobs
 
+        assert (
+            self._progress_info is not None
+        ), "The rich Progress class was not initialized."
         progress = self._progress_info["current_progress"]
         main_task = self._progress_info["current_task"]
 
