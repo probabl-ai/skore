@@ -303,7 +303,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 else:
                     index = pd.Index([metric_name], name="Metric")
                     score = np.array(score).reshape(-1, 1)
-            elif self._parent._ml_task == "regression":
+            elif "regression" in self._parent._ml_task:
                 if isinstance(score, np.ndarray):
                     index = pd.MultiIndex.from_arrays(
                         [[metric_name] * len(score), list(range(len(score)))],

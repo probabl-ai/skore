@@ -103,8 +103,8 @@ def _find_ml_task(y, estimator=None) -> MLTask:
     >>> _find_ml_task(numpy.array([[0, 1, 5, 9], [1, 0, 1, 1]]))
     'multioutput-regression'
 
-    # Discrete sequential values, not containing 0, in a 2d array
-    >>> _find_ml_task(numpy.array([[1, 3, 2], [2, 1, 1]]))
+    # 2 columns, one of them not sequential, in a 2d array
+    >>> _find_ml_task(numpy.array([[0, 0], [2, 2], [1, 0]]))
     'multioutput-regression'
     """
     if estimator is not None:
@@ -113,6 +113,11 @@ def _find_ml_task(y, estimator=None) -> MLTask:
         if is_clusterer(estimator):
             return "clustering"
         if is_regressor(estimator):
+            if y is None:
+                return "regression"
+            y_ = check_array(y, ensure_2d=False)
+            if len(y_.shape) >= 2 and y_.shape[1] > 1:
+                return "multioutput-regression"
             return "regression"
         if is_classifier(estimator):
             if hasattr(estimator, "classes_"):  # fitted estimator
