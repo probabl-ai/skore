@@ -1,6 +1,5 @@
 import time
 
-import joblib
 import numpy as np
 from rich.panel import Panel
 from sklearn.base import clone, is_classifier
@@ -12,6 +11,7 @@ from skore.externals._sklearn_compat import _safe_indexing
 from skore.sklearn._base import _BaseReport
 from skore.sklearn._estimator.report import EstimatorReport
 from skore.sklearn.find_ml_task import _find_ml_task
+from skore.utils._parallel import Parallel, delayed
 from skore.utils._progress_bar import progress_decorator
 
 
@@ -84,13 +84,12 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
     See Also
     --------
-    skore.sklearn.estimator.report.EstimatorReport :
+    skore.EstimatorReport
         Report for a fitted estimator.
 
     Examples
     --------
     >>> from sklearn.datasets import make_classification
-    >>> from sklearn.model_selection import train_test_split
     >>> from sklearn.linear_model import LogisticRegression
     >>> X, y = make_classification(random_state=42)
     >>> estimator = LogisticRegression()
@@ -157,10 +156,10 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         n_splits = self._cv_splitter.get_n_splits(self._X, self._y)
         progress.update(task, total=n_splits)
 
-        parallel = joblib.Parallel(n_jobs=self.n_jobs, return_as="generator")
+        parallel = Parallel(n_jobs=self.n_jobs, return_as="generator")
         # do not split the data to take advantage of the memory mapping
         generator = parallel(
-            joblib.delayed(_generate_estimator_report)(
+            delayed(_generate_estimator_report)(
                 clone(self._estimator),
                 self._X,
                 self._y,

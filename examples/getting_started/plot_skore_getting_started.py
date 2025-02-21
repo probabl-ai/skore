@@ -17,6 +17,8 @@ Skore: getting started
 #       *   :class:`skore.CrossValidationReport`: get an insightful report on your
 #           cross-validation results
 #
+#       *   :class:`skore.ComparisonReport`: benchmark your skore estimator reports
+#
 #       *   :func:`skore.train_test_split`: get diagnostics when splitting your data
 #
 # #.    Track your ML/DS results using skore's :class:`~skore.Project`
@@ -50,10 +52,10 @@ from skore import EstimatorReport
 X, y = make_classification(n_classes=2, n_samples=100_000, n_informative=4)
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 
-clf = LogisticRegression(random_state=0)
+log_reg = LogisticRegression(random_state=0)
 
-est_report = EstimatorReport(
-    clf, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test
+log_reg_report = EstimatorReport(
+    log_reg, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test
 )
 
 # %%
@@ -61,14 +63,14 @@ est_report = EstimatorReport(
 # (skore detected that we are doing binary classification):
 
 # %%
-est_report.help()
+log_reg_report.help()
 
 # %%
 # We can get the report metrics that was computed for us:
 
 # %%
-df_est_report_metrics = est_report.metrics.report_metrics()
-df_est_report_metrics
+df_log_reg_report_metrics = log_reg_report.metrics.report_metrics()
+df_log_reg_report_metrics
 
 # %%
 # We can also plot the ROC curve that was generated for us:
@@ -76,7 +78,7 @@ df_est_report_metrics
 # %%
 import matplotlib.pyplot as plt
 
-roc_plot = est_report.metrics.roc()
+roc_plot = log_reg_report.metrics.roc()
 roc_plot.plot()
 plt.tight_layout()
 
@@ -97,7 +99,7 @@ plt.tight_layout()
 # %%
 from skore import CrossValidationReport
 
-cv_report = CrossValidationReport(clf, X, y, cv_splitter=5)
+cv_report = CrossValidationReport(log_reg, X, y, cv_splitter=5)
 
 # %%
 # We display the cross-validation report helper:
@@ -125,15 +127,68 @@ plt.tight_layout()
 # for example the first fold:
 
 # %%
-est_report_fold = cv_report.estimator_reports_[0]
-df_report_metrics_fold = est_report_fold.metrics.report_metrics()
-df_report_metrics_fold
+log_reg_report_fold = cv_report.estimator_reports_[0]
+df_log_reg_report_fold_metrics = log_reg_report_fold.metrics.report_metrics()
+df_log_reg_report_fold_metrics
 
 # %%
 # .. seealso::
 #
 #   For more information about the motivation and usage of
 #   :class:`skore.CrossValidationReport`, see :ref:`example_use_case_employee_salaries`.
+
+# %%
+# Comparing estimators reports
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+# :class:`skore.ComparisonReport` enables users to compare several estimator reports
+# (corresponding to several estimators) on a same test set, as in a benchmark of
+# estimators.
+#
+# Apart from the previous ``log_reg_report``, let use define another estimator report:
+
+# %%
+from sklearn.ensemble import RandomForestClassifier
+
+rf = RandomForestClassifier(max_depth=2, random_state=0)
+rf_report = EstimatorReport(
+    rf, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test
+)
+
+# %%
+# Now, let us compare these two estimator reports, that were applied to the exact
+# same test set:
+
+# %%
+from skore import ComparisonReport
+
+comparison_report = ComparisonReport(reports=[log_reg_report, rf_report])
+
+# %%
+# As for the :class:`~skore.EstimatorReport` and the
+# :class:`~skore.CrossValidationReport`, we have a helper:
+
+# %%
+comparison_report.help()
+
+# %%
+# Let us display the result of our benchmark:
+
+# %%
+benchmark_metrics = comparison_report.metrics.report_metrics()
+benchmark_metrics
+
+# %%
+# We have the result of our benchmark.
+
+# %%
+# We display the ROC curve for the two estimator reports we want to compare, by
+# superimposing them on the same figure:
+
+# %%
+comparison_report.metrics.roc().plot()
+plt.tight_layout()
+
 
 # %%
 # Train-test split with skore

@@ -152,11 +152,6 @@ class PrecisionRecallCurveDisplay(
         despine : bool, default=True
             Whether to remove the top and right spines from the plot.
 
-        Returns
-        -------
-        display : PrecisionRecallCurveDisplay
-            Object that stores computed values.
-
         Notes
         -----
         The average precision (cf. :func:`~sklearn.metrics.average_precision_score`)
@@ -410,7 +405,7 @@ class PrecisionRecallCurveDisplay(
             The machine learning task.
 
         data_source : {"train", "test", "X_y"}, default=None
-            The data source used to compute the ROC curve.
+            The data source used to compute the precision recall curve.
 
         pos_label : int, float, bool or str, default=None
             The class considered as the positive class when computing the
@@ -423,7 +418,7 @@ class PrecisionRecallCurveDisplay(
 
         Returns
         -------
-        display : :class:`~sklearn.metrics.PrecisionRecallDisplay`
+        display : PrecisionRecallCurveDisplay
         """
         pos_label_validated = cls._validate_from_predictions_params(
             y_true, y_pred, ml_task=ml_task, pos_label=pos_label

@@ -9,25 +9,21 @@ everyone and appreciate you taking the time to get involved.
 
 This project is hosted on https://github.com/probabl-ai/skore.
 
-.. topic:: **Our community, our values**
+.. topic:: **Our values**
 
-    We are a community based on openness and friendly, didactic
-    discussions.
+    We aspire to treat everybody equally, and value their contributions.
+    We are particularly seeking people from underrepresented backgrounds in Open Source
+    Software to participate and contribute their expertise and experience.
 
-    We aspire to treat everybody equally, and value their contributions.  We
-    are particularly seeking people from underrepresented backgrounds in Open
-    Source Software to participate and contribute their expertise and experience.
+    Decisions are made based on technical merit, consensus, and roadmap priorities.
 
-    Decisions are made based on technical merit and consensus.
+    Code is not the only way to help the project. Reviewing pull requests, answering
+    questions to help others on mailing lists or issues, organizing and teaching
+    tutorials, working on the website, improving the documentation, are all priceless
+    contributions.
 
-    Code is not the only way to help the project. Reviewing pull
-    requests, answering questions to help others on mailing lists or
-    issues, organizing and teaching tutorials, working on the website,
-    improving the documentation, are all priceless contributions.
-
-    We abide by the principles of openness, respect, and consideration of
-    others of the Python Software Foundation:
-    https://www.python.org/psf/codeofconduct/
+    We abide by the principles of openness, respect, and consideration of others of the
+    Python Software Foundation: https://www.python.org/psf/codeofconduct/
 
 Below are some guidelines to help you get started.
 
@@ -56,8 +52,8 @@ You'll need ``python >=3.9, <3.13`` to build the backend and ``Node>=20`` to bui
 .. code-block:: bash
 
     make install-skore
-    skore create
     make build-skore-ui
+    skore create
     make serve-skore-ui
 
 You are now all setup to run the library locally.
@@ -107,15 +103,14 @@ Then, to use the skore-ui
 
 Do not forget to do a hard refresh when changing the front-end (meta+shift+R) if the expected changes do not appear.
 
-PR format
----------
+Pull request format
+-------------------
 
 We use the `conventional commits <https://www.conventionalcommits.org/en/v1.0.0/#summary>`_ format, and we automatically check that the PR title fits this format.
-In particular, commits are "sentence case", meaning "fix: Fix issue" passes, while "fix: fix issue" doesn't.
 
-Generally the description of a commit should start with a verb in the imperative voice, so that it would properly complete the sentence: "When applied, this commit will [...]".
-
-Examples of correct PR titles: ``docs: Update the docstrings`` or ``feat: Remove CrossValidationAggregationItem.``
+- In particular, commits are "sentence case", meaning that the ``fix: Fix issue`` title passes, while ``fix: fix issue`` does not.
+- Generally, the description of a commit should start with a verb in the imperative voice, so that it would properly complete the sentence: ``When applied, this commit will [...]``.
+- Examples of correct PR titles: ``docs: Update the docstrings`` or ``feat: Remove CrossValidationAggregationItem``
 
 Tests
 -----
@@ -199,15 +194,16 @@ When writing documentation, whether it be online, docstrings or help messages in
 Contributing to the examples
 ----------------------------
 
-The examples are stored in the folder called `examples`. They are classified in subcategories.
-They should be written in a python file, with cells marked by `# %%`. They will be automatically converted to rst files in the subfolder `sphinx/auto_examples`. This subfolder is listed in the gitignore, and cannot be pushed.
+The examples are stored in the `examples` folder:
 
-The python file should start by a docstring indicating the example name and the title.
+- They are classified in subcategories.
+- They should be written in a python script (`.py`), with cells marked by `# %%`, to separate code cells and markdown cells, as they will be rendered as notebooks (`.ipynb`).
+- The file should start with a docstring giving the example title.
+- No example should require to have large files stored in this repository. For example, no dataset should be stored, it should be downloaded in the script.
+- When built (using `make html` for example), these examples will automatically be converted into rst files in the `sphinx/auto_examples` subfolder. This subfolder is listed in the gitignore and cannot be pushed.
 
-No example should require to have large files in this repository. For example, no dataset should be stored, it should be downloaded in the script.
-
-Contributing to the ReadMe
+Contributing to the README
 --------------------------
 
-The README.md file can be modified and is part of the documentation.
+The `README.md` file can be modified and is part of the documentation (although it is not included in the online documentation).
 This file is used to be presented on `PyPI <https://pypi.org/project/skore/#description>`_.

@@ -12,6 +12,8 @@ from skore.sklearn._plot import (
     RocCurveDisplay,
 )
 from skore.utils._accessor import _check_supported_ml_task
+from skore.utils._index import flatten_multi_index
+from skore.utils._parallel import Parallel, delayed
 from skore.utils._progress_bar import progress_decorator
 
 
@@ -45,8 +47,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source="test",
         scoring=None,
         scoring_names=None,
-        pos_label=None,
         scoring_kwargs=None,
+        pos_label=None,
+        indicator_favorability=False,
+        flat_index=False,
         aggregate=None,
     ):
         """Report a set of metrics for our estimator.
@@ -72,11 +76,19 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             Used to overwrite the default scoring names in the report. It should be of
             the same length as the `scoring` parameter.
 
+        scoring_kwargs : dict, default=None
+            The keyword arguments to pass to the scoring functions.
+
         pos_label : int, float, bool or str, default=None
             The positive class.
 
-        scoring_kwargs : dict, default=None
-            The keyword arguments to pass to the scoring functions.
+        indicator_favorability : bool, default=False
+            Whether or not to add an indicator of the favorability of the metric as
+            an extra column in the returned DataFrame.
+
+        flat_index : bool, default=False
+            Whether to flatten the `MultiIndex` columns. Flat index will always be lower
+            case, do not include spaces and remove the hash symbol to ease indexing.
 
         aggregate : {"mean", "std"} or list of such str, default=None
             Function to aggregate the scores across the cross-validation splits.
@@ -95,15 +107,18 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         >>> report.metrics.report_metrics(
-        ...     scoring=["precision", "recall"], pos_label=1, aggregate=["mean", "std"]
+        ...     scoring=["precision", "recall"],
+        ...     pos_label=1,
+        ...     aggregate=["mean", "std"],
+        ...     indicator_favorability=True,
         ... )
-                    LogisticRegression
-                                    mean       std
+                  LogisticRegression           Favorability
+                                mean       std
         Metric
-        Precision (↗︎)            0.94...  0.024...
-        Recall (↗︎)               0.96...  0.027...
+        Precision           0.94...  0.02...         (↗︎)
+        Recall              0.96...  0.02...         (↗︎)
         """
-        return self._compute_metric_scores(
+        results = self._compute_metric_scores(
             report_metric_name="report_metrics",
             data_source=data_source,
             aggregate=aggregate,
@@ -111,7 +126,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             pos_label=pos_label,
             scoring_kwargs=scoring_kwargs,
             scoring_names=scoring_names,
+            indicator_favorability=indicator_favorability,
         )
+        if flat_index:
+            if isinstance(results.columns, pd.MultiIndex):
+                results.columns = flatten_multi_index(results.columns)
+            if isinstance(results.index, pd.MultiIndex):
+                results.index = flatten_multi_index(results.index)
+        return results
 
     @progress_decorator(description="Compute metric for each split")
     def _compute_metric_scores(
@@ -125,16 +147,15 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         cache_key = (self._parent._hash, report_metric_name, data_source)
         cache_key += (aggregate,) if aggregate is None else tuple(aggregate)
 
-        if metric_kwargs != {}:
-            # we need to enforce the order of the parameter for a specific metric
-            # to make sure that we hit the cache in a consistent way
-            ordered_metric_kwargs = sorted(metric_kwargs.keys())
+        # we need to enforce the order of the parameter for a specific metric
+        # to make sure that we hit the cache in a consistent way
+        ordered_metric_kwargs = sorted(metric_kwargs.keys())
 
-            for key in ordered_metric_kwargs:
-                if isinstance(metric_kwargs[key], (np.ndarray, list, dict)):
-                    cache_key += (joblib.hash(metric_kwargs[key]),)
-                else:
-                    cache_key += (metric_kwargs[key],)
+        for key in ordered_metric_kwargs:
+            if isinstance(metric_kwargs[key], (np.ndarray, list, dict)):
+                cache_key += (joblib.hash(metric_kwargs[key]),)
+            else:
+                cache_key += (metric_kwargs[key],)
 
         progress = self._progress_info["current_progress"]
         main_task = self._progress_info["current_task"]
@@ -145,13 +166,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         if cache_key in self._parent._cache:
             results = self._parent._cache[cache_key]
         else:
-            parallel = joblib.Parallel(
+            parallel = Parallel(
                 n_jobs=self._parent.n_jobs,
                 return_as="generator",
                 require="sharedmem",
             )
             generator = parallel(
-                joblib.delayed(getattr(report.metrics, report_metric_name))(
+                delayed(getattr(report.metrics, report_metric_name))(
                     data_source=data_source, **metric_kwargs
                 )
                 for report in self._parent.estimator_reports_
@@ -167,13 +188,26 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 keys=[f"Split #{i}" for i in range(len(results))],
             )
             results = results.swaplevel(0, 1, axis=1)
+
+            # Pop the favorability column if it exists, to:
+            # - not use it in the aggregate operation
+            # - later to only report a single column and not by split columns
+            if metric_kwargs.get("indicator_favorability", False):
+                favorability = results.pop("Favorability").iloc[:, 0]
+            else:
+                favorability = None
+
             if aggregate:
                 if isinstance(aggregate, str):
                     aggregate = [aggregate]
+
                 results = results.aggregate(func=aggregate, axis=1)
                 results = pd.concat(
                     [results], keys=[self._parent.estimator_name_], axis=1
                 )
+
+            if favorability is not None:
+                results["Favorability"] = favorability
 
             self._parent._cache[cache_key] = results
         return results
@@ -214,7 +248,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                     LogisticRegression
                                 Split #0  Split #1
         Metric
-        Accuracy (↗︎)            0.94...   0.94...
+        Accuracy                0.94...   0.94...
         """
         return self.report_metrics(
             scoring=["accuracy"],
@@ -293,7 +327,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                                     LogisticRegression
                                                 Split #0  Split #1
         Metric         Label / Average
-        Precision (↗︎) 0                         0.96...   0.90...
+        Precision     0                         0.96...   0.90...
                       1                         0.93...   0.96...
         """
         return self.report_metrics(
@@ -376,7 +410,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                                     LogisticRegression
                                             Split #0  Split #1
         Metric      Label / Average
-        Recall (↗︎) 0                         0.87...  0.94...
+        Recall     0                         0.87...  0.94...
                    1                         0.98...  0.94...
         """
         return self.report_metrics(
@@ -421,7 +455,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                         LogisticRegression
                                 Split #0  Split #1
         Metric
-        Brier score (↘︎)         0.04...   0.04...
+        Brier score             0.04...   0.04...
         """
         return self.report_metrics(
             scoring=["brier_score"],
@@ -505,7 +539,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                     LogisticRegression
                             Split #0  Split #1
         Metric
-        ROC AUC (↗︎)         0.99...   0.98...
+        ROC AUC             0.99...   0.98...
         """
         return self.report_metrics(
             scoring=["roc_auc"],
@@ -550,7 +584,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                     LogisticRegression
                                 Split #0  Split #1
         Metric
-        Log loss (↘︎)           0.1...     0.1...
+        Log loss                0.1...     0.1...
         """
         return self.report_metrics(
             scoring=["log_loss"],
@@ -606,7 +640,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                     Ridge
                 Split #0  Split #1
         Metric
-        R² (↗︎)  0.36...   0.39...
+        R²      0.36...   0.39...
         """
         return self.report_metrics(
             scoring=["r2"],
@@ -663,7 +697,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                     Ridge
                     Split #0   Split #1
         Metric
-        RMSE (↘︎)    59.9...    61.4...
+        RMSE        59.9...    61.4...
         """
         return self.report_metrics(
             scoring=["rmse"],
@@ -737,12 +771,12 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> report.metrics.custom_metric(
         ...     metric_function=mean_absolute_error,
         ...     response_method="predict",
-        ...     metric_name="MAE (↗︎)",
+        ...     metric_name="MAE",
         ... )
                     Ridge
                 Split #0   Split #1
         Metric
-        MAE (↗︎) 50.1...   52.6...
+        MAE     50.1...   52.6...
         """
         # create a scorer with `greater_is_better=True` to not alter the output of
         # `metric_function`
@@ -789,11 +823,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             "icon"
         ] in ("(↗︎)", "(↘︎)"):
             if self._SCORE_OR_LOSS_INFO[name]["icon"] == "(↗︎)":
-                method_name += f"[cyan]{self._SCORE_OR_LOSS_INFO[name]['name']}[/cyan]"
+                method_name += f"[cyan]{self._SCORE_OR_LOSS_INFO[name]['icon']}[/cyan]"
                 return method_name.ljust(43)
             else:  # (↘︎)
                 method_name += (
-                    f"[orange1]{self._SCORE_OR_LOSS_INFO[name]['name']}[/orange1]"
+                    f"[orange1]{self._SCORE_OR_LOSS_INFO[name]['icon']}[/orange1]"
                 )
                 return method_name.ljust(49)
         else:
