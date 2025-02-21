@@ -1,4 +1,5 @@
 import numpy
+import pandas
 import pytest
 from sklearn.cluster import KMeans
 from sklearn.datasets import (
@@ -23,6 +24,11 @@ from skore.sklearn.find_ml_task import _find_ml_task
             *make_regression(random_state=42),
             LinearRegression(),
             "regression",
+        ),
+        (
+            *make_regression(n_targets=2, random_state=42),
+            LinearRegression(),
+            "multioutput-regression",
         ),
         (make_classification(random_state=42)[0], None, KMeans(), "clustering"),
         (
@@ -69,6 +75,9 @@ def test_find_ml_task_with_estimator(X, y, estimator, expected_task, should_fit)
         (numpy.array([[1, 2], [2, 1]]), "multioutput-regression"),
         # No 2 class
         (numpy.array([[0, 3], [1, 3]]), "multioutput-regression"),
+        # Non-numeric is classification
+        (numpy.array(["a", "b", "c"]), "multiclass-classification"),
+        (numpy.array([[0, 2], [1, 2]]), "multioutput-regression"),
     ],
 )
 def test_find_ml_task_without_estimator(target, expected_task):
@@ -80,3 +89,15 @@ def test_find_ml_task_unfitted_estimator():
 
     estimator = DummyClassifier()
     assert _find_ml_task(None, estimator) == "unknown"
+
+
+def test_find_ml_task_pandas():
+    y = pandas.Series([0, 1, 2])
+    assert _find_ml_task(y, None) == "multiclass-classification"
+
+    y = pandas.DataFrame([0, 1, 2])
+    assert _find_ml_task(y, None) == "multiclass-classification"
+
+
+def test_find_ml_task_string():
+    assert _find_ml_task(["0", "1", "2"], None) == "multiclass-classification"
