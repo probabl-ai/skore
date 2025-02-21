@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import functools
 import json
 import pathlib
 import tempfile
@@ -98,3 +99,24 @@ class AuthenticationToken:
 
     def __repr__(self):
         return f"AuthenticationToken('{self.__access:.10}[...]')"
+
+
+TOKEN = AuthenticationToken()
+
+
+def authenticate(fn):
+    """
+    Authenticate current user by requesting token before calling ``fn``.
+
+    Parameters
+    ----------
+    fn : callable
+        Callable that is protected from unauthenticated/unauthorized users.
+
+    Returns
+    -------
+    wrapper : callable
+        Wrapper that authenticate current user and pass ``AuthenticationToken`` as first
+        argument to ``fn``.
+    """
+    return functools.wraps(fn)(functools.partial(fn, token=TOKEN))
