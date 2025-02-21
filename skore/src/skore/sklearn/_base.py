@@ -58,14 +58,14 @@ class _HelpMixin(ABC):
         """Create the help tree."""
         pass
 
-    @classmethod
     @abstractmethod
-    def _get_help_panel_title(cls) -> str:
+    def _get_help_panel_title(self) -> str:
         """Get the help panel title."""
         pass
 
     def _create_help_panel(self) -> Panel:
         """Create the help panel."""
+        content: Union[Tree, Group]
         if self._get_help_legend():
             content = Group(
                 self._create_help_tree(),
@@ -89,7 +89,8 @@ class _HelpMixin(ABC):
 
     def _rich_repr(self, class_name: str, help_method_name: str) -> str:
         """Return a string representation using rich."""
-        console = Console(file=StringIO(), force_terminal=False)
+        string_buffer = StringIO()
+        console = Console(file=string_buffer, force_terminal=False)
         console.print(
             Panel(
                 f"Get guidance using the {help_method_name} method",
@@ -98,7 +99,7 @@ class _HelpMixin(ABC):
                 expand=False,
             )
         )
-        return console.file.getvalue()
+        return string_buffer.getvalue()
 
 
 class _BaseReport(_HelpMixin):
@@ -202,6 +203,11 @@ class _BaseAccessor(_HelpMixin):
 
     def __init__(self, parent: _BaseReport) -> None:
         self._parent = parent
+
+    @abstractmethod
+    def _get_help_tree_title(self) -> str:
+        """Get the title for the help tree."""
+        pass
 
     def _get_help_panel_title(self) -> str:
         name = self.__class__.__name__.replace("_", "").replace("Accessor", "").lower()
@@ -353,9 +359,14 @@ def _get_cached_response_values(
     if prediction_method in ("predict_proba", "decision_function"):
         # pos_label is only important in classification and with probabilities
         # and decision functions
-        cache_key = (estimator_hash, pos_label, prediction_method, data_source)
+        cache_key: tuple[Any, ...] = (
+            estimator_hash,
+            pos_label,
+            prediction_method,
+            data_source,
+        )
     else:
-        cache_key = (estimator_hash, prediction_method, data_source)
+        cache_key = (estimator_hash, None, prediction_method, data_source)
 
     if data_source == "X_y":
         if data_source_hash is None:
@@ -363,7 +374,7 @@ def _get_cached_response_values(
             # If data_source_hash is not None, we internally computed ourself the hash
             # and it is trustful
             data_source_hash = joblib.hash(X)
-        cache_key += (data_source_hash,)
+        cache_key = cache_key + (data_source_hash,)
 
     if cache_key in cache:
         return cache[cache_key]
