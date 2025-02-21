@@ -63,9 +63,11 @@ class _FeatureImportanceAccessor(_BaseAccessor, DirNamesMixin):
         )
 
         feature_names = (
-            estimator.feature_names_in_
-            if hasattr(estimator, "feature_names_in_")
-            else [f"Feature #{i}" for i in range(estimator.n_features_in_)]
+            self._parent.estimator_.feature_names_in_
+            if hasattr(self._parent.estimator_, "feature_names_in_")
+            else [
+                f"Feature #{i}" for i in range(self._parent.estimator_.n_features_in_)
+            ]
         )
 
         intercept = np.atleast_2d(estimator.intercept_)
