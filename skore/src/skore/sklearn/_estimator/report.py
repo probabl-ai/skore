@@ -2,7 +2,7 @@ import copy
 import time
 import warnings
 from itertools import product
-from typing import Literal, Optional, Union
+from typing import Any, Literal, Optional, Union
 
 import numpy as np
 from numpy.typing import ArrayLike
@@ -79,7 +79,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     @staticmethod
     def _fit_estimator(
-        estimator: BaseEstimator, X_train: ArrayLike, y_train: Optional[ArrayLike]
+        estimator: BaseEstimator,
+        X_train: Union[ArrayLike, None],
+        y_train: Union[ArrayLike, None],
     ) -> BaseEstimator:
         if X_train is None or (y_train is None and not is_clusterer(estimator)):
             raise ValueError(
@@ -114,6 +116,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         y_test: Optional[ArrayLike] = None,
     ) -> None:
         # used to know if a parent launch a progress bar manager
+        self._progress_info: Optional[dict[str, Any]] = None
         self._parent_progress = None
 
         if fit == "auto":
@@ -142,7 +145,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self._hash = self._rng.integers(
             low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
         )
-        self._cache = {}
+        self._cache: dict[str, Any] = {}
         self._ml_task = _find_ml_task(self._y_test, estimator=self._estimator)
 
     # NOTE:
@@ -250,6 +253,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             )
         )
         # trigger the computation
+        assert (
+            self._progress_info is not None
+        ), "The rich Progress class was not initialized."
         progress = self._progress_info["current_progress"]
         task = self._progress_info["current_task"]
         total_iterations = len(response_methods) * len(pos_labels) * len(data_sources)
