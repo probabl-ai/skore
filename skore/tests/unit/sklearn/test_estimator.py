@@ -21,7 +21,7 @@ from sklearn.metrics import (
     rand_score,
 )
 from sklearn.model_selection import train_test_split
-from sklearn.pipeline import Pipeline
+from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 from sklearn.utils.validation import check_is_fitted
@@ -1350,6 +1350,43 @@ def test_estimator_report_model_weights_pandas_dataframe():
             5.707783e01,
             6.057748e01,
             3.560967e01,
+        ],
+        index=[
+            "Intercept",
+            "my_feature_0",
+            "my_feature_1",
+            "my_feature_2",
+            "my_feature_3",
+            "my_feature_4",
+        ],
+        columns=["Coefficient"],
+    )
+    pd.testing.assert_frame_equal(result, expected)
+
+
+def test_estimator_report_model_weights_pandas_dataframe_pipeline():
+    """If provided, the model weights dataframe uses the feature names."""
+    X, y = make_regression(n_features=5, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+    X_train = pd.DataFrame(
+        X_train, columns=[f"my_feature_{i}" for i in range(X_train.shape[1])]
+    )
+    est = make_pipeline(StandardScaler(), LinearRegression())
+    est.fit(X_train, y_train)
+
+    report = EstimatorReport(est)
+    result = report.feature_importance.model_weights()
+
+    expected = pd.DataFrame(
+        data=[
+            7.813845,
+            58.075732,
+            95.531352,
+            59.158434,
+            60.605368,
+            34.323409,
         ],
         index=[
             "Intercept",
