@@ -63,7 +63,7 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
     estimator_names : list of str
         Name of the estimators.
 
-    pos_label : int, float, bool or str, default=None
+    pos_label : int, float, bool, str or None
         The class considered as the positive class. If None, the class will not
         be shown in the legend.
 

@@ -1,7 +1,7 @@
 import inspect
 from abc import ABC, abstractmethod
 from io import StringIO
-from typing import Any, Literal, Optional, Union
+from typing import Any, Generic, Literal, Optional, TypeVar, Union
 
 import joblib
 from numpy.typing import ArrayLike
@@ -198,10 +198,13 @@ class _BaseReport(_HelpMixin):
         return tree
 
 
-class _BaseAccessor(_HelpMixin):
+ParentT = TypeVar("ParentT", bound="_BaseReport")
+
+
+class _BaseAccessor(_HelpMixin, Generic[ParentT]):
     """Base class for all accessors."""
 
-    def __init__(self, parent: _BaseReport) -> None:
+    def __init__(self, parent: ParentT) -> None:
         self._parent = parent
 
     @abstractmethod
