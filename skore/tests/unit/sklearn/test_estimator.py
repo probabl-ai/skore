@@ -1399,3 +1399,20 @@ def test_estimator_report_model_weights_pandas_dataframe_pipeline():
         columns=["Coefficient"],
     )
     pd.testing.assert_frame_equal(result, expected)
+
+
+def test_estimator_report_feature_permutation():
+    X, y = make_regression(n_features=5, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+    linear_regression = LinearRegression().fit(X_train, y_train)
+
+    report = EstimatorReport(linear_regression, X_test=X_test, y_test=y_test)
+    result = report.feature_importance.feature_permutation()
+    breakpoint()
+
+
+def test_estimator_report_feature_permutation_not_fitted():
+    """If estimator is not fitted, raise"""
+    assert False

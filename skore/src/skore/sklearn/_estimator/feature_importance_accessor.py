@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from sklearn.inspection import permutation_importance
 from sklearn.pipeline import Pipeline
 from sklearn.utils.metaestimators import available_if
 
@@ -86,6 +87,16 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
 
         return df
 
+    def feature_permutation(
+        self,
+        *,
+        data_source="test",
+        X=None,
+        y=None,
+        scoring=None,
+        **kwargs,
+    ) -> pd.DataFrame:
+        """Report the permutation importance of the estimator."""
     ####################################################################################
     # Methods related to the help tree
     ####################################################################################
