@@ -25,13 +25,27 @@ def _is_classification(y) -> bool:
     to be multiclass classification. This might not be the case, so we add the
     constraints that `y` must contain sequential values and contain 0.
 
-    If `y` does not contain numbers (e.g. strings), then this function returns True.
+    If `y` is a 2-d array, we check each column independently; if at least one
+    column does not fit the constraints, then we consider the task to be regression.
+
+    Note that this can cause false positives, e.g. a classification task with classes
+    0, 1, 2 where `y` contains no examples of class 1 would be falsely considered
+    "regression".
+    Similarly, if `y` is a 2-d array where some column contains 0 and 2 but not 1,
+    the whole array would be considered "regression".
+
+    If `y` does not contain numbers (e.g. strings) then this function returns True.
     """
     try:
         y = check_array(y, dtype="numeric", ensure_2d=False)
     except ValueError:
         return True
-    return _column_is_classification(y)
+
+    if len(y.shape) == 1:
+        return _column_is_classification(y)
+
+    # Iterate on columns of y (check_array ensures that y is at most 2-d)
+    return all(_column_is_classification(column) for column in y.T)
 
 
 def _find_ml_task(y, estimator=None) -> MLTask:
@@ -73,16 +87,16 @@ def _find_ml_task(y, estimator=None) -> MLTask:
     >>> _find_ml_task(numpy.array([1, 3, 2]))
     'regression'
 
-    # 2 values, containing 0, in a 2d array
-    >>> _find_ml_task(numpy.array([[0, 1], [1, 1]]))
-    'multioutput-binary-classification'
-
     # Discrete sequential values, containing 0, in a 2d array
-    >>> _find_ml_task(numpy.array([[0, 1, 2], [2, 1, 1]]))
+    >>> _find_ml_task(numpy.array([[0, 1], [2, 2], [1, 0]]))
     'multioutput-multiclass-classification'
 
     # Discrete values, not sequential, in a 2d array
     >>> _find_ml_task(numpy.array([[1, 5], [5, 9]]))
+    'multioutput-regression'
+
+    # 2 columns, one of them not containing 0, in a 2d array
+    >>> _find_ml_task(numpy.array([[0, 1], [1, 1]]))
     'multioutput-regression'
 
     # Discrete values, not sequential, containing 0, in a 2d array
