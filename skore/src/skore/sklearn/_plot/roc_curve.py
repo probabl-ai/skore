@@ -68,7 +68,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
     estimator_name : str
         Name of the estimator.
 
-    pos_label : int, float, bool or str
+    pos_label : int, float, bool, str or None
         The class considered as positive. Only meaningful for binary classification.
 
     data_source : {"train", "test", "X_y"}
@@ -116,7 +116,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         tpr: dict[Union[int, float, bool, str], list[ArrayLike]],
         roc_auc: dict[Union[int, float, bool, str], list[float]],
         estimator_name: str,
-        pos_label: Union[int, float, bool, str],
+        pos_label: Union[int, float, bool, str, None],
         data_source: Literal["train", "test", "X_y"],
     ):
         self.estimator_name = estimator_name
@@ -189,7 +189,11 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         )
 
         self.lines_ = []
+        default_line_kwargs: dict[str, Any] = {}
         if len(self.fpr) == 1:  # binary-classification
+            assert (
+                self.pos_label is not None
+            ), "pos_label should not be None with binary classification."
             if len(self.fpr[self.pos_label]) == 1:  # single-split
                 if roc_curve_kwargs is None:
                     roc_curve_kwargs = {}
@@ -206,7 +210,6 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
                 tpr = self.tpr[self.pos_label][0]
                 roc_auc = self.roc_auc[self.pos_label][0]
 
-                default_line_kwargs: dict[str, Any] = {}
                 if self.data_source in ("train", "test"):
                     default_line_kwargs["label"] = (
                         f"{self.data_source.title()} set (AUC = {roc_auc:0.2f})"
@@ -269,7 +272,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         else:  # multiclass-classification
             info_pos_label = None  # irrelevant for multiclass
             class_colors = sample_mpl_colormap(
-                colormaps["tab10"], 10 if len(self.fpr) < 10 else len(self.fpr)
+                colormaps.get_cmap("tab10"), 10 if len(self.fpr) < 10 else len(self.fpr)
             )
             if roc_curve_kwargs is None:
                 roc_curve_kwargs = [{}] * len(self.fpr)
@@ -431,8 +434,11 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
             y_true, y_pred, ml_task=ml_task, pos_label=pos_label
         )
 
+        fpr: dict[Union[int, float, bool, str], list[ArrayLike]] = defaultdict(list)
+        tpr: dict[Union[int, float, bool, str], list[ArrayLike]] = defaultdict(list)
+        roc_auc: dict[Union[int, float, bool, str], list[float]] = defaultdict(list)
+
         if ml_task == "binary-classification":
-            fpr, tpr, roc_auc = defaultdict(list), defaultdict(list), defaultdict(list)
             for y_true_i, y_pred_i in zip(y_true, y_pred):
                 fpr_i, tpr_i, _ = roc_curve(
                     y_true_i,
@@ -441,12 +447,17 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
                     drop_intermediate=drop_intermediate,
                 )
                 roc_auc_i = auc(fpr_i, tpr_i)
+                # assert for mypy that pos_label_validated is not None
+                assert pos_label_validated is not None, (
+                    "pos_label_validated should not be None with binary classification "
+                    "once calling _validate_from_predictions_params and more precisely "
+                    "_check_pos_label_consistency."
+                )
                 fpr[pos_label_validated].append(fpr_i)
                 tpr[pos_label_validated].append(tpr_i)
                 roc_auc[pos_label_validated].append(roc_auc_i)
         else:  # multiclass-classification
             # OvR fashion to collect fpr, tpr, and roc_auc
-            fpr, tpr, roc_auc = defaultdict(list), defaultdict(list), defaultdict(list)
             for y_true_i, y_pred_i in zip(y_true, y_pred):
                 label_binarizer = LabelBinarizer().fit(estimator.classes_)
                 y_true_onehot_i: NDArray = label_binarizer.transform(y_true_i)
