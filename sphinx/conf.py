@@ -65,12 +65,12 @@ html_js_files = [
 
 # list of examples in explicit order
 subsections_order = [
-    "../examples/example_driven_dev",
     "../examples/getting_started",
     "../examples/use_cases",
     "../examples/model_evaluation",
     "../examples/skore_project",
     "../examples/technical_details",
+    "../examples/example_driven_dev",
 ]
 
 
