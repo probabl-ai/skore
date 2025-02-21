@@ -1,3 +1,7 @@
+from sklearn.base import is_regressor
+from sklearn.pipeline import Pipeline
+
+
 def _check_supported_ml_task(supported_ml_tasks):
     def check(accessor):
         supported_task = any(
@@ -13,3 +17,19 @@ def _check_supported_ml_task(supported_ml_tasks):
         return True
 
     return check
+
+
+def _check_is_regressor_coef_task(accessor):
+    """Check if the estimator is a regressor and holds a `coef_` attribute."""
+    parent_estimator = accessor._parent.estimator_
+    estimator = (
+        parent_estimator.steps[-1][1]
+        if isinstance(parent_estimator, Pipeline)
+        else parent_estimator
+    )
+    if is_regressor(estimator) and hasattr(estimator, "coef_"):
+        return True
+    raise AttributeError(
+        f"Estimator {accessor._parent.estimator_} is not a supported estimator by "
+        "the function called."
+    )
