@@ -1,6 +1,3 @@
-import time
-
-import numpy as np
 from rich.panel import Panel
 from sklearn.base import clone, is_classifier
 from sklearn.model_selection import check_cv
@@ -8,9 +5,8 @@ from sklearn.pipeline import Pipeline
 
 from skore.externals._pandas_accessors import DirNamesMixin
 from skore.externals._sklearn_compat import _safe_indexing
-from skore.sklearn._base import _BaseReport
+from skore.sklearn._comparison.report import ComparisonReport
 from skore.sklearn._estimator.report import EstimatorReport
-from skore.sklearn.find_ml_task import _find_ml_task
 from skore.utils._parallel import Parallel, delayed
 from skore.utils._progress_bar import progress_decorator
 
@@ -26,7 +22,7 @@ def _generate_estimator_report(estimator, X, y, train_indices, test_indices):
     )
 
 
-class CrossValidationReport(_BaseReport, DirNamesMixin):
+class CrossValidationReport(ComparisonReport, DirNamesMixin):
     """Report for cross-validation results.
 
     Upon initialization, `CrossValidationReport` will clone ``estimator`` according to
@@ -109,9 +105,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         cv_splitter=None,
         n_jobs=None,
     ):
-        # used to know if a parent launch a progress bar manager
-        self._parent_progress = None
-
         self._estimator = clone(estimator)
 
         # private storage to be able to invalidate the cache when the user alters
@@ -123,15 +116,17 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         )
         self.n_jobs = n_jobs
 
+        # used to know if a parent launch a progress bar manager
+        self._parent_progress = None
+
         self.estimator_reports_ = self._fit_estimator_reports()
 
-        self._rng = np.random.default_rng(time.time_ns())
-        self._hash = self._rng.integers(
-            low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
-        )
-        self._cache = {}
-        self._ml_task = _find_ml_task(
-            y, estimator=self.estimator_reports_[0]._estimator
+        super().__init__(
+            reports={
+                f"Split #{i}": report
+                for i, report in enumerate(self.estimator_reports_)
+            },
+            n_jobs=n_jobs,
         )
 
     @progress_decorator(
