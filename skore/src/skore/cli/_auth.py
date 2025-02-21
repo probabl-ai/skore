@@ -10,12 +10,23 @@ from urllib.parse import urljoin
 
 import httpx
 
+URI = "https://skh.k.probabl.dev"
 
-class Client(httpx.Client):
-    URI = "https://skh.k.probabl.dev"
+
+class AuthenticatedClient(httpx.Client):
+    @functools.cached_property
+    def token(self):
+        return AuthenticationToken()
 
     def request(self, method: str, url: httpx.URL | str, **kwargs) -> httpx.Response:
-        response = super().request(method, urljoin(self.URI, url), **kwargs)
+        headers = kwargs.get("headers") or {}
+        headers |= {
+            "Authorization": f"Bearer {str(self.token)}",
+            "Content-Type": "application/json",
+        }
+
+        kwargs["headers"] = headers
+        response = super().request(method, urljoin(URI, url), **kwargs)
         response.raise_for_status()
 
         return response.json()
@@ -31,9 +42,12 @@ class AuthenticationToken:
             self.__create()
 
     def __create(self):
-        with Client() as client:
+        with httpx.Client() as client:
             # Request a new authorization URL
-            response = client.get("identity/oauth/device/login")
+            response = client.get(urljoin(URI, "identity/oauth/device/login"))
+            response.raise_for_status()
+
+            response = response.json()
             authorization_url = response["authorization_url"]
             device_code = response["device_code"]
             user_code = response["user_code"]
@@ -78,13 +92,9 @@ class AuthenticationToken:
         self.FILEPATH.write_text(json.dumps((self.__access, self.__refreshment)))
 
     def refresh(self):
-        with Client() as client:
+        with AuthenticatedClient() as client:
             response = client.post(
                 "identity/oauth/token/refresh",
-                headers={
-                    "Authorization": f"Bearer {self.__access}",
-                    "Content-Type": "application/json",
-                },
                 json={"refresh_token": self.__refreshment},
             )
 
