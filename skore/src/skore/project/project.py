@@ -161,7 +161,7 @@ class Project:
         *,
         note: Optional[str] = None,
         display_as: Optional[Literal["HTML", "MARKDOWN", "SVG"]] = None,
-    ):
+    ) -> None:
         """Add a key-value pair to the Project.
 
         If an item with the same key already exists, its value is replaced by the new
@@ -206,7 +206,7 @@ class Project:
         *,
         version: Optional[Union[Literal[-1, "all"], int]] = -1,
         metadata: bool = False,
-    ):
+    ) -> Any:
         """Get the value associated to ``key`` from the Project.
 
         Parameters
@@ -286,7 +286,7 @@ class Project:
         yield from self._item_repository
 
     @_raise_if_deleted
-    def delete(self, key: str):
+    def delete(self, key: str) -> None:
         """Delete the item corresponding to ``key`` from the Project.
 
         Parameters
@@ -302,7 +302,7 @@ class Project:
         self._item_repository.delete_item(key)
 
     @_raise_if_deleted
-    def set_note(self, key: str, note: str, *, version=-1):
+    def set_note(self, key: str, note: str, *, version: int = -1) -> None:
         """Attach a note to key ``key``.
 
         Parameters
@@ -332,7 +332,7 @@ class Project:
         return self._item_repository.set_item_note(key=key, note=note, version=version)
 
     @_raise_if_deleted
-    def get_note(self, key: str, *, version=-1) -> Union[str, None]:
+    def get_note(self, key: str, *, version: int = -1) -> Union[str, None]:
         """Retrieve a note previously attached to key ``key``.
 
         Parameters
