@@ -61,7 +61,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         pos_label: Optional[Union[int, float, bool, str]] = None,
         indicator_favorability: bool = False,
         flat_index: bool = False,
-    ):
+    ) -> pd.DataFrame:
         """Report a set of metrics for the estimators.
 
         Parameters
@@ -254,7 +254,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source: DataSource = "test",
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
-    ):
+    ) -> pd.DataFrame:
         """Compute the accuracy score.
 
         Parameters
@@ -333,7 +333,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             Literal["binary", "macro", "micro", "weighted", "samples"]
         ] = None,
         pos_label: Optional[Union[int, float, bool, str]] = None,
-    ):
+    ) -> pd.DataFrame:
         """Compute the precision score.
 
         Parameters
@@ -443,7 +443,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             Literal["binary", "macro", "micro", "weighted", "samples"]
         ] = None,
         pos_label: Optional[Union[int, float, bool, str]] = None,
-    ):
+    ) -> pd.DataFrame:
         """Compute the recall score.
 
         Parameters
@@ -548,7 +548,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source: DataSource = "test",
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
-    ):
+    ) -> pd.DataFrame:
         """Compute the Brier score.
 
         Parameters
@@ -627,7 +627,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             Literal["auto", "macro", "micro", "weighted", "samples"]
         ] = None,
         multi_class: Literal["raise", "ovr", "ovo"] = "ovr",
-    ):
+    ) -> pd.DataFrame:
         """Compute the ROC AUC score.
 
         Parameters
@@ -737,7 +737,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source: DataSource = "test",
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
-    ):
+    ) -> pd.DataFrame:
         """Compute the log loss.
 
         Parameters
@@ -813,7 +813,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
         multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
-    ):
+    ) -> pd.DataFrame:
         """Compute the R² score.
 
         Parameters
@@ -900,7 +900,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
         multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
-    ):
+    ) -> pd.DataFrame:
         """Compute the root mean squared error.
 
         Parameters
@@ -985,7 +985,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
         **kwargs: Any,
-    ):
+    ) -> pd.DataFrame:
         """Compute a custom metric.
 
         It brings some flexibility to compute any desired metric. However, we need to
@@ -1169,7 +1169,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             Union[RocCurveDisplay, PrecisionRecallCurveDisplay, PredictionErrorDisplay]
         ],
         display_kwargs: dict[str, Any],
-    ):
+    ) -> Union[RocCurveDisplay, PrecisionRecallCurveDisplay, PredictionErrorDisplay]:
         """Get the display from the cache or compute it.
 
         Parameters
@@ -1266,7 +1266,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
         pos_label: Optional[Union[int, float, bool, str]] = None,
-    ):
+    ) -> RocCurveDisplay:
         """Plot the ROC curve.
 
         Parameters
@@ -1326,7 +1326,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         """
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
-        return self._get_display(
+        display = self._get_display(
             X=X,
             y=y,
             data_source=data_source,
@@ -1334,6 +1334,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             display_class=RocCurveDisplay,
             display_kwargs=display_kwargs,
         )
+        assert isinstance(display, RocCurveDisplay)
+        return display
 
     @available_if(
         _check_supported_ml_task(
@@ -1347,7 +1349,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
         pos_label: Optional[Union[int, float, bool, str]] = None,
-    ):
+    ) -> PrecisionRecallCurveDisplay:
         """Plot the precision-recall curve.
 
         Parameters
@@ -1407,7 +1409,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         """
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
-        return self._get_display(
+        display = self._get_display(
             X=X,
             y=y,
             data_source=data_source,
@@ -1415,6 +1417,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             display_class=PrecisionRecallCurveDisplay,
             display_kwargs=display_kwargs,
         )
+        assert isinstance(display, PrecisionRecallCurveDisplay)
+        return display
 
     @available_if(
         _check_supported_ml_task(
@@ -1429,7 +1433,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         y: Optional[ArrayLike] = None,
         subsample: int = 1_000,
         random_state: Optional[int] = None,
-    ):
+    ) -> PredictionErrorDisplay:
         """Plot the prediction error of a regression model.
 
         Extra keyword arguments will be passed to matplotlib's `plot`.
@@ -1497,7 +1501,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> display.plot(kind="actual_vs_predicted")
         """
         display_kwargs = {"subsample": subsample, "random_state": random_state}
-        return self._get_display(
+        display = self._get_display(
             X=X,
             y=y,
             data_source=data_source,
@@ -1505,3 +1509,5 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             display_class=PredictionErrorDisplay,
             display_kwargs=display_kwargs,
         )
+        assert isinstance(display, PredictionErrorDisplay)
+        return display
