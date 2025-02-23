@@ -1572,7 +1572,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             Union[RocCurveDisplay, PrecisionRecallCurveDisplay, PredictionErrorDisplay]
         ],
         display_kwargs: dict[str, Any],
-    ) -> Any:
+    ) -> Union[RocCurveDisplay, PrecisionRecallCurveDisplay, PredictionErrorDisplay]:
         """Get the display from the cache or compute it.
 
         Parameters
@@ -1708,7 +1708,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         """
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
-        return self._get_display(
+        display = self._get_display(
             X=X,
             y=y,
             data_source=data_source,
@@ -1716,6 +1716,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             display_class=RocCurveDisplay,
             display_kwargs=display_kwargs,
         )
+        assert isinstance(display, RocCurveDisplay)
+        return display
 
     @available_if(
         _check_supported_ml_task(
@@ -1779,7 +1781,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         """
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
-        return self._get_display(
+        display = self._get_display(
             X=X,
             y=y,
             data_source=data_source,
@@ -1787,6 +1789,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             display_class=PrecisionRecallCurveDisplay,
             display_kwargs=display_kwargs,
         )
+        assert isinstance(display, PrecisionRecallCurveDisplay)
+        return display
 
     @available_if(
         _check_supported_ml_task(
@@ -1859,7 +1863,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         >>> display.plot(line_kwargs={"color": "tab:red"})
         """
         display_kwargs = {"subsample": subsample, "random_state": random_state}
-        return self._get_display(
+        display = self._get_display(
             X=X,
             y=y,
             data_source=data_source,
@@ -1867,3 +1871,5 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             display_class=PredictionErrorDisplay,
             display_kwargs=display_kwargs,
         )
+        assert isinstance(display, PredictionErrorDisplay)
+        return display
