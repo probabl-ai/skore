@@ -243,7 +243,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         aggregate: Optional[
             Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
         ] = None,
-    ):
+    ) -> pd.DataFrame:
         """Compute the accuracy score.
 
         Parameters
@@ -298,7 +298,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         aggregate: Optional[
             Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
         ] = None,
-    ):
+    ) -> pd.DataFrame:
         """Compute the precision score.
 
         Parameters
@@ -384,7 +384,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         aggregate: Optional[
             Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
         ] = None,
-    ):
+    ) -> pd.DataFrame:
         """Compute the recall score.
 
         Parameters
@@ -465,7 +465,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         aggregate: Optional[
             Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
         ] = None,
-    ):
+    ) -> pd.DataFrame:
         """Compute the Brier score.
 
         Parameters
@@ -518,7 +518,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         aggregate: Optional[
             Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
         ] = None,
-    ):
+    ) -> pd.DataFrame:
         """Compute the ROC AUC score.
 
         Parameters
@@ -603,7 +603,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         aggregate: Optional[
             Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
         ] = None,
-    ):
+    ) -> pd.DataFrame:
         """Compute the log loss.
 
         Parameters
@@ -655,7 +655,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         aggregate: Optional[
             Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
         ] = None,
-    ):
+    ) -> pd.DataFrame:
         """Compute the R² score.
 
         Parameters
@@ -718,7 +718,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         aggregate: Optional[
             Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
         ] = None,
-    ):
+    ) -> pd.DataFrame:
         """Compute the root mean squared error.
 
         Parameters
@@ -779,7 +779,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
         ] = None,
         **kwargs,
-    ):
+    ) -> pd.DataFrame:
         """Compute a custom metric.
 
         It brings some flexibility to compute any desired metric. However, we need to
@@ -934,7 +934,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         response_method: str,
         display_class: Any,
         display_kwargs: dict[str, Any],
-    ) -> Any:
+    ) -> Union[RocCurveDisplay, PrecisionRecallCurveDisplay, PredictionErrorDisplay]:
         """Get the display from the cache or compute it.
 
         Parameters
@@ -1017,7 +1017,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         *,
         data_source: DataSource = "test",
         pos_label: Optional[Union[int, float, bool, str]] = None,
-    ):
+    ) -> RocCurveDisplay:
         """Plot the ROC curve.
 
         Parameters
@@ -1049,12 +1049,14 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         """
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
-        return self._get_display(
+        display = self._get_display(
             data_source=data_source,
             response_method=response_method,
             display_class=RocCurveDisplay,
             display_kwargs=display_kwargs,
         )
+        assert isinstance(display, RocCurveDisplay)
+        return display
 
     @available_if(
         _check_supported_ml_task(
@@ -1066,7 +1068,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         *,
         data_source: DataSource = "test",
         pos_label: Optional[Union[int, float, bool, str]] = None,
-    ):
+    ) -> PrecisionRecallCurveDisplay:
         """Plot the precision-recall curve.
 
         Parameters
@@ -1098,12 +1100,14 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         """
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
-        return self._get_display(
+        display = self._get_display(
             data_source=data_source,
             response_method=response_method,
             display_class=PrecisionRecallCurveDisplay,
             display_kwargs=display_kwargs,
         )
+        assert isinstance(display, PrecisionRecallCurveDisplay)
+        return display
 
     @available_if(
         _check_supported_ml_task(
@@ -1116,7 +1120,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         data_source: DataSource = "test",
         subsample: Union[float, int, None] = 1_000,
         random_state: Optional[int] = None,
-    ):
+    ) -> PredictionErrorDisplay:
         """Plot the prediction error of a regression model.
 
         Extra keyword arguments will be passed to matplotlib's `plot`.
@@ -1156,9 +1160,11 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         >>> display.plot(kind="actual_vs_predicted", line_kwargs={"color": "tab:red"})
         """
         display_kwargs = {"subsample": subsample, "random_state": random_state}
-        return self._get_display(
+        display = self._get_display(
             data_source=data_source,
             response_method="predict",
             display_class=PredictionErrorDisplay,
             display_kwargs=display_kwargs,
         )
+        assert isinstance(display, PredictionErrorDisplay)
+        return display
