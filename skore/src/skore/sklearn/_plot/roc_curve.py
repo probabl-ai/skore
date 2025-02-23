@@ -118,7 +118,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         estimator_name: str,
         pos_label: Union[int, float, bool, str, None],
         data_source: Literal["train", "test", "X_y"],
-    ):
+    ) -> None:
         self.estimator_name = estimator_name
         self.fpr = fpr
         self.tpr = tpr
@@ -135,7 +135,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         plot_chance_level: bool = True,
         chance_level_kwargs: Optional[dict[str, Any]] = None,
         despine: bool = True,
-    ):
+    ) -> None:
         """Plot visualization.
 
         Extra keyword arguments will be passed to matplotlib's ``plot``.

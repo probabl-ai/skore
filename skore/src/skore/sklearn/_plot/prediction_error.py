@@ -91,7 +91,7 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         y_pred: list[NDArray],
         estimator_name: str,
         data_source: Literal["train", "test", "X_y"],
-    ):
+    ) -> None:
         self.y_true = y_true
         self.y_pred = y_pred
         self.estimator_name = estimator_name

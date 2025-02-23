@@ -115,7 +115,7 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
         estimator_name: str,
         pos_label: Union[int, float, bool, str, None],
         data_source: Literal["train", "test", "X_y"],
-    ):
+    ) -> None:
         self.precision = precision
         self.recall = recall
         self.average_precision = average_precision
