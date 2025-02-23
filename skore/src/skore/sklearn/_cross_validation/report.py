@@ -1,6 +1,6 @@
 import time
 from collections.abc import Generator
-from typing import Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 import numpy as np
 from numpy.typing import ArrayLike
@@ -17,6 +17,9 @@ from skore.sklearn.find_ml_task import _find_ml_task
 from skore.sklearn.types import SKLearnCrossValidator
 from skore.utils._parallel import Parallel, delayed
 from skore.utils._progress_bar import progress_decorator
+
+if TYPE_CHECKING:
+    from skore.sklearn._cross_validation.metrics_accessor import _MetricsAccessor
 
 
 def _generate_estimator_report(
@@ -110,6 +113,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     _ACCESSOR_CONFIG: dict[str, dict[str, str]] = {
         "metrics": {"name": "metrics"},
     }
+    metrics: "_MetricsAccessor"
 
     def __init__(
         self,

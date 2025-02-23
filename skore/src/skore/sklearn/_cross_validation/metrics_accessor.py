@@ -24,7 +24,7 @@ from skore.utils._progress_bar import progress_decorator
 DataSource = Literal["test", "train"]
 
 
-class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
+class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
     """Accessor for metrics-related operations.
 
     You can access this accessor using the `metrics` attribute.
@@ -46,6 +46,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     def __init__(self, parent: CrossValidationReport) -> None:
         super().__init__(parent)
 
+        self._progress_info: Optional[dict[str, Any]] = None
         self._parent_progress: Optional[Progress] = None
 
     def report_metrics(
@@ -54,8 +55,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source: DataSource = "test",
         scoring: Optional[Union[list[str], Callable, SKLearnScorer]] = None,
         scoring_names: Optional[list[str]] = None,
-        pos_label: Optional[Union[int, float, bool, str]] = None,
         scoring_kwargs: Optional[dict[str, Any]] = None,
+        pos_label: Optional[Union[int, float, bool, str]] = None,
         indicator_favorability: bool = False,
         flat_index: bool = False,
         aggregate: Optional[
@@ -155,19 +156,26 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ] = None,
         **metric_kwargs: Any,
     ) -> pd.DataFrame:
-        cache_key = (self._parent._hash, report_metric_name, data_source)
-        cache_key += (aggregate,) if aggregate is None else tuple(aggregate)
-
-        # we need to enforce the order of the parameter for a specific metric
-        # to make sure that we hit the cache in a consistent way
+        # build the cache key components to finally create a tuple that will be used
+        # to check if the metric has already been computed
+        cache_key_parts: list[Any] = [
+            self._parent._hash,
+            report_metric_name,
+            data_source,
+        ]
+        if aggregate is None:
+            cache_key_parts.append(aggregate)
+        else:
+            cache_key_parts.extend(tuple(aggregate))
         ordered_metric_kwargs = sorted(metric_kwargs.keys())
-
         for key in ordered_metric_kwargs:
             if isinstance(metric_kwargs[key], (np.ndarray, list, dict)):
-                cache_key += (joblib.hash(metric_kwargs[key]),)
+                cache_key_parts.append(joblib.hash(metric_kwargs[key]))
             else:
-                cache_key += (metric_kwargs[key],)
+                cache_key_parts.append(metric_kwargs[key])
+        cache_key = tuple(cache_key_parts)
 
+        assert self._progress_info is not None, "Progress info not set"
         progress = self._progress_info["current_progress"]
         main_task = self._progress_info["current_task"]
 
@@ -846,7 +854,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             scoring=[scorer],
             data_source=data_source,
             aggregate=aggregate,
-            scoring_names=[metric_name],
+            scoring_names=[metric_name] if metric_name is not None else None,
         )
 
     ####################################################################################
@@ -951,10 +959,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         display : display_class
             The display.
         """
-        cache_key = (self._parent._hash, display_class.__name__)
-        cache_key += tuple(display_kwargs.values())
-        cache_key += (data_source,)
+        # Create a list of cache key components and then convert to tuple
+        cache_key_parts: list[Any] = [self._parent._hash, display_class.__name__]
+        cache_key_parts.extend(display_kwargs.values())
+        cache_key_parts.append(data_source)
+        cache_key = tuple(cache_key_parts)
 
+        assert self._progress_info is not None, "Progress info not set"
         progress = self._progress_info["current_progress"]
         main_task = self._progress_info["current_task"]
         total_estimators = len(self._parent.estimator_reports_)

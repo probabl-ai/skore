@@ -2,7 +2,7 @@ import copy
 import time
 import warnings
 from itertools import product
-from typing import Any, Literal, Optional, Union
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 
 import numpy as np
 from numpy.typing import ArrayLike
@@ -17,6 +17,9 @@ from skore.sklearn._base import _BaseReport, _get_cached_response_values
 from skore.sklearn.find_ml_task import _find_ml_task
 from skore.utils._parallel import Parallel, delayed
 from skore.utils._progress_bar import progress_decorator
+
+if TYPE_CHECKING:
+    from skore.sklearn._estimator.metrics_accessor import _MetricsAccessor
 
 
 class EstimatorReport(_BaseReport, DirNamesMixin):
@@ -76,6 +79,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     _ACCESSOR_CONFIG: dict[str, dict[str, str]] = {
         "metrics": {"name": "metrics"},
     }
+    metrics: "_MetricsAccessor"
 
     @staticmethod
     def _fit_estimator(
