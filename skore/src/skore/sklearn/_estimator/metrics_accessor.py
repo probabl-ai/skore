@@ -187,10 +187,12 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             # is also a callable but it has a special private API that we can leverage
             if isinstance(metric, _BaseScorer):
                 # scorers have the advantage to have scoped defined kwargs
+                metric_function: Callable = metric._score_func
+                response_method: Union[str, list[str]] = metric._response_method
                 metric_fn = partial(
                     self._custom_metric,
-                    metric_function=metric._score_func,
-                    response_method=metric._response_method,
+                    metric_function=metric_function,
+                    response_method=response_method,
                 )
                 # forward the additional parameters specific to the scorer
                 metrics_kwargs = {**metric._kwargs}
@@ -312,7 +314,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                 else:
                     index = pd.Index([metric_name], name="Metric")
                     score_array = np.array(score).reshape(-1, 1)
-            elif self._parent._ml_task == "regression":
+            elif self._parent._ml_task in ("regression", "multioutput-regression"):
                 if isinstance(score, np.ndarray):
                     index = pd.MultiIndex.from_arrays(
                         [[metric_name] * len(score), list(range(len(score)))],
@@ -342,7 +344,10 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             # Convert single-level dataframes to multi-level
             for i, df in enumerate(scores):
                 if hasattr(df, "index") and not isinstance(df.index, pd.MultiIndex):
-                    if self._parent._ml_task == "regression":
+                    if self._parent._ml_task in (
+                        "regression",
+                        "multioutput-regression",
+                    ):
                         name_index = ["Metric", "Output"]
                     else:
                         name_index = ["Metric", "Label / Average"]
@@ -366,12 +371,12 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         X: Optional[ArrayLike],
         y_true: Optional[ArrayLike],
         *,
+        response_method: Union[str, list[str], tuple[str, ...]],
         data_source: DataSource = "test",
         data_source_hash: Optional[int] = None,
-        response_method: Union[str, list[str]],
         pos_label: Optional[Union[int, float, bool, str]] = None,
         **metric_kwargs: Any,
-    ) -> Union[float, dict[str, float], NDArray]:
+    ) -> Union[float, dict[Union[int, float, bool, str], float], NDArray]:
         if data_source_hash is None:
             X, y_true, data_source_hash = self._get_X_y_and_data_source_hash(
                 data_source=data_source, X=X, y=y_true
@@ -433,7 +438,12 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             "binary-classification",
             "multiclass-classification",
         ) and isinstance(score, np.ndarray):
-            return dict(zip(self._parent._estimator.classes_, score))
+            # convert np.float64 and np.float32 to float for consistency across
+            # functions
+            return {
+                label: float(score_label)
+                for label, score_label in zip(self._parent._estimator.classes_, score)
+            }
         elif isinstance(score, np.ndarray):
             return score[0] if score.size == 1 else score
         return score
@@ -644,7 +654,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             # the statistics of the positive class
             average = "binary"
 
-        return self._compute_metric_scores(
+        result = self._compute_metric_scores(
             metrics.precision_score,
             X=X,
             y_true=y,
@@ -654,6 +664,17 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             pos_label=pos_label,
             average=average,
         )
+        if self._parent._ml_task == "binary-classification" and pos_label is not None:
+            assert isinstance(result, float), (
+                "The precision score should be a float, got "
+                f"{type(result)} with value {result}."
+            )
+            return result
+        assert isinstance(result, dict), (
+            "The precision score should be a dict, got "
+            f"{type(result)} with value {result}."
+        )
+        return result
 
     @available_if(
         _check_supported_ml_task(
@@ -776,7 +797,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             # the statistics of the positive class
             average = "binary"
 
-        return self._compute_metric_scores(
+        result = self._compute_metric_scores(
             metrics.recall_score,
             X=X,
             y_true=y,
@@ -786,6 +807,17 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             pos_label=pos_label,
             average=average,
         )
+        if self._parent._ml_task == "binary-classification" and pos_label is not None:
+            assert isinstance(result, float), (
+                "The precision score should be a float, got "
+                f"{type(result)} with value {result}."
+            )
+            return result
+        assert isinstance(result, dict), (
+            "The precision score should be a dict, got "
+            f"{type(result)} with value {result}."
+        )
+        return result
 
     @available_if(
         _check_supported_ml_task(supported_ml_tasks=["binary-classification"])
@@ -866,7 +898,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         # integral encoding of `y_true` corresponds to the probabilities of the
         # `pos_label`. Since we get the predictions with `get_response_method`, we
         # can pass any `pos_label`, they will lead to the same result.
-        return self._compute_metric_scores(
+        result = self._compute_metric_scores(
             metrics.brier_score_loss,
             X=X,
             y_true=y,
@@ -875,6 +907,11 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             response_method="predict_proba",
             pos_label=self._parent._estimator.classes_[-1],
         )
+        assert isinstance(result, float), (
+            "The Brier score should be a float, got "
+            f"{type(result)} with value {result}."
+        )
+        return result
 
     @available_if(
         _check_supported_ml_task(
@@ -992,7 +1029,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         and are able to pass it around or `None` and thus trigger its computation
         in the underlying process.
         """
-        return self._compute_metric_scores(
+        result = self._compute_metric_scores(
             metrics.roc_auc_score,
             X=X,
             y_true=y,
@@ -1002,6 +1039,17 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             average=average,
             multi_class=multi_class,
         )
+        if self._parent._ml_task == "multiclass-classification" and average is None:
+            assert isinstance(result, dict), (
+                "The ROC AUC score should be a dict, got "
+                f"{type(result)} with value {result}."
+            )
+            return result
+        assert isinstance(result, float), (
+            "The ROC AUC score should be a float, got "
+            f"{type(result)} with value {result}."
+        )
+        return result
 
     @available_if(
         _check_supported_ml_task(
@@ -1073,7 +1121,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         and are able to pass it around or `None` and thus trigger its computation
         in the underlying process.
         """
-        return self._compute_metric_scores(
+        result = self._compute_metric_scores(
             metrics.log_loss,
             X=X,
             y_true=y,
@@ -1081,8 +1129,17 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             data_source_hash=data_source_hash,
             response_method="predict_proba",
         )
+        assert isinstance(result, float), (
+            "The log loss should be a float, got "
+            f"{type(result)} with value {result}."
+        )
+        return result
 
-    @available_if(_check_supported_ml_task(supported_ml_tasks=["regression"]))
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["regression", "multioutput-regression"]
+        )
+    )
     def r2(
         self,
         *,
@@ -1172,7 +1229,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         and are able to pass it around or `None` and thus trigger its computation
         in the underlying process.
         """
-        return self._compute_metric_scores(
+        result = self._compute_metric_scores(
             metrics.r2_score,
             X=X,
             y_true=y,
@@ -1181,8 +1238,26 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             response_method="predict",
             multioutput=multioutput,
         )
+        if (
+            self._parent._ml_task == "multioutput-regression"
+            and multioutput == "raw_values"
+        ):
+            assert isinstance(result, np.ndarray), (
+                "The R² score should be a numpy.ndarray, got "
+                f"{type(result)} with value {result}."
+            )
+            return result
+        assert isinstance(result, float), (
+            "The R² score should be a float, got "
+            f"{type(result)} with value {result}."
+        )
+        return result
 
-    @available_if(_check_supported_ml_task(supported_ml_tasks=["regression"]))
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["regression", "multioutput-regression"]
+        )
+    )
     def rmse(
         self,
         *,
@@ -1272,7 +1347,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         and are able to pass it around or `None` and thus trigger its computation
         in the underlying process.
         """
-        return self._compute_metric_scores(
+        result = self._compute_metric_scores(
             metrics.root_mean_squared_error,
             X=X,
             y_true=y,
@@ -1281,6 +1356,20 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             response_method="predict",
             multioutput=multioutput,
         )
+        if (
+            self._parent._ml_task == "multioutput-regression"
+            and multioutput == "raw_values"
+        ):
+            assert isinstance(result, np.ndarray), (
+                "The RMSE score should be a numpy.ndarray, got "
+                f"{type(result)} with value {result}."
+            )
+            return result
+        assert isinstance(result, float), (
+            "The RMSE score should be a float, got "
+            f"{type(result)} with value {result}."
+        )
+        return result
 
     def custom_metric(
         self,
@@ -1381,14 +1470,14 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
     def _custom_metric(
         self,
         *,
+        metric_function: Callable,
+        response_method: Union[str, list[str]],
         data_source: DataSource = "test",
         data_source_hash: Optional[int] = None,
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
-        metric_function: Optional[Callable] = None,
-        response_method: Optional[Union[str, list[str]]] = None,
         **kwargs: Any,
-    ) -> Union[float, dict[Union[int, float, bool, str], float], np.ndarray]:
+    ) -> Any:
         """Private interface of `custom_metric` to be able to pass `data_source_hash`.
 
         `data_source_hash` is either an `int` when we already computed the hash
@@ -1478,8 +1567,10 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         X: Union[ArrayLike, None],
         y: Union[ArrayLike, None],
         data_source: DataSource,
-        response_method: Union[str, list[str]],
-        display_class: type,
+        response_method: Union[str, list[str], tuple[str, ...]],
+        display_class: type[
+            Union[RocCurveDisplay, PrecisionRecallCurveDisplay, PredictionErrorDisplay]
+        ],
         display_kwargs: dict[str, Any],
     ) -> Any:
         """Get the display from the cache or compute it.
@@ -1499,7 +1590,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
 
-        response_method : str
+        response_method : str, list of str or tuple of str
             The response method.
 
         display_class : class
@@ -1516,10 +1607,17 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         X, y, data_source_hash = self._get_X_y_and_data_source_hash(
             data_source=data_source, X=X, y=y
         )
+        assert y is not None, "y must be provided"
 
-        cache_key = (self._parent._hash, display_class.__name__)
-        cache_key += tuple(display_kwargs.values())
-        cache_key += (data_source_hash,) if data_source_hash else (data_source,)
+        # build the cache key components to finally create a tuple that will be used
+        # to check if the metric has already been computed
+        cache_key_parts: list[Any] = [self._parent._hash, display_class.__name__]
+        cache_key_parts.extend(display_kwargs.values())
+        if data_source_hash is not None:
+            cache_key_parts.append(data_source_hash)
+        else:
+            cache_key_parts.append(data_source)
+        cache_key = tuple(cache_key_parts)
 
         if cache_key in self._parent._cache:
             display = self._parent._cache[cache_key]
@@ -1536,8 +1634,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             )
 
             display = display_class._from_predictions(
-                [y],
-                [y_pred],
+                y_true=[y],
+                y_pred=[y_pred],
                 estimator=self._parent.estimator_,
                 estimator_name=self._parent.estimator_name_,
                 ml_task=self._parent._ml_task,
@@ -1690,7 +1788,11 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             display_kwargs=display_kwargs,
         )
 
-    @available_if(_check_supported_ml_task(supported_ml_tasks=["regression"]))
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["regression", "multioutput-regression"]
+        )
+    )
     def prediction_error(
         self,
         *,

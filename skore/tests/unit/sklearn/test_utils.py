@@ -24,6 +24,11 @@ from skore.sklearn.find_ml_task import _find_ml_task
             LinearRegression(),
             "regression",
         ),
+        (
+            *make_regression(n_targets=2, random_state=42),
+            LinearRegression(),
+            "multioutput-regression",
+        ),
         (make_classification(random_state=42)[0], None, KMeans(), "clustering"),
         (
             *make_multilabel_classification(random_state=42),

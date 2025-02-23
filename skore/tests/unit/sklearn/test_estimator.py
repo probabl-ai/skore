@@ -1016,6 +1016,7 @@ def test_estimator_report_report_metrics_with_scorer_binary_classification(
 
     result = report.metrics.report_metrics(
         scoring=["accuracy", accuracy_score, scorer],
+        scoring_kwargs={"response_method": "predict"},
     )
     assert result.shape == (3, 1)
     np.testing.assert_allclose(

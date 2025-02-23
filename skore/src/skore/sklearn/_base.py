@@ -4,7 +4,8 @@ from io import StringIO
 from typing import Any, Generic, Literal, Optional, TypeVar, Union
 
 import joblib
-from numpy.typing import ArrayLike
+import numpy as np
+from numpy.typing import ArrayLike, NDArray
 from rich.console import Console, Group
 from rich.panel import Panel
 from rich.tree import Tree
@@ -315,11 +316,11 @@ def _get_cached_response_values(
     estimator_hash: int,
     estimator: BaseEstimator,
     X: Union[ArrayLike, None],
-    response_method: Union[str, list[str]],
+    response_method: Union[str, list[str], tuple[str, ...]],
     pos_label: Optional[Union[int, float, bool, str]] = None,
     data_source: Literal["test", "train", "X_y"] = "test",
     data_source_hash: Optional[int] = None,
-) -> ArrayLike:
+) -> NDArray:
     """Compute or load from local cache the response values.
 
     Parameters
@@ -337,7 +338,7 @@ def _get_cached_response_values(
     X : {array-like, sparse matrix} of shape (n_samples, n_features) or None
         The data.
 
-    response_method : str or list of str
+    response_method : str, list of str or tuple of str
         The response method.
 
     pos_label : int, float, bool or str, default=None
@@ -380,7 +381,9 @@ def _get_cached_response_values(
         cache_key = cache_key + (data_source_hash,)
 
     if cache_key in cache:
-        return cache[cache_key]
+        cached_predictions = cache[cache_key]
+        assert isinstance(cached_predictions, np.ndarray)
+        return cached_predictions
 
     predictions, _ = _get_response_values(
         estimator,

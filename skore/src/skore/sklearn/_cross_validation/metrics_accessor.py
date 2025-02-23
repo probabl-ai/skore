@@ -634,7 +634,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             aggregate=aggregate,
         )
 
-    @available_if(_check_supported_ml_task(supported_ml_tasks=["regression"]))
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["regression", "multioutput-regression"]
+        )
+    )
     def r2(
         self,
         *,
@@ -693,7 +697,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             scoring_kwargs={"multioutput": multioutput},
         )
 
-    @available_if(_check_supported_ml_task(supported_ml_tasks=["regression"]))
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["regression", "multioutput-regression"]
+        )
+    )
     def rmse(
         self,
         *,
@@ -1086,7 +1094,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             display_kwargs=display_kwargs,
         )
 
-    @available_if(_check_supported_ml_task(supported_ml_tasks=["regression"]))
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["regression", "multioutput-regression"]
+        )
+    )
     def prediction_error(
         self,
         *,
