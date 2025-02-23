@@ -46,6 +46,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     def __init__(self, parent: ComparisonReport) -> None:
         super().__init__(parent)
 
+        self._progress_info: Optional[dict[str, Any]] = None
         self._parent_progress: Optional[Progress] = None
 
     def report_metrics(
@@ -176,18 +177,26 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         y: Optional[ArrayLike] = None,
         **metric_kwargs: Any,
     ):
-        cache_key = (self._parent._hash, report_metric_name, data_source)
+        # build the cache key components to finally create a tuple that will be used
+        # to check if the metric has already been computed
+        cache_key_parts: list[Any] = [
+            self._parent._hash,
+            report_metric_name,
+            data_source,
+        ]
 
         # we need to enforce the order of the parameter for a specific metric
         # to make sure that we hit the cache in a consistent way
         ordered_metric_kwargs = sorted(metric_kwargs.keys())
-
         for key in ordered_metric_kwargs:
             if isinstance(metric_kwargs[key], (np.ndarray, list, dict)):
-                cache_key += (joblib.hash(metric_kwargs[key]),)
+                cache_key_parts.append(joblib.hash(metric_kwargs[key]))
             else:
-                cache_key += (metric_kwargs[key],)
+                cache_key_parts.append(metric_kwargs[key])
 
+        cache_key = tuple(cache_key_parts)
+
+        assert self._progress_info is not None, "Progress info not set"
         progress = self._progress_info["current_progress"]
         main_task = self._progress_info["current_task"]
 
@@ -1076,7 +1085,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             data_source=data_source,
             X=X,
             y=y,
-            scoring_names=[metric_name],
+            scoring_names=[metric_name] if metric_name is not None else None,
         )
 
     ####################################################################################
@@ -1156,7 +1165,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         y: Union[ArrayLike, None],
         data_source: DataSource,
         response_method: Union[str, list[str]],
-        display_class: type,
+        display_class: type[
+            Union[RocCurveDisplay, PrecisionRecallCurveDisplay, PredictionErrorDisplay]
+        ],
         display_kwargs: dict[str, Any],
     ):
         """Get the display from the cache or compute it.
@@ -1190,10 +1201,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         display : display_class
             The display.
         """
-        cache_key = (self._parent._hash, display_class.__name__)
-        cache_key += tuple(display_kwargs.values())
-        cache_key += (data_source,)
+        # build the cache key components to finally create a tuple that will be used
+        # to check if the metric has already been computed
+        cache_key_parts: list[Any] = [self._parent._hash, display_class.__name__]
+        cache_key_parts.extend(display_kwargs.values())
+        cache_key_parts.append(data_source)
+        cache_key = tuple(cache_key_parts)
 
+        assert self._progress_info is not None, "Progress info not set"
         progress = self._progress_info["current_progress"]
         main_task = self._progress_info["current_task"]
         total_estimators = len(self._parent.estimator_reports_)
