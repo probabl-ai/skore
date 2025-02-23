@@ -311,11 +311,11 @@ class _BaseAccessor(_HelpMixin, Generic[ParentT]):
 
 def _get_cached_response_values(
     *,
-    cache: dict[tuple, ArrayLike],
+    cache: dict[tuple[Any, ...], ArrayLike],
     estimator_hash: int,
     estimator: BaseEstimator,
-    X: ArrayLike,
-    response_method: str,
+    X: Union[ArrayLike, None],
+    response_method: Union[str, list[str]],
     pos_label: Optional[Union[int, float, bool, str]] = None,
     data_source: Literal["test", "train", "X_y"] = "test",
     data_source_hash: Optional[int] = None,
@@ -334,10 +334,10 @@ def _get_cached_response_values(
     estimator : estimator object
         The estimator.
 
-    X : {array-like, sparse matrix} of shape (n_samples, n_features)
+    X : {array-like, sparse matrix} of shape (n_samples, n_features) or None
         The data.
 
-    response_method : str
+    response_method : str or list of str
         The response method.
 
     pos_label : int, float, bool or str, default=None

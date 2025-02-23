@@ -371,31 +371,37 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         response_method: Union[str, list[str]],
         pos_label: Optional[Union[int, float, bool, str]] = None,
         **metric_kwargs: Any,
-    ) -> Union[float, dict[str, float], np.ndarray]:
+    ) -> Union[float, dict[str, float], NDArray]:
         if data_source_hash is None:
             X, y_true, data_source_hash = self._get_X_y_and_data_source_hash(
                 data_source=data_source, X=X, y=y_true
             )
 
-        cache_key = (self._parent._hash, metric_fn.__name__, data_source)
-        if data_source_hash:
-            cache_key += (data_source_hash,)
+        # build the cache key components to finally create a tuple that will be used
+        # to check if the metric has already been computed
+        cache_key_parts: list[Any] = [
+            self._parent._hash,
+            metric_fn.__name__,
+            data_source,
+        ]
+
+        if data_source_hash is not None:
+            cache_key_parts.append(data_source_hash)
 
         metric_params = inspect.signature(metric_fn).parameters
         if "pos_label" in metric_params:
-            cache_key += (pos_label,)
+            cache_key_parts.append(pos_label)
 
-        # we need to enforce the order of the parameter for a specific metric
-        # to make sure that we hit the cache in a consistent way
+        # add the ordered metric kwargs to the cache key
         ordered_metric_kwargs = sorted(metric_kwargs.keys())
-        cache_key += tuple(
-            (
-                joblib.hash(metric_kwargs[key])
-                if isinstance(metric_kwargs[key], np.ndarray)
-                else metric_kwargs[key]
-            )
-            for key in ordered_metric_kwargs
-        )
+        for key in ordered_metric_kwargs:
+            value = metric_kwargs[key]
+            if isinstance(value, np.ndarray):
+                cache_key_parts.append(joblib.hash(value))
+            else:
+                cache_key_parts.append(value)
+
+        cache_key = tuple(cache_key_parts)
 
         if cache_key in self._parent._cache:
             score = self._parent._cache[cache_key]
@@ -504,7 +510,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         and are able to pass it around or `None` and thus trigger its computation
         in the underlying process.
         """
-        return self._compute_metric_scores(
+        score = self._compute_metric_scores(
             metrics.accuracy_score,
             X=X,
             y_true=y,
@@ -512,6 +518,11 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             data_source_hash=data_source_hash,
             response_method="predict",
         )
+        assert isinstance(score, float), (
+            "The accuracy score should be a float, got "
+            f"{type(score)} with value {score}."
+        )
+        return score
 
     @available_if(
         _check_supported_ml_task(

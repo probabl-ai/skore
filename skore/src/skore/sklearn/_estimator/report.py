@@ -145,7 +145,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self._hash = self._rng.integers(
             low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
         )
-        self._cache: dict[str, Any] = {}
+        self._cache: dict[tuple[Any, ...], Any] = {}
         self._ml_task = _find_ml_task(self._y_test, estimator=self._estimator)
 
     # NOTE:
