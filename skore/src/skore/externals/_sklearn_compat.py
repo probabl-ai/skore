@@ -1,4 +1,5 @@
 # ruff: noqa
+# mypy: ignore-errors
 """Ease developer experience to support multiple versions of scikit-learn.
 
 This file is intended to be vendored in your project if you do not want to depend on

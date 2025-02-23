@@ -38,7 +38,7 @@ class RichColorHelpFormatter(HelpFormatter):
             metavar = self._metavar_formatter(action, action.dest)(1)[0]
             return metavar
         else:
-            parts = []
+            parts: list[str] = []
             # Format short options
             if action.option_strings:
                 parts.extend(

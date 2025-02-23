@@ -40,7 +40,7 @@ repos:
     rev: v1.15.0
     hooks:
       - id: mypy
-        exclude: ^skore/src/skore/externals/.*$
+        files: ^(skore/src)/
 
   - repo: local
     hooks:
