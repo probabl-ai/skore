@@ -36,6 +36,12 @@ repos:
       - id: ruff-format
         files: ^(skore/(src|tests))|(examples)/
 
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.15.0
+    hooks:
+      - id: mypy
+        files: ^(skore/src)
+
   - repo: local
     hooks:
       - id: tsc
