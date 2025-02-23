@@ -32,7 +32,7 @@ class RichColorHelpFormatter(HelpFormatter):
         super().__init__(prog, indent_increment, max_help_position, width)
         self.console = Console(theme=skore_console_theme)
 
-    def _format_action_invocation(self, action):
+    def _format_action_invocation(self, action: Action) -> str:
         """Format the action invocation (flags and arguments)."""
         if not action.option_strings:
             metavar = self._metavar_formatter(action, action.dest)(1)[0]
