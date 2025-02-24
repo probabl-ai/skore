@@ -1,5 +1,3 @@
-from typing import Any
-
 import numpy as np
 import pandas as pd
 from sklearn.pipeline import Pipeline
@@ -7,16 +5,17 @@ from sklearn.utils.metaestimators import available_if
 
 from skore.externals._pandas_accessors import DirNamesMixin
 from skore.sklearn._base import _BaseAccessor
+from skore.sklearn._estimator.report import EstimatorReport
 from skore.utils._accessor import _check_is_regressor_coef_task
 
 
-class _FeatureImportanceAccessor(_BaseAccessor, DirNamesMixin):
+class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
     """Accessor for feature importance related operations.
 
     You can access this accessor using the `feature_importance` attribute.
     """
 
-    def __init__(self, parent: Any) -> None:
+    def __init__(self, parent: EstimatorReport) -> None:
         super().__init__(parent)
 
     @available_if(_check_is_regressor_coef_task)
