@@ -62,9 +62,7 @@ class TestAuthenticationToken:
     @pytest.mark.respx
     def test_refresh(self, tmp_path, respx_mock):
         filepath = tmp_path / "skore.token"
-        refresh_route = respx_mock.post(
-            urljoin(URI, "identity/oauth/token/refresh")
-        ).mock(
+        respx_mock.post(urljoin(URI, "identity/oauth/token/refresh")).mock(
             Response(
                 200,
                 json={
@@ -80,7 +78,6 @@ class TestAuthenticationToken:
         token = AuthenticationToken("A", "B", "C")
         token.refresh()
 
-        assert refresh_route.called
         assert token.access == "D"
         assert token.refreshment == "E"
         assert token.expires_at == "F"
