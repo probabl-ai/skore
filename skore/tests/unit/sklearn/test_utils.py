@@ -90,6 +90,7 @@ def test_find_ml_task_with_estimator_multiclass():
         # Non-numeric is classification
         (numpy.array(["a", "b", "c"]), "multiclass-classification"),
         (numpy.array([[0, 2], [1, 2]]), "multioutput-regression"),
+        (numpy.array([[[0], [0]]]), "unknown"),
     ],
 )
 def test_find_ml_task_without_estimator(target, expected_task):
