@@ -14,6 +14,8 @@ from urllib.parse import urljoin
 
 import httpx
 
+from skore.hub.callback_server import launch_callback_server
+
 URI = os.environ.get("SKORE_HUB_URI", "https://skh.k.probabl.dev")
 
 
@@ -165,6 +167,10 @@ def login(timeout=600):
 
         # Start polling Skore-Hub, waiting for the token
         tic = datetime.now()
+
+        def toto():...
+
+        server = launch_callback_server()
 
         try:
             while True:
