@@ -70,7 +70,6 @@ subsections_order = [
     "../examples/model_evaluation",
     "../examples/skore_project",
     "../examples/technical_details",
-    "../examples/example_driven_dev",
 ]
 
 
