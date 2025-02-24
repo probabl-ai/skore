@@ -5,7 +5,7 @@ polars
 kaleido
 pydata-sphinx-theme
 sentence-transformers
-sphinx<8.2.0
+sphinx<8.3.0
 sphinx_autosummary_accessors
 sphinx-design
 sphinx-gallery
