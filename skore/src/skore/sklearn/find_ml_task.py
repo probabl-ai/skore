@@ -12,10 +12,10 @@ from skore.sklearn.types import MLTask
 def _column_is_classification(y) -> bool:
     """Check whether ``y`` is a 1-d array of sequential integer values containing 0."""
     y_values = np.unique(y)
-    if 0 not in y:
-        return False
-    sequential = np.arange(y_values[0], y_values[-1] + 1)
-    return np.array_equal(y_values, sequential)
+    if np.any(y_values == 0):
+        sequential = np.arange(y_values[0], y_values[-1] + 1)
+        return np.array_equal(y_values, sequential)
+    return False
 
 
 def _is_classification(y) -> bool:
