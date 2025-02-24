@@ -162,24 +162,33 @@ rf_report = EstimatorReport(
 # %%
 from skore import ComparisonReport
 
-comparator = ComparisonReport(reports=[log_reg_report, rf_report])
+comparison_report = ComparisonReport(reports=[log_reg_report, rf_report])
 
 # %%
 # As for the :class:`~skore.EstimatorReport` and the
 # :class:`~skore.CrossValidationReport`, we have a helper:
 
 # %%
-comparator.help()
+comparison_report.help()
 
 # %%
 # Let us display the result of our benchmark:
 
 # %%
-benchmark_metrics = comparator.metrics.report_metrics()
+benchmark_metrics = comparison_report.metrics.report_metrics()
 benchmark_metrics
 
 # %%
 # We have the result of our benchmark.
+
+# %%
+# We display the ROC curve for the two estimator reports we want to compare, by
+# superimposing them on the same figure:
+
+# %%
+comparison_report.metrics.roc().plot()
+plt.tight_layout()
+
 
 # %%
 # Train-test split with skore
