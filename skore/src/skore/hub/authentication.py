@@ -26,18 +26,24 @@ class AuthenticationToken:
 
     EMPTY = object()
 
-    def __init__(self, access=EMPTY, refreshment=EMPTY, expires_at=EMPTY):
+    def __init__(
+        self,
+        access: str = EMPTY,
+        refreshment: str = EMPTY,
+        expires_at: str = EMPTY,
+    ):
         if all(attr != self.EMPTY for attr in (access, refreshment, expires_at)):
             self.access = access
             self.refreshment = refreshment
-            self.expires_at = expires_at
+            self.expires_at = datetime.fromisoformat(expires_at)
 
             self.save()
         else:
             try:
-                self.access, self.refreshment, self.expires_at = json.loads(
-                    self.filepath.read_text()
-                )
+                content = json.loads(self.filepath.read_text())
+
+                self.access, self.refreshment = content[:2]
+                self.expires_at = datetime.fromisoformat(content[2])
             except FileNotFoundError:
                 self.access = None
                 self.refreshment = None
@@ -51,7 +57,13 @@ class AuthenticationToken:
     def save(self):
         """Save the tokens to the disk."""
         self.filepath.write_text(
-            json.dumps((self.access, self.refreshment, self.expires_at))
+            json.dumps(
+                (
+                    self.access,
+                    self.refreshment,
+                    self.expires_at.isoformat(),
+                )
+            )
         )
 
     def refresh(self):
@@ -67,7 +79,7 @@ class AuthenticationToken:
 
             self.access = tokens["access_token"]
             self.refreshment = tokens["refresh_token"]
-            self.expires_at = tokens["expires_at"]
+            self.expires_at = datetime.fromisoformat(tokens["expires_at"])
             self.save()
 
     def is_valid(self):
@@ -98,7 +110,7 @@ class AuthenticatedClient(httpx.Client):
             raise AuthenticationError("You are not logged in.")
 
         # Check if token must be refreshed
-        if datetime.fromisoformat(self.token.expires_at) <= datetime.now():
+        if self.token.expires_at <= datetime.now():
             self.token.refresh()
 
         # Overload headers with authorization token
@@ -131,7 +143,6 @@ def login(timeout=600):
         user_code = response["user_code"]
 
         # Display authentication info to the user
-
         console.print(
             "\n"
             "🌍 Opening your default browser to start the authentication process.\n"

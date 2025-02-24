@@ -29,20 +29,20 @@ def monkeypatch_home(monkeypatch, tmp_path):
 
 
 class TestAuthenticationToken:
-    def test_init_with_parameters(self):
-        token = AuthenticationToken("A", "B", "C")
+    def test_init_with_parameters(self, mock_now, mock_nowstr):
+        token = AuthenticationToken("A", "B", mock_nowstr)
 
         assert token.access == "A"
         assert token.refreshment == "B"
-        assert token.expires_at == "C"
+        assert token.expires_at == mock_now
 
-    def test_init_without_parameters_with_file(self, tmp_path):
-        (tmp_path / "skore.token").write_text('["A", "B", "C"]')
+    def test_init_without_parameters_with_file(self, tmp_path, mock_now, mock_nowstr):
+        (tmp_path / "skore.token").write_text(f'["A", "B", "{mock_nowstr}"]')
         token = AuthenticationToken()
 
         assert token.access == "A"
         assert token.refreshment == "B"
-        assert token.expires_at == "C"
+        assert token.expires_at == mock_now
 
     def test_init_without_parameters_without_file(self):
         token = AuthenticationToken()
@@ -51,14 +51,18 @@ class TestAuthenticationToken:
         assert token.refreshment is None
         assert token.expires_at is None
 
-    def test_save(self, tmp_path):
-        token = AuthenticationToken("A", "B", "C")
+    def test_save(self, tmp_path, mock_nowstr):
+        token = AuthenticationToken("A", "B", mock_nowstr)
         token.save()
 
-        assert json.loads((tmp_path / "skore.token").read_text()) == ["A", "B", "C"]
+        assert json.loads((tmp_path / "skore.token").read_text()) == [
+            "A",
+            "B",
+            mock_nowstr,
+        ]
 
     @pytest.mark.respx
-    def test_refresh(self, tmp_path, respx_mock):
+    def test_refresh(self, tmp_path, respx_mock, mock_now, mock_nowstr):
         respx_mock.post(urljoin(URI, "identity/oauth/token/refresh")).mock(
             Response(
                 200,
@@ -66,40 +70,44 @@ class TestAuthenticationToken:
                     "token": {
                         "access_token": "D",
                         "refresh_token": "E",
-                        "expires_at": "F",
+                        "expires_at": mock_nowstr,
                     }
                 },
             )
         )
 
-        token = AuthenticationToken("A", "B", "C")
+        token = AuthenticationToken("A", "B", datetime(2000, 1, 1).isoformat())
         token.refresh()
 
         assert token.access == "D"
         assert token.refreshment == "E"
-        assert token.expires_at == "F"
-        assert json.loads((tmp_path / "skore.token").read_text()) == ["D", "E", "F"]
+        assert token.expires_at == mock_now
+        assert json.loads((tmp_path / "skore.token").read_text()) == [
+            "D",
+            "E",
+            mock_nowstr,
+        ]
 
-    def test_is_valid_true(self):
-        assert AuthenticationToken("A", "B", "C").is_valid()
+    def test_is_valid_true(self, mock_nowstr):
+        assert AuthenticationToken("A", "B", mock_nowstr).is_valid()
 
     def test_is_valid_false(self):
         assert not AuthenticationToken().is_valid()
 
-    def test_repr(self):
-        token = AuthenticationToken("A" * 1000, "B" * 1000, "C" * 1000)
+    def test_repr(self, mock_nowstr):
+        token = AuthenticationToken("A" * 1000, "B" * 1000, mock_nowstr)
 
         assert repr(token) == f"AuthenticationToken('{'A' * 10}[...]')"
 
 
 class TestAuthenticatedClient:
-    def test_token_with_file(self, tmp_path):
-        (tmp_path / "skore.token").write_text('["A", "B", "C"]')
+    def test_token_with_file(self, tmp_path, mock_now, mock_nowstr):
+        (tmp_path / "skore.token").write_text(f'["A", "B", "{mock_nowstr}"]')
         token = AuthenticatedClient().token
 
         assert token.access == "A"
         assert token.refreshment == "B"
-        assert token.expires_at == "C"
+        assert token.expires_at == mock_now
 
     def test_token_without_file(self):
         token = AuthenticatedClient().token
@@ -118,7 +126,9 @@ class TestAuthenticatedClient:
         assert not foo_route.called
 
     @pytest.mark.respx(assert_all_called=True)
-    def test_request_with_expired_token(self, tmp_path, respx_mock):
+    def test_request_with_expired_token(
+        self, tmp_path, respx_mock, mock_now, mock_nowstr
+    ):
         (tmp_path / "skore.token").write_text(
             f'["A", "B", "{datetime(2000, 1, 1, 0, 0, 0).isoformat()}"]'
         )
@@ -131,7 +141,7 @@ class TestAuthenticatedClient:
                     "token": {
                         "access_token": "D",
                         "refresh_token": "E",
-                        "expires_at": "F",
+                        "expires_at": mock_nowstr,
                     }
                 },
             )
@@ -143,11 +153,11 @@ class TestAuthenticatedClient:
         # breakpoint()
         assert client.token.access == "D"
         assert client.token.refreshment == "E"
-        assert client.token.expires_at == "F"
+        assert client.token.expires_at == mock_now
 
 
 @pytest.mark.respx(assert_all_called=True)
-def test_login(monkeypatch, respx_mock):
+def test_login(monkeypatch, respx_mock, mock_now, mock_nowstr):
     respx_mock.get(urljoin(URI, "identity/oauth/device/login")).mock(
         Response(
             200,
@@ -167,7 +177,7 @@ def test_login(monkeypatch, respx_mock):
                 "token": {
                     "access_token": "A",
                     "refresh_token": "B",
-                    "expires_at": "C",
+                    "expires_at": mock_nowstr,
                 }
             },
         )
@@ -186,4 +196,4 @@ def test_login(monkeypatch, respx_mock):
     assert called_url == "https://idp.com"
     assert token.access == "A"
     assert token.refreshment == "B"
-    assert token.expires_at == "C"
+    assert token.expires_at == mock_now
