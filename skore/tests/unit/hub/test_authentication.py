@@ -37,8 +37,7 @@ class TestAuthenticationToken:
         assert token.expires_at == "C"
 
     def test_init_without_parameters_with_file(self, tmp_path):
-        filepath = tmp_path / "skore.token"
-        filepath.write_text('["A", "B", "C"]')
+        (tmp_path / "skore.token").write_text('["A", "B", "C"]')
         token = AuthenticationToken()
 
         assert token.access == "A"
@@ -53,15 +52,13 @@ class TestAuthenticationToken:
         assert token.expires_at is None
 
     def test_save(self, tmp_path):
-        filepath = tmp_path / "skore.token"
         token = AuthenticationToken("A", "B", "C")
         token.save()
 
-        assert json.loads(filepath.read_text()) == ["A", "B", "C"]
+        assert json.loads((tmp_path / "skore.token").read_text()) == ["A", "B", "C"]
 
     @pytest.mark.respx
     def test_refresh(self, tmp_path, respx_mock):
-        filepath = tmp_path / "skore.token"
         respx_mock.post(urljoin(URI, "identity/oauth/token/refresh")).mock(
             Response(
                 200,
@@ -81,7 +78,7 @@ class TestAuthenticationToken:
         assert token.access == "D"
         assert token.refreshment == "E"
         assert token.expires_at == "F"
-        assert json.loads(filepath.read_text()) == ["D", "E", "F"]
+        assert json.loads((tmp_path / "skore.token").read_text()) == ["D", "E", "F"]
 
     def test_is_valid_true(self):
         assert AuthenticationToken("A", "B", "C").is_valid()
@@ -97,8 +94,7 @@ class TestAuthenticationToken:
 
 class TestAuthenticatedClient:
     def test_token_with_file(self, tmp_path):
-        filepath = tmp_path / "skore.token"
-        filepath.write_text('["A", "B", "C"]')
+        (tmp_path / "skore.token").write_text('["A", "B", "C"]')
         token = AuthenticatedClient().token
 
         assert token.access == "A"
@@ -123,8 +119,7 @@ class TestAuthenticatedClient:
 
     @pytest.mark.respx(assert_all_called=True)
     def test_request_with_expired_token(self, tmp_path, respx_mock):
-        filepath = tmp_path / "skore.token"
-        filepath.write_text(
+        (tmp_path / "skore.token").write_text(
             f'["A", "B", "{datetime(2000, 1, 1, 0, 0, 0).isoformat()}"]'
         )
 
