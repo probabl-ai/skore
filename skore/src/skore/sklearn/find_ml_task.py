@@ -11,7 +11,7 @@ from skore.sklearn.types import MLTask
 
 def _column_is_classification(y) -> bool:
     """Check whether ``y`` is a sequence.
-    
+
     We define a sequence as a 1-d array of sequential integer values,
     where the first value is 0.
     """
