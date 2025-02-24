@@ -119,10 +119,9 @@ def _find_ml_task(y, estimator=None) -> MLTask:
         if is_regressor(estimator):
             if y is None:
                 return "regression"
-            y_ = check_array(y, ensure_2d=False)
-            if len(y_.shape) >= 2 and y_.shape[1] > 1:
-                return "multioutput-regression"
-            return "regression"
+            if np.ndim(y) == 1 or np.shape(y)[1] == 1:
+                return "regression"
+            return "multioutput-regression"
         if is_classifier(estimator):
             if hasattr(estimator, "classes_"):  # fitted estimator
                 if (
