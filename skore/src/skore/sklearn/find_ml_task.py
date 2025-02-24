@@ -45,7 +45,7 @@ def _is_classification(y) -> bool:
     except ValueError:
         return True
 
-    if len(y.shape) == 1:
+    if y.ndim == 1:
         return _column_is_classification(y)
 
     # Iterate on columns of y (check_array ensures that y is at most 2-d)
