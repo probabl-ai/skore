@@ -57,12 +57,10 @@ class _HelpMixin(ABC):
     @abstractmethod
     def _create_help_tree(self) -> Tree:
         """Create the help tree."""
-        pass
 
     @abstractmethod
     def _get_help_panel_title(self) -> str:
         """Get the help panel title."""
-        pass
 
     def _create_help_panel(self) -> Panel:
         """Create the help panel."""
