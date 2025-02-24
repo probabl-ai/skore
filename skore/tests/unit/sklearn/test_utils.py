@@ -48,6 +48,13 @@ def test_find_ml_task_with_estimator(X, y, estimator, expected_task, should_fit)
     assert _find_ml_task(y, estimator) == expected_task
 
 
+def test_find_ml_task_with_estimator_multiclass():
+    estimator = LogisticRegression().fit(
+        *make_classification(n_classes=3, n_informative=3, random_state=42)
+    )
+    assert _find_ml_task(None, estimator) == "multiclass-classification"
+
+
 @pytest.mark.parametrize(
     "target, expected_task",
     [
