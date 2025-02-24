@@ -21,7 +21,7 @@ from sklearn.metrics import (
     rand_score,
 )
 from sklearn.model_selection import train_test_split
-from sklearn.pipeline import Pipeline
+from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 from sklearn.utils.validation import check_is_fitted
@@ -1193,3 +1193,218 @@ def test_estimator_has_no_deep_copy():
             y_train=y_train,
             y_test=y_test,
         )
+
+
+########################################################################################
+# Check the feature importance
+########################################################################################
+
+
+def test_estimator_report_feature_importance_help(capsys, regression_data):
+    """Check that the help method writes to the console."""
+    estimator, X_test, y_test = regression_data
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    report.feature_importance.help()
+    captured = capsys.readouterr()
+    assert "Available feature importance methods" in captured.out
+    assert "model_weights" in captured.out
+
+
+def test_estimator_report_feature_importance_repr(regression_data):
+    """Check that __repr__ returns a string starting with the expected prefix."""
+    estimator, X_test, y_test = regression_data
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    repr_str = repr(report.feature_importance)
+    assert "skore.EstimatorReport.feature_importance" in repr_str
+    assert "report.feature_importance.help()" in repr_str
+
+
+########################################################################################
+# Check the model_weights feature importance metric
+########################################################################################
+
+
+@pytest.mark.parametrize(
+    "data, estimator, expected",
+    [
+        (
+            make_regression(n_features=5, random_state=42),
+            LinearRegression(),
+            pd.DataFrame(
+                data=[
+                    -1.776357e-15,
+                    6.459172e01,
+                    9.865152e01,
+                    5.707783e01,
+                    6.057748e01,
+                    3.560967e01,
+                ],
+                index=[
+                    "Intercept",
+                    "Feature #0",
+                    "Feature #1",
+                    "Feature #2",
+                    "Feature #3",
+                    "Feature #4",
+                ],
+                columns=["Coefficient"],
+            ),
+        ),
+        (
+            make_classification(n_features=5, random_state=42),
+            LogisticRegression(),
+            pd.DataFrame(
+                data=[
+                    0.069455,
+                    -1.034753,
+                    -1.495166,
+                    -0.655735,
+                    2.102900,
+                    0.530756,
+                ],
+                index=[
+                    "Intercept",
+                    "Feature #0",
+                    "Feature #1",
+                    "Feature #2",
+                    "Feature #3",
+                    "Feature #4",
+                ],
+                columns=["Coefficient"],
+            ),
+        ),
+        (
+            make_regression(n_features=5, random_state=42),
+            Pipeline([("scaler", StandardScaler()), ("reg", LinearRegression())]),
+            pd.DataFrame(
+                data=[
+                    7.813845,
+                    58.075732,
+                    95.531352,
+                    59.158434,
+                    60.605368,
+                    34.323409,
+                ],
+                index=[
+                    "Intercept",
+                    "Feature #0",
+                    "Feature #1",
+                    "Feature #2",
+                    "Feature #3",
+                    "Feature #4",
+                ],
+                columns=["Coefficient"],
+            ),
+        ),
+        (
+            make_regression(n_features=5, n_targets=3, random_state=42),
+            LinearRegression(),
+            pd.DataFrame(
+                data=[
+                    [-8.88178420e-16, 8.21565038e-15, -1.60982339e-15],
+                    [1.60681373e01, 1.86567024e01, 2.85095169e01],
+                    [1.01782473e01, 1.52859139e01, 2.45957728e01],
+                    [1.73373595e01, 8.96765425e01, 8.02337457e00],
+                    [6.45917241e01, 5.70778305e01, 3.56096726e01],
+                    [9.86515249e01, 6.05774819e01, 2.37226792e01],
+                ],
+                index=[
+                    "Intercept",
+                    "Feature #0",
+                    "Feature #1",
+                    "Feature #2",
+                    "Feature #3",
+                    "Feature #4",
+                ],
+                columns=["Target #0", "Target #1", "Target #2"],
+            ),
+        ),
+    ],
+)
+def test_estimator_report_model_weights_numpy_arrays(data, estimator, expected):
+    X, y = data
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+
+    estimator.fit(X_train, y_train)
+
+    report = EstimatorReport(estimator)
+    result = report.feature_importance.model_weights()
+
+    pd.testing.assert_frame_equal(result, expected)
+
+
+def test_estimator_report_model_weights_pandas_dataframe():
+    """If provided, the model weights dataframe uses the feature names."""
+    X, y = make_regression(n_features=5, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+    X_train = pd.DataFrame(
+        X_train, columns=[f"my_feature_{i}" for i in range(X_train.shape[1])]
+    )
+    linear_regression = LinearRegression().fit(X_train, y_train)
+
+    report = EstimatorReport(linear_regression)
+    result = report.feature_importance.model_weights()
+
+    expected = pd.DataFrame(
+        data=[
+            -1.776357e-15,
+            6.459172e01,
+            9.865152e01,
+            5.707783e01,
+            6.057748e01,
+            3.560967e01,
+        ],
+        index=[
+            "Intercept",
+            "my_feature_0",
+            "my_feature_1",
+            "my_feature_2",
+            "my_feature_3",
+            "my_feature_4",
+        ],
+        columns=["Coefficient"],
+    )
+    pd.testing.assert_frame_equal(result, expected)
+
+
+def test_estimator_report_model_weights_pandas_dataframe_pipeline():
+    """If provided, the model weights dataframe uses the feature names."""
+    X, y = make_regression(n_features=5, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+    X_train = pd.DataFrame(
+        X_train, columns=[f"my_feature_{i}" for i in range(X_train.shape[1])]
+    )
+    est = make_pipeline(StandardScaler(), LinearRegression())
+    est.fit(X_train, y_train)
+
+    report = EstimatorReport(est)
+    result = report.feature_importance.model_weights()
+
+    expected = pd.DataFrame(
+        data=[
+            7.813845,
+            58.075732,
+            95.531352,
+            59.158434,
+            60.605368,
+            34.323409,
+        ],
+        index=[
+            "Intercept",
+            "my_feature_0",
+            "my_feature_1",
+            "my_feature_2",
+            "my_feature_3",
+            "my_feature_4",
+        ],
+        columns=["Coefficient"],
+    )
+    pd.testing.assert_frame_equal(result, expected)
