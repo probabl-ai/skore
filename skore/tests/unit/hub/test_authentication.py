@@ -1,5 +1,6 @@
 import json
 from datetime import datetime
+from importlib import reload
 from urllib.parse import urljoin
 
 import pytest
@@ -14,16 +15,18 @@ from skore.hub.authentication import (
 )
 
 
-@pytest.fixture
-def filepath(tmp_path):
-    return tmp_path / "skore.token"
-
-
 @pytest.fixture(autouse=True)
-def monkeypatch_authentication_token_filepath(monkeypatch, filepath):
-    monkeypatch.setattr(
-        "skore.hub.authentication.AuthenticationToken.FILEPATH", filepath
-    )
+def monkeypatch_home(monkeypatch, tmp_path):
+    import tempfile
+
+    with monkeypatch.context() as mp:
+        mp.setenv("TMPDIR", str(tmp_path))
+
+        # The first call of `tempfile.gettempdir` being cached, reload the module.
+        # https://docs.python.org/3/library/tempfile.html#tempfile.gettempdir
+        reload(tempfile)
+
+        yield
 
 
 def monkeypatch_refresh_route(access_token, refresh_token, expires_at):
@@ -49,7 +52,8 @@ class TestAuthenticationToken:
         assert token.refreshment == "B"
         assert token.expires_at == "C"
 
-    def test_init_without_parameters_with_file(self, filepath):
+    def test_init_without_parameters_with_file(self, tmp_path):
+        filepath = tmp_path / "skore.token"
         filepath.write_text('["A", "B", "C"]')
         token = AuthenticationToken()
 
@@ -64,14 +68,16 @@ class TestAuthenticationToken:
         assert token.refreshment is None
         assert token.expires_at is None
 
-    def test_save(self, filepath):
+    def test_save(self, tmp_path):
+        filepath = tmp_path / "skore.token"
         token = AuthenticationToken("A", "B", "C")
         token.save()
 
         assert json.loads(filepath.read_text()) == ["A", "B", "C"]
 
     @respx.mock
-    def test_refresh(self, filepath):
+    def test_refresh(self, tmp_path):
+        filepath = tmp_path / "skore.token"
         refresh_route = monkeypatch_refresh_route("D", "E", "F")
         token = AuthenticationToken("A", "B", "C")
         token.refresh()
@@ -95,7 +101,8 @@ class TestAuthenticationToken:
 
 
 class TestAuthenticatedClient:
-    def test_token_with_file(self, filepath):
+    def test_token_with_file(self, tmp_path):
+        filepath = tmp_path / "skore.token"
         filepath.write_text('["A", "B", "C"]')
         token = AuthenticatedClient().token
 
@@ -117,7 +124,8 @@ class TestAuthenticatedClient:
             AuthenticatedClient().get(mock)
 
     @respx.mock
-    def test_request_with_expired_token(self, filepath):
+    def test_request_with_expired_token(self, tmp_path):
+        filepath = tmp_path / "skore.token"
         filepath.write_text(
             f'["A", "B", "{datetime(2000, 1, 1, 0, 0, 0).isoformat()}"]'
         )

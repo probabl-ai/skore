@@ -24,7 +24,6 @@ class AuthenticationError(Exception):
 class AuthenticationToken:
     """Wrap access, refresh and expires_at."""
 
-    FILEPATH = pathlib.Path(tempfile.gettempdir(), "skore.token")
     EMPTY = object()
 
     def __init__(self, access=EMPTY, refreshment=EMPTY, expires_at=EMPTY):
@@ -37,16 +36,21 @@ class AuthenticationToken:
         else:
             try:
                 self.access, self.refreshment, self.expires_at = json.loads(
-                    self.FILEPATH.read_text()
+                    self.filepath.read_text()
                 )
             except FileNotFoundError:
                 self.access = None
                 self.refreshment = None
                 self.expires_at = None
 
+    @functools.cached_property
+    def filepath(self):
+        """Filepath used to save the tokens on disk."""
+        return pathlib.Path(tempfile.gettempdir(), "skore.token")
+
     def save(self):
         """Save the tokens to the disk."""
-        self.FILEPATH.write_text(
+        self.filepath.write_text(
             json.dumps((self.access, self.refreshment, self.expires_at))
         )
 
