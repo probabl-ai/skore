@@ -136,25 +136,37 @@ def login(timeout=600, auto_otp=True):
 
     with httpx.Client() as client:
         if auto_otp:
+            access = None
+            refreshment = None
+            expires_at = None
 
             def callback(state):
                 with httpx.Client() as c2:
-                    r = c2.post(
+                    c2.post(
                         urljoin(URI, "identity/oauth/device/callback"),
                         data={
                             "state": state,
                             "user_code": user_code,
                         },
-                    )
-                    r.raise_for_status()
+                    ).raise_for_status()
 
-                    tokens = r.json()
-                    t = AuthenticationToken(
-                        access=tokens["access_token"],
-                        refreshment=tokens["refresh_token"],
-                        expires_at=tokens["expires_at"],
+                    #
+                    response = c2.get(
+                        urljoin(
+                            URI,
+                            f"identity/oauth/device/token?device_code={device_code}",
+                        )
                     )
-                    console.print(t)
+                    response.raise_for_status()
+                    tokens = response.json()["token"]
+
+                    nonlocal access
+                    nonlocal refreshment
+                    nonlocal expires_at
+
+                    access = tokens["access_token"]
+                    refreshment = tokens["refresh_token"]
+                    expires_at = tokens["expires_at"]
 
             port = launch_callback_server(callback=callback)
             # Request a new authorization URL
@@ -171,6 +183,14 @@ def login(timeout=600, auto_otp=True):
 
             # Open the default browser
             webbrowser.open(authorization_url)
+
+            #
+            while access is None or refreshment is None or expires_at is None:
+                time.sleep(0.5)
+
+            return AuthenticationToken(
+                access=access, refreshment=refreshment, expires_at=expires_at
+            )
 
         else:
             # Request a new authorization URL
