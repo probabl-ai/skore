@@ -1,8 +1,17 @@
+"""Create an HTTP server which will wait for oauth success callback."""
+
 import threading
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler
 from socketserver import TCPServer
 from threading import Thread
+from typing import Callable
+from urllib.parse import parse_qs, urlparse
+
+SUCCESS_PAGE = """
+<script>window.close();</script>
+<p>You can now close this page.</p>
+"""
 
 
 def _get_handler(callback):
@@ -11,21 +20,50 @@ def _get_handler(callback):
             del args
 
         def do_GET(self):
-            s = "coucou"
+            parsed = urlparse(self.path)
+            params = parse_qs(parsed.query)
             self.send_response(HTTPStatus.OK)
             self.send_header("Content-type", "text/html")
-            self.send_header("Content-Length", len(s))
+            self.send_header("Content-Length", len(SUCCESS_PAGE))
             self.end_headers()
-            self.wfile.write(bytes(s, "utf-8"))
+            self.wfile.write(bytes(SUCCESS_PAGE, "utf-8"))
 
-            state = None
-            callback(state)
+            state_list = params.get("state", [None])
+            callback(state_list[0])
 
     return _Handler
 
 
-def launch_callback_server(callback, timeout) -> int:
-    """Launch a HTTP server that will wait for server success web hook."""
+def launch_callback_server(callback: Callable[[str], None], timeout: int = 500) -> int:
+    """Start a temporary HTTP server on a random port to handle callbacks.
+
+    The server automatically shuts down after receiving a callback or timing out.
+
+    Parameters
+    ----------
+    callback : callable
+      Function to be called when the server receives a request.
+      The callback function should accept one parameter for the state.
+    timeout : float
+      Maximum time in seconds to wait for the callback before shutting down.
+
+    Returns
+    -------
+    int
+      The port number the server is listening on.
+
+    Notes
+    -----
+    The server runs in a separate thread and will be automatically shut down
+    either when the callback is received or when the timeout is reached.
+
+    Examples
+    --------
+    >>> def my_callback(state):
+    ...     print(f"Received state: {state}")
+    >>> port = launch_callback_server(my_callback, timeout=60)
+    >>> print(f"Server listening on port {port}")
+    """
     # We let the OS choose the port to make sure the chosen one is free.
     shutdown_event = threading.Event()
 
