@@ -10,7 +10,11 @@ from skore.sklearn.types import MLTask
 
 
 def _column_is_classification(y) -> bool:
-    """Check whether ``y`` is a 1-d array of sequential integer values containing 0."""
+    """Check whether ``y`` is a sequence.
+    
+    We define a sequence as a 1-d array of sequential integer values,
+    where the first value is 0.
+    """
     y_unique = np.unique(y)
     if np.any(y_unique == 0):
         sequential = np.arange(y_unique[0], y_unique[-1] + 1)
