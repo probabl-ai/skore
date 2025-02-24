@@ -150,7 +150,6 @@ class TestAuthenticatedClient:
         client = AuthenticatedClient()
         client.get("foo")
 
-        # breakpoint()
         assert client.token.access == "D"
         assert client.token.refreshment == "E"
         assert client.token.expires_at == mock_now
