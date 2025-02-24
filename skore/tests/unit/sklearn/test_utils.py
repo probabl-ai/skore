@@ -7,6 +7,7 @@ from sklearn.datasets import (
     make_multilabel_classification,
     make_regression,
 )
+from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.multioutput import MultiOutputClassifier
 from skore.sklearn.find_ml_task import _find_ml_task
@@ -84,11 +85,15 @@ def test_find_ml_task_without_estimator(target, expected_task):
     assert _find_ml_task(target) == expected_task
 
 
-def test_find_ml_task_unfitted_estimator():
-    from sklearn.dummy import DummyClassifier
-
-    estimator = DummyClassifier()
-    assert _find_ml_task(None, estimator) == "unknown"
+@pytest.mark.parametrize(
+    "estimator, expected",
+    [
+        (DummyClassifier(), "unknown"),
+        (DummyRegressor(), "regression"),
+    ],
+)
+def test_find_ml_task_unfitted_estimator(estimator, expected):
+    assert _find_ml_task(None, estimator) == expected
 
 
 def test_find_ml_task_pandas():
