@@ -73,6 +73,10 @@ def test_find_ml_task_with_estimator_multiclass():
             make_multilabel_classification(random_state=42)[1],
             "multioutput-binary-classification",
         ),
+        (
+            [[0, 0, 0], [1, 1, 1], [2, 2, 2]],
+            "multioutput-multiclass-classification",
+        ),
         (numpy.array([1, 5, 9]), "regression"),
         (numpy.array([0, 1, 2]), "multiclass-classification"),
         (numpy.array([1, 2, 3]), "regression"),
