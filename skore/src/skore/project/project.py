@@ -42,6 +42,59 @@ def _raise_if_deleted(method):
     return wrapper
 
 
+class ArtifactMetadata:
+    """Handle metadata for project artifacts."""
+
+    def __init__(self, project):
+        self._project = project
+
+    def __getattr__(self, key: str):
+        """Get metadata for an item."""
+        return {
+            "note": self._project.get_note(key),
+            "display_as": None,
+        }
+
+    def __setattr__(self, key: str, value: dict):
+        """Set metadata for an item."""
+        if key.startswith("_"):
+            super().__setattr__(key, value)
+            return
+
+        if isinstance(value, dict):
+            if "note" in value:
+                self._project.set_note(key, value["note"])
+            if "display_as" in value:
+                # TODO: Implement display_as storage
+                pass
+        else:
+            raise TypeError(
+                "Metadata must be a dictionary with 'note' and/or 'display_as' keys"
+            )
+
+
+class Artifacts:
+    """Handle attribute-style access to project artifacts."""
+
+    def __init__(self, project):
+        self._project = project
+
+    def __getattr__(self, key: str):
+        """Get an artifact value."""
+        try:
+            return self._project.get(key)
+        except KeyError as e:
+            raise AttributeError(f"No artifact named '{key}'") from e
+
+    def __setattr__(self, key: str, value: Any):
+        """Set an artifact value."""
+        if key.startswith("_"):
+            super().__setattr__(key, value)
+            return
+
+        self._project.put(key, value)
+
+
 class Project:
     """
     A collection of items persisted in a storage.
@@ -106,6 +159,9 @@ class Project:
         self.path = self.path.with_suffix(".skore")
         self.path = self.path.resolve()
         self.name = self.path.name
+
+        self.artifacts = Artifacts(project=self)
+        self.metadata = ArtifactMetadata(project=self)
 
         if if_exists == "raise" and self.path.exists():
             raise FileExistsError(

@@ -268,9 +268,9 @@ my_project = skore.Project("my_project")
 # directory) using :func:`~skore.Project.put`), with a "universal" key-value convention:
 
 # %%
-my_project.put("my_int", 3)
-my_project.put("df_cv_report_metrics", df_cv_report_metrics)
-my_project.put("roc_plot", roc_plot)
+my_project.artifacts.my_int = 3
+my_project.artifacts.df_cv_report_metrics = df_cv_report_metrics
+my_project.artifacts.roc_plot = roc_plot
 
 # %%
 # .. note ::
@@ -282,10 +282,10 @@ my_project.put("roc_plot", roc_plot)
 # We can retrieve the value of an item:
 
 # %%
-my_project.get("my_int")
+my_project.artifacts.my_int
 
 # %%
-my_project.get("df_cv_report_metrics")
+my_project.artifacts.df_cv_report_metrics
 
 # %%
 # .. seealso::
