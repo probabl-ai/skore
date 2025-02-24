@@ -1338,7 +1338,8 @@ def test_estimator_report_model_weights_numpy_arrays(data, estimator, expected):
 
 
 def test_estimator_report_model_weights_pandas_dataframe():
-    """If provided, the model weights dataframe uses the feature names."""
+    """If provided, the model weights dataframe uses the feature names, where the
+    estimator is a single estimator (not a pipeline)."""
     X, y = make_regression(n_features=5, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42
@@ -1374,7 +1375,8 @@ def test_estimator_report_model_weights_pandas_dataframe():
 
 
 def test_estimator_report_model_weights_pandas_dataframe_pipeline():
-    """If provided, the model weights dataframe uses the feature names."""
+    """If provided, the model weights dataframe uses the feature names, where the
+    estimator is a pipeline (not a single estimator)."""
     X, y = make_regression(n_features=5, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42
