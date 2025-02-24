@@ -127,7 +127,7 @@ class AuthenticatedClient(httpx.Client):
         )
 
 
-def login(timeout=600):
+def login(timeout=600, auto_otp=True):
     """Login to the skore-HUB."""
     from rich.align import Align
     from rich.panel import Panel
@@ -135,69 +135,106 @@ def login(timeout=600):
     from skore import console
 
     with httpx.Client() as client:
-        # Request a new authorization URL
-        response = client.get(urljoin(URI, "identity/oauth/device/login"))
-        response.raise_for_status()
+        if auto_otp:
 
-        response = response.json()
-        authorization_url = response["authorization_url"]
-        device_code = response["device_code"]
-        user_code = response["user_code"]
-
-        # Display authentication info to the user
-        console.print(
-            "\n"
-            "🌍 Opening your default browser to start the authentication process.\n"
-            "❔ If your browser did not open visit our "
-            f"[link={authorization_url}]authentication page[/link].\n"
-        )
-        console.print(
-            Panel(
-                Align(f"[bold]{user_code}[/bold]", align="center"),
-                title="[cyan]Your unique code is[/cyan]",
-                border_style="orange1",
-                expand=False,
-                padding=1,
-                title_align="center",
-            )
-        )
-
-        # Open the default browser
-        webbrowser.open(authorization_url)
-
-        # Start polling Skore-Hub, waiting for the token
-        tic = datetime.now()
-
-        def toto():...
-
-        server = launch_callback_server()
-
-        try:
-            while True:
-                response = client.get(
-                    urljoin(
-                        URI,
-                        f"identity/oauth/device/token?device_code={device_code}",
+            def callback(state):
+                with httpx.Client() as c2:
+                    r = c2.post(
+                        urljoin(URI, "identity/oauth/device/callback"),
+                        data={
+                            "state": state,
+                            "user_code": user_code,
+                        },
                     )
-                )
+                    r.raise_for_status()
 
-                try:
-                    response.raise_for_status()
-                except httpx.HTTPError:
-                    time.sleep(0.5)
-
-                    if (datetime.now() - tic).total_seconds() > timeout:
-                        raise AuthenticationError(
-                            "Authentication process timed out."
-                        ) from None
-                else:
-                    response = response.json()
-                    tokens = response["token"]
-
-                    return AuthenticationToken(
+                    tokens = r.json()
+                    t = AuthenticationToken(
                         access=tokens["access_token"],
                         refreshment=tokens["refresh_token"],
                         expires_at=tokens["expires_at"],
                     )
-        except KeyboardInterrupt:
-            console.print("👋 login process interrupted.")
+                    console.print(t)
+
+            port = launch_callback_server(callback=callback)
+            # Request a new authorization URL
+            response = client.get(
+                urljoin(URI, "identity/oauth/device/login"),
+                params={"success_uri": f"http://localhost:{port}"},
+            )
+            response.raise_for_status()
+
+            response = response.json()
+            authorization_url = response["authorization_url"]
+            device_code = response["device_code"]
+            user_code = response["user_code"]
+
+            # Open the default browser
+            webbrowser.open(authorization_url)
+
+        else:
+            # Request a new authorization URL
+            response = client.get(urljoin(URI, "identity/oauth/device/login"))
+            response.raise_for_status()
+
+            response = response.json()
+            authorization_url = response["authorization_url"]
+            device_code = response["device_code"]
+            user_code = response["user_code"]
+
+            # Display authentication info to the user
+            console.print(
+                "\n"
+                "🌍 Opening your default browser to start the authentication process.\n"
+                "❔ If your browser did not open visit our "
+                f"[link={authorization_url}]authentication page[/link].\n"
+            )
+            console.print(
+                Panel(
+                    Align(f"[bold]{user_code}[/bold]", align="center"),
+                    title="[cyan]Your unique code is[/cyan]",
+                    border_style="orange1",
+                    expand=False,
+                    padding=1,
+                    title_align="center",
+                )
+            )
+            # Open the default browser
+            webbrowser.open(authorization_url)
+
+            # Start polling Skore-Hub, waiting for the token
+            tic = datetime.now()
+
+            try:
+                while True:
+                    response = client.get(
+                        urljoin(
+                            URI,
+                            f"identity/oauth/device/token?device_code={device_code}",
+                        )
+                    )
+
+                    try:
+                        response.raise_for_status()
+                    except httpx.HTTPError:
+                        time.sleep(0.5)
+
+                        if (datetime.now() - tic).total_seconds() > timeout:
+                            raise AuthenticationError(
+                                "Authentication process timed out."
+                            ) from None
+                    else:
+                        response = response.json()
+                        tokens = response["token"]
+
+                        return AuthenticationToken(
+                            access=tokens["access_token"],
+                            refreshment=tokens["refresh_token"],
+                            expires_at=tokens["expires_at"],
+                        )
+            except KeyboardInterrupt:
+                console.print("👋 login process interrupted.")
+
+
+if __name__ == "__main__":
+    login()
