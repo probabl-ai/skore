@@ -125,7 +125,7 @@ class ServerInfo:
         with open(self.pid_file, "w") as f:
             json.dump(info, f)
 
-    def delete_pid_file(self):
+    def delete_pid_file(self) -> None:
         """Delete server information from disk."""
         with contextlib.suppress(FileNotFoundError):
             os.remove(self.pid_file)
@@ -166,7 +166,9 @@ def is_server_started(port: int, timeout: float = 10.0, interval: float = 0.1) -
     return False
 
 
-def start_server_in_subprocess(project: Project, port: int, open_browser: bool):
+def start_server_in_subprocess(
+    project: Project, port: int, open_browser: bool
+) -> subprocess.Popen:
     """Start the server in a separate process.
 
     Parameters
@@ -283,7 +285,7 @@ def block_before_cleanup(project: Project, process: subprocess.Popen) -> None:
         cleanup_server(project)
 
 
-def _kill_all_servers(verbose: bool = False):
+def _kill_all_servers(verbose: bool = False) -> None:
     """Kill all running servers.
 
     Parameters
@@ -321,7 +323,7 @@ def _launch(
     port: Union[int, None] = None,
     open_browser: bool = True,
     verbose: bool = False,
-):
+) -> None:
     """Launch the UI to visualize a project.
 
     Parameters

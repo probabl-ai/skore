@@ -91,7 +91,10 @@ def _find_ml_task(y, estimator=None) -> MLTask:
         if is_clusterer(estimator):
             return "clustering"
         if is_regressor(estimator):
-            return "regression"
+            if np.ndim(y) == 1:
+                return "regression"
+            else:
+                return "multioutput-regression"
         if is_classifier(estimator):
             if hasattr(estimator, "classes_"):  # fitted estimator
                 if (

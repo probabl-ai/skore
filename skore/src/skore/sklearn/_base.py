@@ -1,19 +1,24 @@
 import inspect
+from abc import ABC, abstractmethod
 from io import StringIO
+from typing import Any, Generic, Literal, Optional, TypeVar, Union
 
 import joblib
+import numpy as np
+from numpy.typing import ArrayLike, NDArray
 from rich.console import Console, Group
 from rich.panel import Panel
 from rich.tree import Tree
+from sklearn.base import BaseEstimator
 from sklearn.utils._response import _check_response_method, _get_response_values
 
 from skore.externals._sklearn_compat import is_clusterer
 
 
-class _HelpMixin:
+class _HelpMixin(ABC):
     """Mixin class providing help for the `help` method and the `__repr__` method."""
 
-    def _get_methods_for_help(self):
+    def _get_methods_for_help(self) -> list[tuple[str, Any]]:
         """Get the methods to display in help."""
         methods = inspect.getmembers(self, predicate=inspect.ismethod)
         filtered_methods = []
@@ -27,15 +32,17 @@ class _HelpMixin:
                 filtered_methods.append((name, method))
         return filtered_methods
 
-    def _sort_methods_for_help(self, methods):
+    def _sort_methods_for_help(
+        self, methods: list[tuple[str, Any]]
+    ) -> list[tuple[str, Any]]:
         """Sort methods for help display."""
         return sorted(methods)
 
-    def _format_method_name(self, name):
+    def _format_method_name(self, name: str) -> str:
         """Format method name for display."""
         return f"{name}(...)"
 
-    def _get_method_description(self, method):
+    def _get_method_description(self, method: Any) -> str:
         """Get the description for a method."""
         return (
             method.__doc__.split("\n")[0]
@@ -43,12 +50,21 @@ class _HelpMixin:
             else "No description available"
         )
 
-    def _get_help_legend(self):
+    def _get_help_legend(self) -> Optional[str]:
         """Get the help legend."""
         return None
 
-    def _create_help_panel(self):
+    @abstractmethod
+    def _create_help_tree(self) -> Tree:
+        """Create the help tree."""
+
+    @abstractmethod
+    def _get_help_panel_title(self) -> str:
+        """Get the help panel title."""
+
+    def _create_help_panel(self) -> Panel:
         """Create the help panel."""
+        content: Union[Tree, Group]
         if self._get_help_legend():
             content = Group(
                 self._create_help_tree(),
@@ -64,15 +80,16 @@ class _HelpMixin:
             border_style="orange1",
         )
 
-    def help(self):
+    def help(self) -> None:
         """Display available methods using rich."""
         from skore import console  # avoid circular import
 
         console.print(self._create_help_panel())
 
-    def _rich_repr(self, class_name, help_method_name):
+    def _rich_repr(self, class_name: str, help_method_name: str) -> str:
         """Return a string representation using rich."""
-        console = Console(file=StringIO(), force_terminal=False)
+        string_buffer = StringIO()
+        console = Console(file=string_buffer, force_terminal=False)
         console.print(
             Panel(
                 f"Get guidance using the {help_method_name} method",
@@ -81,19 +98,26 @@ class _HelpMixin:
                 expand=False,
             )
         )
-        return console.file.getvalue()
+        return string_buffer.getvalue()
 
 
 class _BaseReport(_HelpMixin):
     """Base class for all reports."""
 
-    def _get_help_panel_title(self):
+    _ACCESSOR_CONFIG: dict[str, dict[str, str]]
+    _X_train: Optional[ArrayLike]
+    _X_test: Optional[ArrayLike]
+    _y_train: Optional[ArrayLike]
+    _y_test: Optional[ArrayLike]
+    estimator_: BaseEstimator
+
+    def _get_help_panel_title(self) -> str:
         return ""
 
-    def _get_help_legend(self):
+    def _get_help_legend(self) -> str:
         return ""
 
-    def _get_attributes_for_help(self):
+    def _get_attributes_for_help(self) -> list[str]:
         """Get the public attributes to display in help."""
         attributes = []
         xy_attributes = []
@@ -122,7 +146,7 @@ class _BaseReport(_HelpMixin):
         # Return X/y attributes first, followed by other attributes
         return xy_attributes + attributes
 
-    def _create_help_tree(self):
+    def _create_help_tree(self) -> Tree:
         """Create a rich Tree with the available tools and accessor methods."""
         tree = Tree(self.__class__.__name__)
 
@@ -173,17 +197,25 @@ class _BaseReport(_HelpMixin):
         return tree
 
 
-class _BaseAccessor(_HelpMixin):
+ParentT = TypeVar("ParentT", bound="_BaseReport")
+
+
+class _BaseAccessor(_HelpMixin, Generic[ParentT]):
     """Base class for all accessors."""
 
-    def __init__(self, parent):
+    def __init__(self, parent: ParentT) -> None:
         self._parent = parent
 
-    def _get_help_panel_title(self):
+    @abstractmethod
+    def _get_help_tree_title(self) -> str:
+        """Get the title for the help tree."""
+        pass
+
+    def _get_help_panel_title(self) -> str:
         name = self.__class__.__name__.replace("_", "").replace("Accessor", "").lower()
         return f"Available {name} methods"
 
-    def _create_help_tree(self):
+    def _create_help_tree(self) -> Tree:
         """Create a rich Tree with the available methods."""
         tree = Tree(self._get_help_tree_title())
 
@@ -197,7 +229,13 @@ class _BaseAccessor(_HelpMixin):
 
         return tree
 
-    def _get_X_y_and_data_source_hash(self, *, data_source, X=None, y=None):
+    def _get_X_y_and_data_source_hash(
+        self,
+        *,
+        data_source: Literal["test", "train", "X_y"],
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
+    ) -> tuple[ArrayLike, Optional[ArrayLike], Optional[int]]:
         """Get the requested dataset and mention if we should hash before caching.
 
         Parameters
@@ -272,15 +310,15 @@ class _BaseAccessor(_HelpMixin):
 
 def _get_cached_response_values(
     *,
-    cache,
-    estimator_hash,
-    estimator,
-    X,
-    response_method,
-    pos_label=None,
-    data_source="test",
-    data_source_hash=None,
-):
+    cache: dict[tuple[Any, ...], ArrayLike],
+    estimator_hash: int,
+    estimator: BaseEstimator,
+    X: Union[ArrayLike, None],
+    response_method: Union[str, list[str], tuple[str, ...]],
+    pos_label: Optional[Union[int, float, bool, str]] = None,
+    data_source: Literal["test", "train", "X_y"] = "test",
+    data_source_hash: Optional[int] = None,
+) -> NDArray:
     """Compute or load from local cache the response values.
 
     Parameters
@@ -295,10 +333,10 @@ def _get_cached_response_values(
     estimator : estimator object
         The estimator.
 
-    X : {array-like, sparse matrix} of shape (n_samples, n_features)
+    X : {array-like, sparse matrix} of shape (n_samples, n_features) or None
         The data.
 
-    response_method : str
+    response_method : str, list of str or tuple of str
         The response method.
 
     pos_label : int, float, bool or str, default=None
@@ -323,9 +361,14 @@ def _get_cached_response_values(
     if prediction_method in ("predict_proba", "decision_function"):
         # pos_label is only important in classification and with probabilities
         # and decision functions
-        cache_key = (estimator_hash, pos_label, prediction_method, data_source)
+        cache_key: tuple[Any, ...] = (
+            estimator_hash,
+            pos_label,
+            prediction_method,
+            data_source,
+        )
     else:
-        cache_key = (estimator_hash, prediction_method, data_source)
+        cache_key = (estimator_hash, None, prediction_method, data_source)
 
     if data_source == "X_y":
         if data_source_hash is None:
@@ -333,10 +376,12 @@ def _get_cached_response_values(
             # If data_source_hash is not None, we internally computed ourself the hash
             # and it is trustful
             data_source_hash = joblib.hash(X)
-        cache_key += (data_source_hash,)
+        cache_key = cache_key + (data_source_hash,)
 
     if cache_key in cache:
-        return cache[cache_key]
+        cached_predictions = cache[cache_key]
+        assert isinstance(cached_predictions, np.ndarray)
+        return cached_predictions
 
     predictions, _ = _get_response_values(
         estimator,
