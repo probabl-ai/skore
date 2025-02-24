@@ -4,7 +4,6 @@ from importlib import reload
 from urllib.parse import urljoin
 
 import pytest
-import respx
 from httpx import Response
 from skore.hub.authentication import (
     URI,
@@ -27,21 +26,6 @@ def monkeypatch_home(monkeypatch, tmp_path):
         reload(tempfile)
 
         yield
-
-
-def monkeypatch_refresh_route(access_token, refresh_token, expires_at):
-    return respx.post(urljoin(URI, "identity/oauth/token/refresh")).mock(
-        Response(
-            200,
-            json={
-                "token": {
-                    "access_token": access_token,
-                    "refresh_token": refresh_token,
-                    "expires_at": expires_at,
-                }
-            },
-        )
-    )
 
 
 class TestAuthenticationToken:
@@ -75,10 +59,24 @@ class TestAuthenticationToken:
 
         assert json.loads(filepath.read_text()) == ["A", "B", "C"]
 
-    @respx.mock
-    def test_refresh(self, tmp_path):
+    @pytest.mark.respx
+    def test_refresh(self, tmp_path, respx_mock):
         filepath = tmp_path / "skore.token"
-        refresh_route = monkeypatch_refresh_route("D", "E", "F")
+        refresh_route = respx_mock.post(
+            urljoin(URI, "identity/oauth/token/refresh")
+        ).mock(
+            Response(
+                200,
+                json={
+                    "token": {
+                        "access_token": "D",
+                        "refresh_token": "E",
+                        "expires_at": "F",
+                    }
+                },
+            )
+        )
+
         token = AuthenticationToken("A", "B", "C")
         token.refresh()
 
@@ -117,35 +115,48 @@ class TestAuthenticatedClient:
         assert token.refreshment is None
         assert token.expires_at is None
 
-    def test_request_with_invalid_token_raises(self):
-        mock = respx.get("foo").mock(Response(200))
+    @pytest.mark.respx(assert_all_called=False)
+    def test_request_with_invalid_token_raises(self, respx_mock):
+        foo_route = respx_mock.get("foo").mock(Response(200))
 
         with pytest.raises(AuthenticationError):
-            AuthenticatedClient().get(mock)
+            AuthenticatedClient().get("foo")
 
-    @respx.mock
-    def test_request_with_expired_token(self, tmp_path):
+        assert not foo_route.called
+
+    @pytest.mark.respx(assert_all_called=True)
+    def test_request_with_expired_token(self, tmp_path, respx_mock):
         filepath = tmp_path / "skore.token"
         filepath.write_text(
             f'["A", "B", "{datetime(2000, 1, 1, 0, 0, 0).isoformat()}"]'
         )
 
-        refresh_route = monkeypatch_refresh_route("D", "E", "F")
-        foo_route = respx.get(urljoin(URI, "foo")).mock(Response(200))
+        respx_mock.get(urljoin(URI, "foo")).mock(Response(200))
+        respx_mock.post(urljoin(URI, "identity/oauth/token/refresh")).mock(
+            Response(
+                200,
+                json={
+                    "token": {
+                        "access_token": "D",
+                        "refresh_token": "E",
+                        "expires_at": "F",
+                    }
+                },
+            )
+        )
 
         client = AuthenticatedClient()
         client.get("foo")
 
-        assert foo_route.called
-        assert refresh_route.called
+        # breakpoint()
         assert client.token.access == "D"
         assert client.token.refreshment == "E"
         assert client.token.expires_at == "F"
 
 
-@respx.mock
-def test_login(monkeypatch):
-    login_route = respx.get(urljoin(URI, "identity/oauth/device/login")).mock(
+@pytest.mark.respx(assert_all_called=True)
+def test_login(monkeypatch, respx_mock):
+    respx_mock.get(urljoin(URI, "identity/oauth/device/login")).mock(
         Response(
             200,
             json={
@@ -155,7 +166,7 @@ def test_login(monkeypatch):
             },
         )
     )
-    token_route = respx.get(
+    respx_mock.get(
         urljoin(URI, "identity/oauth/device/token?device_code=device-123")
     ).mock(
         Response(
@@ -180,8 +191,6 @@ def test_login(monkeypatch):
 
     token = login()
 
-    assert login_route.called
-    assert token_route.called
     assert called_url == "https://idp.com"
     assert token.access == "A"
     assert token.refreshment == "B"
