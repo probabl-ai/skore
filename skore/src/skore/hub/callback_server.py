@@ -34,23 +34,23 @@ def _get_handler(callback):
     return _Handler
 
 
-def launch_callback_server(callback: Callable[[str], None], timeout: int = 500) -> int:
+def launch_callback_server(callback: Callable[[str], None]) -> int:
     """Start a temporary HTTP server on a random port to handle callbacks.
 
-    The server automatically shuts down after receiving a callback or timing out.
+    The server automatically shuts down after receiving a callback.
 
     Parameters
     ----------
     callback : callable
-      Function to be called when the server receives a request.
-      The callback function should accept one parameter for the state.
-    timeout : float
-      Maximum time in seconds to wait for the callback before shutting down.
+        Function to be called when the server receives a request.
+        The callback function should accept one parameter for the state.
 
     Returns
     -------
     int
-      The port number the server is listening on.
+        The port number the server is listening on.
+    threading.Event
+        An event to stop the running server.
 
     Notes
     -----
@@ -69,7 +69,7 @@ def launch_callback_server(callback: Callable[[str], None], timeout: int = 500) 
     server_thread = Thread(target=server.serve_forever)
 
     def watchdog():
-        shutdown_event.wait(timeout=timeout)
+        shutdown_event.wait()
         server.shutdown()
         server_thread.join()
 
@@ -78,4 +78,4 @@ def launch_callback_server(callback: Callable[[str], None], timeout: int = 500) 
     server_thread.start()
     watchdog_thread.start()
 
-    return port
+    return port, shutdown_event

@@ -34,7 +34,7 @@ def login(timeout=600, auto_otp=True):
                 device_code=device_code
             )
 
-        port = launch_callback_server(callback=callback)
+        port, shutdown = launch_callback_server(callback=callback)
         authorization_url, device_code, user_code = api.get_oauth_device_login(
             success_uri=f"http://localhost:{port}"
         )
@@ -44,6 +44,7 @@ def login(timeout=600, auto_otp=True):
 
         while access is None or refreshment is None or expires_at is None:
             if (datetime.now() - start).total_seconds() > timeout:
+                shutdown.set()
                 raise AuthenticationError("Timeout") from None
 
             sleep(0.5)

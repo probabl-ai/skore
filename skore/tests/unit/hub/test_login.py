@@ -110,8 +110,8 @@ def test_auto_otp_login(monkeypatch, respx_mock, mock_now, mock_nowstr):
         from skore.hub.callback_server import launch_callback_server
 
         nonlocal port
-        port = launch_callback_server(callback)
-        return port
+        port, event = launch_callback_server(callback)
+        return port, event
 
     monkeypatch.setattr("skore.hub.login.launch_callback_server", mock_create_server)
 
@@ -131,3 +131,22 @@ def test_auto_otp_login(monkeypatch, respx_mock, mock_now, mock_nowstr):
     assert token.access == "A"
     assert token.refreshment == "B"
     assert token.expires_at == mock_now
+
+
+@pytest.mark.respx(assert_all_called=True)
+def test_auto_otp_login_timeout(monkeypatch, respx_mock):
+    monkeypatch.setattr("webbrowser.open", lambda _: None)
+
+    respx_mock.get(LOGIN_URL).mock(
+        Response(
+            200,
+            json={
+                "authorization_url": "url",
+                "device_code": "device",
+                "user_code": "user",
+            },
+        )
+    )
+
+    with pytest.raises(AuthenticationError, match="Timeout"):
+        login(timeout=0, auto_otp=True)
