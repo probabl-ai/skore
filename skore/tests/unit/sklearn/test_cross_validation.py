@@ -702,6 +702,7 @@ def test_cross_validation_report_report_metrics_with_scorer_binary_classificatio
 
     result = report.metrics.report_metrics(
         scoring=["accuracy", accuracy_score, scorer],
+        scoring_kwargs={"response_method": "predict"},
     )
     assert result.shape == (3, 2)
 

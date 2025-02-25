@@ -1,11 +1,16 @@
+from typing import Any, Callable, Literal, Optional, Union
+
 import joblib
 import numpy as np
 import pandas as pd
+from rich.progress import Progress
 from sklearn.metrics import make_scorer
+from sklearn.metrics._scorer import _BaseScorer as SKLearnScorer
 from sklearn.utils.metaestimators import available_if
 
 from skore.externals._pandas_accessors import DirNamesMixin
 from skore.sklearn._base import _BaseAccessor, _get_cached_response_values
+from skore.sklearn._cross_validation.report import CrossValidationReport
 from skore.sklearn._plot import (
     PrecisionRecallCurveDisplay,
     PredictionErrorDisplay,
@@ -16,14 +21,16 @@ from skore.utils._index import flatten_multi_index
 from skore.utils._parallel import Parallel, delayed
 from skore.utils._progress_bar import progress_decorator
 
+DataSource = Literal["test", "train"]
 
-class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
+
+class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
     """Accessor for metrics-related operations.
 
     You can access this accessor using the `metrics` attribute.
     """
 
-    _SCORE_OR_LOSS_INFO = {
+    _SCORE_OR_LOSS_INFO: dict[str, dict[str, str]] = {
         "accuracy": {"name": "Accuracy", "icon": "(↗︎)"},
         "precision": {"name": "Precision", "icon": "(↗︎)"},
         "recall": {"name": "Recall", "icon": "(↗︎)"},
@@ -36,23 +43,26 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         "report_metrics": {"name": "Report metrics", "icon": ""},
     }
 
-    def __init__(self, parent):
+    def __init__(self, parent: CrossValidationReport) -> None:
         super().__init__(parent)
 
-        self._parent_progress = None
+        self._progress_info: Optional[dict[str, Any]] = None
+        self._parent_progress: Optional[Progress] = None
 
     def report_metrics(
         self,
         *,
-        data_source="test",
-        scoring=None,
-        scoring_names=None,
-        scoring_kwargs=None,
-        pos_label=None,
-        indicator_favorability=False,
-        flat_index=False,
-        aggregate=None,
-    ):
+        data_source: DataSource = "test",
+        scoring: Optional[Union[list[str], Callable, SKLearnScorer]] = None,
+        scoring_names: Optional[list[str]] = None,
+        scoring_kwargs: Optional[dict[str, Any]] = None,
+        pos_label: Optional[Union[int, float, bool, str]] = None,
+        indicator_favorability: bool = False,
+        flat_index: bool = False,
+        aggregate: Optional[
+            Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
+        ] = None,
+    ) -> pd.DataFrame:
         """Report a set of metrics for our estimator.
 
         Parameters
@@ -138,25 +148,34 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     @progress_decorator(description="Compute metric for each split")
     def _compute_metric_scores(
         self,
-        report_metric_name,
+        report_metric_name: str,
         *,
-        data_source="test",
-        aggregate=None,
-        **metric_kwargs,
-    ):
-        cache_key = (self._parent._hash, report_metric_name, data_source)
-        cache_key += (aggregate,) if aggregate is None else tuple(aggregate)
-
-        # we need to enforce the order of the parameter for a specific metric
-        # to make sure that we hit the cache in a consistent way
+        data_source: DataSource = "test",
+        aggregate: Optional[
+            Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
+        ] = None,
+        **metric_kwargs: Any,
+    ) -> pd.DataFrame:
+        # build the cache key components to finally create a tuple that will be used
+        # to check if the metric has already been computed
+        cache_key_parts: list[Any] = [
+            self._parent._hash,
+            report_metric_name,
+            data_source,
+        ]
+        if aggregate is None:
+            cache_key_parts.append(aggregate)
+        else:
+            cache_key_parts.extend(tuple(aggregate))
         ordered_metric_kwargs = sorted(metric_kwargs.keys())
-
         for key in ordered_metric_kwargs:
             if isinstance(metric_kwargs[key], (np.ndarray, list, dict)):
-                cache_key += (joblib.hash(metric_kwargs[key]),)
+                cache_key_parts.append(joblib.hash(metric_kwargs[key]))
             else:
-                cache_key += (metric_kwargs[key],)
+                cache_key_parts.append(metric_kwargs[key])
+        cache_key = tuple(cache_key_parts)
 
+        assert self._progress_info is not None, "Progress info not set"
         progress = self._progress_info["current_progress"]
         main_task = self._progress_info["current_task"]
 
@@ -217,7 +236,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def accuracy(self, *, data_source="test", aggregate=None):
+    def accuracy(
+        self,
+        *,
+        data_source: DataSource = "test",
+        aggregate: Optional[
+            Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
+        ] = None,
+    ) -> pd.DataFrame:
         """Compute the accuracy score.
 
         Parameters
@@ -264,11 +290,15 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     def precision(
         self,
         *,
-        data_source="test",
-        average=None,
-        pos_label=None,
-        aggregate=None,
-    ):
+        data_source: DataSource = "test",
+        average: Optional[
+            Literal["binary", "macro", "micro", "weighted", "samples"]
+        ] = None,
+        pos_label: Optional[Union[int, float, bool, str]] = None,
+        aggregate: Optional[
+            Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
+        ] = None,
+    ) -> pd.DataFrame:
         """Compute the precision score.
 
         Parameters
@@ -346,11 +376,15 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     def recall(
         self,
         *,
-        data_source="test",
-        average=None,
-        pos_label=None,
-        aggregate=None,
-    ):
+        data_source: DataSource = "test",
+        average: Optional[
+            Literal["binary", "macro", "micro", "weighted", "samples"]
+        ] = None,
+        pos_label: Optional[Union[int, float, bool, str]] = None,
+        aggregate: Optional[
+            Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
+        ] = None,
+    ) -> pd.DataFrame:
         """Compute the recall score.
 
         Parameters
@@ -424,7 +458,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     @available_if(
         _check_supported_ml_task(supported_ml_tasks=["binary-classification"])
     )
-    def brier_score(self, *, data_source="test", aggregate=None):
+    def brier_score(
+        self,
+        *,
+        data_source: DataSource = "test",
+        aggregate: Optional[
+            Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
+        ] = None,
+    ) -> pd.DataFrame:
         """Compute the Brier score.
 
         Parameters
@@ -471,11 +512,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     def roc_auc(
         self,
         *,
-        data_source="test",
-        average=None,
-        multi_class="ovr",
-        aggregate=None,
-    ):
+        data_source: DataSource = "test",
+        average: Optional[Literal["macro", "micro", "weighted", "samples"]] = None,
+        multi_class: Literal["raise", "ovr", "ovo"] = "ovr",
+        aggregate: Optional[
+            Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
+        ] = None,
+    ) -> pd.DataFrame:
         """Compute the ROC AUC score.
 
         Parameters
@@ -553,7 +596,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def log_loss(self, *, data_source="test", aggregate=None):
+    def log_loss(
+        self,
+        *,
+        data_source: DataSource = "test",
+        aggregate: Optional[
+            Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
+        ] = None,
+    ) -> pd.DataFrame:
         """Compute the log loss.
 
         Parameters
@@ -592,14 +642,20 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             aggregate=aggregate,
         )
 
-    @available_if(_check_supported_ml_task(supported_ml_tasks=["regression"]))
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["regression", "multioutput-regression"]
+        )
+    )
     def r2(
         self,
         *,
-        data_source="test",
-        multioutput="raw_values",
-        aggregate=None,
-    ):
+        data_source: DataSource = "test",
+        multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
+        aggregate: Optional[
+            Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
+        ] = None,
+    ) -> pd.DataFrame:
         """Compute the R² score.
 
         Parameters
@@ -649,14 +705,20 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             scoring_kwargs={"multioutput": multioutput},
         )
 
-    @available_if(_check_supported_ml_task(supported_ml_tasks=["regression"]))
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["regression", "multioutput-regression"]
+        )
+    )
     def rmse(
         self,
         *,
-        data_source="test",
-        multioutput="raw_values",
-        aggregate=None,
-    ):
+        data_source: DataSource = "test",
+        multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
+        aggregate: Optional[
+            Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
+        ] = None,
+    ) -> pd.DataFrame:
         """Compute the root mean squared error.
 
         Parameters
@@ -708,14 +770,16 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
     def custom_metric(
         self,
-        metric_function,
-        response_method,
+        metric_function: Callable,
+        response_method: Union[str, list[str]],
         *,
-        metric_name=None,
-        data_source="test",
-        aggregate=None,
+        metric_name: Optional[str] = None,
+        data_source: DataSource = "test",
+        aggregate: Optional[
+            Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
+        ] = None,
         **kwargs,
-    ):
+    ) -> pd.DataFrame:
         """Compute a custom metric.
 
         It brings some flexibility to compute any desired metric. However, we need to
@@ -790,14 +854,16 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             scoring=[scorer],
             data_source=data_source,
             aggregate=aggregate,
-            scoring_names=[metric_name],
+            scoring_names=[metric_name] if metric_name is not None else None,
         )
 
     ####################################################################################
     # Methods related to the help tree
     ####################################################################################
 
-    def _sort_methods_for_help(self, methods):
+    def _sort_methods_for_help(
+        self, methods: list[tuple[str, Callable]]
+    ) -> list[tuple[str, Callable]]:
         """Override sort method for metrics-specific ordering.
 
         In short, we display the `report_metrics` first and then the `custom_metric`.
@@ -815,7 +881,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         return sorted(methods, key=_sort_key)
 
-    def _format_method_name(self, name):
+    def _format_method_name(self, name: str) -> str:
         """Override format method for metrics-specific naming."""
         method_name = f"{name}(...)"
         method_name = method_name.ljust(22)
@@ -833,38 +899,42 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         else:
             return method_name.ljust(29)
 
-    def _get_methods_for_help(self):
+    def _get_methods_for_help(self) -> list[tuple[str, Callable]]:
         """Override to exclude the plot accessor from methods list."""
         methods = super()._get_methods_for_help()
         return [(name, method) for name, method in methods if name != "plot"]
 
-    def _get_help_panel_title(self):
+    def _get_help_panel_title(self) -> str:
         return "[bold cyan]Available metrics methods[/bold cyan]"
 
-    def _get_help_legend(self):
+    def _get_help_legend(self) -> str:
         return (
             "[cyan](↗︎)[/cyan] higher is better [orange1](↘︎)[/orange1] lower is better"
         )
 
-    def _get_help_tree_title(self):
+    def _get_help_tree_title(self) -> str:
         return "[bold cyan]report.metrics[/bold cyan]"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Return a string representation using rich."""
         return self._rich_repr(
             class_name="skore.CrossValidationReport.metrics",
             help_method_name="report.metrics.help()",
         )
 
+    ####################################################################################
+    # Methods related to displays
+    ####################################################################################
+
     @progress_decorator(description="Computing predictions for display")
     def _get_display(
         self,
         *,
-        data_source,
-        response_method,
-        display_class,
-        display_kwargs,
-    ):
+        data_source: DataSource,
+        response_method: str,
+        display_class: Any,
+        display_kwargs: dict[str, Any],
+    ) -> Union[RocCurveDisplay, PrecisionRecallCurveDisplay, PredictionErrorDisplay]:
         """Get the display from the cache or compute it.
 
         Parameters
@@ -889,10 +959,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         display : display_class
             The display.
         """
-        cache_key = (self._parent._hash, display_class.__name__)
-        cache_key += tuple(display_kwargs.values())
-        cache_key += (data_source,)
+        # Create a list of cache key components and then convert to tuple
+        cache_key_parts: list[Any] = [self._parent._hash, display_class.__name__]
+        cache_key_parts.extend(display_kwargs.values())
+        cache_key_parts.append(data_source)
+        cache_key = tuple(cache_key_parts)
 
+        assert self._progress_info is not None, "Progress info not set"
         progress = self._progress_info["current_progress"]
         main_task = self._progress_info["current_task"]
         total_estimators = len(self._parent.estimator_reports_)
@@ -916,7 +989,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                         response_method=response_method,
                         data_source=data_source,
                         data_source_hash=None,
-                        pos_label=display_kwargs.get("pos_label", None),
+                        pos_label=display_kwargs.get("pos_label"),
                     )
                 )
                 progress.update(main_task, advance=1, refresh=True)
@@ -939,7 +1012,12 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def roc(self, *, data_source="test", pos_label=None):
+    def roc(
+        self,
+        *,
+        data_source: DataSource = "test",
+        pos_label: Optional[Union[int, float, bool, str]] = None,
+    ) -> RocCurveDisplay:
         """Plot the ROC curve.
 
         Parameters
@@ -971,19 +1049,26 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         """
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
-        return self._get_display(
+        display = self._get_display(
             data_source=data_source,
             response_method=response_method,
             display_class=RocCurveDisplay,
             display_kwargs=display_kwargs,
         )
+        assert isinstance(display, RocCurveDisplay)
+        return display
 
     @available_if(
         _check_supported_ml_task(
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def precision_recall(self, *, data_source="test", pos_label=None):
+    def precision_recall(
+        self,
+        *,
+        data_source: DataSource = "test",
+        pos_label: Optional[Union[int, float, bool, str]] = None,
+    ) -> PrecisionRecallCurveDisplay:
         """Plot the precision-recall curve.
 
         Parameters
@@ -1015,21 +1100,27 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         """
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
-        return self._get_display(
+        display = self._get_display(
             data_source=data_source,
             response_method=response_method,
             display_class=PrecisionRecallCurveDisplay,
             display_kwargs=display_kwargs,
         )
+        assert isinstance(display, PrecisionRecallCurveDisplay)
+        return display
 
-    @available_if(_check_supported_ml_task(supported_ml_tasks=["regression"]))
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["regression", "multioutput-regression"]
+        )
+    )
     def prediction_error(
         self,
         *,
-        data_source="test",
-        subsample=1_000,
-        random_state=None,
-    ):
+        data_source: DataSource = "test",
+        subsample: Union[float, int, None] = 1_000,
+        random_state: Optional[int] = None,
+    ) -> PredictionErrorDisplay:
         """Plot the prediction error of a regression model.
 
         Extra keyword arguments will be passed to matplotlib's `plot`.
@@ -1069,9 +1160,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> display.plot(kind="actual_vs_predicted", line_kwargs={"color": "tab:red"})
         """
         display_kwargs = {"subsample": subsample, "random_state": random_state}
-        return self._get_display(
+        display = self._get_display(
             data_source=data_source,
             response_method="predict",
             display_class=PredictionErrorDisplay,
             display_kwargs=display_kwargs,
         )
+        assert isinstance(display, PredictionErrorDisplay)
+        return display

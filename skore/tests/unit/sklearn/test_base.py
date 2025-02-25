@@ -206,6 +206,14 @@ class MockReport:
         return self._y_test
 
 
+class MockAccessor(_BaseAccessor):
+    def __init__(self, parent):
+        super().__init__(parent)
+
+    def _get_help_tree_title(self) -> str:
+        return "Mock accessor"
+
+
 def test_base_accessor_get_X_y_and_data_source_hash_error():
     """Check that we raise the proper error in `get_X_y_and_use_cache`."""
     X, y = make_classification(n_samples=10, n_classes=2, random_state=42)
@@ -213,7 +221,7 @@ def test_base_accessor_get_X_y_and_data_source_hash_error():
 
     estimator = LogisticRegression().fit(X_train, y_train)
     report = MockReport(estimator, X_train=None, y_train=None, X_test=None, y_test=None)
-    accessor = _BaseAccessor(parent=report)
+    accessor = MockAccessor(parent=report)
 
     err_msg = re.escape(
         "Invalid data source: unknown. Possible values are: " "test, train, X_y."
@@ -234,7 +242,7 @@ def test_base_accessor_get_X_y_and_data_source_hash_error():
     report = MockReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    accessor = _BaseAccessor(parent=report)
+    accessor = MockAccessor(parent=report)
 
     for data_source in ("train", "test"):
         err_msg = f"X and y must be None when data_source is {data_source}."
@@ -251,13 +259,13 @@ def test_base_accessor_get_X_y_and_data_source_hash_error():
     # use `custom_metric` for them.
     estimator = KMeans(n_clusters=2).fit(X_train)
     report = MockReport(estimator, X_test=X_test)
-    accessor = _BaseAccessor(parent=report)
+    accessor = MockAccessor(parent=report)
     err_msg = "X must be provided."
     with pytest.raises(ValueError, match=err_msg):
         accessor._get_X_y_and_data_source_hash(data_source="X_y")
 
     report = MockReport(estimator)
-    accessor = _BaseAccessor(parent=report)
+    accessor = MockAccessor(parent=report)
     for data_source in ("train", "test"):
         err_msg = re.escape(
             f"No {data_source} data (i.e. X_{data_source}) were provided when "
@@ -279,7 +287,7 @@ def test_base_accessor_get_X_y_and_data_source_hash(data_source):
     report = MockReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    accessor = _BaseAccessor(parent=report)
+    accessor = MockAccessor(parent=report)
     kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
     X, y, data_source_hash = accessor._get_X_y_and_data_source_hash(
         data_source=data_source, **kwargs

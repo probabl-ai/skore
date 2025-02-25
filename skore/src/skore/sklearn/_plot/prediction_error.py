@@ -1,8 +1,13 @@
 import numbers
+from typing import Any, Literal, Optional, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.utils.validation import check_random_state
+from matplotlib import colormaps
+from matplotlib.axes import Axes
+from numpy.typing import ArrayLike, NDArray
+from sklearn.base import BaseEstimator
+from sklearn.utils.validation import _num_samples, check_array, check_random_state
 
 from skore.externals._sklearn_compat import _safe_indexing
 from skore.sklearn._plot.style import StyleDisplayMixin
@@ -12,6 +17,7 @@ from skore.sklearn._plot.utils import (
     _validate_style_kwargs,
     sample_mpl_colormap,
 )
+from skore.sklearn.types import MLTask
 
 
 class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
@@ -36,7 +42,7 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
     estimator_name : str
         Name of the estimator.
 
-    data_source : {"train", "test", "X_y"}, default=None
+    data_source : {"train", "test", "X_y"}
         The data source used to display the prediction error.
 
     Attributes
@@ -82,7 +88,14 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
     _default_scatter_kwargs = None
     _default_line_kwargs = None
 
-    def __init__(self, *, y_true, y_pred, estimator_name, data_source=None):
+    def __init__(
+        self,
+        *,
+        y_true: list[NDArray],
+        y_pred: list[NDArray],
+        estimator_name: str,
+        data_source: Literal["train", "test", "X_y"],
+    ) -> None:
         self.y_true = y_true
         self.y_pred = y_pred
         self.estimator_name = estimator_name
@@ -90,14 +103,16 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
 
     def plot(
         self,
-        ax=None,
+        ax: Optional[Axes] = None,
         *,
-        estimator_name=None,
-        kind="residual_vs_predicted",
-        scatter_kwargs=None,
-        line_kwargs=None,
-        despine=True,
-    ):
+        estimator_name: Optional[str] = None,
+        kind: Literal[
+            "actual_vs_predicted", "residual_vs_predicted"
+        ] = "residual_vs_predicted",
+        scatter_kwargs: Optional[dict[str, Any]] = None,
+        line_kwargs: Optional[dict[str, Any]] = None,
+        despine: bool = True,
+    ) -> None:
         """Plot visualization.
 
         Extra keyword arguments will be passed to matplotlib's ``plot``.
@@ -195,7 +210,8 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
                 y_range_perfect_pred[1] = max(y_range_perfect_pred[1], residuals.max())
 
         colors_markers = sample_mpl_colormap(
-            plt.cm.tab10, len(self.y_true) if len(self.y_true) > 10 else 10
+            colormaps.get_cmap("tab10"),
+            len(self.y_true) if len(self.y_true) > 10 else 10,
         )
         for split_idx in range(len(self.y_true)):
             y_true, y_pred = self.y_true[split_idx], self.y_pred[split_idx]
@@ -284,16 +300,16 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
     @classmethod
     def _from_predictions(
         cls,
-        y_true,
-        y_pred,
+        y_true: list[ArrayLike],
+        y_pred: list[ArrayLike],
         *,
-        estimator,  # currently only for consistency with other plots
-        estimator_name,
-        ml_task,  # FIXME: to be used when having single-output vs. multi-output
-        data_source=None,
-        subsample=1_000,
-        random_state=None,
-    ):
+        estimator: BaseEstimator,  # currently only for consistency with other plots
+        estimator_name: str,
+        ml_task: MLTask,  # FIXME: to be used when having single-output vs. multi-output
+        data_source: Literal["train", "test", "X_y"],
+        subsample: Union[float, int, None] = 1_000,
+        random_state: Optional[Union[int, np.random.RandomState]] = None,
+    ) -> "PredictionErrorDisplay":
         """Plot the prediction error given the true and predicted targets.
 
         Parameters
@@ -313,7 +329,7 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
         ml_task : {"binary-classification", "multiclass-classification"}
             The machine learning task.
 
-        data_source : {"train", "test", "X_y"}, default=None
+        data_source : {"train", "test", "X_y"}
             The data source used to compute the prediction error curve.
 
         subsample : float, int or None, default=1_000
@@ -331,7 +347,7 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
         -------
         display : PredictionErrorDisplay
         """
-        random_state = check_random_state(random_state)
+        rng: np.random.RandomState = check_random_state(random_state)
         if isinstance(subsample, numbers.Integral):
             if subsample <= 0:
                 raise ValueError(
@@ -345,7 +361,7 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
 
         y_true_display, y_pred_display = [], []
         for y_true_i, y_pred_i in zip(y_true, y_pred):
-            n_samples = len(y_true_i)
+            n_samples = _num_samples(y_true_i)
             if subsample is None:
                 subsample_ = n_samples
             elif isinstance(subsample, numbers.Integral):
@@ -356,9 +372,17 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
             # normalize subsample based on the number of splits
             subsample_ = int(subsample_ / len(y_true))
             if subsample_ < n_samples:
-                indices = random_state.choice(np.arange(n_samples), size=subsample_)
-                y_true_display.append(_safe_indexing(y_true_i, indices, axis=0))
-                y_pred_display.append(_safe_indexing(y_pred_i, indices, axis=0))
+                indices = rng.choice(np.arange(n_samples), size=subsample_)
+                y_true_display.append(
+                    check_array(
+                        _safe_indexing(y_true_i, indices, axis=0), ensure_2d=False
+                    )
+                )
+                y_pred_display.append(
+                    check_array(
+                        _safe_indexing(y_pred_i, indices, axis=0), ensure_2d=False
+                    )
+                )
             else:
                 y_true_display.append(y_true_i)
                 y_pred_display.append(y_pred_i)

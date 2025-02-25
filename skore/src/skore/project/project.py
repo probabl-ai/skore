@@ -6,8 +6,9 @@ import functools
 import shutil
 from collections.abc import Iterator
 from logging import INFO, NullHandler, getLogger
+from os import PathLike
 from pathlib import Path
-from typing import Any, Literal, Optional, Union
+from typing import Any, Callable, Literal, Optional, Union
 
 from skore.persistence.item import item_to_object, object_to_item
 from skore.persistence.repository import ItemRepository
@@ -22,7 +23,7 @@ class ProjectDeletedError(Exception):
     """A method of a Project was called but the Project is marked as deleted."""
 
 
-def _raise_if_deleted(method):
+def _raise_if_deleted(method: Callable[..., Any]) -> Callable[..., Any]:
     """Raise if the underlying Project has been deleted, otherwise execute `method`.
 
     This wrapper makes it safe to "delete" a Project, even if the Project instance
@@ -82,7 +83,7 @@ class Project:
 
     def __init__(
         self,
-        path: Optional[Union[str, Path]] = "project.skore",
+        path: Union[str, PathLike[str]] = "project.skore",
         *,
         if_exists: Optional[Literal["raise", "load"]] = "raise",
     ):
@@ -129,7 +130,7 @@ class Project:
         self._server_info = ServerInfo.rejoin(self)
 
     @_raise_if_deleted
-    def clear(self, delete_project=False):
+    def clear(self, delete_project: bool = False) -> None:
         """Remove all items from the project.
 
         .. warning::
@@ -160,7 +161,7 @@ class Project:
         *,
         note: Optional[str] = None,
         display_as: Optional[Literal["HTML", "MARKDOWN", "SVG"]] = None,
-    ):
+    ) -> None:
         """Add a key-value pair to the Project.
 
         If an item with the same key already exists, its value is replaced by the new
@@ -205,7 +206,7 @@ class Project:
         *,
         version: Optional[Union[Literal[-1, "all"], int]] = -1,
         metadata: bool = False,
-    ):
+    ) -> Any:
         """Get the value associated to ``key`` from the Project.
 
         Parameters
@@ -285,7 +286,7 @@ class Project:
         yield from self._item_repository
 
     @_raise_if_deleted
-    def delete(self, key: str):
+    def delete(self, key: str) -> None:
         """Delete the item corresponding to ``key`` from the Project.
 
         Parameters
@@ -301,7 +302,7 @@ class Project:
         self._item_repository.delete_item(key)
 
     @_raise_if_deleted
-    def set_note(self, key: str, note: str, *, version=-1):
+    def set_note(self, key: str, note: str, *, version: int = -1) -> None:
         """Attach a note to key ``key``.
 
         Parameters
@@ -331,7 +332,7 @@ class Project:
         return self._item_repository.set_item_note(key=key, note=note, version=version)
 
     @_raise_if_deleted
-    def get_note(self, key: str, *, version=-1) -> Union[str, None]:
+    def get_note(self, key: str, *, version: int = -1) -> Union[str, None]:
         """Retrieve a note previously attached to key ``key``.
 
         Parameters
@@ -361,7 +362,7 @@ class Project:
         return self._item_repository.get_item_note(key=key, version=version)
 
     @_raise_if_deleted
-    def delete_note(self, key: str, *, version=-1):
+    def delete_note(self, key: str, *, version: int = -1) -> None:
         """Delete a note previously attached to key ``key``.
 
         If no note is attached, does nothing.
@@ -389,7 +390,7 @@ class Project:
         return self._item_repository.delete_item_note(key=key, version=version)
 
     @_raise_if_deleted
-    def shutdown_web_ui(self):
+    def shutdown_web_ui(self) -> None:
         """Shutdown the web UI server if it is running."""
         if self._server_info is None:
             raise RuntimeError("UI server is not running")

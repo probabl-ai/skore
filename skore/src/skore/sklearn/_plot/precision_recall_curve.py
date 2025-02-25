@@ -1,7 +1,11 @@
 from collections import defaultdict
+from typing import Any, Literal, Optional, Union
 
-import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib import colormaps
+from matplotlib.axes import Axes
+from numpy.typing import ArrayLike, NDArray
+from sklearn.base import BaseEstimator
 from sklearn.metrics import average_precision_score, precision_recall_curve
 from sklearn.preprocessing import LabelBinarizer
 
@@ -13,6 +17,7 @@ from skore.sklearn._plot.utils import (
     _validate_style_kwargs,
     sample_mpl_colormap,
 )
+from skore.sklearn.types import MLTask
 
 
 class PrecisionRecallCurveDisplay(
@@ -62,11 +67,11 @@ class PrecisionRecallCurveDisplay(
     estimator_name : str
         Name of the estimator.
 
-    pos_label : int, float, bool or str, default=None
+    pos_label : int, float, bool, str or None
         The class considered as the positive class. If None, the class will not
         be shown in the legend.
 
-    data_source : {"train", "test", "X_y"}, default=None
+    data_source : {"train", "test", "X_y"}
         The data source used to compute the precision recall curve.
 
     Attributes
@@ -108,14 +113,14 @@ class PrecisionRecallCurveDisplay(
 
     def __init__(
         self,
-        precision,
-        recall,
         *,
-        average_precision,
-        estimator_name,
-        pos_label=None,
-        data_source=None,
-    ):
+        precision: dict[Any, list[ArrayLike]],
+        recall: dict[Any, list[ArrayLike]],
+        average_precision: dict[Any, list[float]],
+        estimator_name: str,
+        pos_label: Union[int, float, bool, str, None],
+        data_source: Literal["train", "test", "X_y"],
+    ) -> None:
         self.precision = precision
         self.recall = recall
         self.average_precision = average_precision
@@ -125,12 +130,12 @@ class PrecisionRecallCurveDisplay(
 
     def plot(
         self,
-        ax=None,
+        ax: Optional[Axes] = None,
         *,
-        estimator_name=None,
-        pr_curve_kwargs=None,
-        despine=True,
-    ):
+        estimator_name: Optional[str] = None,
+        pr_curve_kwargs: Optional[Union[dict[str, Any], list[dict[str, Any]]]] = None,
+        despine: bool = True,
+    ) -> None:
         """Plot visualization.
 
         Extra keyword arguments will be passed to matplotlib's `plot`.
@@ -191,8 +196,11 @@ class PrecisionRecallCurveDisplay(
             pr_curve_kwargs = self._default_pr_curve_kwargs
 
         self.lines_ = []
-        self.chance_levels_ = []
+        default_line_kwargs: dict[str, Any] = {}
         if len(self.precision) == 1:  # binary-classification
+            assert (
+                self.pos_label is not None
+            ), "pos_label should not be None with binary classification."
             if len(self.precision[self.pos_label]) == 1:  # single-split
                 if pr_curve_kwargs is None:
                     pr_curve_kwargs = {}
@@ -275,7 +283,8 @@ class PrecisionRecallCurveDisplay(
         else:  # multiclass-classification
             info_pos_label = None  # irrelevant for multiclass
             class_colors = sample_mpl_colormap(
-                plt.cm.tab10, 10 if len(self.precision) < 10 else len(self.precision)
+                colormaps.get_cmap("tab10"),
+                10 if len(self.precision) < 10 else len(self.precision),
             )
             if pr_curve_kwargs is None:
                 pr_curve_kwargs = [{}] * len(self.precision)
@@ -373,27 +382,27 @@ class PrecisionRecallCurveDisplay(
     @classmethod
     def _from_predictions(
         cls,
-        y_true,
-        y_pred,
+        y_true: list[ArrayLike],
+        y_pred: list[NDArray],
         *,
-        estimator,
-        estimator_name,
-        ml_task,
-        data_source=None,
-        pos_label=None,
-        drop_intermediate=False,
-    ):
+        estimator: BaseEstimator,
+        estimator_name: str,
+        ml_task: MLTask,
+        data_source: Literal["train", "test", "X_y"],
+        pos_label: Union[int, float, bool, str, None],
+        drop_intermediate: bool = False,
+    ) -> "PrecisionRecallCurveDisplay":
         """Plot precision-recall curve given binary class predictions.
 
         Parameters
         ----------
-        y_true : array-like of shape (n_samples,)
+        y_true : list of array-like of shape (n_samples,)
             True binary labels.
 
-        y_pred : array-like of shape (n_samples,)
+        y_pred : list of array-like of shape (n_samples,)
             Target scores, can either be probability estimates of the positive class,
             confidence values, or non-thresholded measure of decisions (as returned by
-            “decision_function” on some classifiers).
+            "decision_function" on some classifiers).
 
         estimator : estimator instance
             The estimator from which `y_pred` is obtained.
@@ -404,10 +413,10 @@ class PrecisionRecallCurveDisplay(
         ml_task : {"binary-classification", "multiclass-classification"}
             The machine learning task.
 
-        data_source : {"train", "test", "X_y"}, default=None
+        data_source : {"train", "test", "X_y"}
             The data source used to compute the precision recall curve.
 
-        pos_label : int, float, bool or str, default=None
+        pos_label : int, float, bool, str or none
             The class considered as the positive class when computing the
             precision and recall metrics.
 
@@ -424,10 +433,22 @@ class PrecisionRecallCurveDisplay(
             y_true, y_pred, ml_task=ml_task, pos_label=pos_label
         )
 
+        precision: dict[Union[int, float, bool, str], list[ArrayLike]] = defaultdict(
+            list
+        )
+        recall: dict[Union[int, float, bool, str], list[ArrayLike]] = defaultdict(list)
+        average_precision: dict[Union[int, float, bool, str], list[float]] = (
+            defaultdict(list)
+        )
+
         if ml_task == "binary-classification":
-            precision, recall = defaultdict(list), defaultdict(list)
-            average_precision = defaultdict(list)
             for y_true_i, y_pred_i in zip(y_true, y_pred):
+                # assert for mypy that pos_label_validated is not None
+                assert pos_label_validated is not None, (
+                    "pos_label_validated should not be None with binary classification "
+                    "once calling _validate_from_predictions_params and more precisely "
+                    "_check_pos_label_consistency."
+                )
                 precision_i, recall_i, _ = precision_recall_curve(
                     y_true_i,
                     y_pred_i,
@@ -442,11 +463,9 @@ class PrecisionRecallCurveDisplay(
                 recall[pos_label_validated].append(recall_i)
                 average_precision[pos_label_validated].append(average_precision_i)
         else:  # multiclass-classification
-            precision, recall = defaultdict(list), defaultdict(list)
-            average_precision = defaultdict(list)
             for y_true_i, y_pred_i in zip(y_true, y_pred):
                 label_binarizer = LabelBinarizer().fit(estimator.classes_)
-                y_true_onehot_i = label_binarizer.transform(y_true_i)
+                y_true_onehot_i: NDArray = label_binarizer.transform(y_true_i)
                 for class_idx, class_ in enumerate(estimator.classes_):
                     precision_class_i, recall_class_i, _ = precision_recall_curve(
                         y_true_onehot_i[:, class_idx],

@@ -1,6 +1,7 @@
 """Module to handle the verbosity of a given logger."""
 
 import logging
+from collections.abc import Iterator
 from contextlib import contextmanager
 
 from rich.logging import LogRecord, RichHandler, Text
@@ -22,7 +23,7 @@ class Handler(RichHandler):
 
 
 @contextmanager
-def logger_context(logger, verbose=False):
+def logger_context(logger: logging.Logger, verbose: bool = False) -> Iterator[None]:
     """Context manager for temporarily adding a Rich handler to a logger."""
     handler = None
     try:
