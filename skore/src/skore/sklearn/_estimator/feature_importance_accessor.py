@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from sklearn.base import is_classifier
 from sklearn.pipeline import Pipeline
 from sklearn.utils.metaestimators import available_if
 
@@ -72,14 +73,17 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
 
         data = np.concatenate([intercept, coef.T])
 
+        if data.shape[1] == 1:
+            columns = ["Coefficient"]
+        elif is_classifier(estimator):
+            columns = [f"Class #{i}" for i in range(data.shape[1])]
+        else:
+            columns = [f"Target #{i}" for i in range(data.shape[1])]
+
         df = pd.DataFrame(
             data=data,
             index=["Intercept"] + list(feature_names),
-            columns=(
-                [f"Target #{i}" for i in range(data.shape[1])]
-                if data.shape[1] != 1
-                else ["Coefficient"]
-            ),
+            columns=columns,
         )
 
         return df

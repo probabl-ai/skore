@@ -62,7 +62,7 @@ def test_estimator_report_feature_importance_repr(regression_data_5_features):
                 random_state=42,
             ),
             LogisticRegression(),
-            "Target",
+            "Class",
             (6, 3),
         ),
         (
