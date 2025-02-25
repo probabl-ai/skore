@@ -1234,11 +1234,16 @@ def assert_frame_shape_equal(result, expected):
     pd.testing.assert_frame_equal(result, expected, check_exact=False, atol=np.inf)
 
 
+@pytest.fixture
+def regression_data_5_features():
+    return make_regression(n_features=5, random_state=42)
+
+
 @pytest.mark.parametrize(
     "data, estimator, expected",
     [
         (
-            make_regression(n_features=5, random_state=42),
+            "regression_data_5_features",
             LinearRegression(),
             pd.DataFrame(
                 data=[0.0] * 6,
@@ -1270,7 +1275,7 @@ def assert_frame_shape_equal(result, expected):
             ),
         ),
         (
-            make_regression(n_features=5, random_state=42),
+            "regression_data_5_features",
             Pipeline([("scaler", StandardScaler()), ("reg", LinearRegression())]),
             pd.DataFrame(
                 data=[0.0] * 6,
@@ -1303,7 +1308,11 @@ def assert_frame_shape_equal(result, expected):
         ),
     ],
 )
-def test_estimator_report_model_weights_numpy_arrays(data, estimator, expected):
+def test_estimator_report_model_weights_numpy_arrays(
+    request, data, estimator, expected
+):
+    if isinstance(data, str):
+        data = request.getfixturevalue(data)
     X, y = data
 
     estimator.fit(X, y)
@@ -1314,10 +1323,10 @@ def test_estimator_report_model_weights_numpy_arrays(data, estimator, expected):
     assert_frame_shape_equal(result, expected)
 
 
-def test_estimator_report_model_weights_pandas_dataframe():
+def test_estimator_report_model_weights_pandas_dataframe(regression_data_5_features):
     """If provided, the model weights dataframe uses the feature names, where the
     estimator is a single estimator (not a pipeline)."""
-    X, y = make_regression(n_features=5, random_state=42)
+    X, y = regression_data_5_features
     X = pd.DataFrame(X, columns=[f"my_feature_{i}" for i in range(X.shape[1])])
     estimator = LinearRegression().fit(X, y)
 
@@ -1339,10 +1348,12 @@ def test_estimator_report_model_weights_pandas_dataframe():
     assert_frame_shape_equal(result, expected)
 
 
-def test_estimator_report_model_weights_pandas_dataframe_pipeline():
+def test_estimator_report_model_weights_pandas_dataframe_pipeline(
+    regression_data_5_features,
+):
     """If provided, the model weights dataframe uses the feature names, where the
     estimator is a pipeline (not a single estimator)."""
-    X, y = make_regression(n_features=5, random_state=42)
+    X, y = regression_data_5_features
     X = pd.DataFrame(X, columns=[f"my_feature_{i}" for i in range(X.shape[1])])
     estimator = make_pipeline(StandardScaler(), LinearRegression()).fit(X, y)
 
