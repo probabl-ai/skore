@@ -20,17 +20,20 @@ def _check_supported_ml_task(supported_ml_tasks: list[str]) -> Callable:
     return check
 
 
-def _check_has_coef(accessor: Any) -> bool:
-    """Check if the estimator has a `coef_` attribute."""
-    parent_estimator = accessor._parent.estimator_
-    estimator = (
-        parent_estimator.steps[-1][1]
-        if isinstance(parent_estimator, Pipeline)
-        else parent_estimator
-    )
-    if hasattr(estimator, "coef_"):
-        return True
-    raise AttributeError(
-        f"Estimator {accessor._parent.estimator_} is not a supported estimator by "
-        "the function called."
-    )
+def _check_has_coef() -> Callable:
+    def check(accessor: Any) -> bool:
+        """Check if the estimator has a `coef_` attribute."""
+        parent_estimator = accessor._parent.estimator_
+        estimator = (
+            parent_estimator.steps[-1][1]
+            if isinstance(parent_estimator, Pipeline)
+            else parent_estimator
+        )
+        if hasattr(estimator, "coef_"):
+            return True
+        raise AttributeError(
+            f"Estimator {accessor._parent.estimator_} is not a supported estimator by "
+            "the function called."
+        )
+
+    return check

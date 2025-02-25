@@ -18,7 +18,7 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
     def __init__(self, parent: EstimatorReport) -> None:
         super().__init__(parent)
 
-    @available_if(_check_has_coef)
+    @available_if(_check_has_coef())
     def model_weights(self) -> pd.DataFrame:
         """Retrieve the coefficients of a linear model, including the intercept.
 
