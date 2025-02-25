@@ -1208,7 +1208,7 @@ def test_estimator_report_feature_importance_help(capsys, regression_data):
     report.feature_importance.help()
     captured = capsys.readouterr()
     assert "Available feature importance methods" in captured.out
-    assert "model_weights" in captured.out
+    assert "coefficients" in captured.out
 
 
 def test_estimator_report_feature_importance_repr(regression_data):
@@ -1222,7 +1222,7 @@ def test_estimator_report_feature_importance_repr(regression_data):
 
 
 ########################################################################################
-# Check the model_weights feature importance metric
+# Check the coefficients feature importance metric
 ########################################################################################
 
 
@@ -1326,7 +1326,7 @@ def regression_data_5_features():
         ),
     ],
 )
-def test_estimator_report_model_weights_numpy_arrays(
+def test_estimator_report_coefficients_numpy_arrays(
     request, data, estimator, expected
 ):
     if isinstance(data, str):
@@ -1336,12 +1336,12 @@ def test_estimator_report_model_weights_numpy_arrays(
     estimator.fit(X, y)
 
     report = EstimatorReport(estimator)
-    result = report.feature_importance.model_weights()
+    result = report.feature_importance.coefficients()
 
     assert_frame_shape_equal(result, expected)
 
 
-def test_estimator_report_model_weights_pandas_dataframe(regression_data_5_features):
+def test_estimator_report_coefficients_pandas_dataframe(regression_data_5_features):
     """If provided, the model weights dataframe uses the feature names, where the
     estimator is a single estimator (not a pipeline)."""
     X, y = regression_data_5_features
@@ -1349,7 +1349,7 @@ def test_estimator_report_model_weights_pandas_dataframe(regression_data_5_featu
     estimator = LinearRegression().fit(X, y)
 
     report = EstimatorReport(estimator)
-    result = report.feature_importance.model_weights()
+    result = report.feature_importance.coefficients()
 
     expected = pd.DataFrame(
         data=[0.0] * 6,
@@ -1366,7 +1366,7 @@ def test_estimator_report_model_weights_pandas_dataframe(regression_data_5_featu
     assert_frame_shape_equal(result, expected)
 
 
-def test_estimator_report_model_weights_pandas_dataframe_pipeline(
+def test_estimator_report_coefficients_pandas_dataframe_pipeline(
     regression_data_5_features,
 ):
     """If provided, the model weights dataframe uses the feature names, where the
@@ -1376,7 +1376,7 @@ def test_estimator_report_model_weights_pandas_dataframe_pipeline(
     estimator = make_pipeline(StandardScaler(), LinearRegression()).fit(X, y)
 
     report = EstimatorReport(estimator)
-    result = report.feature_importance.model_weights()
+    result = report.feature_importance.coefficients()
 
     expected = pd.DataFrame(
         data=[0.0] * 6,
