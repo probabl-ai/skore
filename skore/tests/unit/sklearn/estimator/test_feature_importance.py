@@ -1,5 +1,7 @@
 import pandas as pd
 import pytest
+import sklearn.linear_model
+from sklearn.base import is_classifier, is_regressor
 from sklearn.datasets import make_classification, make_regression
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.pipeline import make_pipeline
@@ -10,6 +12,11 @@ from skore import EstimatorReport
 @pytest.fixture
 def regression_data():
     return make_regression(n_features=5, random_state=42)
+
+
+@pytest.fixture
+def classification_data():
+    return make_classification(n_features=5, random_state=42)
 
 
 def test_estimator_report_feature_importance_help(capsys, regression_data):
@@ -135,5 +142,114 @@ def test_estimator_report_coefficients_pandas_dataframe(estimator):
         "my_feature_2",
         "my_feature_3",
         "my_feature_4",
+    ]
+    assert result.columns.tolist() == ["Coefficient"]
+
+
+@pytest.mark.parametrize(
+    "estimator",
+    [
+        pytest.param(sklearn.svm.NuSVC(kernel="linear"), id="NuSVC"),
+        pytest.param(sklearn.svm.NuSVR(kernel="linear"), id="NuSVR"),
+        # pytest.param(sklearn.svm.OneClassSVM(), id="OneClassSVM"),
+        pytest.param(sklearn.svm.SVC(kernel="linear"), id="SVC"),
+        pytest.param(sklearn.svm.SVR(kernel="linear"), id="SVR"),
+        pytest.param(sklearn.svm.LinearSVC(), id="LinearSVC"),
+        pytest.param(sklearn.svm.LinearSVR(), id="LinearSVR"),
+        # pytest.param(sklearn.cross_decomposition.CCA(), id="CCA"),
+        # pytest.param(sklearn.cross_decomposition.PLSCanonical(), id="PLSCanonical"),
+        pytest.param(sklearn.cross_decomposition.PLSRegression(), id="PLSRegression"),
+        pytest.param(
+            sklearn.discriminant_analysis.LinearDiscriminantAnalysis(),
+            id="LinearDiscriminantAnalysis",
+        ),
+        # pytest.param(
+        #     sklearn.compose.TransformedTargetRegressor(),
+        #     id="TransformedTargetRegressor",
+        # ),
+        pytest.param(sklearn.linear_model.ElasticNet(), id="ElasticNet"),
+        pytest.param(sklearn.linear_model.Lasso(), id="Lasso"),
+        pytest.param(sklearn.linear_model.ARDRegression(), id="ARDRegression"),
+        pytest.param(sklearn.linear_model.BayesianRidge(), id="BayesianRidge"),
+        pytest.param(sklearn.linear_model.ElasticNet(), id="ElasticNet"),
+        pytest.param(sklearn.linear_model.ElasticNetCV(), id="ElasticNetCV"),
+        # pytest.param(sklearn.linear_model.GammaRegressor(), id="GammaRegressor"),
+        pytest.param(sklearn.linear_model.HuberRegressor(), id="HuberRegressor"),
+        pytest.param(sklearn.linear_model.Lars(), id="Lars"),
+        pytest.param(sklearn.linear_model.LarsCV(), id="LarsCV"),
+        pytest.param(sklearn.linear_model.Lasso(), id="Lasso"),
+        pytest.param(sklearn.linear_model.LassoCV(), id="LassoCV"),
+        pytest.param(sklearn.linear_model.LassoLars(), id="LassoLars"),
+        pytest.param(sklearn.linear_model.LassoLarsCV(), id="LassoLarsCV"),
+        pytest.param(sklearn.linear_model.LassoLarsIC(), id="LassoLarsIC"),
+        pytest.param(sklearn.linear_model.LinearRegression(), id="LinearRegression"),
+        pytest.param(
+            sklearn.linear_model.LogisticRegression(), id="LogisticRegression"
+        ),
+        pytest.param(
+            sklearn.linear_model.LogisticRegressionCV(), id="LogisticRegressionCV"
+        ),
+        # pytest.param(
+        #     sklearn.linear_model.MultiTaskElasticNet(), id="MultiTaskElasticNet"
+        # ),
+        # pytest.param(
+        #     sklearn.linear_model.MultiTaskElasticNetCV(), id="MultiTaskElasticNetCV"
+        # ),
+        # pytest.param(sklearn.linear_model.MultiTaskLasso(), id="MultiTaskLasso"),
+        # pytest.param(sklearn.linear_model.MultiTaskLassoCV(), id="MultiTaskLassoCV"),
+        pytest.param(
+            sklearn.linear_model.OrthogonalMatchingPursuit(),
+            id="OrthogonalMatchingPursuit",
+        ),
+        pytest.param(
+            sklearn.linear_model.OrthogonalMatchingPursuitCV(),
+            id="OrthogonalMatchingPursuitCV",
+        ),
+        pytest.param(
+            sklearn.linear_model.PassiveAggressiveClassifier(),
+            id="PassiveAggressiveClassifier",
+        ),
+        pytest.param(
+            sklearn.linear_model.PassiveAggressiveRegressor(),
+            id="PassiveAggressiveRegressor",
+        ),
+        pytest.param(sklearn.linear_model.Perceptron(), id="Perceptron"),
+        # pytest.param(sklearn.linear_model.PoissonRegressor(), id="PoissonRegressor"),
+        pytest.param(sklearn.linear_model.QuantileRegressor(), id="QuantileRegressor"),
+        pytest.param(sklearn.linear_model.Ridge(), id="Ridge"),
+        pytest.param(sklearn.linear_model.RidgeClassifier(), id="RidgeClassifier"),
+        pytest.param(sklearn.linear_model.RidgeClassifierCV(), id="RidgeClassifierCV"),
+        pytest.param(sklearn.linear_model.RidgeCV(), id="RidgeCV"),
+        pytest.param(sklearn.linear_model.SGDClassifier(), id="SGDClassifier"),
+        # pytest.param(sklearn.linear_model.SGDOneClassSVM(), id="SGDOneClassSVM"),
+        pytest.param(sklearn.linear_model.SGDRegressor(), id="SGDRegressor"),
+        pytest.param(sklearn.linear_model.TheilSenRegressor(), id="TheilSenRegressor"),
+        pytest.param(sklearn.linear_model.TweedieRegressor(), id="TweedieRegressor"),
+    ],
+)
+def test_all_sklearn_estimators(
+    request, estimator, regression_data, classification_data
+):
+    """Check that `coefficients` is supported for every sklearn estimator."""
+    if is_classifier(estimator):
+        X, y = classification_data
+    elif is_regressor(estimator):
+        X, y = regression_data
+    else:
+        raise Exception("Estimator is neither a classifier nor a regressor")
+
+    estimator.fit(X, y)
+
+    report = EstimatorReport(estimator)
+    result = report.feature_importance.coefficients()
+
+    assert result.shape == (6, 1)
+    assert result.index.tolist() == [
+        "Intercept",
+        "Feature #0",
+        "Feature #1",
+        "Feature #2",
+        "Feature #3",
+        "Feature #4",
     ]
     assert result.columns.tolist() == ["Coefficient"]
