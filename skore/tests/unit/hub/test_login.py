@@ -1,4 +1,3 @@
-import time
 from threading import Thread
 from urllib.parse import urljoin
 
@@ -104,28 +103,17 @@ def test_auto_otp_login(monkeypatch, respx_mock, mock_now, mock_nowstr):
         )
     )
 
-    port = -1
-
-    def mock_create_server(callback):
-        from skore.hub.callback_server import launch_callback_server
-
-        nonlocal port
-        port, event = launch_callback_server(callback)
-        return port, event
-
-    monkeypatch.setattr("skore.hub.login.launch_callback_server", mock_create_server)
-
     def call_success():
         with httpx.Client() as client:
             while not login_route.called:
-                time.sleep(0.5)
+                pass
 
-            client.get(f"http://localhost:{port}")
+            client.get("http://localhost:65535")
 
-    success_thread = Thread(target=call_success)
-    success_thread.start()
+    call_success_thread = Thread(target=call_success)
+    call_success_thread.start()
 
-    token = login(auto_otp=True)
+    token = login(auto_otp=True, port=65535)
 
     assert webbrowser_open.url == "url"
     assert token.access == "A"

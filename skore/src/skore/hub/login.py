@@ -12,12 +12,12 @@ from rich.panel import Panel
 
 from skore import console
 from skore.hub import api
-from skore.hub.callback_server import launch_callback_server
 from skore.hub.client import AuthenticationError
+from skore.hub.server import OTPServer
 from skore.hub.token import AuthenticationToken
 
 
-def login(timeout=600, auto_otp=True):
+def login(timeout=600, auto_otp=True, port=0):
     """Login to the skore-HUB."""
     if auto_otp:
         access = None
@@ -34,20 +34,22 @@ def login(timeout=600, auto_otp=True):
                 device_code=device_code
             )
 
-        port, shutdown = launch_callback_server(callback=callback)
+        server = OTPServer(callback=callback).start(port=port)
         authorization_url, device_code, user_code = api.get_oauth_device_login(
-            success_uri=f"http://localhost:{port}"
+            success_uri=f"http://localhost:{server.port}"
         )
 
         webbrowser.open(authorization_url)
         start = datetime.now()
 
-        while access is None or refreshment is None or expires_at is None:
-            if (datetime.now() - start).total_seconds() > timeout:
-                shutdown.set()
-                raise AuthenticationError("Timeout") from None
+        try:
+            while access is None or refreshment is None or expires_at is None:
+                if (datetime.now() - start).total_seconds() > timeout:
+                    raise AuthenticationError("Timeout") from None
 
             sleep(0.5)
+        finally:
+            server.stop()
 
         return AuthenticationToken(
             access=access, refreshment=refreshment, expires_at=expires_at
