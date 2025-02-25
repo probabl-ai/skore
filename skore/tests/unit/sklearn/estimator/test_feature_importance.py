@@ -8,13 +8,13 @@ from skore import EstimatorReport
 
 
 @pytest.fixture
-def regression_data_5_features():
+def regression_data():
     return make_regression(n_features=5, random_state=42)
 
 
-def test_estimator_report_feature_importance_help(capsys, regression_data_5_features):
+def test_estimator_report_feature_importance_help(capsys, regression_data):
     """Check that the help method writes to the console."""
-    X, y = regression_data_5_features
+    X, y = regression_data
     report = EstimatorReport(LinearRegression().fit(X, y), X_test=X, y_test=y)
 
     report.feature_importance.help()
@@ -23,9 +23,9 @@ def test_estimator_report_feature_importance_help(capsys, regression_data_5_feat
     assert "coefficients" in captured.out
 
 
-def test_estimator_report_feature_importance_repr(regression_data_5_features):
+def test_estimator_report_feature_importance_repr(regression_data):
     """Check that __repr__ returns a string starting with the expected prefix."""
-    X, y = regression_data_5_features
+    X, y = regression_data
     report = EstimatorReport(LinearRegression().fit(X, y), X_test=X, y_test=y)
 
     repr_str = repr(report.feature_importance)
