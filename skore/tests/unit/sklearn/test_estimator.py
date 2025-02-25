@@ -1325,9 +1325,7 @@ def test_estimator_report_feature_importance_repr(regression_data):
 )
 def test_estimator_report_model_weights_numpy_arrays(data, estimator, expected):
     X, y = data
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42
-    )
+    X_train, _, y_train, _ = train_test_split(X, y, test_size=0.2, random_state=42)
 
     estimator.fit(X_train, y_train)
 
