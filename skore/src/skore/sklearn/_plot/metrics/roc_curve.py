@@ -85,8 +85,8 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
             - the value is a list of `float`, each `float` being the area under
               the ROC curve.
 
-    estimator_name : str
-        Name of the estimator.
+    estimator_names : list of str
+        Name of the estimators.
 
     pos_label : int, float, bool, str or None
         The class considered as positive. Only meaningful for binary classification.
@@ -145,6 +145,15 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         self.roc_auc = roc_auc
         self.pos_label = pos_label
         self.data_source = data_source
+
+    def _plot_single_estimator():
+        pass
+
+    def _plot_cross_validated_estimator():
+        pass
+
+    def _plot_comparison_estimators():
+        pass
 
     def plot(
         self,
@@ -402,13 +411,13 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         self.ax_.legend(loc="lower right", title=estimator_name)
 
     @classmethod
-    def _from_predictions(
+    def _compute_data_for_display(
         cls,
         y_true: Sequence[ArrayLike],
         y_pred: Sequence[NDArray],
         *,
-        estimator: BaseEstimator,
-        estimator_name: str,
+        estimators: Sequence[BaseEstimator],
+        estimator_names: list[str],
         ml_task: MLTask,
         data_source: Literal["train", "test", "X_y"],
         pos_label: Union[int, float, bool, str, None],
@@ -421,16 +430,16 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         y_true : list of array-like of shape (n_samples,)
             True binary labels in binary classification.
 
-        y_pred : list of array-like of shape (n_samples,)
+        y_pred : list of ndarray of shape (n_samples,)
             Target scores, can either be probability estimates of the positive class,
             confidence values, or non-thresholded measure of decisions (as returned by
             "decision_function" on some classifiers).
 
-        estimator : estimator instance
-            The estimator from which `y_pred` is obtained.
+        estimators : list of estimator instances
+            The estimators from which `y_pred` is obtained.
 
-        estimator_name : str
-            Name of the estimator used to plot the ROC curve.
+        estimator_name : list of str
+            Name of the estimators used to plot the ROC curve.
 
         ml_task : {"binary-classification", "multiclass-classification"}
             The machine learning task.
@@ -478,10 +487,10 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
                 roc_auc[pos_label_validated].append(roc_auc_i)
         else:  # multiclass-classification
             # OvR fashion to collect fpr, tpr, and roc_auc
-            for y_true_i, y_pred_i in zip(y_true, y_pred):
-                label_binarizer = LabelBinarizer().fit(estimator.classes_)
+            for y_true_i, y_pred_i, est in zip(y_true, y_pred, estimators):
+                label_binarizer = LabelBinarizer().fit(est.classes_)
                 y_true_onehot_i: NDArray = label_binarizer.transform(y_true_i)
-                for class_idx, class_ in enumerate(estimator.classes_):
+                for class_idx, class_ in enumerate(est.classes_):
                     fpr_class_i, tpr_class_i, _ = roc_curve(
                         y_true_onehot_i[:, class_idx],
                         y_pred_i[:, class_idx],
@@ -498,7 +507,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
             fpr=fpr,
             tpr=tpr,
             roc_auc=roc_auc,
-            estimator_name=estimator_name,
+            estimator_names=estimator_names,
             pos_label=pos_label_validated,
             data_source=data_source,
         )
