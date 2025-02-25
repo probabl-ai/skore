@@ -43,6 +43,9 @@ def _is_classification(y) -> bool:
     try:
         y = check_array(y, dtype="numeric", ensure_2d=False)
     except ValueError:
+        # The conversion in `check_array` failed meaning
+        # that we are in a classification case with non-numeric
+        # data type.
         return True
 
     if y.ndim == 1:
