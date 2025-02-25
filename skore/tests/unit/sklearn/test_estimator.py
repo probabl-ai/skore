@@ -1275,6 +1275,24 @@ def regression_data_5_features():
             ),
         ),
         (
+            make_classification(
+                n_features=5, n_classes=3, n_samples=30, n_informative=3
+            ),
+            LogisticRegression(),
+            pd.DataFrame(
+                data=[[0.0] * 3] * 6,
+                index=[
+                    "Intercept",
+                    "Feature #0",
+                    "Feature #1",
+                    "Feature #2",
+                    "Feature #3",
+                    "Feature #4",
+                ],
+                columns=["Target #0", "Target #1", "Target #2"],
+            ),
+        ),
+        (
             "regression_data_5_features",
             Pipeline([("scaler", StandardScaler()), ("reg", LinearRegression())]),
             pd.DataFrame(
