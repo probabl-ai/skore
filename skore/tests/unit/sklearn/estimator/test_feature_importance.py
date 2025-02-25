@@ -1,4 +1,3 @@
-import numpy as np
 import pandas as pd
 import pytest
 from sklearn.datasets import make_classification, make_regression
@@ -6,14 +5,6 @@ from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import StandardScaler
 from skore import EstimatorReport
-
-
-def assert_frame_shape_equal(result, expected):
-    """Assert that `result` and `expected` have the same shape and names.
-
-    Do not check the data.
-    """
-    pd.testing.assert_frame_equal(result, expected, check_exact=False, atol=np.inf)
 
 
 @pytest.fixture
@@ -48,103 +39,64 @@ def test_estimator_report_feature_importance_repr(regression_data_5_features):
 
 
 @pytest.mark.parametrize(
-    "data, estimator, expected",
+    "data, estimator, column_base_name, expected_shape",
     [
         (
-            "regression_data_5_features",
+            make_regression(n_features=5, random_state=42),
             LinearRegression(),
-            pd.DataFrame(
-                data=[0.0] * 6,
-                index=[
-                    "Intercept",
-                    "Feature #0",
-                    "Feature #1",
-                    "Feature #2",
-                    "Feature #3",
-                    "Feature #4",
-                ],
-                columns=["Coefficient"],
-            ),
+            None,
+            (6, 1),
         ),
         (
             make_classification(n_features=5, random_state=42),
             LogisticRegression(),
-            pd.DataFrame(
-                data=[0.0] * 6,
-                index=[
-                    "Intercept",
-                    "Feature #0",
-                    "Feature #1",
-                    "Feature #2",
-                    "Feature #3",
-                    "Feature #4",
-                ],
-                columns=["Coefficient"],
-            ),
+            None,
+            (6, 1),
         ),
         (
             make_classification(
-                n_features=5, n_classes=3, n_samples=30, n_informative=3
+                n_features=5,
+                n_classes=3,
+                n_samples=30,
+                n_informative=3,
+                random_state=42,
             ),
             LogisticRegression(),
-            pd.DataFrame(
-                data=[[0.0] * 3] * 6,
-                index=[
-                    "Intercept",
-                    "Feature #0",
-                    "Feature #1",
-                    "Feature #2",
-                    "Feature #3",
-                    "Feature #4",
-                ],
-                columns=["Target #0", "Target #1", "Target #2"],
-            ),
+            "Target",
+            (6, 3),
         ),
         (
-            "regression_data_5_features",
+            make_regression(n_features=5, random_state=42),
             Pipeline([("scaler", StandardScaler()), ("reg", LinearRegression())]),
-            pd.DataFrame(
-                data=[0.0] * 6,
-                index=[
-                    "Intercept",
-                    "Feature #0",
-                    "Feature #1",
-                    "Feature #2",
-                    "Feature #3",
-                    "Feature #4",
-                ],
-                columns=["Coefficient"],
-            ),
+            None,
+            (6, 1),
         ),
         (
             make_regression(n_features=5, n_targets=3, random_state=42),
             LinearRegression(),
-            pd.DataFrame(
-                data=[[0.0] * 3] * 6,
-                index=[
-                    "Intercept",
-                    "Feature #0",
-                    "Feature #1",
-                    "Feature #2",
-                    "Feature #3",
-                    "Feature #4",
-                ],
-                columns=["Target #0", "Target #1", "Target #2"],
-            ),
+            "Target",
+            (6, 3),
         ),
     ],
 )
-def test_estimator_report_coefficients_numpy_arrays(request, data, estimator, expected):
-    if isinstance(data, str):
-        data = request.getfixturevalue(data)
+def test_estimator_report_coefficients_numpy_arrays(
+    data, estimator, column_base_name, expected_shape
+):
     X, y = data
-
     estimator.fit(X, y)
-
     report = EstimatorReport(estimator)
     result = report.feature_importance.coefficients()
+    assert result.shape == expected_shape
 
-    assert_frame_shape_equal(result, expected)
+    expected_index = ["Intercept"] + [f"Feature #{i}" for i in range(X.shape[1])]
+    assert result.index.tolist() == expected_index
+
+    expected_columns = (
+        ["Coefficient"]
+        if expected_shape[1] == 1
+        else [f"{column_base_name} #{i}" for i in range(expected_shape[1])]
+    )
+    assert result.columns.tolist() == expected_columns
 
 
 def test_estimator_report_coefficients_pandas_dataframe(regression_data_5_features):
