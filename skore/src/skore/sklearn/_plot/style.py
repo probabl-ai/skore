@@ -1,4 +1,4 @@
-from typing import Any, Self
+from typing import Any
 
 
 class StyleDisplayMixin:
@@ -21,7 +21,7 @@ class StyleDisplayMixin:
             if attr.startswith(prefix) and attr.endswith(suffix)
         ]
 
-    def set_style(self, **kwargs: Any) -> Self:
+    def set_style(self, **kwargs: Any):
         """Set the style parameters for the display.
 
         Parameters
