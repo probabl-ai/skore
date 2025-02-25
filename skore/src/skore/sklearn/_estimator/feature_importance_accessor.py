@@ -19,7 +19,7 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
         super().__init__(parent)
 
     @available_if(_check_has_coef())
-    def model_weights(self) -> pd.DataFrame:
+    def coefficients(self) -> pd.DataFrame:
         """Retrieve the coefficients of a linear model, including the intercept.
 
         Examples
@@ -39,7 +39,7 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
         ...     X_test=X_test,
         ...     y_test=y_test,
         ... )
-        >>> report.feature_importance.model_weights()
+        >>> report.feature_importance.coefficients()
                    Coefficient
         Intercept   152.447736
         Feature #0   21.200004
