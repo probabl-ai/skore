@@ -66,6 +66,18 @@ def test_estimator_report_feature_importance_repr(regression_data_5_features):
             (6, 3),
         ),
         (
+            make_classification(
+                n_features=5,
+                n_classes=3,
+                n_samples=30,
+                n_informative=3,
+                random_state=42,
+            ),
+            Pipeline([("scaler", StandardScaler()), ("reg", LogisticRegression())]),
+            "Class",
+            (6, 3),
+        ),
+        (
             make_regression(n_features=5, random_state=42),
             Pipeline([("scaler", StandardScaler()), ("reg", LinearRegression())]),
             None,
