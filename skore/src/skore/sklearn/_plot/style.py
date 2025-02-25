@@ -1,8 +1,11 @@
+from typing import Any, Self
+
+
 class StyleDisplayMixin:
     """Mixin to control the style plot of a display."""
 
     @property
-    def _style_params(self):
+    def _style_params(self) -> list[str]:
         """Get the list of available style parameters.
 
         Returns
@@ -18,7 +21,7 @@ class StyleDisplayMixin:
             if attr.startswith(prefix) and attr.endswith(suffix)
         ]
 
-    def set_style(self, **kwargs):
+    def set_style(self, **kwargs: Any) -> Self:
         """Set the style parameters for the display.
 
         Parameters
