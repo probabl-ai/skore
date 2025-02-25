@@ -22,6 +22,8 @@ example.
 # %%
 # We start by showing how skore can help you inspect the coefficients of linear models.
 # We consider a linear model as defined in `scikit-learn's user guide <https://scikit-learn.org/stable/modules/linear_model.html>`_.
+# In short, we consider a "linear model" as a scikit-learn compatible estimator that
+# holds a ``coef_`` attribute (after being fitted).
 
 # %%
 # Let us load some data for a regression task about predicting house prices:
