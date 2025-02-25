@@ -2,7 +2,7 @@ import pandas as pd
 import pytest
 from sklearn.datasets import make_classification, make_regression
 from sklearn.linear_model import LinearRegression, LogisticRegression
-from sklearn.pipeline import Pipeline, make_pipeline
+from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 from skore import EstimatorReport
 
@@ -73,13 +73,13 @@ def test_estimator_report_feature_importance_repr(regression_data_5_features):
                 n_informative=3,
                 random_state=42,
             ),
-            Pipeline([("scaler", StandardScaler()), ("reg", LogisticRegression())]),
+            make_pipeline(StandardScaler(), LogisticRegression()),
             "Class",
             (6, 3),
         ),
         (
             make_regression(n_features=5, random_state=42),
-            Pipeline([("scaler", StandardScaler()), ("reg", LinearRegression())]),
+            make_pipeline(StandardScaler(), LinearRegression()),
             None,
             (6, 1),
         ),
