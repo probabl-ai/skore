@@ -112,8 +112,8 @@ class RocCurveDisplay(
     >>> display.plot(roc_curve_kwargs={"color": "tab:red"})
     """
 
-    _default_roc_curve_kwargs = None
-    _default_chance_level_kwargs = None
+    _default_roc_curve_kwargs: Union[dict[str, Any], None] = None
+    _default_chance_level_kwargs: Union[dict[str, Any], None] = None
 
     def __init__(
         self,

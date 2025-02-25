@@ -109,7 +109,7 @@ class PrecisionRecallCurveDisplay(
     >>> display.plot(pr_curve_kwargs={"color": "tab:red"})
     """
 
-    _default_pr_curve_kwargs = None
+    _default_pr_curve_kwargs: Union[dict[str, Any], None] = None
 
     def __init__(
         self,

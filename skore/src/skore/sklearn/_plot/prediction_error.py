@@ -85,8 +85,8 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
     >>> display.plot(kind="actual_vs_predicted")
     """
 
-    _default_scatter_kwargs = None
-    _default_line_kwargs = None
+    _default_scatter_kwargs: Union[dict[str, Any], None] = None
+    _default_line_kwargs: Union[dict[str, Any], None] = None
 
     def __init__(
         self,
