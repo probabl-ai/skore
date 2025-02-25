@@ -11,6 +11,7 @@ from sklearn.base import BaseEstimator
 from sklearn.metrics import auc, roc_curve
 from sklearn.preprocessing import LabelBinarizer
 
+from skore.sklearn._plot.style import StyleDisplayMixin
 from skore.sklearn._plot.utils import (
     HelpDisplayMixin,
     _ClassifierCurveDisplayMixin,
@@ -21,7 +22,9 @@ from skore.sklearn._plot.utils import (
 from skore.sklearn.types import MLTask
 
 
-class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
+class RocCurveDisplay(
+    HelpDisplayMixin, _ClassifierCurveDisplayMixin, StyleDisplayMixin
+):
     """ROC Curve visualization.
 
     An instance of this class is should created by `EstimatorReport.metrics.roc()`.
@@ -109,6 +112,9 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
     >>> display.plot(roc_curve_kwargs={"color": "tab:red"})
     """
 
+    _default_roc_curve_kwargs: Union[dict[str, Any], None] = None
+    _default_chance_level_kwargs: Union[dict[str, Any], None] = None
+
     def __init__(
         self,
         *,
@@ -188,7 +194,12 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
             ax=ax, estimator_name=estimator_name
         )
 
-        self.lines_ = []
+        if roc_curve_kwargs is None:
+            roc_curve_kwargs = self._default_roc_curve_kwargs
+        if chance_level_kwargs is None:
+            chance_level_kwargs = self._default_chance_level_kwargs
+
+        self.lines_: list[Line2D] = []
         default_line_kwargs: dict[str, Any] = {}
         if len(self.fpr) == 1:  # binary-classification
             assert (

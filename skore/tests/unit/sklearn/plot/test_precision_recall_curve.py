@@ -252,11 +252,23 @@ def test_precision_recall_curve_display_pr_curve_kwargs(
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    display = report.metrics.precision_recall()
     for pr_curve_kwargs in ({"color": "red"}, [{"color": "red"}]):
+        display = report.metrics.precision_recall()
         display.plot(pr_curve_kwargs=pr_curve_kwargs)
-
         assert display.lines_[0].get_color() == "red"
+
+        # check the `.style` display setter
+        display.plot()  # default style
+        assert display.lines_[0].get_color() == "#1f77b4"
+        display.set_style(pr_curve_kwargs=pr_curve_kwargs)
+        display.plot()
+        assert display.lines_[0].get_color() == "red"
+        display.plot(pr_curve_kwargs=pr_curve_kwargs)
+        assert display.lines_[0].get_color() == "red"
+
+        # reset to default style since next call to `precision_recall` will use the
+        # cache
+        display.set_style(pr_curve_kwargs={"color": "#1f77b4"})
 
     estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
     report = EstimatorReport(
