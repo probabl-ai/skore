@@ -99,53 +99,29 @@ def test_estimator_report_coefficients_numpy_arrays(
     assert result.columns.tolist() == expected_columns
 
 
-def test_estimator_report_coefficients_pandas_dataframe(regression_data_5_features):
-    """If provided, the model weights dataframe uses the feature names, where the
-    estimator is a single estimator (not a pipeline)."""
-    X, y = regression_data_5_features
+@pytest.mark.parametrize(
+    "estimator",
+    [
+        LinearRegression(),
+        make_pipeline(StandardScaler(), LinearRegression()),
+    ],
+)
+def test_estimator_report_coefficients_pandas_dataframe(estimator):
+    """If provided, the coefficients dataframe uses the feature names."""
+    X, y = make_regression(n_features=5, random_state=42)
     X = pd.DataFrame(X, columns=[f"my_feature_{i}" for i in range(X.shape[1])])
-    estimator = LinearRegression().fit(X, y)
+    estimator.fit(X, y)
 
     report = EstimatorReport(estimator)
     result = report.feature_importance.coefficients()
 
-    expected = pd.DataFrame(
-        data=[0.0] * 6,
-        index=[
-            "Intercept",
-            "my_feature_0",
-            "my_feature_1",
-            "my_feature_2",
-            "my_feature_3",
-            "my_feature_4",
-        ],
-        columns=["Coefficient"],
-    )
-    assert_frame_shape_equal(result, expected)
-
-
-def test_estimator_report_coefficients_pandas_dataframe_pipeline(
-    regression_data_5_features,
-):
-    """If provided, the model weights dataframe uses the feature names, where the
-    estimator is a pipeline (not a single estimator)."""
-    X, y = regression_data_5_features
-    X = pd.DataFrame(X, columns=[f"my_feature_{i}" for i in range(X.shape[1])])
-    estimator = make_pipeline(StandardScaler(), LinearRegression()).fit(X, y)
-
-    report = EstimatorReport(estimator)
-    result = report.feature_importance.coefficients()
-
-    expected = pd.DataFrame(
-        data=[0.0] * 6,
-        index=[
-            "Intercept",
-            "my_feature_0",
-            "my_feature_1",
-            "my_feature_2",
-            "my_feature_3",
-            "my_feature_4",
-        ],
-        columns=["Coefficient"],
-    )
-    assert_frame_shape_equal(result, expected)
+    assert result.shape == (6, 1)
+    assert result.index.tolist() == [
+        "Intercept",
+        "my_feature_0",
+        "my_feature_1",
+        "my_feature_2",
+        "my_feature_3",
+        "my_feature_4",
+    ]
+    assert result.columns.tolist() == ["Coefficient"]
