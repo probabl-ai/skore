@@ -27,7 +27,7 @@ class AuthenticatedClient(Client):
     def request(self, method: str, url: URL | str, **kwargs) -> Response:
         """Execute request with access token, and refresh the token if needed."""
         # Check if token is well initialized
-        if not self.token.is_valid():
+        if not self.token.valid:
             raise AuthenticationError("You are not logged in.")
 
         # Check if token must be refreshed
@@ -36,7 +36,7 @@ class AuthenticatedClient(Client):
 
         # Overload headers with authorization token
         headers = kwargs.pop("headers", None) or {}
-        headers |= {"Authorization": f"Bearer {self.token.access}"}
+        headers["Authorization"] = f"Bearer {self.token.access}"
 
         return super().request(
             method,
