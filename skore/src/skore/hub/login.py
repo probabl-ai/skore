@@ -40,8 +40,12 @@ def login(timeout=600, auto_otp=True):
         )
 
         webbrowser.open(authorization_url)
+        start = datetime.now()
 
         while access is None or refreshment is None or expires_at is None:
+            if (datetime.now() - start).total_seconds() > timeout:
+                raise AuthenticationError("Timeout") from None
+
             sleep(0.5)
 
         return AuthenticationToken(
@@ -71,10 +75,9 @@ def login(timeout=600, auto_otp=True):
         )
         # Open the default browser
         webbrowser.open(authorization_url)
-
-        # Start polling Skore-Hub, waiting for the token
         start = datetime.now()
 
+        # Start polling Skore-Hub, waiting for the token
         while True:
             try:
                 return AuthenticationToken(
