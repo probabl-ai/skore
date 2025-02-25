@@ -1305,9 +1305,8 @@ def assert_frame_shape_equal(result, expected):
 )
 def test_estimator_report_model_weights_numpy_arrays(data, estimator, expected):
     X, y = data
-    X_train, _, y_train, _ = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    estimator.fit(X_train, y_train)
+    estimator.fit(X, y)
 
     report = EstimatorReport(estimator)
     result = report.feature_importance.model_weights()
@@ -1319,15 +1318,10 @@ def test_estimator_report_model_weights_pandas_dataframe():
     """If provided, the model weights dataframe uses the feature names, where the
     estimator is a single estimator (not a pipeline)."""
     X, y = make_regression(n_features=5, random_state=42)
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42
-    )
-    X_train = pd.DataFrame(
-        X_train, columns=[f"my_feature_{i}" for i in range(X_train.shape[1])]
-    )
-    linear_regression = LinearRegression().fit(X_train, y_train)
+    X = pd.DataFrame(X, columns=[f"my_feature_{i}" for i in range(X.shape[1])])
+    estimator = LinearRegression().fit(X, y)
 
-    report = EstimatorReport(linear_regression)
+    report = EstimatorReport(estimator)
     result = report.feature_importance.model_weights()
 
     expected = pd.DataFrame(
@@ -1349,16 +1343,10 @@ def test_estimator_report_model_weights_pandas_dataframe_pipeline():
     """If provided, the model weights dataframe uses the feature names, where the
     estimator is a pipeline (not a single estimator)."""
     X, y = make_regression(n_features=5, random_state=42)
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42
-    )
-    X_train = pd.DataFrame(
-        X_train, columns=[f"my_feature_{i}" for i in range(X_train.shape[1])]
-    )
-    est = make_pipeline(StandardScaler(), LinearRegression())
-    est.fit(X_train, y_train)
+    X = pd.DataFrame(X, columns=[f"my_feature_{i}" for i in range(X.shape[1])])
+    estimator = make_pipeline(StandardScaler(), LinearRegression()).fit(X, y)
 
-    report = EstimatorReport(est)
+    report = EstimatorReport(estimator)
     result = report.feature_importance.model_weights()
 
     expected = pd.DataFrame(
