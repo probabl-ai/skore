@@ -50,7 +50,9 @@ h11==0.14.0
 httpcore==1.0.7
     # via httpx
 httpx==0.28.1
-    # via skore (skore/pyproject.toml)
+    # via
+    #   respx
+    #   skore (skore/pyproject.toml)
 huggingface-hub==0.28.1
     # via skops
 identify==2.6.6
@@ -175,6 +177,8 @@ requests==2.32.3
     # via
     #   huggingface-hub
     #   skrub
+respx==0.22.0
+    # via skore (skore/pyproject.toml)
 rich==13.9.4
     # via skore (skore/pyproject.toml)
 rpds-py==0.22.3
