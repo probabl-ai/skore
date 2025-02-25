@@ -24,7 +24,7 @@ example.
 # We consider a linear model as defined in `scikit-learn's user guide <https://scikit-learn.org/stable/modules/linear_model.html>`_.
 
 # %%
-# Let us load some data for a regression task:
+# Let us load some data for a regression task about predicting house prices:
 
 # %%
 from sklearn.datasets import fetch_california_housing
