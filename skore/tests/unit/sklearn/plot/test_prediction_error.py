@@ -200,6 +200,27 @@ def test_prediction_error_display_kwargs(pyplot, regression_data):
     np.testing.assert_allclose(display.scatter_.get_facecolor(), [[1, 0, 0, 0.3]])
     assert display.line_.get_color() == "blue"
 
+    # check the `.style` display setter
+    display.plot()  # default style
+    np.testing.assert_allclose(
+        display.scatter_.get_facecolor(),
+        [[0.121569, 0.466667, 0.705882, 0.3]],
+        rtol=1e-3,
+    )
+    assert display.line_.get_color() == "black"
+    display.set_style(scatter_kwargs={"color": "red"}, line_kwargs={"color": "blue"})
+    display.plot()
+    np.testing.assert_allclose(display.scatter_.get_facecolor(), [[1, 0, 0, 0.3]])
+    assert display.line_.get_color() == "blue"
+    # overwrite the style that was set above
+    display.plot(
+        scatter_kwargs={"color": "tab:orange"}, line_kwargs={"color": "tab:green"}
+    )
+    np.testing.assert_allclose(
+        display.scatter_.get_facecolor(), [[1.0, 0.498039, 0.054902, 0.3]], rtol=1e-3
+    )
+    assert display.line_.get_color() == "tab:green"
+
     display.plot(despine=False)
     assert display.ax_.spines["top"].get_visible()
     assert display.ax_.spines["right"].get_visible()

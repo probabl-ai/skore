@@ -222,6 +222,23 @@ def test_roc_curve_display_roc_curve_kwargs_binary_classification(
     assert display.lines_[0].get_color() == "red"
     assert display.chance_level_.get_color() == "blue"
 
+    # check the `.style` display setter
+    display.plot()  # default style
+    assert display.lines_[0].get_color() == "#1f77b4"
+    assert display.chance_level_.get_color() == "k"
+    display.set_style(
+        roc_curve_kwargs=roc_curve_kwargs, chance_level_kwargs={"color": "blue"}
+    )
+    display.plot()
+    assert display.lines_[0].get_color() == "red"
+    assert display.chance_level_.get_color() == "blue"
+    # overwrite the style that was set above
+    display.plot(
+        roc_curve_kwargs={"color": "#1f77b4"}, chance_level_kwargs={"color": "red"}
+    )
+    assert display.lines_[0].get_color() == "#1f77b4"
+    assert display.chance_level_.get_color() == "red"
+
 
 def test_roc_curve_display_roc_curve_kwargs_multiclass_classification(
     pyplot, multiclass_classification_data
