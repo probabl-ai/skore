@@ -120,11 +120,11 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
         data_source_hash: Optional[int] = None,
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
-        scoring: Union[str, list[str]] = None,  # Typing TODO
+        scoring: Union[str, list[str], None] = None,  # Typing TODO
         **kwargs,
     ) -> pd.DataFrame:
         if data_source_hash is None:
-            X, y_true, data_source_hash = self._get_X_y_and_data_source_hash(
+            X_, y_true, data_source_hash = self._get_X_y_and_data_source_hash(
                 data_source=data_source, X=X, y=y
             )
 
@@ -153,7 +153,7 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
         else:
             sklearn_score = permutation_importance(
                 estimator=self._parent.estimator_,
-                X=X,
+                X=X_,
                 y=y_true,
                 scoring=scoring,
                 **kwargs,
@@ -163,7 +163,7 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
             feature_names = (
                 self._parent.estimator_.feature_names_in_
                 if hasattr(self._parent.estimator_, "feature_names_in_")
-                else [f"Feature #{i}" for i in range(X.shape[1])]
+                else [f"Feature #{i}" for i in range(X_.shape[1])]
             )
 
             # If there is more than one metric
