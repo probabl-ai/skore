@@ -7,7 +7,7 @@ from threading import Thread
 from typing import Callable
 from urllib.parse import parse_qs, urlparse
 
-SUCCESS_PAGE = """
+SUCCESS_PAGE = b"""
 <script>window.close();</script>
 <p>You can now close this page.</p>
 """
@@ -20,15 +20,19 @@ def _get_handler(callback):
 
         def do_GET(self):
             parsed = urlparse(self.path)
-            params = parse_qs(parsed.query)
+
+            if parsed.path != "/":
+                self.send_response(HTTPStatus.FORBIDDEN)
+                return
+
+            (state,) = parse_qs(parsed.query).get("state", [None])
+            callback(state)
+
             self.send_response(HTTPStatus.OK)
             self.send_header("Content-type", "text/html")
             self.send_header("Content-Length", len(SUCCESS_PAGE))
             self.end_headers()
-            self.wfile.write(bytes(SUCCESS_PAGE, "utf-8"))
-
-            state_list = params.get("state", [None])
-            callback(state_list[0])
+            self.wfile.write(SUCCESS_PAGE)
 
     return _Handler
 
