@@ -159,16 +159,21 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
                 **kwargs,
             )
             score = sklearn_score.get("importances")
+
+            feature_names = (
+                self._parent.estimator_.feature_names_in_
+                if hasattr(self._parent.estimator_, "feature_names_in_")
+                else [f"Feature #{i}" for i in range(X.shape[1])]
+            )
+
             # If there is more than one metric
             if score is None:
                 data = np.concatenate(
                     [v["importances"] for v in sklearn_score.values()]
                 )
-                n_features = X.shape[1]
                 n_repeats = data.shape[1]
                 index = pd.MultiIndex.from_product(
-                    [sklearn_score, (f"Feature #{i}" for i in range(n_features))],
-                    names=("Metric", "Feature"),
+                    [sklearn_score, feature_names], names=("Metric", "Feature")
                 )
                 columns = pd.Index(
                     (f"Repeat #{i}" for i in range(n_repeats)), name="Repeat"
@@ -176,11 +181,8 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
                 score = pd.DataFrame(data=data, index=index, columns=columns)
             else:
                 data = score
-                n_features = X.shape[1]
                 n_repeats = data.shape[1]
-                index = pd.Index(
-                    (f"Feature #{i}" for i in range(n_features)), name="Feature"
-                )
+                index = pd.Index(feature_names, name="Feature")
                 columns = pd.Index(
                     (f"Repeat #{i}" for i in range(n_repeats)), name="Repeat"
                 )
