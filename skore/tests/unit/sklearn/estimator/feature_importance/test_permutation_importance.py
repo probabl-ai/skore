@@ -11,6 +11,80 @@ from sklearn.preprocessing import StandardScaler
 from skore import EstimatorReport
 
 
+def case_default_args_numpy():
+    X, y = make_regression(n_features=3, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+    data = {"X_train": X_train, "y_train": y_train, "X_test": X_test, "y_test": y_test}
+
+    kwargs = {"random_state": 42}
+
+    expected = pd.DataFrame(
+        data=np.zeros((3, 5)),
+        index=pd.Index((f"Feature #{i}" for i in range(3)), name="Feature"),
+        columns=pd.Index((f"Repeat #{i}" for i in range(5)), name="Repeat"),
+    )
+    return data, kwargs, expected
+
+
+def case_r2_numpy():
+    X, y = make_regression(n_features=3, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+    data = {"X_train": X_train, "y_train": y_train, "X_test": X_test, "y_test": y_test}
+
+    kwargs = {"scoring": make_scorer(r2_score), "random_state": 42}
+
+    expected = pd.DataFrame(
+        data=np.zeros((3, 5)),
+        index=pd.Index((f"Feature #{i}" for i in range(3)), name="Feature"),
+        columns=pd.Index((f"Repeat #{i}" for i in range(5)), name="Repeat"),
+    )
+    return data, kwargs, expected
+
+
+def case_train_numpy():
+    X, y = make_regression(n_features=3, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+    data = {"X_train": X_train, "y_train": y_train, "X_test": X_test, "y_test": y_test}
+
+    kwargs = {"data_source": "train", "random_state": 42}
+
+    expected = pd.DataFrame(
+        data=np.zeros((3, 5)),
+        index=pd.Index((f"Feature #{i}" for i in range(3)), name="Feature"),
+        columns=pd.Index((f"Repeat #{i}" for i in range(5)), name="Repeat"),
+    )
+    return data, kwargs, expected
+
+
+def case_several_scoring_numpy():
+    X, y = make_regression(n_features=3, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+    data = {"X_train": X_train, "y_train": y_train, "X_test": X_test, "y_test": y_test}
+
+    kwargs = {"scoring": ["r2", "neg_root_mean_squared_error"], "random_state": 42}
+
+    expected = pd.DataFrame(
+        data=np.zeros((2 * 3, 5)),
+        index=pd.MultiIndex.from_product(
+            [
+                ["r2", "neg_root_mean_squared_error"],
+                (f"Feature #{i}" for i in range(3)),
+            ],
+            names=("Metric", "Feature"),
+        ),
+        columns=pd.Index((f"Repeat #{i}" for i in range(5)), name="Repeat"),
+    )
+    return data, kwargs, expected
+
+
 @pytest.mark.parametrize(
     "estimator",
     [
@@ -21,61 +95,18 @@ from skore import EstimatorReport
     ],
 )
 @pytest.mark.parametrize(
-    "kwargs, expected",
+    "params",
     [
-        (
-            {"random_state": 42},
-            pd.DataFrame(
-                data=np.zeros((3, 5)),
-                index=pd.Index((f"Feature #{i}" for i in range(3)), name="Feature"),
-                columns=pd.Index((f"Repeat #{i}" for i in range(5)), name="Repeat"),
-            ),
-        ),
-        (
-            {"scoring": make_scorer(r2_score), "random_state": 42},
-            pd.DataFrame(
-                data=np.zeros((3, 5)),
-                index=pd.Index((f"Feature #{i}" for i in range(3)), name="Feature"),
-                columns=pd.Index((f"Repeat #{i}" for i in range(5)), name="Repeat"),
-            ),
-        ),
-        (
-            {"data_source": "train", "random_state": 42},
-            pd.DataFrame(
-                data=np.zeros((3, 5)),
-                index=pd.Index((f"Feature #{i}" for i in range(3)), name="Feature"),
-                columns=pd.Index((f"Repeat #{i}" for i in range(5)), name="Repeat"),
-            ),
-        ),
-        (
-            {"scoring": ["r2", "neg_root_mean_squared_error"], "random_state": 42},
-            pd.DataFrame(
-                data=np.zeros((2 * 3, 5)),
-                index=pd.MultiIndex.from_product(
-                    [
-                        ["r2", "neg_root_mean_squared_error"],
-                        (f"Feature #{i}" for i in range(3)),
-                    ],
-                    names=("Metric", "Feature"),
-                ),
-                columns=pd.Index((f"Repeat #{i}" for i in range(5)), name="Repeat"),
-            ),
-        ),
+        case_default_args_numpy,
+        case_r2_numpy,
+        case_train_numpy,
+        case_several_scoring_numpy,
     ],
 )
-def test_estimator_report_feature_permutation(estimator, kwargs, expected):
-    X, y = make_regression(n_features=3, random_state=42)
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42
-    )
+def test_estimator_report_feature_permutation(estimator, params):
+    data, kwargs, expected = params()
 
-    report = EstimatorReport(
-        estimator,
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
+    report = EstimatorReport(estimator, **data)
     result = report.feature_importance.feature_permutation(**kwargs)
 
     # Do not check values
