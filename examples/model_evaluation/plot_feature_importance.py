@@ -88,8 +88,9 @@ estimator_report.feature_importance.coefficients()
 
 # %%
 # We can interpret a coefficient as follows: according to our model, on average,
-# having one additional bedroom (a increase of :math:`1` of ``AveBedrms``) increases
-# the house value of :math:`0.62` in $100,000, hence of $62,000.
+# having one additional bedroom (a increase of :math:`1` of ``AveBedrms``),
+# with all other features being constant,
+# increases the house value of :math:`0.62` in $100,000, hence of $62,000.
 
 # %%
 # When further inspecting the coefficients of our model, we can notice that some of
