@@ -38,7 +38,12 @@ X.head()
 y.head()
 
 # %%
-# Now, let us apply the :class:`~skore.EstimatorReport` on a linear regression and get
+# The documentation of the California housing dataset explains that the target is
+# the median house value for California districts, expressed in hundreds of thousands
+# of dollars ($100,000).
+
+# %%
+# Now, let us apply the :class:`~skore.EstimatorReport` on a Ridge regression and get
 # some metrics:
 
 # %%
@@ -67,8 +72,8 @@ estimator_report.metrics.report_metrics()
 #   Note that the score can be negative, as it could be worse than the average.
 # - The root mean squared error (:func:`~sklearn.metrics.root_mean_squared_error`),
 #   abbreviated as RMSE, which is an error.
-#   It takes the square root of the mean squared error so it is expressed in the same
-#   units as the target variable.
+#   It takes the square root of the mean squared error (MSE) so it is expressed in the
+#   same units as the target variable.
 #   The MSE measures the average squared difference between the predicted values and
 #   the actual values.
 
@@ -79,10 +84,15 @@ estimator_report.metrics.report_metrics()
 estimator_report.feature_importance.coefficients()
 
 # %%
-# When inspecting the coefficients of our model, we can notice that some of them
-# have a very low absolute value, indicating that the corresponding features are not
-# important.
-# For example, that is the case of the ``HouseAge`` feature, which seems surprising.
+# We can interpret a coefficient as follows: according to our model, on average,
+# having one additional bedroom (a increase of :math:`1` of ``AveBedrms``) increases
+# the house value of :math:`0.62` in $100,000, hence of $62,000.
+
+# %%
+# When further inspecting the coefficients of our model, we can notice that some of
+# them have a very low absolute value, indicating that the corresponding features are
+# not important.
+# For example, that is the case of the ``HouseAge`` feature, which seems surprising!
 # Indeed, we forget to scale our input data:
 
 # %%
@@ -99,8 +109,14 @@ scaled_estimator_report = EstimatorReport(
 scaled_estimator_report.feature_importance.coefficients()
 
 # %%
-# Now, the obtained coefficients can be properly interpreted.
-# After scaling, it appears that the ``HouseAge`` feature is actually quite important.
+# Now, after scaling, the coefficients are in the same range so they can be compared to
+# one another.
+# It appears that the ``HouseAge`` feature is actually quite important,
+# with regards to the other coefficients.
+# Hence, scaling matters for feature importance.
+#
+# Note that, after scaling, we can no longer interpret the coefficient values
+# with regards to the original unit of the feature.
 
 # %%
 # .. seealso::
