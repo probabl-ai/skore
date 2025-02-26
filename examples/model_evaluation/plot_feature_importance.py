@@ -43,12 +43,12 @@ y.head()
 
 # %%
 from skore import train_test_split, EstimatorReport
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import Ridge
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 
 estimator_report = EstimatorReport(
-    LinearRegression(),
+    Ridge(),
     X_train=X_train,
     X_test=X_test,
     y_train=y_train,
@@ -74,7 +74,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import make_pipeline
 
 scaled_estimator_report = EstimatorReport(
-    make_pipeline(StandardScaler(), LinearRegression()),
+    make_pipeline(StandardScaler(), Ridge()),
     X_train=X_train,
     X_test=X_test,
     y_train=y_train,
