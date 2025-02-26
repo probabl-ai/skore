@@ -6,16 +6,15 @@ This warning is shown when a dataset exhibits a high class imbalance.
 from __future__ import annotations
 
 from collections import Counter
-from typing import TYPE_CHECKING, Any, Optional, Union
+from collections.abc import Sequence
+from typing import Optional, Union
+
+from numpy.typing import ArrayLike
 
 from skore.sklearn.train_test_split.warning.train_test_split_warning import (
     TrainTestSplitWarning,
 )
-
-if TYPE_CHECKING:
-    from skore.sklearn.cross_validate import MLTask
-
-    ArrayLike = Any
+from skore.sklearn.types import MLTask
 
 
 class HighClassImbalanceWarning(TrainTestSplitWarning):
@@ -32,7 +31,7 @@ class HighClassImbalanceWarning(TrainTestSplitWarning):
 
     @staticmethod
     def check(
-        y: Optional[ArrayLike],
+        y: Optional[Sequence],
         stratify: Optional[ArrayLike],
         ml_task: MLTask,
         **kwargs,
@@ -64,9 +63,9 @@ class HighClassImbalanceWarning(TrainTestSplitWarning):
             return None
 
         counter = Counter(y)
-        counter = sorted(counter.values())
+        counts = sorted(counter.values())
 
-        if (counter[-1] / counter[0]) < 3:
+        if (counts[-1] / counts[0]) < 3:
             return None
 
         return HighClassImbalanceWarning.MSG

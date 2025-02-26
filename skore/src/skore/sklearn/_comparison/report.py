@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 from collections.abc import Iterable
-from typing import Optional, Union
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 
 import joblib
 import numpy as np
@@ -11,6 +11,9 @@ from skore.externals._pandas_accessors import DirNamesMixin
 from skore.sklearn._base import _BaseReport
 from skore.sklearn._estimator.report import EstimatorReport
 from skore.utils._progress_bar import progress_decorator
+
+if TYPE_CHECKING:
+    from skore.sklearn._estimator.metrics_accessor import _MetricsAccessor
 
 
 class ComparisonReport(_BaseReport, DirNamesMixin):
@@ -88,16 +91,17 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     ...
     """
 
-    _ACCESSOR_CONFIG = {
+    _ACCESSOR_CONFIG: dict[str, dict[str, str]] = {
         "metrics": {"name": "metrics"},
     }
+    metrics: _MetricsAccessor
 
     def __init__(
         self,
         reports: Union[list[EstimatorReport], dict[str, EstimatorReport]],
         *,
         n_jobs: Optional[int] = None,
-    ):
+    ) -> None:
         """
         ComparisonReport instance initializer.
 
@@ -146,6 +150,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         self.estimator_reports_ = reports
 
         # used to know if a parent launches a progress bar manager
+        self._progress_info: Optional[dict[str, Any]] = None
         self._parent_progress = None
 
         # NEEDED FOR METRICS ACCESSOR
@@ -154,10 +159,10 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         self._hash = self._rng.integers(
             low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
         )
-        self._cache = {}
+        self._cache: dict[tuple[Any, ...], Any] = {}
         self._ml_task = self.estimator_reports_[0]._ml_task
 
-    def clear_cache(self):
+    def clear_cache(self) -> None:
         """Clear the cache.
 
         Examples
@@ -195,7 +200,13 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         self._cache = {}
 
     @progress_decorator(description="Estimator predictions")
-    def cache_predictions(self, response_methods="auto", n_jobs=None):
+    def cache_predictions(
+        self,
+        response_methods: Literal[
+            "auto", "predict", "predict_proba", "decision_function"
+        ] = "auto",
+        n_jobs: Optional[int] = None,
+    ) -> None:
         """Cache the predictions for sub-estimators reports.
 
         Parameters
@@ -240,6 +251,9 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         if n_jobs is None:
             n_jobs = self.n_jobs
 
+        assert (
+            self._progress_info is not None
+        ), "The rich Progress class was not initialized."
         progress = self._progress_info["current_progress"]
         main_task = self._progress_info["current_task"]
 
@@ -258,14 +272,14 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     # Methods related to the help and repr
     ####################################################################################
 
-    def _get_help_panel_title(self):
+    def _get_help_panel_title(self) -> str:
         return "[bold cyan]Tools to compare estimators[/bold cyan]"
 
-    def _get_help_legend(self):
+    def _get_help_legend(self) -> str:
         return (
             "[cyan](↗︎)[/cyan] higher is better [orange1](↘︎)[/orange1] lower is better"
         )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Return a string representation."""
         return f"{self.__class__.__name__}(...)"

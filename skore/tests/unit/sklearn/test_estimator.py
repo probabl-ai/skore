@@ -26,7 +26,6 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 from sklearn.utils.validation import check_is_fitted
 from skore import EstimatorReport
-from skore.sklearn._estimator.utils import _check_supported_estimator
 from skore.sklearn._plot import RocCurveDisplay
 
 
@@ -108,36 +107,6 @@ def regression_multioutput_data():
         X, y, test_size=0.2, random_state=42
     )
     return LinearRegression().fit(X_train, y_train), X_test, y_test
-
-
-def test_check_supported_estimator():
-    """Test the behaviour of `_check_supported_estimator`."""
-
-    class MockParent:
-        def __init__(self, estimator):
-            self.estimator_ = estimator
-
-    class MockAccessor:
-        def __init__(self, parent):
-            self._parent = parent
-
-    parent = MockParent(LogisticRegression())
-    accessor = MockAccessor(parent)
-    check = _check_supported_estimator((LogisticRegression,))
-    assert check(accessor)
-
-    pipeline = Pipeline([("clf", LogisticRegression())])
-    parent = MockParent(pipeline)
-    accessor = MockAccessor(parent)
-    assert check(accessor)
-
-    parent = MockParent(RandomForestClassifier())
-    accessor = MockAccessor(parent)
-    err_msg = (
-        "The RandomForestClassifier estimator is not supported by the function called."
-    )
-    with pytest.raises(AttributeError, match=err_msg):
-        check(accessor)
 
 
 ########################################################################################
@@ -1047,6 +1016,7 @@ def test_estimator_report_report_metrics_with_scorer_binary_classification(
 
     result = report.metrics.report_metrics(
         scoring=["accuracy", accuracy_score, scorer],
+        scoring_kwargs={"response_method": "predict"},
     )
     assert result.shape == (3, 1)
     np.testing.assert_allclose(

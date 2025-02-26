@@ -2,7 +2,9 @@
 
 import re
 import shutil
-from argparse import ArgumentParser, HelpFormatter
+from argparse import Action, ArgumentParser, HelpFormatter
+from collections.abc import Iterable
+from typing import Any, NoReturn, Optional
 
 from rich.console import Console
 from rich.theme import Theme
@@ -19,18 +21,24 @@ skore_console_theme = Theme(
 class RichColorHelpFormatter(HelpFormatter):
     """Custom help formatter for the CLI."""
 
-    def __init__(self, prog, indent_increment=2, max_help_position=24, width=None):
+    def __init__(
+        self,
+        prog: str,
+        indent_increment: int = 2,
+        max_help_position: int = 24,
+        width: Optional[int] = None,
+    ):
         width = shutil.get_terminal_size()[0] if width is None else width
         super().__init__(prog, indent_increment, max_help_position, width)
         self.console = Console(theme=skore_console_theme)
 
-    def _format_action_invocation(self, action):
+    def _format_action_invocation(self, action: Action) -> str:
         """Format the action invocation (flags and arguments)."""
         if not action.option_strings:
             metavar = self._metavar_formatter(action, action.dest)(1)[0]
             return metavar
         else:
-            parts = []
+            parts: list[str] = []
             # Format short options
             if action.option_strings:
                 parts.extend(
@@ -44,7 +52,13 @@ class RichColorHelpFormatter(HelpFormatter):
 
             return " ".join(parts)
 
-    def _format_usage(self, usage, actions, groups, prefix):
+    def _format_usage(
+        self,
+        usage: Optional[str],
+        actions: Iterable[Action],
+        groups: Iterable[Any],
+        prefix: Optional[str],
+    ) -> str:
         """Format the usage line."""
         if prefix is None:
             prefix = "usage: "
@@ -60,7 +74,7 @@ class RichColorHelpFormatter(HelpFormatter):
 
         return formatted
 
-    def format_help(self):
+    def format_help(self) -> str:
         """Format the help message."""
         help_text = super().format_help()
 
@@ -97,15 +111,16 @@ class RichColorHelpFormatter(HelpFormatter):
 class ColorArgumentParser(ArgumentParser):
     """Custom argument parser for the CLI."""
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs, formatter_class=RichColorHelpFormatter)
+    def __init__(self, *args: Any, **kwargs: Any):
+        kwargs["formatter_class"] = RichColorHelpFormatter
+        super().__init__(*args, **kwargs)
 
-    def print_help(self, file=None):
+    def print_help(self, file: Any = None) -> None:
         """Print the help message."""
         console = Console(file=file)
         console.print(self.format_help())
 
-    def error(self, message):
+    def error(self, message: str) -> NoReturn:
         """Print error message with Rich formatting and exit."""
         console = Console(stderr=True, theme=skore_console_theme)
         console.print(f"[red bold]error:[/red bold] {message}")

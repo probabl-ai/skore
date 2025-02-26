@@ -134,3 +134,11 @@ extend-exclude = ["*.min.js"]
 fpr = "fpr"
 # typos considers pnd.NpNDArray as a typo and corrects it to pnd.NpANDArray
 ND = "ND"
+
+[tool.mypy]
+ignore_missing_imports = true
+exclude = ["src/skore/externals/.*", "ci/*", "hatch/*", "tests/*"]
+
+[[tool.mypy.overrides]]
+module = ["diskcache.*", "sklearn.*"]
+ignore_missing_imports = true

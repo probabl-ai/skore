@@ -2,28 +2,57 @@
 
 import numpy as np
 from sklearn.base import is_classifier, is_regressor
+from sklearn.utils import check_array
 from sklearn.utils.multiclass import type_of_target
 
 from skore.externals._sklearn_compat import is_clusterer
 from skore.sklearn.types import MLTask
 
 
-def _is_sequential(y) -> bool:
-    """Check whether ``y`` is vector of sequential integer values."""
-    y_values = np.sort(np.unique(y))
-    sequential = np.arange(y_values[0], y_values[-1] + 1)
-    return np.array_equal(y_values, sequential)
+def _column_is_classification(y) -> bool:
+    """Check whether ``y`` is a sequence.
+
+    We define a sequence as a 1-d array of sequential integer values,
+    where the first value is 0.
+    """
+    y_unique = np.unique(y)
+    if np.any(y_unique == 0):
+        sequential = np.arange(y_unique[0], y_unique[-1] + 1)
+        return np.array_equal(y_unique, sequential)
+    return False
 
 
 def _is_classification(y) -> bool:
     """Determine if `y` is a target for a classification task.
 
-    If `y` contains integers, sklearn's `type_of_target` considers
-    the task to be multiclass classification.
-    This function makes the analysis finer.
+    If `y` contains integers, sklearn's `type_of_target` considers the task
+    to be multiclass classification. This might not be the case, so we add the
+    constraints that `y` must contain sequential values and contain 0.
+
+    If `y` is a 2-d array, we check each column independently; if at least one
+    column does not fit the constraints, then we consider the task to be regression.
+
+    Note that this can cause false positives, e.g. a classification task with classes
+    0, 1, 2 where `y` contains no examples of class 1 would be falsely considered
+    "regression".
+    Similarly, if `y` is a 2-d array where some column contains 0 and 2 but not 1,
+    the whole array would be considered "regression".
+
+    If `y` does not contain numbers (e.g. strings) then this function returns True.
     """
-    y = y.flatten()
-    return _is_sequential(y) and 0 in y
+    try:
+        y = check_array(y, dtype="numeric", ensure_2d=False)
+    except ValueError:
+        # The conversion in `check_array` failed meaning
+        # that we are in a classification case with non-numeric
+        # data type.
+        return True
+
+    if y.ndim == 1:
+        return _column_is_classification(y)
+
+    # Iterate on columns of y (check_array ensures that y is at most 2-d)
+    return all(_column_is_classification(column) for column in y.T)
 
 
 def _find_ml_task(y, estimator=None) -> MLTask:
@@ -65,24 +94,24 @@ def _find_ml_task(y, estimator=None) -> MLTask:
     >>> _find_ml_task(numpy.array([1, 3, 2]))
     'regression'
 
-    # 2 values, containing 0, in a 2d array
-    >>> _find_ml_task(numpy.array([[0, 1], [1, 1]]))
-    'multioutput-binary-classification'
-
     # Discrete sequential values, containing 0, in a 2d array
-    >>> _find_ml_task(numpy.array([[0, 1, 2], [2, 1, 1]]))
+    >>> _find_ml_task(numpy.array([[0, 1], [2, 2], [1, 0]]))
     'multioutput-multiclass-classification'
 
     # Discrete values, not sequential, in a 2d array
     >>> _find_ml_task(numpy.array([[1, 5], [5, 9]]))
     'multioutput-regression'
 
+    # 2 columns, one of them not containing 0, in a 2d array
+    >>> _find_ml_task(numpy.array([[0, 1], [1, 1]]))
+    'multioutput-regression'
+
     # Discrete values, not sequential, containing 0, in a 2d array
     >>> _find_ml_task(numpy.array([[0, 1, 5, 9], [1, 0, 1, 1]]))
     'multioutput-regression'
 
-    # Discrete sequential values, not containing 0, in a 2d array
-    >>> _find_ml_task(numpy.array([[1, 3, 2], [2, 1, 1]]))
+    # 2 columns, one of them not sequential, in a 2d array
+    >>> _find_ml_task(numpy.array([[0, 0], [2, 2], [1, 0]]))
     'multioutput-regression'
     """
     if estimator is not None:
@@ -91,7 +120,11 @@ def _find_ml_task(y, estimator=None) -> MLTask:
         if is_clusterer(estimator):
             return "clustering"
         if is_regressor(estimator):
-            return "regression"
+            if y is None:
+                return "regression"
+            if np.ndim(y) == 1 or np.shape(y)[1] == 1:
+                return "regression"
+            return "multioutput-regression"
         if is_classifier(estimator):
             if hasattr(estimator, "classes_"):  # fitted estimator
                 if (

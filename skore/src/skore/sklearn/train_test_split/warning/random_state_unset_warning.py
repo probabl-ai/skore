@@ -47,3 +47,4 @@ class RandomStateUnsetWarning(TrainTestSplitWarning):
         """
         if shuffle and random_state is None:
             return RandomStateUnsetWarning.MSG
+        return None

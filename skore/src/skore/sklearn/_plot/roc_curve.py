@@ -1,10 +1,17 @@
 from collections import defaultdict
+from collections.abc import Sequence
+from typing import Any, Literal, Optional, Union
 
-import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib import colormaps
+from matplotlib.axes import Axes
+from matplotlib.lines import Line2D
+from numpy.typing import ArrayLike, NDArray
+from sklearn.base import BaseEstimator
 from sklearn.metrics import auc, roc_curve
 from sklearn.preprocessing import LabelBinarizer
 
+from skore.sklearn._plot.style import StyleDisplayMixin
 from skore.sklearn._plot.utils import (
     HelpDisplayMixin,
     _ClassifierCurveDisplayMixin,
@@ -12,9 +19,12 @@ from skore.sklearn._plot.utils import (
     _validate_style_kwargs,
     sample_mpl_colormap,
 )
+from skore.sklearn.types import MLTask
 
 
-class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
+class RocCurveDisplay(
+    HelpDisplayMixin, _ClassifierCurveDisplayMixin, StyleDisplayMixin
+):
     """ROC Curve visualization.
 
     An instance of this class is should created by `EstimatorReport.metrics.roc()`.
@@ -61,10 +71,10 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
     estimator_name : str
         Name of the estimator.
 
-    pos_label : int, float, bool or str, default=None
+    pos_label : int, float, bool, str or None
         The class considered as positive. Only meaningful for binary classification.
 
-    data_source : {"train", "test", "X_y"}, default=None
+    data_source : {"train", "test", "X_y"}
         The data source used to compute the ROC curve.
 
     Attributes
@@ -102,16 +112,19 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
     >>> display.plot(roc_curve_kwargs={"color": "tab:red"})
     """
 
+    _default_roc_curve_kwargs: Union[dict[str, Any], None] = None
+    _default_chance_level_kwargs: Union[dict[str, Any], None] = None
+
     def __init__(
         self,
         *,
-        fpr,
-        tpr,
-        roc_auc,
-        estimator_name,
-        pos_label=None,
-        data_source=None,
-    ):
+        fpr: dict[Union[int, float, bool, str], list[ArrayLike]],
+        tpr: dict[Union[int, float, bool, str], list[ArrayLike]],
+        roc_auc: dict[Union[int, float, bool, str], list[float]],
+        estimator_name: str,
+        pos_label: Union[int, float, bool, str, None],
+        data_source: Literal["train", "test", "X_y"],
+    ) -> None:
         self.estimator_name = estimator_name
         self.fpr = fpr
         self.tpr = tpr
@@ -121,14 +134,14 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
 
     def plot(
         self,
-        ax=None,
+        ax: Optional[Axes] = None,
         *,
-        estimator_name=None,
-        roc_curve_kwargs=None,
-        plot_chance_level=True,
-        chance_level_kwargs=None,
-        despine=True,
-    ):
+        estimator_name: Optional[str] = None,
+        roc_curve_kwargs: Optional[Union[dict[str, Any], list[dict[str, Any]]]] = None,
+        plot_chance_level: bool = True,
+        chance_level_kwargs: Optional[dict[str, Any]] = None,
+        despine: bool = True,
+    ) -> None:
         """Plot visualization.
 
         Extra keyword arguments will be passed to matplotlib's ``plot``.
@@ -181,8 +194,17 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
             ax=ax, estimator_name=estimator_name
         )
 
-        self.lines_ = []
+        if roc_curve_kwargs is None:
+            roc_curve_kwargs = self._default_roc_curve_kwargs
+        if chance_level_kwargs is None:
+            chance_level_kwargs = self._default_chance_level_kwargs
+
+        self.lines_: list[Line2D] = []
+        default_line_kwargs: dict[str, Any] = {}
         if len(self.fpr) == 1:  # binary-classification
+            assert (
+                self.pos_label is not None
+            ), "pos_label should not be None with binary classification."
             if len(self.fpr[self.pos_label]) == 1:  # single-split
                 if roc_curve_kwargs is None:
                     roc_curve_kwargs = {}
@@ -199,7 +221,6 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
                 tpr = self.tpr[self.pos_label][0]
                 roc_auc = self.roc_auc[self.pos_label][0]
 
-                default_line_kwargs = {}
                 if self.data_source in ("train", "test"):
                     default_line_kwargs["label"] = (
                         f"{self.data_source.title()} set (AUC = {roc_auc:0.2f})"
@@ -227,7 +248,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
                             "`roc_curve_kwargs` to be a list of dictionaries with the "
                             "same length as the number of ROC curves. Got "
                             f"{len(roc_curve_kwargs)} instead of "
-                            f"{len(self.fpr)}."
+                            f"{len(self.fpr[self.pos_label])}."
                         )
                 else:
                     raise ValueError(
@@ -262,7 +283,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         else:  # multiclass-classification
             info_pos_label = None  # irrelevant for multiclass
             class_colors = sample_mpl_colormap(
-                plt.cm.tab10, 10 if len(self.fpr) < 10 else len(self.fpr)
+                colormaps.get_cmap("tab10"), 10 if len(self.fpr) < 10 else len(self.fpr)
             )
             if roc_curve_kwargs is None:
                 roc_curve_kwargs = [{}] * len(self.fpr)
@@ -362,10 +383,9 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
             aspect="equal",
         )
 
+        self.chance_level_: Optional[Line2D] = None
         if plot_chance_level:
             (self.chance_level_,) = self.ax_.plot((0, 1), (0, 1), **chance_level_kwargs)
-        else:
-            self.chance_level_ = None
 
         if despine:
             _despine_matplotlib_axis(self.ax_)
@@ -375,16 +395,16 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
     @classmethod
     def _from_predictions(
         cls,
-        y_true,
-        y_pred,
+        y_true: Sequence[ArrayLike],
+        y_pred: Sequence[NDArray],
         *,
-        estimator,
-        estimator_name,
-        ml_task,
-        data_source=None,
-        pos_label=None,
-        drop_intermediate=True,
-    ):
+        estimator: BaseEstimator,
+        estimator_name: str,
+        ml_task: MLTask,
+        data_source: Literal["train", "test", "X_y"],
+        pos_label: Union[int, float, bool, str, None],
+        drop_intermediate: bool = True,
+    ) -> "RocCurveDisplay":
         """Private method to create a RocCurveDisplay from predictions.
 
         Parameters
@@ -395,7 +415,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         y_pred : list of array-like of shape (n_samples,)
             Target scores, can either be probability estimates of the positive class,
             confidence values, or non-thresholded measure of decisions (as returned by
-            “decision_function” on some classifiers).
+            "decision_function" on some classifiers).
 
         estimator : estimator instance
             The estimator from which `y_pred` is obtained.
@@ -406,7 +426,7 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         ml_task : {"binary-classification", "multiclass-classification"}
             The machine learning task.
 
-        data_source : {"train", "test", "X_y"}, default=None
+        data_source : {"train", "test", "X_y"}
             The data source used to compute the ROC curve.
 
         pos_label : int, float, bool or str, default=None
@@ -425,8 +445,11 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
             y_true, y_pred, ml_task=ml_task, pos_label=pos_label
         )
 
+        fpr: dict[Union[int, float, bool, str], list[ArrayLike]] = defaultdict(list)
+        tpr: dict[Union[int, float, bool, str], list[ArrayLike]] = defaultdict(list)
+        roc_auc: dict[Union[int, float, bool, str], list[float]] = defaultdict(list)
+
         if ml_task == "binary-classification":
-            fpr, tpr, roc_auc = defaultdict(list), defaultdict(list), defaultdict(list)
             for y_true_i, y_pred_i in zip(y_true, y_pred):
                 fpr_i, tpr_i, _ = roc_curve(
                     y_true_i,
@@ -435,15 +458,20 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
                     drop_intermediate=drop_intermediate,
                 )
                 roc_auc_i = auc(fpr_i, tpr_i)
+                # assert for mypy that pos_label_validated is not None
+                assert pos_label_validated is not None, (
+                    "pos_label_validated should not be None with binary classification "
+                    "once calling _validate_from_predictions_params and more precisely "
+                    "_check_pos_label_consistency."
+                )
                 fpr[pos_label_validated].append(fpr_i)
                 tpr[pos_label_validated].append(tpr_i)
                 roc_auc[pos_label_validated].append(roc_auc_i)
         else:  # multiclass-classification
             # OvR fashion to collect fpr, tpr, and roc_auc
-            fpr, tpr, roc_auc = defaultdict(list), defaultdict(list), defaultdict(list)
             for y_true_i, y_pred_i in zip(y_true, y_pred):
                 label_binarizer = LabelBinarizer().fit(estimator.classes_)
-                y_true_onehot_i = label_binarizer.transform(y_true_i)
+                y_true_onehot_i: NDArray = label_binarizer.transform(y_true_i)
                 for class_idx, class_ in enumerate(estimator.classes_):
                     fpr_class_i, tpr_class_i, _ = roc_curve(
                         y_true_onehot_i[:, class_idx],

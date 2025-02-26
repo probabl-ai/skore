@@ -6,16 +6,15 @@ This warning is shown when some class in a dataset has too few examples in the t
 from __future__ import annotations
 
 from collections import Counter
-from typing import TYPE_CHECKING, Any, Optional, Union
+from collections.abc import Sequence
+from typing import Optional, Union
+
+from numpy.typing import ArrayLike
 
 from skore.sklearn.train_test_split.warning.train_test_split_warning import (
     TrainTestSplitWarning,
 )
-
-if TYPE_CHECKING:
-    from skore.sklearn.cross_validate import MLTask
-
-    ArrayLike = Any
+from skore.sklearn.types import MLTask
 
 
 class HighClassImbalanceTooFewExamplesWarning(TrainTestSplitWarning):
@@ -31,9 +30,9 @@ class HighClassImbalanceTooFewExamplesWarning(TrainTestSplitWarning):
 
     @staticmethod
     def check(
-        y_test: Optional[ArrayLike],
+        y_test: Optional[Sequence],
         stratify: Optional[ArrayLike],
-        y_labels: Optional[ArrayLike],
+        y_labels: Optional[Sequence],
         ml_task: MLTask,
         **kwargs,
     ) -> Union[str, None]:
