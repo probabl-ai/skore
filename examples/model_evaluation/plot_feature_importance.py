@@ -58,6 +58,21 @@ estimator_report = EstimatorReport(
 estimator_report.metrics.report_metrics()
 
 # %%
+# From the report metrics, we have access to:
+#
+# - The coefficient of determination (:func:`~sklearn.metrics.r2_score`), denoted as
+#   :math:`R^2`, which is a score.
+#   The best possible score is :math:`1` and a constant model that always predicts the
+#   average value of the target would get a score of :math:`0`.
+#   Note that the score can be negative, as it could be worse than the average.
+# - The root mean squared error (:func:`~sklearn.metrics.root_mean_squared_error`),
+#   abbreviated as RMSE, which is an error.
+#   It takes the square root of the mean squared error so it is expressed in the same
+#   units as the target variable.
+#   The MSE measures the average squared difference between the predicted values and
+#   the actual values.
+
+# %%
 # Finally, we can get the coefficients of our linear model:
 
 # %%
