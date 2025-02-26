@@ -9,6 +9,7 @@ from sklearn.model_selection import train_test_split
 from skore import EstimatorReport
 
 
+@pytest.mark.parametrize("estimator", [LinearRegression()])
 @pytest.mark.parametrize(
     "kwargs, expected",
     [
@@ -52,14 +53,14 @@ from skore import EstimatorReport
         ),
     ],
 )
-def test_estimator_report_feature_permutation(kwargs, expected):
+def test_estimator_report_feature_permutation(estimator, kwargs, expected):
     X, y = make_regression(n_features=3, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42
     )
 
     report = EstimatorReport(
-        LinearRegression(),
+        estimator,
         X_train=X_train,
         y_train=y_train,
         X_test=X_test,
