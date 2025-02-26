@@ -14,8 +14,10 @@ from skore import EstimatorReport
 @pytest.mark.parametrize(
     "estimator",
     [
-        LinearRegression(),
-        make_pipeline(StandardScaler(), LinearRegression()),
+        pytest.param(LinearRegression(), id="linear_regression"),
+        pytest.param(
+            make_pipeline(StandardScaler(), LinearRegression()), id="pipeline"
+        ),
     ],
 )
 @pytest.mark.parametrize(
