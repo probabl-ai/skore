@@ -56,6 +56,8 @@ class _HelpMixin(ABC):
         if self.__doc__ is None:
             return "No description available"
         regex_pattern = rf"{name} : .*?\n\s*(.*?)\."
+        # this regex will look for the first sentence
+        # on the line below the pattern 'attribute_name : '
         search_result = re.search(regex_pattern, self.__doc__)
         return search_result.group(1) if search_result else "No description available"
 
