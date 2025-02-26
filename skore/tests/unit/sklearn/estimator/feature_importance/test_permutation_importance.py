@@ -11,12 +11,17 @@ from sklearn.preprocessing import StandardScaler
 from skore import EstimatorReport
 
 
-def case_default_args_numpy():
+def regression_data():
     X, y = make_regression(n_features=3, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42
     )
     data = {"X_train": X_train, "y_train": y_train, "X_test": X_test, "y_test": y_test}
+    return data
+
+
+def case_default_args_numpy():
+    data = regression_data()
 
     kwargs = {"random_state": 42}
 
@@ -29,11 +34,7 @@ def case_default_args_numpy():
 
 
 def case_r2_numpy():
-    X, y = make_regression(n_features=3, random_state=42)
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42
-    )
-    data = {"X_train": X_train, "y_train": y_train, "X_test": X_test, "y_test": y_test}
+    data = regression_data()
 
     kwargs = {"scoring": make_scorer(r2_score), "random_state": 42}
 
@@ -46,11 +47,7 @@ def case_r2_numpy():
 
 
 def case_train_numpy():
-    X, y = make_regression(n_features=3, random_state=42)
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42
-    )
-    data = {"X_train": X_train, "y_train": y_train, "X_test": X_test, "y_test": y_test}
+    data = regression_data()
 
     kwargs = {"data_source": "train", "random_state": 42}
 
@@ -63,11 +60,7 @@ def case_train_numpy():
 
 
 def case_several_scoring_numpy():
-    X, y = make_regression(n_features=3, random_state=42)
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42
-    )
-    data = {"X_train": X_train, "y_train": y_train, "X_test": X_test, "y_test": y_test}
+    data = regression_data()
 
     kwargs = {"scoring": ["r2", "neg_root_mean_squared_error"], "random_state": 42}
 
