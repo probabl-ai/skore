@@ -76,6 +76,9 @@ estimator_report.metrics.report_metrics()
 #   same units as the target variable.
 #   The MSE measures the average squared difference between the predicted values and
 #   the actual values.
+#
+# Here, the :math:`R^2` seems quite poor, so some further preprocessing would be needed,
+# but that is not the purpose of this example.
 
 # %%
 # Finally, we can get the coefficients of our linear model:
