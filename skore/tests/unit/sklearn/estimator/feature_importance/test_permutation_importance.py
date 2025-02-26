@@ -169,7 +169,7 @@ def case_several_scoring_dataframe():
         case_several_scoring_dataframe,
     ],
 )
-def test_estimator_report_feature_permutation(estimator, params):
+def test(estimator, params):
     data, kwargs, expected = params()
 
     report = EstimatorReport(estimator, **data)
@@ -179,24 +179,45 @@ def test_estimator_report_feature_permutation(estimator, params):
     pd.testing.assert_frame_equal(result, expected, check_exact=False, atol=np.inf)
 
 
-def test_estimator_report_feature_permutation_cache(regression_data):
+def test_cache_n_jobs(regression_data):
     """Results are properly cached. `n_jobs` is not in the cache."""
     X, y = regression_data
     report = EstimatorReport(LinearRegression(), X_train=X, y_train=y)
 
     result = report.feature_importance.feature_permutation(
-        data_source="train", n_jobs=1
+        data_source="train", random_state=42, n_jobs=1
     )
     assert report._cache != {}
     cached_result = report.feature_importance.feature_permutation(
-        data_source="train", n_jobs=-1
+        data_source="train", random_state=42, n_jobs=-1
     )
     assert len(report._cache) == 1
 
     pd.testing.assert_frame_equal(cached_result, result)
 
 
-def test_estimator_report_feature_permutation_not_fitted(regression_data):
+def test_cache_random_state(regression_data):
+    """If `random_state` is None (the default) then the result is not cached."""
+
+    X, y = regression_data
+    report = EstimatorReport(LinearRegression(), X_train=X, y_train=y)
+
+    report.feature_importance.feature_permutation(data_source="train")
+    assert report._cache == {}
+
+    result = report.feature_importance.feature_permutation(
+        data_source="train", random_state=42
+    )
+    assert report._cache != {}
+    cached_result = report.feature_importance.feature_permutation(
+        data_source="train", random_state=42
+    )
+    assert len(report._cache) == 1
+
+    pd.testing.assert_frame_equal(cached_result, result)
+
+
+def test_not_fitted(regression_data):
     """If estimator is not fitted, raise"""
     X, y = regression_data
 
