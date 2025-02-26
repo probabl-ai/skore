@@ -204,7 +204,7 @@ class _BaseReport(_HelpMixin):
             attr_branch = tree.add("[bold cyan]Attributes[/bold cyan]")
             for attr_name in attributes:
                 description = self._get_attributes_description(attr_name)
-                attr_branch.add(f".{attr_name.ljust(29)}" f"- {description}")
+                attr_branch.add(f".{attr_name.ljust(29)}" f" - {description}")
 
         return tree
 
