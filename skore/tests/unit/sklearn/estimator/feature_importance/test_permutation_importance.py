@@ -180,13 +180,18 @@ def test_estimator_report_feature_permutation(estimator, params):
 
 
 def test_estimator_report_feature_permutation_cache(regression_data):
-    """Results are properly cached."""
+    """Results are properly cached. `n_jobs` is not in the cache."""
     X, y = regression_data
     report = EstimatorReport(LinearRegression(), X_train=X, y_train=y)
 
-    result = report.feature_importance.feature_permutation(data_source="train")
+    result = report.feature_importance.feature_permutation(
+        data_source="train", n_jobs=1
+    )
     assert report._cache != {}
-    cached_result = report.feature_importance.feature_permutation(data_source="train")
+    cached_result = report.feature_importance.feature_permutation(
+        data_source="train", n_jobs=-1
+    )
+    assert len(report._cache) == 1
 
     pd.testing.assert_frame_equal(cached_result, result)
 
