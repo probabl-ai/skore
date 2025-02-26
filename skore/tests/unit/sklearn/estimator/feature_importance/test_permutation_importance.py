@@ -6,10 +6,18 @@ from sklearn.exceptions import NotFittedError
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import make_scorer, r2_score
 from sklearn.model_selection import train_test_split
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
 from skore import EstimatorReport
 
 
-@pytest.mark.parametrize("estimator", [LinearRegression()])
+@pytest.mark.parametrize(
+    "estimator",
+    [
+        LinearRegression(),
+        make_pipeline(StandardScaler(), LinearRegression()),
+    ],
+)
 @pytest.mark.parametrize(
     "kwargs, expected",
     [
