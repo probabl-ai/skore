@@ -255,7 +255,7 @@ ridge_report.feature_importance.coefficients()
 # However, due to the scaling, we can not interpret the coefficient values
 # with regards to the original unit of the feature.
 # Let us unscale the coefficients, without forgetting the intercept, so that the
-# coefficients can interpreted using the original units:
+# coefficients can be interpreted using the original units:
 
 # %%
 import numpy as np
