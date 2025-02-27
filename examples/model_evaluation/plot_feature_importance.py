@@ -6,7 +6,7 @@
 =====================================================================
 
 In this example, we tackle the California housing dataset where the goal is to perform
-a regression task: predicting house prices based on the number of bedrooms, etc.
+a regression task: predicting house prices based on features describing the house, such as the number of bedrooms.
 For that, we try out several families of models, starting with linear ones.
 We evaluate these methods using skore's :class:`~skore.EstimatorReport` and its
 report on metrics.
