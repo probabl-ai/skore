@@ -10,16 +10,6 @@ from sklearn.preprocessing import StandardScaler
 from skore import EstimatorReport
 
 
-@pytest.fixture
-def regression_data():
-    return make_regression(n_features=5, random_state=42)
-
-
-@pytest.fixture
-def classification_data():
-    return make_classification(n_features=5, random_state=42)
-
-
 def test_estimator_report_feature_importance_help(capsys, regression_data):
     """Check that the help method writes to the console."""
     X, y = regression_data
