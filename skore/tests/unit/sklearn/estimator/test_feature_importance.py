@@ -4,7 +4,7 @@ import sklearn.linear_model
 from sklearn.base import is_classifier, is_regressor
 from sklearn.datasets import make_classification, make_regression
 from sklearn.linear_model import LinearRegression, LogisticRegression
-from sklearn.pipeline import make_pipeline
+from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import StandardScaler
 from skore import EstimatorReport
 
@@ -107,7 +107,11 @@ def test_estimator_report_coefficients_numpy_arrays(
     result = report.feature_importance.coefficients()
     assert result.shape == expected_shape
 
-    expected_index = ["Intercept"] + [f"Feature #{i}" for i in range(X.shape[1])]
+    expected_index = (
+        ["Intercept"] + [f"x{i}" for i in range(X.shape[1])]
+        if isinstance(estimator, Pipeline)
+        else ["Intercept"] + [f"Feature #{i}" for i in range(X.shape[1])]
+    )
     assert result.index.tolist() == expected_index
 
     expected_columns = (
@@ -251,5 +255,49 @@ def test_all_sklearn_estimators(
         "Feature #2",
         "Feature #3",
         "Feature #4",
+    ]
+    assert result.columns.tolist() == ["Coefficient"]
+
+
+def test_pipeline_with_transformer(regression_data):
+    """If the estimator is a pipeline containing a transformer that changes the
+    features, adapt the feature names in the output table."""
+    from sklearn.model_selection import train_test_split
+    from sklearn.preprocessing import PolynomialFeatures
+
+    X, y = regression_data
+    X = pd.DataFrame(X, columns=[f"my_feature_{i}" for i in range(5)])
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
+
+    model = make_pipeline(
+        PolynomialFeatures(degree=2, interaction_only=True),
+        LinearRegression(),
+    )
+
+    report = EstimatorReport(
+        model, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test
+    )
+
+    result = report.feature_importance.coefficients()
+    assert result.shape == (17, 1)
+    assert result.index.tolist() == [
+        "Intercept",
+        "1",
+        "my_feature_0",
+        "my_feature_1",
+        "my_feature_2",
+        "my_feature_3",
+        "my_feature_4",
+        "my_feature_0 my_feature_1",
+        "my_feature_0 my_feature_2",
+        "my_feature_0 my_feature_3",
+        "my_feature_0 my_feature_4",
+        "my_feature_1 my_feature_2",
+        "my_feature_1 my_feature_3",
+        "my_feature_1 my_feature_4",
+        "my_feature_2 my_feature_3",
+        "my_feature_2 my_feature_4",
+        "my_feature_3 my_feature_4",
     ]
     assert result.columns.tolist() == ["Coefficient"]

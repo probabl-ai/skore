@@ -54,22 +54,21 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
         Feature #8    250.5...
         Feature #9     99.5...
         """
-        estimator = (
-            self._parent.estimator_.steps[-1][1]
-            if isinstance(self._parent.estimator_, Pipeline)
-            else self._parent.estimator_
-        )
+        estimator = self._parent.estimator_
 
-        feature_names = (
-            self._parent.estimator_.feature_names_in_
-            if hasattr(self._parent.estimator_, "feature_names_in_")
-            else [
-                f"Feature #{i}" for i in range(self._parent.estimator_.n_features_in_)
-            ]
-        )
+        if isinstance(estimator, Pipeline):
+            feature_names = estimator[:-1].get_feature_names_out()
+        else:
+            if hasattr(estimator, "feature_names_in_"):
+                feature_names = estimator.feature_names_in_
+            else:
+                feature_names = [
+                    f"Feature #{i}" for i in range(estimator.n_features_in_)
+                ]
 
-        intercept = np.atleast_2d(estimator.intercept_)
-        coef = np.atleast_2d(estimator.coef_)
+        linear_model = estimator[-1] if isinstance(estimator, Pipeline) else estimator
+        intercept = np.atleast_2d(linear_model.intercept_)
+        coef = np.atleast_2d(linear_model.coef_)
 
         data = np.concatenate([intercept, coef.T])
 
