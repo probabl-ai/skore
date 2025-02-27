@@ -379,8 +379,8 @@ def sort_absolute_values(df):
 sort_absolute_values(df_engineered_ridge_coef)
 
 # %%
-# We can observe that most importance features are interactions between several
-# features that a simple linear model without feature engineering could not have
+# We can observe that the most importance features are interactions between several
+# features, that a simple linear model without feature engineering could not have
 # captured.
 
 # %%
@@ -389,7 +389,7 @@ sort_absolute_values(df_engineered_ridge_coef)
 
 # %%
 # Now, let us build a model with a more interpretable feature engineering, although
-# it might perform more poorly.
+# it might not perform as well.
 # For that, after the complex feature engineering, we perform some feature selection
 # using a :class:`~sklearn.feature_selection.SelectKBest`.
 # To compensate the drop in score, we fine-tune some hyperparameters using
@@ -474,7 +474,7 @@ print(selectk_features)
 # income.
 
 # %%
-# An here are the feature importances based on our model:
+# And here are the feature importances based on our model:
 
 # %%
 df_engineered_selectkbest_coef = selectk_ridge_report.feature_importance.coefficients()
