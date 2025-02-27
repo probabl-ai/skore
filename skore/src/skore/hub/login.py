@@ -13,7 +13,7 @@ from rich.panel import Panel
 from skore import console
 from skore.hub import api
 from skore.hub.client import AuthenticationError
-from skore.hub.server import OTPServer
+from skore.hub.otp_server import OTPServer
 from skore.hub.token import AuthenticationToken
 
 

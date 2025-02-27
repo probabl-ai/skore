@@ -175,11 +175,8 @@ def test_login_with_falling_refresh(monkeypatch, respx_mock, tmp_path):
 
     (tmp_path / "skore.token").write_text(f'["A", "B", "{old}"]')
 
-    has_open_browser = False
-
-    def patched_webserver_open(_):
-        nonlocal has_open_browser
-        has_open_browser = True
+    def patched_webserver_open(url):
+        patched_webserver_open.url = url
 
     monkeypatch.setattr("webbrowser.open", patched_webserver_open)
 
@@ -197,6 +194,7 @@ def test_login_with_falling_refresh(monkeypatch, respx_mock, tmp_path):
 
     with pytest.raises(AuthenticationError, match="Timeout"):
         login(timeout=0, auto_otp=True)
+    assert patched_webserver_open.url == "url"
 
 
 def test_login_with_existing_token(mock_now, tmp_path):

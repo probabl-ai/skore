@@ -15,24 +15,23 @@ SUCCESS_PAGE = b"""
 
 def _get_handler(callback):
     class _Handler(BaseHTTPRequestHandler):
-        def log_message(self, *args):
-            del args
-
         def do_GET(self):
             parsed = urlparse(self.path)
 
             if parsed.path != "/":
-                self.send_response(HTTPStatus.FORBIDDEN)
-                return
+                self.send_response(HTTPStatus.NO_CONTENT)
+                self.send_header("Content-Length", 0)
+                self.end_headers()
+                self.wfile.write(b"")
+            else:
+                (state,) = parse_qs(parsed.query).get("state", [None])
+                callback(state)
 
-            (state,) = parse_qs(parsed.query).get("state", [None])
-            callback(state)
-
-            self.send_response(HTTPStatus.OK)
-            self.send_header("Content-type", "text/html")
-            self.send_header("Content-Length", len(SUCCESS_PAGE))
-            self.end_headers()
-            self.wfile.write(SUCCESS_PAGE)
+                self.send_response(HTTPStatus.OK)
+                self.send_header("Content-type", "text/html")
+                self.send_header("Content-Length", len(SUCCESS_PAGE))
+                self.end_headers()
+                self.wfile.write(SUCCESS_PAGE)
 
     return _Handler
 
