@@ -35,8 +35,8 @@ For linear models, we look at their coefficients.
 # regression task about predicting house prices:
 
 # %%
-from sklearn.datasets import fetch_california_housing
 import pandas as pd
+from sklearn.datasets import fetch_california_housing
 
 X_load, y_load = fetch_california_housing(return_X_y=True, as_frame=True)
 X_y = pd.concat([X_load, y_load], axis=1)
@@ -89,8 +89,8 @@ TableReport(X_y)
 # Moreover, the target distribution has a long tail:
 
 # %%
-import seaborn as sns
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 sns.histplot(data=X_y, x=target_name, bins=100)
 plt.show()
@@ -174,7 +174,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 # =============
 
 # %%
-# For our regression task, let us start with linear models.
+# For our regression task, we first use linear models.
 
 # %%
 # Simple model
@@ -187,10 +187,10 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 # :meth:`skore.EstimatorReport.metrics`:
 
 # %%
-from skore import EstimatorReport
-from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import Ridge
 from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from skore import EstimatorReport
 
 ridge_report = EstimatorReport(
     make_pipeline(StandardScaler(), Ridge()),
@@ -231,21 +231,27 @@ ridge_report.feature_importance.coefficients()
 
 # %%
 # .. note::
-#   More generally, skore can help you inspect the coefficients of all linear models.
-#   We consider a linear model as defined in `scikit-learn's user guide <https://scikit-learn.org/stable/modules/linear_model.html>`_.
+#   More generally, :meth:`skore.EstimatorReport.feature_importance` can help you
+#   inspect the coefficients of all linear models.
+#   We consider a linear model as defined in
+#   `scikit-learn's user guide
+#   <https://scikit-learn.org/stable/modules/linear_model.html>`_.
 #   In short, we consider a "linear model" as a scikit-learn compatible estimator that
 #   holds a ``coef_`` attribute (after being fitted).
 
 # %%
-# As we have performed scaling in our pipeline, the above coefficients are in the same
-# range so they can be compared to one another.
-# Indeed, without scaling, the coefficients of the features in a linear model are affected by the scale of the features values, and therefore are not comparable.
+# Since we have included scaling in the pipeline, the resulting coefficients are all on
+# the same scale, making them directly comparable to each other.
+# Without this scaling step, the coefficients in a linear model would be influenced by
+# the original scale of the feature values, which would prevent meaningful comparisons
+# between them.
 #
 # .. seealso::
 #
 #   For more information about the importance of scaling,
 #   see scikit-learn's example on
-#   `Common pitfalls in the interpretation of coefficients of linear models <https://scikit-learn.org/stable/auto_examples/inspection/plot_linear_model_coefficient_interpretation.html>`_.
+#   `Common pitfalls in the interpretation of coefficients of linear models
+#   <https://scikit-learn.org/stable/auto_examples/inspection/plot_linear_model_coefficient_interpretation.html>`_.
 #
 # Here, it appears that the ``MedInc``, ``Latitude``, and ``Longitude`` features are
 # the most important, with regards to the absolute value of other coefficients.
@@ -301,8 +307,8 @@ ridge_report.feature_importance.coefficients() * unscaling_weights
 
 # %%
 from sklearn.cluster import KMeans
-from sklearn.preprocessing import SplineTransformer, PolynomialFeatures
 from sklearn.compose import make_column_transformer
+from sklearn.preprocessing import PolynomialFeatures, SplineTransformer
 
 geo_columns = ["Latitude", "Longitude"]
 
@@ -319,9 +325,12 @@ engineered_ridge = make_pipeline(
 engineered_ridge
 
 # %%
-# Now, let us compute the metrics:
+# Now, let us compute the metrics and compare it to our previous model using
+# a :class:`skore.ComparisonReport`:
 
 # %%
+from skore import ComparisonReport
+
 engineered_ridge_report = EstimatorReport(
     engineered_ridge,
     X_train=X_train,
@@ -329,7 +338,8 @@ engineered_ridge_report = EstimatorReport(
     y_train=y_train,
     y_test=y_test,
 )
-engineered_ridge_report.metrics.report_metrics()
+comparator = ComparisonReport(reports=[ridge_report, engineered_ridge_report])
+comparator.metrics.report_metrics()
 
 # %%
 # We get a much better score!
@@ -392,7 +402,8 @@ compromised_model = random_search.best_estimator_
 compromised_model
 
 # %%
-# Let us get the metrics for the best model of our grid search:
+# Let us get the metrics for the best model of our grid search, and compare it with
+# our previous iterations:
 
 # %%
 compromised_ridge_report = EstimatorReport(
@@ -402,7 +413,10 @@ compromised_ridge_report = EstimatorReport(
     y_train=y_train,
     y_test=y_test,
 )
-compromised_ridge_report.metrics.report_metrics()
+comparator = ComparisonReport(
+    reports=[ridge_report, engineered_ridge_report, compromised_ridge_report]
+)
+comparator.metrics.report_metrics()
 
 # %%
 # We get a good score and much less features:
@@ -414,12 +428,9 @@ X_train_transformed = compromised_ridge_report.estimator_[:-1].transform(X_train
 print("Number of features after feature engineering:", X_train_transformed.shape[1])
 
 # %%
-# Now, let us get some intuition on the results of our grid search by using a
+# Now, let us gain some intuition on the results of our grid search by using a
 # `plotly.express.parallel_coordinates
-# <https://plotly.com/python-api-reference/generated/plotly.express.parallel_coordinates.html>`_,
-# as done in
-# `this scikit-learn example
-# <https://scikit-learn.org/stable/auto_examples/model_selection/plot_grid_search_text_feature_extraction.html>`_:
+# <https://plotly.com/python-api-reference/generated/plotly.express.parallel_coordinates.html>`_.
 
 # %%
 import math
@@ -432,19 +443,17 @@ def shorten_param(param_name):
     return param_name
 
 
-cv_results = pd.DataFrame(random_search.cv_results_)
-cv_results = cv_results.rename(shorten_param, axis=1)
+cv_results = pd.DataFrame(random_search.cv_results_).rename(shorten_param, axis=1)
 
 param_names = [shorten_param(name) for name in parameter_grid.keys()]
 labels = {
-    "mean_score_time": "CV Score time (s)",
-    "mean_test_score": "CV score (accuracy)",
+    "mean_score_time": "CV score time (s)",
+    "mean_test_score": "CV test score",
 }
 column_results = param_names + ["mean_test_score", "mean_score_time"]
 
 transform_funcs = dict.fromkeys(column_results, lambda x: x)
-# Using a logarithmic scale for alpha
-transform_funcs["alpha"] = math.log10
+transform_funcs["alpha"] = math.log10  # using a logarithmic scale for alpha
 
 fig = px.parallel_coordinates(
     cv_results[column_results].apply(transform_funcs),
@@ -454,7 +463,7 @@ fig = px.parallel_coordinates(
 )
 fig.update_layout(
     title={
-        "text": "Parallel coordinates plot of text classifier pipeline",
+        "text": "Parallel coordinates plot",
         "y": 0.99,
         "x": 0.5,
         "xanchor": "center",
@@ -465,7 +474,7 @@ fig
 
 # %%
 # Using the above interactive plotly figure, one can get a better intuition of
-# the impact of each hyperparameter on the CV score and the score time.
+# the impact of each hyperparameter on the CV test score and the score time.
 
 # %%
 # Finally, we can visualize the results of our K-means clustering (on the training set):
