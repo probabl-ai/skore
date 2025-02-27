@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import webbrowser
-from datetime import datetime
+from datetime import datetime, timezone
 from time import sleep
 
 from httpx import HTTPError
@@ -17,8 +17,42 @@ from skore.hub.server import OTPServer
 from skore.hub.token import AuthenticationToken
 
 
+def refresh():
+    """Attempt to refresh an existing token.
+
+    Returns
+    -------
+    tuple
+        A tuple containing:
+        - token: AuthenticationToken
+            The token valid or not
+        - is_valid: bool
+            `True` if the (potentially) refreshed token is valid
+            `False` otherwise.
+    """
+    token = AuthenticationToken()
+    if not token.valid:
+        return False, token
+
+    now = datetime.now(tz=timezone.utc)
+    if token.expires_at <= now:
+        # we have a token but it's expired
+        # try to refresh it
+        try:
+            token.refresh()
+            return True, token
+        except HTTPError:
+            return False, token
+
+    # we have a token and it is not expired
+    return True, token
+
+
 def login(timeout=600, auto_otp=True, port=0):
     """Login to the skore-HUB."""
+    is_valid, token = refresh()
+    if is_valid:
+        return token
     if auto_otp:
         access = None
         refreshment = None

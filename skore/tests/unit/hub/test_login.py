@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta, timezone
 from threading import Thread
 from urllib.parse import urljoin
 
@@ -138,3 +139,72 @@ def test_auto_otp_login_timeout(monkeypatch, respx_mock):
 
     with pytest.raises(AuthenticationError, match="Timeout"):
         login(timeout=0, auto_otp=True)
+
+
+@pytest.mark.respx()
+def test_login_with_refresh(tmp_path, respx_mock):
+    first = datetime(2000, 1, 1, tzinfo=timezone.utc).isoformat()
+    second = datetime(2000, 1, 2, tzinfo=timezone.utc)
+
+    (tmp_path / "skore.token").write_text(f'["A", "B", "{first}"]')
+    respx_mock.post(urljoin(URI, "identity/oauth/token/refresh")).mock(
+        Response(
+            200,
+            json={
+                "token": {
+                    "access_token": "D",
+                    "refresh_token": "E",
+                    "expires_at": second.isoformat(),
+                }
+            },
+        )
+    )
+
+    token = login(auto_otp=True)
+    assert token.access == "D"
+    assert token.refreshment == "E"
+    assert token.expires_at == second
+
+
+@pytest.mark.respx()
+def test_login_with_falling_refresh(monkeypatch, respx_mock, tmp_path):
+    """Attempt to refresh an expired token and fail.
+
+    Then check that login process is launched."""
+    old = datetime(2000, 1, 1, tzinfo=timezone.utc).isoformat()
+
+    (tmp_path / "skore.token").write_text(f'["A", "B", "{old}"]')
+
+    has_open_browser = False
+
+    def patched_webserver_open(_):
+        nonlocal has_open_browser
+        has_open_browser = True
+
+    monkeypatch.setattr("webbrowser.open", patched_webserver_open)
+
+    respx_mock.post(urljoin(URI, "identity/oauth/token/refresh")).mock(Response(500))
+    respx_mock.get(LOGIN_URL).mock(
+        Response(
+            200,
+            json={
+                "authorization_url": "url",
+                "device_code": "device",
+                "user_code": "user",
+            },
+        )
+    )
+
+    with pytest.raises(AuthenticationError, match="Timeout"):
+        login(timeout=0, auto_otp=True)
+
+
+def test_login_with_existing_token(mock_now, tmp_path):
+    tomorrow = mock_now + timedelta(days=1)
+    (tmp_path / "skore.token").write_text(f'["A", "B", "{tomorrow}"]')
+
+    token = login(auto_otp=True)
+
+    assert token.access == "A"
+    assert token.refreshment == "B"
+    assert token.expires_at == tomorrow
