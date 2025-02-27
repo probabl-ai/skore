@@ -74,27 +74,31 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
         Feature #8    250.5...
         Feature #9     99.5...
         """
-        estimator = self._parent.estimator_
+        parent_estimator = self._parent.estimator_
 
-        if isinstance(estimator, Pipeline):
-            feature_names = estimator[:-1].get_feature_names_out()
+        if isinstance(parent_estimator, Pipeline):
+            feature_names = parent_estimator[:-1].get_feature_names_out()
         else:
-            if hasattr(estimator, "feature_names_in_"):
-                feature_names = estimator.feature_names_in_
+            if hasattr(parent_estimator, "feature_names_in_"):
+                feature_names = parent_estimator.feature_names_in_
             else:
                 feature_names = [
-                    f"Feature #{i}" for i in range(estimator.n_features_in_)
+                    f"Feature #{i}" for i in range(parent_estimator.n_features_in_)
                 ]
 
-        linear_model = estimator[-1] if isinstance(estimator, Pipeline) else estimator
-        intercept = np.atleast_2d(linear_model.intercept_)
-        coef = np.atleast_2d(linear_model.coef_)
+        estimator = (
+            parent_estimator[-1]
+            if isinstance(parent_estimator, Pipeline)
+            else parent_estimator
+        )
+        intercept = np.atleast_2d(estimator.intercept_)
+        coef = np.atleast_2d(estimator.coef_)
 
         data = np.concatenate([intercept, coef.T])
 
         if data.shape[1] == 1:
             columns = ["Coefficient"]
-        elif is_classifier(estimator):
+        elif is_classifier(parent_estimator):
             columns = [f"Class #{i}" for i in range(data.shape[1])]
         else:
             columns = [f"Target #{i}" for i in range(data.shape[1])]
