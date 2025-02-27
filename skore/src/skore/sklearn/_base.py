@@ -52,7 +52,7 @@ class _HelpMixin(ABC):
         )
 
     def _get_attributes_description(self, name: str) -> str:
-        """Get the description for each attribute."""
+        """Get the description of an attribute from its docstring."""
         if self.__doc__ is None:
             return "No description available"
         regex_pattern = rf"{name} : .*?\n\s*(.*?)\."
