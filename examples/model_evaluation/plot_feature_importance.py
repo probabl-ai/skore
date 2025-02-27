@@ -262,14 +262,23 @@ ridge_report.feature_importance.coefficients()
 # with regards to the original unit of the feature.
 # Let us unscale the coefficients, without forgetting the intercept, so that the
 # coefficients can be interpreted using the original units:
-
 # %%
-import numpy as np
+mean = ridge_report.estimator_[0].mean_.mean()
+scale = ridge_report.estimator_[0].scale_
 
-unscaling_weights = np.insert(ridge_report.estimator_[0].scale_, 0, 1, axis=0).reshape(
-    -1, 1
+
+def unscale_coefficients(df, mean, scale):
+    df.loc["Intercept", "Coefficient"] = df.loc["Intercept", "Coefficient"] + mean
+    df.loc[df.index != "Intercept", "Coefficient"] = (
+        df.loc[df.index != "Intercept", "Coefficient"] * scale
+    )
+    return df
+
+
+df_ridge_report_coef_unscaled = unscale_coefficients(
+    ridge_report.feature_importance.coefficients(), mean, scale
 )
-ridge_report.feature_importance.coefficients() * unscaling_weights
+df_ridge_report_coef_unscaled
 
 # %%
 # Now, we can interpret each coefficient values with regards to the original units.
@@ -354,8 +363,25 @@ n_features_engineered = X_train_transformed.shape[1]
 print("Number of features after feature engineering:", n_features_engineered)
 
 # %%
-# TODO
-# engineered_ridge_report.feature_importance.coefficients()
+# Let us display the 15 largest absolute coefficients:
+
+# %%
+df_engineered_ridge_coef = engineered_ridge_report.feature_importance.coefficients()
+
+
+def sort_absolute_values(df):
+    df = df.assign(absolute_coefficient=df["Coefficient"].abs()).sort_values(
+        by="absolute_coefficient", ascending=False
+    )
+    return df.head(15)
+
+
+sort_absolute_values(df_engineered_ridge_coef)
+
+# %%
+# We can observe that most importance features are interactions between several
+# features that a simple linear model without feature engineering could not have
+# captured.
 
 # %%
 # Compromising on complexity
@@ -370,6 +396,7 @@ print("Number of features after feature engineering:", n_features_engineered)
 # a :class:`~sklearn.model_selection.RandomizedSearchCV`.
 
 # %%
+import numpy as np
 from scipy.stats import randint
 from sklearn.feature_selection import SelectKBest, VarianceThreshold
 from sklearn.model_selection import RandomizedSearchCV
@@ -399,23 +426,23 @@ random_search = RandomizedSearchCV(
 )
 random_search.fit(X_train, y_train)
 
-compromised_model = random_search.best_estimator_
-compromised_model
+selectkbest_ridge = random_search.best_estimator_
+selectkbest_ridge
 
 # %%
 # Let us get the metrics for the best model of our grid search, and compare it with
 # our previous iterations:
 
 # %%
-selectkbest_ridge_report = EstimatorReport(
-    compromised_model,
+selectk_ridge_report = EstimatorReport(
+    selectkbest_ridge,
     X_train=X_train,
     X_test=X_test,
     y_train=y_train,
     y_test=y_test,
 )
 comparator = ComparisonReport(
-    reports=[ridge_report, engineered_ridge_report, selectkbest_ridge_report]
+    reports=[ridge_report, engineered_ridge_report, selectk_ridge_report]
 )
 comparator.metrics.report_metrics()
 
@@ -426,11 +453,11 @@ comparator.metrics.report_metrics()
 print("Initial number of features:", X_train.shape[1])
 print("Number of features after feature engineering:", n_features_engineered)
 
-X_train_transformed = selectkbest_ridge_report.estimator_[:-1].transform(X_train)
-n_features_selectkbest = X_train_transformed.shape[1]
+X_train_transformed = selectk_ridge_report.estimator_[:-1].transform(X_train)
+n_features_selectk = X_train_transformed.shape[1]
 print(
     "Number of features after feature engineering using `SelectKBest`:",
-    n_features_selectkbest,
+    n_features_selectk,
 )
 
 # %%
@@ -438,13 +465,20 @@ print(
 # features are the following:
 
 # %%
-selectk_features = selectkbest_ridge_report.estimator_[-1].feature_names_in_
+selectk_features = selectk_ridge_report.estimator_[-1].feature_names_in_
 print(selectk_features)
 
 # %%
 # We can see that, in the best features, according to statistical tests, there are
 # geospatial features (derived from the K-means clustering) and splines on the median
 # income.
+
+# %%
+# An here are the feature importances based on our model:
+
+# %%
+df_engineered_selectkbest_coef = selectk_ridge_report.feature_importance.coefficients()
+sort_absolute_values(df_engineered_selectkbest_coef)
 
 # %%
 # Now, let us gain some intuition on the results of our grid search by using a
@@ -477,7 +511,6 @@ transform_funcs["alpha"] = math.log10  # using a logarithmic scale for alpha
 fig = px.parallel_coordinates(
     cv_results[column_results].apply(transform_funcs),
     color="mean_test_score",
-    color_continuous_scale=px.colors.sequential.Viridis_r,
     labels=labels,
 )
 fig.update_layout(
@@ -501,7 +534,7 @@ fig
 # %%
 
 # getting the cluster labels
-col_transformer = compromised_model.named_steps["columntransformer"]
+col_transformer = selectkbest_ridge.named_steps["columntransformer"]
 kmeans = col_transformer.named_transformers_["kmeans"]
 clustering_labels = kmeans.labels_
 
