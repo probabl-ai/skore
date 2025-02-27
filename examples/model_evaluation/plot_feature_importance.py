@@ -187,8 +187,8 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 # :meth:`skore.EstimatorReport.metrics`:
 
 # %%
-from sklearn.preprocessing import StandardScaler
 from skore import EstimatorReport
+from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import Ridge
 from sklearn.pipeline import make_pipeline
 
