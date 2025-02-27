@@ -13,7 +13,7 @@ from sklearn.utils.metaestimators import available_if
 from skore.externals._pandas_accessors import DirNamesMixin
 from skore.sklearn._base import _BaseAccessor
 from skore.sklearn._estimator.report import EstimatorReport
-from skore.utils._accessor import _check_has_coef
+from skore.utils._accessor import _check_has_coef, _check_has_feature_importances
 
 DataSource = Literal["test", "train", "X_y"]
 
@@ -107,6 +107,61 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
             data=data,
             index=["Intercept"] + list(feature_names),
             columns=columns,
+        )
+
+        return df
+
+    @available_if(_check_has_feature_importances())
+    def mean_decrease_impurity(self):
+        """Retrieve the mean decrease impurity of a forest model.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import make_classification
+        >>> from sklearn.ensemble import RandomForestClassifier
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X, y = make_classification(n_features=5, random_state=42)
+        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
+        >>> forest = RandomForestClassifier(random_state=0)
+        >>> report = EstimatorReport(
+        ...     forest,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> report.feature_importance.mean_decrease_impurity()
+                   Mean decrease impurity
+        Feature #0                0.09...
+        Feature #1                0.32...
+        Feature #2                0.05...
+        Feature #3                0.51...
+        Feature #4                0.01...
+        """
+        parent_estimator = self._parent.estimator_
+        estimator = (
+            parent_estimator.steps[-1][1]
+            if isinstance(parent_estimator, Pipeline)
+            else parent_estimator
+        )
+
+        data = estimator.feature_importances_
+
+        if isinstance(parent_estimator, Pipeline):
+            feature_names = parent_estimator[:-1].get_feature_names_out()
+        else:
+            if hasattr(parent_estimator, "feature_names_in_"):
+                feature_names = parent_estimator.feature_names_in_
+            else:
+                feature_names = [
+                    f"Feature #{i}" for i in range(parent_estimator.n_features_in_)
+                ]
+
+        df = pd.DataFrame(
+            data=data,
+            index=feature_names,
+            columns=["Mean decrease impurity"],
         )
 
         return df
