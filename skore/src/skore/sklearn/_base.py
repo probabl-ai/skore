@@ -51,7 +51,7 @@ class _HelpMixin(ABC):
             else "No description available"
         )
 
-    def _get_attributes_description(self, name: str) -> str:
+    def _get_attribute_description(self, name: str) -> str:
         """Get the description of an attribute from its docstring."""
         if self.__doc__ is None:
             return "No description available"
