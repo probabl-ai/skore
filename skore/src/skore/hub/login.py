@@ -34,7 +34,7 @@ def refresh():
     if not token.valid:
         return False, token
 
-    now = datetime.now(tz=timezone.utc)
+    now = datetime.now(timezone.utc)
     if token.expires_at <= now:
         # we have a token but it's expired
         # try to refresh it

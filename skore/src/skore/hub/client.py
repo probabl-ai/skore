@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from functools import cached_property
 from urllib.parse import urljoin
 
@@ -19,6 +19,11 @@ class AuthenticationError(Exception):
 class AuthenticatedClient(Client):
     """Override httpx client to pass our bearer token."""
 
+    def __init__(self, *, raises=False):
+        super().__init__()
+
+        self.raises = raises
+
     @cached_property
     def token(self):
         """Access token."""
@@ -31,16 +36,20 @@ class AuthenticatedClient(Client):
             raise AuthenticationError("You are not logged in.")
 
         # Check if token must be refreshed
-        if self.token.expires_at <= datetime.now():
+        if self.token.expires_at <= datetime.now(timezone.utc):
             self.token.refresh()
 
         # Overload headers with authorization token
         headers = kwargs.pop("headers", None) or {}
         headers["Authorization"] = f"Bearer {self.token.access}"
-
-        return super().request(
+        response = super().request(
             method,
             urljoin(URI, str(url)),
             headers=headers,
             **kwargs,
         )
+
+        if self.raises:
+            response.raise_for_status()
+
+        return response

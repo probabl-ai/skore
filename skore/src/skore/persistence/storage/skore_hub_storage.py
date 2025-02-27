@@ -12,10 +12,6 @@ import httpx
 from .abstract_storage import AbstractStorage
 
 
-class DirectoryDoesNotExist(Exception):
-    """Directory does not exist."""
-
-
 class SkoreHubStorage(AbstractStorage):
     def __init__(self, *, project_id: UUID, domain="http://0.0.0.0:8000"):
         self.url = f"{domain}/skore/projects"
