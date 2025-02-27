@@ -239,7 +239,7 @@ ridge_report.feature_importance.coefficients()
 # %%
 # As we have performed scaling in our pipeline, the above coefficients are in the same
 # range so they can be compared to one another.
-# Indeed, scaling matters for feature importance.
+# Indeed, without scaling, the coefficients of the features in a linear model are affected by the scale of the features values, and therefore are not comparable.
 #
 # .. seealso::
 #
