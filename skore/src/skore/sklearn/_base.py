@@ -52,7 +52,7 @@ class _HelpMixin(ABC):
         )
 
     def _get_attribute_description(self, name: str) -> str:
-        """Get the description of an attribute from its docstring."""
+        """Get the description of an attribute from its class docstring."""
         if self.__doc__ is None:
             return "No description available"
         # Look for the first sentence on the line below the pattern 'attribute_name : '
@@ -202,8 +202,8 @@ class _BaseReport(_HelpMixin):
         if attributes:
             attr_branch = tree.add("[bold cyan]Attributes[/bold cyan]")
             for attr_name in attributes:
-                description = self._get_attributes_description(attr_name)
-                attr_branch.add(f".{attr_name.ljust(29)} - {description}")
+                description = self._get_attribute_description(attr_name)
+                attr_branch.add(f".{attr_name.ljust(29)}" f" - {description}")
 
         return tree
 
