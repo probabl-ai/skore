@@ -6,8 +6,9 @@
 =====================================================================
 
 In this example, we tackle the California housing dataset where the goal is to perform
-a regression task: predicting house prices based on features describing the house, such as the number of bedrooms.
-For that, we try out several families of models, starting with linear ones.
+a regression task: predicting house prices based on features such as the number of
+bedrooms, the geolocalisation, etc.
+For that, we try out several families of models.
 We evaluate these methods using skore's :class:`~skore.EstimatorReport` and its
 report on metrics.
 
@@ -149,7 +150,7 @@ fig = plot_map(X_y, target_name)
 fig
 
 # %%
-# As could be expected, the price of the houses near the sea is higher, especially
+# As could be expected, the price of the houses near the ocean is higher, especially
 # around big cities like Los Angeles and San Jose.
 # Taking into account the coordinates in our modelling will be very important.
 
@@ -180,8 +181,8 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 # ------------
 
 # %%
-# Before trying any complex model, we start with a simple linear model to have a
-# baseline of what a "good score" is (remember that all scores are relative).
+# Before trying any complex feature engineering, we start with a simple pipeline to
+# have a baseline of what a "good score" is (remember that all scores are relative).
 # Here, we use a Ridge regression along with some scaling and evaluate it using
 # :meth:`skore.EstimatorReport.metrics`:
 
