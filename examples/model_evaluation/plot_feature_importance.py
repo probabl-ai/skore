@@ -305,14 +305,6 @@ from sklearn.preprocessing import SplineTransformer, PolynomialFeatures
 from sklearn.compose import make_column_transformer
 
 geo_columns = ["Latitude", "Longitude"]
-spline_columns = [
-    "MedInc",
-    "HouseAge",
-    "AveRooms",
-    "AveBedrms",
-    "Population",
-    "AveOccup",
-]
 
 preprocessor = make_column_transformer(
     (KMeans(n_clusters=10), geo_columns),
