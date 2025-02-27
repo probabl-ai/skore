@@ -350,7 +350,8 @@ comparator.metrics.report_metrics()
 print("Initial number of features:", X_train.shape[1])
 
 X_train_transformed = engineered_ridge_report.estimator_[:-1].transform(X_train)
-print("Number of features after feature engineering:", X_train_transformed.shape[1])
+n_features_engineered = X_train_transformed.shape[1]
+print("Number of features after feature engineering:", n_features_engineered)
 
 # %%
 # TODO
@@ -406,7 +407,7 @@ compromised_model
 # our previous iterations:
 
 # %%
-compromised_ridge_report = EstimatorReport(
+selectkbest_ridge_report = EstimatorReport(
     compromised_model,
     X_train=X_train,
     X_test=X_test,
@@ -414,7 +415,7 @@ compromised_ridge_report = EstimatorReport(
     y_test=y_test,
 )
 comparator = ComparisonReport(
-    reports=[ridge_report, engineered_ridge_report, compromised_ridge_report]
+    reports=[ridge_report, engineered_ridge_report, selectkbest_ridge_report]
 )
 comparator.metrics.report_metrics()
 
@@ -423,9 +424,27 @@ comparator.metrics.report_metrics()
 
 # %%
 print("Initial number of features:", X_train.shape[1])
+print("Number of features after feature engineering:", n_features_engineered)
 
-X_train_transformed = compromised_ridge_report.estimator_[:-1].transform(X_train)
-print("Number of features after feature engineering:", X_train_transformed.shape[1])
+X_train_transformed = selectkbest_ridge_report.estimator_[:-1].transform(X_train)
+n_features_selectkbest = X_train_transformed.shape[1]
+print(
+    "Number of features after feature engineering using `SelectKBest`:",
+    n_features_selectkbest,
+)
+
+# %%
+# According to the :class:`~sklearn.feature_selection.SelectKBest`, the most important
+# features are the following:
+
+# %%
+selectk_features = selectkbest_ridge_report.estimator_[-1].feature_names_in_
+print(selectk_features)
+
+# %%
+# We can see that, in the best features, according to statistical tests, there are
+# geospatial features (derived from the K-means clustering) and splines on the median
+# income.
 
 # %%
 # Now, let us gain some intuition on the results of our grid search by using a
