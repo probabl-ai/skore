@@ -47,9 +47,12 @@ class Project:
     """
     A collection of items persisted in a storage.
 
-    Its main methods are :func:`~skore.Project.put` and :func:`~skore.Project.get`,
-    respectively to insert a key-value pair into the Project and to recover the value
-    associated with a key.
+    This constructor initializes a project, by creating a new project or by loading an
+    existing one.
+
+    The class main methods are :func:`~skore.Project.put` and
+    :func:`~skore.Project.get`, respectively to insert a key-value pair into the Project
+    and to recover the value associated with a key.
 
     You can add any type of objects. In some cases, especially on classes you defined,
     the persistency is based on the pickle representation. You must therefore ensure
