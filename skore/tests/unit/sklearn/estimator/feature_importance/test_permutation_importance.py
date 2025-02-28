@@ -199,17 +199,30 @@ def test_cache_n_jobs(regression_data):
 
 
 def test_cache_random_state(regression_data):
-    """If `random_state` is None (the default) then the result is not cached."""
+    """If `random_state` is not an int (the default is None)
+    then the result is not cached."""
 
     X, y = regression_data
     report = EstimatorReport(LinearRegression(), X_train=X, y_train=y)
 
+    # random_state is None
     report.feature_importance.feature_permutation(data_source="train")
+    # so no cache
     assert report._cache == {}
 
+    # random_state is a RandomState
+    report.feature_importance.feature_permutation(
+        data_source="train",
+        random_state=np.random.RandomState(42),
+    )
+    # so no cache
+    assert report._cache == {}
+
+    # random_state is an int
     result = report.feature_importance.feature_permutation(
         data_source="train", random_state=42
     )
+    # so the result is cached
     assert report._cache != {}
     cached_result = report.feature_importance.feature_permutation(
         data_source="train", random_state=42
