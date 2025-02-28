@@ -136,7 +136,6 @@ def post_oauth_refresh_token(refresh_token: str):
             The expiration datetime as ISO 8601 str of the access token
     """
     with httpx.Client() as client:
-        breakpoint()
         response = client.post(
             urljoin(URI, "identity/oauth/token/refresh"),
             json={"refresh_token": refresh_token},

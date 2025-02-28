@@ -31,6 +31,6 @@ class JSONableItem(Item):
         try:
             value_json_str = dumps(value)
         except TypeError:
-            raise ItemTypeError(f"Type '{value.__class__}' is not supported.")
+            raise ItemTypeError(f"Type '{value.__class__}' is not supported.") from None
 
         return cls(value_json_str, **kwargs)

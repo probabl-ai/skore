@@ -5,8 +5,8 @@ This module defines the MatplotlibFigureItem class, used to persist Matplotlib f
 
 from __future__ import annotations
 
-from functools import cached_property
 from contextlib import contextmanager
+from functools import cached_property
 from io import BytesIO
 from typing import TYPE_CHECKING, Optional
 
@@ -16,9 +16,9 @@ from .item import (
     Item,
     ItemTypeError,
     Representation,
-    lazy_is_instance,
     b64_str_to_bytes,
     bytes_to_b64_str,
+    lazy_is_instance,
 )
 
 if TYPE_CHECKING:

@@ -2,8 +2,8 @@ from urllib.parse import urljoin
 
 import pytest
 from httpx import Response
-from skore.hub import api
-from skore.hub.api import URI
+from skore.hub.client import api
+from skore.hub.client.api import URI
 
 
 @pytest.mark.parametrize("success_uri", [None, "toto"])

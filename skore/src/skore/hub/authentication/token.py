@@ -7,7 +7,7 @@ import tempfile
 from datetime import datetime
 from typing import Optional
 
-from skore.hub.api import post_oauth_refresh_token
+from skore.hub.client.api import post_oauth_refresh_token
 
 
 class Token:

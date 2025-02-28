@@ -3,8 +3,8 @@ from urllib.parse import urljoin
 
 import pytest
 from httpx import Response
-from skore.hub.api import URI
-from skore.hub.client import AuthenticatedClient, AuthenticationError
+from skore.hub.client.api import URI
+from skore.hub.client.client import AuthenticatedClient, AuthenticationError
 
 REFRESH_URL = urljoin(URI, "identity/oauth/token/refresh")
 DATETIME_MIN = datetime.min.replace(tzinfo=timezone.utc)
@@ -16,9 +16,8 @@ class TestAuthenticatedClient:
     def test_request_with_invalid_token_raises(self, respx_mock):
         foo_route = respx_mock.get("foo").mock(Response(200))
 
-        with pytest.raises(AuthenticationError):
-            with AuthenticatedClient() as client:
-                client.get("foo")
+        with pytest.raises(AuthenticationError), AuthenticatedClient() as client:
+            client.get("foo")
 
         assert not foo_route.called
 

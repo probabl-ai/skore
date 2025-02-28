@@ -18,7 +18,7 @@ class TestAltairChartItem:
         assert item.chart_json_str == chart.to_json()
         assert item.created_at == mock_nowstr
         assert item.updated_at == mock_nowstr
-        assert item.note == None
+        assert item.note is None
 
     def test_factory_exception(self):
         with raises(ItemTypeError):

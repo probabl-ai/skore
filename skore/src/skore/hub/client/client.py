@@ -7,9 +7,8 @@ from functools import cached_property
 from urllib.parse import urljoin
 
 from httpx import URL, Client, Response
-
-from skore.hub.api import URI
-from skore.hub.token import AuthenticationToken
+from skore.hub.authentication.token import Token
+from skore.hub.client.api import URI
 
 
 class AuthenticationError(Exception):
@@ -27,7 +26,7 @@ class AuthenticatedClient(Client):
     @cached_property
     def token(self):
         """Access token."""
-        return AuthenticationToken()
+        return Token()
 
     def request(self, method: str, url: URL | str, **kwargs) -> Response:
         """Execute request with access token, and refresh the token if needed."""

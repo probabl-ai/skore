@@ -1,4 +1,5 @@
 import json
+
 import pytest
 from skore.hub.item import JSONableItem
 from skore.hub.item.item import ItemTypeError, Representation

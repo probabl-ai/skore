@@ -1,19 +1,16 @@
-from json import dumps
 from io import BytesIO
-from pytest import fixture, raises
+from json import dumps
+
 from joblib import dump, load
-from matplotlib import get_backend
-from matplotlib.figure import Figure
 from matplotlib.pyplot import subplots
 from matplotlib.testing.compare import compare_images
+from pytest import fixture, raises
 from skore.hub.item import MatplotlibFigureItem
 from skore.hub.item.item import (
     ItemTypeError,
-    Representation,
     b64_str_to_bytes,
     bytes_to_b64_str,
 )
-from skore.hub.item.matplotlib_figure_item import mpl_backend
 
 
 class TestMatplotlibFigureItem:

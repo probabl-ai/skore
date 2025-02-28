@@ -5,7 +5,8 @@ from functools import cached_property
 from typing import Any
 
 from skore.hub.client.client import AuthenticatedClient
-from skore.hub.item import object_to_item, item as skore_item_module
+from skore.hub.item import item as skore_item_module
+from skore.hub.item import object_to_item
 
 
 class Project:

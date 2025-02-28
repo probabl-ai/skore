@@ -7,7 +7,6 @@ from datetime import datetime, timezone
 from inspect import signature as inspect_signature
 from typing import Any, Optional
 
-
 #
 # faire un system qui import dynamiquement les modules
 # et qui leve une exception si les modules ne sont pas dispos

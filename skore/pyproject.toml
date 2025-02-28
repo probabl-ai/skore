@@ -38,7 +38,7 @@ Issues = "https://github.com/probabl-ai/skore/issues"
 
 [project.scripts]
 skore-ui = "skore.__main__:main"
-skore-hub-login = "skore.hub.login:login"
+skore-hub-login = "skore.hub.authentication.login:login"
 
 [build-system]
 requires = ["hatchling"]
