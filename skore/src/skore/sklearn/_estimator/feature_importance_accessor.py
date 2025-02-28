@@ -1,4 +1,5 @@
-from typing import Any, Literal, Optional, Union
+from collections.abc import Iterable
+from typing import Any, Callable, Literal, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -14,6 +15,16 @@ from skore.sklearn._estimator.report import EstimatorReport
 from skore.utils._accessor import _check_has_coef
 
 DataSource = Literal["test", "train", "X_y"]
+
+# If scoring represents a single score, one can use:
+#   - a single string (see The scoring parameter: defining model evaluation rules);
+#   - a callable (see Callable scorers) that returns a single value.
+# If scoring represents multiple scores, one can use:
+#   - a list or tuple of unique strings;
+#   - a callable returning a dictionary where the keys are the metric names
+#   and the values are the metric scores;
+#   - a dictionary with metric names as keys and callables a values.
+Scoring = Union[str, Callable, Iterable[str], dict[str, Callable]]
 
 
 class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
@@ -99,7 +110,7 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
         data_source: DataSource = "test",
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
-        scoring=None,
+        scoring: Optional[Scoring] = None,
         **kwargs,
     ) -> pd.DataFrame:
         """Report the permutation importance of the estimator.
@@ -179,7 +190,7 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
         data_source_hash: Optional[int] = None,
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
-        scoring: Union[str, list[str], None] = None,  # Typing TODO
+        scoring: Optional[Scoring] = None,
         **kwargs,
     ) -> pd.DataFrame:
         """Private interface of `feature_permutation` to pass `data_source_hash`.
