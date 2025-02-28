@@ -1,3 +1,5 @@
+"""Patch jupyter's `_render_segments` function to make display work in VS Code."""
+
 import os
 from collections.abc import Iterable
 
@@ -18,6 +20,15 @@ def patched_render_segments(segments: Iterable[Segment]) -> str:
     We should track the progress in the following issue:
     https://github.com/microsoft/vscode-jupyter/issues/7161
 
+    Parameters
+    ----------
+    segments : rich.segment.Segment
+        The segments to display.
+
+    Returns
+    -------
+    str
+        The patched HTML-rendered segments.
     """
     html = _original_render_segments(segments)
     # Apply VS Code styling if we're in VS Code
