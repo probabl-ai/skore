@@ -264,7 +264,8 @@ results = pd.concat(
     [
         linear_model_report.metrics.report_metrics(aggregate=["mean", "std"]),
         hgbdt_model_report.metrics.report_metrics(aggregate=["mean", "std"]),
-    ]
+    ],
+    axis=1,
 )
 results
 
