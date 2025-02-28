@@ -1,7 +1,7 @@
 """
 Utility methods to print system info for debugging.
 
-adapted from :func:`sklearn.show_versions`
+Adapted from :func:`sklearn.show_versions`.
 """
 
 import importlib
@@ -17,9 +17,8 @@ def _get_sys_info() -> dict[str, Any]:
 
     Returns
     -------
-    sys_info : dict
-        system and Python version information
-
+    dict
+        System and Python version information.
     """
     python = sys.version.replace("\n", " ")
 
@@ -42,8 +41,7 @@ def _get_deps_info() -> dict[str, Any]:
     Returns
     -------
     deps_info: dict
-        version information on relevant Python libraries
-
+        Version information on relevant Python libraries.
     """
     from importlib.metadata import PackageNotFoundError, version
 
