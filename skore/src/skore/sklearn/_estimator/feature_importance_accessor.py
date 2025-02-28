@@ -268,8 +268,9 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
                 )
                 score = pd.DataFrame(data=data, index=index, columns=columns)
 
-            # if random_state is None, we do not cache
-            if kwargs.get("random_state") is not None:
+            # Unless random_state is an int (i.e. the call is deterministic),
+            # we do not cache
+            if isinstance(kwargs.get("random_state"), int):
                 self._parent._cache[cache_key] = score
 
         return score
