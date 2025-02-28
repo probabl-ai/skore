@@ -102,8 +102,67 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
         scoring=None,
         **kwargs,
     ) -> pd.DataFrame:
-        """Report the permutation importance of the estimator."""
-        # TODO docs
+        """Report the permutation importance of the estimator.
+
+        This computes the permutation importance using sklearn's
+        :func:`~sklearn.inspection.permutation_importance` function.
+
+        By default, `random_state` is set to `None`, which means the function will
+        return a different result at every call. In that case, the results are not
+        cached. If you wish to take advantage of skore's caching capabilities, make
+        sure you set the `random_state` parameter.
+
+        Parameters
+        ----------
+        data_source : {"test", "train", "X_y"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the test
+            set provided when creating the report.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the test
+            target provided when creating the report.
+
+        scoring : str, callable, list, tuple, or dict, default=None
+            The scorer to pass to :func:`~sklearn.inspection.permutation_importance`.
+
+        n_repeats : int, default=5
+            Number of times to permute a feature.
+
+        n_jobs : int or None, default=None
+            Number of jobs to run in parallel. -1 means using all processors.
+
+        random_state : int, RandomState instance, default=None
+            Pseudo-random number generator to control the permutations of each feature.
+            Pass an int to get reproducible results across function calls.
+
+        sample_weight : array-like of shape (n_samples,), default=None
+            Sample weights used in scoring.
+
+        max_samples : int or float, default=1.0
+            The number of samples to draw from `X` to compute feature importance
+            in each repeat (without replacement).
+
+            - If int, then draw max_samples samples.
+            - If float, then draw max_samples * X.shape[0] samples.
+            - If max_samples is equal to 1.0 or X.shape[0], all samples will be used.
+
+            While using this option may provide less accurate importance estimates,
+            it keeps the method tractable when evaluating feature importance on
+            large datasets. In combination with n_repeats, this allows to control
+            the computational speed vs statistical accuracy trade-off of this method.
+
+        Returns
+        -------
+        pandas.DataFrame
+            The permutation importance.
+        """
         return self._feature_permutation(
             data_source=data_source,
             data_source_hash=None,
@@ -123,6 +182,12 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
         scoring: Union[str, list[str], None] = None,  # Typing TODO
         **kwargs,
     ) -> pd.DataFrame:
+        """Private interface of `feature_permutation` to pass `data_source_hash`.
+
+        `data_source_hash` is either an `int` when we already computed the hash
+        and are able to pass it around, or `None` and thus trigger its computation
+        in the underlying process.
+        """
         if data_source_hash is None:
             X_, y_true, data_source_hash = self._get_X_y_and_data_source_hash(
                 data_source=data_source, X=X, y=y
