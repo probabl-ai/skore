@@ -1,4 +1,5 @@
-"""NumpyArrayItem.
+"""
+NumpyArrayItem.
 
 This module defines the NumpyArrayItem class, which represents a NumPy array item.
 """

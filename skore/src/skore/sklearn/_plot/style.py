@@ -6,7 +6,8 @@ class StyleDisplayMixin:
 
     @property
     def _style_params(self) -> list[str]:
-        """Get the list of available style parameters.
+        """
+        Get the list of available style parameters.
 
         Returns
         -------
@@ -22,7 +23,8 @@ class StyleDisplayMixin:
         ]
 
     def set_style(self, **kwargs: Any):
-        """Set the style parameters for the display.
+        """
+        Set the style parameters for the display.
 
         Parameters
         ----------

@@ -1,4 +1,5 @@
-"""'High class imbalance (too few examples)' warning.
+"""
+'High class imbalance (too few examples)' warning.
 
 This warning is shown when some class in a dataset has too few examples in the test set.
 """
@@ -36,7 +37,8 @@ class HighClassImbalanceTooFewExamplesWarning(TrainTestSplitWarning):
         ml_task: MLTask,
         **kwargs,
     ) -> Union[str, None]:
-        """Check whether the test set has too few examples in one class.
+        """
+        Check whether the test set has too few examples in one class.
 
         More precisely, we check whether some class in `y_labels` has
         fewer than 100 examples in `y_test`.

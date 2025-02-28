@@ -38,7 +38,8 @@ def multiclass_classification_data_no_split():
 def test_precision_recall_curve_display_binary_classification(
     pyplot, binary_classification_data
 ):
-    """Check the attributes and default plotting behaviour of the
+    """
+    Check the attributes and default plotting behaviour of the
     precision-recall curve plot with binary data.
     """
     estimator, X_train, X_test, y_train, y_test = binary_classification_data
@@ -85,7 +86,8 @@ def test_precision_recall_curve_display_binary_classification(
 def test_precision_recall_curve_cross_validation_display_binary_classification(
     pyplot, binary_classification_data_no_split
 ):
-    """Check the attributes and default plotting behaviour of the
+    """
+    Check the attributes and default plotting behaviour of the
     precision-recall curve plot with binary data.
     """
     (estimator, X, y), cv = binary_classification_data_no_split, 3
@@ -130,7 +132,8 @@ def test_precision_recall_curve_cross_validation_display_binary_classification(
 
 
 def test_precision_recall_curve_display_data_source(pyplot, binary_classification_data):
-    """Check that we can pass the `data_source` argument to the precision-recall
+    """
+    Check that we can pass the `data_source` argument to the precision-recall
     curve plot.
     """
     estimator, X_train, X_test, y_train, y_test = binary_classification_data
@@ -149,7 +152,8 @@ def test_precision_recall_curve_display_data_source(pyplot, binary_classificatio
 def test_precision_recall_curve_display_multiclass_classification(
     pyplot, multiclass_classification_data
 ):
-    """Check the attributes and default plotting behaviour of the precision-recall
+    """
+    Check the attributes and default plotting behaviour of the precision-recall
     curve plot with multiclass data.
     """
     estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
@@ -197,7 +201,8 @@ def test_precision_recall_curve_display_multiclass_classification(
 def test_precision_recall_curve_cross_validation_display_multiclass_classification(
     pyplot, multiclass_classification_data_no_split
 ):
-    """Check the attributes and default plotting behaviour of the precision-recall
+    """
+    Check the attributes and default plotting behaviour of the precision-recall
     curve plot with multiclass data.
     """
     (estimator, X, y), cv = multiclass_classification_data_no_split, 3
@@ -290,7 +295,8 @@ def test_precision_recall_curve_display_pr_curve_kwargs(
 def test_precision_recall_curve_display_plot_error_wrong_pr_curve_kwargs(
     pyplot, binary_classification_data, multiclass_classification_data
 ):
-    """Check that we raise a proper error message when passing an inappropriate
+    """
+    Check that we raise a proper error message when passing an inappropriate
     value for the `roc_curve_kwargs` argument.
     """
     estimator, X_train, X_test, y_train, y_test = binary_classification_data
@@ -326,7 +332,8 @@ def test_precision_recall_curve_display_plot_error_wrong_pr_curve_kwargs(
 def test_pr_curve_display_cross_validation_multiple_roc_curve_kwargs_error(
     pyplot, fixture_name, request, pr_curve_kwargs
 ):
-    """Check that we raise a proper error message when passing an inappropriate
+    """
+    Check that we raise a proper error message when passing an inappropriate
     value for the `pr_curve_kwargs` argument."""
     (estimator, X, y), cv = request.getfixturevalue(fixture_name), 3
 
@@ -340,7 +347,8 @@ def test_pr_curve_display_cross_validation_multiple_roc_curve_kwargs_error(
 def test_precision_recall_curve_display_data_source_binary_classification(
     pyplot, binary_classification_data
 ):
-    """Check that we can pass the `data_source` argument to the precision-recall curve
+    """
+    Check that we can pass the `data_source` argument to the precision-recall curve
     plot."""
     estimator, X_train, X_test, y_train, y_test = binary_classification_data
     report = EstimatorReport(

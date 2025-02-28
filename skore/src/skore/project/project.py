@@ -24,7 +24,8 @@ class ProjectDeletedError(Exception):
 
 
 def _raise_if_deleted(method: Callable[..., Any]) -> Callable[..., Any]:
-    """Raise if the underlying Project has been deleted, otherwise execute `method`.
+    """
+    Raise if the underlying Project has been deleted, otherwise execute `method`.
 
     This wrapper makes it safe to "delete" a Project, even if the Project instance
     still exists.
@@ -131,7 +132,8 @@ class Project:
 
     @_raise_if_deleted
     def clear(self, delete_project: bool = False) -> None:
-        """Remove all items from the project.
+        """
+        Remove all items from the project.
 
         .. warning::
            Clearing the project with `delete_project=True` will invalidate the whole
@@ -162,7 +164,8 @@ class Project:
         note: Optional[str] = None,
         display_as: Optional[Literal["HTML", "MARKDOWN", "SVG"]] = None,
     ) -> None:
-        """Add a key-value pair to the Project.
+        """
+        Add a key-value pair to the Project.
 
         If an item with the same key already exists, its value is replaced by the new
         one.
@@ -207,7 +210,8 @@ class Project:
         version: Optional[Union[Literal[-1, "all"], int]] = -1,
         metadata: bool = False,
     ) -> Any:
-        """Get the value associated to ``key`` from the Project.
+        """
+        Get the value associated to ``key`` from the Project.
 
         Parameters
         ----------
@@ -287,7 +291,8 @@ class Project:
 
     @_raise_if_deleted
     def delete(self, key: str) -> None:
-        """Delete the item corresponding to ``key`` from the Project.
+        """
+        Delete the item corresponding to ``key`` from the Project.
 
         Parameters
         ----------
@@ -303,7 +308,8 @@ class Project:
 
     @_raise_if_deleted
     def set_note(self, key: str, note: str, *, version: int = -1) -> None:
-        """Attach a note to key ``key``.
+        """
+        Attach a note to key ``key``.
 
         Parameters
         ----------
@@ -333,7 +339,8 @@ class Project:
 
     @_raise_if_deleted
     def get_note(self, key: str, *, version: int = -1) -> Union[str, None]:
-        """Retrieve a note previously attached to key ``key``.
+        """
+        Retrieve a note previously attached to key ``key``.
 
         Parameters
         ----------
@@ -363,7 +370,8 @@ class Project:
 
     @_raise_if_deleted
     def delete_note(self, key: str, *, version: int = -1) -> None:
-        """Delete a note previously attached to key ``key``.
+        """
+        Delete a note previously attached to key ``key``.
 
         If no note is attached, does nothing.
 

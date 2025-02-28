@@ -55,7 +55,8 @@ def on_disk_project(tmp_path):
 
 @pytest.fixture(scope="function")
 def pyplot():
-    """Setup and teardown fixture for matplotlib.
+    """
+    Setup and teardown fixture for matplotlib.
 
     This fixture closes the figures before and after running the functions.
 

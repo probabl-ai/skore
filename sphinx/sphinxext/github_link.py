@@ -1,4 +1,5 @@
-"""Link docs with GitHub lines.
+"""
+Link docs with GitHub lines.
 
 This file is copied from https://github.com/scikit-learn-contrib/imbalanced-learn/blob/master/doc/sphinxext/github_link.py
 """
@@ -23,7 +24,8 @@ def _get_git_revision():
 
 
 def _linkcode_resolve(domain, info, package, url_fmt, revision):
-    """Determine a link to online source for a class/method/function
+    """
+    Determine a link to online source for a class/method/function
 
     This is called by sphinx.ext.linkcode
 
@@ -73,7 +75,8 @@ def _linkcode_resolve(domain, info, package, url_fmt, revision):
 
 
 def make_linkcode_resolve(package, url_fmt):
-    """Returns a linkcode_resolve function for the given URL format
+    """
+    Returns a linkcode_resolve function for the given URL format
 
     revision is a git commit reference (hash or name)
 

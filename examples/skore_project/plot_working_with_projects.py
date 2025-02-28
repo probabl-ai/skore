@@ -120,7 +120,8 @@ my_project.get("my_string")
 my_project.put(
     "my_string_2",
     (
-        """Hello world!, **bold**, *italic*, `code`
+        """
+        Hello world!, **bold**, *italic*, `code`
 
 ```python
 def my_func(x):

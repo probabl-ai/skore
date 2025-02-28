@@ -25,7 +25,8 @@ from skore.sklearn.types import MLTask
 class RocCurveDisplay(
     HelpDisplayMixin, _ClassifierCurveDisplayMixin, StyleDisplayMixin
 ):
-    """ROC Curve visualization.
+    """
+    ROC Curve visualization.
 
     An instance of this class is should created by `EstimatorReport.metrics.roc()`.
     You should not create an instance of this class directly.
@@ -142,7 +143,8 @@ class RocCurveDisplay(
         chance_level_kwargs: Optional[dict[str, Any]] = None,
         despine: bool = True,
     ) -> None:
-        """Plot visualization.
+        """
+        Plot visualization.
 
         Extra keyword arguments will be passed to matplotlib's ``plot``.
 
@@ -405,7 +407,8 @@ class RocCurveDisplay(
         pos_label: Union[int, float, bool, str, None],
         drop_intermediate: bool = True,
     ) -> "RocCurveDisplay":
-        """Private method to create a RocCurveDisplay from predictions.
+        """
+        Private method to create a RocCurveDisplay from predictions.
 
         Parameters
         ----------

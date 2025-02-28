@@ -19,7 +19,8 @@ class TestNotes:
         assert project.get_note("key") == "note"
 
     def test_set_note_version(self, project_fixture, request):
-        """By default, `set_note` only attaches a note to the latest version
+        """
+        By default, `set_note` only attaches a note to the latest version
         of a key."""
         project = request.getfixturevalue(project_fixture)
 

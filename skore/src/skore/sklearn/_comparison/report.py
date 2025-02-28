@@ -17,7 +17,8 @@ if TYPE_CHECKING:
 
 
 class ComparisonReport(_BaseReport, DirNamesMixin):
-    """Report for comparison of instances of :class:`skore.EstimatorReport`.
+    """
+    Report for comparison of instances of :class:`skore.EstimatorReport`.
 
     Caution: reports passed to `ComparisonReport` are not copied. If you pass
     a report to `ComparisonReport`, and then modify the report outside later, it will
@@ -163,7 +164,8 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         self._ml_task = self.estimator_reports_[0]._ml_task
 
     def clear_cache(self) -> None:
-        """Clear the cache.
+        """
+        Clear the cache.
 
         Examples
         --------
@@ -207,7 +209,8 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         ] = "auto",
         n_jobs: Optional[int] = None,
     ) -> None:
-        """Cache the predictions for sub-estimators reports.
+        """
+        Cache the predictions for sub-estimators reports.
 
         Parameters
         ----------

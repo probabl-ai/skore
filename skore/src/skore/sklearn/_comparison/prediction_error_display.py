@@ -12,7 +12,8 @@ from skore.sklearn._plot.utils import (
 
 
 class PredictionErrorDisplay(HelpDisplayMixin):
-    """Prediction error visualization for comparison report.
+    """
+    Prediction error visualization for comparison report.
 
     This tool can display "residuals vs predicted" or "actual vs predicted"
     using scatter plots to qualitatively assess the behavior of a regressor,
@@ -68,7 +69,8 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         kind="residual_vs_predicted",
         despine=True,
     ):
-        """Plot visualization.
+        """
+        Plot visualization.
 
         Parameters
         ----------
@@ -171,7 +173,8 @@ class PredictionErrorDisplay(HelpDisplayMixin):
         random_state=None,
         **kwargs,
     ):
-        """Private factory to create a PredictionErrorDisplay from predictions.
+        """
+        Private factory to create a PredictionErrorDisplay from predictions.
 
         Parameters
         ----------

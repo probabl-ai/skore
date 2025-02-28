@@ -41,7 +41,8 @@ def binary_classification_data():
 
 @pytest.fixture
 def binary_classification_data_svc():
-    """Create a binary classification dataset and return fitted estimator and data.
+    """
+    Create a binary classification dataset and return fitted estimator and data.
     The estimator is a SVC that does not support `predict_proba`.
     """
     X, y = make_classification(random_state=42)
@@ -53,7 +54,8 @@ def binary_classification_data_svc():
 
 @pytest.fixture
 def multiclass_classification_data():
-    """Create a multiclass classification dataset and return fitted estimator and
+    """
+    Create a multiclass classification dataset and return fitted estimator and
     data."""
     X, y = make_classification(
         n_classes=3, n_clusters_per_class=1, random_state=42, n_informative=10
@@ -66,7 +68,8 @@ def multiclass_classification_data():
 
 @pytest.fixture
 def multiclass_classification_data_svc():
-    """Create a multiclass classification dataset and return fitted estimator and
+    """
+    Create a multiclass classification dataset and return fitted estimator and
     data. The estimator is a SVC that does not support `predict_proba`.
     """
     X, y = make_classification(
@@ -116,7 +119,8 @@ def regression_multioutput_data():
 
 @pytest.mark.parametrize("fit", [True, "auto"])
 def test_estimator_not_fitted(fit):
-    """Test that an error is raised when trying to create a report from an unfitted
+    """
+    Test that an error is raised when trying to create a report from an unfitted
     estimator and no data are provided to fit the estimator.
     """
     estimator = LinearRegression()
@@ -127,7 +131,8 @@ def test_estimator_not_fitted(fit):
 
 @pytest.mark.parametrize("fit", [True, "auto"])
 def test_estimator_report_from_unfitted_estimator(fit):
-    """Check the general behaviour of passing an unfitted estimator and training
+    """
+    Check the general behaviour of passing an unfitted estimator and training
     data."""
     X, y = make_regression(random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
@@ -160,7 +165,8 @@ def test_estimator_report_from_unfitted_estimator(fit):
 
 @pytest.mark.parametrize("fit", [False, "auto"])
 def test_estimator_report_from_fitted_estimator(binary_classification_data, fit):
-    """Check the general behaviour of passing an already fitted estimator without
+    """
+    Check the general behaviour of passing an already fitted estimator without
     refitting it."""
     estimator, X, y = binary_classification_data
     report = EstimatorReport(estimator, fit=fit, X_test=X, y_test=y)
@@ -182,7 +188,8 @@ def test_estimator_report_from_fitted_estimator(binary_classification_data, fit)
 
 
 def test_estimator_report_from_fitted_pipeline(binary_classification_data_pipeline):
-    """Check the general behaviour of passing an already fitted pipeline without
+    """
+    Check the general behaviour of passing an already fitted pipeline without
     refitting it.
     """
     estimator, X, y = binary_classification_data_pipeline
@@ -306,7 +313,8 @@ def test_estimator_report_cache_predictions(
 
 
 def test_estimator_report_pickle(binary_classification_data):
-    """Check that we can pickle an estimator report.
+    """
+    Check that we can pickle an estimator report.
 
     In particular, the progress bar from rich are pickable, therefore we trigger
     the progress bar to be able to test that the progress bar is pickable.
@@ -320,7 +328,8 @@ def test_estimator_report_pickle(binary_classification_data):
 
 
 def test_estimator_report_flat_index(binary_classification_data):
-    """Check that the index is flattened when `flat_index` is True.
+    """
+    Check that the index is flattened when `flat_index` is True.
 
     Since `pos_label` is None, then by default a MultiIndex would be returned.
     Here, we force to have a single-index by passing `flat_index=True`.
@@ -383,7 +392,8 @@ def test_estimator_report_display_regression(pyplot, regression_data, display):
 def test_estimator_report_display_binary_classification_external_data(
     pyplot, binary_classification_data, display
 ):
-    """General behaviour of the function creating display on binary classification
+    """
+    General behaviour of the function creating display on binary classification
     when passing external data.
     """
     estimator, X_test, y_test = binary_classification_data
@@ -403,7 +413,8 @@ def test_estimator_report_display_binary_classification_external_data(
 def test_estimator_report_display_regression_external_data(
     pyplot, regression_data, display
 ):
-    """General behaviour of the function creating display on regression when passing
+    """
+    General behaviour of the function creating display on regression when passing
     external data.
     """
     estimator, X_test, y_test = regression_data
@@ -490,7 +501,8 @@ def test_estimator_report_metrics_repr(binary_classification_data):
 def test_estimator_report_metrics_binary_classification(
     binary_classification_data, metric
 ):
-    """Check the behaviour of the metrics methods available for binary
+    """
+    Check the behaviour of the metrics methods available for binary
     classification.
     """
     estimator, X_test, y_test = binary_classification_data
@@ -520,7 +532,8 @@ def test_estimator_report_metrics_binary_classification(
 def test_estimator_report_metrics_binary_classification_pr(
     binary_classification_data, metric
 ):
-    """Check the behaviour of the precision and recall metrics available for binary
+    """
+    Check the behaviour of the precision and recall metrics available for binary
     classification.
     """
     estimator, X_test, y_test = binary_classification_data
@@ -573,7 +586,8 @@ def test_estimator_report_metrics_regression(regression_data, metric):
 
 
 def _normalize_metric_name(column):
-    """Helper to normalize the metric name present in a pandas column that could be
+    """
+    Helper to normalize the metric name present in a pandas column that could be
     a multi-index or single-index."""
     # if we have a multi-index, then the metric name is on level 0
     s = column[0] if isinstance(column, tuple) else column
@@ -608,7 +622,8 @@ def test_estimator_report_report_metrics_binary(
     nb_stats,
     data_source,
 ):
-    """Check the behaviour of the `report_metrics` method with binary
+    """
+    Check the behaviour of the `report_metrics` method with binary
     classification. We test both with an SVC that does not support `predict_proba` and a
     RandomForestClassifier that does.
     """
@@ -659,7 +674,8 @@ def test_estimator_report_report_metrics_binary(
 def test_estimator_report_report_metrics_multiclass(
     multiclass_classification_data, multiclass_classification_data_svc, data_source
 ):
-    """Check the behaviour of the `report_metrics` method with multiclass
+    """
+    Check the behaviour of the `report_metrics` method with multiclass
     classification.
     """
     estimator, X_test, y_test = multiclass_classification_data
@@ -868,7 +884,8 @@ def test_estimator_report_report_metrics_error_scoring_strings(
 
 
 def test_estimator_report_custom_function_kwargs_numpy_array(regression_data):
-    """Check that we are able to store a hash of a numpy array in the cache when they
+    """
+    Check that we are able to store a hash of a numpy array in the cache when they
     are passed as kwargs.
     """
     estimator, X_test, y_test = regression_data
@@ -900,7 +917,8 @@ def test_estimator_report_custom_function_kwargs_numpy_array(regression_data):
 
 
 def test_estimator_report_report_metrics_with_custom_metric(regression_data):
-    """Check that we can pass a custom metric with specific kwargs into
+    """
+    Check that we can pass a custom metric with specific kwargs into
     `report_metrics`."""
     estimator, X_test, y_test = regression_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -924,7 +942,8 @@ def test_estimator_report_report_metrics_with_custom_metric(regression_data):
 
 
 def test_estimator_report_report_metrics_with_scorer(regression_data):
-    """Check that we can pass scikit-learn scorer with different parameters to
+    """
+    Check that we can pass scikit-learn scorer with different parameters to
     the `report_metrics` method."""
     estimator, X_test, y_test = regression_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -957,13 +976,15 @@ def test_estimator_report_report_metrics_with_scorer(regression_data):
 def test_estimator_report_custom_metric_compatible_estimator(
     binary_classification_data,
 ):
-    """Check that the estimator report still works if an estimator has a compatible
+    """
+    Check that the estimator report still works if an estimator has a compatible
     scikit-learn API.
     """
     _, X_test, y_test = binary_classification_data
 
     class CompatibleEstimator:
-        """Estimator exposing only a predict method but it should be enough for the
+        """
+        Estimator exposing only a predict method but it should be enough for the
         reports.
         """
 
@@ -1005,7 +1026,8 @@ def test_estimator_report_custom_metric_compatible_estimator(
 def test_estimator_report_report_metrics_with_scorer_binary_classification(
     binary_classification_data, scorer, pos_label
 ):
-    """Check that we can pass scikit-learn scorer with different parameters to
+    """
+    Check that we can pass scikit-learn scorer with different parameters to
     the `report_metrics` method.
 
     We also check that we can pass `pos_label` whether to the scorer or to the
@@ -1032,7 +1054,8 @@ def test_estimator_report_report_metrics_with_scorer_binary_classification(
 def test_estimator_report_report_metrics_with_scorer_pos_label_error(
     binary_classification_data,
 ):
-    """Check that we raise an error when pos_label is passed both in the scorer and
+    """
+    Check that we raise an error when pos_label is passed both in the scorer and
     globally conducting to a mismatch."""
     estimator, X_test, y_test = binary_classification_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -1150,7 +1173,8 @@ def test_estimator_report_get_X_y_and_data_source_hash(data_source):
 
 @pytest.mark.parametrize("prefit_estimator", [True, False])
 def test_estimator_has_side_effects(prefit_estimator):
-    """Re-fitting the estimator outside the EstimatorReport
+    """
+    Re-fitting the estimator outside the EstimatorReport
     should not have an effect on the EstimatorReport's internal estimator."""
     X, y = make_classification(n_classes=2, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
@@ -1174,7 +1198,8 @@ def test_estimator_has_side_effects(prefit_estimator):
 
 
 def test_estimator_has_no_deep_copy():
-    """Check that we raise a warning if the deep copy failed with a fitted
+    """
+    Check that we raise a warning if the deep copy failed with a fitted
     estimator."""
     X, y = make_classification(n_classes=2, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)

@@ -236,7 +236,8 @@ class _BaseAccessor(_HelpMixin, Generic[ParentT]):
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
     ) -> tuple[ArrayLike, Optional[ArrayLike], Optional[int]]:
-        """Get the requested dataset and mention if we should hash before caching.
+        """
+        Get the requested dataset and mention if we should hash before caching.
 
         Parameters
         ----------
@@ -319,7 +320,8 @@ def _get_cached_response_values(
     data_source: Literal["test", "train", "X_y"] = "test",
     data_source_hash: Optional[int] = None,
 ) -> NDArray:
-    """Compute or load from local cache the response values.
+    """
+    Compute or load from local cache the response values.
 
     Parameters
     ----------

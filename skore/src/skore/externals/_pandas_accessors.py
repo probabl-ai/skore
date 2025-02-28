@@ -1,4 +1,5 @@
-"""Pandas-like accessors.
+"""
+Pandas-like accessors.
 
 This code is copied from:
 https://github.com/pandas-dev/pandas/blob/main/pandas/core/accessor.py

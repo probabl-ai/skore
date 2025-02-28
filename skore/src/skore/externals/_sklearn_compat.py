@@ -1,6 +1,7 @@
 # ruff: noqa
 # mypy: ignore-errors
-"""Ease developer experience to support multiple versions of scikit-learn.
+"""
+Ease developer experience to support multiple versions of scikit-learn.
 
 This file is intended to be vendored in your project if you do not want to depend on
 `sklearn-compat` as a package. Then, you can import directly from this file.
@@ -40,7 +41,8 @@ def _dataclass_args():
 
 
 def get_tags(estimator):
-    """Get estimator tags in a consistent format across different sklearn versions.
+    """
+    Get estimator tags in a consistent format across different sklearn versions.
 
     This function provides compatibility between sklearn versions before and after 1.6.
     It returns either a Tags object (sklearn >= 1.6) or a converted Tags object from
@@ -172,7 +174,8 @@ else:
 if sklearn_version < parse_version("1.4"):
 
     def _is_fitted(estimator, attributes=None, all_or_any=all):
-        """Determine if an estimator is fitted
+        """
+        Determine if an estimator is fitted
 
         Parameters
         ----------
@@ -384,7 +387,8 @@ if sklearn_version < parse_version("1.6"):
         from sklearn.utils.multiclass import type_of_target
 
         def _raise_or_return(target_type):
-            """Depending on the value of raise_unknown, either raise an error or
+            """
+            Depending on the value of raise_unknown, either raise an error or
             return 'unknown'.
             """
             if raise_unknown and target_type == "unknown":
@@ -410,7 +414,8 @@ if sklearn_version < parse_version("1.6"):
         skip_check_array=False,
         **kwargs,
     ):
-        """Validate input data and set or check feature names and counts of the input.
+        """
+        Validate input data and set or check feature names and counts of the input.
 
         See the original scikit-learn documentation:
         https://scikit-learn.org/stable/modules/generated/sklearn.utils.validation.validate_data.html#sklearn.utils.validation.validate_data
@@ -468,7 +473,8 @@ if sklearn_version < parse_version("1.6"):
         estimator=None,
         input_name="",
     ):
-        """Input validation on an array, list, sparse matrix or similar.
+        """
+        Input validation on an array, list, sparse matrix or similar.
 
         Check the original documentation for more details:
         https://scikit-learn.org/stable/modules/generated/sklearn.utils.check_array.html
@@ -523,7 +529,8 @@ if sklearn_version < parse_version("1.6"):
         y_numeric=False,
         estimator=None,
     ):
-        """Input validation for standard estimators.
+        """
+        Input validation for standard estimators.
 
         Check the original documentation for more details:
         https://scikit-learn.org/stable/modules/generated/sklearn.utils.check_X_y.html
@@ -562,7 +569,8 @@ if sklearn_version < parse_version("1.6"):
     # tags infrastructure
     @dataclass(**_dataclass_args())
     class InputTags:
-        """Tags for the input data.
+        """
+        Tags for the input data.
 
         Parameters
         ----------
@@ -622,7 +630,8 @@ if sklearn_version < parse_version("1.6"):
 
     @dataclass(**_dataclass_args())
     class TargetTags:
-        """Tags for the target data.
+        """
+        Tags for the target data.
 
         Parameters
         ----------
@@ -660,7 +669,8 @@ if sklearn_version < parse_version("1.6"):
 
     @dataclass(**_dataclass_args())
     class TransformerTags:
-        """Tags for the transformer.
+        """
+        Tags for the transformer.
 
         Parameters
         ----------
@@ -679,7 +689,8 @@ if sklearn_version < parse_version("1.6"):
 
     @dataclass(**_dataclass_args())
     class ClassifierTags:
-        """Tags for the classifier.
+        """
+        Tags for the classifier.
 
         Parameters
         ----------
@@ -706,7 +717,8 @@ if sklearn_version < parse_version("1.6"):
 
     @dataclass(**_dataclass_args())
     class RegressorTags:
-        """Tags for the regressor.
+        """
+        Tags for the regressor.
 
         Parameters
         ----------
@@ -727,7 +739,8 @@ if sklearn_version < parse_version("1.6"):
 
     @dataclass(**_dataclass_args())
     class Tags:
-        """Tags for the estimator.
+        """
+        Tags for the estimator.
 
         See :ref:`estimator_tags` for more information.
 

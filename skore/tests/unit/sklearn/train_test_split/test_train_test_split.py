@@ -130,7 +130,8 @@ def case_time_based_column_polars_dates():
     ],
 )
 def test_train_test_split_warns(params, capsys):
-    """When train_test_split is called with these args and kwargs, the corresponding
+    """
+    When train_test_split is called with these args and kwargs, the corresponding
     warning should be printed to the console."""
     args, kwargs, warning_cls = params()
 
@@ -170,7 +171,8 @@ def test_train_test_split_warns_suppressed(params, capsys):
 
 
 def test_train_test_split_kwargs():
-    """Passing data by keyword arguments should produce the same results as passing
+    """
+    Passing data by keyword arguments should produce the same results as passing
     them by position."""
     warnings.simplefilter("ignore")
 

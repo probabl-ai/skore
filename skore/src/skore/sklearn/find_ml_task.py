@@ -10,7 +10,8 @@ from skore.sklearn.types import MLTask
 
 
 def _column_is_classification(y) -> bool:
-    """Check whether ``y`` is a sequence.
+    """
+    Check whether ``y`` is a sequence.
 
     We define a sequence as a 1-d array of sequential integer values,
     where the first value is 0.
@@ -23,7 +24,8 @@ def _column_is_classification(y) -> bool:
 
 
 def _is_classification(y) -> bool:
-    """Determine if `y` is a target for a classification task.
+    """
+    Determine if `y` is a target for a classification task.
 
     If `y` contains integers, sklearn's `type_of_target` considers the task
     to be multiclass classification. This might not be the case, so we add the
@@ -56,7 +58,8 @@ def _is_classification(y) -> bool:
 
 
 def _find_ml_task(y, estimator=None) -> MLTask:
-    """Guess the ML task being addressed based on a target array and an estimator.
+    """
+    Guess the ML task being addressed based on a target array and an estimator.
 
     This relies first on the estimator characteristics, and falls back on
     analyzing ``y``. Check the examples for some of the heuristics relied on.

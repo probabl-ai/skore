@@ -30,7 +30,8 @@ def regression_data_no_split():
     ],
 )
 def test_prediction_error_display_raise_error(pyplot, params, err_msg, regression_data):
-    """Check that we raise the proper error when making the parameters
+    """
+    Check that we raise the proper error when making the parameters
     validation."""
     estimator, X_train, X_test, y_train, y_test = regression_data
     report = EstimatorReport(
@@ -42,7 +43,8 @@ def test_prediction_error_display_raise_error(pyplot, params, err_msg, regressio
 
 @pytest.mark.parametrize("subsample", [None, 1_000])
 def test_prediction_error_display_regression(pyplot, regression_data, subsample):
-    """Check the attributes and default plotting behaviour of the prediction error plot
+    """
+    Check the attributes and default plotting behaviour of the prediction error plot
     with regression data."""
     estimator, X_train, X_test, y_train, y_test = regression_data
     report = EstimatorReport(
@@ -79,7 +81,8 @@ def test_prediction_error_display_regression(pyplot, regression_data, subsample)
 def test_prediction_error_cross_validation_display_regression(
     pyplot, regression_data_no_split
 ):
-    """Check the attributes and default plotting behaviour of the prediction error plot
+    """
+    Check the attributes and default plotting behaviour of the prediction error plot
     with cross-validation data."""
     (estimator, X, y), cv = regression_data_no_split, 3
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
@@ -172,7 +175,8 @@ def test_prediction_error_cross_validation_display_regression_kind(
 
 
 def test_prediction_error_display_data_source(pyplot, regression_data):
-    """Check that we can pass the `data_source` argument to the prediction error
+    """
+    Check that we can pass the `data_source` argument to the prediction error
     plot."""
     estimator, X_train, X_test, y_train, y_test = regression_data
     report = EstimatorReport(

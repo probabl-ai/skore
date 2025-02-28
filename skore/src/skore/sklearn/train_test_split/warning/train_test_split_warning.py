@@ -1,4 +1,5 @@
-"""Train-test split warning.
+"""
+Train-test split warning.
 
 This module defines an interface for warnings shown in :func:`~skore.train_test_split`.
 """
@@ -11,7 +12,8 @@ class TrainTestSplitWarning(Warning):
 
     @staticmethod
     def check(*args, **kwargs) -> Union[str, None]:
-        """Perform the check.
+        """
+        Perform the check.
 
         Returns
         -------

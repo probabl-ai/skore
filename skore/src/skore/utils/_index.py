@@ -2,7 +2,8 @@ import pandas as pd
 
 
 def flatten_multi_index(index: pd.MultiIndex) -> pd.Index:
-    """Flatten a pandas MultiIndex into a single-level Index.
+    """
+    Flatten a pandas MultiIndex into a single-level Index.
 
     Flatten a pandas `MultiIndex` into a single-level Index by joining the levels
     with underscores. Empty strings are skipped when joining. Spaces are replaced by

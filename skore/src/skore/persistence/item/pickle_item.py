@@ -1,4 +1,5 @@
-"""PickleItem.
+"""
+PickleItem.
 
 This module defines the PickleItem class, which is used to persist objects that cannot
 be otherwise.

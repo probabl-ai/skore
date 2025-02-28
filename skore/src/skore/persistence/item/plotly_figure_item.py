@@ -1,4 +1,5 @@
-"""PlotlyFigureItem.
+"""
+PlotlyFigureItem.
 
 This module defines the PlotlyFigureItem class, used to persist Plotly figures.
 """

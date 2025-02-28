@@ -1,4 +1,5 @@
-"""PandasSeriesItem.
+"""
+PandasSeriesItem.
 
 This module defines the PandasSeriesItem class,
 which represents a pandas Series item.

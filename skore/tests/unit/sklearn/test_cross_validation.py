@@ -37,7 +37,8 @@ def binary_classification_data():
 
 @pytest.fixture
 def binary_classification_data_svc():
-    """Create a binary classification dataset and return fitted estimator and data.
+    """
+    Create a binary classification dataset and return fitted estimator and data.
     The estimator is a SVC that does not support `predict_proba`.
     """
     X, y = make_classification(random_state=42)
@@ -46,7 +47,8 @@ def binary_classification_data_svc():
 
 @pytest.fixture
 def multiclass_classification_data():
-    """Create a multiclass classification dataset and return fitted estimator and
+    """
+    Create a multiclass classification dataset and return fitted estimator and
     data."""
     X, y = make_classification(
         n_classes=3, n_clusters_per_class=1, random_state=42, n_informative=10
@@ -56,7 +58,8 @@ def multiclass_classification_data():
 
 @pytest.fixture
 def multiclass_classification_data_svc():
-    """Create a multiclass classification dataset and return fitted estimator and
+    """
+    Create a multiclass classification dataset and return fitted estimator and
     data. The estimator is a SVC that does not support `predict_proba`.
     """
     X, y = make_classification(
@@ -208,7 +211,8 @@ def test_cross_validation_report_cache_predictions(
 
 
 def test_cross_validation_report_pickle(tmp_path, binary_classification_data):
-    """Check that we can pickle an cross-validation report.
+    """
+    Check that we can pickle an cross-validation report.
 
     In particular, the progress bar from rich are pickable, therefore we trigger
     the progress bar to be able to test that the progress bar is pickable.
@@ -220,7 +224,8 @@ def test_cross_validation_report_pickle(tmp_path, binary_classification_data):
 
 
 def test_cross_validation_report_flat_index(binary_classification_data):
-    """Check that the index is flattened when `flat_index` is True.
+    """
+    Check that the index is flattened when `flat_index` is True.
 
     Since `pos_label` is None, then by default a MultiIndex would be returned.
     Here, we force to have a single-index by passing `flat_index=True`.
@@ -308,7 +313,8 @@ def test_cross_validation_report_metrics_repr(binary_classification_data):
 
 
 def _normalize_metric_name(index):
-    """Helper to normalize the metric name present in a pandas index that could be
+    """
+    Helper to normalize the metric name present in a pandas index that could be
     a multi-index or single-index."""
     # if we have a multi-index, then the metric name is on level 0
     s = index[0] if isinstance(index, tuple) else index
@@ -412,7 +418,8 @@ def _check_metrics_names(result, expected_metrics, expected_nb_stats):
 def test_cross_validation_report_metrics_binary_classification(
     binary_classification_data, metric, nb_stats
 ):
-    """Check the behaviour of the metrics methods available for binary
+    """
+    Check the behaviour of the metrics methods available for binary
     classification.
     """
     (estimator, X, y), cv = binary_classification_data, 2
@@ -433,7 +440,8 @@ def test_cross_validation_report_metrics_binary_classification(
 def test_cross_validation_report_metrics_multiclass_classification(
     multiclass_classification_data, metric, nb_stats
 ):
-    """Check the behaviour of the metrics methods available for multiclass
+    """
+    Check the behaviour of the metrics methods available for multiclass
     classification.
     """
     (estimator, X, y), cv = multiclass_classification_data, 2
@@ -466,7 +474,8 @@ def test_cross_validation_report_report_metrics_binary(
     pos_label,
     nb_stats,
 ):
-    """Check the behaviour of the `report_metrics` method with binary
+    """
+    Check the behaviour of the `report_metrics` method with binary
     classification. We test both with an SVC that does not support `predict_proba` and a
     RandomForestClassifier that does.
     """
@@ -520,7 +529,8 @@ def test_cross_validation_report_report_metrics_binary(
 def test_cross_validation_report_report_metrics_multiclass(
     multiclass_classification_data, multiclass_classification_data_svc
 ):
-    """Check the behaviour of the `report_metrics` method with multiclass
+    """
+    Check the behaviour of the `report_metrics` method with multiclass
     classification.
     """
     estimator, X, y = multiclass_classification_data
@@ -640,7 +650,8 @@ def test_cross_validation_report_report_metrics_error_scoring_strings(
 
 
 def test_cross_validation_report_report_metrics_with_scorer(regression_data):
-    """Check that we can pass scikit-learn scorer with different parameters to
+    """
+    Check that we can pass scikit-learn scorer with different parameters to
     the `report_metrics` method."""
     estimator, X, y = regression_data
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
@@ -691,7 +702,8 @@ def test_cross_validation_report_report_metrics_with_scorer(regression_data):
 def test_cross_validation_report_report_metrics_with_scorer_binary_classification(
     binary_classification_data, scorer, pos_label
 ):
-    """Check that we can pass scikit-learn scorer with different parameters to
+    """
+    Check that we can pass scikit-learn scorer with different parameters to
     the `report_metrics` method.
 
     We also check that we can pass `pos_label` whether to the scorer or to the
@@ -710,7 +722,8 @@ def test_cross_validation_report_report_metrics_with_scorer_binary_classificatio
 def test_cross_validation_report_report_metrics_with_scorer_pos_label_error(
     binary_classification_data,
 ):
-    """Check that we raise an error when pos_label is passed both in the scorer and
+    """
+    Check that we raise an error when pos_label is passed both in the scorer and
     globally conducting to a mismatch."""
     estimator, X, y = binary_classification_data
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
@@ -777,7 +790,8 @@ def test_cross_validation_report_custom_metric(binary_classification_data):
 def test_cross_validation_report_interrupted(
     binary_classification_data, capsys, error, error_message
 ):
-    """Check that we can interrupt cross-validation without losing all
+    """
+    Check that we can interrupt cross-validation without losing all
     data."""
 
     class MockEstimator(ClassifierMixin, BaseEstimator):
@@ -792,7 +806,8 @@ def test_cross_validation_report_interrupted(
             return self
 
         def __sklearn_clone__(self):
-            """Do not clone the estimator
+            """
+            Do not clone the estimator
 
             Instead, we increment a counter each time that
             `sklearn.clone` is called.

@@ -23,7 +23,8 @@ if TYPE_CHECKING:
 
 
 class EstimatorReport(_BaseReport, DirNamesMixin):
-    """Report for a fitted estimator.
+    """
+    Report for a fitted estimator.
 
     This class provides a set of tools to quickly validate and inspect a scikit-learn
     compatible estimator.
@@ -157,7 +158,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     # For the validation set, we allow it and we invalidate the cache.
 
     def clear_cache(self) -> None:
-        """Clear the cache.
+        """
+        Clear the cache.
 
         Examples
         --------
@@ -189,7 +191,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         response_methods: Union[Literal["auto"], list[str]] = "auto",
         n_jobs: Optional[int] = None,
     ) -> None:
-        """Cache estimator's predictions.
+        """
+        Cache estimator's predictions.
 
         Parameters
         ----------

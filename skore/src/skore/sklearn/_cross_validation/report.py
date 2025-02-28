@@ -40,7 +40,8 @@ def _generate_estimator_report(
 
 
 class CrossValidationReport(_BaseReport, DirNamesMixin):
-    """Report for cross-validation results.
+    """
+    Report for cross-validation results.
 
     Upon initialization, `CrossValidationReport` will clone ``estimator`` according to
     ``cv_splitter`` and fit the generated estimators. The fitting is done in parallel,
@@ -155,7 +156,8 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         )
     )
     def _fit_estimator_reports(self) -> list[EstimatorReport]:
-        """Fit the estimator reports.
+        """
+        Fit the estimator reports.
 
         This function is created to be able to use the progress bar. It works well
         with the patch of `rich` in VS Code.
@@ -221,7 +223,8 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         return estimator_reports
 
     def clear_cache(self) -> None:
-        """Clear the cache.
+        """
+        Clear the cache.
 
         Examples
         --------
@@ -246,7 +249,8 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         response_methods: str = "auto",
         n_jobs: Optional[int] = None,
     ) -> None:
-        """Cache the predictions for sub-estimators reports.
+        """
+        Cache the predictions for sub-estimators reports.
 
         Parameters
         ----------

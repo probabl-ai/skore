@@ -8,7 +8,8 @@ Layout = list[str]
 
 @dataclass
 class View:
-    """A view of a Project.
+    """
+    A view of a Project.
 
     Examples
     --------

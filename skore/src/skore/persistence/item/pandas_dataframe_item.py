@@ -1,4 +1,5 @@
-"""PandasDataFrameItem.
+"""
+PandasDataFrameItem.
 
 This module defines the PandasDataFrameItem class,
 which represents a pandas DataFrame item.

@@ -13,7 +13,8 @@ _threadlocal = threading.local()
 
 
 def _get_threadlocal_config() -> dict[str, Any]:
-    """Get a threadlocal **mutable** configuration.
+    """
+    Get a threadlocal **mutable** configuration.
 
     If the configuration does not exist, copy the default global configuration.
     """
@@ -23,7 +24,8 @@ def _get_threadlocal_config() -> dict[str, Any]:
 
 
 def get_config() -> dict[str, Any]:
-    """Retrieve current values for configuration set by :func:`set_config`.
+    """
+    Retrieve current values for configuration set by :func:`set_config`.
 
     Returns
     -------
@@ -50,7 +52,8 @@ def get_config() -> dict[str, Any]:
 def set_config(
     show_progress: Union[bool, None] = None,
 ) -> None:
-    """Set skore configuration.
+    """
+    Set skore configuration.
 
     Setting the configuration affects global settings meaning that it will be used
     by all skore functions and classes, even in the processes and threads spawned by
@@ -82,7 +85,8 @@ def config_context(
     *,
     show_progress: Union[bool, None] = None,
 ) -> Generator[None, None, None]:
-    """Context manager for skore configuration.
+    """
+    Context manager for skore configuration.
 
     Setting the configuration affects global settings meaning that it will be used
     by all skore functions and classes, even in the processes and threads spawned by
@@ -131,7 +135,8 @@ def config_context(
 
 
 def _set_show_progress_for_testing(show_progress: bool, sleep_duration: float) -> bool:
-    """Set the value of show_progress for testing purposes after some waiting.
+    """
+    Set the value of show_progress for testing purposes after some waiting.
 
     This function should exist in a Python module rather than in tests, otherwise
     joblib will not be able to pickle it.

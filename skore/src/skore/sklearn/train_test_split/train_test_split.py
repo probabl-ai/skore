@@ -28,7 +28,8 @@ def train_test_split(
     stratify: Optional[ArrayLike] = None,
     project: Optional[Project] = None,
 ):
-    """Perform train-test-split of data.
+    """
+    Perform train-test-split of data.
 
     This is a wrapper over scikit-learn's
     :func:`sklearn.model_selection.train_test_split` helper function,

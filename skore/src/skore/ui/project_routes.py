@@ -48,7 +48,8 @@ async def get_activity(
     request: Request,
     after: datetime = datetime(1, 1, 1, 0, 0, 0, 0, timezone.utc),
 ) -> list[SerializableItem]:
-    """Send all recent activity as a JSON array.
+    """
+    Send all recent activity as a JSON array.
 
     The activity is composed of all the items and their versions created after the
     datetime `after`, sorted from newest to oldest.

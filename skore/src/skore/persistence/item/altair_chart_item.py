@@ -1,4 +1,5 @@
-"""AltairChartItem.
+"""
+AltairChartItem.
 
 This module defines the AltairChartItem class, used to persist Altair Charts.
 """

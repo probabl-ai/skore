@@ -1,4 +1,5 @@
-"""High class imbalance warning.
+"""
+High class imbalance warning.
 
 This warning is shown when a dataset exhibits a high class imbalance.
 """
@@ -36,7 +37,8 @@ class HighClassImbalanceWarning(TrainTestSplitWarning):
         ml_task: MLTask,
         **kwargs,
     ) -> Union[str, None]:
-        """Check whether the test set has high class imbalance.
+        """
+        Check whether the test set has high class imbalance.
 
         More precisely, we check whether the most populated class in `y` has
         more than 3 times the size of the least populated class in `y`.

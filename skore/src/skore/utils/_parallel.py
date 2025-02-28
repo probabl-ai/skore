@@ -34,7 +34,8 @@ def _with_config_and_warning_filters(delayed_func, config, warning_filters):
 
 
 class Parallel(joblib.Parallel):
-    """Tweak of :class:`joblib.Parallel` that propagates the skore configuration.
+    """
+    Tweak of :class:`joblib.Parallel` that propagates the skore configuration.
 
     This subclass of :class:`joblib.Parallel` ensures that the active configuration
     (thread-local) of skore is propagated to the parallel workers for the
@@ -45,7 +46,8 @@ class Parallel(joblib.Parallel):
     """
 
     def __call__(self, iterable):
-        """Dispatch the tasks and return the results.
+        """
+        Dispatch the tasks and return the results.
 
         Parameters
         ----------
@@ -77,7 +79,8 @@ class Parallel(joblib.Parallel):
 
 # remove when https://github.com/joblib/joblib/issues/1071 is fixed
 def delayed(function):
-    """Capture the arguments of a function to delay its execution.
+    """
+    Capture the arguments of a function to delay its execution.
 
     This alternative to `joblib.delayed` is meant to be used in conjunction
     with `skore.utils._parallel.Parallel`. The latter captures the skore

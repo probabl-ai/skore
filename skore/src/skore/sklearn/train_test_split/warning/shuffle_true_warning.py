@@ -1,4 +1,5 @@
-"""'Shuffle is true' warning.
+"""
+'Shuffle is true' warning.
 
 This warning is shown when ``shuffle`` is set to True.
 """
@@ -29,7 +30,8 @@ class ShuffleTrueWarning(TrainTestSplitWarning):
         shuffle: bool,
         **kwargs,
     ) -> Union[str, None]:
-        """Check whether ``shuffle`` is set to ``True``.
+        """
+        Check whether ``shuffle`` is set to ``True``.
 
         Parameters
         ----------

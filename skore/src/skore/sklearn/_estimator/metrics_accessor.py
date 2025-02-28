@@ -27,7 +27,8 @@ DataSource = Literal["test", "train", "X_y"]
 
 
 class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
-    """Accessor for metrics-related operations.
+    """
+    Accessor for metrics-related operations.
 
     You can access this accessor using the `metrics` attribute.
     """
@@ -61,7 +62,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         indicator_favorability: bool = False,
         flat_index: bool = False,
     ) -> pd.DataFrame:
-        """Report a set of metrics for our estimator.
+        """
+        Report a set of metrics for our estimator.
 
         Parameters
         ----------
@@ -460,7 +462,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
     ) -> float:
-        """Compute the accuracy score.
+        """
+        Compute the accuracy score.
 
         Parameters
         ----------
@@ -514,7 +517,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
     ) -> float:
-        """Private interface of `accuracy` to be able to pass `data_source_hash`.
+        """
+        Private interface of `accuracy` to be able to pass `data_source_hash`.
 
         `data_source_hash` is either an `int` when we already computed the hash
         and are able to pass it around or `None` and thus trigger its computation
@@ -550,7 +554,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         ] = None,
         pos_label: Optional[Union[int, float, bool, str]] = None,
     ) -> Union[float, dict[Union[int, float, bool, str], float]]:
-        """Compute the precision score.
+        """
+        Compute the precision score.
 
         Parameters
         ----------
@@ -643,7 +648,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         ] = None,
         pos_label: Optional[Union[int, float, bool, str]] = None,
     ) -> Union[float, dict[Union[int, float, bool, str], float]]:
-        """Private interface of `precision` to be able to pass `data_source_hash`.
+        """
+        Private interface of `precision` to be able to pass `data_source_hash`.
 
         `data_source_hash` is either an `int` when we already computed the hash
         and are able to pass it around or `None` and thus trigger its computation
@@ -692,7 +698,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         ] = None,
         pos_label: Optional[Union[int, float, bool, str]] = None,
     ) -> Union[float, dict[Union[int, float, bool, str], float]]:
-        """Compute the recall score.
+        """
+        Compute the recall score.
 
         Parameters
         ----------
@@ -786,7 +793,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         ] = None,
         pos_label: Optional[Union[int, float, bool, str]] = None,
     ) -> Union[float, dict[Union[int, float, bool, str], float]]:
-        """Private interface of `recall` to be able to pass `data_source_hash`.
+        """
+        Private interface of `recall` to be able to pass `data_source_hash`.
 
         `data_source_hash` is either an `int` when we already computed the hash
         and are able to pass it around or `None` and thus trigger its computation
@@ -829,7 +837,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
     ) -> float:
-        """Compute the Brier score.
+        """
+        Compute the Brier score.
 
         Parameters
         ----------
@@ -888,7 +897,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
     ) -> float:
-        """Private interface of `brier_score` to be able to pass `data_source_hash`.
+        """
+        Private interface of `brier_score` to be able to pass `data_source_hash`.
 
         `data_source_hash` is either an `int` when we already computed the hash
         and are able to pass it around or `None` and thus trigger its computation
@@ -927,7 +937,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         average: Optional[Literal["macro", "micro", "weighted", "samples"]] = None,
         multi_class: Literal["raise", "ovr", "ovo"] = "ovr",
     ) -> Union[float, dict[Union[int, float, bool, str], float]]:
-        """Compute the ROC AUC score.
+        """
+        Compute the ROC AUC score.
 
         Parameters
         ----------
@@ -1023,7 +1034,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         average: Optional[Literal["macro", "micro", "weighted", "samples"]] = None,
         multi_class: Literal["raise", "ovr", "ovo"] = "ovr",
     ) -> Union[float, dict[Union[int, float, bool, str], float]]:
-        """Private interface of `roc_auc` to be able to pass `data_source_hash`.
+        """
+        Private interface of `roc_auc` to be able to pass `data_source_hash`.
 
         `data_source_hash` is either an `int` when we already computed the hash
         and are able to pass it around or `None` and thus trigger its computation
@@ -1063,7 +1075,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
     ) -> float:
-        """Compute the log loss.
+        """
+        Compute the log loss.
 
         Parameters
         ----------
@@ -1115,7 +1128,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
     ) -> float:
-        """Private interface of `log_loss` to be able to pass `data_source_hash`.
+        """
+        Private interface of `log_loss` to be able to pass `data_source_hash`.
 
         `data_source_hash` is either an `int` when we already computed the hash
         and are able to pass it around or `None` and thus trigger its computation
@@ -1150,7 +1164,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             Literal["raw_values", "uniform_average"], ArrayLike
         ] = "raw_values",
     ) -> Union[float, np.ndarray]:
-        """Compute the R² score.
+        """
+        Compute the R² score.
 
         Parameters
         ----------
@@ -1223,7 +1238,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             Literal["raw_values", "uniform_average"], ArrayLike
         ] = "raw_values",
     ) -> Union[float, np.ndarray]:
-        """Private interface of `r2` to be able to pass `data_source_hash`.
+        """
+        Private interface of `r2` to be able to pass `data_source_hash`.
 
         `data_source_hash` is either an `int` when we already computed the hash
         and are able to pass it around or `None` and thus trigger its computation
@@ -1268,7 +1284,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             Literal["raw_values", "uniform_average"], ArrayLike
         ] = "raw_values",
     ) -> Union[float, np.ndarray]:
-        """Compute the root mean squared error.
+        """
+        Compute the root mean squared error.
 
         Parameters
         ----------
@@ -1341,7 +1358,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             Literal["raw_values", "uniform_average"], ArrayLike
         ] = "raw_values",
     ) -> Union[float, np.ndarray]:
-        """Private interface of `rmse` to be able to pass `data_source_hash`.
+        """
+        Private interface of `rmse` to be able to pass `data_source_hash`.
 
         `data_source_hash` is either an `int` when we already computed the hash
         and are able to pass it around or `None` and thus trigger its computation
@@ -1381,7 +1399,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         y: Optional[ArrayLike] = None,
         **kwargs: Any,
     ) -> Union[float, dict[Union[int, float, bool, str], float], np.ndarray]:
-        """Compute a custom metric.
+        """
+        Compute a custom metric.
 
         It brings some flexibility to compute any desired metric. However, we need to
         follow some rules:
@@ -1478,7 +1497,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         y: Optional[ArrayLike] = None,
         **kwargs: Any,
     ) -> Any:
-        """Private interface of `custom_metric` to be able to pass `data_source_hash`.
+        """
+        Private interface of `custom_metric` to be able to pass `data_source_hash`.
 
         `data_source_hash` is either an `int` when we already computed the hash
         and are able to pass it around or `None` and thus trigger its computation
@@ -1499,7 +1519,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
     ####################################################################################
 
     def _sort_methods_for_help(self, methods: list[tuple]) -> list[tuple]:
-        """Override sort method for metrics-specific ordering.
+        """
+        Override sort method for metrics-specific ordering.
 
         In short, we display the `report_metrics` first and then the `custom_metric`.
         """
@@ -1573,7 +1594,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         ],
         display_kwargs: dict[str, Any],
     ) -> Union[RocCurveDisplay, PrecisionRecallCurveDisplay, PredictionErrorDisplay]:
-        """Get the display from the cache or compute it.
+        """
+        Get the display from the cache or compute it.
 
         Parameters
         ----------
@@ -1659,7 +1681,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         y: Optional[ArrayLike] = None,
         pos_label: Optional[Union[int, float, bool, str]] = None,
     ) -> RocCurveDisplay:
-        """Plot the ROC curve.
+        """
+        Plot the ROC curve.
 
         Parameters
         ----------
@@ -1732,7 +1755,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         y: Optional[ArrayLike] = None,
         pos_label: Optional[Union[int, float, bool, str]] = None,
     ) -> PrecisionRecallCurveDisplay:
-        """Plot the precision-recall curve.
+        """
+        Plot the precision-recall curve.
 
         Parameters
         ----------
@@ -1806,7 +1830,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         subsample: Union[float, int, None] = 1_000,
         random_state: Optional[int] = None,
     ) -> PredictionErrorDisplay:
-        """Plot the prediction error of a regression model.
+        """
+        Plot the prediction error of a regression model.
 
         Extra keyword arguments will be passed to matplotlib's `plot`.
 

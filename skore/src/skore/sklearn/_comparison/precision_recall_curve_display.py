@@ -20,7 +20,8 @@ from skore.sklearn._plot.utils import (
 
 
 class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
-    """Precision Recall visualization.
+    """
+    Precision Recall visualization.
 
     An instance of this class is should created by
     `ComparisonReport.metrics.precision_recall()`.
@@ -107,7 +108,8 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
         *,
         despine: bool = True,
     ):
-        """Plot visualization.
+        """
+        Plot visualization.
 
         Parameters
         ----------
@@ -214,7 +216,8 @@ class PrecisionRecallCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin
         pos_label: Union[int, float, bool, str, None],
         drop_intermediate: bool = True,
     ):
-        """Private factory to create a PrecisionRecallCurveDisplay from predictions.
+        """
+        Private factory to create a PrecisionRecallCurveDisplay from predictions.
 
         Parameters
         ----------

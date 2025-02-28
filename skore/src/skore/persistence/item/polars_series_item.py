@@ -1,4 +1,5 @@
-"""PolarsSeriesItem.
+"""
+PolarsSeriesItem.
 
 This module defines the PolarsSeriesItem class,
 which represents a polars Series item.

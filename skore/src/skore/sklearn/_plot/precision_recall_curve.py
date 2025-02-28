@@ -23,7 +23,8 @@ from skore.sklearn.types import MLTask
 class PrecisionRecallCurveDisplay(
     HelpDisplayMixin, _ClassifierCurveDisplayMixin, StyleDisplayMixin
 ):
-    """Precision Recall visualization.
+    """
+    Precision Recall visualization.
 
     An instance of this class is should created by
     `EstimatorReport.metrics.precision_recall()`. You should not create an
@@ -136,7 +137,8 @@ class PrecisionRecallCurveDisplay(
         pr_curve_kwargs: Optional[Union[dict[str, Any], list[dict[str, Any]]]] = None,
         despine: bool = True,
     ) -> None:
-        """Plot visualization.
+        """
+        Plot visualization.
 
         Extra keyword arguments will be passed to matplotlib's `plot`.
 
@@ -392,7 +394,8 @@ class PrecisionRecallCurveDisplay(
         pos_label: Union[int, float, bool, str, None],
         drop_intermediate: bool = False,
     ) -> "PrecisionRecallCurveDisplay":
-        """Plot precision-recall curve given binary class predictions.
+        """
+        Plot precision-recall curve given binary class predictions.
 
         Parameters
         ----------

@@ -22,7 +22,8 @@ from skore.utils._logger import logger_context
 
 
 def find_free_port(min_port: int = 22140, max_attempts: int = 100) -> int:
-    """Find first available port starting from min_port.
+    """
+    Find first available port starting from min_port.
 
     Note: Jupyter has the same brute force way to find a free port.
     see: https://github.com/jupyter/jupyter_core/blob/fa513c1550bbd1ebcc14a4a79eb8c5d95e3e23c9/tests/dotipython_empty/profile_default/ipython_notebook_config.py#L28
@@ -60,7 +61,8 @@ def find_free_port(min_port: int = 22140, max_attempts: int = 100) -> int:
 
 
 class ServerInfo:
-    """Server information.
+    """
+    Server information.
 
     Parameters
     ----------
@@ -99,7 +101,8 @@ class ServerInfo:
 
     @classmethod
     def rejoin(cls, project: Project):
-        """Rejoin a project to a server.
+        """
+        Rejoin a project to a server.
 
         Parameters
         ----------
@@ -140,7 +143,8 @@ class ServerInfo:
 
 
 def is_server_started(port: int, timeout: float = 10.0, interval: float = 0.1) -> bool:
-    """Wait for server to be ready by attempting to connect to the port.
+    """
+    Wait for server to be ready by attempting to connect to the port.
 
     Parameters
     ----------
@@ -169,7 +173,8 @@ def is_server_started(port: int, timeout: float = 10.0, interval: float = 0.1) -
 def start_server_in_subprocess(
     project: Project, port: int, open_browser: bool
 ) -> subprocess.Popen:
-    """Start the server in a separate process.
+    """
+    Start the server in a separate process.
 
     Parameters
     ----------
@@ -214,7 +219,8 @@ def start_server_in_subprocess(
 
 
 def cleanup_server(project: Project, timeout: float = 5.0) -> bool:
-    """Cleanup server resources and wait for termination.
+    """
+    Cleanup server resources and wait for termination.
 
     Parameters
     ----------
@@ -262,7 +268,8 @@ def cleanup_server(project: Project, timeout: float = 5.0) -> bool:
 
 
 def block_before_cleanup(project: Project, process: subprocess.Popen) -> None:
-    """Block the main process until the server is terminated.
+    """
+    Block the main process until the server is terminated.
 
     Parameters
     ----------
@@ -286,7 +293,8 @@ def block_before_cleanup(project: Project, process: subprocess.Popen) -> None:
 
 
 def _kill_all_servers(verbose: bool = False) -> None:
-    """Kill all running servers.
+    """
+    Kill all running servers.
 
     Parameters
     ----------
@@ -324,7 +332,8 @@ def _launch(
     open_browser: bool = True,
     verbose: bool = False,
 ) -> None:
-    """Launch the UI to visualize a project.
+    """
+    Launch the UI to visualize a project.
 
     Parameters
     ----------

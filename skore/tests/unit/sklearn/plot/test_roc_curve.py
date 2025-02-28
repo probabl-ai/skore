@@ -36,7 +36,8 @@ def multiclass_classification_data_no_split():
 
 
 def test_roc_curve_display_binary_classification(pyplot, binary_classification_data):
-    """Check the attributes and default plotting behaviour of the ROC curve plot with
+    """
+    Check the attributes and default plotting behaviour of the ROC curve plot with
     binary data."""
     estimator, X_train, X_test, y_train, y_test = binary_classification_data
     report = EstimatorReport(
@@ -86,7 +87,8 @@ def test_roc_curve_display_binary_classification(pyplot, binary_classification_d
 def test_roc_curve_display_multiclass_classification(
     pyplot, multiclass_classification_data
 ):
-    """Check the attributes and default plotting behaviour of the ROC curve plot with
+    """
+    Check the attributes and default plotting behaviour of the ROC curve plot with
     multiclass data."""
     estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
     report = EstimatorReport(
@@ -178,7 +180,8 @@ def test_roc_curve_display_data_source_multiclass_classification(
 def test_roc_curve_display_plot_error_wrong_roc_curve_kwargs(
     pyplot, binary_classification_data, multiclass_classification_data
 ):
-    """Check that we raise a proper error message when passing an inappropriate
+    """
+    Check that we raise a proper error message when passing an inappropriate
     value for the `roc_curve_kwargs` argument."""
     estimator, X_train, X_test, y_train, y_test = binary_classification_data
     report = EstimatorReport(
@@ -243,7 +246,8 @@ def test_roc_curve_display_roc_curve_kwargs_binary_classification(
 def test_roc_curve_display_roc_curve_kwargs_multiclass_classification(
     pyplot, multiclass_classification_data
 ):
-    """Check that we can pass keyword arguments to the ROC curve plot for
+    """
+    Check that we can pass keyword arguments to the ROC curve plot for
     multiclass classification."""
     estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
     report = EstimatorReport(
@@ -270,7 +274,8 @@ def test_roc_curve_display_roc_curve_kwargs_multiclass_classification(
 def test_roc_curve_display_cross_validation_binary_classification(
     pyplot, binary_classification_data_no_split
 ):
-    """Check the attributes and default plotting behaviour of the ROC curve plot with
+    """
+    Check the attributes and default plotting behaviour of the ROC curve plot with
     binary data."""
     (estimator, X, y), cv = binary_classification_data_no_split, 3
 
@@ -321,7 +326,8 @@ def test_roc_curve_display_cross_validation_binary_classification(
 def test_roc_curve_display_cross_validation_multiclass_classification(
     pyplot, multiclass_classification_data_no_split
 ):
-    """Check the attributes and default plotting behaviour of the ROC curve plot with
+    """
+    Check the attributes and default plotting behaviour of the ROC curve plot with
     multiclass data."""
     (estimator, X, y), cv = multiclass_classification_data_no_split, 3
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
@@ -381,7 +387,8 @@ def test_roc_curve_display_cross_validation_multiclass_classification(
 def test_roc_curve_display_cross_validation_binary_classification_kwargs(
     pyplot, binary_classification_data_no_split, roc_curve_kwargs
 ):
-    """Check that we can pass keyword arguments to the ROC curve plot for
+    """
+    Check that we can pass keyword arguments to the ROC curve plot for
     cross-validation."""
     (estimator, X, y), cv = binary_classification_data_no_split, 3
 
@@ -405,7 +412,8 @@ def test_roc_curve_display_cross_validation_binary_classification_kwargs(
 def test_roc_curve_display_cross_validation_multiple_roc_curve_kwargs_error(
     pyplot, fixture_name, request, roc_curve_kwargs
 ):
-    """Check that we raise a proper error message when passing an inappropriate
+    """
+    Check that we raise a proper error message when passing an inappropriate
     value for the `roc_curve_kwargs` argument."""
     (estimator, X, y), cv = request.getfixturevalue(fixture_name), 3
 

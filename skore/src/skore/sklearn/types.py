@@ -35,7 +35,8 @@ class SKLearnCrossValidator(Protocol):
     def split(
         self, X: ArrayLike, y: Any = None, groups: Any = None
     ) -> Iterator[tuple[ArrayLike, ArrayLike]]:
-        """Generate indices to split data into training and test set.
+        """
+        Generate indices to split data into training and test set.
 
         Parameters
         ----------

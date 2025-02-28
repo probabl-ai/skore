@@ -4,7 +4,8 @@ from skore.utils._accessor import _check_supported_ml_task
 
 
 def test_register_accessor():
-    """Test that an accessor is properly registered and accessible on a class
+    """
+    Test that an accessor is properly registered and accessible on a class
     instance.
     """
 
@@ -30,7 +31,8 @@ def test_register_accessor():
 
 
 def test_check_supported_ml_task():
-    """Test that ML task validation accepts supported tasks and rejects unknown
+    """
+    Test that ML task validation accepts supported tasks and rejects unknown
     ones.
     """
 

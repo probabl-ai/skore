@@ -2,7 +2,8 @@
 
 
 class InvalidProjectNameError(Exception):
-    """The project name does not fit with one or more of the project name rules.
+    """
+    The project name does not fit with one or more of the project name rules.
 
     - The project name must start with an alphanumeric character, and must not contain
     special characters other than '_' (underscore) and '-' (hyphen).

@@ -1,4 +1,5 @@
-"""PolarsDataFrameItem.
+"""
+PolarsDataFrameItem.
 
 This module defines the PolarsDataFrameItem class,
 which represents a polars DataFrame item.

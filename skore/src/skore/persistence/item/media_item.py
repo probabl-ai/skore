@@ -1,4 +1,5 @@
-"""MediaItem.
+"""
+MediaItem.
 
 This module defines the MediaItem class, used to persist media.
 """

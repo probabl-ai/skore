@@ -21,7 +21,8 @@ from skore.sklearn.types import MLTask
 
 
 class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
-    """Visualization of the prediction error of a regression model.
+    """
+    Visualization of the prediction error of a regression model.
 
     This tool can display "residuals vs predicted" or "actual vs predicted"
     using scatter plots to qualitatively assess the behavior of a regressor,
@@ -113,7 +114,8 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
         line_kwargs: Optional[dict[str, Any]] = None,
         despine: bool = True,
     ) -> None:
-        """Plot visualization.
+        """
+        Plot visualization.
 
         Extra keyword arguments will be passed to matplotlib's ``plot``.
 
@@ -310,7 +312,8 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
         subsample: Union[float, int, None] = 1_000,
         random_state: Optional[Union[int, np.random.RandomState]] = None,
     ) -> "PredictionErrorDisplay":
-        """Plot the prediction error given the true and predicted targets.
+        """
+        Plot the prediction error given the true and predicted targets.
 
         Parameters
         ----------

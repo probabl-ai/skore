@@ -4,7 +4,8 @@ from typing import Any
 
 
 def get_environment_info() -> dict[str, Any]:
-    """Detect the current Python execution environment.
+    """
+    Detect the current Python execution environment.
 
     Returns a dictionary with information about the environment.
     """

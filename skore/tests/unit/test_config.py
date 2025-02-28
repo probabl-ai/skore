@@ -88,7 +88,8 @@ def test_set_config():
 
 @pytest.mark.parametrize("backend", ["loky", "multiprocessing", "threading"])
 def test_config_threadsafe_joblib(backend):
-    """Test that the global config is threadsafe with all joblib backends.
+    """
+    Test that the global config is threadsafe with all joblib backends.
     Two jobs are spawned and each sets `show_progress` to two different values.
     When the job with a duration of 0.1s completes, the `show_progress` value
     should be the same as the value passed to the function. In other words,
@@ -106,7 +107,8 @@ def test_config_threadsafe_joblib(backend):
 
 
 def test_config_threadsafe():
-    """Uses threads directly to test that the global config does not change
+    """
+    Uses threads directly to test that the global config does not change
     between threads. Same test as `test_config_threadsafe_joblib` but with
     `ThreadPoolExecutor`."""
 

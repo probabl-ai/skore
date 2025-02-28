@@ -1,4 +1,5 @@
-"""MatplotlibFigureItem.
+"""
+MatplotlibFigureItem.
 
 This module defines the MatplotlibFigureItem class, used to persist Matplotlib figures.
 """

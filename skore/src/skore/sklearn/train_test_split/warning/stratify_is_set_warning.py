@@ -1,4 +1,5 @@
-"""Stratify warning.
+"""
+Stratify warning.
 
 This warning is shown when `stratify` is set.
 """
@@ -27,7 +28,8 @@ class StratifyWarning(TrainTestSplitWarning):
 
     @staticmethod
     def check(stratify: Optional[ArrayLike], **kwargs) -> Union[str, None]:
-        """Check whether stratify is set.
+        """
+        Check whether stratify is set.
 
         Parameters
         ----------

@@ -17,7 +17,8 @@ DescriptionType = Union[str, Callable[..., str]]
 def progress_decorator(
     description: DescriptionType,
 ) -> Callable[[Callable[..., T]], Callable[..., T]]:
-    """Decorate class methods to add a progress bar.
+    """
+    Decorate class methods to add a progress bar.
 
     This decorator adds a Rich progress bar to class methods, displaying progress
     during execution. The progress bar automatically disappears after completion.

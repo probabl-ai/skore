@@ -1,4 +1,5 @@
-"""Define PrimitiveItem.
+"""
+Define PrimitiveItem.
 
 PrimitiveItems represents a primitive item with creation and update timestamps.
 """

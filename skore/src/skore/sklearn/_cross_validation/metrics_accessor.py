@@ -25,7 +25,8 @@ DataSource = Literal["test", "train"]
 
 
 class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
-    """Accessor for metrics-related operations.
+    """
+    Accessor for metrics-related operations.
 
     You can access this accessor using the `metrics` attribute.
     """
@@ -63,7 +64,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
         ] = None,
     ) -> pd.DataFrame:
-        """Report a set of metrics for our estimator.
+        """
+        Report a set of metrics for our estimator.
 
         Parameters
         ----------
@@ -244,7 +246,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
         ] = None,
     ) -> pd.DataFrame:
-        """Compute the accuracy score.
+        """
+        Compute the accuracy score.
 
         Parameters
         ----------
@@ -299,7 +302,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
         ] = None,
     ) -> pd.DataFrame:
-        """Compute the precision score.
+        """
+        Compute the precision score.
 
         Parameters
         ----------
@@ -385,7 +389,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
         ] = None,
     ) -> pd.DataFrame:
-        """Compute the recall score.
+        """
+        Compute the recall score.
 
         Parameters
         ----------
@@ -466,7 +471,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
         ] = None,
     ) -> pd.DataFrame:
-        """Compute the Brier score.
+        """
+        Compute the Brier score.
 
         Parameters
         ----------
@@ -519,7 +525,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
         ] = None,
     ) -> pd.DataFrame:
-        """Compute the ROC AUC score.
+        """
+        Compute the ROC AUC score.
 
         Parameters
         ----------
@@ -604,7 +611,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
         ] = None,
     ) -> pd.DataFrame:
-        """Compute the log loss.
+        """
+        Compute the log loss.
 
         Parameters
         ----------
@@ -656,7 +664,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
         ] = None,
     ) -> pd.DataFrame:
-        """Compute the R² score.
+        """
+        Compute the R² score.
 
         Parameters
         ----------
@@ -719,7 +728,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
         ] = None,
     ) -> pd.DataFrame:
-        """Compute the root mean squared error.
+        """
+        Compute the root mean squared error.
 
         Parameters
         ----------
@@ -780,7 +790,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         ] = None,
         **kwargs,
     ) -> pd.DataFrame:
-        """Compute a custom metric.
+        """
+        Compute a custom metric.
 
         It brings some flexibility to compute any desired metric. However, we need to
         follow some rules:
@@ -864,7 +875,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
     def _sort_methods_for_help(
         self, methods: list[tuple[str, Callable]]
     ) -> list[tuple[str, Callable]]:
-        """Override sort method for metrics-specific ordering.
+        """
+        Override sort method for metrics-specific ordering.
 
         In short, we display the `report_metrics` first and then the `custom_metric`.
         """
@@ -935,7 +947,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         display_class: Any,
         display_kwargs: dict[str, Any],
     ) -> Union[RocCurveDisplay, PrecisionRecallCurveDisplay, PredictionErrorDisplay]:
-        """Get the display from the cache or compute it.
+        """
+        Get the display from the cache or compute it.
 
         Parameters
         ----------
@@ -1018,7 +1031,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         data_source: DataSource = "test",
         pos_label: Optional[Union[int, float, bool, str]] = None,
     ) -> RocCurveDisplay:
-        """Plot the ROC curve.
+        """
+        Plot the ROC curve.
 
         Parameters
         ----------
@@ -1069,7 +1083,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         data_source: DataSource = "test",
         pos_label: Optional[Union[int, float, bool, str]] = None,
     ) -> PrecisionRecallCurveDisplay:
-        """Plot the precision-recall curve.
+        """
+        Plot the precision-recall curve.
 
         Parameters
         ----------
@@ -1121,7 +1136,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         subsample: Union[float, int, None] = 1_000,
         random_state: Optional[int] = None,
     ) -> PredictionErrorDisplay:
-        """Plot the prediction error of a regression model.
+        """
+        Plot the prediction error of a regression model.
 
         Extra keyword arguments will be passed to matplotlib's `plot`.
 

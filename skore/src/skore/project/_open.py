@@ -15,7 +15,8 @@ def open(
     port: Union[int, None] = None,
     verbose: bool = False,
 ) -> Project:
-    """Open a project given a project name or path and launch skore UI.
+    """
+    Open a project given a project name or path and launch skore UI.
 
     This function :
         - opens the project if it already exists,

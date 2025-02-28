@@ -1,4 +1,5 @@
-"""SklearnBaseEstimatorItem.
+"""
+SklearnBaseEstimatorItem.
 
 This module defines the SklearnBaseEstimatorItem class,
 which represents a scikit-learn BaseEstimator item.

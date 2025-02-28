@@ -59,7 +59,8 @@ def test_comparison_report_init_wrong_parameters(binary_classification_model):
 
 
 def test_comparison_report_without_testing_data(binary_classification_model):
-    """If there is no test data (`None`) for some estimator report,
+    """
+    If there is no test data (`None`) for some estimator report,
     initialization works, but computing metrics can fail.
     """
     estimator, _, _, _, _ = binary_classification_model
@@ -136,7 +137,8 @@ def test_comparison_report_init_different_ml_usecases(
 
 
 def test_comparison_report_init_with_report_names(binary_classification_model):
-    """If the estimators are passed as a dict,
+    """
+    If the estimators are passed as a dict,
     then the estimator names are the dict keys."""
     estimator, X_train, X_test, y_train, y_test = binary_classification_model
     estimator_report = EstimatorReport(
@@ -156,7 +158,8 @@ def test_comparison_report_init_with_report_names(binary_classification_model):
 
 
 def test_comparison_report_init_without_report_names(binary_classification_model):
-    """If the estimators are passed as a list,
+    """
+    If the estimators are passed as a list,
     then the estimator names are the estimator class names."""
     estimator, X_train, X_test, y_train, y_test = binary_classification_model
     estimator_report = EstimatorReport(
@@ -176,7 +179,8 @@ def test_comparison_report_init_without_report_names(binary_classification_model
 
 
 def test_comparison_report_non_string_report_names(binary_classification_model):
-    """If the estimators are passed as a dict with non-string keys,
+    """
+    If the estimators are passed as a dict with non-string keys,
     then the estimator names are the dict keys converted to strings."""
     estimator, _, X_test, _, y_test = binary_classification_model
     estimator_report = EstimatorReport(
@@ -543,7 +547,8 @@ def test_comparison_report_custom_metric_X_y(binary_classification_model):
 
 
 def test_cross_validation_report_flat_index(binary_classification_model):
-    """Check that the index is flattened when `flat_index` is True.
+    """
+    Check that the index is flattened when `flat_index` is True.
 
     Since `pos_label` is None, then by default a MultiIndex would be returned.
     Here, we force to have a single-index by passing `flat_index=True`.

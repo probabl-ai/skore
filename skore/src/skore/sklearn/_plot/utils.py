@@ -112,7 +112,8 @@ class HelpDisplayMixin:
 
 
 class _ClassifierCurveDisplayMixin:
-    """Mixin class to be used in Displays requiring a binary classifier.
+    """
+    Mixin class to be used in Displays requiring a binary classifier.
 
     The aim of this class is to centralize some validations regarding the estimator and
     the target and gather the response of the estimator.
@@ -156,7 +157,8 @@ def _despine_matplotlib_axis(
     y_range: tuple[float, float] = (0, 1),
     offset: float = 10,
 ) -> None:
-    """Despine the matplotlib axis.
+    """
+    Despine the matplotlib axis.
 
     Parameters
     ----------
@@ -180,7 +182,8 @@ def _despine_matplotlib_axis(
 def _validate_style_kwargs(
     default_style_kwargs: dict[str, Any], user_style_kwargs: dict[str, Any]
 ) -> dict[str, Any]:
-    """Create valid style kwargs by avoiding Matplotlib alias errors.
+    """
+    Create valid style kwargs by avoiding Matplotlib alias errors.
 
     Matplotlib raises an error when, for example, 'color' and 'c', or 'linestyle' and
     'ls', are specified together. To avoid this, we automatically keep only the one
@@ -244,7 +247,8 @@ def _validate_style_kwargs(
 def sample_mpl_colormap(
     cmap: Colormap, n: int
 ) -> list[tuple[float, float, float, float]]:
-    """Sample colors from a Matplotlib colormap.
+    """
+    Sample colors from a Matplotlib colormap.
 
     Parameters
     ----------

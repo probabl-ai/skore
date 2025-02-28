@@ -1,4 +1,5 @@
-"""PillowImageItem.
+"""
+PillowImageItem.
 
 This module defines the PillowImageItem class, used to persist Pillow images.
 """

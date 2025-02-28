@@ -1,4 +1,5 @@
-"""'Random state is unset' warning.
+"""
+'Random state is unset' warning.
 
 This warning is shown when `random_state` is unset.
 """
@@ -29,7 +30,8 @@ class RandomStateUnsetWarning(TrainTestSplitWarning):
         random_state: Optional[Union[int, RandomState]],
         **kwargs,
     ) -> Union[str, None]:
-        """Check whether ``random_state`` is set.
+        """
+        Check whether ``random_state`` is set.
 
         Parameters
         ----------

@@ -12,7 +12,8 @@ from typing import Any, Union
 
 
 def _get_sys_info() -> dict[str, Any]:
-    """System information.
+    """
+    System information.
 
     Returns
     -------
@@ -32,7 +33,8 @@ def _get_sys_info() -> dict[str, Any]:
 
 
 def _get_deps_info() -> dict[str, Any]:
-    """Overview of the installed version of main dependencies.
+    """
+    Overview of the installed version of main dependencies.
 
     This function does not import the modules to collect the version numbers
     but instead relies on standard Python package metadata.
@@ -68,7 +70,8 @@ def _get_deps_info() -> dict[str, Any]:
 
 
 def show_versions() -> None:
-    """Print useful debugging information.
+    """
+    Print useful debugging information.
 
     Examples
     --------

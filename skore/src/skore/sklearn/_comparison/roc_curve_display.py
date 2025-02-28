@@ -34,7 +34,8 @@ LINESTYLE = [
 
 
 class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
-    """ROC Curve visualization for comparison report.
+    """
+    ROC Curve visualization for comparison report.
 
     An instance of this class is should created by `ComparisonReport.metrics.roc()`.
     You should not create an instance of this class directly.
@@ -127,7 +128,8 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         plot_chance_level=True,
         despine=True,
     ):
-        """Plot visualization.
+        """
+        Plot visualization.
 
         Parameters
         ----------
@@ -231,7 +233,8 @@ class RocCurveDisplay(HelpDisplayMixin, _ClassifierCurveDisplayMixin):
         pos_label=None,
         drop_intermediate=True,
     ):
-        """Private factory to create a RocCurveDisplay from predictions.
+        """
+        Private factory to create a RocCurveDisplay from predictions.
 
         Parameters
         ----------

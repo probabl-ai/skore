@@ -9,7 +9,8 @@ from skore.ui.app import create_app
 
 
 def run_server(port: int, project_path: str) -> uvicorn.Server:
-    """Run the uvicorn server with the given project and port.
+    """
+    Run the uvicorn server with the given project and port.
 
     Parameters
     ----------

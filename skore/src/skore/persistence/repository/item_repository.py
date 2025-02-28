@@ -1,4 +1,5 @@
-"""ItemRepository for managing storage and retrieval of items.
+"""
+ItemRepository for managing storage and retrieval of items.
 
 This module provides the ItemRepository class, which is responsible for
 storing, retrieving, and deleting items in a storage system.
@@ -146,7 +147,8 @@ class ItemRepository:
         yield from self.storage
 
     def set_item_note(self, key: str, note: str, *, version=-1):
-        """Attach a note to key ``key``.
+        """
+        Attach a note to key ``key``.
 
         Parameters
         ----------
@@ -178,7 +180,8 @@ class ItemRepository:
             raise KeyError((key, version)) from e
 
     def get_item_note(self, key: str, *, version=-1) -> Union[str, None]:
-        """Retrieve a note previously attached to key ``key``.
+        """
+        Retrieve a note previously attached to key ``key``.
 
         Parameters
         ----------
@@ -203,7 +206,8 @@ class ItemRepository:
             raise KeyError((key, version)) from e
 
     def delete_item_note(self, key: str, *, version=-1):
-        """Delete a note previously attached to key ``key``.
+        """
+        Delete a note previously attached to key ``key``.
 
         Parameters
         ----------

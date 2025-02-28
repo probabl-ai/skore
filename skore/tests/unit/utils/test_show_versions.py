@@ -18,7 +18,8 @@ def test_get_deps_info():
 
 
 def test_show_versions(capfd):
-    """Check that we have the expected packages in the output of `show_versions()`.
+    """
+    Check that we have the expected packages in the output of `show_versions()`.
 
     We use `:` in the assertion to be sure that we are robust to package
     version specifiers.
