@@ -1,3 +1,10 @@
+"""
+Progress bar.
+
+This file implements a progress bar that shows when long-running tasks start,
+e.g. training estimators.
+"""
+
 from functools import wraps
 from typing import Any, Callable, TypeVar, Union
 
@@ -31,13 +38,13 @@ def progress_decorator(
 
     Returns
     -------
-    decorator : function
+    Callable
         A decorator that wraps the input function and adds a progress bar to it.
     """
 
-    def decorator(func: Callable[..., T]) -> Callable[..., T]:
+    def decorator(func: Callable[..., T]) -> Callable[..., T]:  # numpydoc ignore=GL08
         @wraps(func)
-        def wrapper(*args: Any, **kwargs: Any) -> T:
+        def wrapper(*args: Any, **kwargs: Any) -> T:  # numpydoc ignore=GL08
             self_obj: Any = args[0]
 
             desc = description(self_obj) if callable(description) else description
