@@ -263,20 +263,24 @@ ridge_report.feature_importance.coefficients()
 # Let us unscale the coefficients, without forgetting the intercept, so that the
 # coefficients can be interpreted using the original units:
 # %%
-mean = ridge_report.estimator_[0].mean_.mean()
-scale = ridge_report.estimator_[0].scale_
+import numpy as np
+
+mu = ridge_report.estimator_[0].mean_
+sigma = ridge_report.estimator_[0].scale_
 
 
-def unscale_coefficients(df, mean, scale):
-    df.loc["Intercept", "Coefficient"] = df.loc["Intercept", "Coefficient"] + mean
+def unscale_coefficients(df, mu, sigma):
+    df.loc["Intercept", "Coefficient"] = df.loc["Intercept", "Coefficient"] - np.sum(
+        df.loc[df.index != "Intercept", "Coefficient"] * mu / sigma
+    )
     df.loc[df.index != "Intercept", "Coefficient"] = (
-        df.loc[df.index != "Intercept", "Coefficient"] * scale
+        df.loc[df.index != "Intercept", "Coefficient"] / sigma
     )
     return df
 
 
 df_ridge_report_coef_unscaled = unscale_coefficients(
-    ridge_report.feature_importance.coefficients(), mean, scale
+    ridge_report.feature_importance.coefficients(), mu, sigma
 )
 df_ridge_report_coef_unscaled
 
@@ -396,7 +400,6 @@ sort_absolute_values(df_engineered_ridge_coef)
 # a :class:`~sklearn.model_selection.RandomizedSearchCV`.
 
 # %%
-import numpy as np
 from scipy.stats import randint
 from sklearn.feature_selection import SelectKBest, VarianceThreshold
 from sklearn.model_selection import RandomizedSearchCV
