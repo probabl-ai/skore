@@ -117,6 +117,14 @@ convention = "numpy"
 "src/*" = ["UP007"]
 "tests/*" = ["D"]
 
+[tool.numpydoc_validation]
+checks = [
+  "all",  # Report on all checks, except the below
+  "ES01",  # No "extended summary" section
+  "EX01",  # No "Examples" section
+  "SA01",  # No "See also" section
+]
+
 [tool.typos.default]
 extend-ignore-re = [
   # Line ignore with trailing `# spellchecker:disable-line`
