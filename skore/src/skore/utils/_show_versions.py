@@ -22,13 +22,11 @@ def _get_sys_info() -> dict[str, Any]:
     """
     python = sys.version.replace("\n", " ")
 
-    blob = [
-        ("python", python),
-        ("executable", sys.executable),
-        ("machine", platform.platform()),
-    ]
-
-    return dict(blob)
+    return {
+        "python": python,
+        "executable": sys.executable,
+        "machine": platform.platform(),
+    }
 
 
 def _get_deps_info() -> dict[str, Any]:
