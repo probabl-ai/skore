@@ -290,7 +290,8 @@ df_ridge_report_coef_unscaled
 # We can interpret a coefficient as follows: according to our model, on average,
 # having one additional bedroom (a increase of :math:`1` of ``AveBedrms``),
 # with all other features being constant,
-# increases the house value of :math:`0.15` in $100,000, hence of $15,000.
+# increases the house value of :math:`0.62` in $100,000, hence of $62,000.
+# Note that we have not dealt with the outliers in this iteration.
 
 # %%
 # More complex model
