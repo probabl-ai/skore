@@ -1,0 +1,117 @@
+"""MatplotlibFigureItem.
+
+This module defines the MatplotlibFigureItem class, used to persist Matplotlib figures.
+"""
+
+from __future__ import annotations
+
+from functools import cached_property
+from contextlib import contextmanager
+from io import BytesIO
+from typing import TYPE_CHECKING, Optional
+
+from joblib import dump, load
+
+from .item import (
+    Item,
+    ItemTypeError,
+    Representation,
+    lazy_is_instance,
+    b64_str_to_bytes,
+    bytes_to_b64_str,
+)
+
+if TYPE_CHECKING:
+    from matplotlib.figure import Figure
+
+
+@contextmanager
+def mpl_backend(backend="agg"):
+    """Context manager for switching matplotlib backend."""
+    import matplotlib
+
+    original_backend = matplotlib.get_backend()
+
+    try:
+        matplotlib.use(backend)
+        yield
+    finally:
+        matplotlib.use(original_backend)
+
+
+class MatplotlibFigureItem(Item):
+    """A class used to persist a Matplotlib figure."""
+
+    def __init__(
+        self,
+        figure_b64_str: str,
+        created_at: Optional[str] = None,
+        updated_at: Optional[str] = None,
+        note: Optional[str] = None,
+    ):
+        """
+        Initialize a MatplotlibFigureItem.
+
+        Parameters
+        ----------
+        figure_b64_str : str
+            The raw bytes of the Matplotlib figure pickled representation.
+        created_at : str, optional
+            The creation timestamp in ISO format.
+        updated_at : str, optional
+            The last update timestamp in ISO format.
+        note : str, optional
+            A note.
+        """
+        super().__init__(created_at, updated_at, note)
+
+        self.figure_b64_str = figure_b64_str
+
+    @cached_property
+    def __raw__(self) -> Figure:
+        figure_bytes = b64_str_to_bytes(self.figure_b64_str)
+
+        with BytesIO(figure_bytes) as stream, mpl_backend(backend="agg"):
+            return load(stream)
+
+    @property
+    def __representation__(self) -> Representation:
+        with BytesIO() as stream:
+            self.__raw__.savefig(stream, format="svg", bbox_inches="tight")
+
+            figure_bytes = stream.getvalue()
+            figure_b64_str = bytes_to_b64_str(figure_bytes)
+
+        return Representation(
+            media_type="image/svg+xml;base64",
+            value=figure_b64_str,
+        )
+
+    @classmethod
+    def factory(cls, figure: Figure, /, **kwargs) -> MatplotlibFigureItem:
+        """
+        Create a new MatplotlibFigureItem instance from a Matplotlib figure.
+
+        Parameters
+        ----------
+        figure : matplotlib.figure.Figure
+            The Matplotlib figure to store.
+
+        Returns
+        -------
+        MatplotlibFigureItem
+            A new MatplotlibFigureItem instance.
+        """
+        if not lazy_is_instance(figure, "matplotlib.figure.Figure"):
+            raise ItemTypeError(f"Type '{figure.__class__}' is not supported.")
+
+        with BytesIO() as stream:
+            dump(figure, stream)
+
+            figure_bytes = stream.getvalue()
+            figure_b64_str = bytes_to_b64_str(figure_bytes)
+
+        instance = cls(figure_b64_str, **kwargs)
+        instance.__raw__ = figure
+
+        return instance
