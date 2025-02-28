@@ -38,7 +38,9 @@ jobs:
 
       - name: Lint
         working-directory: skore/
-        run: pre-commit run --all-files ruff
+        run: |
+          pre-commit run --all-files ruff
+          pre-commit run --all-files numpydoc-validation
 
   backend-lockfiles:
     runs-on: "ubuntu-latest"
