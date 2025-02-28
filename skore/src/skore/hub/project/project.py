@@ -47,7 +47,7 @@ class Project:
                         "note": None,
                         "type": item.__class__.__name__,
                         "parameters": item.__parameters__,
-                        "representation": item.__representation__,
+                        "representation": item.__representation__.__dict__,
                     },
                 },
             )
