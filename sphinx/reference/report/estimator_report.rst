@@ -76,3 +76,4 @@ used to train your estimator.
 
     EstimatorReport.feature_importance.help
     EstimatorReport.feature_importance.coefficients
+    EstimatorReport.feature_importance.feature_permutation
