@@ -1,6 +1,7 @@
 from collections.abc import Iterable
 from typing import Any, Callable, Literal, Optional, Union
 
+import joblib
 import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike
@@ -214,6 +215,9 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
 
         if data_source_hash is not None:
             cache_key_parts.append(data_source_hash)
+
+        if callable(scoring) or isinstance(scoring, (list, dict)):
+            cache_key_parts.append(joblib.hash(scoring))
 
         # order arguments by key to ensure cache works
         # n_jobs variable should not be in the cache

@@ -1,10 +1,12 @@
+import copy
+
 import numpy as np
 import pandas as pd
 import pytest
 from sklearn.datasets import make_regression
 from sklearn.exceptions import NotFittedError
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import make_scorer, r2_score
+from sklearn.metrics import make_scorer, r2_score, root_mean_squared_error
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
@@ -211,6 +213,32 @@ def test_cache_random_state(regression_data):
     assert report._cache != {}
     cached_result = report.feature_importance.feature_permutation(
         data_source="train", random_state=42
+    )
+    assert len(report._cache) == 1
+
+    pd.testing.assert_frame_equal(cached_result, result)
+
+
+@pytest.mark.parametrize(
+    "scoring",
+    [
+        make_scorer(r2_score),
+        ["r2", "neg_root_mean_squared_error"],
+        {"r2": make_scorer(r2_score), "rmse": make_scorer(root_mean_squared_error)},
+    ],
+)
+def test_cache_scoring_is_callable(regression_data, scoring):
+    """If `scoring` is a callable then the result is cached properly."""
+
+    X, y = regression_data
+    report = EstimatorReport(LinearRegression(), X_train=X, y_train=y)
+
+    result = report.feature_importance.feature_permutation(
+        data_source="train", scoring=scoring, random_state=42
+    )
+    assert report._cache != {}
+    cached_result = report.feature_importance.feature_permutation(
+        data_source="train", scoring=copy.copy(scoring), random_state=42
     )
     assert len(report._cache) == 1
 
