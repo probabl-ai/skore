@@ -73,9 +73,10 @@ table_report
 #   Hence, during our feature engineering, we could potentially drop one of them if the
 #   final predictive model is sensitive to the collinearity.
 #
-# When looking at the "Stats" tab, we observe that the "division" and
-# "employee_position_title" are two features containing a large number of categories. It
-# something that we should consider in our feature engineering.
+# * When looking at the "Stats" tab, we observe that the ``division`` and
+#   ``employee_position_title`` are two features containing a large number of
+#   categories.
+#   It is something that we should consider in our feature engineering.
 #
 # We can store the report in the skore project so that we can easily retrieve it later
 # without necessarily having to reload the dataset and recompute the report.
@@ -147,8 +148,7 @@ model
 # %%
 # In the diagram above, we can see what how we performed our feature engineering:
 #
-# * In the diagram above, we can see what we intend to do as feature engineering.
-#   For categorical features, we use two approaches: if the number of categories is
+# * For categorical features, we use two approaches: if the number of categories is
 #   relatively small, we use a `OneHotEncoder` and if the number of categories is
 #   large, we use a `GapEncoder` that was designed to deal with high cardinality
 #   categorical features.
@@ -181,7 +181,7 @@ report.help()
 #
 # To accelerate any future computation (e.g. of a metric), we cache once and for all the
 # predictions of our model.
-# Note that we don't necessarily need to cache the predictions as the report will
+# Note that we do not necessarily need to cache the predictions as the report will
 # compute them on the fly (if not cached) and cache them for us.
 
 # %%
@@ -194,7 +194,8 @@ with warnings.catch_warnings():
     report.cache_predictions(n_jobs=4)
 
 # %%
-# To not lose this cross-validation report, let's store it in our skore project.
+# To ensure this cross-validation report is not lost, let us save it in our skore
+# project.
 my_project.put("Linear model report", report)
 
 # %%
@@ -225,7 +226,7 @@ model
 
 # %%
 #
-# Let's compute the cross-validation report for this model.
+# Let us compute the cross-validation report for this model.
 report = CrossValidationReport(estimator=model, X=df, y=y, cv_splitter=5, n_jobs=4)
 report.help()
 
@@ -248,16 +249,19 @@ report.metrics.report_metrics(aggregate=["mean", "std"])
 # Investigating the models
 # ^^^^^^^^^^^^^^^^^^^^^^^^
 #
-# At this stage, we might not been careful and have already overwritten the report and
-# model from our first attempt. Hopefully, because we stored the reports in our skore
-# project, we can easily retrieve them. So let's retrieve the reports.
+# At this point, we may not have been cautious and could have already overwritten the
+# report and model from our initial attempt.
+# Fortunately, since we saved the reports in our skore project, we can easily recover
+# them.
+# So, let us retrieve those reports.
+
 linear_model_report = my_project.get("Linear model report")
 hgbdt_model_report = my_project.get("HGBDT model report")
 
 # %%
 #
-# Now that we retrieved the reports, we can make further comparison and build upon some
-# usual pandas operations to concatenate the results.
+# Now that we retrieved the reports, we can make some further comparison and build upon
+# some usual pandas operations to concatenate the results.
 import pandas as pd
 
 results = pd.concat(
