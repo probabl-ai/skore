@@ -221,12 +221,7 @@ def test_not_fitted(regression_data):
     """If estimator is not fitted, raise"""
     X, y = regression_data
 
-    report = EstimatorReport(
-        LinearRegression(),
-        fit=False,
-        X_test=X,
-        y_test=y,
-    )
+    report = EstimatorReport(LinearRegression(), fit=False, X_test=X, y_test=y)
 
     error_msg = "This LinearRegression instance is not fitted yet"
     with pytest.raises(NotFittedError, match=error_msg):
