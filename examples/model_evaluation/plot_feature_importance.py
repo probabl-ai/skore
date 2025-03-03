@@ -399,8 +399,9 @@ plt.tight_layout()
 # %%
 print("Initial number of features:", X_train.shape[1])
 
-X_train_transformed = engineered_ridge_report.estimator_[:-1].transform(X_train)
-n_features_engineered = X_train_transformed.shape[1]
+# We slice the scikit-learn pipeline to extract the predictor, using -1 to access
+# the last step:
+n_features_engineered = engineered_ridge_report.estimator_[-1].n_features_in_
 print("Number of features after feature engineering:", n_features_engineered)
 
 # %%
