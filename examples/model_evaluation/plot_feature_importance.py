@@ -490,59 +490,11 @@ print(selectk_features)
 # income.
 
 # %%
-# And here are the feature importances based on our model:
+# And here are is feature importance based on our model:
 
 # %%
 df_engineered_selectkbest_coef = selectk_ridge_report.feature_importance.coefficients()
 sort_absolute_values(df_engineered_selectkbest_coef)
-
-# %%
-# Now, let us gain some intuition on the results of our grid search by using a
-# `plotly.express.parallel_coordinates
-# <https://plotly.com/python-api-reference/generated/plotly.express.parallel_coordinates.html>`_.
-
-# %%
-import math
-
-
-def shorten_param(param_name):
-    """Remove components' prefixes in param_name."""
-    if "__" in param_name:
-        return param_name.rsplit("__", 1)[1]
-    return param_name
-
-
-cv_results = pd.DataFrame(random_search.cv_results_).rename(shorten_param, axis=1)
-
-param_names = [shorten_param(name) for name in parameter_grid.keys()]
-labels = {
-    "mean_score_time": "CV score time (s)",
-    "mean_test_score": "CV test score",
-}
-column_results = param_names + ["mean_test_score", "mean_score_time"]
-
-transform_funcs = dict.fromkeys(column_results, lambda x: x)
-transform_funcs["alpha"] = math.log10  # using a logarithmic scale for alpha
-
-fig = px.parallel_coordinates(
-    cv_results[column_results].apply(transform_funcs),
-    color="mean_test_score",
-    labels=labels,
-)
-fig.update_layout(
-    title={
-        "text": "Parallel coordinates plot",
-        "y": 0.99,
-        "x": 0.5,
-        "xanchor": "center",
-        "yanchor": "top",
-    }
-)
-fig
-
-# %%
-# Using the above interactive plotly figure, one can get a better intuition of
-# the impact of each hyperparameter on the CV test score and the score time.
 
 # %%
 # Finally, we can visualize the results of our K-means clustering (on the training set):
