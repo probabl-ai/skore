@@ -229,6 +229,17 @@ ridge_report.metrics.report_metrics()
 ridge_report.feature_importance.coefficients()
 
 # %%
+# We can plot this pandas datafame:
+
+# %%
+ridge_report.feature_importance.coefficients().plot.barh(
+    title="Model weights",
+    xlabel="Coefficient",
+    ylabel="Feature",
+)
+plt.tight_layout()
+
+# %%
 # .. note::
 #   More generally, :meth:`skore.EstimatorReport.feature_importance` can help you
 #   inspect the coefficients of all linear models.
