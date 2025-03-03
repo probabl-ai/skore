@@ -60,7 +60,7 @@ class Item(ABC):
         updated_at: Optional[str] = None,
         note: Optional[str] = None,
     ):
-        now = datetime.now(tz=timezone.utc).isoformat()
+        now = datetime.now(tz=timezone.utc).replace(tzinfo=None).isoformat()
 
         self.created_at = created_at or now
         self.updated_at = updated_at or now
