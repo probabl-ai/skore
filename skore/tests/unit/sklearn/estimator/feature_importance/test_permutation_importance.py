@@ -91,6 +91,20 @@ def case_several_scoring_numpy():
     return data, kwargs, expected
 
 
+def case_X_y():
+    data = regression_data()
+    X, y = data["X_train"], data["y_train"]
+
+    kwargs = {"data_source": "X_y", "X": X, "y": y, "random_state": 42}
+
+    expected = pd.DataFrame(
+        data=np.zeros((3, 5)),
+        index=pd.Index((f"Feature #{i}" for i in range(3)), name="Feature"),
+        columns=pd.Index((f"Repeat #{i}" for i in range(5)), name="Repeat"),
+    )
+    return data, kwargs, expected
+
+
 def case_default_args_dataframe():
     data = regression_data_dataframe()
 
@@ -169,6 +183,7 @@ def case_several_scoring_dataframe():
         case_r2_dataframe,
         case_train_dataframe,
         case_several_scoring_dataframe,
+        case_X_y,
     ],
 )
 def test(estimator, params):
