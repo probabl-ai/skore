@@ -3,8 +3,8 @@ from __future__ import annotations
 from functools import cached_property
 from typing import Any
 
+from skore.hub import item as item_module
 from skore.hub.client.client import AuthenticatedClient
-from skore.hub.item import item as skore_item_module
 from skore.hub.item import object_to_item
 
 
@@ -24,11 +24,20 @@ class Project:
     @cached_property
     def id(self):
         with AuthenticatedClient(raises=True) as client:
+            # Retrieve existing project if exists
+            request = client.get("projects/", params={"tenant_id": self.tenant})
+            projects = request.json()
+
+            for project in projects:
+                if project["name"] == self.name:
+                    return project["id"]
+
+            # Create new project if not exists
             request = client.post(
                 "projects/", json={"name": self.name, "tenant_id": self.tenant}
             )
 
-            return request.json()
+            return request.json()["project_id"]
 
     def put(self, key: str, value: Any):
         item = object_to_item(value)
@@ -40,10 +49,9 @@ class Project:
                     "key": key,
                     "created_at": item.created_at,
                     "updated_at": item.updated_at,
-                    "value_type": None,
+                    "value_type": item.__class__.__name__,
                     "value": {
                         "note": item.note,
-                        "type": item.__class__.__name__,
                         "parameters": item.__parameters__,
                         "representation": item.__representation__.__dict__,
                     },
@@ -53,11 +61,11 @@ class Project:
     def get(self, key: str):
         # Retrieve item content from persistence
         with AuthenticatedClient(raises=True) as client:
-            request = client.get(f"skore/projects/{self.id}/items/{key}")
+            request = client.get(f"projects/{self.id}/items/{key}")
             response = request.json()
 
         # Reconstruct item
-        item_class = getattr(skore_item_module, response["value"]["type"])
+        item_class = getattr(item_module, response["value_type"])
         item = item_class(**response["value"]["parameters"])
 
         # Reconstruct value
