@@ -419,7 +419,7 @@ model = make_pipeline(
 ).set_output(transform="pandas")
 
 parameter_grid = {
-    "columntransformer__kmeans__n_clusters": randint(low=1, high=30),
+    "columntransformer__kmeans__n_clusters": randint(low=10, high=30),
     "columntransformer__remainder__degree": randint(low=1, high=4),
     "columntransformer__remainder__n_knots": randint(low=2, high=10),
     "selectkbest__k": randint(low=5, high=100),
