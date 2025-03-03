@@ -412,7 +412,7 @@ preprocessor = make_column_transformer(
 )
 model = make_pipeline(
     preprocessor,
-    PolynomialFeatures(degree=1, interaction_only=True),
+    PolynomialFeatures(degree=1, interaction_only=True, include_bias=False),
     VarianceThreshold(),
     SelectKBest(k=50),
     Ridge(),
