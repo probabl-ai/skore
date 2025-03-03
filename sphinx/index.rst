@@ -63,8 +63,10 @@ Skore is just at the beginning of its journey, but we’re shipping fast! Freque
    reference/index
    contributing
 
-<!-- Start of Reo Javascript -->
-<script type="text/javascript">
-   !function(){var e,t,n;e="460c80a5e0b7c04",t=function(){Reo.init({clientID:"460c80a5e0b7c04"})},(n=document.createElement("script")).src="https://static.reo.dev/"+e+"/reo.js",n.defer=!0,n.onload=t,document.head.appendChild(n)}();
-</script>
-<!-- End of Reo Javascript -->
+.. raw:: html
+   
+   <!-- Start of Reo Javascript -->
+   <script type="text/javascript">
+      !function(){var e,t,n;e="460c80a5e0b7c04",t=function(){Reo.init({clientID:"460c80a5e0b7c04"})},(n=document.createElement("script")).src="https://static.reo.dev/"+e+"/reo.js",n.defer=!0,n.onload=t,document.head.appendChild(n)}();
+   </script>
+   <!-- End of Reo Javascript -->
