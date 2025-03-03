@@ -408,17 +408,11 @@ print("Number of features after feature engineering:", n_features_engineered)
 # Let us display the 15 largest absolute coefficients:
 
 # %%
-df_engineered_ridge_coef = engineered_ridge_report.feature_importance.coefficients()
-
-
-def sort_absolute_values(df):
-    df = df.assign(absolute_coefficient=df["Coefficient"].abs()).sort_values(
-        by="absolute_coefficient", ascending=False
+(
+    engineered_ridge_report.feature_importance.coefficients().sort_values(
+        by="Coefficient", key=abs, ascending=False
     )
-    return df.head(15)
-
-
-sort_absolute_values(df_engineered_ridge_coef)
+)
 
 # %%
 # We can observe that the most importance features are interactions between several
@@ -514,11 +508,14 @@ print(selectk_features)
 # income.
 
 # %%
-# And here are is feature importance based on our model:
+# And here are is the feature importance based on our model (sorted by absolute values):
 
 # %%
-df_engineered_selectkbest_coef = selectk_ridge_report.feature_importance.coefficients()
-sort_absolute_values(df_engineered_selectkbest_coef)
+(
+    selectk_ridge_report.feature_importance.coefficients().sort_values(
+        by="Coefficient", key=abs, ascending=False
+    )
+)
 
 # %%
 # Finally, we can visualize the results of our K-means clustering (on the training set):
