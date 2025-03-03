@@ -433,6 +433,7 @@ engineered_ridge_report.feature_importance.coefficients().sort_values(
 from scipy.stats import randint
 from sklearn.feature_selection import SelectKBest, VarianceThreshold
 from sklearn.model_selection import RandomizedSearchCV
+from sklearn.linear_model import RidgeCV
 
 preprocessor = make_column_transformer(
     (KMeans(n_clusters=20), geo_columns),
@@ -451,7 +452,6 @@ parameter_grid = {
     "columntransformer__remainder__degree": randint(low=1, high=4),
     "columntransformer__remainder__n_knots": randint(low=2, high=10),
     "selectkbest__k": randint(low=5, high=100),
-    "ridge__alpha": np.logspace(-5, 5, num=100),
 }
 random_search = RandomizedSearchCV(
     model,
