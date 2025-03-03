@@ -476,7 +476,7 @@ selectkbest_ridge
 
 # %%
 selectk_ridge_report = EstimatorReport(
-    random_search,
+    selectkbest_ridge,
     X_train=X_train,
     X_test=X_test,
     y_train=y_train,
@@ -494,8 +494,7 @@ comparator.metrics.report_metrics()
 print("Initial number of features:", X_train.shape[1])
 print("Number of features after feature engineering:", n_features_engineered)
 
-X_train_transformed = selectk_ridge_report.estimator_[:-1].transform(X_train)
-n_features_selectk = X_train_transformed.shape[1]
+n_features_selectk = selectk_ridge_report.estimator_[-1].n_features_in_
 print(
     "Number of features after feature engineering using `SelectKBest`:",
     n_features_selectk,
