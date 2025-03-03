@@ -408,10 +408,8 @@ print("Number of features after feature engineering:", n_features_engineered)
 # Let us display the 15 largest absolute coefficients:
 
 # %%
-(
-    engineered_ridge_report.feature_importance.coefficients().sort_values(
-        by="Coefficient", key=abs, ascending=False
-    )
+engineered_ridge_report.feature_importance.coefficients().sort_values(
+    by="Coefficient", key=abs, ascending=False
 )
 
 # %%
@@ -511,10 +509,8 @@ print(selectk_features)
 # And here are is the feature importance based on our model (sorted by absolute values):
 
 # %%
-(
-    selectk_ridge_report.feature_importance.coefficients().sort_values(
-        by="Coefficient", key=abs, ascending=False
-    )
+selectk_ridge_report.feature_importance.coefficients().sort_values(
+    by="Coefficient", key=abs, ascending=False
 )
 
 # %%
