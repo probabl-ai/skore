@@ -226,6 +226,7 @@ ridge_report.metrics.report_metrics()
 
 # %%
 ridge_report.metrics.prediction_error().plot(kind="actual_vs_predicted")
+plt.tight_layout()
 
 # %%
 # We can observe that the model has issues predicting large house prices, due to the clipping effect of the actual values.
@@ -379,6 +380,19 @@ comparator.metrics.report_metrics()
 
 # %%
 # We get a much better score!
+# Let us plot the prediction error:
+
+# %%
+engineered_ridge_report.metrics.prediction_error().plot(kind="actual_vs_predicted")
+plt.tight_layout()
+
+# %%
+# About the clipping issue, compared to the prediction error of our previous model
+# (``ridge_report``), our ``engineered_ridge_report`` model seems to produce predictions
+# that are not as large, so it seems that some interactions between features have
+# helped alleviate the clipping issue.
+
+# %%
 # However, interpreting the features is harder: indeed, our complex feature engineering
 # introduced a lot of features:
 
