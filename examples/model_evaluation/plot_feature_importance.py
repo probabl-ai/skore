@@ -443,7 +443,7 @@ model = make_pipeline(
     PolynomialFeatures(degree=1, interaction_only=True, include_bias=False),
     VarianceThreshold(),
     SelectKBest(k=50),
-    Ridge(),
+    RidgeCV(np.logspace(-5, 5, num=100)),
 ).set_output(transform="pandas")
 
 parameter_grid = {
