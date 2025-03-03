@@ -36,7 +36,7 @@ def _generate_estimator_report(
     )
 
 
-class CrossValidationReport(ComparisonReport, DirNamesMixin):
+class CrossValidationReport(ComparisonReport):
     """Report for cross-validation results.
 
     Upon initialization, `CrossValidationReport` will clone ``estimator`` according to
