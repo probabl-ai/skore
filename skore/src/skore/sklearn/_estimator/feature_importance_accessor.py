@@ -4,6 +4,7 @@ from typing import Any, Callable, Literal, Optional, Union
 import joblib
 import numpy as np
 import pandas as pd
+from numpy.random import RandomState
 from numpy.typing import ArrayLike
 from sklearn.base import is_classifier
 from sklearn.inspection import permutation_importance
@@ -112,7 +113,11 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
         scoring: Optional[Scoring] = None,
-        **kwargs,
+        n_repeats: int = 5,
+        n_jobs: Optional[int] = None,
+        random_state: Optional[Union[int, RandomState]] = None,
+        sample_weight: Optional[ArrayLike] = None,  # Sample weights used in scoring.
+        max_samples: float = 1.0,
     ) -> pd.DataFrame:
         """Report the permutation feature importance.
 
@@ -184,7 +189,11 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
             X=X,
             y=y,
             scoring=scoring,
-            **kwargs,
+            n_repeats=n_repeats,
+            n_jobs=n_jobs,
+            random_state=random_state,
+            sample_weight=sample_weight,
+            max_samples=max_samples,
         )
 
     def _feature_permutation(
