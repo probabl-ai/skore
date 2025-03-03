@@ -114,10 +114,13 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
         scoring: Optional[Scoring] = None,
         **kwargs,
     ) -> pd.DataFrame:
-        """Report the permutation importance of the estimator.
+        """Report the permutation feature importance.
 
         This computes the permutation importance using sklearn's
-        :func:`~sklearn.inspection.permutation_importance` function.
+        :func:`~sklearn.inspection.permutation_importance` function,
+        which consists in permuting the values of one feature and comparing
+        the value of `scoring` between with and without the permutation, which gives an
+        indication on the impact of the feature.
 
         By default, `random_state` is set to `None`, which means the function will
         return a different result at every call. In that case, the results are not
