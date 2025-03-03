@@ -285,7 +285,7 @@ plt.tight_layout()
 # %%
 import numpy as np
 
-# retrieve the mean and standard deviation used to standardized the feature values.
+# retrieve the mean and standard deviation used to standardize the feature values
 feature_mean = ridge_report.estimator_[0].mean_
 feature_std = ridge_report.estimator_[0].scale_
 
