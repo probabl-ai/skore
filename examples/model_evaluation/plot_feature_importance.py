@@ -222,7 +222,16 @@ ridge_report.metrics.report_metrics()
 # must be treated with caution.
 
 # %%
-# To inspect our model, let us use the
+# Let us plot the prediction error:
+
+# %%
+ridge_report.metrics.prediction_error().plot(kind="actual_vs_predicted")
+
+# %%
+# We can observe that the model has issues predicting large house prices, due to the clipping effect of the actual values.
+
+# %%
+# Now, to inspect our model, let us use the
 # :meth:`skore.EstimatorReport.feature_importance` accessor:
 
 # %%
