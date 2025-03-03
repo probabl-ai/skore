@@ -88,7 +88,7 @@ def test_post_oauth_refresh_token(respx_mock):
     )
     access_token, refresh_token, expires_at = api.post_oauth_refresh_token("token")
 
-    assert route.calls.last.request.read() == b"refresh_token=token"
+    assert route.calls.last.request.read() == b'{"refresh_token":"token"}'
     assert access_token == "A"
     assert refresh_token == "B"
     assert expires_at == "C"
