@@ -276,22 +276,23 @@ plt.tight_layout()
 # %%
 import numpy as np
 
-mu = ridge_report.estimator_[0].mean_
-sigma = ridge_report.estimator_[0].scale_
+feature_mean = ridge_report.estimator_[0].mean_
+feature_std = ridge_report.estimator_[0].scale_
 
 
-def unscale_coefficients(df, mu, sigma):
-    df.loc["Intercept", "Coefficient"] = df.loc["Intercept", "Coefficient"] - np.sum(
-        df.loc[df.index != "Intercept", "Coefficient"] * mu / sigma
+def unscale_coefficients(df, feature_mean, feature_std):
+    mask_intercept_column = df.index == "Intercept"
+    df.loc["Intercept"] = df.loc["Intercept"] - np.sum(
+        df.loc[~mask_intercept_column, "Coefficient"] * feature_mean / feature_std
     )
-    df.loc[df.index != "Intercept", "Coefficient"] = (
-        df.loc[df.index != "Intercept", "Coefficient"] / sigma
+    df.loc[~mask_intercept_column, "Coefficient"] = (
+        df.loc[~mask_intercept_column, "Coefficient"] / feature_std
     )
     return df
 
 
 df_ridge_report_coef_unscaled = unscale_coefficients(
-    ridge_report.feature_importance.coefficients(), mu, sigma
+    ridge_report.feature_importance.coefficients(), feature_mean, feature_std
 )
 df_ridge_report_coef_unscaled
 
