@@ -151,7 +151,7 @@ fig
 
 # %%
 # As could be expected, the price of the houses near the ocean is higher, especially
-# around big cities like Los Angeles and San Jose.
+# around big cities like Los Angeles, San Francisco, and San Jose.
 # Taking into account the coordinates in our modelling will be very important.
 
 # %%
