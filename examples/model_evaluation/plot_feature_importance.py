@@ -38,10 +38,9 @@ For linear models, we look at their coefficients.
 import pandas as pd
 from sklearn.datasets import fetch_california_housing
 
-X_load, y_load = fetch_california_housing(return_X_y=True, as_frame=True)
-X_y = pd.concat([X_load, y_load], axis=1)
-target_name = y_load.name
-X_y.head(2)
+california_housing = fetch_california_housing(as_frame=True)
+X, y = california_housing.data, california_housing.target
+california_housing.frame.head(2)
 
 # %%
 # The documentation of the California housing dataset explains that the dataset
@@ -67,7 +66,7 @@ X_y.head(2)
 # %%
 from skrub import TableReport
 
-TableReport(X_y)
+TableReport(california_housing.frame)
 
 # %%
 # From the table report, we can draw some key observations:
@@ -92,7 +91,9 @@ TableReport(X_y)
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-sns.histplot(data=X_y, x=target_name, bins=100)
+sns.histplot(
+    data=california_housing.frame, x=california_housing.target_names[0], bins=100
+)
 plt.show()
 
 # %%
@@ -108,12 +109,12 @@ plt.show()
 # %%
 import plotly.express as px
 
-X_y_plot = X_y.copy()
+X_y_plot = california_housing.frame.copy()
 X_y_plot["MedInc_bins"] = pd.qcut(X_y_plot["MedInc"], q=5)
 bin_order = X_y_plot["MedInc_bins"].cat.categories.sort_values()
 fig = px.histogram(
     X_y_plot,
-    x=target_name,
+    x=california_housing.target_names[0],
     color="MedInc_bins",
     category_orders={"MedInc_bins": bin_order},
 )
@@ -146,7 +147,7 @@ def plot_map(df, color_feature):
 
 
 # %%
-fig = plot_map(X_y, target_name)
+fig = plot_map(california_housing.frame, california_housing.target_names[0])
 fig
 
 # %%
@@ -165,8 +166,6 @@ fig
 # %%
 from sklearn.model_selection import train_test_split
 
-X = X_y.drop(columns=[target_name])
-y = X_y[target_name]
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 
 # %%
