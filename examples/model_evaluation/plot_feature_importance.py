@@ -85,7 +85,7 @@ TableReport(california_housing.frame)
 # Target feature
 # --------------
 #
-# Moreover, the target distribution has a long tail:
+# The target distribution has a long tail:
 
 # %%
 import matplotlib.pyplot as plt
