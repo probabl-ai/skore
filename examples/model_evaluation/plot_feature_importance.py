@@ -476,7 +476,7 @@ selectkbest_ridge
 
 # %%
 selectk_ridge_report = EstimatorReport(
-    selectkbest_ridge,
+    random_search,
     X_train=X_train,
     X_test=X_test,
     y_train=y_train,
