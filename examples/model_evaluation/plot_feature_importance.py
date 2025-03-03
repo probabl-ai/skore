@@ -334,7 +334,7 @@ preprocessor = make_column_transformer(
 engineered_ridge = make_pipeline(
     preprocessor,
     SplineTransformer(),
-    PolynomialFeatures(degree=2, interaction_only=True),
+    PolynomialFeatures(degree=1, interaction_only=True, include_bias=False),
     Ridge(),
 )
 engineered_ridge
