@@ -115,7 +115,7 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
         scoring: Optional[Scoring] = None,
         n_repeats: int = 5,
         n_jobs: Optional[int] = None,
-        random_state: Optional[Union[int, RandomState]] = None,
+        random_state: Optional[int] = None,
         max_samples: float = 1.0,
     ) -> pd.DataFrame:
         """Report the permutation feature importance.
@@ -157,7 +157,7 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
         n_jobs : int or None, default=None
             Number of jobs to run in parallel. -1 means using all processors.
 
-        random_state : int, RandomState instance, default=None
+        random_state : int or None, default=None
             Pseudo-random number generator to control the permutations of each feature.
             Pass an int to get reproducible results across function calls.
 
@@ -201,7 +201,7 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
         scoring: Optional[Scoring] = None,
         n_repeats: int = 5,
         n_jobs: Optional[int] = None,
-        random_state: Optional[Union[int, RandomState]] = None,
+        random_state: Optional[int] = None,
         max_samples: float = 1.0,
     ) -> pd.DataFrame:
         """Private interface of `feature_permutation` to pass `data_source_hash`.
@@ -215,31 +215,41 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
                 data_source=data_source, X=X, y=y
             )
 
-        # build the cache key components to finally create a tuple that will be used
-        # to check if the metric has already been computed
-        cache_key_parts: list[Any] = [
-            self._parent._hash,
-            "permutation_importance",
-            data_source,
-        ]
+        # If random_state is None, then we do not do any caching
+        if random_state is None:
+            cache_key = None
 
-        if data_source_hash is not None:
-            cache_key_parts.append(data_source_hash)
+        elif isinstance(random_state, int):
+            # build the cache key components to finally create a tuple that will be used
+            # to check if the metric has already been computed
+            cache_key_parts: list[Any] = [
+                self._parent._hash,
+                "permutation_importance",
+                data_source,
+            ]
 
-        if callable(scoring) or isinstance(scoring, (list, dict)):
-            cache_key_parts.append(joblib.hash(scoring))
+            if data_source_hash is not None:
+                cache_key_parts.append(data_source_hash)
 
-        # order arguments by key to ensure cache works
-        # n_jobs variable should not be in the cache
-        kwargs = {
-            "n_repeats": n_repeats,
-            "random_state": random_state,
-            "max_samples": max_samples,
-        }
-        for _, v in sorted(kwargs.items()):
-            cache_key_parts.append(v)
+            if callable(scoring) or isinstance(scoring, (list, dict)):
+                cache_key_parts.append(joblib.hash(scoring))
 
-        cache_key = tuple(cache_key_parts)
+            # order arguments by key to ensure cache works
+            # n_jobs variable should not be in the cache
+            kwargs = {
+                "n_repeats": n_repeats,
+                "random_state": random_state,
+                "max_samples": max_samples,
+            }
+            for _, v in sorted(kwargs.items()):
+                cache_key_parts.append(v)
+
+            cache_key = tuple(cache_key_parts)
+
+        else:
+            raise ValueError(
+                f"random_state must be an integer or None; got {type(random_state)}"
+            )
 
         if cache_key in self._parent._cache:
             score = self._parent._cache[cache_key]
@@ -286,7 +296,7 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
 
             # Unless random_state is an int (i.e. the call is deterministic),
             # we do not cache
-            if isinstance(kwargs.get("random_state"), int):
+            if cache_key is not None:
                 self._parent._cache[cache_key] = score
 
         return score
