@@ -391,12 +391,11 @@ engineered_ridge_report = EstimatorReport(
     y_train=y_train,
     y_test=y_test,
 )
-comparator = ComparisonReport(
-    reports={
-        "Vanilla model": ridge_report,
-        "Model w/ feature engineering": engineered_ridge_report,
-    }
-)
+dict_reports = {
+    "Vanilla model": ridge_report,
+    "Model w/ feature engineering": engineered_ridge_report,
+}
+comparator = ComparisonReport(reports=dict_reports)
 comparator.metrics.report_metrics()
 
 # %%
@@ -512,13 +511,8 @@ selectk_ridge_report = EstimatorReport(
     y_train=y_train,
     y_test=y_test,
 )
-comparator = ComparisonReport(
-    reports={
-        "Vanilla model": ridge_report,
-        "Model w/ feature engineering": engineered_ridge_report,
-        "Model w/ feature selection and grid search": selectk_ridge_report,
-    }
-)
+dict_reports["Model w/ feature selection and grid search"] = selectk_ridge_report
+comparator = ComparisonReport(reports=dict_reports)
 comparator.metrics.report_metrics()
 
 # %%
