@@ -198,10 +198,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         # to make sure that we hit the cache in a consistent way
         ordered_metric_kwargs = sorted(metric_kwargs.keys())
         for key in ordered_metric_kwargs:
-            if isinstance(metric_kwargs[key], (np.ndarray, list, dict)):
-                cache_key_parts.append(joblib.hash(metric_kwargs[key]))
+            value = metric_kwargs[key]
+            if isinstance(value, (np.ndarray, list, dict)):
+                cache_key_parts.append(joblib.hash(value))
             else:
-                cache_key_parts.append(metric_kwargs[key])
+                cache_key_parts.append(value)
 
         cache_key = tuple(cache_key_parts)
 
