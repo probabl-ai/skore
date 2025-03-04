@@ -177,6 +177,40 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
         -------
         pandas.DataFrame
             The permutation importance.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_diabetes
+        >>> from sklearn.linear_model import Ridge
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_diabetes(return_X_y=True), random_state=0
+        ... )
+        >>> regressor = Ridge()
+        >>> report = EstimatorReport(
+        ...     regressor,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> report.feature_importance.feature_permutation(
+        ...    n_repeats=2,
+        ...    random_state=0,
+        ... )
+        Repeat      Repeat #0  Repeat #1
+        Feature
+        Feature #0   0.003...  -0.000...
+        Feature #1   0.004...   0.013...
+        Feature #2   0.114...   0.142...
+        Feature #3   0.077...   0.070...
+        Feature #4   0.000...  -0.000...
+        Feature #5  -0.002...   0.000...
+        Feature #6   0.033...   0.029...
+        Feature #7   0.023...   0.017...
+        Feature #8   0.077...   0.077...
+        Feature #9   0.011...   0.023...
         """
         return self._feature_permutation(
             data_source=data_source,
