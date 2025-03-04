@@ -11,6 +11,7 @@ from .numpy_array_item import NumpyArrayItem
 from .pandas_dataframe_item import PandasDataFrameItem
 from .pandas_series_item import PandasSeriesItem
 from .pickle_item import PickleItem
+from .pillow_image_item import PillowImageItem
 
 
 def object_to_item(object: Any, /) -> Item:
@@ -21,6 +22,7 @@ def object_to_item(object: Any, /) -> Item:
         NumpyArrayItem,
         PandasDataFrameItem,
         PandasSeriesItem,
+        PillowImageItem,
         # JSONable must be the penultimate
         JSONableItem,
     ):
@@ -45,5 +47,6 @@ __all__ = [
     "PandasDataFrameItem",
     "PandasSeriesItem",
     "PickleItem",
+    "PillowImageItem",
     "object_to_item",
 ]
