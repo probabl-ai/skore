@@ -3,10 +3,12 @@ from __future__ import annotations
 from contextlib import suppress
 from typing import Any
 
+from . import skrub_table_report_item as SkrubTableReportItem
 from .altair_chart_item import AltairChartItem
 from .item import Item, ItemTypeError
 from .jsonable_item import JSONableItem
 from .matplotlib_figure_item import MatplotlibFigureItem
+from .media_item import MediaItem, MediaType
 from .numpy_array_item import NumpyArrayItem
 from .pandas_dataframe_item import PandasDataFrameItem
 from .pandas_series_item import PandasSeriesItem
@@ -31,6 +33,7 @@ def object_to_item(object: Any, /) -> Item:
         PolarsDataFrameItem,
         PolarsSeriesItem,
         SklearnBaseEstimatorItem,
+        SkrubTableReportItem,
         # JSONable must be the penultimate
         JSONableItem,
     ):
@@ -51,6 +54,8 @@ __all__ = [
     "Item",
     "JSONableItem",
     "MatplotlibFigureItem",
+    "MediaItem",
+    "MediaType",
     "NumpyArrayItem",
     "PandasDataFrameItem",
     "PandasSeriesItem",
@@ -60,5 +65,6 @@ __all__ = [
     "PolarsDataFrameItem",
     "PolarsSeriesItem",
     "SklearnBaseEstimatorItem",
+    "SkrubTableReportItem",
     "object_to_item",
 ]

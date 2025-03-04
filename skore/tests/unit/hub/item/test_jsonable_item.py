@@ -1,4 +1,4 @@
-import json
+from json import dumps
 
 import pytest
 from skore.hub.item import JSONableItem
@@ -21,7 +21,7 @@ class TestJSONableItem:
     def test_factory(self, value):
         item = JSONableItem.factory(value)
 
-        assert item.value_json_str == json.dumps(value)
+        assert item.value_json_str == dumps(value)
 
     def test_factory_exception(self):
         with pytest.raises(ItemTypeError):
@@ -34,7 +34,7 @@ class TestJSONableItem:
         assert item_parameters == {"value_json_str": "[1, 2]"}
 
         # Ensure parameters are JSONable
-        json.dumps(item_parameters)
+        dumps(item_parameters)
 
     def test_raw(self):
         item1 = JSONableItem.factory((1, 2))
@@ -53,5 +53,5 @@ class TestJSONableItem:
         assert item2.__representation__ == representation
 
         # Ensure representation is JSONable
-        json.dumps(item1.__representation__.__dict__)
-        json.dumps(item2.__representation__.__dict__)
+        dumps(item1.__representation__.__dict__)
+        dumps(item2.__representation__.__dict__)
