@@ -27,6 +27,8 @@ DataSource = Literal["test", "train", "X_y"]
 #   - a dictionary with metric names as keys and callables a values.
 Scoring = Union[str, Callable, Iterable[str], dict[str, Callable]]
 
+Aggregation = Literal["mean", "std"]
+
 
 class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
     """Accessor for feature importance related operations.
@@ -111,6 +113,7 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
         data_source: DataSource = "test",
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
+        aggregate: Optional[Union[Aggregation, list[Aggregation]]] = None,
         scoring: Optional[Scoring] = None,
         n_repeats: int = 5,
         n_jobs: Optional[int] = None,
@@ -146,6 +149,9 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
         y : array-like of shape (n_samples,), default=None
             New target on which to compute the metric. By default, we use the test
             target provided when creating the report.
+
+        aggregate : {"mean", "std"} or list of such str, default=None
+            Function to aggregate the scores across the repeats.
 
         scoring : str, callable, list, tuple, or dict, default=None
             The scorer to pass to :func:`~sklearn.inspection.permutation_importance`.
@@ -211,12 +217,30 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
         Feature #7   0.023...   0.017...
         Feature #8   0.077...   0.077...
         Feature #9   0.011...   0.023...
+        >>> report.feature_importance.feature_permutation(
+        ...    n_repeats=2,
+        ...    aggregate=["mean", "std"],
+        ...    random_state=0,
+        ... )
+                        mean       std
+        Feature
+        Feature #0  0.001...  0.002...
+        Feature #1  0.009...  0.007...
+        Feature #2  0.128...  0.019...
+        Feature #3  0.074...  0.004...
+        Feature #4  0.000...  0.000...
+        Feature #5 -0.000...  0.002...
+        Feature #6  0.031...  0.002...
+        Feature #7  0.020...  0.004...
+        Feature #8  0.077...  0.000...
+        Feature #9  0.017...  0.008...
         """
         return self._feature_permutation(
             data_source=data_source,
             data_source_hash=None,
             X=X,
             y=y,
+            aggregate=aggregate,
             scoring=scoring,
             n_repeats=n_repeats,
             n_jobs=n_jobs,
@@ -231,6 +255,7 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
         data_source_hash: Optional[int] = None,
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
+        aggregate: Optional[Union[Aggregation, list[Aggregation]]] = None,
         scoring: Optional[Scoring] = None,
         n_repeats: int = 5,
         n_jobs: Optional[int] = None,
@@ -268,6 +293,9 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
                 cache_key_parts.append(joblib.hash(scoring))
             else:
                 cache_key_parts.append(scoring)
+
+            # aggregate is not included in the cache
+            # in order to trade off computation for storage
 
             # order arguments by key to ensure cache works
             # n_jobs variable should not be in the cache
@@ -333,6 +361,11 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
             # we do not cache
             if cache_key is not None:
                 self._parent._cache[cache_key] = score
+
+        if aggregate:
+            if isinstance(aggregate, str):
+                aggregate = [aggregate]
+            score = score.aggregate(func=aggregate, axis=1)
 
         return score
 
