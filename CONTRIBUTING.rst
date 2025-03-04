@@ -47,61 +47,14 @@ Development
 Quick start
 -----------
 
-You'll need ``python >=3.9, <3.13`` to build the backend and ``Node>=20`` to build the skore-ui. Then, you can install dependencies and run the UI with:
+You'll need ``python >=3.9, <3.13``.
 
-.. code-block:: bash
-
-    make install-skore
-    make build-skore-ui
-    skore create
-    make serve-skore-ui
-
-You are now all setup to run the library locally.
-If you want to contribute, please continue with the three other sections.
-
-Backend
--------
-
-Install backend dependencies with:
+Install dependencies and setup pre-commit with:
 
 .. code-block:: bash
 
     make install-skore
 
-
-You can run the API server with:
-
-.. code-block:: bash
-
-    make serve-skore-ui
-
-skore-ui
---------
-
-Install skore-ui dependencies with:
-
-.. code-block:: bash
-
-    npm install
-
-in the ``skore-ui`` directory.
-
-Run the skore-ui in dev mode (for hot-reloading) with
-
-.. code-block:: bash
-
-    npm run dev
-
-in the ``skore-ui`` directory.
-
-Then, to use the skore-ui
-
-.. code-block:: bash
-
-    make build-skore-ui
-    make serve-skore-ui
-
-Do not forget to do a hard refresh when changing the front-end (meta+shift+R) if the expected changes do not appear.
 
 Pull request format
 -------------------
@@ -120,18 +73,6 @@ To run the tests locally, you may run
 .. code-block:: bash
 
     make test
-
-To run only back-end tests, use:
-
-.. code-block:: bash
-
-    make test-backend
-
-To run only front-end tests, use:
-
-.. code-block:: bash
-
-    make test-frontend
 
 
 Linting

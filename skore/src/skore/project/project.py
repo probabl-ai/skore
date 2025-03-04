@@ -127,11 +127,6 @@ class Project:
 
         self._storage_initialized = True
 
-        # Check if the project should rejoin a server
-        from skore.project._launch import ServerInfo  # avoid circular import
-
-        self._server_info = ServerInfo.rejoin(self)
-
     @_raise_if_deleted
     def clear(self, delete_project: bool = False) -> None:
         """Remove all items from the project.
@@ -391,13 +386,3 @@ class Project:
         >>> project.delete_note("key", version=0)  # doctest: +SKIP
         """
         return self._item_repository.delete_item_note(key=key, version=version)
-
-    @_raise_if_deleted
-    def shutdown_web_ui(self) -> None:
-        """Shutdown the web UI server if it is running."""
-        if self._server_info is None:
-            raise RuntimeError("UI server is not running")
-
-        from skore.project._launch import cleanup_server  # avoid circular import
-
-        cleanup_server(self)
