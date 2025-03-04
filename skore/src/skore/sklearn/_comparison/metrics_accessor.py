@@ -247,9 +247,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
             results.columns = pd.Index(self._parent.report_names_, name="Estimator")
 
-            if favorability is not None:
-                results["Favorability"] = favorability
-
             if aggregate:
                 if isinstance(aggregate, str):
                     aggregate = [aggregate]
@@ -257,6 +254,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 results = pd.concat(
                     [results], keys=[self._parent.estimator_name_], axis=1
                 )
+
+            if favorability is not None:
+                results["Favorability"] = favorability
 
             self._parent._cache[cache_key] = results
         return results
