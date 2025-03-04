@@ -7,7 +7,7 @@
 
 In this example, we tackle the California housing dataset where the goal is to perform
 a regression task: predicting house prices based on features such as the number of
-bedrooms, the geolocalisation, etc.
+bedrooms, the geolocation, etc.
 For that, we try out several families of models.
 We evaluate these methods using skore's :class:`~skore.EstimatorReport` and its
 report on metrics.
@@ -76,7 +76,7 @@ TableReport(california_housing.frame)
 # - Looking at the *Distributions* tab, we can notice that some features seem to have
 #   some outliers:
 #   ``MedInc``, ``AveRooms``, ``AveBedrms``, ``Population``, and ``AveOccup``.
-#   The feature with the largest number of alleged outliers is ``AveBedrms``, probably
+#   The feature with the largest number of potential outliers is ``AveBedrms``, probably
 #   corresponding to vacation resorts.
 # - Looking at the *Associations* tab, we observe that:
 #
@@ -84,7 +84,8 @@ TableReport(california_housing.frame)
 #       ``Longitude``, and ``Latitude``.
 #       Indeed, intuitively, people with a large income would live in areas where the
 #       house prices are high.
-#       Moreover, we can expect these expensive areas to be close to one another.
+#       Moreover, we can expect some of these expensive areas to be close to one
+#       another.
 #   -   The association power between the target and these features is not super
 #       high, which would indicate that each single feature can not correctly predict
 #       the target.
@@ -110,15 +111,14 @@ plt.show()
 # %%
 # There seems to be a threshold-effect for high-valued houses: all houses with a price
 # above $500,000 are given the value $500,000.
-# We keep these clipped values in our data and will inspect how our models deals with
+# We keep these clipped values in our data and will inspect how our models deal with
 # them.
 
 # %%
 
 # %%
 # Now, as the median income ``MedInc`` is the feature with the highest association with
-# our target (the median house prices ``MedHouseVal``), let us assess how ``MedInc``
-# relates to ``MedHouseVal``:
+# our target, let us assess how ``MedInc`` relates to ``MedHouseVal``:
 
 # %%
 import plotly.express as px
@@ -329,7 +329,7 @@ df_ridge_report_coef_unscaled
 # having one additional bedroom (a increase of :math:`1` of ``AveBedrms``),
 # with all other features being constant,
 # increases the house value of :math:`0.62` in $100,000, hence of $62,000.
-# Note that we have not dealt with the outliers in this iteration.
+# Note that we have not dealt with any potential outlier in this iteration.
 
 # %%
 # More complex model
@@ -426,7 +426,12 @@ print("Number of features after feature engineering:", n_features_engineered)
 # %%
 engineered_ridge_report.feature_importance.coefficients().sort_values(
     by="Coefficient", key=abs, ascending=False
+).head(15).plot.barh(
+    title="Model weights",
+    xlabel="Coefficient",
+    ylabel="Feature",
 )
+plt.tight_layout()
 
 # %%
 # We can observe that the most importance features are interactions between several
@@ -540,7 +545,12 @@ print(selectk_features)
 # %%
 selectk_ridge_report.feature_importance.coefficients().sort_values(
     by="Coefficient", key=abs, ascending=False
+).head(15).plot.barh(
+    title="Model weights",
+    xlabel="Coefficient",
+    ylabel="Feature",
 )
+plt.tight_layout()
 
 # %%
 # Finally, we can visualize the results of our K-means clustering (on the training set):
@@ -558,3 +568,16 @@ X_train_plot.insert(0, "clustering_labels", clustering_labels)
 
 # plotting the map
 plot_map(X_train_plot, "clustering_labels")
+
+# %%
+# Conclusion
+# ==========
+#
+# This example used the California housing dataset to predict house prices with skore's
+# :class:`~skore.EstimatorReport`.
+# We explored key features like income and location, then tested a simple Ridge model
+# (interpretable but weak), a complex engineered model (strong but less clear), and a
+# balanced approach with feature selection (and grid search).
+# The :meth:`~skore.EstimatorReport.feature_importance` accessor revealed model
+# insights at each step, highlighting the trade-off between performance and
+# interpretability that skore helps navigate.
