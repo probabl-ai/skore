@@ -11,7 +11,7 @@ ORIENT = PandasSeriesItem.ORIENT
 
 
 class TestPandasSeriesItem:
-    def test_factory(self, mock_nowstr):
+    def test_factory(self):
         series = Series([0, 1, 2], Index([0, 1, 2], name="myIndex"))
 
         index_json_str = series.index.to_frame(index=False).to_json(orient=ORIENT)
