@@ -13,6 +13,8 @@ from .pandas_series_item import PandasSeriesItem
 from .pickle_item import PickleItem
 from .pillow_image_item import PillowImageItem
 from .plotly_figure_item import PlotlyFigureItem
+from .polars_dataframe_item import PolarsDataFrameItem
+from .polars_series_item import PolarsSeriesItem
 
 
 def object_to_item(object: Any, /) -> Item:
@@ -25,6 +27,8 @@ def object_to_item(object: Any, /) -> Item:
         PandasSeriesItem,
         PillowImageItem,
         PlotlyFigureItem,
+        PolarsDataFrameItem,
+        PolarsSeriesItem,
         # JSONable must be the penultimate
         JSONableItem,
     ):
@@ -51,5 +55,7 @@ __all__ = [
     "PickleItem",
     "PillowImageItem",
     "PlotlyFigureItem",
+    "PolarsDataFrameItem",
+    "PolarsSeriesItem",
     "object_to_item",
 ]
