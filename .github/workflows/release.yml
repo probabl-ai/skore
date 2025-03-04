@@ -88,28 +88,20 @@ jobs:
       - name: Post to slack
         uses: slackapi/slack-github-action@v2.0.0
         with:
-          channel-id: "product-releases"
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
           payload: |
-            {
-                "blocks": [
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": ${{ toJSON(github.event.release.html_url) }}
-                        }
-                    },
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": ${{ toJSON(format('>>> {0}', github.event.release.body)) }}
-                        }
-                    }
-                ]
-            }
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+            channel: "product-releases"
+            text: ${{ github.event.release.html_url }}
+            blocks:
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: ${{ toJSON(github.event.release.html_url) }}
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: ${{ toJSON(format('>>> {0}', github.event.release.body)) }}
 
   clean:
     name: Delete package distributions artifacts
