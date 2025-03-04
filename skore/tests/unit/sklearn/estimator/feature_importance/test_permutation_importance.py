@@ -255,6 +255,22 @@ def test_cache_random_state(regression_data):
     pd.testing.assert_frame_equal(cached_result, result)
 
 
+def test_cache_scoring(regression_data):
+    """`scoring` is in the cache."""
+
+    X, y = regression_data
+    report = EstimatorReport(LinearRegression(), X_train=X, y_train=y)
+
+    report.feature_importance.feature_permutation(
+        data_source="train", scoring="r2", random_state=42
+    )
+    report.feature_importance.feature_permutation(
+        data_source="train", scoring="neg_root_mean_squared_error", random_state=42
+    )
+    # Scorings are different, so cache keys should be different
+    assert len(report._cache) == 2
+
+
 @pytest.mark.parametrize(
     "scoring",
     [
