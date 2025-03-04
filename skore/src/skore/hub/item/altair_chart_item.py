@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from json import loads
 from typing import TYPE_CHECKING
 
 from .item import Item, ItemTypeError, Representation, lazy_is_instance
@@ -9,7 +10,7 @@ if TYPE_CHECKING:
 
 
 class AltairChartItem(Item):
-    def __init__(self, chart_json_str: str):
+    def __init__(self, chart_json_str: dict):
         self.chart_json_str = chart_json_str
 
     @property
@@ -22,7 +23,7 @@ class AltairChartItem(Item):
     def __representation__(self) -> Representation:
         return Representation(
             media_type="application/vnd.vega.v5+json",
-            value=self.chart_json_str,
+            value=loads(self.chart_json_str),
         )
 
     @classmethod

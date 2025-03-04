@@ -1,4 +1,4 @@
-import json
+from json import dumps, loads
 
 from altair import Chart
 from pytest import raises
@@ -25,7 +25,7 @@ class TestAltairChartItem:
         assert item_parameters == {"chart_json_str": chart.to_json()}
 
         # Ensure parameters are JSONable
-        json.dumps(item_parameters)
+        dumps(item_parameters)
 
     def test_raw(self):
         chart = Chart().mark_point()
@@ -42,7 +42,7 @@ class TestAltairChartItem:
         chart_json_str = chart.to_json()
         representation = Representation(
             media_type="application/vnd.vega.v5+json",
-            value=chart_json_str,
+            value=loads(chart_json_str),
         )
 
         item1 = AltairChartItem.factory(chart)
