@@ -215,7 +215,10 @@ def test_cache_n_jobs(regression_data):
 
 def test_cache_random_state(regression_data):
     """If `random_state` is not an int (the default is None)
-    then the result is not cached."""
+    then the result is not cached.
+
+    `random_state` must be an int or None.
+    """
 
     X, y = regression_data
     report = EstimatorReport(LinearRegression(), X_train=X, y_train=y)
@@ -226,10 +229,15 @@ def test_cache_random_state(regression_data):
     assert report._cache == {}
 
     # random_state is a RandomState
-    report.feature_importance.feature_permutation(
-        data_source="train",
-        random_state=np.random.RandomState(42),
+    err_msg = (
+        "random_state must be an integer or None; "
+        "got <class 'numpy.random.mtrand.RandomState'>"
     )
+    with pytest.raises(ValueError, match=err_msg):
+        report.feature_importance.feature_permutation(
+            data_source="train",
+            random_state=np.random.RandomState(42),
+        )
     # so no cache
     assert report._cache == {}
 
