@@ -4,7 +4,6 @@ from typing import Any, Callable, Literal, Optional, Union
 import joblib
 import numpy as np
 import pandas as pd
-from numpy.random import RandomState
 from numpy.typing import ArrayLike
 from sklearn.base import is_classifier
 from sklearn.inspection import permutation_importance
