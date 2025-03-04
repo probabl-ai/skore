@@ -116,7 +116,6 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
         n_repeats: int = 5,
         n_jobs: Optional[int] = None,
         random_state: Optional[Union[int, RandomState]] = None,
-        sample_weight: Optional[ArrayLike] = None,  # Sample weights used in scoring.
         max_samples: float = 1.0,
     ) -> pd.DataFrame:
         """Report the permutation feature importance.
@@ -162,9 +161,6 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
             Pseudo-random number generator to control the permutations of each feature.
             Pass an int to get reproducible results across function calls.
 
-        sample_weight : array-like of shape (n_samples,), default=None
-            Sample weights used in scoring.
-
         max_samples : int or float, default=1.0
             The number of samples to draw from `X` to compute feature importance
             in each repeat (without replacement).
@@ -192,7 +188,6 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
             n_repeats=n_repeats,
             n_jobs=n_jobs,
             random_state=random_state,
-            sample_weight=sample_weight,
             max_samples=max_samples,
         )
 
