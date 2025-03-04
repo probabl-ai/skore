@@ -430,6 +430,7 @@ engineered_ridge_report.feature_importance.coefficients().sort_values(
 # a :class:`~sklearn.model_selection.RandomizedSearchCV`.
 
 # %%
+import warnings
 from scipy.stats import randint
 from sklearn.feature_selection import SelectKBest, VarianceThreshold
 from sklearn.model_selection import RandomizedSearchCV
@@ -453,14 +454,20 @@ parameter_grid = {
     "columntransformer__remainder__n_knots": randint(low=2, high=10),
     "selectkbest__k": randint(low=5, high=100),
 }
-random_search = RandomizedSearchCV(
-    model,
-    param_distributions=parameter_grid,
-)
-random_search.fit(X_train, y_train)
-
-selectkbest_ridge = random_search.best_estimator_
-selectkbest_ridge
+with warnings.catch_warnings():
+    # Catch expected warnings to avoid cluterring this notebook
+    warnings.filterwarnings(
+        "ignore",
+        category=UserWarning,
+        module="sklearn.feature_selection._univariate_selection",
+    )
+    random_search = RandomizedSearchCV(
+        model,
+        param_distributions=parameter_grid,
+    )
+    random_search.fit(X_train, y_train)
+    selectkbest_ridge = random_search.best_estimator_
+    selectkbest_ridge
 
 # %%
 # Let us get the metrics for the best model of our grid search, and compare it with
