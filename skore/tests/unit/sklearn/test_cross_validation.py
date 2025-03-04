@@ -238,10 +238,7 @@ def test_cross_validation_report_flat_index(binary_classification_data):
         "roc_auc",
         "brier_score",
     ]
-    assert result.columns.tolist() == [
-        "randomforestclassifier_split_0",
-        "randomforestclassifier_split_1",
-    ]
+    assert result.columns.tolist() == ["Split #0", "Split #1"]
 
 
 ########################################################################################
