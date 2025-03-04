@@ -15,6 +15,7 @@ from .pillow_image_item import PillowImageItem
 from .plotly_figure_item import PlotlyFigureItem
 from .polars_dataframe_item import PolarsDataFrameItem
 from .polars_series_item import PolarsSeriesItem
+from .sklearn_base_estimator_item import SklearnBaseEstimatorItem
 
 
 def object_to_item(object: Any, /) -> Item:
@@ -29,6 +30,7 @@ def object_to_item(object: Any, /) -> Item:
         PlotlyFigureItem,
         PolarsDataFrameItem,
         PolarsSeriesItem,
+        SklearnBaseEstimatorItem,
         # JSONable must be the penultimate
         JSONableItem,
     ):
@@ -57,5 +59,6 @@ __all__ = [
     "PlotlyFigureItem",
     "PolarsDataFrameItem",
     "PolarsSeriesItem",
+    "SklearnBaseEstimatorItem",
     "object_to_item",
 ]

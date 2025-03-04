@@ -8,7 +8,7 @@ from skore.hub.item.item import ItemTypeError, Representation
 
 
 class TestPolarsSeriesItem:
-    def test_factory(self, mock_nowstr):
+    def test_factory(self):
         series = Series([0, 1, 2])
         series_json_str = series.to_frame().write_json()
 
@@ -32,7 +32,7 @@ class TestPolarsSeriesItem:
         # Ensure parameters are JSONable
         dumps(item_parameters)
 
-    def test_raw(self, mock_nowstr):
+    def test_raw(self):
         series = Series([np.array([1, 2])])
         series_json_str = series.to_frame().write_json()
 

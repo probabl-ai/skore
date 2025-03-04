@@ -27,13 +27,6 @@ class TestJSONableItem:
         with pytest.raises(ItemTypeError):
             JSONableItem.factory(set())
 
-    def test_raw(self):
-        item1 = JSONableItem.factory((1, 2))
-        item2 = JSONableItem("[1, 2]")
-
-        assert item1.__raw__ == [1, 2]
-        assert item2.__raw__ == [1, 2]
-
     def test_parameters(self):
         item = JSONableItem.factory((1, 2))
         item_parameters = item.__parameters__
@@ -42,6 +35,13 @@ class TestJSONableItem:
 
         # Ensure parameters are JSONable
         json.dumps(item_parameters)
+
+    def test_raw(self):
+        item1 = JSONableItem.factory((1, 2))
+        item2 = JSONableItem("[1, 2]")
+
+        assert item1.__raw__ == [1, 2]
+        assert item2.__raw__ == [1, 2]
 
     def test_representation(self):
         representation = Representation(media_type="application/json", value=[1, 2])

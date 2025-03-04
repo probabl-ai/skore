@@ -8,7 +8,7 @@ from skore.hub.item.item import ItemTypeError, Representation
 
 
 class TestPlotlyFigureItem:
-    def test_factory(self, mock_nowstr):
+    def test_factory(self):
         bar = plotly.graph_objects.Bar(x=[1, 2, 3], y=[1, 3, 2])
         figure = plotly.graph_objects.Figure(data=[bar])
         figure_json_str = plotly.io.to_json(figure, engine="json")
