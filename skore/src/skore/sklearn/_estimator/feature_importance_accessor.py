@@ -233,6 +233,8 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
 
             if callable(scoring) or isinstance(scoring, (list, dict)):
                 cache_key_parts.append(joblib.hash(scoring))
+            else:
+                cache_key_parts.append(scoring)
 
             # order arguments by key to ensure cache works
             # n_jobs variable should not be in the cache
