@@ -6,10 +6,6 @@ from skore.hub.item.item import ItemTypeError, Representation
 
 
 class TestJSONableItem:
-    @pytest.fixture(autouse=True)
-    def monkeypatch_datetime(self, monkeypatch, MockDatetime):
-        monkeypatch.setattr("skore.hub.item.item.datetime", MockDatetime)
-
     @pytest.mark.parametrize(
         "value",
         [
@@ -22,28 +18,20 @@ class TestJSONableItem:
             None,
         ],
     )
-    def test_factory(self, mock_nowstr, value):
+    def test_factory(self, value):
         item = JSONableItem.factory(value)
 
         assert item.value_json_str == json.dumps(value)
-        assert item.created_at == mock_nowstr
-        assert item.updated_at == mock_nowstr
-        assert item.note is None
 
     def test_factory_exception(self):
         with pytest.raises(ItemTypeError):
             JSONableItem.factory(set())
 
-    def test_parameters(self, mock_nowstr):
+    def test_parameters(self):
         item = JSONableItem.factory((1, 2))
         item_parameters = item.__parameters__
 
-        assert item_parameters == {
-            "value_json_str": "[1, 2]",
-            "created_at": mock_nowstr,
-            "updated_at": mock_nowstr,
-            "note": None,
-        }
+        assert item_parameters == {"value_json_str": "[1, 2]"}
 
         # Ensure parameters are JSONable
         json.dumps(item_parameters)

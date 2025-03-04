@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from functools import cached_property
 from typing import Any
 
@@ -39,7 +40,8 @@ class Project:
 
             return request.json()["project_id"]
 
-    def put(self, key: str, value: Any):
+    def put(self, key: str, value: Any, *, note=None):
+        now = datetime.now(tz=timezone.utc).replace(tzinfo=None).isoformat()
         item = object_to_item(value)
 
         with AuthenticatedClient(raises=True) as client:
@@ -47,11 +49,11 @@ class Project:
                 f"projects/{self.id}/items/",
                 json={
                     "key": key,
-                    "created_at": item.created_at,
-                    "updated_at": item.updated_at,
+                    "created_at": now,
+                    "updated_at": now,
                     "value_type": item.__class__.__name__,
                     "value": {
-                        "note": item.note,
+                        "note": note,
                         "parameters": item.__parameters__,
                         "representation": item.__representation__.__dict__,
                     },

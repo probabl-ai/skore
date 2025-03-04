@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from .item import Item, ItemTypeError, Representation, lazy_is_instance
 
@@ -9,15 +9,7 @@ if TYPE_CHECKING:
 
 
 class AltairChartItem(Item):
-    def __init__(
-        self,
-        chart_json_str: str,
-        created_at: Optional[str] = None,
-        updated_at: Optional[str] = None,
-        note: Optional[str] = None,
-    ):
-        super().__init__(created_at, updated_at, note)
-
+    def __init__(self, chart_json_str: str):
         self.chart_json_str = chart_json_str
 
     @property

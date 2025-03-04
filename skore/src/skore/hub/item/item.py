@@ -3,9 +3,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from base64 import b64decode, b64encode
 from dataclasses import dataclass
-from datetime import datetime, timezone
 from inspect import signature as inspect_signature
-from typing import Any, Optional
+from typing import Any
 
 #
 # faire un system qui import dynamiquement les modules
@@ -54,18 +53,6 @@ class ItemTypeError(Exception):
 
 
 class Item(ABC):
-    def __init__(
-        self,
-        created_at: Optional[str] = None,
-        updated_at: Optional[str] = None,
-        note: Optional[str] = None,
-    ):
-        now = datetime.now(tz=timezone.utc).replace(tzinfo=None).isoformat()
-
-        self.created_at = created_at or now
-        self.updated_at = updated_at or now
-        self.note = note
-
     @property
     def __parameters__(self) -> dict[str, Any]:
         cls = self.__class__

@@ -4,7 +4,7 @@ from json import dumps
 from joblib import dump, load
 from matplotlib.pyplot import subplots
 from matplotlib.testing.compare import compare_images
-from pytest import fixture, raises
+from pytest import raises
 from skore.hub.item import MatplotlibFigureItem
 from skore.hub.item.item import (
     ItemTypeError,
@@ -14,11 +14,7 @@ from skore.hub.item.item import (
 
 
 class TestMatplotlibFigureItem:
-    @fixture(autouse=True)
-    def monkeypatch_datetime(self, monkeypatch, MockDatetime):
-        monkeypatch.setattr("skore.hub.item.item.datetime", MockDatetime)
-
-    def test_factory(self, mock_nowstr, tmp_path):
+    def test_factory(self, tmp_path):
         figure, ax = subplots()
         ax.plot([1, 2, 3, 4], [1, 4, 2, 3])
 
@@ -32,15 +28,12 @@ class TestMatplotlibFigureItem:
             load(stream).savefig(tmp_path / "item.png")
 
         assert compare_images(tmp_path / "figure.png", tmp_path / "item.png", 0) is None
-        assert item.created_at == mock_nowstr
-        assert item.updated_at == mock_nowstr
-        assert item.note is None
 
     def test_factory_exception(self):
         with raises(ItemTypeError):
             MatplotlibFigureItem.factory(None)
 
-    def test_parameters(self, mock_nowstr, tmp_path):
+    def test_parameters(self, tmp_path):
         figure, ax = subplots()
         ax.plot([1, 2, 3, 4], [1, 4, 2, 3])
 
@@ -55,15 +48,7 @@ class TestMatplotlibFigureItem:
             load(stream).savefig(tmp_path / "item.png")
 
         assert compare_images(tmp_path / "figure.png", tmp_path / "item.png", 0) is None
-        assert item_parameters["created_at"] == mock_nowstr
-        assert item_parameters["updated_at"] == mock_nowstr
-        assert item_parameters["note"] is None
-        assert list(item_parameters.keys()) == [
-            "figure_b64_str",
-            "created_at",
-            "updated_at",
-            "note",
-        ]
+        assert list(item_parameters.keys()) == ["figure_b64_str"]
 
         # Ensure parameters are JSONable
         dumps(item_parameters)

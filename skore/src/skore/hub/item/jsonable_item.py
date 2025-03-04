@@ -1,21 +1,13 @@
 from __future__ import annotations
 
 from json import dumps, loads
-from typing import Any, Union
+from typing import Any
 
 from .item import Item, ItemTypeError, Representation
 
 
 class JSONableItem(Item):
-    def __init__(
-        self,
-        value_json_str: str,
-        created_at: Union[str, None] = None,
-        updated_at: Union[str, None] = None,
-        note: Union[str, None] = None,
-    ):
-        super().__init__(created_at, updated_at, note)
-
+    def __init__(self, value_json_str: str):
         self.value_json_str = value_json_str
 
     @property

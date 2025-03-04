@@ -1,40 +1,28 @@
 import json
 
 from altair import Chart
-from pytest import fixture, raises
+from pytest import raises
 from skore.hub.item import AltairChartItem
 from skore.hub.item.item import ItemTypeError, Representation
 
 
 class TestAltairChartItem:
-    @fixture(autouse=True)
-    def monkeypatch_datetime(self, monkeypatch, MockDatetime):
-        monkeypatch.setattr("skore.hub.item.item.datetime", MockDatetime)
-
-    def test_factory(self, mock_nowstr):
+    def test_factory(self):
         chart = Chart().mark_point()
         item = AltairChartItem.factory(chart)
 
         assert item.chart_json_str == chart.to_json()
-        assert item.created_at == mock_nowstr
-        assert item.updated_at == mock_nowstr
-        assert item.note is None
 
     def test_factory_exception(self):
         with raises(ItemTypeError):
             AltairChartItem.factory(None)
 
-    def test_parameters(self, mock_nowstr):
+    def test_parameters(self):
         chart = Chart().mark_point()
         item = AltairChartItem.factory(chart)
         item_parameters = item.__parameters__
 
-        assert item_parameters == {
-            "chart_json_str": chart.to_json(),
-            "created_at": mock_nowstr,
-            "updated_at": mock_nowstr,
-            "note": None,
-        }
+        assert item_parameters == {"chart_json_str": chart.to_json()}
 
         # Ensure parameters are JSONable
         json.dumps(item_parameters)

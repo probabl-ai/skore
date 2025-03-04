@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from contextlib import suppress
-from typing import Any, Optional
+from typing import Any
 
 from .altair_chart_item import AltairChartItem
 from .item import Item, ItemTypeError
@@ -10,10 +10,7 @@ from .matplotlib_figure_item import MatplotlibFigureItem
 from .pickle_item import PickleItem
 
 
-def object_to_item(object: Any, /, *, note: Optional[str] = None) -> Item:
-    if not isinstance(note, (type(None), str)):
-        raise TypeError(f"`note` must be a string (found '{type(note)}')")
-
+def object_to_item(object: Any, /) -> Item:
     for cls in (
         AltairChartItem,
         MatplotlibFigureItem,
@@ -27,8 +24,8 @@ def object_to_item(object: Any, /, *, note: Optional[str] = None) -> Item:
             # ItemTypeError:
             #     The factories are responsible for checking that parameters are of
             #     the correct type. If not, they throw a ItemTypeError exception.
-            return cls.factory(object, note=note)
-    return PickleItem.factory(object, note=note)
+            return cls.factory(object)
+    return PickleItem.factory(object)
 
 
 __all__ = [

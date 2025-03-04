@@ -8,7 +8,7 @@ from __future__ import annotations
 from contextlib import contextmanager
 from functools import cached_property
 from io import BytesIO
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from joblib import dump, load
 
@@ -42,29 +42,7 @@ def mpl_backend(backend="agg"):
 class MatplotlibFigureItem(Item):
     """A class used to persist a Matplotlib figure."""
 
-    def __init__(
-        self,
-        figure_b64_str: str,
-        created_at: Optional[str] = None,
-        updated_at: Optional[str] = None,
-        note: Optional[str] = None,
-    ):
-        """
-        Initialize a MatplotlibFigureItem.
-
-        Parameters
-        ----------
-        figure_b64_str : str
-            The raw bytes of the Matplotlib figure pickled representation.
-        created_at : str, optional
-            The creation timestamp in ISO format.
-        updated_at : str, optional
-            The last update timestamp in ISO format.
-        note : str, optional
-            A note.
-        """
-        super().__init__(created_at, updated_at, note)
-
+    def __init__(self, figure_b64_str: str):
         self.figure_b64_str = figure_b64_str
 
     @cached_property

@@ -8,12 +8,8 @@ from skore.hub.item.item import Representation, bytes_to_b64_str
 
 
 class TestPickleItem:
-    @pytest.fixture(autouse=True)
-    def monkeypatch_datetime(self, monkeypatch, MockDatetime):
-        monkeypatch.setattr("skore.hub.item.item.datetime", MockDatetime)
-
     @pytest.mark.parametrize("value", [0, 0.0, int, True, [0], {0: 0}])
-    def test_factory(self, mock_nowstr, value):
+    def test_factory(self, value):
         item = PickleItem.factory(value)
 
         with io.BytesIO() as stream:
@@ -23,11 +19,8 @@ class TestPickleItem:
             pickle_b64_str = bytes_to_b64_str(pickle_bytes)
 
         assert item.pickle_b64_str == pickle_b64_str
-        assert item.created_at == mock_nowstr
-        assert item.updated_at == mock_nowstr
-        assert item.note is None
 
-    def test_parameters(self, mock_nowstr):
+    def test_parameters(self):
         with io.BytesIO() as stream:
             dump(int, stream)
 
@@ -37,12 +30,7 @@ class TestPickleItem:
         item = PickleItem.factory(int)
         item_parameters = item.__parameters__
 
-        assert item_parameters == {
-            "pickle_b64_str": pickle_b64_str,
-            "created_at": mock_nowstr,
-            "updated_at": mock_nowstr,
-            "note": None,
-        }
+        assert item_parameters == {"pickle_b64_str": pickle_b64_str}
 
         # Ensure parameters are JSONable
         json.dumps(item_parameters)

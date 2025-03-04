@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from functools import cached_property
 from io import BytesIO
-from typing import Any, Optional
+from typing import Any
 
 from joblib import dump, load
 
@@ -28,29 +28,7 @@ class PickleItem(Item):
     timestamps.
     """
 
-    def __init__(
-        self,
-        pickle_b64_str: str,
-        created_at: Optional[str] = None,
-        updated_at: Optional[str] = None,
-        note: Optional[str] = None,
-    ):
-        """
-        Initialize a PickleItem.
-
-        Parameters
-        ----------
-        pickle_b64_str : str
-            The raw bytes of the object pickled representation.
-        created_at : str, optional
-            The creation timestamp in ISO format.
-        updated_at : str, optional
-            The last update timestamp in ISO format.
-        note : str, optional
-            A note.
-        """
-        super().__init__(created_at, updated_at, note)
-
+    def __init__(self, pickle_b64_str: str):
         self.pickle_b64_str = pickle_b64_str
 
     @cached_property
