@@ -199,7 +199,10 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
         scoring: Optional[Scoring] = None,
-        **kwargs,
+        n_repeats: int = 5,
+        n_jobs: Optional[int] = None,
+        random_state: Optional[Union[int, RandomState]] = None,
+        max_samples: float = 1.0,
     ) -> pd.DataFrame:
         """Private interface of `feature_permutation` to pass `data_source_hash`.
 
@@ -228,9 +231,12 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
 
         # order arguments by key to ensure cache works
         # n_jobs variable should not be in the cache
-        for k, v in sorted(kwargs.items()):
-            if k == "n_jobs":
-                continue
+        kwargs = {
+            "n_repeats": n_repeats,
+            "random_state": random_state,
+            "max_samples": max_samples,
+        }
+        for _, v in sorted(kwargs.items()):
             cache_key_parts.append(v)
 
         cache_key = tuple(cache_key_parts)
@@ -243,7 +249,10 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
                 X=X_,
                 y=y_true,
                 scoring=scoring,
-                **kwargs,
+                n_repeats=n_repeats,
+                n_jobs=n_jobs,
+                random_state=random_state,
+                max_samples=max_samples,
             )
             score = sklearn_score.get("importances")
 
