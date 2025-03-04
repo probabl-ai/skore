@@ -8,15 +8,18 @@ from .item import Item, ItemTypeError
 from .jsonable_item import JSONableItem
 from .matplotlib_figure_item import MatplotlibFigureItem
 from .numpy_array_item import NumpyArrayItem
+from .pandas_dataframe_item import PandasDataFrameItem
 from .pickle_item import PickleItem
 
 
 def object_to_item(object: Any, /) -> Item:
     for cls in (
+        # Lexicographically sorted, the order of execution doesn't matter
         AltairChartItem,
         MatplotlibFigureItem,
         NumpyArrayItem,
-        # JSONable must be the penultimate serializer
+        PandasDataFrameItem,
+        # JSONable must be the penultimate
         JSONableItem,
     ):
         with suppress(ImportError, ItemTypeError):
@@ -37,6 +40,7 @@ __all__ = [
     "JSONableItem",
     "MatplotlibFigureItem",
     "NumpyArrayItem",
+    "PandasDataFrameItem",
     "PickleItem",
     "object_to_item",
 ]

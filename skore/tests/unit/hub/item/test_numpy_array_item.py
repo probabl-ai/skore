@@ -8,7 +8,7 @@ from skore.hub.item.item import ItemTypeError, Representation, bytes_to_b64_str
 
 
 class TestNumpyArrayItem:
-    def test_factory(self, mock_nowstr):
+    def test_factory(self):
         array = numpy.array([1, 2, 3])
 
         with BytesIO() as stream:
