@@ -162,7 +162,6 @@ def test_all_sklearn_estimators(
 def test_pipeline_with_transformer(regression_data):
     """If the estimator is a pipeline containing a transformer that changes the
     features, adapt the feature names in the output table."""
-    from sklearn.model_selection import train_test_split
     from sklearn.preprocessing import PolynomialFeatures
 
     X, y = regression_data
