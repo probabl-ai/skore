@@ -105,6 +105,19 @@ def case_X_y():
     return data, kwargs, expected
 
 
+def case_aggregate():
+    data = regression_data()
+
+    kwargs = {"data_source": "train", "aggregate": "mean", "random_state": 42}
+
+    expected = pd.DataFrame(
+        data=np.zeros((3, 1)),
+        index=pd.Index((f"Feature #{i}" for i in range(3)), name="Feature"),
+        columns=pd.Index(["mean"]),
+    )
+    return data, kwargs, expected
+
+
 def case_default_args_dataframe():
     data = regression_data_dataframe()
 
@@ -179,6 +192,7 @@ def case_several_scoring_dataframe():
         case_r2_numpy,
         case_train_numpy,
         case_several_scoring_numpy,
+        case_aggregate,
         case_default_args_dataframe,
         case_r2_dataframe,
         case_train_dataframe,
