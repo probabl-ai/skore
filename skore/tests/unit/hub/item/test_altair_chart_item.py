@@ -50,3 +50,7 @@ class TestAltairChartItem:
 
         assert item1.__representation__ == representation
         assert item2.__representation__ == representation
+
+        # Ensure representation is JSONable
+        dumps(item1.__representation__.__dict__)
+        dumps(item2.__representation__.__dict__)

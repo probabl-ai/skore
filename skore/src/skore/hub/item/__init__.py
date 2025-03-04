@@ -7,6 +7,7 @@ from .altair_chart_item import AltairChartItem
 from .item import Item, ItemTypeError
 from .jsonable_item import JSONableItem
 from .matplotlib_figure_item import MatplotlibFigureItem
+from .numpy_array_item import NumpyArrayItem
 from .pickle_item import PickleItem
 
 
@@ -14,6 +15,8 @@ def object_to_item(object: Any, /) -> Item:
     for cls in (
         AltairChartItem,
         MatplotlibFigureItem,
+        NumpyArrayItem,
+        # JSONable must be the penultimate serializer
         JSONableItem,
     ):
         with suppress(ImportError, ItemTypeError):
@@ -33,6 +36,7 @@ __all__ = [
     "Item",
     "JSONableItem",
     "MatplotlibFigureItem",
+    "NumpyArrayItem",
     "PickleItem",
     "object_to_item",
 ]
