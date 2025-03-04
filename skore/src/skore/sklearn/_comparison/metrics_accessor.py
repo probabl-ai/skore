@@ -190,8 +190,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             report_metric_name,
             data_source,
         ]
-        cache_key = (self._parent._hash, report_metric_name, data_source)
-        cache_key += (aggregate,) if aggregate is None else tuple(aggregate)
+
+        if aggregate is not None:
+            cache_key_parts.append(tuple(aggregate))
 
         # we need to enforce the order of the parameter for a specific metric
         # to make sure that we hit the cache in a consistent way
