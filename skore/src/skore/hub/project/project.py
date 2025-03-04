@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from functools import cached_property
-from typing import Any
+from typing import Any, Literal, Optional, Union
 
 from skore.hub import item as item_module
 from skore.hub.client.client import AuthenticatedClient
@@ -60,15 +60,48 @@ class Project:
                 },
             )
 
-    def get(self, key: str):
-        # Retrieve item content from persistence
-        with AuthenticatedClient(raises=True) as client:
-            request = client.get(f"projects/{self.id}/items/{key}")
-            response = request.json()
+    def get(
+        self,
+        key: str,
+        *,
+        version: Optional[Union[Literal[-1, "all"], int]] = -1,
+        metadata: bool = False,
+    ):
+        if not metadata:
 
-        # Reconstruct item
-        item_class = getattr(item_module, response["value_type"])
-        item = item_class(**response["value"]["parameters"])
+            def dto(response):
+                item_class = getattr(item_module, response["value_type"])
+                item = item_class(**response["value"]["parameters"])
+                return item.__raw__
 
-        # Reconstruct value
-        return item.__raw__
+        else:
+
+            def dto(response):
+                item_class = getattr(item_module, response["value_type"])
+                item = item_class(**response["value"]["parameters"])
+                return {
+                    "value": item.__raw__,
+                    "date": response["created_at"],
+                    "note": response["value"]["note"],
+                }
+
+        if version == -1:
+            with AuthenticatedClient(raises=True) as client:
+                request = client.get(f"projects/{self.id}/items/{key}")
+                response = request.json()
+
+            return dto(response)
+        if version == "all":
+            with AuthenticatedClient(raises=True) as client:
+                request = client.get(f"projects/{self.id}/items/{key}/history")
+                response = request.json()
+
+            return list(map(dto, response))
+        if isinstance(version, int):
+            with AuthenticatedClient(raises=True) as client:
+                request = client.get(f"projects/{self.id}/items/{key}/history")
+                response = request.json()
+
+            return dto(response[version])
+
+        raise ValueError('`version` should be -1, "all", or an integer')
