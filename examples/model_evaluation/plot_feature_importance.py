@@ -366,7 +366,7 @@ from sklearn.preprocessing import PolynomialFeatures, SplineTransformer
 geo_columns = ["Latitude", "Longitude"]
 
 preprocessor = make_column_transformer(
-    (KMeans(n_clusters=10), geo_columns),
+    (KMeans(n_clusters=10, random_state=0), geo_columns),
     remainder="passthrough",
 )
 engineered_ridge = make_pipeline(
@@ -458,7 +458,7 @@ from sklearn.model_selection import RandomizedSearchCV
 from sklearn.linear_model import RidgeCV
 
 preprocessor = make_column_transformer(
-    (KMeans(n_clusters=20), geo_columns),
+    (KMeans(n_clusters=20, random_state=0), geo_columns),
     remainder="passthrough",
     force_int_remainder_cols=False,
 )
@@ -479,8 +479,7 @@ parameter_grid = {
 }
 
 random_search = RandomizedSearchCV(
-    model,
-    param_distributions=parameter_grid,
+    model, param_distributions=parameter_grid, random_state=0
 )
 
 with warnings.catch_warnings():
