@@ -73,13 +73,24 @@ TableReport(california_housing.frame)
 #
 # - Looking at the *Stats* tab, all features are numerical and there are no
 #   missing values.
-# - Looking at the *Distributions* tab, we can notice that some features have some
-#   outliers: ``MedInc``, ``AveRooms``, ``AveBedrms``, ``Population``, and ``AveOccup``.
-#   The feature with the largest number of outliers is ``AveBedrms``, probably
+# - Looking at the *Distributions* tab, we can notice that some features seem to have
+#   some outliers:
+#   ``MedInc``, ``AveRooms``, ``AveBedrms``, ``Population``, and ``AveOccup``.
+#   The feature with the largest number of alleged outliers is ``AveBedrms``, probably
 #   corresponding to vacation resorts.
-# - Looking at the *Associations* tab, we observe that the target feature
-#   ``MedHouseVal`` is mostly associated with ``MedInc``, ``Longitude``, and
-#   ``Latitude``, which makes sense.
+# - Looking at the *Associations* tab, we observe that:
+#
+#   -   The target feature ``MedHouseVal`` is mostly associated with ``MedInc``,
+#       ``Longitude``, and ``Latitude``.
+#       Indeed, intuitively, people with a large income would live in areas where the
+#       house prices are high.
+#       Moreover, we can expect these expensive areas to be close to one another.
+#   -   The association power between the target and these features is not super
+#       high, which would indicate that each single feature can not correctly predict
+#       the target.
+#       Given that ``MedInc`` is associated with ``Longitude`` and also ``Latitude``,
+#       it might make sense to have some interactions between these features in our
+#       modelling: linear combinations might not be enough.
 
 # %%
 # Target feature
@@ -99,12 +110,15 @@ plt.show()
 # %%
 # There seems to be a threshold-effect for high-valued houses: all houses with a price
 # above $500,000 are given the value $500,000.
+# We keep these clipped values in our data and will inspect how our models deals with
+# them.
 
 # %%
 
 # %%
-# Now, let us assess how the median income ``MedInc`` relates to the median house
-# prices ``MedHouseVal``:
+# Now, as the median income ``MedInc`` is the feature with the highest association with
+# our target (the median house prices ``MedHouseVal``), let us assess how ``MedInc``
+# relates to ``MedHouseVal``:
 
 # %%
 import plotly.express as px
@@ -129,8 +143,10 @@ fig
 # -------------------
 
 # %%
-# Let us look into the coordinates of the districts in California, with regards to the
-# target feature:
+# From the table report, we noticed that the geospatial features ``Latitude`` and
+# ``Longitude`` were well associated with our target.
+# Hence, let us look into the coordinates of the districts in California, with regards
+# to the target feature, using a map:
 
 
 # %%
