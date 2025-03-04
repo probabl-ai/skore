@@ -438,10 +438,12 @@ from sklearn.linear_model import RidgeCV
 
 preprocessor = make_column_transformer(
     (KMeans(n_clusters=20), geo_columns),
-    remainder=SplineTransformer(),
+    remainder="passthrough",
+    force_int_remainder_cols=False,
 )
 model = make_pipeline(
     preprocessor,
+    SplineTransformer(),
     PolynomialFeatures(degree=1, interaction_only=True, include_bias=False),
     VarianceThreshold(),
     SelectKBest(k=50),
@@ -450,10 +452,11 @@ model = make_pipeline(
 
 parameter_grid = {
     "columntransformer__kmeans__n_clusters": randint(low=10, high=30),
-    "columntransformer__remainder__degree": randint(low=1, high=4),
-    "columntransformer__remainder__n_knots": randint(low=2, high=10),
+    "splinetransformer__degree": randint(low=1, high=4),
+    "splinetransformer__n_knots": randint(low=2, high=10),
     "selectkbest__k": randint(low=5, high=100),
 }
+
 random_search = RandomizedSearchCV(
     model,
     param_distributions=parameter_grid,
