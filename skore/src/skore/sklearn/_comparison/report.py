@@ -12,7 +12,7 @@ from skore.sklearn._estimator.report import EstimatorReport
 from skore.utils._progress_bar import progress_decorator
 
 if TYPE_CHECKING:
-    from skore.sklearn._estimator.metrics_accessor import _MetricsAccessor
+    from skore.sklearn._comparison.metrics_accessor import _MetricsAccessor
 
 
 class ComparisonReport(_BaseReport, DirNamesMixin):

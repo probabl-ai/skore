@@ -109,7 +109,7 @@ class CrossValidationReport(ComparisonReport):
     _ACCESSOR_CONFIG: dict[str, dict[str, str]] = {
         "metrics": {"name": "metrics"},
     }
-    metrics: "_MetricsAccessor"
+    metrics: _MetricsAccessor
 
     def __init__(
         self,
