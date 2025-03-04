@@ -542,7 +542,7 @@ print(selectk_features)
 # income.
 
 # %%
-# And here are is the feature importance based on our model (sorted by absolute values):
+# And here is the feature importance based on our model (sorted by absolute values):
 
 # %%
 selectk_ridge_report.feature_importance.coefficients().sort_values(
