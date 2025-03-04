@@ -9,6 +9,7 @@ from .jsonable_item import JSONableItem
 from .matplotlib_figure_item import MatplotlibFigureItem
 from .numpy_array_item import NumpyArrayItem
 from .pandas_dataframe_item import PandasDataFrameItem
+from .pandas_series_item import PandasSeriesItem
 from .pickle_item import PickleItem
 
 
@@ -19,6 +20,7 @@ def object_to_item(object: Any, /) -> Item:
         MatplotlibFigureItem,
         NumpyArrayItem,
         PandasDataFrameItem,
+        PandasSeriesItem,
         # JSONable must be the penultimate
         JSONableItem,
     ):
@@ -41,6 +43,7 @@ __all__ = [
     "MatplotlibFigureItem",
     "NumpyArrayItem",
     "PandasDataFrameItem",
+    "PandasSeriesItem",
     "PickleItem",
     "object_to_item",
 ]
