@@ -7,7 +7,6 @@ from sklearn.base import BaseEstimator, clone, is_classifier
 from sklearn.model_selection import check_cv
 from sklearn.pipeline import Pipeline
 
-from skore.externals._pandas_accessors import DirNamesMixin
 from skore.externals._sklearn_compat import _safe_indexing
 from skore.sklearn._comparison.report import ComparisonReport
 from skore.sklearn._estimator.report import EstimatorReport
