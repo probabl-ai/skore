@@ -1,9 +1,8 @@
 import pytest
 from sklearn.pipeline import make_pipeline
 from skore.externals._pandas_accessors import DirNamesMixin, _register_accessor
-from skore.utils._accessor import _check_supported_ml_task
-from skore.utils._accessor import _check_has_coef, _check_supported_ml_task
 from skore.utils._accessor import (
+    _check_has_coef,
     _check_has_feature_importances,
     _check_supported_ml_task,
 )
