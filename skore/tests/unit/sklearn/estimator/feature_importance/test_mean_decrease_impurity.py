@@ -10,39 +10,17 @@ from sklearn.preprocessing import StandardScaler
 from skore import EstimatorReport
 
 
-def test(classification_data):
-    X, y = classification_data
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-
-    forest = RandomForestClassifier(random_state=0)
-    report = EstimatorReport(
-        forest, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test
-    )
-
-    result = report.feature_importance.mean_decrease_impurity()
-
-    assert result.shape == (5, 1)
-    assert result.index.tolist() == [
-        "Feature #0",
-        "Feature #1",
-        "Feature #2",
-        "Feature #3",
-        "Feature #4",
-    ]
-    assert result.columns.tolist() == ["Mean decrease impurity"]
-
-
 @pytest.mark.parametrize(
     "data, estimator, expected_shape",
     [
         (
             make_classification(n_features=5, random_state=42),
-            RandomForestClassifier(random_state=0),
+            RandomForestClassifier(n_estimators=2, random_state=0),
             (5, 1),
         ),
         (
             make_classification(n_features=5, random_state=42),
-            RandomForestClassifier(random_state=0),
+            RandomForestClassifier(n_estimators=2, random_state=0),
             (5, 1),
         ),
         (
@@ -53,7 +31,7 @@ def test(classification_data):
                 n_informative=3,
                 random_state=42,
             ),
-            RandomForestClassifier(random_state=0),
+            RandomForestClassifier(n_estimators=2, random_state=0),
             (5, 1),
         ),
         (
@@ -64,17 +42,21 @@ def test(classification_data):
                 n_informative=3,
                 random_state=42,
             ),
-            make_pipeline(StandardScaler(), RandomForestClassifier(random_state=0)),
+            make_pipeline(
+                StandardScaler(), RandomForestClassifier(n_estimators=2, random_state=0)
+            ),
             (5, 1),
         ),
         (
             make_classification(n_features=5, random_state=42),
-            make_pipeline(StandardScaler(), RandomForestClassifier(random_state=0)),
+            make_pipeline(
+                StandardScaler(), RandomForestClassifier(n_estimators=2, random_state=0)
+            ),
             (5, 1),
         ),
         (
             make_regression(n_features=5, n_targets=3, random_state=42),
-            RandomForestRegressor(random_state=0),
+            RandomForestRegressor(n_estimators=2, random_state=0),
             (5, 1),
         ),
     ],
@@ -101,8 +83,10 @@ def test_numpy_arrays(data, estimator, expected_shape):
 @pytest.mark.parametrize(
     "estimator",
     [
-        RandomForestClassifier(random_state=0),
-        make_pipeline(StandardScaler(), RandomForestClassifier(random_state=0)),
+        RandomForestClassifier(n_estimators=2, random_state=0),
+        make_pipeline(
+            StandardScaler(), RandomForestClassifier(n_estimators=2, random_state=0)
+        ),
     ],
 )
 def test_pandas_dataframe(estimator):
@@ -134,15 +118,15 @@ def _make_estimator_param(estimator):
     [
         _make_estimator_param(estimator)
         for estimator in [
-            sklearn.ensemble.AdaBoostClassifier(),
-            sklearn.ensemble.AdaBoostRegressor(),
-            sklearn.ensemble.ExtraTreesClassifier(),
-            sklearn.ensemble.ExtraTreesRegressor(),
-            sklearn.ensemble.GradientBoostingClassifier(),
-            sklearn.ensemble.GradientBoostingRegressor(),
-            sklearn.ensemble.RandomForestClassifier(),
-            sklearn.ensemble.RandomForestRegressor(),
-            sklearn.ensemble.RandomTreesEmbedding(),
+            sklearn.ensemble.AdaBoostClassifier(n_estimators=2),
+            sklearn.ensemble.AdaBoostRegressor(n_estimators=2),
+            sklearn.ensemble.ExtraTreesClassifier(n_estimators=2),
+            sklearn.ensemble.ExtraTreesRegressor(n_estimators=2),
+            sklearn.ensemble.GradientBoostingClassifier(n_estimators=2),
+            sklearn.ensemble.GradientBoostingRegressor(n_estimators=2),
+            sklearn.ensemble.RandomForestClassifier(n_estimators=2),
+            sklearn.ensemble.RandomForestRegressor(n_estimators=2),
+            sklearn.ensemble.RandomTreesEmbedding(n_estimators=2),
             sklearn.tree.DecisionTreeClassifier(),
             sklearn.tree.DecisionTreeRegressor(),
             sklearn.tree.ExtraTreeClassifier(),
@@ -188,7 +172,7 @@ def test_pipeline_with_transformer(regression_data):
 
     model = make_pipeline(
         PolynomialFeatures(degree=2, interaction_only=True),
-        RandomForestRegressor(random_state=0),
+        RandomForestRegressor(n_estimators=2, random_state=0),
     )
 
     report = EstimatorReport(

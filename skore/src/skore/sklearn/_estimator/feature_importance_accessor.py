@@ -113,11 +113,13 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
 
     @available_if(_check_has_feature_importances())
     def mean_decrease_impurity(self):
-        """Retrieve the mean decrease impurity of a forest model.
+        """Retrieve the mean decrease impurity (MDI) of a tree-based model.
 
         This method is available for estimators that expose a `feature_importances_`
         attribute. See for example the
         `sklearn.ensemble.GradientBoostingClassifier documentation <https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html#sklearn.ensemble.GradientBoostingClassifier.feature_importances_>`_.
+        In particular, note that the MDI is computed at fit time, i.e. using the
+        training data.
 
         Examples
         --------
@@ -127,7 +129,7 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
         >>> from skore import EstimatorReport
         >>> X, y = make_classification(n_features=5, random_state=42)
         >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
-        >>> forest = RandomForestClassifier(random_state=0)
+        >>> forest = RandomForestClassifier(n_estimators=5, random_state=0)
         >>> report = EstimatorReport(
         ...     forest,
         ...     X_train=X_train,
