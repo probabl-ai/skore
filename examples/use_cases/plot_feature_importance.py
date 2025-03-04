@@ -391,7 +391,12 @@ engineered_ridge_report = EstimatorReport(
     y_train=y_train,
     y_test=y_test,
 )
-comparator = ComparisonReport(reports=[ridge_report, engineered_ridge_report])
+comparator = ComparisonReport(
+    reports={
+        "Vanilla model": ridge_report,
+        "Model w/ feature engineering": engineered_ridge_report,
+    }
+)
 comparator.metrics.report_metrics()
 
 # %%
