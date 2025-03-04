@@ -375,3 +375,9 @@ print(f"Time taken to compute the ROC curve: {end - start:.2f} seconds")
 
 # %%
 # As expected, since we need to recompute the predictions, it takes more time.
+
+# %%
+# .. seealso::
+#
+#   For using the :class:`~skore.EstimatorReport` to inspect your models,
+#   see :ref:`example_feature_importance`.

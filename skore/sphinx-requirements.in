@@ -4,6 +4,7 @@ numpydoc
 polars
 kaleido
 pydata-sphinx-theme
+seaborn
 sentence-transformers
 sphinx<8.2.0
 sphinx_autosummary_accessors
