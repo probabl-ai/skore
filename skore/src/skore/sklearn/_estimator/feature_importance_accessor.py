@@ -14,11 +14,21 @@ from sklearn.utils.metaestimators import available_if
 
 from skore.externals._pandas_accessors import DirNamesMixin
 from skore.sklearn._base import _BaseAccessor
-from skore.sklearn._estimator.metrics_accessor import Metric
 from skore.sklearn._estimator.report import EstimatorReport
 from skore.utils._accessor import _check_has_coef, _check_has_feature_importances
 
 DataSource = Literal["test", "train", "X_y"]
+
+Metric = Literal[
+    "accuracy",
+    "precision",
+    "recall",
+    "brier_score",
+    "roc_auc",
+    "log_loss",
+    "r2",
+    "rmse",
+]
 
 # If scoring represents a single score, one can use:
 #   - a single string (see The scoring parameter: defining model evaluation rules);
