@@ -385,6 +385,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         ...     X_test=X_test,
         ...     y_test=y_test,
         ... )
+
         >>> report.feature_importance.feature_permutation(
         ...    n_repeats=2,
         ...    random_state=0,
@@ -394,6 +395,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         r2      Feature #0   0.699...   0.885...
                 Feature #1   2.320...   2.636...
                 Feature #2   0.028...   0.022...
+
         >>> report.feature_importance.feature_permutation(
         ...    scoring=["r2", "rmse"],
         ...    n_repeats=2,
@@ -407,6 +409,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         rmse   Feature #0 -47.222331 -53.231782
                Feature #1 -86.608369 -92.366122
                Feature #2  -8.930898  -7.916905
+
         >>> report.feature_importance.feature_permutation(
         ...    n_repeats=2,
         ...    aggregate=["mean", "std"],
@@ -417,6 +420,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         r2      Feature #0  0.792...  0.131...
                 Feature #1  2.478...  0.223...
                 Feature #2  0.025...  0.003...
+
         >>> report.feature_importance.feature_permutation(
         ...    n_repeats=2,
         ...    aggregate=["mean", "std"],
