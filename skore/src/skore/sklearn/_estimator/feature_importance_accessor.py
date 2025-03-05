@@ -181,9 +181,9 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
         aggregate: Optional[Union[Aggregation, list[Aggregation]]] = None,
         scoring: Optional[Scoring] = None,
         n_repeats: int = 5,
+        max_samples: float = 1.0,
         n_jobs: Optional[int] = None,
         random_state: Optional[int] = None,
-        max_samples: float = 1.0,
     ) -> pd.DataFrame:
         """Report the permutation feature importance.
 
@@ -224,13 +224,6 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
         n_repeats : int, default=5
             Number of times to permute a feature.
 
-        n_jobs : int or None, default=None
-            Number of jobs to run in parallel. -1 means using all processors.
-
-        random_state : int or None, default=None
-            Pseudo-random number generator to control the permutations of each feature.
-            Pass an int to get reproducible results across function calls.
-
         max_samples : int or float, default=1.0
             The number of samples to draw from `X` to compute feature importance
             in each repeat (without replacement).
@@ -243,6 +236,13 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
             it keeps the method tractable when evaluating feature importance on
             large datasets. In combination with n_repeats, this allows to control
             the computational speed vs statistical accuracy trade-off of this method.
+
+        n_jobs : int or None, default=None
+            Number of jobs to run in parallel. -1 means using all processors.
+
+        random_state : int or None, default=None
+            Pseudo-random number generator to control the permutations of each feature.
+            Pass an int to get reproducible results across function calls.
 
         Returns
         -------
@@ -308,9 +308,9 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
             aggregate=aggregate,
             scoring=scoring,
             n_repeats=n_repeats,
+            max_samples=max_samples,
             n_jobs=n_jobs,
             random_state=random_state,
-            max_samples=max_samples,
         )
 
     def _feature_permutation(
@@ -323,9 +323,9 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
         aggregate: Optional[Union[Aggregation, list[Aggregation]]] = None,
         scoring: Optional[Scoring] = None,
         n_repeats: int = 5,
+        max_samples: float = 1.0,
         n_jobs: Optional[int] = None,
         random_state: Optional[int] = None,
-        max_samples: float = 1.0,
     ) -> pd.DataFrame:
         """Private interface of `feature_permutation` to pass `data_source_hash`.
 
@@ -366,8 +366,8 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
             # n_jobs variable should not be in the cache
             kwargs = {
                 "n_repeats": n_repeats,
-                "random_state": random_state,
                 "max_samples": max_samples,
+                "random_state": random_state,
             }
             for _, v in sorted(kwargs.items()):
                 cache_key_parts.append(v)
