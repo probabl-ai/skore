@@ -40,6 +40,11 @@ multiindex_numpy = pd.MultiIndex.from_product(
     names=("Metric", "Feature"),
 )
 
+multiindex_pandas = pd.MultiIndex.from_product(
+    [["r2"], (f"my_feature_{i}" for i in range(3))],
+    names=("Metric", "Feature"),
+)
+
 
 def case_default_args_numpy():
     data = regression_data()
@@ -135,10 +140,7 @@ def case_default_args_pandas():
 
     expected = pd.DataFrame(
         data=np.zeros((3, 5)),
-        index=pd.MultiIndex.from_product(
-            [["r2"], (f"my_feature_{i}" for i in range(3))],
-            names=("Metric", "Feature"),
-        ),
+        index=multiindex_pandas,
         columns=repeat_columns,
     )
     return data, kwargs, expected
@@ -165,10 +167,7 @@ def case_train_pandas():
 
     expected = pd.DataFrame(
         data=np.zeros((3, 5)),
-        index=pd.MultiIndex.from_product(
-            [["r2"], (f"my_feature_{i}" for i in range(3))],
-            names=("Metric", "Feature"),
-        ),
+        index=multiindex_pandas,
         columns=repeat_columns,
     )
     return data, kwargs, expected
