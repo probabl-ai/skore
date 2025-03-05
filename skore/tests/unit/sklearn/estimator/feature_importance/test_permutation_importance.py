@@ -35,6 +35,11 @@ def regression_data_dataframe():
 
 repeat_columns = pd.Index((f"Repeat #{i}" for i in range(5)), name="Repeat")
 
+multiindex_numpy = pd.MultiIndex.from_product(
+    [["r2"], (f"Feature #{i}" for i in range(3))],
+    names=("Metric", "Feature"),
+)
+
 
 def case_default_args_numpy():
     data = regression_data()
@@ -43,10 +48,7 @@ def case_default_args_numpy():
 
     expected = pd.DataFrame(
         data=np.zeros((3, 5)),
-        index=pd.MultiIndex.from_product(
-            [["r2"], (f"Feature #{i}" for i in range(3))],
-            names=("Metric", "Feature"),
-        ),
+        index=multiindex_numpy,
         columns=repeat_columns,
     )
 
@@ -74,10 +76,7 @@ def case_train_numpy():
 
     expected = pd.DataFrame(
         data=np.zeros((3, 5)),
-        index=pd.MultiIndex.from_product(
-            [["r2"], (f"Feature #{i}" for i in range(3))],
-            names=("Metric", "Feature"),
-        ),
+        index=multiindex_numpy,
         columns=repeat_columns,
     )
     return data, kwargs, expected
@@ -110,10 +109,7 @@ def case_X_y():
 
     expected = pd.DataFrame(
         data=np.zeros((3, 5)),
-        index=pd.MultiIndex.from_product(
-            [["r2"], (f"Feature #{i}" for i in range(3))],
-            names=("Metric", "Feature"),
-        ),
+        index=multiindex_numpy,
         columns=repeat_columns,
     )
     return data, kwargs, expected
@@ -126,10 +122,7 @@ def case_aggregate():
 
     expected = pd.DataFrame(
         data=np.zeros((3, 1)),
-        index=pd.MultiIndex.from_product(
-            [["r2"], (f"Feature #{i}" for i in range(3))],
-            names=("Metric", "Feature"),
-        ),
+        index=multiindex_numpy,
         columns=pd.Index(["mean"]),
     )
     return data, kwargs, expected
