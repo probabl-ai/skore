@@ -75,13 +75,13 @@ def case_train_numpy():
 def case_several_scoring_numpy():
     data = regression_data()
 
-    kwargs = {"scoring": ["r2", "neg_root_mean_squared_error"], "random_state": 42}
+    kwargs = {"scoring": ["r2", "rmse"], "random_state": 42}
 
     expected = pd.DataFrame(
         data=np.zeros((2 * 3, 5)),
         index=pd.MultiIndex.from_product(
             [
-                ["r2", "neg_root_mean_squared_error"],
+                ["r2", "rmse"],
                 (f"Feature #{i}" for i in range(3)),
             ],
             names=("Metric", "Feature"),
@@ -160,13 +160,13 @@ def case_train_dataframe():
 def case_several_scoring_dataframe():
     data = regression_data_dataframe()
 
-    kwargs = {"scoring": ["r2", "neg_root_mean_squared_error"], "random_state": 42}
+    kwargs = {"scoring": ["r2", "rmse"], "random_state": 42}
 
     expected = pd.DataFrame(
         data=np.zeros((2 * 3, 5)),
         index=pd.MultiIndex.from_product(
             [
-                ["r2", "neg_root_mean_squared_error"],
+                ["r2", "rmse"],
                 (f"my_feature_{i}" for i in range(3)),
             ],
             names=("Metric", "Feature"),
@@ -279,7 +279,7 @@ def test_cache_scoring(regression_data):
         data_source="train", scoring="r2", random_state=42
     )
     report.feature_importance.feature_permutation(
-        data_source="train", scoring="neg_root_mean_squared_error", random_state=42
+        data_source="train", scoring="rmse", random_state=42
     )
     # Scorings are different, so cache keys should be different
     assert len(report._cache) == 2
@@ -289,7 +289,7 @@ def test_cache_scoring(regression_data):
     "scoring",
     [
         make_scorer(r2_score),
-        ["r2", "neg_root_mean_squared_error"],
+        ["r2", "rmse"],
         {"r2": make_scorer(r2_score), "rmse": make_scorer(root_mean_squared_error)},
     ],
 )
