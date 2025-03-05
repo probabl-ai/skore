@@ -33,6 +33,9 @@ def regression_data_dataframe():
     return data
 
 
+repeat_columns = pd.Index((f"Repeat #{i}" for i in range(5)), name="Repeat")
+
+
 def case_default_args_numpy():
     data = regression_data()
 
@@ -44,7 +47,7 @@ def case_default_args_numpy():
             [["r2"], (f"Feature #{i}" for i in range(3))],
             names=("Metric", "Feature"),
         ),
-        columns=pd.Index((f"Repeat #{i}" for i in range(5)), name="Repeat"),
+        columns=repeat_columns,
     )
 
     return data, kwargs, expected
@@ -58,7 +61,7 @@ def case_r2_numpy():
     expected = pd.DataFrame(
         data=np.zeros((3, 5)),
         index=pd.Index((f"Feature #{i}" for i in range(3)), name="Feature"),
-        columns=pd.Index((f"Repeat #{i}" for i in range(5)), name="Repeat"),
+        columns=repeat_columns,
     )
 
     return data, kwargs, expected
@@ -75,7 +78,7 @@ def case_train_numpy():
             [["r2"], (f"Feature #{i}" for i in range(3))],
             names=("Metric", "Feature"),
         ),
-        columns=pd.Index((f"Repeat #{i}" for i in range(5)), name="Repeat"),
+        columns=repeat_columns,
     )
     return data, kwargs, expected
 
@@ -94,7 +97,7 @@ def case_several_scoring_numpy():
             ],
             names=("Metric", "Feature"),
         ),
-        columns=pd.Index((f"Repeat #{i}" for i in range(5)), name="Repeat"),
+        columns=repeat_columns,
     )
     return data, kwargs, expected
 
@@ -111,7 +114,7 @@ def case_X_y():
             [["r2"], (f"Feature #{i}" for i in range(3))],
             names=("Metric", "Feature"),
         ),
-        columns=pd.Index((f"Repeat #{i}" for i in range(5)), name="Repeat"),
+        columns=repeat_columns,
     )
     return data, kwargs, expected
 
@@ -143,7 +146,7 @@ def case_default_args_pandas():
             [["r2"], (f"my_feature_{i}" for i in range(3))],
             names=("Metric", "Feature"),
         ),
-        columns=pd.Index((f"Repeat #{i}" for i in range(5)), name="Repeat"),
+        columns=repeat_columns,
     )
     return data, kwargs, expected
 
@@ -156,7 +159,7 @@ def case_r2_pandas():
     expected = pd.DataFrame(
         data=np.zeros((3, 5)),
         index=pd.Index((f"my_feature_{i}" for i in range(3)), name="Feature"),
-        columns=pd.Index((f"Repeat #{i}" for i in range(5)), name="Repeat"),
+        columns=repeat_columns,
     )
 
     return data, kwargs, expected
@@ -173,7 +176,7 @@ def case_train_pandas():
             [["r2"], (f"my_feature_{i}" for i in range(3))],
             names=("Metric", "Feature"),
         ),
-        columns=pd.Index((f"Repeat #{i}" for i in range(5)), name="Repeat"),
+        columns=repeat_columns,
     )
     return data, kwargs, expected
 
@@ -192,7 +195,7 @@ def case_several_scoring_pandas():
             ],
             names=("Metric", "Feature"),
         ),
-        columns=pd.Index((f"Repeat #{i}" for i in range(5)), name="Repeat"),
+        columns=repeat_columns,
     )
     return data, kwargs, expected
 
