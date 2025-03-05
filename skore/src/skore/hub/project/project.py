@@ -40,7 +40,19 @@ class Project:
 
             return request.json()["project_id"]
 
-    def put(self, key: str, value: Any, *, note=None):
+    def put(
+        self,
+        key: str,
+        value: Any,
+        *,
+        note: Optional[str] = None,
+    ):
+        if not isinstance(key, str):
+            raise TypeError(f"Key must be a string (found '{type(key)}')")
+
+        if not isinstance(note, (type(None), str)):
+            raise TypeError(f"Note must be a string (found '{type(note)}')")
+
         now = datetime.now(tz=timezone.utc).replace(tzinfo=None).isoformat()
         item = object_to_item(value)
 
