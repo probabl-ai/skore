@@ -25,17 +25,6 @@ from skore.utils._index import flatten_multi_index
 
 DataSource = Literal["test", "train", "X_y"]
 
-Metric = Literal[
-    "accuracy",
-    "precision",
-    "recall",
-    "brier_score",
-    "roc_auc",
-    "log_loss",
-    "r2",
-    "rmse",
-]
-
 
 class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
     """Accessor for metrics-related operations.
