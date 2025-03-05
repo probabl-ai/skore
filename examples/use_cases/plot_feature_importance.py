@@ -35,7 +35,6 @@ For linear models, we look at their coefficients.
 # regression task about predicting house prices:
 
 # %%
-import pandas as pd
 from sklearn.datasets import fetch_california_housing
 
 california_housing = fetch_california_housing(as_frame=True)
@@ -121,6 +120,7 @@ plt.show()
 # our target, let us assess how ``MedInc`` relates to ``MedHouseVal``:
 
 # %%
+import pandas as pd
 import plotly.express as px
 
 X_y_plot = california_housing.frame.copy()
@@ -190,6 +190,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 
 # %%
 # For our regression task, we first use linear models.
+# For feature importance, we inspect their coefficients.
 
 # %%
 # Simple model
@@ -245,7 +246,8 @@ ridge_report.metrics.prediction_error().plot(kind="actual_vs_predicted")
 plt.tight_layout()
 
 # %%
-# We can observe that the model has issues predicting large house prices, due to the clipping effect of the actual values.
+# We can observe that the model has issues predicting large house prices, due to the
+# clipping effect of the actual values.
 
 # %%
 # Now, to inspect our model, let us use the
@@ -392,8 +394,8 @@ engineered_ridge_report = EstimatorReport(
     y_test=y_test,
 )
 dict_reports = {
-    "Vanilla model": ridge_report,
-    "Model w/ feature engineering": engineered_ridge_report,
+    "Vanilla Ridge": ridge_report,
+    "Ridge w/ feature engineering": engineered_ridge_report,
 }
 comparator = ComparisonReport(reports=dict_reports)
 comparator.metrics.report_metrics()
@@ -511,7 +513,7 @@ selectk_ridge_report = EstimatorReport(
     y_train=y_train,
     y_test=y_test,
 )
-dict_reports["Model w/ feature selection and grid search"] = selectk_ridge_report
+dict_reports["Ridge w/ feature selection and grid search"] = selectk_ridge_report
 comparator = ComparisonReport(reports=dict_reports)
 comparator.metrics.report_metrics()
 
@@ -572,8 +574,250 @@ X_train_plot.insert(0, "clustering_labels", clustering_labels)
 plot_map(X_train_plot, "clustering_labels")
 
 # %%
+# Tree-based models
+# =================
+
+# %%
+# Now, let us look into tree-based models.
+# For feature importance, we inspect their mean decrease impurity (MDI).
+# As stated in scikit-learn,
+# the importance of a feature is computed as the (normalized) total reduction of the
+# criterion brought by that feature.
+# It is also known as the Gini importance.
+
+# %%
+# Decision trees
+# --------------
+
+# %%
+# Let us start with a simple decision tree.
+
+# %%
+# .. seealso::
+#   For more information about decision trees, see
+#   `Understanding the decision tree structure <https://scikit-learn.org/stable/auto_examples/tree/plot_unveil_tree_structure.html>`_.
+#   In this example, we are tackling a regression task, but it is easier to gain
+#   intuition on decision trees on a classification task.
+
+# %%
+from sklearn.tree import DecisionTreeRegressor
+
+tree_report = EstimatorReport(
+    DecisionTreeRegressor(random_state=0),
+    X_train=X_train,
+    X_test=X_test,
+    y_train=y_train,
+    y_test=y_test,
+)
+dict_reports["Decision tree"] = tree_report
+
+# %%
+comparator = ComparisonReport(reports=dict_reports)
+comparator.metrics.report_metrics()
+
+# %%
+# Note that the performance is quite poor, so the derived feature importance is to be
+# dealt with caution.
+
+# %%
+tree_report.help()
+
+# %%
+# Let us interpret our model with regards to the original features.
+# For the visualization, we fix a very low ``max_depth`` so that it will be easy for
+# the human eye to visualize the tree using :func:`sklearn.tree.plot_tree`:
+
+# %%
+from sklearn.tree import plot_tree
+
+plt.figure(dpi=300)
+_ = plot_tree(
+    tree_report.estimator_,
+    feature_names=tree_report.estimator_.feature_names_in_,
+    max_depth=2,
+)
+
+# %%
+# This tree explains how each sample is going to be predicted by our tree.
+# A decision tree provides a decision path for each sample, where the sample traverses
+# the tree based on feature thresholds, and the final prediction is made at the leaf
+# node (not represented above for conciseness purposes).
+# At each node:
+#
+# - ``samples`` is the number of samples that fall into that node,
+# - ``value`` is the predicted output for the samples that fall into this particular
+#   node (it is the mean of the target values for the samples in that node).
+#   At the root node, the value is :math:`2.074`. This means that if you were to make a
+#   prediction for all :math:`15480` samples at this node (without any further splits),
+#   the predicted value would be :math:`2.074`, which is the mean of the target
+#   variable for those samples.
+# - ``squared_error`` is the mean squared error associated with the ``value``,
+#   representing the average of the squared differences between the actual target values
+#   of the samples in the node and the node's predicted ``value`` (the mean),
+# - the first element is how the split is defined.
+
+# %%
+# Let us explain how this works in practice.
+# At each node, the tree splits the data based on a feature and a threshold.
+# For the first node (the root node), ``MedInc <= 5.029`` means that, for each sample,
+# our decision tree first looks at the ``MedInc`` feature (which is thus the most
+# important one):
+# if the ``MedInc`` value is lower than :math:`5.029` (the threshold), then the sample goes
+# into the left node, otherwise it goes to the right, and so on for each node.
+# As you move down the tree, the splits refine the predictions, leading to the leaf
+# nodes where the final prediction for a sample is the ``value`` of the leaf it reaches.
+# Note that for the second node layer, it is also the ``MedInc`` feature that is used
+# for the threshold, indicating that our model heavily relies on ``MedInc``.
+
+# %%
+# .. seealso::
+#   A nicer display of decision trees is available in the
+#   `dtreeviz <https://github.com/parrt/dtreeviz>`_ python package.
+
+# %%
+# Now, let us look at the feature importanc based on the MDI:
+
+# %%
+tree_report.feature_importance.mean_decrease_impurity().plot.barh(
+    title="Feature importance",
+    xlabel="MDI",
+    ylabel="Feature",
+)
+plt.tight_layout()
+
+# %%
+# The MDI (Mean Decrease in Impurity) is a measure used in decision trees to quantify
+# the importance of each feature in making predictions.
+# MDI calculates how much a feature contributes to reducing the impurity (or error)
+# across all splits in the tree, averaged over the entire tree structure.
+# Here, the impurity is the mean squared error.
+#
+# As expected, ``MedInc`` is of great importance for our decision tree.
+# Indeed, in the above tree visualization, ``MedInc`` is used multiple times for splits
+# and contributes greatly to reducing the squared error at multiple nodes.
+# At the root, it reduces the error from :math:`1.335` to :math:`0.832` and :math:`0.546`
+# in the children.
+
+# %%
+# Random forest
+# -------------
+#
+# Now, let us apply a slightly more elaborate model: a random forest.
+# A random forest is an ensemble method that builds multiple decision trees, each
+# trained on a random subset of data and features.
+# For regression, it averages the trees' predictions.
+# This reduces overfitting and improves accuracy compared to a single decision tree.
+
+# %%
+from sklearn.ensemble import RandomForestRegressor
+
+rf_report = EstimatorReport(
+    RandomForestRegressor(random_state=0),
+    X_train=X_train,
+    X_test=X_test,
+    y_train=y_train,
+    y_test=y_test,
+)
+dict_reports["Random forest"] = rf_report
+
+comparator = ComparisonReport(reports=dict_reports)
+comparator.metrics.report_metrics()
+
+# %%
+# Without any feature engineering, the random forest beats all linear models!
+
+# %%
+print(f"Number of trees in the forest: {rf_report.estimator_.n_estimators}")
+
+# %%
+# Given that we have many trees, it hard to use :func:`sklearn.tree.plot_tree` as for
+# the single decision tree.
+# Let us look into the MDI of our random forest:
+
+# %%
+rf_report.feature_importance.mean_decrease_impurity().plot.barh(
+    title="Feature importance",
+    xlabel="MDI",
+    ylabel="Feature",
+)
+plt.tight_layout()
+
+# %%
+# In a Random Forest, the MDI is computed by averaging the MDI of each feature across
+# all the decision trees in the forest.
+#
+# As for the decision tree, ``MecInc`` is the most important feature.
+# Compared to linear models, the random forest also attributes a high importance to
+# the ``Longitude`` and ``Latitude``, but the second most important feature is
+# ``AveOccup`` that linear models did not deem very important.
+# As the random forest has a great score, perhaps linear models missed something
+# about ``AveOccup`` that seems to be key to predicting house prices.
+
+# %%
+# Gradient-boosted tree
+# ---------------------
+#
+# A gradient boosted tree (or gradient boosted decision tree) is an ensemble learning
+# method that builds a series of decision trees sequentially, where each tree corrects
+# the errors of the previous ones to improve predictions.
+# Unlike a random forest, which builds trees independently, gradient boosting focuses
+# on iteratively reducing the prediction error using gradient descent.
+
+# %%
+from sklearn.ensemble import GradientBoostingRegressor
+
+gbdt_report = EstimatorReport(
+    GradientBoostingRegressor(random_state=0),
+    X_train=X_train,
+    X_test=X_test,
+    y_train=y_train,
+    y_test=y_test,
+)
+dict_reports["Gradient boosted tree"] = gbdt_report
+
+comparator = ComparisonReport(reports=dict_reports)
+comparator.metrics.report_metrics()
+
+# %%
+gbdt_report.feature_importance.mean_decrease_impurity().plot.barh(
+    title="Feature importance",
+    xlabel="MDI",
+    ylabel="Feature",
+)
+plt.tight_layout()
+
+# %%
+# .. note::
+#   The :class:`~sklearn.ensemble.HistGradientBoostingRegressor` is a gradient boosting
+#   implementation in scikit-learn, designed for regression tasks, that uses a
+#   histogram-based approach to improve speed and scalability, especially for large
+#   datasets.
+#   It builds on the concept of gradient boosted trees but introduces optimizations for
+#   efficiency.
+#   ``HistGradientBoostingRegressor`` is much faster than ``GradientBoostingRegressor``
+#   for big datasets (``n_samples >= 10 000``).
+
+# %%
+# Model-agnostic feature importance: permutation importance
+# =========================================================
+
+# %%
+# .. warning::
+#   TODO
+
+# %%
+# In the previous sections, we have inspected coefficients that are specific to linear
+# models and the MDI that is specific to tree-based models.
+# In this section, we look into the permutation importance that is model agnostic.
+# Hence, we could compare the permutation importance of a feature for a same dataset,
+# between a linear model and a tree-based one.
+
+# %%
 # Conclusion
 # ==========
+#
+# .. warning::
+#   TODO: update this conclusion to take into account more than just linear models.
 #
 # This example used the California housing dataset to predict house prices with skore's
 # :class:`~skore.EstimatorReport`.
