@@ -13,7 +13,7 @@ from sklearn.utils.metaestimators import available_if
 from skore.externals._pandas_accessors import DirNamesMixin
 from skore.sklearn._base import _BaseAccessor
 from skore.sklearn._estimator.report import EstimatorReport
-from skore.utils._accessor import _check_has_coef
+from skore.utils._accessor import _check_has_coef, _check_has_feature_importances
 
 DataSource = Literal["test", "train", "X_y"]
 
@@ -74,27 +74,31 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
         Feature #8    250.5...
         Feature #9     99.5...
         """
-        estimator = self._parent.estimator_
+        parent_estimator = self._parent.estimator_
 
-        if isinstance(estimator, Pipeline):
-            feature_names = estimator[:-1].get_feature_names_out()
+        if isinstance(parent_estimator, Pipeline):
+            feature_names = parent_estimator[:-1].get_feature_names_out()
         else:
-            if hasattr(estimator, "feature_names_in_"):
-                feature_names = estimator.feature_names_in_
+            if hasattr(parent_estimator, "feature_names_in_"):
+                feature_names = parent_estimator.feature_names_in_
             else:
                 feature_names = [
-                    f"Feature #{i}" for i in range(estimator.n_features_in_)
+                    f"Feature #{i}" for i in range(parent_estimator.n_features_in_)
                 ]
 
-        linear_model = estimator[-1] if isinstance(estimator, Pipeline) else estimator
-        intercept = np.atleast_2d(linear_model.intercept_)
-        coef = np.atleast_2d(linear_model.coef_)
+        estimator = (
+            parent_estimator[-1]
+            if isinstance(parent_estimator, Pipeline)
+            else parent_estimator
+        )
+        intercept = np.atleast_2d(estimator.intercept_)
+        coef = np.atleast_2d(estimator.coef_)
 
         data = np.concatenate([intercept, coef.T])
 
         if data.shape[1] == 1:
             columns = ["Coefficient"]
-        elif is_classifier(estimator):
+        elif is_classifier(parent_estimator):
             columns = [f"Class #{i}" for i in range(data.shape[1])]
         else:
             columns = [f"Target #{i}" for i in range(data.shape[1])]
@@ -103,6 +107,67 @@ class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin
             data=data,
             index=["Intercept"] + list(feature_names),
             columns=columns,
+        )
+
+        return df
+
+    @available_if(_check_has_feature_importances())
+    def mean_decrease_impurity(self):
+        """Retrieve the mean decrease impurity (MDI) of a tree-based model.
+
+        This method is available for estimators that expose a `feature_importances_`
+        attribute. See for example the
+        `sklearn.ensemble.GradientBoostingClassifier documentation <https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html#sklearn.ensemble.GradientBoostingClassifier.feature_importances_>`_.
+        In particular, note that the MDI is computed at fit time, i.e. using the
+        training data.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import make_classification
+        >>> from sklearn.ensemble import RandomForestClassifier
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X, y = make_classification(n_features=5, random_state=42)
+        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
+        >>> forest = RandomForestClassifier(n_estimators=5, random_state=0)
+        >>> report = EstimatorReport(
+        ...     forest,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> report.feature_importance.mean_decrease_impurity()
+                   Mean decrease impurity
+        Feature #0                0.06...
+        Feature #1                0.19...
+        Feature #2                0.01...
+        Feature #3                0.69...
+        Feature #4                0.02...
+        """
+        parent_estimator = self._parent.estimator_
+        estimator = (
+            parent_estimator.steps[-1][1]
+            if isinstance(parent_estimator, Pipeline)
+            else parent_estimator
+        )
+
+        data = estimator.feature_importances_
+
+        if isinstance(parent_estimator, Pipeline):
+            feature_names = parent_estimator[:-1].get_feature_names_out()
+        else:
+            if hasattr(parent_estimator, "feature_names_in_"):
+                feature_names = parent_estimator.feature_names_in_
+            else:
+                feature_names = [
+                    f"Feature #{i}" for i in range(parent_estimator.n_features_in_)
+                ]
+
+        df = pd.DataFrame(
+            data=data,
+            index=feature_names,
+            columns=["Mean decrease impurity"],
         )
 
         return df
