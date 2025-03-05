@@ -18,6 +18,7 @@ from skore.externals._pandas_accessors import DirNamesMixin
 from skore.sklearn._base import _BaseAccessor
 from skore.sklearn._estimator.report import EstimatorReport
 from skore.utils._accessor import _check_has_coef, _check_has_feature_importances
+from skore.utils._index import flatten_multi_index
 
 DataSource = Literal["test", "train", "X_y"]
 
@@ -297,6 +298,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         max_samples: float = 1.0,
         n_jobs: Optional[int] = None,
         random_state: Optional[int] = None,
+        flat_index: bool = False,
     ) -> pd.DataFrame:
         """Report the permutation feature importance.
 
@@ -357,6 +359,10 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             Pseudo-random number generator to control the permutations of each feature.
             Pass an int to get reproducible results across function calls.
 
+        flat_index : bool, default=False
+            Whether to flatten the multiindex columns. Flat index will always be lower
+            case, do not include spaces and remove the hash symbol to ease indexing.
+
         Returns
         -------
         pandas.DataFrame
@@ -411,6 +417,16 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         r2      Feature #0  0.792...  0.131...
                 Feature #1  2.478...  0.223...
                 Feature #2  0.025...  0.003...
+        >>> report.feature_importance.feature_permutation(
+        ...    n_repeats=2,
+        ...    aggregate=["mean", "std"],
+        ...    flat_index=True,
+        ...    random_state=0,
+        ... )
+                          mean       std
+        r2_feature_0  0.792...  0.131...
+        r2_feature_1  2.478...  0.223...
+        r2_feature_2  0.025...  0.003...
         """
         return self._feature_permutation(
             data_source=data_source,
@@ -423,6 +439,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             max_samples=max_samples,
             n_jobs=n_jobs,
             random_state=random_state,
+            flat_index=flat_index,
         )
 
     def _feature_permutation(
@@ -438,6 +455,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         max_samples: float = 1.0,
         n_jobs: Optional[int] = None,
         random_state: Optional[int] = None,
+        flat_index: bool = False,
     ) -> pd.DataFrame:
         """Private interface of `feature_permutation` to pass `data_source_hash`.
 
@@ -562,6 +580,9 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             if isinstance(aggregate, str):
                 aggregate = [aggregate]
             score = score.aggregate(func=aggregate, axis=1)
+
+        if flat_index and isinstance(score.index, pd.MultiIndex):
+            score.index = flatten_multi_index(score.index)
 
         return score
 
