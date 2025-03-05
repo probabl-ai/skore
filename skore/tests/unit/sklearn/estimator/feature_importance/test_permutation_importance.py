@@ -118,7 +118,7 @@ def case_aggregate():
     return data, kwargs, expected
 
 
-def case_default_args_dataframe():
+def case_default_args_pandas():
     data = regression_data_dataframe()
 
     kwargs = {"random_state": 42}
@@ -131,7 +131,7 @@ def case_default_args_dataframe():
     return data, kwargs, expected
 
 
-def case_r2_dataframe():
+def case_r2_pandas():
     data = regression_data_dataframe()
 
     kwargs = {"scoring": make_scorer(r2_score), "random_state": 42}
@@ -144,7 +144,7 @@ def case_r2_dataframe():
     return data, kwargs, expected
 
 
-def case_train_dataframe():
+def case_train_pandas():
     data = regression_data_dataframe()
 
     kwargs = {"data_source": "train", "random_state": 42}
@@ -157,7 +157,7 @@ def case_train_dataframe():
     return data, kwargs, expected
 
 
-def case_several_scoring_dataframe():
+def case_several_scoring_pandas():
     data = regression_data_dataframe()
 
     kwargs = {"scoring": ["r2", "rmse"], "random_state": 42}
@@ -193,10 +193,10 @@ def case_several_scoring_dataframe():
         case_train_numpy,
         case_several_scoring_numpy,
         case_aggregate,
-        case_default_args_dataframe,
-        case_r2_dataframe,
-        case_train_dataframe,
-        case_several_scoring_dataframe,
+        case_default_args_pandas,
+        case_r2_pandas,
+        case_train_pandas,
+        case_several_scoring_pandas,
         case_X_y,
     ],
 )
