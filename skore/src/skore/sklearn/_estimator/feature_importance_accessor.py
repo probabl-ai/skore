@@ -12,6 +12,7 @@ from sklearn.utils.metaestimators import available_if
 
 from skore.externals._pandas_accessors import DirNamesMixin
 from skore.sklearn._base import _BaseAccessor
+from skore.sklearn._estimator.metrics_accessor import Metric
 from skore.sklearn._estimator.report import EstimatorReport
 from skore.utils._accessor import _check_has_coef, _check_has_feature_importances
 
@@ -25,7 +26,7 @@ DataSource = Literal["test", "train", "X_y"]
 #   - a callable returning a dictionary where the keys are the metric names
 #   and the values are the metric scores;
 #   - a dictionary with metric names as keys and callables a values.
-Scoring = Union[str, Callable, Iterable[str], dict[str, Callable]]
+Scoring = Union[Metric, Callable, Iterable[Metric], dict[str, Callable]]
 
 Aggregation = Literal["mean", "std"]
 
