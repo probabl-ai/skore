@@ -1,9 +1,13 @@
-from skore.externals._pandas_accessors import _register_accessor
+from typing import cast
+
+from skore.externals._pandas_accessors import Accessor
 from skore.sklearn._cross_validation.metrics_accessor import _MetricsAccessor
 from skore.sklearn._cross_validation.report import (
     CrossValidationReport,
 )
 
-_register_accessor("metrics", CrossValidationReport)(_MetricsAccessor)
+CrossValidationReport.metrics = cast(
+    _MetricsAccessor, Accessor("metrics", _MetricsAccessor)
+)
 
 __all__ = ["CrossValidationReport"]
