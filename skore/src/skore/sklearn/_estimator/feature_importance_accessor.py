@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from collections.abc import Iterable
 from typing import Any, Callable, Literal, Optional, Union
 
@@ -31,7 +33,7 @@ Scoring = Union[Metric, Callable, Iterable[Metric], dict[str, Callable]]
 Aggregation = Literal["mean", "std"]
 
 
-class _FeatureImportanceAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
+class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     """Accessor for feature importance related operations.
 
     You can access this accessor using the `feature_importance` attribute.
