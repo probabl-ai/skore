@@ -40,9 +40,13 @@ def case_default_args_numpy():
 
     expected = pd.DataFrame(
         data=np.zeros((3, 5)),
-        index=pd.Index((f"Feature #{i}" for i in range(3)), name="Feature"),
+        index=pd.MultiIndex.from_product(
+            [["r2"], (f"Feature #{i}" for i in range(3))],
+            names=("Metric", "Feature"),
+        ),
         columns=pd.Index((f"Repeat #{i}" for i in range(5)), name="Repeat"),
     )
+
     return data, kwargs, expected
 
 
@@ -56,6 +60,7 @@ def case_r2_numpy():
         index=pd.Index((f"Feature #{i}" for i in range(3)), name="Feature"),
         columns=pd.Index((f"Repeat #{i}" for i in range(5)), name="Repeat"),
     )
+
     return data, kwargs, expected
 
 
@@ -66,7 +71,10 @@ def case_train_numpy():
 
     expected = pd.DataFrame(
         data=np.zeros((3, 5)),
-        index=pd.Index((f"Feature #{i}" for i in range(3)), name="Feature"),
+        index=pd.MultiIndex.from_product(
+            [["r2"], (f"Feature #{i}" for i in range(3))],
+            names=("Metric", "Feature"),
+        ),
         columns=pd.Index((f"Repeat #{i}" for i in range(5)), name="Repeat"),
     )
     return data, kwargs, expected
@@ -99,7 +107,10 @@ def case_X_y():
 
     expected = pd.DataFrame(
         data=np.zeros((3, 5)),
-        index=pd.Index((f"Feature #{i}" for i in range(3)), name="Feature"),
+        index=pd.MultiIndex.from_product(
+            [["r2"], (f"Feature #{i}" for i in range(3))],
+            names=("Metric", "Feature"),
+        ),
         columns=pd.Index((f"Repeat #{i}" for i in range(5)), name="Repeat"),
     )
     return data, kwargs, expected
@@ -112,7 +123,10 @@ def case_aggregate():
 
     expected = pd.DataFrame(
         data=np.zeros((3, 1)),
-        index=pd.Index((f"Feature #{i}" for i in range(3)), name="Feature"),
+        index=pd.MultiIndex.from_product(
+            [["r2"], (f"Feature #{i}" for i in range(3))],
+            names=("Metric", "Feature"),
+        ),
         columns=pd.Index(["mean"]),
     )
     return data, kwargs, expected
@@ -125,7 +139,10 @@ def case_default_args_pandas():
 
     expected = pd.DataFrame(
         data=np.zeros((3, 5)),
-        index=pd.Index((f"my_feature_{i}" for i in range(3)), name="Feature"),
+        index=pd.MultiIndex.from_product(
+            [["r2"], (f"my_feature_{i}" for i in range(3))],
+            names=("Metric", "Feature"),
+        ),
         columns=pd.Index((f"Repeat #{i}" for i in range(5)), name="Repeat"),
     )
     return data, kwargs, expected
@@ -141,6 +158,7 @@ def case_r2_pandas():
         index=pd.Index((f"my_feature_{i}" for i in range(3)), name="Feature"),
         columns=pd.Index((f"Repeat #{i}" for i in range(5)), name="Repeat"),
     )
+
     return data, kwargs, expected
 
 
@@ -151,7 +169,10 @@ def case_train_pandas():
 
     expected = pd.DataFrame(
         data=np.zeros((3, 5)),
-        index=pd.Index((f"my_feature_{i}" for i in range(3)), name="Feature"),
+        index=pd.MultiIndex.from_product(
+            [["r2"], (f"my_feature_{i}" for i in range(3))],
+            names=("Metric", "Feature"),
+        ),
         columns=pd.Index((f"Repeat #{i}" for i in range(5)), name="Repeat"),
     )
     return data, kwargs, expected
