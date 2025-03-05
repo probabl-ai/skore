@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 from sklearn.datasets import make_regression
 from sklearn.exceptions import NotFittedError
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.metrics import make_scorer, r2_score, root_mean_squared_error
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline
@@ -70,7 +70,7 @@ def case_r2_numpy():
 def case_train_numpy():
     data = regression_data()
 
-    kwargs = {"data_source": "train", "random_state": 42}
+    kwargs = {"data_source": "train", "scoring": "r2", "random_state": 42}
 
     return data, kwargs, multiindex_numpy, repeat_columns
 
@@ -287,6 +287,20 @@ def test_cache_scoring_is_callable(regression_data, scoring):
     assert len(report._cache) == 1
 
     pd.testing.assert_frame_equal(cached_result, result)
+
+
+def test_classification(classification_data):
+    """If `scoring` is a callable then the result is cached properly."""
+
+    X, y = classification_data
+    report = EstimatorReport(LogisticRegression(), X_train=X, y_train=y)
+
+    result = report.feature_importance.feature_permutation(
+        data_source="train", random_state=42
+    )
+
+    pd.testing.assert_index_equal(result.index, pd.Index())
+    pd.testing.assert_index_equal(result.columns, repeat_columns)
 
 
 def test_not_fitted(regression_data):
