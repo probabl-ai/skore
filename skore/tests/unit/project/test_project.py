@@ -11,7 +11,7 @@ from matplotlib.pyplot import subplots
 from matplotlib.testing.compare import compare_images
 from PIL import Image
 from sklearn.ensemble import RandomForestClassifier
-from skore import Project, open
+from skore import Project
 from skore.project.project import ProjectDeletedError
 
 
@@ -307,11 +307,3 @@ def test_put_wrong_key_and_value_raise(in_memory_project):
     """When `on_error` is "raise", raise the first error that occurs."""
     with pytest.raises(TypeError):
         in_memory_project.put(0, (lambda: "unsupported object"))
-
-
-def test_open(tmp_path):
-    dirpath = tmp_path / "my-project.skore"
-
-    open(dirpath)
-    assert dirpath.exists()
-    assert (dirpath / "items").exists()

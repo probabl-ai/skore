@@ -45,7 +45,7 @@ def _get_deps_info() -> dict[str, Any]:
     """
     from importlib.metadata import PackageNotFoundError, version
 
-    deps = ["pip", "setuptools"]
+    deps = ["pip"]
 
     raw_requirements = importlib.metadata.requires("skore")
     requirements: list[str] = [] if raw_requirements is None else raw_requirements
