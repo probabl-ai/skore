@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import Any, Callable, Literal, Optional, Union
+from typing import Any, Callable, Literal, Optional, Union, cast
 
 import joblib
 import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike
+from sklearn import metrics
 from sklearn.base import is_classifier
 from sklearn.inspection import permutation_importance
+from sklearn.metrics import make_scorer
 from sklearn.pipeline import Pipeline
 from sklearn.utils.metaestimators import available_if
 
@@ -39,6 +41,104 @@ Metric = Literal[
 #   and the values are the metric scores;
 #   - a dictionary with metric names as keys and callables a values.
 Scoring = Union[Metric, Callable, Iterable[Metric], dict[str, Callable]]
+
+metric_to_scorer: dict[Metric, Callable] = {
+    "accuracy": make_scorer(metrics.accuracy_score),
+    "precision": make_scorer(metrics.precision_score),
+    "recall": make_scorer(metrics.recall_score),
+    "brier_score": make_scorer(metrics.brier_score_loss),
+    "roc_auc": make_scorer(metrics.roc_auc_score),
+    "log_loss": make_scorer(metrics.log_loss),
+    "r2": make_scorer(metrics.r2_score),
+    "rmse": make_scorer(metrics.root_mean_squared_error),
+}
+
+
+def _check_scoring(scoring: Any) -> Union[Scoring, None]:
+    """Check that `scoring` is valid, and convert it to a suitable form as needed.
+
+    If `scoring` is a list of strings, it is checked against our own metric names.
+    For example, "rmse" is recognized as root-mean-square error, even though sklearn
+    itself does not recognize this name.
+    Similarly, "neg_root_mean_square_error" is not recognized, and leads to an error.
+
+    Parameters
+    ----------
+    scoring : str, callable, list, tuple, dict, or None
+        The scoring to check.
+
+    Returns
+    -------
+    scoring
+        A scoring hopefully suitable for passing to `permutation_importance`.
+        Can be equal to the original scoring.
+
+    Raises
+    ------
+    TypeError
+        If `scoring` does not type-check.
+
+    Examples
+    --------
+    >>> from sklearn.metrics import make_scorer, root_mean_squared_error
+    >>> from skore.sklearn._estimator.feature_importance_accessor import _check_scoring
+
+    >>> _check_scoring(None)  # Returns None
+
+    >>> _check_scoring(make_scorer(root_mean_squared_error))
+    make_scorer(root_mean_squared_error, ...)
+
+    >>> _check_scoring({"rmse": make_scorer(root_mean_squared_error)})
+    {'rmse': make_scorer(root_mean_squared_error, ...)}
+
+    >>> _check_scoring("rmse")
+    {'rmse': make_scorer(root_mean_squared_error, ...)}
+
+    >>> _check_scoring(["r2", "rmse"])
+    {'r2': make_scorer(r2_score, ...),
+    'rmse': make_scorer(root_mean_squared_error, ...)}
+
+    >>> _check_scoring("neg_root_mean_squared_error")
+    Traceback (most recent call last):
+    TypeError: If scoring is a string, it must be one of ...;
+    got 'neg_root_mean_squared_error'
+
+    >>> _check_scoring(["r2", make_scorer(root_mean_squared_error)])
+    Traceback (most recent call last):
+    TypeError: If scoring is a list or tuple, it must contain only strings; ...
+
+    >>> _check_scoring(3)
+    Traceback (most recent call last):
+    TypeError: scoring must be a string, callable, list, tuple or dict;
+    got <class 'int'>
+    """
+    if scoring is None or callable(scoring) or isinstance(scoring, dict):
+        return scoring
+    elif isinstance(scoring, str):
+        if scoring in metric_to_scorer:
+            # Convert to scorer
+            return {scoring: metric_to_scorer[cast(Metric, scoring)]}
+        raise TypeError(
+            "If scoring is a string, it must be one of "
+            f"{list(metric_to_scorer.keys())}; got '{scoring}'"
+        )
+    elif isinstance(scoring, (list, tuple)):
+        result: dict[str, Callable] = {}
+        for s in scoring:
+            if isinstance(s, str):
+                result |= cast(dict[str, Callable], _check_scoring(s))
+            else:
+                raise TypeError(
+                    "If scoring is a list or tuple, it must contain only strings; "
+                    f"got {s} of type {type(s)}"
+                )
+        return result
+    else:
+        raise TypeError(
+            "scoring must be a string, callable, list, tuple or dict; "
+            f"got {type(scoring)}"
+        )
+
 
 Aggregation = Literal["mean", "std"]
 
@@ -289,18 +389,18 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         Feature #1   2.320...   2.636...
         Feature #2   0.028...   0.022...
         >>> report.feature_importance.feature_permutation(
-        ...    scoring=["r2", "neg_root_mean_squared_error"],
+        ...    scoring=["r2", "rmse"],
         ...    n_repeats=2,
         ...    random_state=0,
         ... )
-        Repeat                                  Repeat #0  Repeat #1
-        Metric                      Feature
-        r2                          Feature #0   0.699...   0.885...
-                                    Feature #1   2.320...   2.636...
-                                    Feature #2   0.028...   0.022...
-        neg_root_mean_squared_error Feature #0  47.222...  53.231...
-                                    Feature #1  86.608...  92.366...
-                                    Feature #2   8.930...   7.916...
+        Repeat             Repeat #0  Repeat #1
+        Metric Feature
+        r2     Feature #0   0.699357   0.885677
+               Feature #1   2.320429   2.636486
+               Feature #2   0.028227   0.022580
+        rmse   Feature #0 -47.222331 -53.231782
+               Feature #1 -86.608369 -92.366122
+               Feature #2  -8.930898  -7.916905
         >>> report.feature_importance.feature_permutation(
         ...    n_repeats=2,
         ...    aggregate=["mean", "std"],
@@ -345,6 +445,8 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         and are able to pass it around, or `None` and thus trigger its computation
         in the underlying process.
         """
+        checked_scoring = _check_scoring(scoring)
+
         if data_source_hash is None:
             X_, y_true, data_source_hash = self._get_X_y_and_data_source_hash(
                 data_source=data_source, X=X, y=y
@@ -398,7 +500,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 estimator=self._parent.estimator_,
                 X=X_,
                 y=y_true,
-                scoring=scoring,
+                scoring=checked_scoring,
                 n_repeats=n_repeats,
                 n_jobs=n_jobs,
                 random_state=random_state,
