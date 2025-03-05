@@ -554,14 +554,17 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 n_repeats = data.shape[1]
 
                 # Get score name
-                scoring_name = None
                 if scoring is None:
                     if is_classifier(self._parent.estimator_):
                         scoring_name = "accuracy"
                     elif is_regressor(self._parent.estimator_):
                         scoring_name = "r2"
-                if isinstance(scoring, str):
-                    scoring_name = scoring
+                else:
+                    # e.g. if scoring is a callable
+                    scoring_name = None
+
+                    # no other cases to deal with explicitly, because
+                    # scoring cannot possibly be a string at this stage
 
                 if scoring_name is None:
                     index = pd.Index(feature_names, name="Feature")
