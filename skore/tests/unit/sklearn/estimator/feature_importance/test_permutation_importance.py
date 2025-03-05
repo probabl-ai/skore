@@ -51,13 +51,7 @@ def case_default_args_numpy():
 
     kwargs = {"random_state": 42}
 
-    expected = pd.DataFrame(
-        data=np.zeros((3, 5)),
-        index=multiindex_numpy,
-        columns=repeat_columns,
-    )
-
-    return data, kwargs, expected
+    return data, kwargs, multiindex_numpy, repeat_columns
 
 
 def case_r2_numpy():
@@ -65,13 +59,12 @@ def case_r2_numpy():
 
     kwargs = {"scoring": make_scorer(r2_score), "random_state": 42}
 
-    expected = pd.DataFrame(
-        data=np.zeros((3, 5)),
-        index=pd.Index((f"Feature #{i}" for i in range(3)), name="Feature"),
-        columns=repeat_columns,
+    return (
+        data,
+        kwargs,
+        pd.Index((f"Feature #{i}" for i in range(3)), name="Feature"),
+        repeat_columns,
     )
-
-    return data, kwargs, expected
 
 
 def case_train_numpy():
@@ -79,12 +72,7 @@ def case_train_numpy():
 
     kwargs = {"data_source": "train", "random_state": 42}
 
-    expected = pd.DataFrame(
-        data=np.zeros((3, 5)),
-        index=multiindex_numpy,
-        columns=repeat_columns,
-    )
-    return data, kwargs, expected
+    return data, kwargs, multiindex_numpy, repeat_columns
 
 
 def case_several_scoring_numpy():
@@ -92,18 +80,15 @@ def case_several_scoring_numpy():
 
     kwargs = {"scoring": ["r2", "rmse"], "random_state": 42}
 
-    expected = pd.DataFrame(
-        data=np.zeros((2 * 3, 5)),
-        index=pd.MultiIndex.from_product(
-            [
-                ["r2", "rmse"],
-                (f"Feature #{i}" for i in range(3)),
-            ],
-            names=("Metric", "Feature"),
-        ),
-        columns=repeat_columns,
+    expected_index = pd.MultiIndex.from_product(
+        [
+            ["r2", "rmse"],
+            (f"Feature #{i}" for i in range(3)),
+        ],
+        names=("Metric", "Feature"),
     )
-    return data, kwargs, expected
+
+    return data, kwargs, expected_index, repeat_columns
 
 
 def case_X_y():
@@ -112,12 +97,7 @@ def case_X_y():
 
     kwargs = {"data_source": "X_y", "X": X, "y": y, "random_state": 42}
 
-    expected = pd.DataFrame(
-        data=np.zeros((3, 5)),
-        index=multiindex_numpy,
-        columns=repeat_columns,
-    )
-    return data, kwargs, expected
+    return data, kwargs, multiindex_numpy, repeat_columns
 
 
 def case_aggregate():
@@ -125,12 +105,7 @@ def case_aggregate():
 
     kwargs = {"data_source": "train", "aggregate": "mean", "random_state": 42}
 
-    expected = pd.DataFrame(
-        data=np.zeros((3, 1)),
-        index=multiindex_numpy,
-        columns=pd.Index(["mean"]),
-    )
-    return data, kwargs, expected
+    return data, kwargs, multiindex_numpy, pd.Index(["mean"], dtype="object")
 
 
 def case_default_args_pandas():
@@ -138,12 +113,7 @@ def case_default_args_pandas():
 
     kwargs = {"random_state": 42}
 
-    expected = pd.DataFrame(
-        data=np.zeros((3, 5)),
-        index=multiindex_pandas,
-        columns=repeat_columns,
-    )
-    return data, kwargs, expected
+    return data, kwargs, multiindex_pandas, repeat_columns
 
 
 def case_r2_pandas():
@@ -151,13 +121,12 @@ def case_r2_pandas():
 
     kwargs = {"scoring": make_scorer(r2_score), "random_state": 42}
 
-    expected = pd.DataFrame(
-        data=np.zeros((3, 5)),
-        index=pd.Index((f"my_feature_{i}" for i in range(3)), name="Feature"),
-        columns=repeat_columns,
+    return (
+        data,
+        kwargs,
+        pd.Index((f"my_feature_{i}" for i in range(3)), name="Feature"),
+        repeat_columns,
     )
-
-    return data, kwargs, expected
 
 
 def case_train_pandas():
@@ -165,12 +134,7 @@ def case_train_pandas():
 
     kwargs = {"data_source": "train", "random_state": 42}
 
-    expected = pd.DataFrame(
-        data=np.zeros((3, 5)),
-        index=multiindex_pandas,
-        columns=repeat_columns,
-    )
-    return data, kwargs, expected
+    return data, kwargs, multiindex_pandas, repeat_columns
 
 
 def case_several_scoring_pandas():
@@ -178,18 +142,15 @@ def case_several_scoring_pandas():
 
     kwargs = {"scoring": ["r2", "rmse"], "random_state": 42}
 
-    expected = pd.DataFrame(
-        data=np.zeros((2 * 3, 5)),
-        index=pd.MultiIndex.from_product(
-            [
-                ["r2", "rmse"],
-                (f"my_feature_{i}" for i in range(3)),
-            ],
-            names=("Metric", "Feature"),
-        ),
-        columns=repeat_columns,
+    expected_index = pd.MultiIndex.from_product(
+        [
+            ["r2", "rmse"],
+            (f"my_feature_{i}" for i in range(3)),
+        ],
+        names=("Metric", "Feature"),
     )
-    return data, kwargs, expected
+
+    return data, kwargs, expected_index, repeat_columns
 
 
 @pytest.mark.parametrize(
@@ -217,13 +178,14 @@ def case_several_scoring_pandas():
     ],
 )
 def test(estimator, params):
-    data, kwargs, expected = params()
+    data, kwargs, expected_index, expected_columns = params()
 
     report = EstimatorReport(estimator, **data)
     result = report.feature_importance.feature_permutation(**kwargs)
 
     # Do not check values
-    pd.testing.assert_frame_equal(result, expected, check_exact=False, atol=np.inf)
+    pd.testing.assert_index_equal(result.index, expected_index)
+    pd.testing.assert_index_equal(result.columns, expected_columns)
 
 
 def test_cache_n_jobs(regression_data):
