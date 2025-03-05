@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike
 from sklearn import metrics
-from sklearn.base import is_classifier
+from sklearn.base import is_classifier, is_regressor
 from sklearn.inspection import permutation_importance
 from sklearn.metrics import make_scorer
 from sklearn.pipeline import Pipeline
@@ -383,11 +383,11 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         ...    n_repeats=2,
         ...    random_state=0,
         ... )
-        Repeat      Repeat #0  Repeat #1
-        Feature
-        Feature #0   0.699...   0.885...
-        Feature #1   2.320...   2.636...
-        Feature #2   0.028...   0.022...
+        Repeat              Repeat #0  Repeat #1
+        Metric  Feature
+        r2      Feature #0   0.699...   0.885...
+                Feature #1   2.320...   2.636...
+                Feature #2   0.028...   0.022...
         >>> report.feature_importance.feature_permutation(
         ...    scoring=["r2", "rmse"],
         ...    n_repeats=2,
@@ -406,11 +406,11 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         ...    aggregate=["mean", "std"],
         ...    random_state=0,
         ... )
-                        mean       std
-        Feature
-        Feature #0  0.792...  0.131...
-        Feature #1  2.478...  0.223...
-        Feature #2  0.025...  0.003...
+                                mean       std
+        Metric  Feature
+        r2      Feature #0  0.792...  0.131...
+                Feature #1  2.478...  0.223...
+                Feature #2  0.025...  0.003...
         """
         return self._feature_permutation(
             data_source=data_source,
@@ -530,7 +530,24 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             else:
                 data = score
                 n_repeats = data.shape[1]
-                index = pd.Index(feature_names, name="Feature")
+
+                # Get score name
+                scoring_name = None
+                if scoring is None:
+                    if is_classifier(self._parent.estimator_):
+                        scoring_name = "accuracy"
+                    elif is_regressor(self._parent.estimator_):
+                        scoring_name = "r2"
+                if isinstance(scoring, str):
+                    scoring_name = scoring
+
+                if scoring_name is None:
+                    index = pd.Index(feature_names, name="Feature")
+                else:
+                    index = pd.MultiIndex.from_product(
+                        [[scoring_name], feature_names], names=("Metric", "Feature")
+                    )
+
                 columns = pd.Index(
                     (f"Repeat #{i}" for i in range(n_repeats)), name="Repeat"
                 )
