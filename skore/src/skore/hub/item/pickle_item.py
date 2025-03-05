@@ -46,7 +46,7 @@ class PickleItem(Item):
         )
 
     @classmethod
-    def factory(cls, value: Any, /, **kwargs) -> PickleItem:
+    def factory(cls, value: Any) -> PickleItem:
         """
         Create a new PickleItem from ``object``.
 
@@ -66,7 +66,7 @@ class PickleItem(Item):
             pickle_bytes = stream.getvalue()
             pickle_b64_str = bytes_to_b64_str(pickle_bytes)
 
-        instance = cls(pickle_b64_str, **kwargs)
+        instance = cls(pickle_b64_str)
         instance.__raw__ = value
 
         return instance

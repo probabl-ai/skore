@@ -1,12 +1,34 @@
-from pytest import raises
+from json import dumps
+
 from pandas import DataFrame
-from skore.hub.item import SkrubTableReportItem
-from skore.hub.item.item import ItemTypeError
+from pytest import raises
+from skore.hub.item import PickleItem, SkrubTableReportItem
+from skore.hub.item.item import ItemTypeError, Representation
 from skrub import TableReport
 
 
 class TestSkrubTableReportItem:
     def test_factory(self, monkeypatch):
+        assert isinstance(
+            SkrubTableReportItem.factory(
+                TableReport(
+                    DataFrame(
+                        {
+                            "a": [1, 2],
+                            "b": ["one", "two"],
+                            "c": [11.1, 11.1],
+                        }
+                    )
+                )
+            ),
+            PickleItem,
+        )
+
+    def test_factory_exception(self):
+        with raises(ItemTypeError):
+            SkrubTableReportItem.factory(None)
+
+    def test_representation(self, monkeypatch):
         monkeypatch.setattr("secrets.token_hex", lambda: "azertyuiop")
 
         report = TableReport(
@@ -21,9 +43,10 @@ class TestSkrubTableReportItem:
 
         item = SkrubTableReportItem.factory(report)
 
-        assert item.media == report.html_snippet()
-        assert item.media_type == "text/html"
+        assert item.__representation__ == Representation(
+            media_type="text/html",
+            value=report.html_snippet(),
+        )
 
-    def test_factory_exception(self):
-        with raises(ItemTypeError):
-            SkrubTableReportItem.factory(None)
+        # Ensure representation is JSONable
+        dumps(item.__representation__.__dict__)

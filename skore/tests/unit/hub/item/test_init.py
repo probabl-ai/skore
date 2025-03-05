@@ -1,19 +1,17 @@
-import pytest
-import pandas
-import polars
-import numpy
-import matplotlib.pyplot as plt
 import altair
+import matplotlib.pyplot as plt
+import numpy
+import pandas
 import PIL.Image
 import plotly.graph_objects
+import polars
+import pytest
 import sklearn
 import skrub
-
 from skore.hub.item import (
     AltairChartItem,
     JSONableItem,
     MatplotlibFigureItem,
-    MediaItem,
     NumpyArrayItem,
     PandasDataFrameItem,
     PandasSeriesItem,
@@ -23,6 +21,7 @@ from skore.hub.item import (
     PolarsDataFrameItem,
     PolarsSeriesItem,
     SklearnBaseEstimatorItem,
+    SkrubTableReportItem,
     object_to_item,
 )
 
@@ -62,7 +61,7 @@ from skore.hub.item import (
                     }
                 )
             ),
-            MediaItem,
+            SkrubTableReportItem,
         ),
     ),
 )
