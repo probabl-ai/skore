@@ -854,8 +854,6 @@ plt.tight_layout()
 # `permutation importance <https://scikit-learn.org/stable/modules/permutation_importance.html>`_
 # which is model agnostic, meaning that it can be applied to any fitted estimator.
 # In particular, it works for linear models and tree-based ones.
-# Hence, we could compare the permutation importance of a feature for a same dataset,
-# between a linear model and a tree-based one.
 
 # %%
 # Permutation feature importance measures the contribution of each feature to
