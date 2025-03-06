@@ -21,9 +21,11 @@ Here, we go beyond predictive performance, and inspect these models to better in
 their behavior, by using feature importance.
 Indeed, in practice, inspection can help spot some flaws in models: it is always
 recommended to look "under the hood".
-For that, we use the :meth:`~skore.EstimatorReport.feature_importance` accessor of
-the :class:`~skore.EstimatorReport`.
+For that, we use the unified :meth:`~skore.EstimatorReport.feature_importance` accessor
+of the :class:`~skore.EstimatorReport`.
 For linear models, we look at their coefficients.
+For tree-based models, we inspect their mean decrease in impurity (MDI).
+We can also inspect the permutation feature importance, that is model-agnostic.
 """
 
 # %%
@@ -745,8 +747,8 @@ comparator.metrics.report_metrics()
 print(f"Number of trees in the forest: {rf_report.estimator_.n_estimators}")
 
 # %%
-# Given that we have many trees, it hard to use :func:`sklearn.tree.plot_tree` as for
-# the single decision tree.
+# Given that we have many trees, it is hard to use :func:`sklearn.tree.plot_tree` as
+# for the single decision tree.
 # As for linear models (and the complex feature engineering), better performance often
 # comes with less interpretability.
 
@@ -861,8 +863,7 @@ plt.tight_layout()
 # It randomly shuffles the values of a single feature and observes the resulting
 # degradation of the model's score.
 # Permuting a predictive feature makes the performance decrease, while
-# permuting a non-predictive feature does not significantly degrade the
-# performance.
+# permuting a non-predictive feature does not degrade the performance much.
 
 # %%
 # Linear models
@@ -956,7 +957,7 @@ mlp_report.feature_importance.feature_permutation().aggregate(
 plt.tight_layout()
 
 # %%
-# Thanks to permutation feature importance, the MLP is not such much of
+# Thanks to permutation feature importance, the MLP is not so much of
 # a "black-box".
 # Note that, for this model that performs poorly, there is more variance in the
 # permutation feature importance.
