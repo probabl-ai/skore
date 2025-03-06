@@ -12,7 +12,8 @@ Skore: getting started
 # #.    Get assistance when developing your ML/DS projects to avoid common pitfalls
 #       and follow recommended practices.
 #
-#       *   :class:`skore.EstimatorReport`: get an insightful report on your estimator
+#       *   :class:`skore.EstimatorReport`: get an insightful report on your estimator,
+#           for evaluation and inspection
 #
 #       *   :class:`skore.CrossValidationReport`: get an insightful report on your
 #           cross-validation results
@@ -83,10 +84,20 @@ roc_plot.plot()
 plt.tight_layout()
 
 # %%
+# Furthermore, we can inspect the model using the permutation feature importance:
+
+# %%
+log_reg_report.feature_importance.feature_permutation().aggregate(
+    ["mean", "std"], axis=1
+).plot.barh(y="mean", xerr="std")
+plt.tight_layout()
+
+# %%
 # .. seealso::
 #
 #   For more information about the motivation and usage of
-#   :class:`skore.EstimatorReport`, see :ref:`example_estimator_report`.
+#   :class:`skore.EstimatorReport`, see :ref:`example_estimator_report` for evaluation
+#   and :ref:`example_feature_importance` for inspection.
 
 
 # %%

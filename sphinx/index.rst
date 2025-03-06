@@ -36,8 +36,8 @@ Key features
 -  **Evaluate**: automated insightful reports.
 
    -  :class:`skore.EstimatorReport`: feed your scikit-learn compatible estimator and
-      dataset, and it generates recommended metrics and plots to help you analyze your
-      estimator.
+      dataset, and it generates recommended metrics, feature importance, and plots to
+      help you evaluate and inspect your estimator.
       All these are computed and generated for you in 1 line of code.
       Under the hood, we use efficient caching to make the computations blazing fast.
 
