@@ -299,7 +299,13 @@ def test_classification(classification_data):
         data_source="train", random_state=42
     )
 
-    pd.testing.assert_index_equal(result.index, pd.Index())
+    pd.testing.assert_index_equal(
+        result.index,
+        pd.MultiIndex.from_product(
+            [["accuracy"], (f"Feature #{i}" for i in range(5))],
+            names=("Metric", "Feature"),
+        ),
+    )
     pd.testing.assert_index_equal(result.columns, repeat_columns)
 
 
