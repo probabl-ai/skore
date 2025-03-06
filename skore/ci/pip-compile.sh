@@ -9,7 +9,7 @@
 #     $ bash pip-compile.sh --upgrade
 #
 
-CWD="$PWD"
+CWD=$(realpath $(dirname $0))
 TMPDIR=$(mktemp -d)
 
 # Make sure that `TMPDIR` is removed on exit, whatever the signal
@@ -29,9 +29,9 @@ set -eu
 
 (
     # Copy everything necessary to compile requirements in `TMPDIR`
-    cp -r .. "${TMPDIR}/skore"
-    cp ../../LICENSE "${TMPDIR}/LICENSE"
-    cp ../../README.md "${TMPDIR}/README.md"
+    cp -r "${CWD}/.." "${TMPDIR}/skore"
+    cp "${CWD}/../../LICENSE" "${TMPDIR}/LICENSE"
+    cp "${CWD}/../../README.md" "${TMPDIR}/README.md"
 
     # Move to `TMPDIR` to avoid absolute paths in requirements file
     cd "${TMPDIR}"
@@ -65,7 +65,7 @@ set -eu
         python -m venv "python-${python}"; source "python-${python}/bin/activate"
 
         # Force the `scikit-learn` version by overloading test requirements
-        sed -i "s/scikit-learn.*/scikit-learn==${scikit_learn}.*/g" skore/test-requirements.in
+        sed "s/scikit-learn.*/scikit-learn==${scikit_learn}.*/g" skore/test-requirements.in > skore/test-requirements.in
 
         # Create the requirements file tree
         mkdir -p $(dirname "${filepath}")
