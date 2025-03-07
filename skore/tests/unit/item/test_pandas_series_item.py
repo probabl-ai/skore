@@ -57,7 +57,7 @@ class TestPandasSeriesItem:
         assert type(item.series.iloc[0]) is list
 
     @pytest.mark.order(1)
-    def test_series_with_integer_indexes_name_and_multiindex(self, mock_nowstr):
+    def test_series_with_integer_indexes_name_and_multi_index(self, mock_nowstr):
         series = Series(
             [">70", ">70"],
             MultiIndex.from_arrays(
