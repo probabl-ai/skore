@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING
 
 from .item import ItemTypeError, Representation, lazy_is_instance
 from .pickle_item import PickleItem
@@ -11,17 +11,13 @@ if TYPE_CHECKING:
     from skrub import TableReport
 
 
-# Create a generic variable that can be `SkrubTableReportItem`, or any subclass.
-T = TypeVar("T", bound="SkrubTableReportItem")
-
-
 class SkrubTableReportItem(PickleItem):
     @property
     def __representation__(self) -> Representation:
         return Representation(media_type="text/html", value=self.__raw__.html_snippet())
 
     @classmethod
-    def factory(cls: type[T], report: TableReport, /) -> T:
+    def factory(cls, report: TableReport, /) -> SkrubTableReportItem:
         """
         Create a new SkrubTableReportItem from a skrub ``TableReport``.
 
