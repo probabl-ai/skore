@@ -37,7 +37,6 @@ Issues = "https://github.com/probabl-ai/skore/issues"
 "Release notes" = "https://github.com/probabl-ai/skore/releases"
 
 [project.scripts]
-skore-ui = "skore.__main__:main"
 skore-hub-login = "skore.hub.login:login"
 
 [build-system]
@@ -55,11 +54,9 @@ optional-dependencies.sphinx = { "file" = "sphinx-requirements.in" }
 
 [tool.hatch.build.targets.sdist]
 only-include = ["src/", "hatch/"]
-artifacts = ["src/skore/ui/static/"]
 
 [tool.hatch.build.targets.wheel]
 package = ["src/skore/"]
-artifacts = ["src/skore/ui/static/"]
 
 [tool.pytest.ini_options]
 addopts = [

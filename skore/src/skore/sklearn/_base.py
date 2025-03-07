@@ -1,4 +1,5 @@
 import inspect
+import re
 from abc import ABC, abstractmethod
 from io import StringIO
 from typing import Any, Generic, Literal, Optional, TypeVar, Union
@@ -49,6 +50,15 @@ class _HelpMixin(ABC):
             if method.__doc__
             else "No description available"
         )
+
+    def _get_attribute_description(self, name: str) -> str:
+        """Get the description of an attribute from its class docstring."""
+        if self.__doc__ is None:
+            return "No description available"
+        # Look for the first sentence on the line below the pattern 'attribute_name : '
+        regex_pattern = rf"{name} : .*?\n\s*(.*?)\."
+        search_result = re.search(regex_pattern, self.__doc__)
+        return search_result.group(1) if search_result else "No description available"
 
     def _get_help_legend(self) -> Optional[str]:
         """Get the help legend."""
@@ -191,8 +201,9 @@ class _BaseReport(_HelpMixin):
         attributes = self._get_attributes_for_help()
         if attributes:
             attr_branch = tree.add("[bold cyan]Attributes[/bold cyan]")
-            for attr in attributes:
-                attr_branch.add(f".{attr}")
+            for attr_name in attributes:
+                description = self._get_attribute_description(attr_name)
+                attr_branch.add(f".{attr_name.ljust(29)} - {description}")
 
         return tree
 

@@ -8,13 +8,6 @@ updates:
     commit-message:
       prefix: "chore(dependencies): GITHUB-ACTIONS"
 
-  - package-ecosystem: "npm"
-    directory: "/"
-    schedule:
-      interval: "monthly"
-    commit-message:
-      prefix: "chore(dependencies): NPM"
-
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
