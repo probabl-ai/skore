@@ -136,3 +136,33 @@ exclude = ["src/skore/externals/.*", "ci/*", "hatch/*", "tests/*"]
 [[tool.mypy.overrides]]
 module = ["diskcache.*", "sklearn.*"]
 ignore_missing_imports = true
+
+[tool.liccheck]
+authorized_licenses = [
+    "bsd",
+    "new bsd",
+    "bsd license",
+    "new bsd license",
+    "simplified bsd",
+    "apache",
+    "apache 2.0",
+    "apache software license",
+    "gnu lgpl",
+    "lgpl with exceptions or zpl",
+    "isc license",
+    "isc license (iscl)",
+    "mit",
+    "mit license",
+    "Mozilla Public License.*",
+    "python software foundation.*",
+    "The Unlicense.*",
+    "wtfpl",
+    "zpl 2.1",
+]
+unauthorized_licenses = [
+    "\bagpl",
+    "\bgpl",
+]
+as_regex = true
+level = "PARANOID"
+requirement_txt_file = "./requirements.in"
