@@ -47,9 +47,12 @@ class Project:
     """
     A collection of items persisted in a storage.
 
-    Its main methods are :func:`~skore.Project.put` and :func:`~skore.Project.get`,
-    respectively to insert a key-value pair into the Project and to recover the value
-    associated with a key.
+    This constructor initializes a project, by creating a new project or by loading an
+    existing one.
+
+    The class main methods are :func:`~skore.Project.put` and
+    :func:`~skore.Project.get`, respectively to insert a key-value pair into the Project
+    and to recover the value associated with a key.
 
     You can add any type of objects. In some cases, especially on classes you defined,
     the persistency is based on the pickle representation. You must therefore ensure
@@ -124,20 +127,14 @@ class Project:
 
         self._storage_initialized = True
 
-        # Check if the project should rejoin a server
-        from skore.project._launch import ServerInfo  # avoid circular import
-
-        self._server_info = ServerInfo.rejoin(self)
-
     @_raise_if_deleted
     def clear(self, delete_project: bool = False) -> None:
         """Remove all items from the project.
 
         .. warning::
            Clearing the project with `delete_project=True` will invalidate the whole
-           `Project` instance, making it unusable.
-           A new Project instance can be created using the :class:`skore.Project`
-           constructor or the :func:`skore.open` function.
+           `Project` instance, making it unusable. A new Project instance can be created
+           using the :class:`skore.Project` constructor.
 
         Parameters
         ----------
@@ -388,13 +385,3 @@ class Project:
         >>> project.delete_note("key", version=0)  # doctest: +SKIP
         """
         return self._item_repository.delete_item_note(key=key, version=version)
-
-    @_raise_if_deleted
-    def shutdown_web_ui(self) -> None:
-        """Shutdown the web UI server if it is running."""
-        if self._server_info is None:
-            raise RuntimeError("UI server is not running")
-
-        from skore.project._launch import cleanup_server  # avoid circular import
-
-        cleanup_server(self)

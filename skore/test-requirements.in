@@ -1,6 +1,6 @@
 altair>=5,<6
 pillow
-plotly
+plotly>=5,<6
 polars
 pre-commit
 pytest

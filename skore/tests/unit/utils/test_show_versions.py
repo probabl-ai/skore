@@ -13,7 +13,6 @@ def test_get_deps_info():
     deps_info = _get_deps_info()
     assert isinstance(deps_info, dict)
     assert "pip" in deps_info
-    assert "setuptools" in deps_info
     assert "skore" in deps_info
 
 
@@ -33,13 +32,8 @@ def test_show_versions(capfd):
     assert "machine:" in captured.out
     assert "skore:" in captured.out
     assert "pip:" in captured.out
-    assert "setuptools:" in captured.out
     assert "diskcache:" in captured.out
-    assert "fastapi:" in captured.out
     assert "numpy:" in captured.out
-    assert "plotly:" in captured.out
-    assert "pyarrow:" in captured.out
     assert "rich:" in captured.out
     assert "scikit-learn:" in captured.out
     assert "skops:" in captured.out
-    assert "uvicorn:" in captured.out
