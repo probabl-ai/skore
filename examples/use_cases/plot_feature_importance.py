@@ -789,62 +789,6 @@ fig = px.histogram(
 fig
 
 # %%
-# Gradient-boosted tree
-# ---------------------
-#
-# A gradient boosted tree (or gradient boosted decision tree) is an ensemble learning
-# method that builds a series of decision trees sequentially, where each tree corrects
-# the errors of the previous ones to improve predictions.
-# Unlike a random forest, which builds trees independently, gradient boosting focuses
-# on iteratively reducing the prediction error using gradient descent.
-
-# %%
-# Let us evaluate a gradient boosted tree:
-
-# %%
-from sklearn.ensemble import GradientBoostingRegressor
-
-gbdt_report = EstimatorReport(
-    GradientBoostingRegressor(random_state=0),
-    X_train=X_train,
-    X_test=X_test,
-    y_train=y_train,
-    y_test=y_test,
-)
-reports_to_compare["Gradient boosted tree"] = gbdt_report
-
-comparator = ComparisonReport(reports=reports_to_compare)
-comparator.metrics.report_metrics()
-
-# %%
-# Here, the performance is similar to a random forest.
-
-# %%
-# Let us look at the MDI:
-
-# %%
-gbdt_report.feature_importance.mean_decrease_impurity().plot.barh(
-    title="Feature importance",
-    xlabel="MDI",
-    ylabel="Feature",
-)
-plt.tight_layout()
-
-# %%
-# The MDI is quite similar to the random forest as well.
-
-# %%
-# .. note::
-#   The :class:`~sklearn.ensemble.HistGradientBoostingRegressor` is a gradient boosting
-#   implementation in scikit-learn, designed for regression tasks, that uses a
-#   histogram-based approach to improve speed and scalability, especially for large
-#   datasets.
-#   It builds on the concept of gradient boosted trees but introduces optimizations for
-#   efficiency.
-#   Typically, ``HistGradientBoostingRegressor`` is much faster than
-#   ``GradientBoostingRegressor`` for big datasets (``n_samples >= 10 000``).
-
-# %%
 # Model-agnostic: permutation feature importance
 # ==============================================
 
