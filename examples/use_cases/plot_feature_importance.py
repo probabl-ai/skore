@@ -680,8 +680,11 @@ _ = plot_tree(
 
 # %%
 # .. seealso::
-#   A nicer display of decision trees is available in the
+#   A richer display of decision trees is available in the
 #   `dtreeviz <https://github.com/parrt/dtreeviz>`_ python package.
+#   For example, it shows the distribution of feature values split at each node and
+#   tailors the visualization to the task at hand (whether classification
+#   or regression).
 
 # %%
 # Now, let us look at the feature importance based on the MDI:
