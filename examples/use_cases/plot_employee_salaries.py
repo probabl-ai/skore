@@ -188,9 +188,7 @@ report.help()
 import warnings
 
 with warnings.catch_warnings():
-    # catch the warnings raised by the OneHotEncoder for seeing unknown categories
-    # at transform time
-    warnings.simplefilter(action="ignore", category=UserWarning)
+    warnings.simplefilter(action="ignore", category=FutureWarning)
     report.cache_predictions(n_jobs=4)
 
 # %%
@@ -299,7 +297,8 @@ results = pd.concat(
             scoring_names=scoring_names,
             aggregate=["mean", "std"],
         ),
-    ]
+    ],
+    axis=1,
 )
 results
 
@@ -307,6 +306,7 @@ results
 # .. note::
 #   We could have also used the :class:`skore.ComparisonReport` to compare estimator
 #   reports.
+#   This is done in :ref:`example_feature_importance`.
 
 # %%
 #
