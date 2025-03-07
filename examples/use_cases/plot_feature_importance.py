@@ -395,11 +395,11 @@ engineered_ridge_report = EstimatorReport(
     y_train=y_train,
     y_test=y_test,
 )
-dict_reports = {
+reports_to_compare = {
     "Vanilla Ridge": ridge_report,
     "Ridge w/ feature engineering": engineered_ridge_report,
 }
-comparator = ComparisonReport(reports=dict_reports)
+comparator = ComparisonReport(reports=reports_to_compare)
 comparator.metrics.report_metrics()
 
 # %%
@@ -515,8 +515,8 @@ selectk_ridge_report = EstimatorReport(
     y_train=y_train,
     y_test=y_test,
 )
-dict_reports["Ridge w/ feature selection and grid search"] = selectk_ridge_report
-comparator = ComparisonReport(reports=dict_reports)
+reports_to_compare["Ridge w/ feature selection and grid search"] = selectk_ridge_report
+comparator = ComparisonReport(reports=reports_to_compare)
 comparator.metrics.report_metrics()
 
 # %%
@@ -608,13 +608,13 @@ tree_report = EstimatorReport(
     y_train=y_train,
     y_test=y_test,
 )
-dict_reports["Decision tree"] = tree_report
+reports_to_compare["Decision tree"] = tree_report
 
 # %%
 # We compare its performance with the models in our benchmark:
 
 # %%
-comparator = ComparisonReport(reports=dict_reports)
+comparator = ComparisonReport(reports=reports_to_compare)
 comparator.metrics.report_metrics()
 
 # %%
@@ -728,9 +728,9 @@ rf_report = EstimatorReport(
     y_train=y_train,
     y_test=y_test,
 )
-dict_reports["Random forest"] = rf_report
+reports_to_compare["Random forest"] = rf_report
 
-comparator = ComparisonReport(reports=dict_reports)
+comparator = ComparisonReport(reports=reports_to_compare)
 comparator.metrics.report_metrics()
 
 # %%
@@ -809,9 +809,9 @@ gbdt_report = EstimatorReport(
     y_train=y_train,
     y_test=y_test,
 )
-dict_reports["Gradient boosted tree"] = gbdt_report
+reports_to_compare["Gradient boosted tree"] = gbdt_report
 
-comparator = ComparisonReport(reports=dict_reports)
+comparator = ComparisonReport(reports=reports_to_compare)
 comparator.metrics.report_metrics()
 
 # %%
@@ -938,9 +938,9 @@ mlp_report = EstimatorReport(
     y_train=y_train,
     y_test=y_test,
 )
-dict_reports["Multi-layer perceptron"] = mlp_report
+reports_to_compare["Multi-layer perceptron"] = mlp_report
 
-comparator = ComparisonReport(reports=dict_reports)
+comparator = ComparisonReport(reports=reports_to_compare)
 comparator.metrics.report_metrics()
 
 # %%
