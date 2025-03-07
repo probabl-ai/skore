@@ -584,7 +584,6 @@ plot_map(X_train_plot, "clustering_labels")
 # For feature importance, we inspect their Mean Decrease in Impurity (MDI).
 # The MDI of a feature is the normalized total reduction of the criterion (loss)
 # brought by that feature.
-# The MDI is also known as the Gini importance.
 # The higher the MDI, the more important the feature.
 
 # %%
