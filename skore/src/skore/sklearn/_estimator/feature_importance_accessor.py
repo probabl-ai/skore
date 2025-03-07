@@ -373,7 +373,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             Pass an int to get reproducible results across function calls.
 
         flat_index : bool, default=False
-            Whether to flatten the multiindex columns. Flat index will always be lower
+            Whether to flatten the multi-index columns. Flat index will always be lower
             case, do not include spaces and remove the hash symbol to ease indexing.
 
         Returns
