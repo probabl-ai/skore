@@ -35,12 +35,12 @@ def regression_data_dataframe():
 
 repeat_columns = pd.Index((f"Repeat #{i}" for i in range(5)), name="Repeat")
 
-multiindex_numpy = pd.MultiIndex.from_product(
+multi_index_numpy = pd.MultiIndex.from_product(
     [["r2"], (f"Feature #{i}" for i in range(3))],
     names=("Metric", "Feature"),
 )
 
-multiindex_pandas = pd.MultiIndex.from_product(
+multi_index_pandas = pd.MultiIndex.from_product(
     [["r2"], (f"my_feature_{i}" for i in range(3))],
     names=("Metric", "Feature"),
 )
@@ -51,7 +51,7 @@ def case_default_args_numpy():
 
     kwargs = {"random_state": 42}
 
-    return data, kwargs, multiindex_numpy, repeat_columns
+    return data, kwargs, multi_index_numpy, repeat_columns
 
 
 def case_r2_numpy():
@@ -72,7 +72,7 @@ def case_train_numpy():
 
     kwargs = {"data_source": "train", "scoring": "r2", "random_state": 42}
 
-    return data, kwargs, multiindex_numpy, repeat_columns
+    return data, kwargs, multi_index_numpy, repeat_columns
 
 
 def case_several_scoring_numpy():
@@ -97,7 +97,7 @@ def case_X_y():
 
     kwargs = {"data_source": "X_y", "X": X, "y": y, "random_state": 42}
 
-    return data, kwargs, multiindex_numpy, repeat_columns
+    return data, kwargs, multi_index_numpy, repeat_columns
 
 
 def case_aggregate():
@@ -105,7 +105,7 @@ def case_aggregate():
 
     kwargs = {"data_source": "train", "aggregate": "mean", "random_state": 42}
 
-    return data, kwargs, multiindex_numpy, pd.Index(["mean"], dtype="object")
+    return data, kwargs, multi_index_numpy, pd.Index(["mean"], dtype="object")
 
 
 def case_default_args_pandas():
@@ -113,7 +113,7 @@ def case_default_args_pandas():
 
     kwargs = {"random_state": 42}
 
-    return data, kwargs, multiindex_pandas, repeat_columns
+    return data, kwargs, multi_index_pandas, repeat_columns
 
 
 def case_r2_pandas():
@@ -134,7 +134,7 @@ def case_train_pandas():
 
     kwargs = {"data_source": "train", "random_state": 42}
 
-    return data, kwargs, multiindex_pandas, repeat_columns
+    return data, kwargs, multi_index_pandas, repeat_columns
 
 
 def case_several_scoring_pandas():

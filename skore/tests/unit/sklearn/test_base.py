@@ -8,7 +8,7 @@ from sklearn.cluster import KMeans
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
-from skore.sklearn._base import _BaseAccessor, _get_cached_response_values
+from skore.sklearn._base import _BaseAccessor, _BaseReport, _get_cached_response_values
 
 
 class MockClassifier(ClassifierMixin, BaseEstimator):
@@ -176,14 +176,23 @@ def test_get_cached_response_values_different_data_source_hash(
     )
 
 
-class MockReport:
+class MockReport(_BaseReport):
+    """Mock a report with the minimal required attributes.
+
+    Attributes
+    ----------
+    no_private : dummy object
+        The text to catch.
+    """
+
     def __init__(self, estimator, X_train=None, y_train=None, X_test=None, y_test=None):
-        """Mock a report with the minimal required attributes."""
         self._estimator = estimator
         self._X_train = X_train
         self._y_train = y_train
         self._X_test = X_test
         self._y_test = y_test
+        self.no_private = "no_private"
+        self.attr_without_description = "attr_without_description"
 
     @property
     def estimator_(self):
@@ -305,3 +314,21 @@ def test_base_accessor_get_X_y_and_data_source_hash(data_source):
         assert X is X_test
         assert y is y_test
         assert data_source_hash == joblib.hash((X_test, y_test))
+
+
+def test_base_accessor_get_attributes_description():
+    X, y = make_classification(n_samples=10, n_classes=2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+    estimator = LogisticRegression()
+    report = MockReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+
+    attributes = report._get_attributes_for_help()
+
+    assert len(attributes) == 7
+    assert report._get_attribute_description("no_private") == "The text to catch"
+    assert (
+        report._get_attribute_description("attr_without_description")
+        == "No description available"
+    )
