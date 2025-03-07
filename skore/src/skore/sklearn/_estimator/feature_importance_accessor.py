@@ -336,6 +336,19 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         scoring : str, callable, list, tuple, or dict, default=None
             The scorer to pass to :func:`~sklearn.inspection.permutation_importance`.
 
+            If `scoring` represents a single score, one can use:
+
+            - a single string, which must be one of the supported metrics;
+            - a callable that returns a single value.
+
+            If `scoring` represents multiple scores, one can use:
+
+            - a list or tuple of unique strings, which must be one of the supported
+              metrics;
+            - a callable returning a dictionary where the keys are the metric names
+              and the values are the metric scores;
+            - a dictionary with metric names as keys and callables a values.
+
         n_repeats : int, default=5
             Number of times to permute a feature.
 
