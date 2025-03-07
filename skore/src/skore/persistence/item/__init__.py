@@ -5,7 +5,6 @@ from __future__ import annotations
 from contextlib import suppress
 from typing import Any, Literal, Optional
 
-from . import skrub_table_report_item as SkrubTableReportItem
 from .altair_chart_item import AltairChartItem
 from .item import Item, ItemTypeError
 from .matplotlib_figure_item import MatplotlibFigureItem
@@ -57,7 +56,6 @@ def object_to_item(
         PolarsSeriesItem,
         PrimitiveItem,
         SklearnBaseEstimatorItem,
-        SkrubTableReportItem,
     ):
         with suppress(ImportError, ItemTypeError):
             # ImportError:
@@ -114,7 +112,6 @@ __all__ = [
     "PolarsSeriesItem",
     "PrimitiveItem",
     "SklearnBaseEstimatorItem",
-    "SkrubTableReportItem",
     "item_to_object",
     "object_to_item",
 ]

@@ -309,6 +309,16 @@ def test_put_wrong_key_and_value_raise(in_memory_project):
         in_memory_project.put(0, (lambda: "unsupported object"))
 
 
-def test_shutdown_web_ui(in_memory_project):
-    with pytest.raises(RuntimeError, match="UI server is not running"):
-        in_memory_project.shutdown_web_ui()
+def test_put_skrub_tablereport(in_memory_project):
+    from pandas import DataFrame
+    from pandas.testing import assert_frame_equal
+    from skrub import TableReport
+
+    dataframe = DataFrame(dict(a=[1, 2], b=["one", "two"], c=[11.1, 11.1]))
+    report = TableReport(dataframe)
+
+    in_memory_project.put("key", report)
+
+    assert (retrieved_report := in_memory_project.get("key"))
+    assert isinstance(retrieved_report, TableReport)
+    assert_frame_equal(retrieved_report.dataframe, dataframe)
