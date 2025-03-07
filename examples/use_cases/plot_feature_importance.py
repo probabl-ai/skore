@@ -714,7 +714,7 @@ plt.tight_layout()
 # Random forest
 # -------------
 #
-# Now, let us apply a slightly more elaborate model: a random forest.
+# Now, let us apply a more elaborate model: a random forest.
 # A random forest is an ensemble method that builds multiple decision trees, each
 # trained on a random subset of data and features.
 # For regression, it averages the trees' predictions.
