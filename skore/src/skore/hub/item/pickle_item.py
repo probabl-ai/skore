@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from functools import cached_property
 from io import BytesIO
-from typing import Any
+from typing import Any, TypeVar
 
 from joblib import dump, load
 
@@ -18,6 +18,9 @@ from .item import (
     b64_str_to_bytes,
     bytes_to_b64_str,
 )
+
+# Create a generic variable that can be `PickleItem`, or any subclass.
+T = TypeVar("T", bound="PickleItem")
 
 
 class PickleItem(Item):
@@ -46,7 +49,7 @@ class PickleItem(Item):
         )
 
     @classmethod
-    def factory(cls, value: Any) -> PickleItem:
+    def factory(cls: type[T], value: Any) -> T:
         """
         Create a new PickleItem from ``object``.
 

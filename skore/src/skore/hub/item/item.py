@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from base64 import b64decode, b64encode
 from dataclasses import dataclass
 from inspect import signature as inspect_signature
-from typing import Any
+from typing import Any, Optional
 
 #
 # faire un system qui import dynamiquement les modules
@@ -43,9 +43,9 @@ def b64_str_to_bytes(literal: str) -> bytes:
 class Representation:
     media_type: str
     value: Any
-    raised: bool = False
-    traceback: str = None
-    schema: int = 1
+    raised: Optional[bool] = False
+    traceback: Optional[str] = None
+    schema: Optional[int] = 1
 
 
 class ItemTypeError(Exception):

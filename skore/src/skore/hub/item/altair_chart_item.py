@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
 
 class AltairChartItem(Item):
-    def __init__(self, chart_json_str: dict):
+    def __init__(self, chart_json_str: str):
         self.chart_json_str = chart_json_str
 
     @property

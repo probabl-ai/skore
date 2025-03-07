@@ -7,12 +7,12 @@ from .item import Item, ItemTypeError, Representation
 
 
 class JSONableItem(Item):
-    def __init__(self, value_json_str: str):
-        self.value_json_str = value_json_str
+    def __init__(self, value: Any):
+        self.value = value
 
     @property
-    def __raw__(self) -> Any:
-        return loads(self.value_json_str)
+    def __raw__(self):
+        return self.value
 
     @property
     def __representation__(self) -> Representation:
@@ -21,8 +21,8 @@ class JSONableItem(Item):
     @classmethod
     def factory(cls, value: Any, /, **kwargs) -> JSONableItem:
         try:
-            value_json_str = dumps(value)
+            value = loads(dumps(value))
         except TypeError:
             raise ItemTypeError(f"Type '{value.__class__}' is not supported.") from None
 
-        return cls(value_json_str, **kwargs)
+        return cls(value, **kwargs)

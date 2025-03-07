@@ -93,7 +93,9 @@ class Project:
                 item = item_class(**response["value"]["parameters"])
                 return {
                     "value": item.__raw__,
-                    "date": response["created_at"],
+                    "date": datetime.fromisoformat(response["created_at"]).replace(
+                        tzinfo=timezone.utc
+                    ),
                     "note": response["value"]["note"],
                 }
 
@@ -103,17 +105,14 @@ class Project:
                 response = request.json()
 
             return dto(response)
-        if version == "all":
+
+        if version == "all" or (isinstance(version, int) and version >= 0):
             with AuthenticatedClient(raises=True) as client:
                 request = client.get(f"projects/{self.id}/items/{key}/history")
                 response = request.json()
 
-            return list(map(dto, response))
-        if isinstance(version, int):
-            with AuthenticatedClient(raises=True) as client:
-                request = client.get(f"projects/{self.id}/items/{key}/history")
-                response = request.json()
-
+            if version == "all":
+                return list(map(dto, response))
             return dto(response[version])
 
-        raise ValueError('`version` should be -1, "all", or an integer')
+        raise ValueError('`version` should be -1, "all", or a positive integer')
