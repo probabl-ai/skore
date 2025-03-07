@@ -1,6 +1,7 @@
-import PIL.Image
 from io import BytesIO
 from json import dumps
+
+import PIL.Image
 from pytest import raises
 from skore.hub.item import PillowImageItem
 from skore.hub.item.item import ItemTypeError, Representation, bytes_to_b64_str

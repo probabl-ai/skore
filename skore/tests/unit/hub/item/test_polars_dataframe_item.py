@@ -1,8 +1,10 @@
-import numpy as np
-from pytest import raises
 from json import dumps
+
+import numpy as np
 from polars import DataFrame
+from polars.exceptions import ComputeError
 from polars.testing import assert_frame_equal
+from pytest import raises
 from skore.hub.item import PolarsDataFrameItem
 from skore.hub.item.item import ItemTypeError, Representation
 
@@ -17,7 +19,7 @@ class TestPolarsDataFrameItem:
         assert item.dataframe_json_str == dataframe_json_str
 
     def test_factory_exception(self):
-        with raises(Exception):
+        with raises(ComputeError):
             PolarsDataFrameItem.factory(DataFrame([{"key": np.array([1, 2])}]))
 
         with raises(ItemTypeError):

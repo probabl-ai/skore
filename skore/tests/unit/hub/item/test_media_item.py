@@ -1,4 +1,5 @@
 from json import dumps
+
 import pytest
 from skore.hub.item import MediaItem, MediaType
 from skore.hub.item.item import ItemTypeError, Representation

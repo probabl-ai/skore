@@ -1,8 +1,9 @@
-import numpy as np
 from json import dumps
-from pytest import raises
+
+import numpy as np
 from polars import Series
 from polars.testing import assert_series_equal
+from pytest import raises
 from skore.hub.item import PolarsSeriesItem
 from skore.hub.item.item import ItemTypeError, Representation
 

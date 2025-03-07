@@ -1,11 +1,11 @@
-import numpy as np
-from pytest import raises
 from json import dumps
+
+import numpy as np
 from pandas import DataFrame, Index, MultiIndex
 from pandas.testing import assert_frame_equal
+from pytest import raises
 from skore.hub.item import PandasDataFrameItem
 from skore.hub.item.item import ItemTypeError, Representation
-
 
 ORIENT = PandasDataFrameItem.ORIENT
 

@@ -7,6 +7,7 @@ from functools import cached_property
 from urllib.parse import urljoin
 
 from httpx import URL, Client, Response
+
 from skore.hub.authentication.token import Token
 from skore.hub.client.api import URI
 

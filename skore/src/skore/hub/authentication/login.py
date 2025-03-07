@@ -9,6 +9,7 @@ from time import sleep
 from httpx import HTTPError
 from rich.align import Align
 from rich.panel import Panel
+
 from skore import console
 from skore.hub.authentication.otp_server import OTPServer
 from skore.hub.authentication.token import Token
