@@ -885,18 +885,14 @@ ridge_report.feature_importance.feature_permutation()
 # The permutation importance is often calculated several times, each time
 # with different permutations of the feature.
 # Hence, we can have measure its variance (or standard deviation).
-# Now, we plot the permutation feature importance along with its standard deviation:
+# Now, we plot the permutation feature importance using a boxplot:
 
 # %%
-df = (
-    ridge_report.feature_importance.feature_permutation()
-    .aggregate(["mean", "std"], axis=1)
-    .plot.barh(y="mean", xerr="std")
-)
+ridge_report.feature_importance.feature_permutation().T.boxplot(vert=False)
 plt.tight_layout()
 
 # %%
-# The standard deviation is quite low.
+# The standard deviation seems quite low.
 # The result of the inspection is the same as with the coefficients:
 # the most important features are ``Latitude``, ``Longitude``, and ``MedInc``.
 
@@ -908,9 +904,7 @@ plt.tight_layout()
 # For our decision tree, here is our permutation importance:
 
 # %%
-tree_report.feature_importance.feature_permutation().aggregate(
-    ["mean", "std"], axis=1
-).plot.barh(y="mean", xerr="std")
+tree_report.feature_importance.feature_permutation().T.boxplot(vert=False)
 plt.tight_layout()
 
 # %%
@@ -950,15 +944,13 @@ comparator.metrics.report_metrics()
 # but we are more interested in inspecting it:
 
 # %%
-mlp_report.feature_importance.feature_permutation().aggregate(
-    ["mean", "std"], axis=1
-).plot.barh(y="mean", xerr="std")
+mlp_report.feature_importance.feature_permutation().T.boxplot(vert=False)
 plt.tight_layout()
 
 # %%
 # Thanks to permutation feature importance, the MLP is not so much of
 # a "black-box".
-# Note that, for this model that performs poorly, there is more variance in the
+# Note that, for this model that performs poorly, there is more dispersion in the
 # permutation feature importance.
 
 # %%
@@ -982,3 +974,5 @@ plt.tight_layout()
 # better.
 # The model-agnostic permutation feature importance further enabled us to compare
 # feature significance across diverse model types, including a neural network (MLP).
+
+# %%
