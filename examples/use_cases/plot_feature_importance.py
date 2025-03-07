@@ -597,8 +597,6 @@ plot_map(X_train_plot, "clustering_labels")
 # .. seealso::
 #   For more information about decision trees, see scikit-learn's example on
 #   `Understanding the decision tree structure <https://scikit-learn.org/stable/auto_examples/tree/plot_unveil_tree_structure.html>`_.
-#   In this example, we are tackling a regression task, but it is easier to gain
-#   intuition on decision trees on a classification task.
 
 # %%
 from sklearn.tree import DecisionTreeRegressor
