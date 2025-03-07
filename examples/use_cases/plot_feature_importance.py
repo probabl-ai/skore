@@ -640,7 +640,6 @@ tree_report.help()
 # %%
 from sklearn.tree import plot_tree
 
-plt.figure(dpi=300)
 _ = plot_tree(
     tree_report.estimator_,
     feature_names=tree_report.estimator_.feature_names_in_,
