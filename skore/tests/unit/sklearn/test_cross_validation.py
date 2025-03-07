@@ -238,10 +238,7 @@ def test_cross_validation_report_flat_index(binary_classification_data):
         "roc_auc",
         "brier_score",
     ]
-    assert result.columns.tolist() == [
-        "randomforestclassifier_split_0",
-        "randomforestclassifier_split_1",
-    ]
+    assert result.columns.tolist() == ["Split #0", "Split #1"]
 
 
 ########################################################################################
@@ -326,9 +323,9 @@ def _check_results_single_metric(report, metric, expected_n_splits, expected_nb_
     pd.testing.assert_frame_equal(result, result_with_cache)
 
     # check that the columns contains the expected split names
-    split_names = result.columns.get_level_values(1).unique()
+    split_names = list(result.columns)
     expected_split_names = [f"Split #{i}" for i in range(expected_n_splits)]
-    assert list(split_names) == expected_split_names
+    assert split_names == expected_split_names
 
     # check that something was written to the cache
     assert report._cache != {}
@@ -362,9 +359,9 @@ def _check_results_report_metric(
     pd.testing.assert_frame_equal(result, result_with_cache)
 
     # check that the columns contains the expected split names
-    split_names = result.columns.get_level_values(1).unique()
+    split_names = list(result.columns)
     expected_split_names = [f"Split #{i}" for i in range(expected_n_splits)]
-    assert list(split_names) == expected_split_names
+    assert split_names == expected_split_names
 
     _check_metrics_names(result, expected_metrics, expected_nb_stats)
 
@@ -392,10 +389,9 @@ def _check_metrics_names(result, expected_metrics, expected_nb_stats):
     for idx in result.index:
         normalized_idx = _normalize_metric_name(idx)
         matches = [metric for metric in normalized_expected if metric == normalized_idx]
-        assert len(matches) == 1, (
-            f"No match found for index '{idx}' in expected metrics: "
-            f" {expected_metrics}"
-        )
+        assert (
+            len(matches) == 1
+        ), f"No match found for index '{idx}' in expected metrics: {expected_metrics}"
 
 
 @pytest.mark.parametrize(
