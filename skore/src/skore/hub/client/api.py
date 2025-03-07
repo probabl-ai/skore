@@ -138,9 +138,7 @@ def post_oauth_refresh_token(refresh_token: str):
     with httpx.Client() as client:
         response = client.post(
             urljoin(URI, "identity/oauth/token/refresh"),
-            data={
-                "refresh_token": refresh_token,
-            },
+            json={"refresh_token": refresh_token},
         )
 
         response.raise_for_status()

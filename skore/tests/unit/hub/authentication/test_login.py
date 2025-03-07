@@ -5,9 +5,9 @@ from urllib.parse import urljoin
 import httpx
 import pytest
 from httpx import Response
-from skore.hub.api import URI
-from skore.hub.client import AuthenticationError
-from skore.hub.login import login
+from skore.hub.authentication.login import login
+from skore.hub.client.api import URI
+from skore.hub.client.client import AuthenticationError
 
 CALLBACK_URL = urljoin(URI, "identity/oauth/device/callback")
 LOGIN_URL = urljoin(URI, "identity/oauth/device/login")

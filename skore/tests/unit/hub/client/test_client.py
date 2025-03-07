@@ -1,12 +1,14 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from urllib.parse import urljoin
 
 import pytest
 from httpx import Response
-from skore.hub.api import URI
-from skore.hub.client import AuthenticatedClient, AuthenticationError
+from skore.hub.client.api import URI
+from skore.hub.client.client import AuthenticatedClient, AuthenticationError
 
 REFRESH_URL = urljoin(URI, "identity/oauth/token/refresh")
+DATETIME_MIN = datetime.min.replace(tzinfo=timezone.utc)
+DATETIME_MAX = datetime.max.replace(tzinfo=timezone.utc)
 
 
 class TestAuthenticatedClient:
@@ -14,30 +16,30 @@ class TestAuthenticatedClient:
     def test_request_with_invalid_token_raises(self, respx_mock):
         foo_route = respx_mock.get("foo").mock(Response(200))
 
-        with pytest.raises(AuthenticationError):
-            AuthenticatedClient().get("foo")
+        with pytest.raises(AuthenticationError), AuthenticatedClient() as client:
+            client.get("foo")
 
         assert not foo_route.called
 
     @pytest.mark.respx(assert_all_called=True)
     def test_request_with_token(self, tmp_path, respx_mock):
         (tmp_path / "skore.token").write_text(
-            f'["A", "B", "{datetime.max.isoformat()}"]'
+            f'["A", "B", "{DATETIME_MAX.isoformat()}"]'
         )
 
         respx_mock.get(urljoin(URI, "foo")).mock(Response(200))
 
-        client = AuthenticatedClient()
-        client.get("foo")
+        with AuthenticatedClient() as client:
+            client.get("foo")
 
-        assert client.token.access == "A"
-        assert client.token.refreshment == "B"
-        assert client.token.expires_at == datetime.max
+            assert client.token.access == "A"
+            assert client.token.refreshment == "B"
+            assert client.token.expires_at == DATETIME_MAX
 
     @pytest.mark.respx(assert_all_called=True)
     def test_request_with_expired_token(self, tmp_path, respx_mock):
         (tmp_path / "skore.token").write_text(
-            f'["A", "B", "{datetime.min.isoformat()}"]'
+            f'["A", "B", "{DATETIME_MIN.isoformat()}"]'
         )
 
         respx_mock.get(urljoin(URI, "foo")).mock(Response(200))
@@ -48,15 +50,15 @@ class TestAuthenticatedClient:
                     "token": {
                         "access_token": "D",
                         "refresh_token": "E",
-                        "expires_at": datetime.max.isoformat(),
+                        "expires_at": DATETIME_MAX.isoformat(),
                     }
                 },
             )
         )
 
-        client = AuthenticatedClient()
-        client.get("foo")
+        with AuthenticatedClient() as client:
+            client.get("foo")
 
-        assert client.token.access == "D"
-        assert client.token.refreshment == "E"
-        assert client.token.expires_at == datetime.max
+            assert client.token.access == "D"
+            assert client.token.refreshment == "E"
+            assert client.token.expires_at == DATETIME_MAX

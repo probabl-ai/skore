@@ -4,13 +4,13 @@ from urllib.parse import urljoin
 
 import pytest
 from httpx import Response
-from skore.hub.api import URI
-from skore.hub.token import AuthenticationToken
+from skore.hub.authentication.token import Token
+from skore.hub.client.api import URI
 
 
-class TestAuthenticationToken:
+class TestToken:
     def test_init_with_parameters(self, tmp_path, mock_now, mock_nowstr):
-        token = AuthenticationToken("A", "B", mock_nowstr)
+        token = Token("A", "B", mock_nowstr)
 
         assert token.valid
         assert token.access == "A"
@@ -24,7 +24,7 @@ class TestAuthenticationToken:
 
     def test_init_without_parameters_with_file(self, tmp_path, mock_now, mock_nowstr):
         (tmp_path / "skore.token").write_text(f'["A", "B", "{mock_nowstr}"]')
-        token = AuthenticationToken()
+        token = Token()
 
         assert token.valid
         assert token.access == "A"
@@ -32,7 +32,7 @@ class TestAuthenticationToken:
         assert token.expires_at == mock_now
 
     def test_init_without_parameters_without_file(self):
-        token = AuthenticationToken()
+        token = Token()
 
         assert not token.valid
         assert not hasattr(token, "access")
@@ -54,7 +54,7 @@ class TestAuthenticationToken:
             )
         )
 
-        token = AuthenticationToken("A", "B", datetime(2000, 1, 1).isoformat())
+        token = Token("A", "B", datetime(2000, 1, 1).isoformat())
         token.refresh()
 
         assert token.access == "D"
@@ -67,6 +67,6 @@ class TestAuthenticationToken:
         ]
 
     def test_repr(self, mock_nowstr):
-        token = AuthenticationToken("A" * 1000, "B" * 1000, mock_nowstr)
+        token = Token("A" * 1000, "B" * 1000, mock_nowstr)
 
-        assert repr(token) == f"AuthenticationToken('{'A' * 10}[...]')"
+        assert repr(token) == f"Token('{'A' * 10}[...]')"

@@ -15,6 +15,9 @@ SUCCESS_PAGE = b"""
 
 def _get_handler(callback):
     class _Handler(BaseHTTPRequestHandler):
+        def log_message(self, *args):
+            """Disable logging."""
+
         def do_GET(self):
             parsed = urlparse(self.path)
 

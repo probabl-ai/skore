@@ -2,7 +2,7 @@ from http import HTTPStatus
 
 import httpx
 import pytest
-from skore.hub.otp_server import OTPServer
+from skore.hub.authentication.otp_server import OTPServer
 
 
 def test_otp_server_return_error_on_non_index_route():

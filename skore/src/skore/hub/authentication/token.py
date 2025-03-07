@@ -1,5 +1,3 @@
-"""Encapsulate all authentication related stuff."""
-
 from __future__ import annotations
 
 import functools
@@ -9,10 +7,10 @@ import tempfile
 from datetime import datetime
 from typing import Optional
 
-from skore.hub.api import post_oauth_refresh_token
+from skore.hub.client.api import post_oauth_refresh_token
 
 
-class AuthenticationToken:
+class Token:
     """Wrap access, refresh and expires_at."""
 
     def __init__(
@@ -62,4 +60,4 @@ class AuthenticationToken:
 
     def __repr__(self):
         """Repr implementation."""
-        return f"AuthenticationToken('{self.access:.10}[...]')"
+        return f"Token('{self.access:.10}[...]')"
