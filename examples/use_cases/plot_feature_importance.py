@@ -589,7 +589,7 @@ plot_map(X_train_plot, "clustering_labels")
 # %%
 # However, the MDI holds some limitations to keep in mind:
 #
-# - When features have significant differences in cardinality, the MDI tends to favor
+# - When features have large differences in cardinality, the MDI tends to favor
 #   those with higher cardinality.
 #   Fortunately, in this example, our numerical features share similar cardinality,
 #   mitigating this concern.
