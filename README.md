@@ -17,7 +17,7 @@
   <h3>the scikit-learn sidekick</h3>
 
 Elevate ML Development with Built-in Recommended Practices \
-[Documentation](https://skore.probabl.ai) — [Community](https://discord.probabl.ai)
+[Documentation](https://skore.probabl.ai) — [Community](https://discord.probabl.ai) — [YouTube](https://youtube.com/playlist?list=PLSIzlWDI17bTpixfFkooxLpbz4DNQcam3)
 
 </div>
 
