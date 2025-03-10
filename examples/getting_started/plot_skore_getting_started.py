@@ -87,9 +87,7 @@ plt.tight_layout()
 # Furthermore, we can inspect the model using the permutation feature importance:
 
 # %%
-log_reg_report.feature_importance.feature_permutation().aggregate(
-    ["mean", "std"], axis=1
-).plot.barh(y="mean", xerr="std")
+log_reg_report.feature_importance.feature_permutation().T.boxplot(vert=False)
 plt.tight_layout()
 
 # %%
