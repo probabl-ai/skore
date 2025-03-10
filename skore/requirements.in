@@ -1,5 +1,6 @@
 diskcache
 joblib
+httpx
 matplotlib
 numpy
 pandas
