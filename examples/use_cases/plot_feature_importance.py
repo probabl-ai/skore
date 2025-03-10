@@ -741,8 +741,9 @@ plt.tight_layout()
 # %%
 from sklearn.ensemble import RandomForestRegressor
 
+n_estimators = 100
 rf_report = EstimatorReport(
-    RandomForestRegressor(random_state=0),
+    RandomForestRegressor(random_state=0, n_estimators=n_estimators),
     X_train=X_train,
     X_test=X_test,
     y_train=y_train,
@@ -758,10 +759,10 @@ comparator.metrics.report_metrics()
 # the random forest beats all linear models!
 
 # %%
-# Let us print the number of trees in our random forest:
+# Let us recall the number of trees in our random forest:
 
 # %%
-print(f"Number of trees in the forest: {rf_report.estimator_.n_estimators}")
+print(f"Number of trees in the forest: {n_estimators}")
 
 # %%
 # Given that we have many trees, it is hard to use :func:`sklearn.tree.plot_tree` as
