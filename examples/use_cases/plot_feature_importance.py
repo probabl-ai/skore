@@ -829,10 +829,6 @@ fig
 # By default, we compute the permutation importance on the test set.
 
 # %%
-# Linear models
-# -------------
-
-# %%
 # Let us look at our helper:
 
 # %%
@@ -859,10 +855,6 @@ plt.tight_layout()
 # The standard deviation seems quite low.
 # The result of the inspection is the same as with the coefficients:
 # the most important features are ``Latitude``, ``Longitude``, and ``MedInc``.
-
-# %%
-# Tree-based models
-# -----------------
 
 # %%
 # For our decision tree, here is our permutation importance:
