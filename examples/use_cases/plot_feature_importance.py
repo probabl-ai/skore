@@ -910,6 +910,4 @@ plot_permutation_train_test(tree_report)
 # Compared to linear models, tree-based models rely on more on ``AveOccup`` and perform
 # better.
 # The model-agnostic permutation feature importance further enabled us to compare
-# feature significance across diverse model types, including a neural network (MLP).
-
-# %%
+# feature significance across diverse model types.
