@@ -876,41 +876,6 @@ plt.tight_layout()
 # and ``AveOccup``.
 
 # %%
-# A model other than a linear or tree-based one
-# ---------------------------------------------
-
-# %%
-# Permutation feature importance is great because it is model-agnostic.
-# In particular, it should work for neural networks that are famous to be
-# "black-box" models, contrary to linear and tree-based models.
-# Hence, let us apply the permutation importance on a simple neural network:
-# the `Multi-layer Perceptron (MLP)
-# <https://scikit-learn.org/stable/modules/neural_networks_supervised.html#multi-layer-perceptron>`_.
-
-# %%
-from sklearn.neural_network import MLPRegressor
-
-mlp_report = EstimatorReport(
-    MLPRegressor(random_state=0),
-    X_train=X_train,
-    X_test=X_test,
-    y_train=y_train,
-    y_test=y_test,
-)
-reports_to_compare["Multi-layer perceptron"] = mlp_report
-
-comparator = ComparisonReport(reports=reports_to_compare)
-comparator.metrics.report_metrics()
-
-# %%
-# Without any feature engineering and grid search, the score of our MLP is bad,
-# but we are more interested in inspecting it:
-
-# %%
-mlp_report.feature_importance.feature_permutation().T.boxplot(vert=False)
-plt.tight_layout()
-
-# %%
 # Thanks to permutation feature importance, the MLP is not so much of
 # a "black-box".
 # Note that, for this model that performs poorly, there is more dispersion in the
