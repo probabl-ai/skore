@@ -10,7 +10,7 @@ decision-makers: @augustebaum @tuscland
 ## Context and Problem Statement
 
 skore projects natively support inserting `pandas` DataFrames, and with PR [#792](https://github.com/probabl-ai/skore/pull/792) it will also support `polars` DataFrames.
-The question arises as to whether skore should use the `narwhals` library under the hood, or any another generic DataFrame library, as skore could then support many more DataFrame objects with little extra effort to integrate them. 
+The question arises as to whether skore should use the `narwhals` library under the hood, or any another generic DataFrame library, as skore could then support many more DataFrame objects with little extra effort to integrate them.
 
 ## Considered Options
 
@@ -20,7 +20,7 @@ The question arises as to whether skore should use the `narwhals` library under 
 
 ## Decision Outcome
 
-Chosen option: "Postpone usage of generic DataFrame library" 
+Chosen option: "Postpone usage of generic DataFrame library"
 
 <!-- This is an optional element. Feel free to remove. -->
 ### Consequences

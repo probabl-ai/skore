@@ -107,10 +107,10 @@ fig = px.line(
     markers=True,
 )
 fig.update_layout(xaxis_type="category")
-fig
 # sphinx_gallery_start_ignore
 temp_dir.cleanup()
 # sphinx_gallery_end_ignore
+fig
 
 # %%
 # .. note::
