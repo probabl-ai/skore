@@ -829,7 +829,7 @@ fig
 # By default, we compute the permutation importance on the test set.
 
 # %%
-# Let us look at our helper:
+# Now, let us look at our helper:
 
 # %%
 ridge_report.help()
@@ -839,40 +839,56 @@ ridge_report.help()
 # accessor:
 
 # %%
-ridge_report.feature_importance.feature_permutation()
+ridge_report.feature_importance.feature_permutation(random_state=0)
 
 # %%
 # The permutation importance is often calculated several times, each time
 # with different permutations of the feature.
 # Hence, we can have measure its variance (or standard deviation).
-# Now, we plot the permutation feature importance using a boxplot:
+# Now, we plot the permutation feature importance on the train and test sets using boxplots:
+
 
 # %%
-ridge_report.feature_importance.feature_permutation().T.boxplot(vert=False)
-plt.tight_layout()
+def plot_permutation_train_test(est_report):
+    fig, axes = plt.subplots(nrows=1, ncols=2, sharey=True)
+
+    # Boxplot for the train set
+    est_report.feature_importance.feature_permutation(
+        data_source="train", random_state=0
+    ).T.boxplot(ax=axes[0], vert=False)
+    axes[0].set_title("Train set")
+    axes[0].set_xlabel("r2")
+
+    # Boxplot for the test set
+    est_report.feature_importance.feature_permutation(
+        data_source="test", random_state=0
+    ).T.boxplot(ax=axes[1], vert=False)
+    axes[1].set_title("Test set")
+    axes[1].set_xlabel("r2")
+
+    fig.suptitle(f"Permutation feature importance of {est_report.estimator_name_}")
+    plt.tight_layout()
+    plt.show()
+
+
+plot_permutation_train_test(ridge_report)
 
 # %%
 # The standard deviation seems quite low.
-# The result of the inspection is the same as with the coefficients:
+# For both the train and test sets, the result of the inspection is the same as
+# with the coefficients:
 # the most important features are ``Latitude``, ``Longitude``, and ``MedInc``.
 
 # %%
-# For our decision tree, here is our permutation importance:
+# For our decision tree, here is our permutation importance on the train and test sets:
 
 # %%
-tree_report.feature_importance.feature_permutation().T.boxplot(vert=False)
-plt.tight_layout()
+plot_permutation_train_test(tree_report)
 
 # %%
 # The result of the inspection is the same as with the MDI:
 # the most important features are ``MedInc``, ``Latitude``, ``Longitude``,
 # and ``AveOccup``.
-
-# %%
-# Thanks to permutation feature importance, the MLP is not so much of
-# a "black-box".
-# Note that, for this model that performs poorly, there is more dispersion in the
-# permutation feature importance.
 
 # %%
 # Conclusion
