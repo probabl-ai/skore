@@ -11,10 +11,10 @@ from rich.align import Align
 from rich.panel import Panel
 
 from skore import console
-from skore.hub import api
-from skore.hub.client import AuthenticationError
-from skore.hub.otp_server import OTPServer
-from skore.hub.token import AuthenticationToken
+from skore.hub.authentication.otp_server import OTPServer
+from skore.hub.authentication.token import Token
+from skore.hub.client import api
+from skore.hub.client.client import AuthenticationError
 
 
 def refresh():
@@ -24,17 +24,17 @@ def refresh():
     -------
     tuple
         A tuple containing:
-        - token: AuthenticationToken
+        - token: Token
             The token valid or not
         - is_valid: bool
             `True` if the (potentially) refreshed token is valid
             `False` otherwise.
     """
-    token = AuthenticationToken()
+    token = Token()
     if not token.valid:
         return False, token
 
-    now = datetime.now(tz=timezone.utc)
+    now = datetime.now(timezone.utc)
     if token.expires_at <= now:
         # we have a token but it's expired
         # try to refresh it
@@ -85,9 +85,7 @@ def login(timeout=600, auto_otp=True, port=0):
         finally:
             server.stop()
 
-        return AuthenticationToken(
-            access=access, refreshment=refreshment, expires_at=expires_at
-        )
+        return Token(access=access, refreshment=refreshment, expires_at=expires_at)
 
     else:
         # Request a new authorization URL
@@ -117,9 +115,7 @@ def login(timeout=600, auto_otp=True, port=0):
         # Start polling Skore-Hub, waiting for the token
         while True:
             try:
-                return AuthenticationToken(
-                    *api.get_oauth_device_token(device_code=device_code)
-                )
+                return Token(*api.get_oauth_device_token(device_code=device_code))
             except HTTPError:
                 sleep(0.5)
 

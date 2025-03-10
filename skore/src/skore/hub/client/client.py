@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from functools import cached_property
 from urllib.parse import urljoin
 
 from httpx import URL, Client, Response
 
-from skore.hub.api import URI
-from skore.hub.token import AuthenticationToken
+from skore.hub.authentication.token import Token
+from skore.hub.client.api import URI
 
 
 class AuthenticationError(Exception):
@@ -19,10 +19,15 @@ class AuthenticationError(Exception):
 class AuthenticatedClient(Client):
     """Override httpx client to pass our bearer token."""
 
+    def __init__(self, *, raises=False):
+        super().__init__()
+
+        self.raises = raises
+
     @cached_property
     def token(self):
         """Access token."""
-        return AuthenticationToken()
+        return Token()
 
     def request(self, method: str, url: URL | str, **kwargs) -> Response:
         """Execute request with access token, and refresh the token if needed."""
@@ -31,16 +36,20 @@ class AuthenticatedClient(Client):
             raise AuthenticationError("You are not logged in.")
 
         # Check if token must be refreshed
-        if self.token.expires_at <= datetime.now():
+        if self.token.expires_at <= datetime.now(timezone.utc):
             self.token.refresh()
 
         # Overload headers with authorization token
         headers = kwargs.pop("headers", None) or {}
         headers["Authorization"] = f"Bearer {self.token.access}"
-
-        return super().request(
+        response = super().request(
             method,
             urljoin(URI, str(url)),
             headers=headers,
             **kwargs,
         )
+
+        if self.raises:
+            response.raise_for_status()
+
+        return response

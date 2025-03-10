@@ -2,8 +2,8 @@ from urllib.parse import urljoin
 
 import pytest
 from httpx import Response
-from skore.hub import api
-from skore.hub.api import URI
+from skore.hub.client import api
+from skore.hub.client.api import URI
 
 
 @pytest.mark.parametrize("success_uri", [None, "toto"])
@@ -88,7 +88,7 @@ def test_post_oauth_refresh_token(respx_mock):
     )
     access_token, refresh_token, expires_at = api.post_oauth_refresh_token("token")
 
-    assert route.calls.last.request.read() == b"refresh_token=token"
+    assert route.calls.last.request.read() == b'{"refresh_token":"token"}'
     assert access_token == "A"
     assert refresh_token == "B"
     assert expires_at == "C"
