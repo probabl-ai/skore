@@ -1,6 +1,5 @@
 exclude: |
      (?x)
-     (fixtures/)|
      (^sphinx/)|
      (^docs/)
 
