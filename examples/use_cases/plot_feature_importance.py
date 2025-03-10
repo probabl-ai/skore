@@ -907,7 +907,7 @@ plot_permutation_train_test(tree_report)
 # trees, we utilized Mean Decrease in Impurity (MDI) to identify key features,
 # notably highlighting ``AveOccup`` alongside ``MedInc``, ``Latitude``, and
 # ``Longitude``.
-# Compared to linear models, tree-based models rely on more on ``AveOccup`` and perform
+# Compared to linear models, tree-based models rely more on ``AveOccup`` and perform
 # better.
 # The model-agnostic permutation feature importance further enabled us to compare
 # feature significance across diverse model types.
