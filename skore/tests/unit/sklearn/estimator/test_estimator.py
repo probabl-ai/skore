@@ -357,7 +357,7 @@ def test_estimator_report_plot_roc(binary_classification_data):
 def test_estimator_report_display_binary_classification(
     pyplot, binary_classification_data, display
 ):
-    """General behaviour of the function creating display on binary classification."""
+    """The call to display functions should be cached."""
     estimator, X_test, y_test = binary_classification_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     assert hasattr(report.metrics, display)
@@ -369,13 +369,14 @@ def test_estimator_report_display_binary_classification(
 
 @pytest.mark.parametrize("display", ["prediction_error"])
 def test_estimator_report_display_regression(pyplot, regression_data, display):
-    """General behaviour of the function creating display on regression."""
+    """The call to display functions should be cached, as long as the arguments make it
+    reproducible."""
     estimator, X_test, y_test = regression_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     assert hasattr(report.metrics, display)
-    display_first_call = getattr(report.metrics, display)()
+    display_first_call = getattr(report.metrics, display)(random_state=0)
     assert report._cache != {}
-    display_second_call = getattr(report.metrics, display)()
+    display_second_call = getattr(report.metrics, display)(random_state=0)
     assert display_first_call is display_second_call
 
 
@@ -383,9 +384,7 @@ def test_estimator_report_display_regression(pyplot, regression_data, display):
 def test_estimator_report_display_binary_classification_external_data(
     pyplot, binary_classification_data, display
 ):
-    """General behaviour of the function creating display on binary classification
-    when passing external data.
-    """
+    """The call to display functions should be cached when passing external data."""
     estimator, X_test, y_test = binary_classification_data
     report = EstimatorReport(estimator)
     assert hasattr(report.metrics, display)
@@ -403,18 +402,17 @@ def test_estimator_report_display_binary_classification_external_data(
 def test_estimator_report_display_regression_external_data(
     pyplot, regression_data, display
 ):
-    """General behaviour of the function creating display on regression when passing
-    external data.
-    """
+    """The call to display functions should be cached when passing external data,
+    as long as the arguments make it reproducible."""
     estimator, X_test, y_test = regression_data
     report = EstimatorReport(estimator)
     assert hasattr(report.metrics, display)
     display_first_call = getattr(report.metrics, display)(
-        data_source="X_y", X=X_test, y=y_test
+        data_source="X_y", X=X_test, y=y_test, random_state=0
     )
     assert report._cache != {}
     display_second_call = getattr(report.metrics, display)(
-        data_source="X_y", X=X_test, y=y_test
+        data_source="X_y", X=X_test, y=y_test, random_state=0
     )
     assert display_first_call is display_second_call
 

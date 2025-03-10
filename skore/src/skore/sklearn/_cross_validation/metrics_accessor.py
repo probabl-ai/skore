@@ -959,11 +959,14 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         display : display_class
             The display.
         """
-        # Create a list of cache key components and then convert to tuple
-        cache_key_parts: list[Any] = [self._parent._hash, display_class.__name__]
-        cache_key_parts.extend(display_kwargs.values())
-        cache_key_parts.append(data_source)
-        cache_key = tuple(cache_key_parts)
+        if "random_state" in display_kwargs and display_kwargs["random_state"] is None:
+            cache_key = None
+        else:
+            # Create a list of cache key components and then convert to tuple
+            cache_key_parts: list[Any] = [self._parent._hash, display_class.__name__]
+            cache_key_parts.extend(display_kwargs.values())
+            cache_key_parts.append(data_source)
+            cache_key = tuple(cache_key_parts)
 
         assert self._progress_info is not None, "Progress info not set"
         progress = self._progress_info["current_progress"]
@@ -1003,7 +1006,11 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
                 data_source=data_source,
                 **display_kwargs,
             )
-            self._parent._cache[cache_key] = display
+
+            # Unless random_state is an int (i.e. the call is deterministic),
+            # we do not cache
+            if cache_key is not None:
+                self._parent._cache[cache_key] = display
 
         return display
 

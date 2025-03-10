@@ -234,3 +234,14 @@ def test_prediction_error_display_kwargs(pyplot, regression_data):
     display = report.metrics.prediction_error(subsample=0.5)
     display.plot()
     assert len(display.scatter_.get_offsets()) == expected_subsample
+
+
+def test_random_state(regression_data):
+    """If random_state is None (the default) the call should not be cached."""
+    estimator, X_train, X_test, y_train, y_test = regression_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    report.metrics.prediction_error()
+    # skore should store the y_pred, but not the plot
+    assert len(report._cache) == 1
