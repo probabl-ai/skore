@@ -825,6 +825,7 @@ fig
 # degradation of the model's score.
 # Permuting a predictive feature makes the performance decrease, while
 # permuting a non-predictive feature does not degrade the performance much.
+# By default, we compute the permutation importance on the test set.
 
 # %%
 # Linear models
