@@ -1,15 +1,14 @@
 import sys
 import typing
 
-
 if sys.version_info < (3, 10):
     from importlib_metadata import entry_points
 else:
     from importlib.metadata import entry_points
 
 
-if not (PLUGINS := entry_points(group="skore.plugins.projects")):
-    raise SystemError("No project plugin founded, please install at least one.")
+if not (PLUGINS := entry_points(group="skore.plugins.project")):
+    raise SystemError("No project plugin found, please install at least one.")
 
 
 def open(mode: typing.Literal[*PLUGINS.names], /, *args, **kwargs):
