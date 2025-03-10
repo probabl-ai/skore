@@ -719,11 +719,8 @@ tree_report.feature_importance.mean_decrease_impurity().plot.barh(
 plt.tight_layout()
 
 # %%
-# The MDI (Mean Decrease in Impurity) is a measure used in decision trees to quantify
-# the importance of each feature in making predictions.
-# MDI calculates how much a feature contributes to reducing the impurity (or error)
-# across all splits in the tree, averaged over the entire tree structure.
-# Here, the impurity is the mean squared error.
+# For a decision tree, for each feature, the MDI is averaged across all splits in the
+# tree. Here, the impurity is the mean squared error.
 #
 # As expected, ``MedInc`` is of great importance for our decision tree.
 # Indeed, in the above tree visualization, ``MedInc`` is used multiple times for splits
