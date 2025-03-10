@@ -153,6 +153,11 @@ html_theme_options = {
             "url": "https://discord.gg/scBZerAGwW",
             "icon": "fa-brands fa-discord",
         },
+        {
+            "name": "YouTube",
+            "url": "https://youtube.com/playlist?list=PLSIzlWDI17bTpixfFkooxLpbz4DNQcam3",
+            "icon": "fa-brands fa-youtube",
+        },
     ],
     "switcher": {
         "json_url": f"https://{domain}/versions.json",
