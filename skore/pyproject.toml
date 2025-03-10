@@ -112,23 +112,6 @@ convention = "numpy"
 "src/*" = ["UP007"]
 "tests/*" = ["D"]
 
-[tool.typos.default]
-extend-ignore-re = [
-  # Line ignore with trailing `# spellchecker:disable-line`
-  "(?Rm)^.*(#|//)\\s*spellchecker:disable-line$",
-  # Line block with `# spellchecker:<on|off>`
-  "(?s)(#|//)\\s*spellchecker:off.*?\\n\\s*(#|//)\\s*spellchecker:on",
-]
-
-[tool.typos.files]
-extend-exclude = ["*.min.js"]
-
-[tool.typos.default.extend-words]
-# acronym for "False Positive Rate"
-fpr = "fpr"
-# typos considers pnd.NpNDArray as a typo and corrects it to pnd.NpANDArray
-ND = "ND"
-
 [tool.mypy]
 ignore_missing_imports = true
 exclude = ["src/skore/externals/.*", "ci/*", "hatch/*", "tests/*"]
