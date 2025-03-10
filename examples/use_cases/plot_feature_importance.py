@@ -582,9 +582,30 @@ plot_map(X_train_plot, "clustering_labels")
 # %%
 # Now, let us look into tree-based models.
 # For feature importance, we inspect their Mean Decrease in Impurity (MDI).
-# The MDI of a feature is the normalized total reduction of the criterion (loss)
+# The MDI of a feature is the normalized total reduction of the criterion (or loss)
 # brought by that feature.
 # The higher the MDI, the more important the feature.
+
+# %%
+# However, the MDI holds some limitations to keep in mind:
+#
+# - When features have significant differences in cardinality, the MDI tends to favor
+#   those with higher cardinality.
+#   Fortunately, in this example, our numerical features share similar cardinality,
+#   mitigating this concern.
+# - Since MDI is typically calculated on the training set, it can reflect biases
+#   from overfitting.
+#   When a model overfits, the tree may partition less relevant regions of the
+#   feature space, artificially inflating MDI values and distorting the perceived
+#   importance of certain features.
+
+# %%
+# .. seealso::
+#
+#   For more information about the MDI, see scikit-learn's
+#   `Permutation Importance vs Random Forest Feature Importance (MDI)
+#   <https://scikit-learn.org/dev/auto_examples/inspection/plot_permutation_importance.html>`_.
+
 
 # %%
 # Decision trees
