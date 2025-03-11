@@ -104,7 +104,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             an extra column in the returned DataFrame.
 
         flat_index : bool, default=False
-            Whether to flatten the multiindex columns. Flat index will always be lower
+            Whether to flatten the multi-index columns. Flat index will always be lower
             case, do not include spaces and remove the hash symbol to ease indexing.
 
         Returns
