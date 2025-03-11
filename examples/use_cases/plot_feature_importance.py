@@ -550,8 +550,8 @@ print(selectk_features)
 
 # %%
 selectk_ridge_report.feature_importance.coefficients().sort_values(
-    by="Coefficient", key=abs, ascending=False
-).head(15).plot.barh(
+    by="Coefficient", key=abs, ascending=True
+).tail(15).plot.barh(
     title="Model weights",
     xlabel="Coefficient",
     ylabel="Feature",
