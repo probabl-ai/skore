@@ -11,18 +11,18 @@ repos:
       - id: trailing-whitespace
 
   - repo: https://github.com/crate-ci/typos
-    rev: v1.26.0
+    rev: v1.30.2
     hooks:
       - id: typos
 
   - repo: https://github.com/kynan/nbstripout
-    rev: 0.7.1
+    rev: 0.8.1
     hooks:
       - id: nbstripout
         args: [--keep-id]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.6.9
+    rev: v0.9.10
     hooks:
       - id: ruff
         files: ^(skore/(src|tests))|(examples)/

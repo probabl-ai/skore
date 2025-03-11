@@ -202,9 +202,9 @@ class RocCurveDisplay(
         self.lines_: list[Line2D] = []
         default_line_kwargs: dict[str, Any] = {}
         if len(self.fpr) == 1:  # binary-classification
-            assert (
-                self.pos_label is not None
-            ), "pos_label should not be None with binary classification."
+            assert self.pos_label is not None, (
+                "pos_label should not be None with binary classification."
+            )
             if len(self.fpr[self.pos_label]) == 1:  # single-split
                 if roc_curve_kwargs is None:
                     roc_curve_kwargs = {}

@@ -403,8 +403,7 @@ def _check_metrics_names(result, expected_metrics, expected_nb_stats):
         normalized_idx = _normalize_metric_name(idx)
         matches = [metric for metric in normalized_expected if metric == normalized_idx]
         assert len(matches) == 1, (
-            f"No match found for index '{idx}' in expected metrics: "
-            f" {expected_metrics}"
+            f"No match found for index '{idx}' in expected metrics:  {expected_metrics}"
         )
 
 
