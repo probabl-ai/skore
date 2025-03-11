@@ -89,9 +89,9 @@ def test_get_cached_response_values(
 
     assert response_values.shape == y.shape
     initial_calls = getattr(estimator, f"n_call_{response_method}")
-    assert (
-        initial_calls == 1
-    ), f"Expected 1 call for {response_method}, got {initial_calls}"
+    assert initial_calls == 1, (
+        f"Expected 1 call for {response_method}, got {initial_calls}"
+    )
 
     # Reload from the cache
     response_values = _get_cached_response_values(cache=cache, **params)
@@ -109,17 +109,17 @@ def test_get_cached_response_values(
     assert response_values.shape == y.shape
     current_calls = getattr(estimator, f"n_call_{response_method}")
     expected_calls = initial_calls + (1 if pos_label_sensitive else 0)
-    assert (
-        current_calls == expected_calls
-    ), f"Unexpected number of calls for different pos_label in {response_method}"
+    assert current_calls == expected_calls, (
+        f"Unexpected number of calls for different pos_label in {response_method}"
+    )
 
     # Should reload completely from the cache
     response_values = _get_cached_response_values(cache=cache, **params)
     assert response_values.shape == y.shape
     current_calls = getattr(estimator, f"n_call_{response_method}")
-    assert (
-        current_calls == expected_calls
-    ), f"Unexpected number of calls for different pos_label in {response_method}"
+    assert current_calls == expected_calls, (
+        f"Unexpected number of calls for different pos_label in {response_method}"
+    )
 
 
 @pytest.mark.parametrize(
@@ -233,7 +233,7 @@ def test_base_accessor_get_X_y_and_data_source_hash_error():
     accessor = MockAccessor(parent=report)
 
     err_msg = re.escape(
-        "Invalid data source: unknown. Possible values are: " "test, train, X_y."
+        "Invalid data source: unknown. Possible values are: test, train, X_y."
     )
     with pytest.raises(ValueError, match=err_msg):
         accessor._get_X_y_and_data_source_hash(data_source="unknown")
