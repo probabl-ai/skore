@@ -1130,8 +1130,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             response_method="predict_proba",
         )
         assert isinstance(result, float), (
-            "The log loss should be a float, got "
-            f"{type(result)} with value {result}."
+            f"The log loss should be a float, got {type(result)} with value {result}."
         )
         return result
 
@@ -1248,8 +1247,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             )
             return result
         assert isinstance(result, float), (
-            "The R² score should be a float, got "
-            f"{type(result)} with value {result}."
+            f"The R² score should be a float, got {type(result)} with value {result}."
         )
         return result
 
@@ -1366,8 +1364,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             )
             return result
         assert isinstance(result, float), (
-            "The RMSE score should be a float, got "
-            f"{type(result)} with value {result}."
+            f"The RMSE score should be a float, got {type(result)} with value {result}."
         )
         return result
 

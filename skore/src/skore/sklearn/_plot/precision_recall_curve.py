@@ -198,9 +198,9 @@ class PrecisionRecallCurveDisplay(
         self.lines_ = []
         default_line_kwargs: dict[str, Any] = {}
         if len(self.precision) == 1:  # binary-classification
-            assert (
-                self.pos_label is not None
-            ), "pos_label should not be None with binary classification."
+            assert self.pos_label is not None, (
+                "pos_label should not be None with binary classification."
+            )
             if len(self.precision[self.pos_label]) == 1:  # single-split
                 if pr_curve_kwargs is None:
                     pr_curve_kwargs = {}

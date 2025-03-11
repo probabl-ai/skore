@@ -138,8 +138,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         ml_tasks = {report: report._ml_task for report in reports}
         if len(set(ml_tasks.values())) > 1:
             raise ValueError(
-                f"Expected all estimators to have the same ML usecase; "
-                f"got {ml_tasks}"
+                f"Expected all estimators to have the same ML usecase; got {ml_tasks}"
             )
 
         if report_names is None:
@@ -251,9 +250,9 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         if n_jobs is None:
             n_jobs = self.n_jobs
 
-        assert (
-            self._progress_info is not None
-        ), "The rich Progress class was not initialized."
+        assert self._progress_info is not None, (
+            "The rich Progress class was not initialized."
+        )
         progress = self._progress_info["current_progress"]
         main_task = self._progress_info["current_task"]
 

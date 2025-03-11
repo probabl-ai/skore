@@ -785,9 +785,9 @@ def test_estimator_report_interaction_cache_metrics(regression_multioutput_data)
         if any(item == multioutput for item in cached_key):
             should_raise = False
             break
-    assert (
-        not should_raise
-    ), f"The value {multioutput} should be stored in one of the cache keys"
+    assert not should_raise, (
+        f"The value {multioutput} should be stored in one of the cache keys"
+    )
     assert result_r2_raw_values.shape == (2,)
 
     multioutput = "uniform_average"
@@ -797,9 +797,9 @@ def test_estimator_report_interaction_cache_metrics(regression_multioutput_data)
         if any(item == multioutput for item in cached_key):
             should_raise = False
             break
-    assert (
-        not should_raise
-    ), f"The value {multioutput} should be stored in one of the cache keys"
+    assert not should_raise, (
+        f"The value {multioutput} should be stored in one of the cache keys"
+    )
     assert isinstance(result_r2_uniform_average, float)
 
 
@@ -823,9 +823,9 @@ def test_estimator_report_custom_metric(regression_data):
         if any(item == threshold for item in cached_key):
             should_raise = False
             break
-    assert (
-        not should_raise
-    ), f"The value {threshold} should be stored in one of the cache keys"
+    assert not should_raise, (
+        f"The value {threshold} should be stored in one of the cache keys"
+    )
 
     assert isinstance(result, float)
     assert result == pytest.approx(
@@ -843,9 +843,9 @@ def test_estimator_report_custom_metric(regression_data):
         if any(item == threshold for item in cached_key):
             should_raise = False
             break
-    assert (
-        not should_raise
-    ), f"The value {threshold} should be stored in one of the cache keys"
+    assert not should_raise, (
+        f"The value {threshold} should be stored in one of the cache keys"
+    )
 
     assert isinstance(result, float)
     assert result == pytest.approx(
@@ -887,9 +887,9 @@ def test_estimator_report_custom_function_kwargs_numpy_array(regression_data):
         if any(item == hash_weights for item in cached_key):
             should_raise = False
             break
-    assert (
-        not should_raise
-    ), "The hash of the weights should be stored in one of the cache keys"
+    assert not should_raise, (
+        "The hash of the weights should be stored in one of the cache keys"
+    )
 
     assert isinstance(result, float)
     assert result == pytest.approx(
@@ -1064,7 +1064,7 @@ def test_estimator_report_get_X_y_and_data_source_hash_error():
     report = EstimatorReport(estimator)
 
     err_msg = re.escape(
-        "Invalid data source: unknown. Possible values are: " "test, train, X_y."
+        "Invalid data source: unknown. Possible values are: test, train, X_y."
     )
     with pytest.raises(ValueError, match=err_msg):
         report.metrics.log_loss(data_source="unknown")
