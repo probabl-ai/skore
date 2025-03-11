@@ -236,9 +236,13 @@ ridge_report.metrics.report_metrics()
 #
 # Here, the :math:`R^2` seems quite poor, so some further preprocessing would be needed.
 # This is done further down in this example.
-# For now, keep in mind that any observations drawn from inspecting the coefficients
-# of this simple Ridge model are made on a model that performs quite poorly, hence
-# must be treated with caution.
+
+# %%
+# .. warning::
+#   Keep in mind that any observations drawn from inspecting the coefficients
+#   of this simple Ridge model are made on a model that performs quite poorly, hence
+#   must be treated with caution.
+#   A good practice should be to not inspect any model that performs poorly.
 
 # %%
 # Let us plot the prediction error:
@@ -332,8 +336,13 @@ df_ridge_report_coef_unscaled
 # We can interpret a coefficient as follows: according to our model, on average,
 # having one additional bedroom (a increase of :math:`1` of ``AveBedrms``),
 # with all other features being constant,
-# increases the house value of :math:`0.62` in $100,000, hence of $62,000.
+# increases the *predicted* house value of :math:`0.62` in $100,000, hence of $62,000.
 # Note that we have not dealt with any potential outlier in this iteration.
+
+# %%
+# .. warning::
+#   Remember that a good practice should be to not inspect any model that performs
+#   poorly.
 
 # %%
 # More complex model
