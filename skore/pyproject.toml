@@ -48,6 +48,7 @@ test = [
   "ruff",
   "scikit-learn<1.7",
   "skrub",
+  "xdoctest",
 ]
 sphinx = [
   "IPython",
@@ -93,7 +94,7 @@ package = ["src/skore/"]
 
 [tool.pytest.ini_options]
 addopts = [
-  "--doctest-modules",
+  "--xdoctest",
   "--import-mode=importlib",
   "--no-header",
   "--verbosity=2",
@@ -105,7 +106,6 @@ addopts = [
   "--ignore=notebooks",
   "--dist=loadscope",
 ]
-doctest_optionflags = ["ELLIPSIS", "NORMALIZE_WHITESPACE"]
 
 [tool.coverage.run]
 branch = true

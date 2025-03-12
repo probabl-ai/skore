@@ -85,31 +85,32 @@ def train_test_split(
 
     Examples
     --------
+    >>> # xdoctest: +SKIP
     >>> import numpy as np
     >>> X, y = np.arange(10).reshape((5, 2)), range(5)
 
     >>> # Drop-in replacement for sklearn train_test_split
-    >>> X_train, X_test, y_train, y_test = train_test_split(X, y,  # doctest: +SKIP
+    >>> X_train, X_test, y_train, y_test = train_test_split(X, y,
     ...     test_size=0.33, random_state=42)
-    >>> X_train  # doctest: +SKIP
+    >>> X_train
     array([[4, 5],
            [0, 1],
            [6, 7]])
 
     >>> # Explicit X and y, makes detection of problems easier
-    >>> X_train, X_test, y_train, y_test = train_test_split(X=X, y=y,  # doctest: +SKIP
+    >>> X_train, X_test, y_train, y_test = train_test_split(X=X, y=y,
     ...     test_size=0.33, random_state=42)
-    >>> X_train  # doctest: +SKIP
+    >>> X_train
     array([[4, 5],
            [0, 1],
            [6, 7]])
 
     >>> # When passing X and y explicitly, X is returned before y
     >>> arr = np.arange(10).reshape((5, 2))
-    >>> splits = train_test_split(  # doctest: +SKIP
+    >>> splits = train_test_split(
     ...     arr, y=y, X=X, test_size=0.33, random_state=42)
-    >>> arr_train, arr_test, X_train, X_test, y_train, y_test = splits  # doctest: +SKIP
-    >>> X_train  # doctest: +SKIP
+    >>> arr_train, arr_test, X_train, X_test, y_train, y_test = splits
+    >>> X_train
     array([[4, 5],
            [0, 1],
            [6, 7]])

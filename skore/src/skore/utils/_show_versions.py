@@ -72,8 +72,9 @@ def show_versions() -> None:
 
     Examples
     --------
+    >>> # xdoctest: +SKIP
     >>> from skore import show_versions
-    >>> show_versions()  # doctest: +SKIP
+    >>> show_versions()
     """
     sys_info = _get_sys_info()
     deps_info = _get_deps_info()
