@@ -851,18 +851,23 @@ fig
 # permuting a non-predictive feature does not degrade the performance much.
 # Note that the permutation importance can be computed on the train and test sets,
 # and by default skore computes it on the test set.
+# Compared to the coefficients and the MDI, permutation feature importance can be
+# less misleading but comes with a higher computation cost.
 
 # %%
-# .. note::
-#   Compared to the coefficients and the MDI, permutation feature importance can be
-#   less misleading but comes with a higher computation cost.
+# Permutation feature importance can help reduce overfitting.
+# If a model overfits (large train score and small test score), and some
+# features are important only on the train set and not on the test set,
+# then these features might be the cause of the overfitting and it might be a good
+# idea to drop them.
 
 # %%
-# .. note::
-#   If a model overfits (large train score and small test score), and some
-#   features are important only on the train set and not on the test set,
-#   then these features might be the cause of the overfitting and it might be a good
-#   idea to drop them.
+# .. warning::
+#   Beware that the permutation feature importance can be misleading on strongly
+#   correlated features. For more information, see
+#   `scikit-learn's user guide
+#   <https://scikit-learn.org/stable/modules/permutation_importance.html#misleading-values-on-strongly-correlated-features>`_.
+
 
 # %%
 # Now, let us look at our helper:
