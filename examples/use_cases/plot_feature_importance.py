@@ -596,17 +596,18 @@ plot_map(X_train_plot, "clustering_labels")
 # The higher the MDI, the more important the feature.
 
 # %%
-# However, the MDI holds some limitations to keep in mind:
+# .. warning::
+#   The MDI holds some limitations to keep in mind:
 #
-# - When features have large differences in cardinality, the MDI tends to favor
-#   those with higher cardinality.
-#   Fortunately, in this example, our numerical features share similar cardinality,
-#   mitigating this concern.
-# - Since MDI is typically calculated on the training set, it can reflect biases
-#   from overfitting.
-#   When a model overfits, the tree may partition less relevant regions of the
-#   feature space, artificially inflating MDI values and distorting the perceived
-#   importance of certain features.
+#   - When features have large differences in cardinality, the MDI tends to favor
+#     those with higher cardinality.
+#     Fortunately, in this example, our numerical features share similar cardinality,
+#     mitigating this concern.
+#   - Since MDI is typically calculated on the training set, it can reflect biases
+#     from overfitting.
+#     When a model overfits, the tree may partition less relevant regions of the
+#     feature space, artificially inflating MDI values and distorting the perceived
+#     importance of certain features.
 
 # %%
 # .. seealso::
