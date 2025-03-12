@@ -243,6 +243,8 @@ ridge_report.metrics.report_metrics()
 #   of this simple Ridge model are made on a model that performs quite poorly, hence
 #   must be treated with caution.
 #   A good practice would be to avoid inspecting models with poor performance.
+#   As the model is performing poorly, it does not know what it is doing, thus can not
+#   properly explain what it is doing.
 
 # %%
 # Let us plot the prediction error:
@@ -261,6 +263,12 @@ plt.tight_layout()
 
 # %%
 ridge_report.feature_importance.coefficients()
+
+# %%
+# .. note::
+#   Beware that coefficients can be misleading: two coefficients can have large
+#   absolute values (so be considered important), but in the predictions, the sum of
+#   their contributions would cancel out so they would actually be unimportant.
 
 # %%
 # We can plot this pandas datafame:
@@ -341,8 +349,9 @@ df_ridge_report_coef_unscaled
 
 # %%
 # .. warning::
-#   Recall that a good practice would be to avoid inspecting models with poor
-#   performance.
+#   Recall that we are inspecting a model with poor performance, which is bad practice.
+#   Moreover, we must be cautious when trying to induce any causation effect
+#   (remember that correlation is not causation).
 
 # %%
 # More complex model
@@ -353,8 +362,8 @@ df_ridge_report_coef_unscaled
 # with regards to the original units of the features, performs quite poorly.
 # Now, we build a more complex model, with more feature engineering.
 # We will see that this model will have a better score... but will be more difficult to
-# interpret with regards to the original features (due to the complex feature
-# engineering).
+# interpret the coefficients with regards to the original features due to the complex
+# feature engineering.
 
 # %%
 # In our previous EDA, when plotting the geospatial data with regards to the house
@@ -597,17 +606,21 @@ plot_map(X_train_plot, "clustering_labels")
 
 # %%
 # .. warning::
-#   The MDI holds some limitations to keep in mind:
+#   Beware that the MDI is limited and can be misleading:
 #
 #   - When features have large differences in cardinality, the MDI tends to favor
 #     those with higher cardinality.
-#     Fortunately, in this example, our numerical features share similar cardinality,
-#     mitigating this concern.
-#   - Since MDI is typically calculated on the training set, it can reflect biases
+#     Fortunately, in this example, we have only numerical features that share similar
+#     cardinality, mitigating this concern.
+#   - Since the MDI is typically calculated on the training set, it can reflect biases
 #     from overfitting.
 #     When a model overfits, the tree may partition less relevant regions of the
 #     feature space, artificially inflating MDI values and distorting the perceived
 #     importance of certain features.
+#     Soon, scikit-learn will enable the computing of the MDI on the test set, and we
+#     will make it available in skore.
+#     Hence, we would be able to draw conclusions on how predictive a feature is and not
+#     just how impactful it is on the training procedure.
 
 # %%
 # .. seealso::
@@ -841,9 +854,15 @@ fig
 
 # %%
 # .. note::
+#   Compared to the coefficients and the MDI, permutation feature importance can be
+#   less misleading but comes with a higher computation cost.
+
+# %%
+# .. note::
 #   If a model overfits (large train score and small test score), and some
-#   features are important only on the train set, then these features might be the
-#   cause of the overfitting.
+#   features are important only on the train set and not on the test set,
+#   then these features might be the cause of the overfitting and it might be a good
+#   idea to drop them.
 
 # %%
 # Now, let us look at our helper:
@@ -945,3 +964,6 @@ plot_permutation_train_test(tree_report)
 # better.
 # The model-agnostic permutation feature importance further enabled us to compare
 # feature significance across diverse model types.
+
+# %%
+# A further work could be look into Shapley values, LIME, and so on.
