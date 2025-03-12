@@ -123,4 +123,5 @@ Tool to test: https://docusaurus.io/docs/styling-layout
 html[data-theme="light"]{
     --pst-color-primary: #ad5d06;
     --pst-color-secondary: #297ba6;
+    --pst-color-inline-code-links: var(--pst-color-primary);
 }
