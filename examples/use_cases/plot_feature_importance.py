@@ -242,7 +242,7 @@ ridge_report.metrics.report_metrics()
 #   Keep in mind that any observations drawn from inspecting the coefficients
 #   of this simple Ridge model are made on a model that performs quite poorly, hence
 #   must be treated with caution.
-#   A good practice should be to not inspect any model that performs poorly.
+#   A good practice would be to avoid inspecting models with poor performance.
 
 # %%
 # Let us plot the prediction error:
@@ -341,8 +341,8 @@ df_ridge_report_coef_unscaled
 
 # %%
 # .. warning::
-#   Remember that a good practice should be to not inspect any model that performs
-#   poorly.
+#   Recall that a good practice would be to avoid inspecting models with poor
+#   performance.
 
 # %%
 # More complex model
