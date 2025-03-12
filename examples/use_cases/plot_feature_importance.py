@@ -881,6 +881,7 @@ def plot_permutation_train_test(est_report):
     plt.show()
 
 
+# %%
 plot_permutation_train_test(ridge_report)
 
 # %%
