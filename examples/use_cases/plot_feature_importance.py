@@ -891,6 +891,16 @@ plot_permutation_train_test(ridge_report)
 # the most important features are ``Latitude``, ``Longitude``, and ``MedInc``.
 
 # %%
+# For ``selectk_ridge_report``, we have a large pipeline that is fed to a
+# :class:`~skore.EstimatorReport`.
+# The pipeline contains a lot a preprocessing that creates many features.
+# By default, the permutation importance is calculated at the entrance of the whole
+# pipeline (with regards to the original features):
+
+# %%
+plot_permutation_train_test(selectk_ridge_report)
+
+# %%
 # For our decision tree, here is our permutation importance on the train and test sets:
 
 # %%
