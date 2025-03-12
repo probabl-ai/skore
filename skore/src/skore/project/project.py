@@ -75,10 +75,11 @@ class Project:
 
     Examples
     --------
+    >>> # xdoctest: +SKIP
     >>> import skore
-    >>> project = skore.Project("my-xp")  # doctest: +SKIP
-    >>> project.put("score", 1.0)  # doctest: +SKIP
-    >>> project.get("score")  # doctest: +SKIP
+    >>> project = skore.Project("my-xp")
+    >>> project.put("score", 1.0)
+    >>> project.get("score")
     1.0
     """
 
@@ -321,10 +322,11 @@ class Project:
 
         Examples
         --------
+        >>> # xdoctest: +SKIP
         >>> # Annotate latest version of key "key"
-        >>> project.set_note("key", "note")  # doctest: +SKIP
+        >>> project.set_note("key", "note")
         >>> # Annotate first version of key "key"
-        >>> project.set_note("key", "note", version=0)  # doctest: +SKIP
+        >>> project.set_note("key", "note", version=0)
         """
         return self._item_repository.set_item_note(key=key, note=note, version=version)
 
@@ -351,10 +353,11 @@ class Project:
 
         Examples
         --------
+        >>> # xdoctest: +SKIP
         >>> # Retrieve note attached to latest version of key "key"
-        >>> project.get_note("key")  # doctest: +SKIP
+        >>> project.get_note("key")
         >>> # Retrieve note attached to first version of key "key"
-        >>> project.get_note("key", version=0)  # doctest: +SKIP
+        >>> project.get_note("key", version=0)
         """
         return self._item_repository.get_item_note(key=key, version=version)
 
@@ -379,9 +382,10 @@ class Project:
 
         Examples
         --------
+        >>> # xdoctest: +SKIP
         >>> # Delete note attached to latest version of key "key"
-        >>> project.delete_note("key")  # doctest: +SKIP
+        >>> project.delete_note("key")
         >>> # Delete note attached to first version of key "key"
-        >>> project.delete_note("key", version=0)  # doctest: +SKIP
+        >>> project.delete_note("key", version=0)
         """
         return self._item_repository.delete_item_note(key=key, version=version)
