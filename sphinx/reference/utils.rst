@@ -6,7 +6,7 @@ Utilities
 These functions and classes are useful for various purposes when using ``skore``.
 
 .. autosummary::
-    :toctree: ../api/
+    :toctree: api/
     :template: base.rst
 
     config_context
