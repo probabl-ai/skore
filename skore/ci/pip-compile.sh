@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # This script compiles all the `test-requirements.txt` files, based on combinations of
 # `python` and `scikit-learn` versions. These combinations mirror those defined in the
