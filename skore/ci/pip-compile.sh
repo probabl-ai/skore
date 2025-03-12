@@ -58,7 +58,7 @@ set -eu
            --no-header \
            --extra=test \
            --override skore/overrides.txt \
-           --python "${python}" \
+           --python-version "${python}" \
            --output-file "${filepath}" \
            skore/pyproject.toml \
            "${@:2}"
