@@ -266,9 +266,10 @@ ridge_report.feature_importance.coefficients()
 
 # %%
 # .. note::
-#   Beware that coefficients can be misleading: two coefficients can have large
-#   absolute values (so be considered important), but in the predictions, the sum of
-#   their contributions would cancel out so they would actually be unimportant.
+#   Beware that coefficients can be misleading when some features are correlated.
+#   For example, two coefficients can have large absolute values (so be considered
+#   important), but in the predictions, the sum of their contributions would cancel out
+#   (if they are highly correlated), so they would actually be unimportant.
 
 # %%
 # We can plot this pandas datafame:
