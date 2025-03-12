@@ -836,7 +836,14 @@ fig
 # degradation of the model's score.
 # Permuting a predictive feature makes the performance decrease, while
 # permuting a non-predictive feature does not degrade the performance much.
-# By default, we compute the permutation importance on the test set.
+# Note that the permutation importance can be computed on the train and test sets,
+# and by default skore computes it on the test set.
+
+# %%
+# .. note::
+#   If a model overfits (large train score and small test score), and some
+#   features are important only on the train set, then these features might be the
+#   cause of the overfitting.
 
 # %%
 # Now, let us look at our helper:
@@ -899,6 +906,12 @@ plot_permutation_train_test(ridge_report)
 
 # %%
 plot_permutation_train_test(selectk_ridge_report)
+
+# %%
+# Hence, contrary to coefficients, although we have created many features in our
+# preprocessing, the interpretability is easier.
+# We notice that, due to our preprocessing using a clustering on the geospatial data,
+# these features are of great importance to our model.
 
 # %%
 # For our decision tree, here is our permutation importance on the train and test sets:
