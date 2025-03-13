@@ -245,6 +245,8 @@ ridge_report.metrics.report_metrics()
 #   Indeed, a poorly performing model does not capture the true underlying
 #   relationships in the data.
 #   A good practice would be to avoid inspecting models with poor performance.
+#   Here, we still inspect it, for demo purposes and because our model is not put into
+#   production!
 
 # %%
 # Let us plot the prediction error:
