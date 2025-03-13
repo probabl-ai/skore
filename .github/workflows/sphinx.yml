@@ -224,9 +224,10 @@ jobs:
         run: |
           curl --fail-with-body \
           -X POST \
-          --url "https://api.bunny.net/purge?url=https%3A%2F%2F${DOMAIN}%2F%2A.%2A&async=false" \
+          --url "https://api.bunny.net/pullzone/${PULLZONE}/purgeCache" \
           --header "AccessKey: ${ACCESS_KEY}"
         env:
+          PULLZONE: ${{ vars.BUNNY_PULLZONE }}
           ACCESS_KEY: ${{ secrets.BUNNY_API_KEY }}
           DOMAIN: ${{ vars.DOCUMENTATION_DOMAIN }}
 
