@@ -104,7 +104,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             an extra column in the returned DataFrame.
 
         flat_index : bool, default=False
-            Whether to flatten the multiindex columns. Flat index will always be lower
+            Whether to flatten the multi-index columns. Flat index will always be lower
             case, do not include spaces and remove the hash symbol to ease indexing.
 
         Returns
@@ -1130,8 +1130,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             response_method="predict_proba",
         )
         assert isinstance(result, float), (
-            "The log loss should be a float, got "
-            f"{type(result)} with value {result}."
+            f"The log loss should be a float, got {type(result)} with value {result}."
         )
         return result
 
@@ -1248,8 +1247,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             )
             return result
         assert isinstance(result, float), (
-            "The R² score should be a float, got "
-            f"{type(result)} with value {result}."
+            f"The R² score should be a float, got {type(result)} with value {result}."
         )
         return result
 
@@ -1366,8 +1364,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             )
             return result
         assert isinstance(result, float), (
-            "The RMSE score should be a float, got "
-            f"{type(result)} with value {result}."
+            f"The RMSE score should be a float, got {type(result)} with value {result}."
         )
         return result
 
@@ -1611,13 +1608,17 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
 
         # build the cache key components to finally create a tuple that will be used
         # to check if the metric has already been computed
-        cache_key_parts: list[Any] = [self._parent._hash, display_class.__name__]
-        cache_key_parts.extend(display_kwargs.values())
-        if data_source_hash is not None:
-            cache_key_parts.append(data_source_hash)
+
+        if "random_state" in display_kwargs and display_kwargs["random_state"] is None:
+            cache_key = None
         else:
-            cache_key_parts.append(data_source)
-        cache_key = tuple(cache_key_parts)
+            cache_key_parts: list[Any] = [self._parent._hash, display_class.__name__]
+            cache_key_parts.extend(display_kwargs.values())
+            if data_source_hash is not None:
+                cache_key_parts.append(data_source_hash)
+            else:
+                cache_key_parts.append(data_source)
+            cache_key = tuple(cache_key_parts)
 
         if cache_key in self._parent._cache:
             display = self._parent._cache[cache_key]
@@ -1642,7 +1643,11 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                 data_source=data_source,
                 **display_kwargs,
             )
-            self._parent._cache[cache_key] = display
+
+            # Unless random_state is an int (i.e. the call is deterministic),
+            # we do not cache
+            if cache_key is not None:
+                self._parent._cache[cache_key] = display
 
         return display
 

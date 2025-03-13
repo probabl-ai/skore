@@ -36,8 +36,8 @@ Key features
 -  **Evaluate**: automated insightful reports.
 
    -  :class:`skore.EstimatorReport`: feed your scikit-learn compatible estimator and
-      dataset, and it generates recommended metrics and plots to help you analyze your
-      estimator.
+      dataset, and it generates recommended metrics, feature importance, and plots to
+      help you evaluate and inspect your estimator.
       All these are computed and generated for you in 1 line of code.
       Under the hood, we use efficient caching to make the computations blazing fast.
 
@@ -64,7 +64,7 @@ Skore is just at the beginning of its journey, but we’re shipping fast! Freque
    contributing
 
 .. raw:: html
-   
+
    <!-- Start of Reo Javascript -->
    <script type="text/javascript">
       !function(){var e,t,n;e="460c80a5e0b7c04",t=function(){Reo.init({clientID:"460c80a5e0b7c04"})},(n=document.createElement("script")).src="https://static.reo.dev/"+e+"/reo.js",n.defer=!0,n.onload=t,document.head.appendChild(n)}();

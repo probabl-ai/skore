@@ -357,7 +357,7 @@ def test_estimator_report_plot_roc(binary_classification_data):
 def test_estimator_report_display_binary_classification(
     pyplot, binary_classification_data, display
 ):
-    """General behaviour of the function creating display on binary classification."""
+    """The call to display functions should be cached."""
     estimator, X_test, y_test = binary_classification_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     assert hasattr(report.metrics, display)
@@ -369,13 +369,14 @@ def test_estimator_report_display_binary_classification(
 
 @pytest.mark.parametrize("display", ["prediction_error"])
 def test_estimator_report_display_regression(pyplot, regression_data, display):
-    """General behaviour of the function creating display on regression."""
+    """The call to display functions should be cached, as long as the arguments make it
+    reproducible."""
     estimator, X_test, y_test = regression_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     assert hasattr(report.metrics, display)
-    display_first_call = getattr(report.metrics, display)()
+    display_first_call = getattr(report.metrics, display)(random_state=0)
     assert report._cache != {}
-    display_second_call = getattr(report.metrics, display)()
+    display_second_call = getattr(report.metrics, display)(random_state=0)
     assert display_first_call is display_second_call
 
 
@@ -383,9 +384,7 @@ def test_estimator_report_display_regression(pyplot, regression_data, display):
 def test_estimator_report_display_binary_classification_external_data(
     pyplot, binary_classification_data, display
 ):
-    """General behaviour of the function creating display on binary classification
-    when passing external data.
-    """
+    """The call to display functions should be cached when passing external data."""
     estimator, X_test, y_test = binary_classification_data
     report = EstimatorReport(estimator)
     assert hasattr(report.metrics, display)
@@ -403,18 +402,17 @@ def test_estimator_report_display_binary_classification_external_data(
 def test_estimator_report_display_regression_external_data(
     pyplot, regression_data, display
 ):
-    """General behaviour of the function creating display on regression when passing
-    external data.
-    """
+    """The call to display functions should be cached when passing external data,
+    as long as the arguments make it reproducible."""
     estimator, X_test, y_test = regression_data
     report = EstimatorReport(estimator)
     assert hasattr(report.metrics, display)
     display_first_call = getattr(report.metrics, display)(
-        data_source="X_y", X=X_test, y=y_test
+        data_source="X_y", X=X_test, y=y_test, random_state=0
     )
     assert report._cache != {}
     display_second_call = getattr(report.metrics, display)(
-        data_source="X_y", X=X_test, y=y_test
+        data_source="X_y", X=X_test, y=y_test, random_state=0
     )
     assert display_first_call is display_second_call
 
@@ -787,9 +785,9 @@ def test_estimator_report_interaction_cache_metrics(regression_multioutput_data)
         if any(item == multioutput for item in cached_key):
             should_raise = False
             break
-    assert (
-        not should_raise
-    ), f"The value {multioutput} should be stored in one of the cache keys"
+    assert not should_raise, (
+        f"The value {multioutput} should be stored in one of the cache keys"
+    )
     assert result_r2_raw_values.shape == (2,)
 
     multioutput = "uniform_average"
@@ -799,9 +797,9 @@ def test_estimator_report_interaction_cache_metrics(regression_multioutput_data)
         if any(item == multioutput for item in cached_key):
             should_raise = False
             break
-    assert (
-        not should_raise
-    ), f"The value {multioutput} should be stored in one of the cache keys"
+    assert not should_raise, (
+        f"The value {multioutput} should be stored in one of the cache keys"
+    )
     assert isinstance(result_r2_uniform_average, float)
 
 
@@ -825,9 +823,9 @@ def test_estimator_report_custom_metric(regression_data):
         if any(item == threshold for item in cached_key):
             should_raise = False
             break
-    assert (
-        not should_raise
-    ), f"The value {threshold} should be stored in one of the cache keys"
+    assert not should_raise, (
+        f"The value {threshold} should be stored in one of the cache keys"
+    )
 
     assert isinstance(result, float)
     assert result == pytest.approx(
@@ -845,9 +843,9 @@ def test_estimator_report_custom_metric(regression_data):
         if any(item == threshold for item in cached_key):
             should_raise = False
             break
-    assert (
-        not should_raise
-    ), f"The value {threshold} should be stored in one of the cache keys"
+    assert not should_raise, (
+        f"The value {threshold} should be stored in one of the cache keys"
+    )
 
     assert isinstance(result, float)
     assert result == pytest.approx(
@@ -889,9 +887,9 @@ def test_estimator_report_custom_function_kwargs_numpy_array(regression_data):
         if any(item == hash_weights for item in cached_key):
             should_raise = False
             break
-    assert (
-        not should_raise
-    ), "The hash of the weights should be stored in one of the cache keys"
+    assert not should_raise, (
+        "The hash of the weights should be stored in one of the cache keys"
+    )
 
     assert isinstance(result, float)
     assert result == pytest.approx(
@@ -1066,7 +1064,7 @@ def test_estimator_report_get_X_y_and_data_source_hash_error():
     report = EstimatorReport(estimator)
 
     err_msg = re.escape(
-        "Invalid data source: unknown. Possible values are: " "test, train, X_y."
+        "Invalid data source: unknown. Possible values are: test, train, X_y."
     )
     with pytest.raises(ValueError, match=err_msg):
         report.metrics.log_loss(data_source="unknown")

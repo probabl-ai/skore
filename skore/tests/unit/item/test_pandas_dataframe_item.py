@@ -57,7 +57,7 @@ class TestPandasDataFrameItem:
         assert type(item.dataframe["key"].iloc[0]) is list
 
     @pytest.mark.order(1)
-    def test_dataframe_with_integer_columns_name_and_multiindex(self, mock_nowstr):
+    def test_dataframe_with_integer_columns_name_and_multi_index(self, mock_nowstr):
         dataframe = DataFrame(
             [[">70", "1M", "M", 1], [">70", "2F", "F", 2]],
             MultiIndex.from_arrays(

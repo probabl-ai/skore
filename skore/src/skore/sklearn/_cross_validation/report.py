@@ -165,9 +165,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         estimator_reports : list of EstimatorReport
             The estimator reports.
         """
-        assert (
-            self._progress_info is not None
-        ), "The rich Progress class was not initialized."
+        assert self._progress_info is not None, (
+            "The rich Progress class was not initialized."
+        )
         progress = self._progress_info["current_progress"]
         task = self._progress_info["current_task"]
 
@@ -273,9 +273,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         if n_jobs is None:
             n_jobs = self.n_jobs
 
-        assert (
-            self._progress_info is not None
-        ), "The rich Progress class was not initialized."
+        assert self._progress_info is not None, (
+            "The rich Progress class was not initialized."
+        )
         progress = self._progress_info["current_progress"]
         main_task = self._progress_info["current_task"]
 
@@ -337,8 +337,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
     def _get_help_panel_title(self) -> str:
         return (
-            f"[bold cyan]Tools to diagnose estimator "
-            f"{self.estimator_name_}[/bold cyan]"
+            f"[bold cyan]Tools to diagnose estimator {self.estimator_name_}[/bold cyan]"
         )
 
     def _get_help_legend(self) -> str:

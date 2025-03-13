@@ -258,9 +258,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             )
         )
         # trigger the computation
-        assert (
-            self._progress_info is not None
-        ), "The rich Progress class was not initialized."
+        assert self._progress_info is not None, (
+            "The rich Progress class was not initialized."
+        )
         progress = self._progress_info["current_progress"]
         task = self._progress_info["current_task"]
         total_iterations = len(response_methods) * len(pos_labels) * len(data_sources)
@@ -333,8 +333,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     def _get_help_panel_title(self) -> str:
         return (
-            f"[bold cyan]Tools to diagnose estimator "
-            f"{self.estimator_name_}[/bold cyan]"
+            f"[bold cyan]Tools to diagnose estimator {self.estimator_name_}[/bold cyan]"
         )
 
     def _get_help_legend(self) -> str:

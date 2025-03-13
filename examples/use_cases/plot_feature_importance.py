@@ -21,9 +21,11 @@ Here, we go beyond predictive performance, and inspect these models to better in
 their behavior, by using feature importance.
 Indeed, in practice, inspection can help spot some flaws in models: it is always
 recommended to look "under the hood".
-For that, we use the :meth:`~skore.EstimatorReport.feature_importance` accessor of
-the :class:`~skore.EstimatorReport`.
+For that, we use the unified :meth:`~skore.EstimatorReport.feature_importance` accessor
+of the :class:`~skore.EstimatorReport`.
 For linear models, we look at their coefficients.
+For tree-based models, we inspect their mean decrease in impurity (MDI).
+We can also inspect the permutation feature importance, that is model-agnostic.
 """
 
 # %%
@@ -35,7 +37,6 @@ For linear models, we look at their coefficients.
 # regression task about predicting house prices:
 
 # %%
-import pandas as pd
 from sklearn.datasets import fetch_california_housing
 
 california_housing = fetch_california_housing(as_frame=True)
@@ -121,6 +122,7 @@ plt.show()
 # our target, let us assess how ``MedInc`` relates to ``MedHouseVal``:
 
 # %%
+import pandas as pd
 import plotly.express as px
 
 X_y_plot = california_housing.frame.copy()
@@ -185,11 +187,12 @@ from sklearn.model_selection import train_test_split
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 
 # %%
-# Linear models
-# =============
+# Linear models: coefficients
+# ===========================
 
 # %%
 # For our regression task, we first use linear models.
+# For feature importance, we inspect their coefficients.
 
 # %%
 # Simple model
@@ -245,7 +248,8 @@ ridge_report.metrics.prediction_error().plot(kind="actual_vs_predicted")
 plt.tight_layout()
 
 # %%
-# We can observe that the model has issues predicting large house prices, due to the clipping effect of the actual values.
+# We can observe that the model has issues predicting large house prices, due to the
+# clipping effect of the actual values.
 
 # %%
 # Now, to inspect our model, let us use the
@@ -391,11 +395,11 @@ engineered_ridge_report = EstimatorReport(
     y_train=y_train,
     y_test=y_test,
 )
-dict_reports = {
-    "Vanilla model": ridge_report,
-    "Model w/ feature engineering": engineered_ridge_report,
+reports_to_compare = {
+    "Vanilla Ridge": ridge_report,
+    "Ridge w/ feature engineering": engineered_ridge_report,
 }
-comparator = ComparisonReport(reports=dict_reports)
+comparator = ComparisonReport(reports=reports_to_compare)
 comparator.metrics.report_metrics()
 
 # %%
@@ -429,8 +433,8 @@ print("Number of features after feature engineering:", n_features_engineered)
 
 # %%
 engineered_ridge_report.feature_importance.coefficients().sort_values(
-    by="Coefficient", key=abs, ascending=False
-).head(15).plot.barh(
+    by="Coefficient", key=abs, ascending=True
+).tail(15).plot.barh(
     title="Model weights",
     xlabel="Coefficient",
     ylabel="Feature",
@@ -511,8 +515,8 @@ selectk_ridge_report = EstimatorReport(
     y_train=y_train,
     y_test=y_test,
 )
-dict_reports["Model w/ feature selection and grid search"] = selectk_ridge_report
-comparator = ComparisonReport(reports=dict_reports)
+reports_to_compare["Ridge w/ feature selection and grid search"] = selectk_ridge_report
+comparator = ComparisonReport(reports=reports_to_compare)
 comparator.metrics.report_metrics()
 
 # %%
@@ -546,8 +550,8 @@ print(selectk_features)
 
 # %%
 selectk_ridge_report.feature_importance.coefficients().sort_values(
-    by="Coefficient", key=abs, ascending=False
-).head(15).plot.barh(
+    by="Coefficient", key=abs, ascending=True
+).tail(15).plot.barh(
     title="Model weights",
     xlabel="Coefficient",
     ylabel="Feature",
@@ -572,14 +576,338 @@ X_train_plot.insert(0, "clustering_labels", clustering_labels)
 plot_map(X_train_plot, "clustering_labels")
 
 # %%
+# Tree-based models: mean decrease in impurity (MDI)
+# ==================================================
+
+# %%
+# Now, let us look into tree-based models.
+# For feature importance, we inspect their Mean Decrease in Impurity (MDI).
+# The MDI of a feature is the normalized total reduction of the criterion (or loss)
+# brought by that feature.
+# The higher the MDI, the more important the feature.
+
+# %%
+# However, the MDI holds some limitations to keep in mind:
+#
+# - When features have large differences in cardinality, the MDI tends to favor
+#   those with higher cardinality.
+#   Fortunately, in this example, our numerical features share similar cardinality,
+#   mitigating this concern.
+# - Since MDI is typically calculated on the training set, it can reflect biases
+#   from overfitting.
+#   When a model overfits, the tree may partition less relevant regions of the
+#   feature space, artificially inflating MDI values and distorting the perceived
+#   importance of certain features.
+
+# %%
+# .. seealso::
+#
+#   For more information about the MDI, see scikit-learn's
+#   `Permutation Importance vs Random Forest Feature Importance (MDI)
+#   <https://scikit-learn.org/dev/auto_examples/inspection/plot_permutation_importance.html>`_.
+
+
+# %%
+# Decision trees
+# --------------
+
+# %%
+# Let us start with a simple decision tree.
+
+# %%
+# .. seealso::
+#   For more information about decision trees, see scikit-learn's example on
+#   `Understanding the decision tree structure <https://scikit-learn.org/stable/auto_examples/tree/plot_unveil_tree_structure.html>`_.
+
+# %%
+from sklearn.tree import DecisionTreeRegressor
+
+tree_report = EstimatorReport(
+    DecisionTreeRegressor(random_state=0),
+    X_train=X_train,
+    X_test=X_test,
+    y_train=y_train,
+    y_test=y_test,
+)
+reports_to_compare["Decision tree"] = tree_report
+
+# %%
+# We compare its performance with the models in our benchmark:
+
+# %%
+comparator = ComparisonReport(reports=reports_to_compare)
+comparator.metrics.report_metrics()
+
+# %%
+# We note that the performance is quite poor, so the derived feature importance is to
+# be dealt with caution.
+
+# %%
+# We display which accessors are available to us:
+
+# %%
+tree_report.help()
+
+# %%
+# We have a
+# :meth:`~skore.EstimatorReport.feature_importance.mean_decrease_impurity`
+# accessor.
+
+# %%
+# First, let us interpret our model with regards to the original features.
+# For the visualization, we fix a very low ``max_depth`` so that it will be easy for
+# the human eye to visualize the tree using :func:`sklearn.tree.plot_tree`:
+
+# %%
+from sklearn.tree import plot_tree
+
+_ = plot_tree(
+    tree_report.estimator_,
+    feature_names=tree_report.estimator_.feature_names_in_,
+    max_depth=2,
+)
+
+# %%
+# This tree explains how each sample is going to be predicted by our tree.
+# A decision tree provides a decision path for each sample, where the sample traverses
+# the tree based on feature thresholds, and the final prediction is made at the leaf
+# node (not represented above for conciseness purposes).
+# At each node:
+#
+# - ``samples`` is the number of samples that fall into that node,
+# - ``value`` is the predicted output for the samples that fall into this particular
+#   node (it is the mean of the target values for the samples in that node).
+#   At the root node, the value is :math:`2.074`. This means that if you were to make a
+#   prediction for all :math:`15480` samples at this node (without any further splits),
+#   the predicted value would be :math:`2.074`, which is the mean of the target
+#   variable for those samples.
+# - ``squared_error`` is the mean squared error associated with the ``value``,
+#   representing the average of the squared differences between the actual target values
+#   of the samples in the node and the node's predicted ``value`` (the mean),
+# - the first element is how the split is defined.
+
+# %%
+# Let us explain how this works in practice.
+# At each node, the tree splits the data based on a feature and a threshold.
+# For the first node (the root node), ``MedInc <= 5.029`` means that, for each sample,
+# our decision tree first looks at the ``MedInc`` feature (which is thus the most
+# important one):
+# if the ``MedInc`` value is lower than :math:`5.029` (the threshold), then the sample goes
+# into the left node, otherwise it goes to the right, and so on for each node.
+# As you move down the tree, the splits refine the predictions, leading to the leaf
+# nodes where the final prediction for a sample is the ``value`` of the leaf it reaches.
+# Note that for the second node layer, it is also the ``MedInc`` feature that is used
+# for the threshold, indicating that our model heavily relies on ``MedInc``.
+
+# %%
+# .. seealso::
+#   A richer display of decision trees is available in the
+#   `dtreeviz <https://github.com/parrt/dtreeviz>`_ python package.
+#   For example, it shows the distribution of feature values split at each node and
+#   tailors the visualization to the task at hand (whether classification
+#   or regression).
+
+# %%
+# Now, let us look at the feature importance based on the MDI:
+
+# %%
+tree_report.feature_importance.mean_decrease_impurity().plot.barh(
+    title="Feature importance",
+    xlabel="MDI",
+    ylabel="Feature",
+)
+plt.tight_layout()
+
+# %%
+# For a decision tree, for each feature, the MDI is averaged across all splits in the
+# tree. Here, the impurity is the mean squared error.
+#
+# As expected, ``MedInc`` is of great importance for our decision tree.
+# Indeed, in the above tree visualization, ``MedInc`` is used multiple times for splits
+# and contributes greatly to reducing the squared error at multiple nodes.
+# At the root, it reduces the error from :math:`1.335` to :math:`0.832` and :math:`0.546`
+# in the children.
+
+# %%
+# Random forest
+# -------------
+#
+# Now, let us apply a more elaborate model: a random forest.
+# A random forest is an ensemble method that builds multiple decision trees, each
+# trained on a random subset of data and features.
+# For regression, it averages the trees' predictions.
+# This reduces overfitting and improves accuracy compared to a single decision tree.
+
+# %%
+from sklearn.ensemble import RandomForestRegressor
+
+n_estimators = 100
+rf_report = EstimatorReport(
+    RandomForestRegressor(random_state=0, n_estimators=n_estimators),
+    X_train=X_train,
+    X_test=X_test,
+    y_train=y_train,
+    y_test=y_test,
+)
+reports_to_compare["Random forest"] = rf_report
+
+comparator = ComparisonReport(reports=reports_to_compare)
+comparator.metrics.report_metrics()
+
+# %%
+# Without any feature engineering and any grid search,
+# the random forest beats all linear models!
+
+# %%
+# Let us recall the number of trees in our random forest:
+
+# %%
+print(f"Number of trees in the forest: {n_estimators}")
+
+# %%
+# Given that we have many trees, it is hard to use :func:`sklearn.tree.plot_tree` as
+# for the single decision tree.
+# As for linear models (and the complex feature engineering), better performance often
+# comes with less interpretability.
+
+# %%
+# Let us look into the MDI of our random forest:
+
+# %%
+rf_report.feature_importance.mean_decrease_impurity().plot.barh(
+    title="Feature importance",
+    xlabel="MDI",
+    ylabel="Feature",
+)
+plt.tight_layout()
+
+# %%
+# In a random forest, the MDI is computed by averaging the MDI of each feature across
+# all the decision trees in the forest.
+#
+# As for the decision tree, ``MecInc`` is the most important feature.
+# Compared to linear models, the random forest also attributes a high importance to
+# the ``Longitude`` and ``Latitude``, but the second most important feature is
+# ``AveOccup`` that linear models did not deem very important.
+# As the random forest has a great score, perhaps linear models missed something
+# about ``AveOccup`` that seems to be key to predicting house prices.
+
+# %%
+# Let us visualize how ``AveOccup`` interacts with ``MedHouseVal``:
+
+# %%
+X_y_plot = california_housing.frame.copy()
+X_y_plot["AveOccup"] = pd.qcut(X_y_plot["AveOccup"], q=5)
+bin_order = X_y_plot["AveOccup"].cat.categories.sort_values()
+fig = px.histogram(
+    X_y_plot,
+    x=california_housing.target_names[0],
+    color="AveOccup",
+    category_orders={"AveOccup": bin_order},
+)
+fig
+
+# %%
+# Model-agnostic: permutation feature importance
+# ==============================================
+
+# %%
+# In the previous sections, we have inspected coefficients that are specific to linear
+# models and the MDI that is specific to tree-based models.
+# In this section, we look into the
+# `permutation importance <https://scikit-learn.org/stable/modules/permutation_importance.html>`_
+# which is model agnostic, meaning that it can be applied to any fitted estimator.
+# In particular, it works for linear models and tree-based ones.
+
+# %%
+# Permutation feature importance measures the contribution of each feature to
+# a fitted model's performance.
+# It randomly shuffles the values of a single feature and observes the resulting
+# degradation of the model's score.
+# Permuting a predictive feature makes the performance decrease, while
+# permuting a non-predictive feature does not degrade the performance much.
+# By default, we compute the permutation importance on the test set.
+
+# %%
+# Now, let us look at our helper:
+
+# %%
+ridge_report.help()
+
+# %%
+# We have a :meth:`~skore.EstimatorReport.feature_importance.feature_permutation`
+# accessor:
+
+# %%
+ridge_report.feature_importance.feature_permutation(random_state=0)
+
+# %%
+# The permutation importance is often calculated several times, each time
+# with different permutations of the feature.
+# Hence, we can have measure its variance (or standard deviation).
+# Now, we plot the permutation feature importance on the train and test sets using boxplots:
+
+
+# %%
+def plot_permutation_train_test(est_report):
+    fig, axes = plt.subplots(nrows=1, ncols=2, sharey=True)
+
+    # Boxplot for the train set
+    est_report.feature_importance.feature_permutation(
+        data_source="train", random_state=0
+    ).T.boxplot(ax=axes[0], vert=False)
+    axes[0].set_title("Train set")
+    axes[0].set_xlabel("r2")
+
+    # Boxplot for the test set
+    est_report.feature_importance.feature_permutation(
+        data_source="test", random_state=0
+    ).T.boxplot(ax=axes[1], vert=False)
+    axes[1].set_title("Test set")
+    axes[1].set_xlabel("r2")
+
+    fig.suptitle(f"Permutation feature importance of {est_report.estimator_name_}")
+    plt.tight_layout()
+    plt.show()
+
+
+plot_permutation_train_test(ridge_report)
+
+# %%
+# The standard deviation seems quite low.
+# For both the train and test sets, the result of the inspection is the same as
+# with the coefficients:
+# the most important features are ``Latitude``, ``Longitude``, and ``MedInc``.
+
+# %%
+# For our decision tree, here is our permutation importance on the train and test sets:
+
+# %%
+plot_permutation_train_test(tree_report)
+
+# %%
+# The result of the inspection is the same as with the MDI:
+# the most important features are ``MedInc``, ``Latitude``, ``Longitude``,
+# and ``AveOccup``.
+
+# %%
 # Conclusion
 # ==========
 #
-# This example used the California housing dataset to predict house prices with skore's
-# :class:`~skore.EstimatorReport`.
-# We explored key features like income and location, then tested a simple Ridge model
-# (interpretable but weak), a complex engineered model (strong but less clear), and a
-# balanced approach with feature selection (and grid search).
-# The :meth:`~skore.EstimatorReport.feature_importance` accessor revealed model
-# insights at each step, highlighting the trade-off between performance and
-# interpretability that skore helps navigate.
+# In this example, we used the California housing dataset to predict house prices with
+# skore's :class:`~skore.EstimatorReport`.
+# By employing the :class:`~skore.EstimatorReport.feature_importance` accessor,
+# we gained valuable insights into model behavior beyond mere predictive performance.
+# For linear models like Ridge regression, we inspected coefficients to understand
+# feature contributions, revealing the prominence of ``MedInc``, ``Latitude``,
+# and ``Longitude``.
+# We explained the trade-off between performance (with complex feature engineering)
+# and interpretability.
+# With tree-based models such as decision trees, random forests, and gradient-boosted
+# trees, we utilized Mean Decrease in Impurity (MDI) to identify key features,
+# notably highlighting ``AveOccup`` alongside ``MedInc``, ``Latitude``, and
+# ``Longitude``.
+# Compared to linear models, tree-based models rely more on ``AveOccup`` and perform
+# better.
+# The model-agnostic permutation feature importance further enabled us to compare
+# feature significance across diverse model types.

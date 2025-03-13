@@ -1,13 +1,7 @@
 [project]
 name = "skore"
 description = "the scikit-learn sidekick"
-dynamic = [
-  "license",
-  "readme",
-  "version",
-  "dependencies",
-  "optional-dependencies",
-]
+dynamic = ["license", "readme", "version"]
 requires-python = ">=3.9, <3.13"
 maintainers = [{ name = "skore developers", email = "skore@signal.probabl.ai" }]
 classifiers = [
@@ -28,6 +22,54 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
 ]
+dependencies = [
+  "diskcache",
+  "httpx",
+  "joblib",
+  "matplotlib",
+  "numpy",
+  "pandas",
+  "rich",
+  "scikit-learn",
+  "skops",
+]
+
+[project.optional-dependencies]
+test = [
+  "altair>=5,<6",
+  "pillow",
+  "plotly>=5,<6",
+  "polars",
+  "pre-commit",
+  "pytest",
+  "pytest-cov",
+  "pytest-order",
+  "pytest-randomly",
+  "pytest-xdist",
+  "respx",
+  "ruff",
+  "scikit-learn<1.7",
+  "skrub",
+  "xdoctest",
+]
+sphinx = [
+  "IPython",
+  "altair",
+  "kaleido",
+  "numpydoc",
+  "plotly>=5,<6",
+  "polars",
+  "pydata-sphinx-theme",
+  "seaborn",
+  "sentence-transformers",
+  "skrub",
+  "sphinx-copybutton",
+  "sphinx-design",
+  "sphinx-gallery",
+  "sphinx-tabs",
+  "sphinx<8.2.0",
+  "sphinx_autosummary_accessors",
+]
 
 [project.urls]
 Homepage = "https://probabl.ai"
@@ -43,7 +85,6 @@ skore-hub-login = "skore.hub.authentication.login:login"
 local = "skore.project.project:Project"
 remote = "skore.hub.project.project:Project"
 
-
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
@@ -53,9 +94,6 @@ path = "hatch/metadata.py"
 version-default = "0.0.0+unknown"
 license = { "file" = "../LICENSE" }
 readme = { "file" = "../README.md" }
-dependencies = { "file" = "requirements.in" }
-optional-dependencies.test = { "file" = "test-requirements.in" }
-optional-dependencies.sphinx = { "file" = "sphinx-requirements.in" }
 
 [tool.hatch.build.targets.sdist]
 only-include = ["src/", "hatch/"]
@@ -65,7 +103,7 @@ package = ["src/skore/"]
 
 [tool.pytest.ini_options]
 addopts = [
-  "--doctest-modules",
+  "--xdoctest",
   "--import-mode=importlib",
   "--no-header",
   "--verbosity=2",
@@ -77,7 +115,6 @@ addopts = [
   "--ignore=notebooks",
   "--dist=loadscope",
 ]
-doctest_optionflags = ["ELLIPSIS", "NORMALIZE_WHITESPACE"]
 
 [tool.coverage.run]
 branch = true
@@ -119,23 +156,6 @@ convention = "numpy"
 [tool.ruff.lint.per-file-ignores]
 "src/*" = ["UP007"]
 "tests/*" = ["D"]
-
-[tool.typos.default]
-extend-ignore-re = [
-  # Line ignore with trailing `# spellchecker:disable-line`
-  "(?Rm)^.*(#|//)\\s*spellchecker:disable-line$",
-  # Line block with `# spellchecker:<on|off>`
-  "(?s)(#|//)\\s*spellchecker:off.*?\\n\\s*(#|//)\\s*spellchecker:on",
-]
-
-[tool.typos.files]
-extend-exclude = ["*.min.js"]
-
-[tool.typos.default.extend-words]
-# acronym for "False Positive Rate"
-fpr = "fpr"
-# typos considers pnd.NpNDArray as a typo and corrects it to pnd.NpANDArray
-ND = "ND"
 
 [tool.mypy]
 ignore_missing_imports = true

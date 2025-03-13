@@ -14,7 +14,6 @@ from skore.sklearn.train_test_split.warning import TRAIN_TEST_SPLIT_WARNINGS
 
 if TYPE_CHECKING:
     ArrayLike = Any
-    from skore.project import Project
 
 
 def train_test_split(
@@ -26,13 +25,12 @@ def train_test_split(
     random_state: Optional[Union[int, RandomState]] = None,
     shuffle: bool = True,
     stratify: Optional[ArrayLike] = None,
-    project: Optional[Project] = None,
 ):
     """Perform train-test-split of data.
 
     This is a wrapper over scikit-learn's
     :func:`sklearn.model_selection.train_test_split` helper function,
-    enriching it with various warnings that can be saved in a skore Project.
+    enriching it with various warnings.
 
     The signature is fully compatible with sklearn's ``train_test_split``, and
     some keyword arguments are added to make the detection of issues more accurate.
@@ -70,8 +68,6 @@ def train_test_split(
     stratify : array-like, optional
         If not None, data is split in a stratified fashion, using this as the
         class labels.
-    project : Project, optional
-        The project to save information into. If None, no information will be saved.
 
     Returns
     -------
@@ -85,31 +81,32 @@ def train_test_split(
 
     Examples
     --------
+    >>> # xdoctest: +SKIP
     >>> import numpy as np
     >>> X, y = np.arange(10).reshape((5, 2)), range(5)
 
     >>> # Drop-in replacement for sklearn train_test_split
-    >>> X_train, X_test, y_train, y_test = train_test_split(X, y,  # doctest: +SKIP
+    >>> X_train, X_test, y_train, y_test = train_test_split(X, y,
     ...     test_size=0.33, random_state=42)
-    >>> X_train  # doctest: +SKIP
+    >>> X_train
     array([[4, 5],
            [0, 1],
            [6, 7]])
 
     >>> # Explicit X and y, makes detection of problems easier
-    >>> X_train, X_test, y_train, y_test = train_test_split(X=X, y=y,  # doctest: +SKIP
+    >>> X_train, X_test, y_train, y_test = train_test_split(X=X, y=y,
     ...     test_size=0.33, random_state=42)
-    >>> X_train  # doctest: +SKIP
+    >>> X_train
     array([[4, 5],
            [0, 1],
            [6, 7]])
 
     >>> # When passing X and y explicitly, X is returned before y
     >>> arr = np.arange(10).reshape((5, 2))
-    >>> splits = train_test_split(  # doctest: +SKIP
+    >>> splits = train_test_split(
     ...     arr, y=y, X=X, test_size=0.33, random_state=42)
-    >>> arr_train, arr_test, X_train, X_test, y_train, y_test = splits  # doctest: +SKIP
-    >>> X_train  # doctest: +SKIP
+    >>> arr_train, arr_test, X_train, X_test, y_train, y_test = splits
+    >>> X_train
     array([[4, 5],
            [0, 1],
            [6, 7]])

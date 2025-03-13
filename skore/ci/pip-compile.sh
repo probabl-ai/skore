@@ -1,10 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # This script compiles all the `test-requirements.txt` files, based on combinations of
 # `python` and `scikit-learn` versions. These combinations mirror those defined in the
 # GitHub `backend` workflow.
 #
-# You can pass any piptools parameter:
+# You can pass any `uv pip compile` parameter:
 #
 #     $ bash pip-compile.sh --upgrade
 #
@@ -29,9 +29,7 @@ set -eu
 
 (
     # Copy everything necessary to compile requirements in `TMPDIR`
-    cp -r "${CWD}/.." "${TMPDIR}/skore"
-    cp "${CWD}/../../LICENSE" "${TMPDIR}/LICENSE"
-    cp "${CWD}/../../README.md" "${TMPDIR}/README.md"
+    mkdir "${TMPDIR}/skore"; cp "${CWD}/../pyproject.toml" "${TMPDIR}/skore"
 
     # Move to `TMPDIR` to avoid absolute paths in requirements file
     cd "${TMPDIR}"
@@ -47,39 +45,23 @@ set -eu
 
         echo "Generating requirements: python==${python} | scikit-learn==${scikit_learn} (${counter}/${#COMBINATIONS[@]})"
 
-        # Install the `python` version using pyenv
-        pyenv install --skip-existing "${python}"
-
-        # Force the `python` version with pyenv, overriding application-specific/global versions
-        export PYENV_VERSION="${python}"
-
-        # Ensure the pyenv `python` version is well set
-        pyenv_version=$(pyenv version-name)
-
-        if [[ "${pyenv_version}" != "${python}."* ]]; then
-            echo -e "\033[0;31mSomething wrong setting 'python-${python}', get '${pyenv_version%.*}'\033[0m"
-            exit 1
-        fi
-
-        # Create the appropriate virtual environment
-        python -m venv "python-${python}"; source "python-${python}/bin/activate"
-
-        # Force the `scikit-learn` version by overloading test requirements
-        sed "s/scikit-learn.*/scikit-learn==${scikit_learn}.*/g" skore/test-requirements.in > skore/test-requirements.in
+        # Force the `scikit-learn` version by creating file overriding requirements
+        echo "scikit-learn==${scikit_learn}.*" > skore/overrides.txt
 
         # Create the requirements file tree
         mkdir -p $(dirname "${filepath}")
 
         # Create the requirements file
-        python -m pip install --upgrade pip pip-tools --quiet
-        python -m piptools compile \
-               --quiet \
-               --no-strip-extras \
-               --no-header \
-               --extra=test \
-               --output-file="${filepath}" \
-               "${@:2}" \
-               skore/pyproject.toml
+        uv pip compile \
+           --quiet \
+           --no-strip-extras \
+           --no-header \
+           --extra=test \
+           --override skore/overrides.txt \
+           --python-version "${python}" \
+           --output-file "${filepath}" \
+           skore/pyproject.toml \
+           "${@:2}"
 
         let counter++
     done
