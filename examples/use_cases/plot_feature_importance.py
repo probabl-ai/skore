@@ -609,7 +609,7 @@ plot_map(X_train_plot, "clustering_labels")
 
 # %%
 # .. warning::
-#   Beware that the MDI is limited and can be misleading:
+#   The MDI is limited and can be misleading:
 #
 #   - When features have large differences in cardinality, the MDI tends to favor
 #     those with higher cardinality.
@@ -866,7 +866,7 @@ fig
 
 # %%
 # .. warning::
-#   Beware that the permutation feature importance can be misleading on strongly
+#   The permutation feature importance can be misleading on strongly
 #   correlated features. For more information, see
 #   `scikit-learn's user guide
 #   <https://scikit-learn.org/stable/modules/permutation_importance.html#misleading-values-on-strongly-correlated-features>`_.
