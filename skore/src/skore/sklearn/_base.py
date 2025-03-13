@@ -121,6 +121,20 @@ class _BaseReport(_HelpMixin):
     _y_test: Optional[ArrayLike]
     estimator_: BaseEstimator
 
+    def get_params(self) -> dict[str, Any]:
+        """
+        Get the parameters of the BaseReport instance.
+
+        Returns
+        -------
+        dict[str, Any]
+            A dictionary containing the parameters of the Item instance.
+        """
+        cls = self.__class__
+        cls_parameters = inspect.signature(cls).parameters
+
+        return {parameter: getattr(self, parameter) for parameter in cls_parameters}
+
     def _get_help_panel_title(self) -> str:
         return ""
 

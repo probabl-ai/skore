@@ -142,7 +142,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             )
 
         if report_names is None:
-            self.report_names_ = [report.estimator_name_ for report in reports]
+            self.report_names_ = [report.estimator_name for report in reports]
         else:
             self.report_names_ = report_names
 
