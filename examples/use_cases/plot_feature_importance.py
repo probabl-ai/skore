@@ -857,7 +857,7 @@ fig
 
 # %%
 # Permutation feature importance can also help reduce overfitting.
-# If a model overfits (large train score and small test score), and some
+# If a model overfits (high train score and low test score), and some
 # features are important only on the train set and not on the test set,
 # then these features might be the cause of the overfitting and it might be a good
 # idea to drop them.
