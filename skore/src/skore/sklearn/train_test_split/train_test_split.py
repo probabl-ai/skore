@@ -14,7 +14,6 @@ from skore.sklearn.train_test_split.warning import TRAIN_TEST_SPLIT_WARNINGS
 
 if TYPE_CHECKING:
     ArrayLike = Any
-    from skore.project import Project
 
 
 def train_test_split(
@@ -26,13 +25,12 @@ def train_test_split(
     random_state: Optional[Union[int, RandomState]] = None,
     shuffle: bool = True,
     stratify: Optional[ArrayLike] = None,
-    project: Optional[Project] = None,
 ):
     """Perform train-test-split of data.
 
     This is a wrapper over scikit-learn's
     :func:`sklearn.model_selection.train_test_split` helper function,
-    enriching it with various warnings that can be saved in a skore Project.
+    enriching it with various warnings.
 
     The signature is fully compatible with sklearn's ``train_test_split``, and
     some keyword arguments are added to make the detection of issues more accurate.
@@ -70,8 +68,6 @@ def train_test_split(
     stratify : array-like, optional
         If not None, data is split in a stratified fashion, using this as the
         class labels.
-    project : Project, optional
-        The project to save information into. If None, no information will be saved.
 
     Returns
     -------
