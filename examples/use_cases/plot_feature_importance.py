@@ -236,9 +236,17 @@ ridge_report.metrics.report_metrics()
 #
 # Here, the :math:`R^2` seems quite poor, so some further preprocessing would be needed.
 # This is done further down in this example.
-# For now, keep in mind that any observations drawn from inspecting the coefficients
-# of this simple Ridge model are made on a model that performs quite poorly, hence
-# must be treated with caution.
+
+# %%
+# .. warning::
+#   Keep in mind that any observations drawn from inspecting the coefficients
+#   of this simple Ridge model are made on a model that performs quite poorly, hence
+#   must be treated with caution.
+#   Indeed, a poorly performing model does not capture the true underlying
+#   relationships in the data.
+#   A good practice would be to avoid inspecting models with poor performance.
+#   Here, we still inspect it, for demo purposes and because our model is not put into
+#   production!
 
 # %%
 # Let us plot the prediction error:
@@ -257,6 +265,13 @@ plt.tight_layout()
 
 # %%
 ridge_report.feature_importance.coefficients()
+
+# %%
+# .. note::
+#   Beware that coefficients can be misleading when some features are correlated.
+#   For example, two coefficients can have large absolute values (so be considered
+#   important), but in the predictions, the sum of their contributions could cancel out
+#   (if they are highly correlated), so they would actually be unimportant.
 
 # %%
 # We can plot this pandas datafame:
@@ -332,8 +347,14 @@ df_ridge_report_coef_unscaled
 # We can interpret a coefficient as follows: according to our model, on average,
 # having one additional bedroom (a increase of :math:`1` of ``AveBedrms``),
 # with all other features being constant,
-# increases the house value of :math:`0.62` in $100,000, hence of $62,000.
+# increases the *predicted* house value of :math:`0.62` in $100,000, hence of $62,000.
 # Note that we have not dealt with any potential outlier in this iteration.
+
+# %%
+# .. warning::
+#   Recall that we are inspecting a model with poor performance, which is bad practice.
+#   Moreover, we must be cautious when trying to induce any causation effect
+#   (remember that correlation is not causation).
 
 # %%
 # More complex model
@@ -344,8 +365,8 @@ df_ridge_report_coef_unscaled
 # with regards to the original units of the features, performs quite poorly.
 # Now, we build a more complex model, with more feature engineering.
 # We will see that this model will have a better score... but will be more difficult to
-# interpret with regards to the original features (due to the complex feature
-# engineering).
+# interpret the coefficients with regards to the original features due to the complex
+# feature engineering.
 
 # %%
 # In our previous EDA, when plotting the geospatial data with regards to the house
@@ -587,17 +608,22 @@ plot_map(X_train_plot, "clustering_labels")
 # The higher the MDI, the more important the feature.
 
 # %%
-# However, the MDI holds some limitations to keep in mind:
+# .. warning::
+#   Beware that the MDI is limited and can be misleading:
 #
-# - When features have large differences in cardinality, the MDI tends to favor
-#   those with higher cardinality.
-#   Fortunately, in this example, our numerical features share similar cardinality,
-#   mitigating this concern.
-# - Since MDI is typically calculated on the training set, it can reflect biases
-#   from overfitting.
-#   When a model overfits, the tree may partition less relevant regions of the
-#   feature space, artificially inflating MDI values and distorting the perceived
-#   importance of certain features.
+#   - When features have large differences in cardinality, the MDI tends to favor
+#     those with higher cardinality.
+#     Fortunately, in this example, we have only numerical features that share similar
+#     cardinality, mitigating this concern.
+#   - Since the MDI is typically calculated on the training set, it can reflect biases
+#     from overfitting.
+#     When a model overfits, the tree may partition less relevant regions of the
+#     feature space, artificially inflating MDI values and distorting the perceived
+#     importance of certain features.
+#     Soon, scikit-learn will enable the computing of the MDI on the test set, and we
+#     will make it available in skore.
+#     Hence, we would be able to draw conclusions on how predictive a feature is and not
+#     just how impactful it is on the training procedure.
 
 # %%
 # .. seealso::
@@ -826,7 +852,24 @@ fig
 # degradation of the model's score.
 # Permuting a predictive feature makes the performance decrease, while
 # permuting a non-predictive feature does not degrade the performance much.
-# By default, we compute the permutation importance on the test set.
+# This permutation importance can be computed on the train and test sets,
+# and by default skore computes it on the test set.
+# Compared to the coefficients and the MDI, the permutation importance can be
+# less misleading, but comes with a higher computation cost.
+
+# %%
+# Permutation feature importance can also help reduce overfitting.
+# If a model overfits (high train score and low test score), and some
+# features are important only on the train set and not on the test set,
+# then these features might be the cause of the overfitting and it might be a good
+# idea to drop them.
+
+# %%
+# .. warning::
+#   Beware that the permutation feature importance can be misleading on strongly
+#   correlated features. For more information, see
+#   `scikit-learn's user guide
+#   <https://scikit-learn.org/stable/modules/permutation_importance.html#misleading-values-on-strongly-correlated-features>`_.
 
 # %%
 # Now, let us look at our helper:
@@ -871,6 +914,7 @@ def plot_permutation_train_test(est_report):
     plt.show()
 
 
+# %%
 plot_permutation_train_test(ridge_report)
 
 # %%
@@ -878,6 +922,22 @@ plot_permutation_train_test(ridge_report)
 # For both the train and test sets, the result of the inspection is the same as
 # with the coefficients:
 # the most important features are ``Latitude``, ``Longitude``, and ``MedInc``.
+
+# %%
+# For ``selectk_ridge_report``, we have a large pipeline that is fed to a
+# :class:`~skore.EstimatorReport`.
+# The pipeline contains a lot a preprocessing that creates many features.
+# By default, the permutation importance is calculated at the entrance of the whole
+# pipeline (with regards to the original features):
+
+# %%
+plot_permutation_train_test(selectk_ridge_report)
+
+# %%
+# Hence, contrary to coefficients, although we have created many features in our
+# preprocessing, the interpretability is easier.
+# We notice that, due to our preprocessing using a clustering on the geospatial data,
+# these features are of great importance to our model.
 
 # %%
 # For our decision tree, here is our permutation importance on the train and test sets:
@@ -911,3 +971,6 @@ plot_permutation_train_test(tree_report)
 # better.
 # The model-agnostic permutation feature importance further enabled us to compare
 # feature significance across diverse model types.
+
+# %%
+# A further work could be look into Shapley values, LIME, and so on.
