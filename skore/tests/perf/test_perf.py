@@ -1,4 +1,5 @@
 import pytest
+import xxhash
 from sklearn.datasets import make_regression
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
@@ -24,6 +25,8 @@ def test_manual():
     "hash_func",
     [
         "md5",
+        pytest.param(xxhash.xxh32(), id="xxhash32"),
+        pytest.param(xxhash.xxh3_64(), id="xxhash3_64"),
     ],
 )
 def test_hash(hash_func, benchmark):

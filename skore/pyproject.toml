@@ -50,6 +50,7 @@ test = [
   "scikit-learn<1.7",
   "skrub",
   "xdoctest",
+  "xxhash",
 ]
 sphinx = [
   "IPython",
