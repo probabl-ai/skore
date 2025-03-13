@@ -54,9 +54,7 @@ def login(timeout=600, auto_otp=True, port=0):
     if is_valid:
         return token
     if auto_otp:
-        access = None
-        refreshment = None
-        expires_at = None
+        access, refreshment, expires_at = None, None, None
 
         def callback(state):
             nonlocal access
@@ -68,20 +66,23 @@ def login(timeout=600, auto_otp=True, port=0):
                 device_code=device_code
             )
 
-        server = OTPServer(callback=callback).start(port=port)
-        authorization_url, device_code, user_code = api.get_oauth_device_login(
-            success_uri=f"http://localhost:{server.port}"
-        )
-
-        webbrowser.open(authorization_url)
-        start = datetime.now()
+        server = OTPServer(callback=callback)
 
         try:
+            server.start(port=port)
+            authorization_url, device_code, user_code = api.get_oauth_device_login(
+                f"http://localhost:{server.port}"
+            )
+
+            webbrowser.open(authorization_url)
+
+            start = datetime.now()
+
             while access is None or refreshment is None or expires_at is None:
                 if (datetime.now() - start).total_seconds() > timeout:
                     raise AuthenticationError("Timeout") from None
 
-            sleep(0.5)
+                sleep(0.25)
         finally:
             server.stop()
 
