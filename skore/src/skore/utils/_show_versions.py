@@ -45,7 +45,7 @@ def _get_deps_info() -> dict[str, Any]:
     """
     from importlib.metadata import PackageNotFoundError, version
 
-    deps = ["pip", "setuptools"]
+    deps = ["pip"]
 
     raw_requirements = importlib.metadata.requires("skore")
     requirements: list[str] = [] if raw_requirements is None else raw_requirements
@@ -72,8 +72,9 @@ def show_versions() -> None:
 
     Examples
     --------
+    >>> # xdoctest: +SKIP
     >>> from skore import show_versions
-    >>> show_versions()  # doctest: +SKIP
+    >>> show_versions()
     """
     sys_info = _get_sys_info()
     deps_info = _get_deps_info()

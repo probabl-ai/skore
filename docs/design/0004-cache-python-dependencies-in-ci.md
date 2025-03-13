@@ -17,7 +17,7 @@ packages can be installed without the need to be re-download from PyPI. It's bet
 nothing, but installation time is incompressibly slow.
 
 Supporting 3 versions of `scikit-learn` means adding at least 2 additional test runs:
-- the latest version is test on each OS/python versions (no additonal test run),
+- the latest version is test on each OS/python versions (no additional test run),
 - the 2 older versions of scikit-learn are tested on ubuntu-latest python 3.12 (2
   additional test runs)
 

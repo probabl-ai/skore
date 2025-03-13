@@ -29,6 +29,14 @@ report are accessible through accessors.
 
    EstimatorReport.metrics
 
+.. rubric:: Feature importance
+
+.. autosummary::
+   :toctree: ../api/
+   :template: autosummary/accessor.rst
+
+   EstimatorReport.feature_importance
+
 Metrics
 -------
 
@@ -54,3 +62,19 @@ estimator.
     EstimatorReport.metrics.rmse
     EstimatorReport.metrics.roc
     EstimatorReport.metrics.roc_auc
+
+Feature importance
+------------------
+
+The `feature_importance` accessor helps you to evaluate the importance of the features
+used to train your estimator.
+
+.. autosummary::
+    :toctree: ../api/
+    :nosignatures:
+    :template: autosummary/accessor_method.rst
+
+    EstimatorReport.feature_importance.help
+    EstimatorReport.feature_importance.coefficients
+    EstimatorReport.feature_importance.mean_decrease_impurity
+    EstimatorReport.feature_importance.feature_permutation

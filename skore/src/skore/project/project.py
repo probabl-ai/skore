@@ -47,9 +47,12 @@ class Project:
     """
     A collection of items persisted in a storage.
 
-    Its main methods are :func:`~skore.Project.put` and :func:`~skore.Project.get`,
-    respectively to insert a key-value pair into the Project and to recover the value
-    associated with a key.
+    This constructor initializes a project, by creating a new project or by loading an
+    existing one.
+
+    The class main methods are :func:`~skore.Project.put` and
+    :func:`~skore.Project.get`, respectively to insert a key-value pair into the Project
+    and to recover the value associated with a key.
 
     You can add any type of objects. In some cases, especially on classes you defined,
     the persistency is based on the pickle representation. You must therefore ensure
@@ -72,10 +75,11 @@ class Project:
 
     Examples
     --------
+    >>> # xdoctest: +SKIP
     >>> import skore
-    >>> project = skore.Project("my-xp")  # doctest: +SKIP
-    >>> project.put("score", 1.0)  # doctest: +SKIP
-    >>> project.get("score")  # doctest: +SKIP
+    >>> project = skore.Project("my-xp")
+    >>> project.put("score", 1.0)
+    >>> project.get("score")
     1.0
     """
 
@@ -124,20 +128,14 @@ class Project:
 
         self._storage_initialized = True
 
-        # Check if the project should rejoin a server
-        from skore.project._launch import ServerInfo  # avoid circular import
-
-        self._server_info = ServerInfo.rejoin(self)
-
     @_raise_if_deleted
     def clear(self, delete_project: bool = False) -> None:
         """Remove all items from the project.
 
         .. warning::
            Clearing the project with `delete_project=True` will invalidate the whole
-           `Project` instance, making it unusable.
-           A new Project instance can be created using the :class:`skore.Project`
-           constructor or the :func:`skore.open` function.
+           `Project` instance, making it unusable. A new Project instance can be created
+           using the :class:`skore.Project` constructor.
 
         Parameters
         ----------
@@ -324,10 +322,11 @@ class Project:
 
         Examples
         --------
+        >>> # xdoctest: +SKIP
         >>> # Annotate latest version of key "key"
-        >>> project.set_note("key", "note")  # doctest: +SKIP
+        >>> project.set_note("key", "note")
         >>> # Annotate first version of key "key"
-        >>> project.set_note("key", "note", version=0)  # doctest: +SKIP
+        >>> project.set_note("key", "note", version=0)
         """
         return self._item_repository.set_item_note(key=key, note=note, version=version)
 
@@ -354,10 +353,11 @@ class Project:
 
         Examples
         --------
+        >>> # xdoctest: +SKIP
         >>> # Retrieve note attached to latest version of key "key"
-        >>> project.get_note("key")  # doctest: +SKIP
+        >>> project.get_note("key")
         >>> # Retrieve note attached to first version of key "key"
-        >>> project.get_note("key", version=0)  # doctest: +SKIP
+        >>> project.get_note("key", version=0)
         """
         return self._item_repository.get_item_note(key=key, version=version)
 
@@ -382,19 +382,10 @@ class Project:
 
         Examples
         --------
+        >>> # xdoctest: +SKIP
         >>> # Delete note attached to latest version of key "key"
-        >>> project.delete_note("key")  # doctest: +SKIP
+        >>> project.delete_note("key")
         >>> # Delete note attached to first version of key "key"
-        >>> project.delete_note("key", version=0)  # doctest: +SKIP
+        >>> project.delete_note("key", version=0)
         """
         return self._item_repository.delete_item_note(key=key, version=version)
-
-    @_raise_if_deleted
-    def shutdown_web_ui(self) -> None:
-        """Shutdown the web UI server if it is running."""
-        if self._server_info is None:
-            raise RuntimeError("UI server is not running")
-
-        from skore.project._launch import cleanup_server  # avoid circular import
-
-        cleanup_server(self)

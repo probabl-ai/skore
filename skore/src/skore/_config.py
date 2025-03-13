@@ -68,8 +68,9 @@ def set_config(
 
     Examples
     --------
+    >>> # xdoctest: +SKIP
     >>> from skore import set_config
-    >>> set_config(show_progress=False)  # doctest: +SKIP
+    >>> set_config(show_progress=False)
     """
     local_config = _get_threadlocal_config()
 

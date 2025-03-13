@@ -712,3 +712,21 @@ def test_comparison_report_plots(
 
     # Ensure plot is callable
     display.plot()
+
+
+def test_random_state(regression_model):
+    """If random_state is None (the default) the call should not be cached."""
+    estimator, X_train, X_test, y_train, y_test = regression_model
+    estimator_report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+    report = ComparisonReport([estimator_report, estimator_report])
+
+    report.metrics.prediction_error()
+    # skore should store the y_pred of the internal estimators, but not the plot
+    assert report._cache == {}
