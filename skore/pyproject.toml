@@ -41,6 +41,7 @@ test = [
   "polars",
   "pre-commit",
   "pytest",
+  "pytest-benchmark",
   "pytest-cov",
   "pytest-order",
   "pytest-randomly",
