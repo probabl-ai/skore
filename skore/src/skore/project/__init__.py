@@ -11,7 +11,10 @@ if not (PLUGINS := entry_points(group="skore.plugins.project")):
     raise SystemError("No project plugin found, please install at least one.")
 
 
-def open(mode: typing.Literal[*PLUGINS.names], /, *args, **kwargs):
+Modes = typing.Literal[*PLUGINS.names]  # type: ignore[valid-type]
+
+
+def open(mode: Modes, /, *args, **kwargs):
     if mode not in PLUGINS.names:
         raise ValueError(
             f"Unknown mode '{mode}'. Available modes {', '.join(PLUGINS.names)}."
