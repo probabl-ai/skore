@@ -239,8 +239,8 @@ ridge_report.metrics.report_metrics()
 
 # %%
 # .. warning::
-#   Keep in mind that any observations drawn from inspecting the coefficients
-#   of this simple Ridge model are made on a model that performs quite poorly, hence
+#   Keep in mind that any observation drawn from inspecting the coefficients
+#   of this simple Ridge model is made on a model that performs quite poorly, hence
 #   must be treated with caution.
 #   Indeed, a poorly performing model does not capture the true underlying
 #   relationships in the data.
