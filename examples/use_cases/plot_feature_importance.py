@@ -498,10 +498,12 @@ selectkbest_ridge = make_pipeline(
 
 # %%
 # .. note::
-#   To compensate the drop in score (as we have less features), a good practice would
-#   have been to fine-tune more hyperparameters using a
+#   To keep the computation time of this example low, we did not tune
+#   the hyperparameters of the predictive model. However, on a real use
+#   case, it would be important to tune the model using
 #   :class:`~sklearn.model_selection.RandomizedSearchCV`
-#   (not just a :class:`~sklearn.linear_model.RidgeCV`).
+#   and not just the :class:`~sklearn.linear_model.RidgeCV`. To keep the
+#   computation time of this exa
 
 # %%
 # Let us get the metrics for the best model of our grid search, and compare it with
