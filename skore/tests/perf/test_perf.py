@@ -4,6 +4,7 @@ from sklearn.datasets import make_regression
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from skore import EstimatorReport, config_context, set_config
+from skore.utils._hash import murmurhash3_32
 
 set_config(show_progress=False)
 
@@ -27,10 +28,11 @@ def test_manual():
         "md5",
         pytest.param(xxhash.xxh32(), id="xxhash32"),
         pytest.param(xxhash.xxh3_64(), id="xxhash3_64"),
+        pytest.param(murmurhash3_32(), id="murmurhash3_32"),
     ],
 )
 def test_hash(hash_func, benchmark):
-    X, y = make_regression(n_samples=10_000, n_features=100, random_state=0)
+    X, y = make_regression(n_samples=int(10e4), n_features=int(10e2), random_state=0)
     X_train, X_test, y_train, y_test = train_test_split(X, y)
     report = EstimatorReport(
         LinearRegression(),

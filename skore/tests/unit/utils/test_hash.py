@@ -1,9 +1,10 @@
 import numpy
 import pytest
 from skore._config import config_context
-from skore.utils._hash import _hash
+from skore.utils._hash import _hash, murmurhash3_32
 
 
+@pytest.mark.parametrize("hash_func", [None, murmurhash3_32()])
 @pytest.mark.parametrize(
     "obj",
     [
@@ -12,8 +13,9 @@ from skore.utils._hash import _hash
         (numpy.array([0.9]), numpy.array([0.3])),
     ],
 )
-def test_hash(obj):
-    _hash(obj)
+def test_hash(hash_func, obj):
+    with config_context(hash_func=hash_func):
+        _hash(obj)
 
 
 @pytest.mark.parametrize(
