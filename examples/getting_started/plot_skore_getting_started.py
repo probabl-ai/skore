@@ -40,38 +40,38 @@ Skore: getting started
 # In order to assist its users when programming, skore has implemented a
 # :class:`skore.EstimatorReport` class.
 #
-# Let us load some synthetic data and get the estimator report for a
-# :class:`~sklearn.linear_model.LogisticRegression`:
+# Let us load a binary classification dataset and get the estimator report for a
+# :class:`~sklearn.ensemble.RandomForestClassifier`:
 
 # %%
-from sklearn.datasets import make_classification
-from sklearn.linear_model import LogisticRegression
+from sklearn.datasets import load_breast_cancer
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 
 from skore import EstimatorReport
 
-X, y = make_classification(n_classes=2, n_samples=100_000, n_informative=4)
+X, y = load_breast_cancer(return_X_y=True, as_frame=True)
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 
-log_reg = LogisticRegression(random_state=0)
+rf = RandomForestClassifier(random_state=0)
 
-log_reg_report = EstimatorReport(
-    log_reg, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test
+rf_report = EstimatorReport(
+    rf, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test
 )
 
 # %%
-# Now, we can display the help tree to see all the insights that are available to us
+# Now, we can display the helper to see all the insights that are available to us
 # (skore detected that we are doing binary classification):
 
 # %%
-log_reg_report.help()
+rf_report.help()
 
 # %%
 # We can get the report metrics that was computed for us:
 
 # %%
-df_log_reg_report_metrics = log_reg_report.metrics.report_metrics()
-df_log_reg_report_metrics
+rf_report_metrics = rf_report.metrics.report_metrics(pos_label=1)
+rf_report_metrics
 
 # %%
 # We can also plot the ROC curve that was generated for us:
@@ -79,7 +79,7 @@ df_log_reg_report_metrics
 # %%
 import matplotlib.pyplot as plt
 
-roc_plot = log_reg_report.metrics.roc()
+roc_plot = rf_report.metrics.roc()
 roc_plot.plot()
 plt.tight_layout()
 
@@ -87,7 +87,7 @@ plt.tight_layout()
 # Furthermore, we can inspect the model using the permutation feature importance:
 
 # %%
-log_reg_report.feature_importance.feature_permutation().T.boxplot(vert=False)
+rf_report.feature_importance.feature_permutation().T.boxplot(vert=False)
 plt.tight_layout()
 
 # %%
@@ -108,7 +108,7 @@ plt.tight_layout()
 # %%
 from skore import CrossValidationReport
 
-cv_report = CrossValidationReport(log_reg, X, y, cv_splitter=5)
+cv_report = CrossValidationReport(rf, X, y, cv_splitter=5)
 
 # %%
 # We display the cross-validation report helper:
@@ -120,7 +120,7 @@ cv_report.help()
 # We display the metrics for each fold:
 
 # %%
-df_cv_report_metrics = cv_report.metrics.report_metrics()
+df_cv_report_metrics = cv_report.metrics.report_metrics(pos_label=1)
 df_cv_report_metrics
 
 # %%
@@ -137,7 +137,7 @@ plt.tight_layout()
 
 # %%
 log_reg_report_fold = cv_report.estimator_reports_[0]
-df_log_reg_report_fold_metrics = log_reg_report_fold.metrics.report_metrics()
+df_log_reg_report_fold_metrics = log_reg_report_fold.metrics.report_metrics(pos_label=1)
 df_log_reg_report_fold_metrics
 
 # %%
@@ -154,14 +154,14 @@ df_log_reg_report_fold_metrics
 # (corresponding to several estimators) on a same test set, as in a benchmark of
 # estimators.
 #
-# Apart from the previous ``log_reg_report``, let use define another estimator report:
+# Apart from the previous ``rf_report``, let use define another estimator report:
 
 # %%
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import GradientBoostingClassifier
 
-rf = RandomForestClassifier(max_depth=2, random_state=0)
-rf_report = EstimatorReport(
-    rf, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test
+gb = GradientBoostingClassifier(random_state=0)
+gb_report = EstimatorReport(
+    gb, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test
 )
 
 # %%
@@ -171,20 +171,20 @@ rf_report = EstimatorReport(
 # %%
 from skore import ComparisonReport
 
-comparison_report = ComparisonReport(reports=[log_reg_report, rf_report])
+comparator = ComparisonReport(reports=[rf_report, gb_report])
 
 # %%
 # As for the :class:`~skore.EstimatorReport` and the
 # :class:`~skore.CrossValidationReport`, we have a helper:
 
 # %%
-comparison_report.help()
+comparator.help()
 
 # %%
 # Let us display the result of our benchmark:
 
 # %%
-benchmark_metrics = comparison_report.metrics.report_metrics()
+benchmark_metrics = comparator.metrics.report_metrics(pos_label=1)
 benchmark_metrics
 
 # %%
@@ -195,7 +195,7 @@ benchmark_metrics
 # superimposing them on the same figure:
 
 # %%
-comparison_report.metrics.roc().plot()
+comparator.metrics.roc().plot()
 plt.tight_layout()
 
 
