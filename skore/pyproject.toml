@@ -24,7 +24,6 @@ classifiers = [
 ]
 dependencies = [
   "diskcache",
-  "httpx",
   "joblib",
   "matplotlib",
   "numpy",
@@ -46,7 +45,6 @@ test = [
   "pytest-order",
   "pytest-randomly",
   "pytest-xdist",
-  "respx",
   "ruff",
   "scikit-learn<1.7",
   "skrub",
@@ -78,12 +76,8 @@ Download = "https://pypi.org/project/skore/#files"
 Issues = "https://github.com/probabl-ai/skore/issues"
 "Release notes" = "https://github.com/probabl-ai/skore/releases"
 
-[project.scripts]
-skore-hub-login = "skore.hub.authentication.login:login"
-
 [project.entry-points."skore.plugins.project"]
 local = "skore.project.project:Project"
-remote = "skore.hub.project.project:Project"
 
 [build-system]
 requires = ["hatchling"]
