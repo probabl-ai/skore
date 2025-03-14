@@ -502,8 +502,7 @@ selectkbest_ridge = make_pipeline(
 #   the hyperparameters of the predictive model. However, on a real use
 #   case, it would be important to tune the model using
 #   :class:`~sklearn.model_selection.RandomizedSearchCV`
-#   and not just the :class:`~sklearn.linear_model.RidgeCV`. To keep the
-#   computation time of this exa
+#   and not just the :class:`~sklearn.linear_model.RidgeCV`.
 
 # %%
 # Let us get the metrics for the best model of our grid search, and compare it with
