@@ -136,9 +136,9 @@ plt.tight_layout()
 # for example the first fold:
 
 # %%
-log_reg_report_fold = cv_report.estimator_reports_[0]
-df_log_reg_report_fold_metrics = log_reg_report_fold.metrics.report_metrics(pos_label=1)
-df_log_reg_report_fold_metrics
+report_fold = cv_report.estimator_reports_[0]
+report_fold_metrics = report_fold.metrics.report_metrics(pos_label=1)
+report_fold_metrics
 
 # %%
 # .. seealso::
@@ -164,8 +164,11 @@ gb_report = EstimatorReport(
     gb, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test
 )
 
+gb_report_metrics = gb_report.metrics.report_metrics(pos_label=1)
+gb_report_metrics
+
 # %%
-# Now, let us compare these two estimator reports, that were applied to the exact
+# We can conveniently compare our two estimator reports, that were applied to the exact
 # same test set:
 
 # %%
@@ -197,7 +200,6 @@ benchmark_metrics
 # %%
 comparator.metrics.roc().plot()
 plt.tight_layout()
-
 
 # %%
 # Train-test split with skore
@@ -244,7 +246,7 @@ X_train, X_test, y_train, y_test = skore.train_test_split(
 # Tracking: skore project
 # =======================
 #
-# A key feature of skore is its :class:`~skore.Project` that allows to store
+# Another key feature of skore is its :class:`~skore.Project` that allows to store
 # items of many types.
 
 # %%
@@ -252,8 +254,8 @@ X_train, X_test, y_train, y_test = skore.train_test_split(
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 # %%
-#   Let's start by creating a skore project directory named ``my_project.skore`` in our
-#   current directory:
+#  Let's start by creating a skore project directory named ``my_project.skore`` in our
+#  current directory:
 
 # %%
 
@@ -268,18 +270,26 @@ os.chdir(temp_dir_path)
 # sphinx_gallery_end_ignore
 my_project = skore.Project("my_project")
 
-
 # %%
 # Skore project: storing and retrieving some items
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # Now that the project exists, we can store some useful items in it (in the same
-# directory) using :func:`~skore.Project.put`), with a "universal" key-value convention:
+# directory) using :func:`~skore.Project.put`), with a "universal" key-value convention,
+# along with some annotations.
 
 # %%
-my_project.put("my_int", 3)
-my_project.put("df_cv_report_metrics", df_cv_report_metrics)
-my_project.put("roc_plot", roc_plot)
+# Let us store our report metrics and the model report on the random forest using
+# :meth:`~skore.Project.put`, along with some annotation to help us track our
+# experiments:
+
+# %%
+my_project.put(
+    "report_metrics", rf_report_metrics, note="random forest, pandas dataframe"
+)
+my_project.put(
+    "estimator_report", rf_report, note="random forest, skore estimator report"
+)
 
 # %%
 # .. note ::
@@ -288,13 +298,16 @@ my_project.put("roc_plot", roc_plot)
 #   etc.
 
 # %%
-# We can retrieve the value of an item:
+# We can retrieve the value of an item using :meth:`~skore.Project.get`:
 
 # %%
-my_project.get("my_int")
+my_project.get("report_metrics")
 
 # %%
-my_project.get("df_cv_report_metrics")
+# We can also retrieve the storage data and annotation:
+
+# %%
+my_project.get("report_metrics", metadata="all")
 
 # %%
 # .. seealso::
@@ -308,21 +321,23 @@ my_project.get("df_cv_report_metrics")
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 # %%
-# Suppose we store several values for a same item called ``my_key_metric``:
+# Now, from the gradient boosting model, let us the exact same keys:
 
 # %%
-my_project.put("my_key_metric", 4)
+my_project.put(
+    "report_metrics", gb_report_metrics, note="gradient boosting, pandas dataframe"
+)
+my_project.put(
+    "estimator_report", gb_report, note="gradient boosting, skore estimator report"
+)
 
-my_project.put("my_key_metric", 9)
-
-my_project.put("my_key_metric", 16)
 
 # %%
 # Skore does not overwrite items with the same name (key): instead, it stores
 # their history so that nothing is lost:
 
 # %%
-history = my_project.get("my_key_metric", version="all")
+history = my_project.get("report_metrics", version="all")
 # sphinx_gallery_start_ignore
 temp_dir.cleanup()
 # sphinx_gallery_end_ignore
