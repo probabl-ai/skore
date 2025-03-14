@@ -369,16 +369,6 @@ df_ridge_report_coef_unscaled
 # feature engineering.
 
 # %%
-# In our previous EDA, when plotting the geospatial data with regards to the house
-# prices, we noticed that it is important to take into account the latitude and
-# longitude features.
-# Moreover, we also observed that the median income is well associated with the
-# house prices.
-# Hence, we will try a feature engineering that takes into account the interactions
-# of the geospatial features with features such as the income.
-# The interactions are no longer simply linear as previously.
-
-# %%
 # Let us build a model with some more complex feature engineering, and still use a
 # Ridge regressor (linear model) at the end.
 # In particular, we perform a K-means clustering on the geospatial features:
@@ -386,7 +376,7 @@ df_ridge_report_coef_unscaled
 # %%
 from sklearn.cluster import KMeans
 from sklearn.compose import make_column_transformer
-from sklearn.preprocessing import PolynomialFeatures, SplineTransformer
+from sklearn.preprocessing import SplineTransformer
 
 geo_columns = ["Latitude", "Longitude"]
 
@@ -397,10 +387,14 @@ preprocessor = make_column_transformer(
 engineered_ridge = make_pipeline(
     preprocessor,
     SplineTransformer(),
-    PolynomialFeatures(degree=1, interaction_only=True, include_bias=False),
     Ridge(),
 )
 engineered_ridge
+
+# %%
+# .. note::
+#   A further work could be to add :class:`~sklearn.preprocessing.PolynomialFeatures`
+#   after the spline transformer to take into account interactions between features.
 
 # %%
 # Now, let us compute the metrics and compare it to our previous model using
@@ -434,7 +428,7 @@ plt.tight_layout()
 # %%
 # About the clipping issue, compared to the prediction error of our previous model
 # (``ridge_report``), our ``engineered_ridge_report`` model seems to produce predictions
-# that are not as large, so it seems that some interactions between features have
+# that are not as large, so it seems that some feature engineering has
 # helped alleviate the clipping issue.
 
 # %%
@@ -463,9 +457,10 @@ engineered_ridge_report.feature_importance.coefficients().sort_values(
 plt.tight_layout()
 
 # %%
-# We can observe that the most importance features are interactions between several
-# features, that a simple linear model without feature engineering could not have
-# captured.
+# We can observe that the most important features are based on ``AveOccup`` and on the
+# geospatial features (resulting from the clustering), that a simple linear model
+# without feature engineering could not have captured.
+# Indeed, the simple Ridge model did not consider ``AveOccup`` to be important.
 
 # %%
 # Compromising on complexity
@@ -494,7 +489,6 @@ preprocessor = make_column_transformer(
 model = make_pipeline(
     preprocessor,
     SplineTransformer(),
-    PolynomialFeatures(degree=1, interaction_only=True, include_bias=False),
     VarianceThreshold(),
     SelectKBest(k=50),
     RidgeCV(np.logspace(-5, 5, num=100)),
@@ -508,7 +502,7 @@ parameter_grid = {
 }
 
 random_search = RandomizedSearchCV(
-    model, param_distributions=parameter_grid, random_state=0
+    model, param_distributions=parameter_grid, random_state=0, n_jobs=2
 )
 
 with warnings.catch_warnings():
