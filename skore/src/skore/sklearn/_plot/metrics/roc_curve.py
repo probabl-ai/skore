@@ -233,9 +233,9 @@ class RocCurveDisplay(
         line_kwargs: dict[str, Any] = {}
 
         if ml_task == "binary-classification":
-            assert (
-                pos_label is not None
-            ), "pos_label should not be None with binary classification."
+            assert pos_label is not None, (
+                "pos_label should not be None with binary classification."
+            )
 
             if roc_curve_kwargs is None:
                 roc_curve_kwargs = {}
@@ -624,11 +624,12 @@ class RocCurveDisplay(
                         line_kwargs, roc_curve_kwargs[est_idx]
                     )
                     line_kwargs_validated["label"] = (
-                        f"{est_name} - {data_source} set"
-                        f" (AUC = {roc_auc_mean:0.2f})"
+                        f"{est_name} - {data_source} set (AUC = {roc_auc_mean:0.2f})"
                     )
 
-                    (line,) = ax.plot(fpr_est_class, tpr_est_class, **line_kwargs_validated)
+                    (line,) = ax.plot(
+                        fpr_est_class, tpr_est_class, **line_kwargs_validated
+                    )
                     lines.append(line)
 
         ax.legend(
@@ -736,18 +737,16 @@ class RocCurveDisplay(
                 )
             )
         else:  # self.report_type == "comparison-estimator"
-            self.ax_, self.lines_, info_pos_label = (
-                self._plot_comparison_estimator(
-                    fpr=self.fpr,
-                    tpr=self.tpr,
-                    roc_auc=self.roc_auc,
-                    pos_label=self.pos_label,
-                    data_source=self.data_source,
-                    ml_task=self.ml_task,
-                    ax=self.ax_,
-                    estimator_names=self.estimator_names,
-                    roc_curve_kwargs=roc_curve_kwargs,
-                )
+            self.ax_, self.lines_, info_pos_label = self._plot_comparison_estimator(
+                fpr=self.fpr,
+                tpr=self.tpr,
+                roc_auc=self.roc_auc,
+                pos_label=self.pos_label,
+                data_source=self.data_source,
+                ml_task=self.ml_task,
+                ax=self.ax_,
+                estimator_names=self.estimator_names,
+                roc_curve_kwargs=roc_curve_kwargs,
             )
 
         chance_level_kwargs = _validate_style_kwargs(
@@ -812,7 +811,7 @@ class RocCurveDisplay(
         estimators : list of estimator instances
             The estimators from which `y_pred` is obtained.
 
-        estimator_name : list of str
+        estimator_names : list of str
             Name of the estimators used to plot the ROC curve.
 
         ml_task : {"binary-classification", "multiclass-classification"}
