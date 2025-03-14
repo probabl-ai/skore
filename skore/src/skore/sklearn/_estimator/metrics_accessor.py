@@ -3,7 +3,6 @@ from collections.abc import Iterable
 from functools import partial
 from typing import Any, Callable, Literal, Optional, Union
 
-import joblib
 import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike, NDArray
@@ -21,6 +20,7 @@ from skore.sklearn._plot import (
 )
 from skore.sklearn.types import SKLearnScorer
 from skore.utils._accessor import _check_supported_ml_task
+from skore.utils._hash import _hash
 from skore.utils._index import flatten_multi_index
 
 DataSource = Literal["test", "train", "X_y"]
@@ -402,7 +402,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         for key in ordered_metric_kwargs:
             value = metric_kwargs[key]
             if isinstance(value, np.ndarray):
-                cache_key_parts.append(joblib.hash(value))
+                cache_key_parts.append(_hash(value))
             else:
                 cache_key_parts.append(value)
 

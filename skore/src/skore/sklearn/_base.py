@@ -4,7 +4,6 @@ from abc import ABC, abstractmethod
 from io import StringIO
 from typing import Any, Generic, Literal, Optional, TypeVar, Union
 
-import joblib
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 from rich.console import Console, Group
@@ -14,6 +13,7 @@ from sklearn.base import BaseEstimator
 from sklearn.utils._response import _check_response_method, _get_response_values
 
 from skore.externals._sklearn_compat import is_clusterer
+from skore.utils._hash import _hash
 
 
 class _HelpMixin(ABC):
@@ -311,7 +311,7 @@ class _BaseAccessor(_HelpMixin, Generic[ParentT]):
                 raise ValueError(
                     f"{missing_data} must be provided when data_source is X_y."
                 )
-            return X, y, joblib.hash((X, y))
+            return X, y, _hash((X, y))
         else:
             raise ValueError(
                 f"Invalid data source: {data_source}. Possible values are: "
@@ -386,7 +386,7 @@ def _get_cached_response_values(
             # Only trigger hash computation if it was not previously done.
             # If data_source_hash is not None, we internally computed ourself the hash
             # and it is trustful
-            data_source_hash = joblib.hash(X)
+            data_source_hash = _hash(X)
         cache_key = cache_key + (data_source_hash,)
 
     if cache_key in cache:

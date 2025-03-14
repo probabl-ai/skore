@@ -3,7 +3,6 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Any, Callable, Literal, Optional, Union, cast
 
-import joblib
 import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike
@@ -18,6 +17,7 @@ from skore.externals._pandas_accessors import DirNamesMixin
 from skore.sklearn._base import _BaseAccessor
 from skore.sklearn._estimator.report import EstimatorReport
 from skore.utils._accessor import _check_has_coef, _check_has_feature_importances
+from skore.utils._hash import _hash
 from skore.utils._index import flatten_multi_index
 
 DataSource = Literal["test", "train", "X_y"]
@@ -504,7 +504,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 cache_key_parts.append(data_source_hash)
 
             if callable(scoring) or isinstance(scoring, (list, dict)):
-                cache_key_parts.append(joblib.hash(scoring))
+                cache_key_parts.append(_hash(scoring))
             else:
                 cache_key_parts.append(scoring)
 
