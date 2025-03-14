@@ -164,9 +164,6 @@ gb_report = EstimatorReport(
     gb, X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test
 )
 
-gb_report_metrics = gb_report.metrics.report_metrics(pos_label=1)
-gb_report_metrics
-
 # %%
 # We can conveniently compare our two estimator reports, that were applied to the exact
 # same test set:
@@ -254,7 +251,7 @@ X_train, X_test, y_train, y_test = skore.train_test_split(
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 # %%
-#  Let's start by creating a skore project directory named ``my_project.skore`` in our
+#  Let us start by creating a skore project directory named ``my_project.skore`` in our
 #  current directory:
 
 # %%
@@ -279,14 +276,12 @@ my_project = skore.Project("my_project")
 # along with some annotations.
 
 # %%
-# Let us store our report metrics and the model report on the random forest using
+# Let us store the accuracy and the estimator report of the random forest using
 # :meth:`~skore.Project.put`, along with some annotation to help us track our
 # experiments:
 
 # %%
-my_project.put(
-    "report_metrics", rf_report_metrics, note="random forest, pandas dataframe"
-)
+my_project.put("accuracy", rf_report.metrics.accuracy(), note="random forest, float")
 my_project.put(
     "estimator_report", rf_report, note="random forest, skore estimator report"
 )
@@ -301,13 +296,13 @@ my_project.put(
 # We can retrieve the value of an item using :meth:`~skore.Project.get`:
 
 # %%
-my_project.get("report_metrics")
+my_project.get("accuracy")
 
 # %%
-# We can also retrieve the storage data and annotation:
+# We can also retrieve the storage date and our annotation:
 
 # %%
-my_project.get("report_metrics", metadata="all")
+my_project.get("accuracy", metadata="all")
 
 # %%
 # .. seealso::
@@ -321,27 +316,29 @@ my_project.get("report_metrics", metadata="all")
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 # %%
-# Now, from the gradient boosting model, let us the exact same keys:
+# Now, for the gradient boosting model, let us store the same kinds of items
+# using the exact same keys, namely ``accuracy`` and ``estimator_report``:
 
 # %%
 my_project.put(
-    "report_metrics", gb_report_metrics, note="gradient boosting, pandas dataframe"
+    "accuracy", gb_report.metrics.accuracy(), note="gradient boosting, float"
 )
 my_project.put(
     "estimator_report", gb_report, note="gradient boosting, skore estimator report"
 )
-
 
 # %%
 # Skore does not overwrite items with the same name (key): instead, it stores
 # their history so that nothing is lost:
 
 # %%
-history = my_project.get("report_metrics", version="all")
+from pprint import pprint
+
+history = my_project.get("accuracy", version="all", metadata="all")
 # sphinx_gallery_start_ignore
 temp_dir.cleanup()
 # sphinx_gallery_end_ignore
-history
+pprint(history)
 
 # %%
 # These tracking functionalities are very useful to:
