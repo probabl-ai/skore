@@ -466,7 +466,7 @@ plt.tight_layout()
 # We can observe that the most important features are interactions between features,
 # mostly based on ``AveOccup``, that a simple linear model without feature engineering
 # could not have captured.
-# Indeed, the simple Ridge model did not consider ``AveOccup`` to be important.
+# Indeed, the vanilla Ridge model did not consider ``AveOccup`` to be important.
 
 # %%
 # Compromising on complexity
@@ -498,9 +498,10 @@ selectkbest_ridge = make_pipeline(
 
 # %%
 # .. note::
-#   To compensate the drop in score (as we have less feature), a good practice would
-#   have been to fine-tune some hyperparameters using a
-#   :class:`~sklearn.model_selection.RandomizedSearchCV`.
+#   To compensate the drop in score (as we have less features), a good practice would
+#   have been to fine-tune more hyperparameters using a
+#   :class:`~sklearn.model_selection.RandomizedSearchCV`
+#   (not just a :class:`~sklearn.linear_model.RidgeCV`).
 
 # %%
 # Let us get the metrics for the best model of our grid search, and compare it with
@@ -543,6 +544,7 @@ print(selectk_features)
 # We can see that, in the best features, according to statistical tests, there are
 # many interactions between geospatial features (derived from the K-means clustering)
 # and the median income.
+# Note that these features are not sorted.
 
 # %%
 # And here is the feature importance based on our model (sorted by absolute values):
@@ -556,10 +558,6 @@ selectk_ridge_report.feature_importance.coefficients().sort_values(
     ylabel="Feature",
 )
 plt.tight_layout()
-
-# %%
-# It is interesting to note that the best features according to feature selection
-# or coefficients are not the same.
 
 # %%
 # Finally, we can visualize the results of our K-means clustering (on the training set):
