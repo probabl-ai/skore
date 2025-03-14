@@ -328,7 +328,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                 index = None if isinstance(score, Iterable) else [metric_name]
 
             score_df = pd.DataFrame(
-                score_array, index=index, columns=[self._parent.estimator_name_]
+                score_array, index=index, columns=[self._parent.estimator_name]
             )
             if indicator_favorability:
                 score_df["Favorability"] = metric_favorability
@@ -1638,7 +1638,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                 y_true=[y],
                 y_pred=[y_pred],
                 estimator=self._parent.estimator_,
-                estimator_name=self._parent.estimator_name_,
+                estimator_name=self._parent.estimator_name,
                 ml_task=self._parent._ml_task,
                 data_source=data_source,
                 **display_kwargs,
