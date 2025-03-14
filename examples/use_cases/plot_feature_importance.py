@@ -369,6 +369,16 @@ df_ridge_report_coef_unscaled
 # feature engineering.
 
 # %%
+# In our previous EDA, when plotting the geospatial data with regards to the house
+# prices, we noticed that it is important to take into account the latitude and
+# longitude features.
+# Moreover, we also observed that the median income is well associated with the
+# house prices.
+# Hence, we will try a feature engineering that takes into account the interactions
+# of the geospatial features with features such as the income.
+# The interactions are no longer simply linear as previously.
+
+# %%
 # Let us build a model with some more complex feature engineering, and still use a
 # Ridge regressor (linear model) at the end.
 # In particular, we perform a K-means clustering on the geospatial features:
@@ -376,7 +386,7 @@ df_ridge_report_coef_unscaled
 # %%
 from sklearn.cluster import KMeans
 from sklearn.compose import make_column_transformer
-from sklearn.preprocessing import SplineTransformer
+from sklearn.preprocessing import PolynomialFeatures, SplineTransformer
 
 geo_columns = ["Latitude", "Longitude"]
 
@@ -386,15 +396,11 @@ preprocessor = make_column_transformer(
 )
 engineered_ridge = make_pipeline(
     preprocessor,
-    SplineTransformer(),
+    SplineTransformer(sparse_output=True),
+    PolynomialFeatures(degree=2, interaction_only=True, include_bias=False),
     Ridge(),
 )
 engineered_ridge
-
-# %%
-# .. note::
-#   A further work could be to add :class:`~sklearn.preprocessing.PolynomialFeatures`
-#   after the spline transformer to take into account interactions between features.
 
 # %%
 # Now, let us compute the metrics and compare it to our previous model using
@@ -428,12 +434,12 @@ plt.tight_layout()
 # %%
 # About the clipping issue, compared to the prediction error of our previous model
 # (``ridge_report``), our ``engineered_ridge_report`` model seems to produce predictions
-# that are not as large, so it seems that some feature engineering has
+# that are not as large, so it seems that some interactions between features have
 # helped alleviate the clipping issue.
 
 # %%
 # However, interpreting the features is harder: indeed, our complex feature engineering
-# introduced a lot of features:
+# introduced a *lot* of features:
 
 # %%
 print("Initial number of features:", X_train.shape[1])
@@ -457,9 +463,9 @@ engineered_ridge_report.feature_importance.coefficients().sort_values(
 plt.tight_layout()
 
 # %%
-# We can observe that the most important features are based on ``AveOccup`` and on the
-# geospatial features (resulting from the clustering), that a simple linear model
-# without feature engineering could not have captured.
+# We can observe that the most important features are interactions between features,
+# mostly based on ``AveOccup``, that a simple linear model without feature engineering
+# could not have captured.
 # Indeed, the simple Ridge model did not consider ``AveOccup`` to be important.
 
 # %%
@@ -470,53 +476,31 @@ plt.tight_layout()
 # Now, let us build a model with a more interpretable feature engineering, although
 # it might not perform as well.
 # For that, after the complex feature engineering, we perform some feature selection
-# using a :class:`~sklearn.feature_selection.SelectKBest`.
-# To compensate the drop in score, we fine-tune some hyperparameters using
-# a :class:`~sklearn.model_selection.RandomizedSearchCV`.
+# using a :class:`~sklearn.feature_selection.SelectKBest`, in order to reduce the
+# number of features.
 
 # %%
-import warnings
-from scipy.stats import randint
 from sklearn.feature_selection import SelectKBest, VarianceThreshold
-from sklearn.model_selection import RandomizedSearchCV
 from sklearn.linear_model import RidgeCV
 
 preprocessor = make_column_transformer(
-    (KMeans(n_clusters=20, random_state=0), geo_columns),
+    (KMeans(n_clusters=10, random_state=0), geo_columns),
     remainder="passthrough",
-    force_int_remainder_cols=False,
 )
-model = make_pipeline(
+selectkbest_ridge = make_pipeline(
     preprocessor,
-    SplineTransformer(),
+    SplineTransformer(sparse_output=True),
+    PolynomialFeatures(degree=2, interaction_only=True, include_bias=False),
     VarianceThreshold(),
-    SelectKBest(k=50),
+    SelectKBest(k=150),
     RidgeCV(np.logspace(-5, 5, num=100)),
-).set_output(transform="pandas")
-
-parameter_grid = {
-    "columntransformer__kmeans__n_clusters": randint(low=10, high=30),
-    "splinetransformer__degree": randint(low=1, high=4),
-    "splinetransformer__n_knots": randint(low=2, high=10),
-    "selectkbest__k": randint(low=5, high=100),
-}
-
-random_search = RandomizedSearchCV(
-    model, param_distributions=parameter_grid, random_state=0, n_jobs=2
 )
 
-with warnings.catch_warnings():
-    # Catch expected warnings to avoid cluttering this notebook,
-    # especially when k > n_features
-    warnings.filterwarnings(
-        "ignore",
-        category=UserWarning,
-        module="sklearn.feature_selection._univariate_selection",
-    )
-    random_search.fit(X_train, y_train)
-
-selectkbest_ridge = random_search.best_estimator_
-selectkbest_ridge
+# %%
+# .. note::
+#   To compensate the drop in score (as we have less feature), a good practice would
+#   have been to fine-tune some hyperparameters using a
+#   :class:`~sklearn.model_selection.RandomizedSearchCV`.
 
 # %%
 # Let us get the metrics for the best model of our grid search, and compare it with
@@ -530,7 +514,7 @@ selectk_ridge_report = EstimatorReport(
     y_train=y_train,
     y_test=y_test,
 )
-reports_to_compare["Ridge w/ feature selection and grid search"] = selectk_ridge_report
+reports_to_compare["Ridge w/ feature engineering and selection"] = selectk_ridge_report
 comparator = ComparisonReport(reports=reports_to_compare)
 comparator.metrics.report_metrics()
 
@@ -552,13 +536,13 @@ print(
 # features are the following:
 
 # %%
-selectk_features = selectk_ridge_report.estimator_[-1].feature_names_in_
+selectk_features = selectk_ridge_report.estimator_[:-1].get_feature_names_out()
 print(selectk_features)
 
 # %%
 # We can see that, in the best features, according to statistical tests, there are
-# geospatial features (derived from the K-means clustering) and splines on the median
-# income.
+# many interactions between geospatial features (derived from the K-means clustering)
+# and the median income.
 
 # %%
 # And here is the feature importance based on our model (sorted by absolute values):
@@ -574,12 +558,16 @@ selectk_ridge_report.feature_importance.coefficients().sort_values(
 plt.tight_layout()
 
 # %%
+# It is intestesting to note that the best features according to feature selection
+# or coefficients are not the same.
+
+# %%
 # Finally, we can visualize the results of our K-means clustering (on the training set):
 
 # %%
 
 # getting the cluster labels
-col_transformer = selectkbest_ridge.named_steps["columntransformer"]
+col_transformer = selectk_ridge_report.estimator_.named_steps["columntransformer"]
 kmeans = col_transformer.named_transformers_["kmeans"]
 clustering_labels = kmeans.labels_
 
@@ -957,12 +945,13 @@ plot_permutation_train_test(tree_report)
 # and ``Longitude``.
 # We explained the trade-off between performance (with complex feature engineering)
 # and interpretability.
+# Interactions between features have highlighted the importance of ``AveOccup``.
 # With tree-based models such as decision trees, random forests, and gradient-boosted
 # trees, we utilized Mean Decrease in Impurity (MDI) to identify key features,
-# notably highlighting ``AveOccup`` alongside ``MedInc``, ``Latitude``, and
+# notably ``AveOccup`` alongside ``MedInc``, ``Latitude``, and
 # ``Longitude``.
-# Compared to linear models, tree-based models rely more on ``AveOccup`` and perform
-# better.
+# The random forest got the best score, without any complex feature engineering
+# compared to linear models.
 # The model-agnostic permutation feature importance further enabled us to compare
 # feature significance across diverse model types.
 
