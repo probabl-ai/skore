@@ -558,7 +558,7 @@ selectk_ridge_report.feature_importance.coefficients().sort_values(
 plt.tight_layout()
 
 # %%
-# It is intestesting to note that the best features according to feature selection
+# It is interesting to note that the best features according to feature selection
 # or coefficients are not the same.
 
 # %%
