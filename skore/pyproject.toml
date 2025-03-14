@@ -67,6 +67,8 @@ sphinx = [
   "sphinx-tabs",
   "sphinx<8.2.0",
   "sphinx_autosummary_accessors",
+]
+dev = [
   "nbformat",
   "ipykernel",
 ]
