@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 import pytest
 from skore.persistence.repository import ItemRepository
 from skore.persistence.storage import InMemoryStorage
-from skore.project import Project
+from skore.project.project import Project
 
 
 def pytest_configure(config):
