@@ -41,6 +41,7 @@ test = [
   "polars",
   "pre-commit",
   "pytest",
+  "pytest-benchmark",
   "pytest-cov",
   "pytest-order",
   "pytest-randomly",
@@ -49,6 +50,7 @@ test = [
   "scikit-learn<1.7",
   "skrub",
   "xdoctest",
+  "xxhash",
 ]
 sphinx = [
   "IPython",
