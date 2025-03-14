@@ -27,6 +27,25 @@ import decimal
 Pickler = pickle._Pickler
 
 
+def _check_hash(hash_):
+    """Check validity of hash function.
+
+    Parameters
+    -----------
+    hash: string or `hashlib`-compatible hash object, optional
+        The hash algorithm to use. If a string, will be passed to `hashlib.new`
+        to create a hash object. Otherwise, will be checked to see if it
+        supports `update` and `hexdigest` and returned as-is.
+    """
+    if isinstance(hash_, str):
+        return hashlib.new(hash_, usedforsecurity=False)
+    if not hasattr(hash_, "update") or not hasattr(hash_, "hexdigest"):
+        raise ValueError(
+            "Hash function instance must implement `update` and `hexdigest` methods."
+        )
+    return hash_
+
+
 class _ConsistentSet(object):
     """ Class used to ensure the hash of Sets is preserved
         whatever the order of its items.
@@ -64,7 +83,7 @@ class Hasher(Pickler):
         protocol = 3
         Pickler.__init__(self, self.stream, protocol=protocol)
         # Initialise the hash obj
-        self._hash = hashlib.new(hash_name)
+        self._hash = _check_hash(hash_name)
 
     def hash(self, obj, return_digest=True):
         try:
@@ -255,17 +274,12 @@ def hash(obj, hash_name='md5', coerce_mmap=False):
 
         Parameters
         ----------
-        hash_name: 'md5' or 'sha1'
-            Hashing algorithm used. sha1 is supposedly safer, but md5 is
-            faster.
+        hash_name: string or `hashlib`-compatible hash object, optional
+            Hashing algorithm used.
         coerce_mmap: boolean
             Make no difference between np.memmap and np.ndarray
     """
-    valid_hash_names = ('md5', 'sha1')
-    if hash_name not in valid_hash_names:
-        raise ValueError("Valid options for 'hash_name' are {}. "
-                         "Got hash_name={!r} instead."
-                         .format(valid_hash_names, hash_name))
+    _check_hash(hash_name)
     if 'numpy' in sys.modules:
         hasher = NumpyHasher(hash_name=hash_name, coerce_mmap=coerce_mmap)
     else:
