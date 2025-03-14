@@ -953,6 +953,3 @@ plot_permutation_train_test(tree_report)
 # compared to linear models.
 # The model-agnostic permutation feature importance further enabled us to compare
 # feature significance across diverse model types.
-
-# %%
-# A further work could be look into Shapley values, LIME, and so on.
