@@ -737,7 +737,7 @@ plt.tight_layout()
 
 # %%
 tree_report.feature_importance.mean_decrease_impurity().plot.barh(
-    title="Feature importance",
+    title=f"Feature importance of {tree_report.estimator_name_}",
     xlabel="MDI",
     ylabel="Feature",
 )
@@ -800,7 +800,7 @@ print(f"Number of trees in the forest: {n_estimators}")
 
 # %%
 rf_report.feature_importance.mean_decrease_impurity().plot.barh(
-    title="Feature importance",
+    title=f"Feature importance of {rf_report.estimator_name_}",
     xlabel="MDI",
     ylabel="Feature",
 )
