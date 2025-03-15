@@ -375,12 +375,13 @@ df_ridge_report_coef_unscaled
 # Moreover, we also observed that the median income is well associated with the
 # house prices.
 # Hence, we will try a feature engineering that takes into account the interactions
-# of the geospatial features with features such as the income.
+# of the geospatial features with features such as the income, using polynomial
+# features.
 # The interactions are no longer simply linear as previously.
 
 # %%
 # Let us build a model with some more complex feature engineering, and still use a
-# Ridge regressor (linear model) at the end.
+# Ridge regressor (linear model) at the end of the pipeline.
 # In particular, we perform a K-means clustering on the geospatial features:
 
 # %%
@@ -467,6 +468,40 @@ plt.tight_layout()
 # mostly based on ``AveOccup``, that a simple linear model without feature engineering
 # could not have captured.
 # Indeed, the vanilla Ridge model did not consider ``AveOccup`` to be important.
+# As the engineered Ridge has a better score, perhaps the vanilla Ridge missed
+# something about ``AveOccup`` that seems to be key to predicting house prices.
+
+# %%
+# Let us visualize how ``AveOccup`` interacts with ``MedHouseVal``:
+
+# %%
+X_y_plot = california_housing.frame.copy()
+X_y_plot["AveOccup"] = pd.qcut(X_y_plot["AveOccup"], q=5)
+bin_order = X_y_plot["AveOccup"].cat.categories.sort_values()
+fig = px.histogram(
+    X_y_plot,
+    x=california_housing.target_names[0],
+    color="AveOccup",
+    category_orders={"AveOccup": bin_order},
+)
+fig
+
+# %%
+# Finally, we can visualize the results of our K-means clustering (on the training set):
+
+# %%
+
+# getting the cluster labels
+col_transformer = engineered_ridge_report.estimator_.named_steps["columntransformer"]
+kmeans = col_transformer.named_transformers_["kmeans"]
+clustering_labels = kmeans.labels_
+
+# adding the cluster labels to our dataframe
+X_train_plot = X_train.copy()
+X_train_plot.insert(0, "clustering_labels", clustering_labels)
+
+# plotting the map
+plot_map(X_train_plot, "clustering_labels")
 
 # %%
 # Compromising on complexity
@@ -505,8 +540,7 @@ selectkbest_ridge = make_pipeline(
 #   and not just the :class:`~sklearn.linear_model.RidgeCV`.
 
 # %%
-# Let us get the metrics for the best model of our grid search, and compare it with
-# our previous iterations:
+# Let us get the metrics for our model and compare it with our previous iterations:
 
 # %%
 selectk_ridge_report = EstimatorReport(
@@ -559,23 +593,6 @@ selectk_ridge_report.feature_importance.coefficients().sort_values(
     ylabel="Feature",
 )
 plt.tight_layout()
-
-# %%
-# Finally, we can visualize the results of our K-means clustering (on the training set):
-
-# %%
-
-# getting the cluster labels
-col_transformer = selectk_ridge_report.estimator_.named_steps["columntransformer"]
-kmeans = col_transformer.named_transformers_["kmeans"]
-clustering_labels = kmeans.labels_
-
-# adding the cluster labels to our dataframe
-X_train_plot = X_train.copy()
-X_train_plot.insert(0, "clustering_labels", clustering_labels)
-
-# plotting the map
-plot_map(X_train_plot, "clustering_labels")
 
 # %%
 # Tree-based models: mean decrease in impurity (MDI)
@@ -668,11 +685,12 @@ tree_report.help()
 # %%
 from sklearn.tree import plot_tree
 
-_ = plot_tree(
+plot_tree(
     tree_report.estimator_,
     feature_names=tree_report.estimator_.feature_names_in_,
     max_depth=2,
 )
+plt.tight_layout()
 
 # %%
 # This tree explains how each sample is going to be predicted by our tree.
@@ -793,26 +811,8 @@ plt.tight_layout()
 # all the decision trees in the forest.
 #
 # As for the decision tree, ``MecInc`` is the most important feature.
-# Compared to linear models, the random forest also attributes a high importance to
-# the ``Longitude`` and ``Latitude``, but the second most important feature is
-# ``AveOccup`` that linear models did not deem very important.
-# As the random forest has a great score, perhaps linear models missed something
-# about ``AveOccup`` that seems to be key to predicting house prices.
-
-# %%
-# Let us visualize how ``AveOccup`` interacts with ``MedHouseVal``:
-
-# %%
-X_y_plot = california_housing.frame.copy()
-X_y_plot["AveOccup"] = pd.qcut(X_y_plot["AveOccup"], q=5)
-bin_order = X_y_plot["AveOccup"].cat.categories.sort_values()
-fig = px.histogram(
-    X_y_plot,
-    x=california_housing.target_names[0],
-    color="AveOccup",
-    category_orders={"AveOccup": bin_order},
-)
-fig
+# As for linear models with some feature engineering, the random forest also attributes
+# a high importance to ``Longitude``, ``Latitude``, and ``AveOccup``.
 
 # %%
 # Model-agnostic: permutation feature importance
