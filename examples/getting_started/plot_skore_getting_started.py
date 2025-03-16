@@ -80,8 +80,7 @@ rf_report.help()
 # In particular, we can get the report metrics that was computed for us:
 
 # %%
-rf_report_metrics = rf_report.metrics.report_metrics(pos_label=1)
-rf_report_metrics
+rf_report.metrics.report_metrics(pos_label=1)
 
 # %%
 # We can also plot the ROC curve that was generated for us:
@@ -151,12 +150,10 @@ plt.tight_layout()
 
 # %%
 # We can retrieve the estimator report of a specific fold to investigate further,
-# for example the first fold:
+# for example getting the report metrics for the first fold only:
 
 # %%
-report_fold = cv_report.estimator_reports_[0]
-report_fold_metrics = report_fold.metrics.report_metrics(pos_label=1)
-report_fold_metrics
+cv_report.estimator_reports_[0].metrics.report_metrics(pos_label=1)
 
 # %%
 # .. seealso::
@@ -354,11 +351,11 @@ my_project.put(
 # their history so that nothing is lost:
 
 # %%
-history = my_project.get("accuracy", version="all", metadata="all")
+accuracies_history = my_project.get("accuracy", metadata="all", version="all")
 # sphinx_gallery_start_ignore
 temp_dir.cleanup()
 # sphinx_gallery_end_ignore
-pprint(history)
+pprint(accuracies_history)
 
 # %%
 # .. note::
