@@ -9,8 +9,8 @@ Skore: getting started
 # %%
 # This getting started guide illustrates how to use skore and why:
 #
-# #.    Get assistance when developing your ML/DS projects to avoid common pitfalls
-#       and follow recommended practices.
+# #.    Get assistance when developing your machine learning projects to avoid common
+#       pitfalls and follow recommended practices.
 #
 #       *   :class:`skore.EstimatorReport`: get an insightful report on your estimator,
 #           for evaluation and inspection
@@ -22,7 +22,7 @@ Skore: getting started
 #
 #       *   :func:`skore.train_test_split`: get diagnostics when splitting your data
 #
-# #.    Track your ML/DS results using skore's :class:`~skore.Project`
+# #.    Track your machine learning results using skore's :class:`~skore.Project`
 #       (for storage).
 
 # %%
@@ -99,7 +99,6 @@ plt.tight_layout()
 #   -   :ref:`example_estimator_report` for model evaluation,
 #   -   :ref:`example_feature_importance` for model inspection.
 
-
 # %%
 # Cross-validation with skore
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -149,14 +148,14 @@ report_fold_metrics
 #   :class:`skore.CrossValidationReport`, see :ref:`example_use_case_employee_salaries`.
 
 # %%
-# Comparing estimators reports
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# Comparing estimator reports
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # :class:`skore.ComparisonReport` enables users to compare several estimator reports
 # (corresponding to several estimators) on a same test set, as in a benchmark of
 # estimators.
 #
-# Apart from the previous ``rf_report``, let use define another estimator report:
+# Apart from the previous ``rf_report``, let us define another estimator report:
 
 # %%
 from sklearn.ensemble import GradientBoostingClassifier
