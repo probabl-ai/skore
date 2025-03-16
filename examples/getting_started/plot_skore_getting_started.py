@@ -67,7 +67,17 @@ rf_report = EstimatorReport(
 rf_report.help()
 
 # %%
-# We can get the report metrics that was computed for us:
+# .. note::
+#   This helper is great because:
+#
+#   -   it enables users to get a glimpse at the API of the different available
+#       accessors without having to look up the online documentation.
+#   -   it provides methodological guidance: for example, we easily provide
+#       several metrics as a way to encourage users looking into them.
+
+# %%
+# We can evaluate our model using the :meth:`~skore.EstimatorReport.metrics` accessor.
+# In particular, we can get the report metrics that was computed for us:
 
 # %%
 rf_report_metrics = rf_report.metrics.report_metrics(pos_label=1)
@@ -84,7 +94,9 @@ roc_plot.plot()
 plt.tight_layout()
 
 # %%
-# Furthermore, we can inspect the model using the permutation feature importance:
+# Furthermore, we can inspect our model using the
+# :meth:`~skore.EstimatorReport.feature_importance` accessor.
+# In particular, we can inspect the model using the permutation feature importance:
 
 # %%
 rf_report.feature_importance.feature_permutation().T.boxplot(vert=False)
@@ -121,8 +133,13 @@ cv_report.help()
 # We display the metrics for each fold:
 
 # %%
-df_cv_report_metrics = cv_report.metrics.report_metrics(pos_label=1)
-df_cv_report_metrics
+cv_report.metrics.report_metrics(pos_label=1)
+
+# %%
+# or the aggregated results:
+
+# %%
+cv_report.metrics.report_metrics(aggregate=["mean", "std"], pos_label=1)
 
 # %%
 # We display the ROC curves for each fold:
@@ -189,11 +206,11 @@ benchmark_metrics = comparator.metrics.report_metrics(pos_label=1)
 benchmark_metrics
 
 # %%
-# We have the result of our benchmark.
+# Thus, we easily have the result of our benchmark for several recommended metrics.
 
 # %%
-# We display the ROC curve for the two estimator reports we want to compare, by
-# superimposing them on the same figure:
+# Moreover, we can display the ROC curve for the two estimator reports we want to
+# compare, by superimposing them on the same figure:
 
 # %%
 comparator.metrics.roc().plot()
@@ -344,10 +361,11 @@ temp_dir.cleanup()
 pprint(history)
 
 # %%
-# These tracking functionalities are very useful to:
+# .. note::
+#   These tracking functionalities are very useful to:
 #
-# * never lose some key machine learning metrics,
-# * and observe the evolution over time / runs.
+#   -   never lose some key machine learning metrics,
+#   -   and observe the evolution over time / runs.
 
 # %%
 # .. seealso::
