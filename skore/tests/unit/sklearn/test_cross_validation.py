@@ -675,9 +675,12 @@ def test_cross_validation_report_report_metrics_with_scorer(regression_data):
         ]
         for est_rep in report.estimator_reports_
     ]
+    expected_result = np.transpose(expected_result)
     np.testing.assert_allclose(
         result.to_numpy(),
-        np.transpose(expected_result),
+        np.stack(
+            [expected_result.mean(axis=1), expected_result.std(axis=1, ddof=1)], axis=1
+        ),
     )
 
 
@@ -825,5 +828,5 @@ def test_cross_validation_report_interrupted(
         metric_function=accuracy_score,
         response_method="predict",
     )
-    assert result.shape == (1, 1)
+    assert result.shape == (1, 2)
     assert result.index == ["accuracy_score"]
