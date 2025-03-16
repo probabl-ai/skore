@@ -94,8 +94,10 @@ plt.tight_layout()
 # .. seealso::
 #
 #   For more information about the motivation and usage of
-#   :class:`skore.EstimatorReport`, see :ref:`example_estimator_report` for evaluation
-#   and :ref:`example_feature_importance` for inspection.
+#   :class:`skore.EstimatorReport`, see the following use cases:
+#
+#   -   :ref:`example_estimator_report` for model evaluation,
+#   -   :ref:`example_feature_importance` for model inspection.
 
 
 # %%
@@ -211,10 +213,10 @@ plt.tight_layout()
 import pandas as pd
 from skrub.datasets import fetch_employee_salaries
 
-dataset = fetch_employee_salaries()
-X, y = dataset.X, dataset.y
-X["date_first_hired"] = pd.to_datetime(X["date_first_hired"])
-X.head(2)
+dataset_employee = fetch_employee_salaries()
+X_employee, y_employee = dataset_employee.X, dataset_employee.y
+X_employee["date_first_hired"] = pd.to_datetime(X_employee["date_first_hired"])
+X_employee.head(2)
 
 # %%
 # We can observe that there is a ``date_first_hired`` which is time-based.
@@ -223,8 +225,8 @@ X.head(2)
 # %%
 import skore
 
-X_train, X_test, y_train, y_test = skore.train_test_split(
-    X, y, random_state=0, shuffle=False
+_, _, _, _ = skore.train_test_split(
+    X_employee, y_employee, random_state=0, shuffle=False
 )
 
 # %%
@@ -272,7 +274,7 @@ my_project = skore.Project("my_project")
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # Now that the project exists, we can store some useful items in it (in the same
-# directory) using :func:`~skore.Project.put`), with a "universal" key-value convention,
+# directory) using :func:`~skore.Project.put`, with a "universal" key-value convention,
 # along with some annotations.
 
 # %%
@@ -289,8 +291,9 @@ my_project.put(
 # %%
 # .. note ::
 #   With the skore :func:`~skore.Project.put`, there is no need to remember the API for
-#   each type of object: ``df.to_csv(...)``, ``plt.savefig(...)``, ``np.save(...)``,
-#   etc.
+#   saving or exporting each type of object: ``df.to_csv(...)``, ``plt.savefig(...)``,
+#   ``np.save(...)``, etc.
+#   There is also the unified :func:`~skore.Project.get` for loading items.
 
 # %%
 # We can retrieve the value of an item using :meth:`~skore.Project.get`:
@@ -302,7 +305,10 @@ my_project.get("accuracy")
 # We can also retrieve the storage date and our annotation:
 
 # %%
-my_project.get("accuracy", metadata="all")
+from pprint import pprint
+
+accuracies = my_project.get("accuracy", metadata="all")
+pprint(accuracies)
 
 # %%
 # .. seealso::
@@ -332,8 +338,6 @@ my_project.put(
 # their history so that nothing is lost:
 
 # %%
-from pprint import pprint
-
 history = my_project.get("accuracy", version="all", metadata="all")
 # sphinx_gallery_start_ignore
 temp_dir.cleanup()
