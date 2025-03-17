@@ -1,4 +1,4 @@
-from types import EllipsisType
+from collections.abc import Sequence
 from typing import Any, Callable, Literal, Optional, Union
 
 import joblib
@@ -60,9 +60,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         pos_label: Optional[Union[int, float, bool, str]] = None,
         indicator_favorability: bool = False,
         flat_index: bool = False,
-        aggregate: Union[
-            Literal["mean", "std"], list[Literal["mean", "std"]], None, EllipsisType
-        ] = ...,
+        aggregate: Optional[Sequence[str]] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Report a set of metrics for our estimator.
 
@@ -129,9 +127,6 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         Precision           0.94...  0.02...         (↗︎)
         Recall              0.96...  0.02...         (↗︎)
         """
-        if aggregate is ...:
-            aggregate = ["mean", "std"]
-
         results = self._compute_metric_scores(
             report_metric_name="report_metrics",
             data_source=data_source,
@@ -155,9 +150,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         report_metric_name: str,
         *,
         data_source: DataSource = "test",
-        aggregate: Optional[
-            Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
-        ] = None,
+        aggregate: Optional[Sequence[str]] = None,
         **metric_kwargs: Any,
     ) -> pd.DataFrame:
         # build the cache key components to finally create a tuple that will be used
@@ -244,9 +237,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        aggregate: Union[
-            Literal["mean", "std"], list[Literal["mean", "std"]], None, EllipsisType
-        ] = ...,
+        aggregate: Optional[Sequence[str]] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the accuracy score.
 
@@ -299,9 +290,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             Literal["binary", "macro", "micro", "weighted", "samples"]
         ] = None,
         pos_label: Optional[Union[int, float, bool, str]] = None,
-        aggregate: Union[
-            Literal["mean", "std"], list[Literal["mean", "std"]], None, EllipsisType
-        ] = ...,
+        aggregate: Optional[Sequence[str]] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the precision score.
 
@@ -385,9 +374,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             Literal["binary", "macro", "micro", "weighted", "samples"]
         ] = None,
         pos_label: Optional[Union[int, float, bool, str]] = None,
-        aggregate: Union[
-            Literal["mean", "std"], list[Literal["mean", "std"]], None, EllipsisType
-        ] = ...,
+        aggregate: Optional[Sequence[str]] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the recall score.
 
@@ -466,9 +453,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        aggregate: Union[
-            Literal["mean", "std"], list[Literal["mean", "std"]], None, EllipsisType
-        ] = ...,
+        aggregate: Optional[Sequence[str]] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the Brier score.
 
@@ -519,9 +504,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         data_source: DataSource = "test",
         average: Optional[Literal["macro", "micro", "weighted", "samples"]] = None,
         multi_class: Literal["raise", "ovr", "ovo"] = "ovr",
-        aggregate: Union[
-            Literal["mean", "std"], list[Literal["mean", "std"]], None, EllipsisType
-        ] = ...,
+        aggregate: Optional[Sequence[str]] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the ROC AUC score.
 
@@ -604,9 +587,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        aggregate: Union[
-            Literal["mean", "std"], list[Literal["mean", "std"]], None, EllipsisType
-        ] = ...,
+        aggregate: Optional[Sequence[str]] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the log loss.
 
@@ -656,9 +637,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         *,
         data_source: DataSource = "test",
         multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
-        aggregate: Union[
-            Literal["mean", "std"], list[Literal["mean", "std"]], None, EllipsisType
-        ] = ...,
+        aggregate: Optional[Sequence[str]] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the R² score.
 
@@ -719,9 +698,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         *,
         data_source: DataSource = "test",
         multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
-        aggregate: Union[
-            Literal["mean", "std"], list[Literal["mean", "std"]], None, EllipsisType
-        ] = ...,
+        aggregate: Optional[Sequence[str]] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the root mean squared error.
 
@@ -779,9 +756,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         *,
         metric_name: Optional[str] = None,
         data_source: DataSource = "test",
-        aggregate: Union[
-            Literal["mean", "std"], list[Literal["mean", "std"]], None, EllipsisType
-        ] = ...,
+        aggregate: Optional[Sequence[str]] = ("mean", "std"),
         **kwargs,
     ) -> pd.DataFrame:
         """Compute a custom metric.
