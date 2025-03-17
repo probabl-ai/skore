@@ -489,6 +489,85 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             )
         return {"fit": fit_time}
 
+    def _predict_time(
+        self,
+        *,
+        data_source: DataSource = "test",
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
+    ) -> dict:
+        """Get the time taken to compute the estimator's `predict` method.
+
+        Will compute the predictions if necessary.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_breast_cancer(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> report = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+
+        >>> report.metrics._predict_time()  # Predictions on the test data
+        {'predict_test': ...}
+
+        >>> report.metrics._predict_time(data_source="train")
+        {'predict_train': ...}
+
+        >>> report.metrics._predict_time(data_source="X_y", X=X_test, y=y_test)
+        {'predict_X_y_f41066b51130a331835e7d66417ff728': ...}
+        """
+        X, y, data_source_hash = self._get_X_y_and_data_source_hash(
+            data_source=data_source, X=X, y=y
+        )
+
+        def find_in_cache():
+            # Search for first matching key in cache
+            if data_source_hash is None:
+                for key in self._parent._timings_cache:
+                    if key[-2:] == (data_source, "predict_time"):
+                        return self._parent._timings_cache[key]
+            else:
+                for key in self._parent._timings_cache:
+                    if key[-3:] == (data_source, data_source_hash, "predict_time"):
+                        return self._parent._timings_cache[key]
+            return None
+
+        predict_time = find_in_cache()
+
+        if predict_time is None:
+            # If the time was not found in the cache, compute predictions
+            _get_cached_response_values(
+                cache=self._parent._cache,
+                timings_cache=self._parent._timings_cache,
+                estimator_hash=self._parent._hash,
+                estimator=self._parent.estimator_,
+                X=X,
+                response_method="predict",
+                data_source=data_source,
+                data_source_hash=data_source_hash,
+            )
+
+            predict_time = find_in_cache()
+
+            if predict_time is None:
+                Exception("This error should never be reached")
+
+        data_source_ = (
+            f"X_y_{data_source_hash}" if data_source == "X_y" else data_source
+        )
+        return {f"predict_{data_source_}": predict_time}
+
     @available_if(
         _check_supported_ml_task(
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
