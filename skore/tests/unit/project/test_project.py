@@ -11,8 +11,7 @@ from matplotlib.pyplot import subplots
 from matplotlib.testing.compare import compare_images
 from PIL import Image
 from sklearn.ensemble import RandomForestClassifier
-from skore import Project
-from skore.project.project import ProjectDeletedError
+from skore.project.project import Project, ProjectDeletedError
 
 
 @pytest.fixture(autouse=True)
