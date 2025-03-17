@@ -77,13 +77,13 @@ rf_report.help()
 
 # %%
 # We can evaluate our model using the :meth:`~skore.EstimatorReport.metrics` accessor.
-# In particular, we can get the report metrics that was computed for us:
+# In particular, we can get the report metrics that is computed for us:
 
 # %%
 rf_report.metrics.report_metrics(pos_label=1)
 
 # %%
-# We can also plot the ROC curve that was generated for us:
+# We can also plot the ROC curve that is generated for us:
 
 # %%
 import matplotlib.pyplot as plt
@@ -115,7 +115,7 @@ plt.tight_layout()
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # skore has also (re-)implemented a :class:`skore.CrossValidationReport` class that
-# contains several :class:`skore.EstimatorReport` for each fold.
+# contains several :class:`skore.EstimatorReport`, one for each fold.
 
 # %%
 from skore import CrossValidationReport
@@ -199,8 +199,7 @@ comparator.help()
 # Let us display the result of our benchmark:
 
 # %%
-benchmark_metrics = comparator.metrics.report_metrics(pos_label=1)
-benchmark_metrics
+comparator.metrics.report_metrics(pos_label=1)
 
 # %%
 # Thus, we easily have the result of our benchmark for several recommended metrics.
@@ -258,8 +257,8 @@ _, _, _, _ = skore.train_test_split(
 # Tracking: skore project
 # =======================
 #
-# Another key feature of skore is its :class:`~skore.Project` that allows to store
-# items of many types.
+# Another key feature of skore is its :class:`~skore.Project` that allows us to store
+# and retrieve items of many types.
 
 # %%
 # Setup: creating and loading a skore project
