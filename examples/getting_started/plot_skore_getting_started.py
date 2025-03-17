@@ -71,7 +71,7 @@ rf_report.help()
 #   This helper is great because:
 #
 #   -   it enables users to get a glimpse at the API of the different available
-#       accessors without having to look up the online documentation.
+#       accessors without having to look up the online documentation,
 #   -   it provides methodological guidance: for example, we easily provide
 #       several metrics as a way to encourage users looking into them.
 
