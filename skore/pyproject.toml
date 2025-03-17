@@ -68,6 +68,10 @@ sphinx = [
   "sphinx<8.2.0",
   "sphinx_autosummary_accessors",
 ]
+dev = [
+  "nbformat",
+  "ipykernel",
+]
 
 [project.urls]
 Homepage = "https://probabl.ai"
