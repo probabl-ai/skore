@@ -45,7 +45,6 @@ test = [
   "pytest-order",
   "pytest-randomly",
   "pytest-xdist",
-  "ruff",
   "scikit-learn<1.7",
   "skrub",
   "xdoctest",

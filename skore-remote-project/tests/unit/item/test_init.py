@@ -7,6 +7,7 @@ import plotly.graph_objects
 import polars
 import pytest
 import sklearn
+import skore
 import skrub
 from skore_remote_project.item import (
     AltairChartItem,
@@ -51,6 +52,7 @@ from skore_remote_project.item import (
         (polars.DataFrame([{"key": "value"}]), PolarsDataFrameItem),
         (polars.Series([0, 1, 2]), PolarsSeriesItem),
         (sklearn.svm.SVC(), SklearnBaseEstimatorItem),
+        (skore.EstimatorReport(sklearn.svm.SVC(), fit=False), PickleItem),
         (
             skrub.TableReport(
                 pandas.DataFrame(

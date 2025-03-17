@@ -22,8 +22,8 @@ test = [
   "pytest-randomly",
   "pytest-xdist",
   "respx",
-  "ruff",
   "scikit-learn",
+  "skore",
   "skrub",
   "xdoctest",
 ]
