@@ -418,6 +418,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
 
             y_pred = _get_cached_response_values(
                 cache=self._parent._cache,
+                timings_cache=self._parent._timings_cache,
                 estimator_hash=self._parent._hash,
                 estimator=self._parent.estimator_,
                 X=X,
@@ -1680,6 +1681,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         else:
             y_pred = _get_cached_response_values(
                 cache=self._parent._cache,
+                timings_cache=self._parent._timings_cache,
                 estimator_hash=self._parent._hash,
                 estimator=self._parent.estimator_,
                 X=X,

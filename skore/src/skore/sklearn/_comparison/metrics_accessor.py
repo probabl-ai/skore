@@ -1233,6 +1233,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 y_pred.append(
                     _get_cached_response_values(
                         cache=report._cache,
+                        timings_cache={},
                         estimator_hash=report._hash,
                         estimator=report._estimator,
                         X=report_X,
