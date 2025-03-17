@@ -239,8 +239,8 @@ def test_cross_validation_report_flat_index(binary_classification_data):
         "brier_score",
     ]
     assert result.columns.tolist() == [
-        "randomforestclassifier_split_0",
-        "randomforestclassifier_split_1",
+        "randomforestclassifier_mean",
+        "randomforestclassifier_std",
     ]
 
 
@@ -337,7 +337,8 @@ def _check_results_single_metric(report, metric, expected_n_splits, expected_nb_
 
     # check that the columns contains the expected split names
     split_names = result.columns.get_level_values(1).unique()
-    expected_split_names = [f"Split #{i}" for i in range(expected_n_splits)]
+    # expected_split_names = [f"Split #{i}" for i in range(expected_n_splits)]
+    expected_split_names = ["mean", "std"]
     assert list(split_names) == expected_split_names
 
     # check that something was written to the cache
@@ -373,7 +374,8 @@ def _check_results_report_metric(
 
     # check that the columns contains the expected split names
     split_names = result.columns.get_level_values(1).unique()
-    expected_split_names = [f"Split #{i}" for i in range(expected_n_splits)]
+    # expected_split_names = [f"Split #{i}" for i in range(expected_n_splits)]
+    expected_split_names = ["mean", "std"]
     assert list(split_names) == expected_split_names
 
     _check_metrics_names(result, expected_metrics, expected_nb_stats)
@@ -673,9 +675,12 @@ def test_cross_validation_report_report_metrics_with_scorer(regression_data):
         ]
         for est_rep in report.estimator_reports_
     ]
+    expected_result = np.transpose(expected_result)
     np.testing.assert_allclose(
         result.to_numpy(),
-        np.transpose(expected_result),
+        np.stack(
+            [expected_result.mean(axis=1), expected_result.std(axis=1, ddof=1)], axis=1
+        ),
     )
 
 
@@ -823,5 +828,5 @@ def test_cross_validation_report_interrupted(
         metric_function=accuracy_score,
         response_method="predict",
     )
-    assert result.shape == (1, 1)
+    assert result.shape == (1, 2)
     assert result.index == ["accuracy_score"]
