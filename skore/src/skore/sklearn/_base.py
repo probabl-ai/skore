@@ -14,6 +14,7 @@ from sklearn.base import BaseEstimator
 from sklearn.utils._response import _check_response_method, _get_response_values
 
 from skore.externals._sklearn_compat import is_clusterer
+from skore.utils._measure_time import _measure_time
 
 
 class _HelpMixin(ABC):
@@ -398,13 +399,16 @@ def _get_cached_response_values(
         assert isinstance(cached_predictions, np.ndarray)
         return cached_predictions
 
-    predictions, _ = _get_response_values(
-        estimator,
-        X=X,
-        response_method=prediction_method,
-        pos_label=pos_label,
-        return_response_method_used=False,
-    )
+    with _measure_time() as predict_time:
+        predictions, _ = _get_response_values(
+            estimator,
+            X=X,
+            response_method=prediction_method,
+            pos_label=pos_label,
+            return_response_method_used=False,
+        )
+
     cache[cache_key] = predictions
+    timings_cache[cache_key + ("predict_time",)] = predict_time()
 
     return predictions
