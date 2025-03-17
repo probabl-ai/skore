@@ -257,6 +257,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         generator = parallel(
             delayed(_get_cached_response_values)(
                 cache=self._cache,
+                timings_cache=self._timings_cache,
                 estimator_hash=self._hash,
                 estimator=self._estimator,
                 X=X,
