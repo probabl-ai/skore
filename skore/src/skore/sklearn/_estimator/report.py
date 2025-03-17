@@ -15,6 +15,7 @@ from skore.externals._pandas_accessors import DirNamesMixin
 from skore.externals._sklearn_compat import is_clusterer
 from skore.sklearn._base import _BaseReport, _get_cached_response_values
 from skore.sklearn.find_ml_task import _find_ml_task
+from skore.utils._measure_time import _measure_time
 from skore.utils._parallel import Parallel, delayed
 from skore.utils._progress_bar import progress_decorator
 
@@ -87,13 +88,16 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         estimator: BaseEstimator,
         X_train: Union[ArrayLike, None],
         y_train: Union[ArrayLike, None],
-    ) -> BaseEstimator:
+    ) -> tuple[BaseEstimator, float]:
         if X_train is None or (y_train is None and not is_clusterer(estimator)):
             raise ValueError(
                 "The training data is required to fit the estimator. "
                 "Please provide both X_train and y_train."
             )
-        return clone(estimator).fit(X_train, y_train)
+        estimator_ = clone(estimator)
+        with _measure_time() as fit_time:
+            estimator_.fit(X_train, y_train)
+        return estimator_, fit_time()
 
     @classmethod
     def _copy_estimator(cls, estimator: BaseEstimator) -> BaseEstimator:
@@ -124,14 +128,17 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self._progress_info: Optional[dict[str, Any]] = None
         self._parent_progress = None
 
+        fit_time: Optional[float] = None
         if fit == "auto":
             try:
                 check_is_fitted(estimator)
                 self._estimator = self._copy_estimator(estimator)
             except NotFittedError:
-                self._estimator = self._fit_estimator(estimator, X_train, y_train)
+                self._estimator, fit_time = self._fit_estimator(
+                    estimator, X_train, y_train
+                )
         elif fit is True:
-            self._estimator = self._fit_estimator(estimator, X_train, y_train)
+            self._estimator, fit_time = self._fit_estimator(estimator, X_train, y_train)
         else:  # fit is False
             self._estimator = self._copy_estimator(estimator)
 
@@ -144,12 +151,16 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
         self._initialize_state()
 
+        if fit_time is not None:
+            self._timings_cache[("fit_time",)] = fit_time
+
     def _initialize_state(self) -> None:
         """Initialize/reset the random number generator, hash, and cache."""
         self._rng = np.random.default_rng(time.time_ns())
         self._hash = self._rng.integers(
             low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
         )
+        self._timings_cache: dict[tuple[Any, ...], Any] = {}
         self._cache: dict[tuple[Any, ...], Any] = {}
         self._ml_task = _find_ml_task(self._y_test, estimator=self._estimator)
 

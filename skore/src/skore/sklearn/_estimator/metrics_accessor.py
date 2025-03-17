@@ -26,6 +26,13 @@ from skore.utils._index import flatten_multi_index
 DataSource = Literal["test", "train", "X_y"]
 
 
+class FitInformationUnavailableError(Exception):
+    """The report does not contain fit information.
+
+    This can happen when the estimator is fitted before the report is created.
+    """
+
+
 class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
     """Accessor for metrics-related operations.
 
@@ -443,6 +450,43 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             if len(score) == 1:
                 return score[0]
         return score
+
+    def _fit_time(self) -> dict:
+        """Get the time to fit the estimator, in seconds.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import make_classification
+        >>> from sklearn.model_selection import train_test_split
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import EstimatorReport
+
+        >>> X, y = make_classification(random_state=42)
+        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+
+        >>> report = EstimatorReport(
+        ...     LogisticRegression(),
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test
+        ... )
+        >>> report.metrics._fit_time()
+        {'fit': ...}
+
+        >>> estimator = LogisticRegression().fit(X_train, y_train)
+        >>> report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+        >>> report.metrics._fit_time()
+        Traceback (most recent call last):
+        skore.sklearn._estimator.metrics_accessor.FitInformationUnavailableError: ...
+        """
+        fit_time = self._parent._timings_cache.get(("fit_time",))
+        if fit_time is None:
+            raise FitInformationUnavailableError(
+                "The fit information is not available, perhaps because the estimator "
+                "was fitted before the report was created."
+            )
+        return {"fit": fit_time}
 
     @available_if(
         _check_supported_ml_task(
