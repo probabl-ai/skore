@@ -75,6 +75,7 @@ def test_get_cached_response_values(
     estimator = Estimator().fit(X, y)
 
     params = {
+        "timings_cache": {},
         "estimator_hash": 123,
         "estimator": estimator,
         "X": X,
@@ -141,6 +142,7 @@ def test_get_cached_response_values_different_data_source_hash(
     estimator = Estimator().fit(X, y)
 
     params = {
+        "timings_cache": {},
         "estimator_hash": 123,
         "estimator": estimator,
         "X": X,

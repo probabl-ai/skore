@@ -321,7 +321,8 @@ class _BaseAccessor(_HelpMixin, Generic[ParentT]):
 
 def _get_cached_response_values(
     *,
-    cache: dict[tuple[Any, ...], ArrayLike],
+    cache: dict[tuple[Any, ...], Any],
+    timings_cache: dict[tuple[Any, ...], Any],
     estimator_hash: int,
     estimator: BaseEstimator,
     X: Union[ArrayLike, None],
@@ -336,6 +337,9 @@ def _get_cached_response_values(
     ----------
     cache : dict
         The cache to use.
+
+    timings_cache : dict
+        The cache to use for time measurement results.
 
     estimator_hash : int
         A hash associated with the estimator such that we can retrieve the data from
