@@ -34,7 +34,7 @@ cv_report.help()
 # Display the report metrics that was computed for you:
 
 # %%
-df_cv_report_metrics = cv_report.metrics.report_metrics()
+df_cv_report_metrics = cv_report.metrics.report_metrics(pos_label=1)
 df_cv_report_metrics
 
 # %%
@@ -90,6 +90,6 @@ temp_dir.cleanup()
 df_get
 
 # %%
-# .. admonition:: What's next?
+# .. seealso::
 #
 #    For a more in-depth guide, see our :ref:`example_skore_getting_started` page!

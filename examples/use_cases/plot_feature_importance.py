@@ -236,9 +236,17 @@ ridge_report.metrics.report_metrics()
 #
 # Here, the :math:`R^2` seems quite poor, so some further preprocessing would be needed.
 # This is done further down in this example.
-# For now, keep in mind that any observations drawn from inspecting the coefficients
-# of this simple Ridge model are made on a model that performs quite poorly, hence
-# must be treated with caution.
+
+# %%
+# .. warning::
+#   Keep in mind that any observation drawn from inspecting the coefficients
+#   of this simple Ridge model is made on a model that performs quite poorly, hence
+#   must be treated with caution.
+#   Indeed, a poorly performing model does not capture the true underlying
+#   relationships in the data.
+#   A good practice would be to avoid inspecting models with poor performance.
+#   Here, we still inspect it, for demo purposes and because our model is not put into
+#   production!
 
 # %%
 # Let us plot the prediction error:
@@ -257,6 +265,13 @@ plt.tight_layout()
 
 # %%
 ridge_report.feature_importance.coefficients()
+
+# %%
+# .. note::
+#   Beware that coefficients can be misleading when some features are correlated.
+#   For example, two coefficients can have large absolute values (so be considered
+#   important), but in the predictions, the sum of their contributions could cancel out
+#   (if they are highly correlated), so they would actually be unimportant.
 
 # %%
 # We can plot this pandas datafame:
@@ -332,8 +347,14 @@ df_ridge_report_coef_unscaled
 # We can interpret a coefficient as follows: according to our model, on average,
 # having one additional bedroom (a increase of :math:`1` of ``AveBedrms``),
 # with all other features being constant,
-# increases the house value of :math:`0.62` in $100,000, hence of $62,000.
+# increases the *predicted* house value of :math:`0.62` in $100,000, hence of $62,000.
 # Note that we have not dealt with any potential outlier in this iteration.
+
+# %%
+# .. warning::
+#   Recall that we are inspecting a model with poor performance, which is bad practice.
+#   Moreover, we must be cautious when trying to induce any causation effect
+#   (remember that correlation is not causation).
 
 # %%
 # More complex model
@@ -344,8 +365,8 @@ df_ridge_report_coef_unscaled
 # with regards to the original units of the features, performs quite poorly.
 # Now, we build a more complex model, with more feature engineering.
 # We will see that this model will have a better score... but will be more difficult to
-# interpret with regards to the original features (due to the complex feature
-# engineering).
+# interpret the coefficients with regards to the original features due to the complex
+# feature engineering.
 
 # %%
 # In our previous EDA, when plotting the geospatial data with regards to the house
@@ -354,12 +375,13 @@ df_ridge_report_coef_unscaled
 # Moreover, we also observed that the median income is well associated with the
 # house prices.
 # Hence, we will try a feature engineering that takes into account the interactions
-# of the geospatial features with features such as the income.
+# of the geospatial features with features such as the income, using polynomial
+# features.
 # The interactions are no longer simply linear as previously.
 
 # %%
 # Let us build a model with some more complex feature engineering, and still use a
-# Ridge regressor (linear model) at the end.
+# Ridge regressor (linear model) at the end of the pipeline.
 # In particular, we perform a K-means clustering on the geospatial features:
 
 # %%
@@ -375,8 +397,8 @@ preprocessor = make_column_transformer(
 )
 engineered_ridge = make_pipeline(
     preprocessor,
-    SplineTransformer(),
-    PolynomialFeatures(degree=1, interaction_only=True, include_bias=False),
+    SplineTransformer(sparse_output=True),
+    PolynomialFeatures(degree=2, interaction_only=True, include_bias=False),
     Ridge(),
 )
 engineered_ridge
@@ -418,7 +440,7 @@ plt.tight_layout()
 
 # %%
 # However, interpreting the features is harder: indeed, our complex feature engineering
-# introduced a lot of features:
+# introduced a *lot* of features:
 
 # %%
 print("Initial number of features:", X_train.shape[1])
@@ -442,9 +464,44 @@ engineered_ridge_report.feature_importance.coefficients().sort_values(
 plt.tight_layout()
 
 # %%
-# We can observe that the most importance features are interactions between several
-# features, that a simple linear model without feature engineering could not have
-# captured.
+# We can observe that the most important features are interactions between features,
+# mostly based on ``AveOccup``, that a simple linear model without feature engineering
+# could not have captured.
+# Indeed, the vanilla Ridge model did not consider ``AveOccup`` to be important.
+# As the engineered Ridge has a better score, perhaps the vanilla Ridge missed
+# something about ``AveOccup`` that seems to be key to predicting house prices.
+
+# %%
+# Let us visualize how ``AveOccup`` interacts with ``MedHouseVal``:
+
+# %%
+X_y_plot = california_housing.frame.copy()
+X_y_plot["AveOccup"] = pd.qcut(X_y_plot["AveOccup"], q=5)
+bin_order = X_y_plot["AveOccup"].cat.categories.sort_values()
+fig = px.histogram(
+    X_y_plot,
+    x=california_housing.target_names[0],
+    color="AveOccup",
+    category_orders={"AveOccup": bin_order},
+)
+fig
+
+# %%
+# Finally, we can visualize the results of our K-means clustering (on the training set):
+
+# %%
+
+# getting the cluster labels
+col_transformer = engineered_ridge_report.estimator_.named_steps["columntransformer"]
+kmeans = col_transformer.named_transformers_["kmeans"]
+clustering_labels = kmeans.labels_
+
+# adding the cluster labels to our dataframe
+X_train_plot = X_train.copy()
+X_train_plot.insert(0, "clustering_labels", clustering_labels)
+
+# plotting the map
+plot_map(X_train_plot, "clustering_labels")
 
 # %%
 # Compromising on complexity
@@ -454,58 +511,36 @@ plt.tight_layout()
 # Now, let us build a model with a more interpretable feature engineering, although
 # it might not perform as well.
 # For that, after the complex feature engineering, we perform some feature selection
-# using a :class:`~sklearn.feature_selection.SelectKBest`.
-# To compensate the drop in score, we fine-tune some hyperparameters using
-# a :class:`~sklearn.model_selection.RandomizedSearchCV`.
+# using a :class:`~sklearn.feature_selection.SelectKBest`, in order to reduce the
+# number of features.
 
 # %%
-import warnings
-from scipy.stats import randint
 from sklearn.feature_selection import SelectKBest, VarianceThreshold
-from sklearn.model_selection import RandomizedSearchCV
 from sklearn.linear_model import RidgeCV
 
 preprocessor = make_column_transformer(
-    (KMeans(n_clusters=20, random_state=0), geo_columns),
+    (KMeans(n_clusters=10, random_state=0), geo_columns),
     remainder="passthrough",
-    force_int_remainder_cols=False,
 )
-model = make_pipeline(
+selectkbest_ridge = make_pipeline(
     preprocessor,
-    SplineTransformer(),
-    PolynomialFeatures(degree=1, interaction_only=True, include_bias=False),
+    SplineTransformer(sparse_output=True),
+    PolynomialFeatures(degree=2, interaction_only=True, include_bias=False),
     VarianceThreshold(),
-    SelectKBest(k=50),
+    SelectKBest(k=150),
     RidgeCV(np.logspace(-5, 5, num=100)),
-).set_output(transform="pandas")
-
-parameter_grid = {
-    "columntransformer__kmeans__n_clusters": randint(low=10, high=30),
-    "splinetransformer__degree": randint(low=1, high=4),
-    "splinetransformer__n_knots": randint(low=2, high=10),
-    "selectkbest__k": randint(low=5, high=100),
-}
-
-random_search = RandomizedSearchCV(
-    model, param_distributions=parameter_grid, random_state=0
 )
-
-with warnings.catch_warnings():
-    # Catch expected warnings to avoid cluttering this notebook,
-    # especially when k > n_features
-    warnings.filterwarnings(
-        "ignore",
-        category=UserWarning,
-        module="sklearn.feature_selection._univariate_selection",
-    )
-    random_search.fit(X_train, y_train)
-
-selectkbest_ridge = random_search.best_estimator_
-selectkbest_ridge
 
 # %%
-# Let us get the metrics for the best model of our grid search, and compare it with
-# our previous iterations:
+# .. note::
+#   To keep the computation time of this example low, we did not tune
+#   the hyperparameters of the predictive model. However, on a real use
+#   case, it would be important to tune the model using
+#   :class:`~sklearn.model_selection.RandomizedSearchCV`
+#   and not just the :class:`~sklearn.linear_model.RidgeCV`.
+
+# %%
+# Let us get the metrics for our model and compare it with our previous iterations:
 
 # %%
 selectk_ridge_report = EstimatorReport(
@@ -515,7 +550,7 @@ selectk_ridge_report = EstimatorReport(
     y_train=y_train,
     y_test=y_test,
 )
-reports_to_compare["Ridge w/ feature selection and grid search"] = selectk_ridge_report
+reports_to_compare["Ridge w/ feature engineering and selection"] = selectk_ridge_report
 comparator = ComparisonReport(reports=reports_to_compare)
 comparator.metrics.report_metrics()
 
@@ -537,13 +572,14 @@ print(
 # features are the following:
 
 # %%
-selectk_features = selectk_ridge_report.estimator_[-1].feature_names_in_
+selectk_features = selectk_ridge_report.estimator_[:-1].get_feature_names_out()
 print(selectk_features)
 
 # %%
 # We can see that, in the best features, according to statistical tests, there are
-# geospatial features (derived from the K-means clustering) and splines on the median
-# income.
+# many interactions between geospatial features (derived from the K-means clustering)
+# and the median income.
+# Note that these features are not sorted.
 
 # %%
 # And here is the feature importance based on our model (sorted by absolute values):
@@ -559,23 +595,6 @@ selectk_ridge_report.feature_importance.coefficients().sort_values(
 plt.tight_layout()
 
 # %%
-# Finally, we can visualize the results of our K-means clustering (on the training set):
-
-# %%
-
-# getting the cluster labels
-col_transformer = selectkbest_ridge.named_steps["columntransformer"]
-kmeans = col_transformer.named_transformers_["kmeans"]
-clustering_labels = kmeans.labels_
-
-# adding the cluster labels to our dataframe
-X_train_plot = X_train.copy()
-X_train_plot.insert(0, "clustering_labels", clustering_labels)
-
-# plotting the map
-plot_map(X_train_plot, "clustering_labels")
-
-# %%
 # Tree-based models: mean decrease in impurity (MDI)
 # ==================================================
 
@@ -587,17 +606,22 @@ plot_map(X_train_plot, "clustering_labels")
 # The higher the MDI, the more important the feature.
 
 # %%
-# However, the MDI holds some limitations to keep in mind:
+# .. warning::
+#   The MDI is limited and can be misleading:
 #
-# - When features have large differences in cardinality, the MDI tends to favor
-#   those with higher cardinality.
-#   Fortunately, in this example, our numerical features share similar cardinality,
-#   mitigating this concern.
-# - Since MDI is typically calculated on the training set, it can reflect biases
-#   from overfitting.
-#   When a model overfits, the tree may partition less relevant regions of the
-#   feature space, artificially inflating MDI values and distorting the perceived
-#   importance of certain features.
+#   - When features have large differences in cardinality, the MDI tends to favor
+#     those with higher cardinality.
+#     Fortunately, in this example, we have only numerical features that share similar
+#     cardinality, mitigating this concern.
+#   - Since the MDI is typically calculated on the training set, it can reflect biases
+#     from overfitting.
+#     When a model overfits, the tree may partition less relevant regions of the
+#     feature space, artificially inflating MDI values and distorting the perceived
+#     importance of certain features.
+#     Soon, scikit-learn will enable the computing of the MDI on the test set, and we
+#     will make it available in skore.
+#     Hence, we would be able to draw conclusions on how predictive a feature is and not
+#     just how impactful it is on the training procedure.
 
 # %%
 # .. seealso::
@@ -661,11 +685,12 @@ tree_report.help()
 # %%
 from sklearn.tree import plot_tree
 
-_ = plot_tree(
+plot_tree(
     tree_report.estimator_,
     feature_names=tree_report.estimator_.feature_names_in_,
     max_depth=2,
 )
+plt.tight_layout()
 
 # %%
 # This tree explains how each sample is going to be predicted by our tree.
@@ -712,7 +737,7 @@ _ = plot_tree(
 
 # %%
 tree_report.feature_importance.mean_decrease_impurity().plot.barh(
-    title="Feature importance",
+    title=f"Feature importance of {tree_report.estimator_name_}",
     xlabel="MDI",
     ylabel="Feature",
 )
@@ -775,7 +800,7 @@ print(f"Number of trees in the forest: {n_estimators}")
 
 # %%
 rf_report.feature_importance.mean_decrease_impurity().plot.barh(
-    title="Feature importance",
+    title=f"Feature importance of {rf_report.estimator_name_}",
     xlabel="MDI",
     ylabel="Feature",
 )
@@ -786,26 +811,8 @@ plt.tight_layout()
 # all the decision trees in the forest.
 #
 # As for the decision tree, ``MecInc`` is the most important feature.
-# Compared to linear models, the random forest also attributes a high importance to
-# the ``Longitude`` and ``Latitude``, but the second most important feature is
-# ``AveOccup`` that linear models did not deem very important.
-# As the random forest has a great score, perhaps linear models missed something
-# about ``AveOccup`` that seems to be key to predicting house prices.
-
-# %%
-# Let us visualize how ``AveOccup`` interacts with ``MedHouseVal``:
-
-# %%
-X_y_plot = california_housing.frame.copy()
-X_y_plot["AveOccup"] = pd.qcut(X_y_plot["AveOccup"], q=5)
-bin_order = X_y_plot["AveOccup"].cat.categories.sort_values()
-fig = px.histogram(
-    X_y_plot,
-    x=california_housing.target_names[0],
-    color="AveOccup",
-    category_orders={"AveOccup": bin_order},
-)
-fig
+# As for linear models with some feature engineering, the random forest also attributes
+# a high importance to ``Longitude``, ``Latitude``, and ``AveOccup``.
 
 # %%
 # Model-agnostic: permutation feature importance
@@ -826,7 +833,24 @@ fig
 # degradation of the model's score.
 # Permuting a predictive feature makes the performance decrease, while
 # permuting a non-predictive feature does not degrade the performance much.
-# By default, we compute the permutation importance on the test set.
+# This permutation importance can be computed on the train and test sets,
+# and by default skore computes it on the test set.
+# Compared to the coefficients and the MDI, the permutation importance can be
+# less misleading, but comes with a higher computation cost.
+
+# %%
+# Permutation feature importance can also help reduce overfitting.
+# If a model overfits (high train score and low test score), and some
+# features are important only on the train set and not on the test set,
+# then these features might be the cause of the overfitting and it might be a good
+# idea to drop them.
+
+# %%
+# .. warning::
+#   The permutation feature importance can be misleading on strongly
+#   correlated features. For more information, see
+#   `scikit-learn's user guide
+#   <https://scikit-learn.org/stable/modules/permutation_importance.html#misleading-values-on-strongly-correlated-features>`_.
 
 # %%
 # Now, let us look at our helper:
@@ -871,6 +895,7 @@ def plot_permutation_train_test(est_report):
     plt.show()
 
 
+# %%
 plot_permutation_train_test(ridge_report)
 
 # %%
@@ -878,6 +903,22 @@ plot_permutation_train_test(ridge_report)
 # For both the train and test sets, the result of the inspection is the same as
 # with the coefficients:
 # the most important features are ``Latitude``, ``Longitude``, and ``MedInc``.
+
+# %%
+# For ``selectk_ridge_report``, we have a large pipeline that is fed to a
+# :class:`~skore.EstimatorReport`.
+# The pipeline contains a lot a preprocessing that creates many features.
+# By default, the permutation importance is calculated at the entrance of the whole
+# pipeline (with regards to the original features):
+
+# %%
+plot_permutation_train_test(selectk_ridge_report)
+
+# %%
+# Hence, contrary to coefficients, although we have created many features in our
+# preprocessing, the interpretability is easier.
+# We notice that, due to our preprocessing using a clustering on the geospatial data,
+# these features are of great importance to our model.
 
 # %%
 # For our decision tree, here is our permutation importance on the train and test sets:
@@ -903,11 +944,12 @@ plot_permutation_train_test(tree_report)
 # and ``Longitude``.
 # We explained the trade-off between performance (with complex feature engineering)
 # and interpretability.
+# Interactions between features have highlighted the importance of ``AveOccup``.
 # With tree-based models such as decision trees, random forests, and gradient-boosted
 # trees, we utilized Mean Decrease in Impurity (MDI) to identify key features,
-# notably highlighting ``AveOccup`` alongside ``MedInc``, ``Latitude``, and
+# notably ``AveOccup`` alongside ``MedInc``, ``Latitude``, and
 # ``Longitude``.
-# Compared to linear models, tree-based models rely more on ``AveOccup`` and perform
-# better.
+# The random forest got the best score, without any complex feature engineering
+# compared to linear models.
 # The model-agnostic permutation feature importance further enabled us to compare
 # feature significance across diverse model types.
