@@ -61,10 +61,10 @@ class Project:
 
     Parameters
     ----------
-    path : str or Path, optional
-        The path of the project to initialize, default "./project.skore".
-    if_exists: Literal["raise", "load"], optional
-        Raise an exception if the project already exists, or load it, default raise.
+    path : str or Path, default="./project.skore"
+        The path of the project to initialize.
+    if_exists: Literal["raise", "load"], default="raise"
+        What to do if the project already exists.
 
     Attributes
     ----------
@@ -92,16 +92,14 @@ class Project:
         if_exists: Optional[Literal["raise", "load"]] = "raise",
     ):
         """
-        Initialize a Project.
-
         Initialize a project, by creating a new project or by loading an existing one.
 
         Parameters
         ----------
-        path : str or Path, optional
-            The path of the project to initialize, default "./project.skore".
-        if_exists: Literal["raise", "load"], optional
-            Raise an exception if the project already exists, or load it, default raise.
+        path : str or Path, default="./project.skore"
+            The path of the project to initialize.
+        if_exists: Literal["raise", "load"], default="raise"
+            What to do if the project already exists.
 
         Raises
         ------
@@ -139,7 +137,7 @@ class Project:
 
         Parameters
         ----------
-        delete_project : bool
+        delete_project : bool, default=False
             If set, the project will be deleted entirely.
         """
         if delete_project:
