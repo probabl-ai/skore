@@ -453,7 +453,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         lambda accessor: accessor._parent._timings_cache.get(("fit_time",)) is not None
     )
     def fit_time(self) -> float:
-        """Compute the time taken to fit the estimator.
+        """Get the time taken to fit the estimator, in seconds.
 
         Returns
         -------
@@ -511,7 +511,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
     ) -> float:
-        """Compute the time taken to compute predictions by the estimator.
+        """Get the time taken to compute predictions by the estimator, in seconds.
 
         Parameters
         ----------
