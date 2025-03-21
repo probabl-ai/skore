@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import copy
 import time
 import warnings
@@ -80,7 +82,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         "metrics": {"name": "metrics"},
         "feature_importance": {"name": "feature_importance"},
     }
-    metrics: "_MetricsAccessor"
+    metrics: _MetricsAccessor
 
     @staticmethod
     def _fit_estimator(
