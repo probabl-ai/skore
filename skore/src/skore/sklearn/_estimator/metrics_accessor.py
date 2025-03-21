@@ -425,7 +425,6 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
 
             y_pred = _get_cached_response_values(
                 cache=self._parent._cache,
-                timings_cache=self._parent._timings_cache,
                 estimator_hash=self._parent._hash,
                 estimator=self._parent.estimator_,
                 X=X,
@@ -481,7 +480,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         Traceback (most recent call last):
         skore.sklearn._estimator.metrics_accessor.FitInformationUnavailableError: ...
         """
-        fit_time = self._parent._timings_cache.get(("fit_time",))
+        fit_time = self._parent._cache.get(("fit_time",))
         if fit_time is None:
             raise FitInformationUnavailableError(
                 "The fit information is not available, perhaps because the estimator "
@@ -534,13 +533,13 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         def find_in_cache():
             # Search for first matching key in cache
             if data_source_hash is None:
-                for key in self._parent._timings_cache:
+                for key in self._parent._cache:
                     if key[-2:] == (data_source, "predict_time"):
-                        return self._parent._timings_cache[key]
+                        return self._parent._cache[key]
             else:
-                for key in self._parent._timings_cache:
+                for key in self._parent._cache:
                     if key[-3:] == (data_source, data_source_hash, "predict_time"):
-                        return self._parent._timings_cache[key]
+                        return self._parent._cache[key]
             return None
 
         predict_time = find_in_cache()
@@ -549,7 +548,6 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             # If the time was not found in the cache, compute predictions
             _get_cached_response_values(
                 cache=self._parent._cache,
-                timings_cache=self._parent._timings_cache,
                 estimator_hash=self._parent._hash,
                 estimator=self._parent.estimator_,
                 X=X,
@@ -1863,7 +1861,6 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         else:
             y_pred = _get_cached_response_values(
                 cache=self._parent._cache,
-                timings_cache=self._parent._timings_cache,
                 estimator_hash=self._parent._hash,
                 estimator=self._parent.estimator_,
                 X=X,

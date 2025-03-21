@@ -272,14 +272,14 @@ def test_estimator_report_repr(binary_classification_data):
 @pytest.mark.parametrize(
     "fixture_name, pass_train_data, expected_n_keys",
     [
-        ("binary_classification_data", True, 8),
-        ("binary_classification_data_svc", True, 8),
-        ("multiclass_classification_data", True, 10),
-        ("regression_data", True, 2),
-        ("binary_classification_data", False, 4),
-        ("binary_classification_data_svc", False, 4),
-        ("multiclass_classification_data", False, 5),
-        ("regression_data", False, 1),
+        ("binary_classification_data", True, 16),
+        ("binary_classification_data_svc", True, 16),
+        ("multiclass_classification_data", True, 20),
+        ("regression_data", True, 4),
+        ("binary_classification_data", False, 8),
+        ("binary_classification_data_svc", False, 8),
+        ("multiclass_classification_data", False, 10),
+        ("regression_data", False, 2),
     ],
 )
 @pytest.mark.parametrize("n_jobs", [1, 2])
