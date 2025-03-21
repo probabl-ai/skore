@@ -269,6 +269,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             progress.update(task, advance=1, refresh=True)
 
     @property
+    def ml_task(self) -> str:
+        return self._ml_task
+
+    @property
     def estimator_(self) -> BaseEstimator:
         return self._estimator
 
