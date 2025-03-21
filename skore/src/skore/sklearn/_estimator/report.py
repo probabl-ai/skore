@@ -152,7 +152,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self._initialize_state()
 
         if fit_time is not None:
-            self._timings_cache[("fit_time",)] = fit_time
+            self._cache[("fit_time",)] = fit_time
 
     def _initialize_state(self) -> None:
         """Initialize/reset the random number generator, hash, and cache."""
@@ -160,7 +160,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self._hash = self._rng.integers(
             low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
         )
-        self._timings_cache: dict[tuple[Any, ...], Any] = {}
         self._cache: dict[tuple[Any, ...], Any] = {}
         self._ml_task = _find_ml_task(self._y_test, estimator=self._estimator)
 
@@ -189,17 +188,16 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         ...     y_test=y_test,
         ... )
         >>> report.cache_predictions()
+        >>> assert len(report._cache) > 1  # cache is not empty
         >>> report.clear_cache()
-        >>> report._cache
-        {}
+        >>> len(report._cache)  # fit time still remains
+        1
         """
-        fit_time = self._timings_cache.get(("fit_time",))
+        fit_time = self._cache.get(("fit_time",))
         if fit_time is None:
-            self._timings_cache = {}
+            self._cache = {}
         else:
-            self._timings_cache = {("fit_time",): fit_time}
-
-        self._cache = {}
+            self._cache = {("fit_time",): fit_time}
 
     @progress_decorator(description="Caching predictions")
     def cache_predictions(
@@ -263,7 +261,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         generator = parallel(
             delayed(_get_cached_response_values)(
                 cache=self._cache,
-                timings_cache=self._timings_cache,
                 estimator_hash=self._hash,
                 estimator=self._estimator,
                 X=X,
