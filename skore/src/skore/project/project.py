@@ -387,3 +387,8 @@ class Project:
         >>> project.delete_note("key", version=0)
         """
         return self._item_repository.delete_item_note(key=key, version=version)
+
+    @_raise_if_deleted
+    def __repr__(self) -> str:
+        """Represent in string form."""
+        return f'{self.__class__.__name__}("{self.path}")'
