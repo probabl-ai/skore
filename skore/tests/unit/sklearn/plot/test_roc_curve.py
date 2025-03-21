@@ -186,8 +186,8 @@ def test_roc_curve_display_plot_error_wrong_roc_curve_kwargs(
     )
     display = report.metrics.roc()
     err_msg = (
-        "You intend to plot a single ROC curve and provide multiple ROC curve "
-        "keyword arguments"
+        "You intend to plot a single ROC curve. We expect `roc_curve_kwargs` to be a "
+        "dictionary."
     )
     with pytest.raises(ValueError, match=err_msg):
         display.plot(roc_curve_kwargs=[{}, {}])

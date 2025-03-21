@@ -148,7 +148,7 @@ class RocCurveDisplay(
         fpr: dict[Union[int, float, bool, str], list[ArrayLike]],
         tpr: dict[Union[int, float, bool, str], list[ArrayLike]],
         roc_auc: dict[Union[int, float, bool, str], list[float]],
-        estimator_names: str,
+        estimator_names: list[str],
         pos_label: Union[int, float, bool, str, None],
         data_source: Literal["train", "test", "X_y"],
         ml_task: MLTask,
@@ -163,6 +163,71 @@ class RocCurveDisplay(
         self.ml_task = ml_task
         self.report_type = report_type
 
+    def _validate_roc_curve_kwargs(
+        self,
+        roc_curve_kwargs: Union[dict[str, Any], list[dict[str, Any]], None],
+    ) -> list[dict[str, Any]]:
+        """Validate and format the ROC curve keyword arguments.
+
+        Parameters
+        ----------
+        roc_curve_kwargs : dict or list of dict or None
+            Keyword arguments to customize the ROC curves.
+
+        Returns
+        -------
+        list of dict
+            Validated list of keyword arguments for each curve.
+
+        Raises
+        ------
+        ValueError
+            If the format of roc_curve_kwargs is invalid.
+        """
+        if self.ml_task == "binary-classification":
+            assert self.pos_label is not None, (
+                "pos_label should not be None with binary classification."
+            )
+            n_curves = len(self.fpr[self.pos_label])
+            allow_single_dict = True
+        else:
+            n_curves = len(self.fpr)
+            allow_single_dict = False
+
+        if roc_curve_kwargs is None:
+            return [{}] * n_curves
+        elif n_curves == 1:
+            if isinstance(roc_curve_kwargs, dict):
+                return [roc_curve_kwargs]
+            elif isinstance(roc_curve_kwargs, list) and len(roc_curve_kwargs) == 1:
+                return roc_curve_kwargs
+            else:
+                raise ValueError(
+                    "You intend to plot a single ROC curve. We expect "
+                    "`roc_curve_kwargs` to be a dictionary. Got "
+                    f"{type(roc_curve_kwargs)} instead."
+                )
+        else:  # n_curves > 1
+            if not allow_single_dict and isinstance(roc_curve_kwargs, dict):
+                raise ValueError(
+                    "You intend to plot multiple ROC curves. We expect "
+                    "`roc_curve_kwargs` to be a list of dictionaries. Got "
+                    f"{type(roc_curve_kwargs)} instead."
+                )
+            if isinstance(roc_curve_kwargs, dict):
+                return [roc_curve_kwargs] * n_curves
+
+            # From this point, we have a list of dictionaries
+            if len(roc_curve_kwargs) != n_curves:
+                raise ValueError(
+                    "You intend to plot multiple ROC curves. We expect "
+                    "`roc_curve_kwargs` to be a list of dictionaries with the "
+                    f"same length as the number of ROC curves. Got "
+                    f"{len(roc_curve_kwargs)} instead of {n_curves}."
+                )
+
+            return roc_curve_kwargs
+
     @staticmethod
     def _plot_single_estimator(
         *,
@@ -174,7 +239,7 @@ class RocCurveDisplay(
         ml_task: MLTask,
         ax: Axes,
         estimator_name: str,
-        roc_curve_kwargs: Optional[dict[str, Any]] = None,
+        roc_curve_kwargs: list[dict[str, Any]],
     ) -> tuple[Axes, list[Line2D], Union[str, None]]:
         """Plot ROC curve for a single estimator.
 
@@ -212,10 +277,10 @@ class RocCurveDisplay(
         estimator_name : str
             The name of the estimator.
 
-        roc_curve_kwargs : dict or None, default=None
-            Additional keyword arguments to pass to matplotlib's plot function.
-            For binary classification, should be a single dict.
-            For multiclass, should be a list of dicts, one per class.
+        roc_curve_kwargs : list of dict
+            Additional keyword arguments to pass to matplotlib's plot function. In
+            binary case, we should have a single dict. In multiclass case, we should
+            have a list of dicts, one per class.
 
         Returns
         -------
@@ -236,18 +301,6 @@ class RocCurveDisplay(
             assert pos_label is not None, (
                 "pos_label should not be None with binary classification."
             )
-
-            if roc_curve_kwargs is None:
-                roc_curve_kwargs = {}
-            elif isinstance(roc_curve_kwargs, list):
-                if len(roc_curve_kwargs) > 1:
-                    raise ValueError(
-                        "You intend to plot a single ROC curve and provide "
-                        "multiple ROC curve keyword arguments. Provide a single "
-                        "dictionary or a list with a single dictionary."
-                    )
-                roc_curve_kwargs = roc_curve_kwargs[0]
-
             if data_source in ("train", "test"):
                 line_kwargs["label"] = (
                     f"{data_source.title()} set (AUC = {roc_auc[pos_label][0]:0.2f})"
@@ -256,7 +309,7 @@ class RocCurveDisplay(
                 line_kwargs["label"] = f"AUC = {roc_auc[pos_label][0]:0.2f}"
 
             line_kwargs_validated = _validate_style_kwargs(
-                line_kwargs, roc_curve_kwargs
+                line_kwargs, roc_curve_kwargs[0]
             )
 
             (line,) = ax.plot(
@@ -272,22 +325,6 @@ class RocCurveDisplay(
             class_colors = sample_mpl_colormap(
                 colormaps.get_cmap("tab10"), 10 if len(fpr) < 10 else len(fpr)
             )
-            if roc_curve_kwargs is None:
-                roc_curve_kwargs = [{}] * len(fpr)
-            elif isinstance(roc_curve_kwargs, list):
-                if len(roc_curve_kwargs) != len(fpr):
-                    raise ValueError(
-                        "You intend to plot multiple ROC curves. We expect "
-                        "`roc_curve_kwargs` to be a list of dictionaries with the "
-                        "same length as the number of ROC curves. Got "
-                        f"{len(roc_curve_kwargs)} instead of {len(fpr)}."
-                    )
-            else:
-                raise ValueError(
-                    "You intend to plot multiple ROC curves. We expect "
-                    "`roc_curve_kwargs` to be a list of dictionaries of "
-                    f"{len(fpr)} elements. Got {roc_curve_kwargs!r} instead."
-                )
 
             for class_idx, class_label in enumerate(fpr):
                 fpr_class = fpr[class_label][0]
@@ -295,7 +332,7 @@ class RocCurveDisplay(
                 roc_auc_class = roc_auc[class_label][0]
                 roc_curve_kwargs_class = roc_curve_kwargs[class_idx]
 
-                default_line_kwargs = {"color": class_colors[class_idx]}
+                default_line_kwargs: dict[str, Any] = {"color": class_colors[class_idx]}
                 if data_source in ("train", "test"):
                     default_line_kwargs["label"] = (
                         f"{str(class_label).title()} - {data_source} "
@@ -330,7 +367,7 @@ class RocCurveDisplay(
         ml_task: MLTask,
         ax: Axes,
         estimator_name: str,
-        roc_curve_kwargs: Optional[list[dict[str, Any]]] = None,
+        roc_curve_kwargs: list[dict[str, Any]],
     ) -> tuple[Axes, list[Line2D], Union[str, None]]:
         """Plot ROC curve for a cross-validated estimator.
 
@@ -368,9 +405,9 @@ class RocCurveDisplay(
         estimator_name : str
             The name of the estimator.
 
-        roc_curve_kwargs : list of dict or None, default=None
-            List of dictionaries containing keyword arguments to customize the ROC curves.
-            The length of the list should match the number of curves to plot.
+        roc_curve_kwargs : list of dict
+            List of dictionaries containing keyword arguments to customize the ROC
+            curves. The length of the list should match the number of curves to plot.
 
         Returns
         -------
@@ -388,25 +425,9 @@ class RocCurveDisplay(
         line_kwargs: dict[str, Any] = {}
 
         if ml_task == "binary-classification":
-            if roc_curve_kwargs is None:
-                roc_curve_kwargs = [{}] * len(fpr[pos_label])
-            elif isinstance(roc_curve_kwargs, dict):
-                roc_curve_kwargs = [roc_curve_kwargs] * len(fpr[pos_label])
-            elif isinstance(roc_curve_kwargs, list):
-                if len(roc_curve_kwargs) != len(fpr[pos_label]):
-                    raise ValueError(
-                        "You intend to plot multiple ROC curves. We expect "
-                        "`roc_curve_kwargs` to be a list of dictionaries with the "
-                        "same length as the number of ROC curves. Got "
-                        f"{len(roc_curve_kwargs)} instead of {len(fpr[pos_label])}."
-                    )
-            else:
-                raise ValueError(
-                    "You intend to plot multiple ROC curves. We expect "
-                    "`roc_curve_kwargs` to be a list of dictionaries of "
-                    f"{len(fpr)} elements. Got {roc_curve_kwargs!r} instead."
-                )
-
+            assert pos_label is not None, (
+                "pos_label should not be None with binary classification."
+            )
             for split_idx in range(len(fpr[pos_label])):
                 fpr_split = fpr[pos_label][split_idx]
                 tpr_split = tpr[pos_label][split_idx]
@@ -431,22 +452,6 @@ class RocCurveDisplay(
             class_colors = sample_mpl_colormap(
                 colormaps.get_cmap("tab10"), 10 if len(fpr) < 10 else len(fpr)
             )
-            if roc_curve_kwargs is None:
-                roc_curve_kwargs = [{}] * len(fpr)
-            elif isinstance(roc_curve_kwargs, list):
-                if len(roc_curve_kwargs) != len(fpr):
-                    raise ValueError(
-                        "You intend to plot multiple ROC curves. We expect "
-                        "`roc_curve_kwargs` to be a list of dictionaries with the "
-                        "same length as the number of ROC curves. Got "
-                        f"{len(roc_curve_kwargs)} instead of {len(fpr)}."
-                    )
-            else:
-                raise ValueError(
-                    "You intend to plot multiple ROC curves. We expect "
-                    "`roc_curve_kwargs` to be a list of dictionaries of "
-                    f"{len(fpr)} elements. Got {roc_curve_kwargs!r} instead."
-                )
 
             for class_idx, class_ in enumerate(fpr):
                 fpr_class = fpr[class_]
@@ -494,7 +499,7 @@ class RocCurveDisplay(
         ml_task: MLTask,
         ax: Axes,
         estimator_names: list[str],
-        roc_curve_kwargs: Optional[list[dict[str, Any]]] = None,
+        roc_curve_kwargs: list[dict[str, Any]],
     ) -> tuple[Axes, list[Line2D], Union[str, None]]:
         """Plot ROC curve for a cross-validated estimator.
 
@@ -532,9 +537,9 @@ class RocCurveDisplay(
         estimator_names : list of str
             The names of the estimators.
 
-        roc_curve_kwargs : list of dict or None, default=None
-            List of dictionaries containing keyword arguments to customize the ROC curves.
-            The length of the list should match the number of curves to plot.
+        roc_curve_kwargs : list of dict
+            List of dictionaries containing keyword arguments to customize the ROC
+            curves. The length of the list should match the number of curves to plot.
 
         Returns
         -------
@@ -552,32 +557,19 @@ class RocCurveDisplay(
         line_kwargs: dict[str, Any] = {}
 
         if ml_task == "binary-classification":
-            if roc_curve_kwargs is None:
-                roc_curve_kwargs = [{}] * len(fpr[pos_label])
-            elif isinstance(roc_curve_kwargs, dict):
-                roc_curve_kwargs = [roc_curve_kwargs] * len(fpr[pos_label])
-            elif isinstance(roc_curve_kwargs, list):
-                if len(roc_curve_kwargs) != len(fpr[pos_label]):
-                    raise ValueError(
-                        "You intend to plot multiple ROC curves. We expect "
-                        "`roc_curve_kwargs` to be a list of dictionaries with the "
-                        "same length as the number of ROC curves. Got "
-                        f"{len(roc_curve_kwargs)} instead of {len(fpr[pos_label])}."
-                    )
-            else:
-                raise ValueError(
-                    "You intend to plot multiple ROC curves. We expect "
-                    "`roc_curve_kwargs` to be a list of dictionaries of "
-                    f"{len(fpr)} elements. Got {roc_curve_kwargs!r} instead."
-                )
-
+            assert pos_label is not None, (
+                "pos_label should not be None with binary classification."
+            )
             for est_idx, est_name in enumerate(estimator_names):
                 fpr_est = fpr[pos_label][est_idx]
                 tpr_est = tpr[pos_label][est_idx]
                 roc_auc_est = roc_auc[pos_label][est_idx]
 
                 line_kwargs_validated = _validate_style_kwargs(
-                    {"label": est_name}, roc_curve_kwargs[est_idx]
+                    line_kwargs, roc_curve_kwargs[est_idx]
+                )
+                line_kwargs_validated["label"] = (
+                    f"{est_name} - {data_source} set (AUC = {roc_auc_est:0.2f})"
                 )
                 (line,) = ax.plot(fpr_est, tpr_est, **line_kwargs_validated)
                 lines.append(line)
@@ -590,22 +582,6 @@ class RocCurveDisplay(
             class_colors = sample_mpl_colormap(
                 colormaps.get_cmap("tab10"), 10 if len(fpr) < 10 else len(fpr)
             )
-            if roc_curve_kwargs is None:
-                roc_curve_kwargs = [{}] * len(fpr)
-            elif isinstance(roc_curve_kwargs, list):
-                if len(roc_curve_kwargs) != len(fpr):
-                    raise ValueError(
-                        "You intend to plot multiple ROC curves. We expect "
-                        "`roc_curve_kwargs` to be a list of dictionaries with the "
-                        "same length as the number of ROC curves. Got "
-                        f"{len(roc_curve_kwargs)} instead of {len(fpr)}."
-                    )
-            else:
-                raise ValueError(
-                    "You intend to plot multiple ROC curves. We expect "
-                    "`roc_curve_kwargs` to be a list of dictionaries of "
-                    f"{len(fpr)} elements. Got {roc_curve_kwargs!r} instead."
-                )
 
             for est_idx, est_name in enumerate(estimator_names):
                 est_color = class_colors[est_idx]
@@ -701,6 +677,7 @@ class RocCurveDisplay(
 
         if roc_curve_kwargs is None:
             roc_curve_kwargs = self._default_roc_curve_kwargs
+        roc_curve_kwargs = self._validate_roc_curve_kwargs(roc_curve_kwargs)
 
         if self.report_type == "estimator":
             self.ax_, self.lines_, info_pos_label = self._plot_single_estimator(
