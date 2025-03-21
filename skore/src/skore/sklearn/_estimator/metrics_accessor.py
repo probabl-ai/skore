@@ -418,6 +418,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
 
             y_pred = _get_cached_response_values(
                 cache=self._parent._cache,
+                timings_cache=self._parent._timings_cache,
                 estimator_hash=self._parent._hash,
                 estimator=self._parent.estimator_,
                 X=X,
@@ -447,6 +448,160 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         elif isinstance(score, np.ndarray):
             return score[0] if score.size == 1 else score
         return score
+
+    @available_if(
+        lambda accessor: accessor._parent._timings_cache.get(("fit_time",)) is not None
+    )
+    def fit_time(self) -> float:
+        """Get the time taken to fit the estimator, in seconds.
+
+        Returns
+        -------
+        float
+            The fit time.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_breast_cancer(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> report = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> report.metrics.fit_time()
+        ...
+        >>> report = EstimatorReport(
+        ...     classifier,
+        ...     fit=False,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> report.metrics.fit_time()
+        Traceback (most recent call last):
+        AttributeError: This '_MetricsAccessor' has no attribute 'fit_time'
+        >>> classifier.fit(X_train, y_train)
+        >>> report = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> report.metrics.fit_time()
+        Traceback (most recent call last):
+        AttributeError: This '_MetricsAccessor' has no attribute 'fit_time'
+        """
+        return self._parent._timings_cache[("fit_time",)]
+
+    def predict_time(
+        self,
+        *,
+        data_source: DataSource = "test",
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
+    ) -> float:
+        """Get the time taken to compute predictions by the estimator, in seconds.
+
+        Parameters
+        ----------
+        data_source : {"test", "train", "X_y"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
+        X : array-like of shape (n_samples, n_features), default=None
+            Data on which the prediction was computed. By default, we use the validation
+            set provided when creating the report.
+
+        y : array-like of shape (n_samples,), default=None
+            Target on which the prediction was computed. By default, we use the
+            validation target provided when creating the report.
+
+        Returns
+        -------
+        float
+            The prediction time.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_breast_cancer(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> report = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+
+        >>> report.metrics.accuracy()
+        ...
+        >>> predict_time = report.metrics.predict_time()
+        >>> predict_time
+        ...
+
+        # Pass `data_source` to get the appropriate measurement
+        >>> report.metrics.accuracy(data_source="train")
+        ...
+        >>> report.metrics.predict_time(data_source="train")
+        ...
+
+        >>> report.metrics.predict_time(data_source="X_y", X=X_test, y=y_test)
+        Traceback (most recent call last):
+        Exception: Predictions have never been computed for this estimator
+        and data combination.
+
+        >>> report.metrics.accuracy(data_source="X_y", X=X_test, y=y_test)
+        ...
+        >>> report.metrics.predict_time(data_source="X_y", X=X_test, y=y_test)
+        ...
+
+        # Brier score is computed using `.predict_proba`, while accuracy was computed
+        # using `.predict`; however,
+        # `predict_time` only cares about `data_source`, not the decision function,
+        # so we get the same output as we got in the beginning
+        >>> report.metrics.brier_score()
+        ...
+        >>> report.metrics.predict_time() == predict_time
+        True
+        """
+        X, y, data_source_hash = self._get_X_y_and_data_source_hash(
+            data_source=data_source, X=X, y=y
+        )
+
+        # Search for first matching key in cache
+        if data_source_hash is None:
+            for key in self._parent._timings_cache:
+                if key[-2:] == (data_source, "predict_time"):
+                    return self._parent._timings_cache[key]
+        else:
+            for key in self._parent._timings_cache:
+                if key[-3:] == (data_source, data_source_hash, "predict_time"):
+                    return self._parent._timings_cache[key]
+
+        raise Exception(
+            "Predictions have never been computed "
+            "for this estimator and data combination."
+        )
 
     @available_if(
         _check_supported_ml_task(
@@ -1625,6 +1780,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         else:
             y_pred = _get_cached_response_values(
                 cache=self._parent._cache,
+                timings_cache=self._parent._timings_cache,
                 estimator_hash=self._parent._hash,
                 estimator=self._parent.estimator_,
                 X=X,
