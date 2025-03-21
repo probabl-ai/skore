@@ -244,4 +244,4 @@ def test_random_state(regression_data):
     )
     report.metrics.prediction_error()
     # skore should store the y_pred, but not the plot
-    assert len(report._cache) == 1
+    assert len(report._cache) == 2
