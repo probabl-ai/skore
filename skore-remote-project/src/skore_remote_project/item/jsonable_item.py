@@ -3,7 +3,7 @@ from __future__ import annotations
 from json import dumps, loads
 from typing import Any
 
-from .item import Item, ItemTypeError, Representation
+from .item import Item, ItemTypeError
 
 
 class JSONableItem(Item):
@@ -15,8 +15,13 @@ class JSONableItem(Item):
         return self.value
 
     @property
-    def __representation__(self) -> Representation:
-        return Representation(media_type="application/json", value=self.__raw__)
+    def __representation__(self) -> dict:
+        return {
+            "representation": {
+                "media_type": "application/json",
+                "value": self.__raw__,
+            }
+        }
 
     @classmethod
     def factory(cls, value: Any, /, **kwargs) -> JSONableItem:

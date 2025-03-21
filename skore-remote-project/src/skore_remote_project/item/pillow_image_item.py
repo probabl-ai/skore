@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING
 from .item import (
     Item,
     ItemTypeError,
-    Representation,
     b64_str_to_bytes,
     bytes_to_b64_str,
     lazy_is_instance,
@@ -43,14 +42,19 @@ class PillowImageItem(Item):
         )
 
     @property
-    def __representation__(self) -> Representation:
+    def __representation__(self) -> dict:
         with BytesIO() as stream:
             self.__raw__.save(stream, format="png")
 
             png_bytes = stream.getvalue()
             png_b64_str = bytes_to_b64_str(png_bytes)
 
-        return Representation(media_type="image/png;base64", value=png_b64_str)
+        return {
+            "representation": {
+                "media_type": "image/png;base64",
+                "value": png_b64_str,
+            }
+        }
 
     @classmethod
     def factory(cls, image: PIL.Image.Image, /) -> PillowImageItem:

@@ -3,7 +3,7 @@ from __future__ import annotations
 from functools import cached_property
 from typing import TYPE_CHECKING, Literal
 
-from .item import Item, ItemTypeError, Representation
+from .item import Item, ItemTypeError
 
 if TYPE_CHECKING:
     import pandas
@@ -46,11 +46,13 @@ class PandasSeriesItem(Item):
             return series
 
     @property
-    def __representation__(self) -> Representation:
-        return Representation(
-            media_type="application/json",
-            value=self.__raw__.fillna("NaN").to_list(),
-        )
+    def __representation__(self) -> dict:
+        return {
+            "representation": {
+                "media_type": "application/json",
+                "value": self.__raw__.fillna("NaN").to_list(),
+            }
+        }
 
     @classmethod
     def factory(cls, series: pandas.Series, /, **kwargs) -> PandasSeriesItem:

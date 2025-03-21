@@ -3,7 +3,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Any
 
-from .item import Item, ItemTypeError, Representation
+from .item import Item, ItemTypeError
 
 
 class MediaType(Enum):
@@ -24,8 +24,13 @@ class MediaItem(Item):
         return self.media
 
     @property
-    def __representation__(self) -> Representation:
-        return Representation(media_type=self.media_type, value=self.media)
+    def __representation__(self) -> dict:
+        return {
+            "representation": {
+                "media_type": self.media_type,
+                "value": self.media,
+            }
+        }
 
     @classmethod
     def factory(

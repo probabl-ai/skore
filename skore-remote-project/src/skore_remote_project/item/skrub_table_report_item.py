@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from .item import ItemTypeError, Representation, lazy_is_instance
+from .item import ItemTypeError, lazy_is_instance
 from .pickle_item import PickleItem
 
 if TYPE_CHECKING:
@@ -13,8 +13,13 @@ if TYPE_CHECKING:
 
 class SkrubTableReportItem(PickleItem):
     @property
-    def __representation__(self) -> Representation:
-        return Representation(media_type="text/html", value=self.__raw__.html_snippet())
+    def __representation__(self) -> dict:
+        return {
+            "representation": {
+                "media_type": "text/html",
+                "value": self.__raw__.html_snippet(),
+            }
+        }
 
     @classmethod
     def factory(cls, report: TableReport, /) -> SkrubTableReportItem:

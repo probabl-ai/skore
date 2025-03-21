@@ -12,12 +12,7 @@ from typing import Any, TypeVar
 
 from joblib import dump, load
 
-from .item import (
-    Item,
-    Representation,
-    b64_str_to_bytes,
-    bytes_to_b64_str,
-)
+from .item import Item, b64_str_to_bytes, bytes_to_b64_str
 
 # Create a generic variable that can be `PickleItem`, or any subclass.
 T = TypeVar("T", bound="PickleItem")
@@ -42,11 +37,13 @@ class PickleItem(Item):
             return load(stream)
 
     @property
-    def __representation__(self) -> Representation:
-        return Representation(
-            media_type="text/markdown",
-            value=f"```python\n{repr(self.__raw__)}\n```",
-        )
+    def __representation__(self) -> dict:
+        return {
+            "representation": {
+                "media_type": "text/markdown",
+                "value": f"```python\n{repr(self.__raw__)}\n```",
+            }
+        }
 
     @classmethod
     def factory(cls: type[T], value: Any) -> T:

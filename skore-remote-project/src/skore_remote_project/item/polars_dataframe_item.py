@@ -3,7 +3,7 @@ from __future__ import annotations
 from functools import cached_property
 from typing import TYPE_CHECKING
 
-from .item import Item, ItemTypeError, Representation
+from .item import Item, ItemTypeError
 
 if TYPE_CHECKING:
     import polars
@@ -30,11 +30,13 @@ class PolarsDataFrameItem(Item):
             return polars.read_json(df_stream)
 
     @property
-    def __representation__(self) -> Representation:
-        return Representation(
-            media_type="application/vnd.dataframe",
-            value=self.__raw__.to_pandas().fillna("NaN").to_dict(orient="tight"),
-        )
+    def __representation__(self) -> dict:
+        return {
+            "representation": {
+                "media_type": "application/vnd.dataframe",
+                "value": self.__raw__.to_pandas().fillna("NaN").to_dict(orient="tight"),
+            }
+        }
 
     @classmethod
     def factory(cls, dataframe: polars.DataFrame, /) -> PolarsDataFrameItem:

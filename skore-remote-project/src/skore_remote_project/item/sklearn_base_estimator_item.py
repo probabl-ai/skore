@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 from .item import (
     Item,
     ItemTypeError,
-    Representation,
     b64_str_to_bytes,
     bytes_to_b64_str,
 )
@@ -37,11 +36,13 @@ class SklearnBaseEstimatorItem(Item):
         )
 
     @property
-    def __representation__(self) -> Representation:
-        return Representation(
-            media_type="application/vnd.sklearn.estimator+html",
-            value=self.estimator_html_repr,
-        )
+    def __representation__(self) -> dict:
+        return {
+            "representation": {
+                "media_type": "application/vnd.sklearn.estimator+html",
+                "value": self.estimator_html_repr,
+            }
+        }
 
     @classmethod
     def factory(cls, estimator: sklearn.base.BaseEstimator) -> SklearnBaseEstimatorItem:

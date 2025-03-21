@@ -3,7 +3,7 @@ from __future__ import annotations
 from json import loads
 from typing import TYPE_CHECKING
 
-from .item import Item, ItemTypeError, Representation, lazy_is_instance
+from .item import Item, ItemTypeError, lazy_is_instance
 
 if TYPE_CHECKING:
     from altair.vegalite.v5.schema.core import TopLevelSpec as AltairChart
@@ -20,11 +20,13 @@ class AltairChartItem(Item):
         return altair.Chart.from_json(self.chart_json_str)
 
     @property
-    def __representation__(self) -> Representation:
-        return Representation(
-            media_type="application/vnd.vega.v5+json",
-            value=loads(self.chart_json_str),
-        )
+    def __representation__(self) -> dict:
+        return {
+            "representation": {
+                "media_type": "application/vnd.vega.v5+json",
+                "value": loads(self.chart_json_str),
+            }
+        }
 
     @classmethod
     def factory(cls, chart: AltairChart, /, **kwargs) -> AltairChartItem:

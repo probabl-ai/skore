@@ -15,7 +15,6 @@ from joblib import dump, load
 from .item import (
     Item,
     ItemTypeError,
-    Representation,
     b64_str_to_bytes,
     bytes_to_b64_str,
     lazy_is_instance,
@@ -53,17 +52,19 @@ class MatplotlibFigureItem(Item):
             return load(stream)
 
     @property
-    def __representation__(self) -> Representation:
+    def __representation__(self) -> dict:
         with BytesIO() as stream:
             self.__raw__.savefig(stream, format="svg", bbox_inches="tight")
 
             figure_bytes = stream.getvalue()
             figure_b64_str = bytes_to_b64_str(figure_bytes)
 
-        return Representation(
-            media_type="image/svg+xml;base64",
-            value=figure_b64_str,
-        )
+        return {
+            "representation": {
+                "media_type": "image/svg+xml;base64",
+                "value": figure_b64_str,
+            }
+        }
 
     @classmethod
     def factory(cls, figure: Figure, /, **kwargs) -> MatplotlibFigureItem:

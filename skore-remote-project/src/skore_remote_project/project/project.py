@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from functools import cached_property
 from typing import Any, Literal, Optional, Union
+from urllib.parse import urljoin
 
 from .. import item as item_module
 from ..client.client import AuthenticatedClient
@@ -22,22 +23,12 @@ class Project:
         return self.__tenant
 
     @cached_property
-    def id(self):
+    def run_id(self):
         with AuthenticatedClient(raises=True) as client:
-            # Retrieve existing project if exists
-            request = client.get("projects/", params={"tenant_id": self.tenant})
-            projects = request.json()
+            request = client.post(urljoin("projects", self.tenant, self.name, "runs"))
+            run = request.json()
 
-            for project in projects:
-                if project["name"] == self.name:
-                    return project["id"]
-
-            # Create new project if not exists
-            request = client.post(
-                "projects/", json={"name": self.name, "tenant_id": self.tenant}
-            )
-
-            return request.json()["project_id"]
+            return run["id"]
 
     def put(
         self,
@@ -52,22 +43,18 @@ class Project:
         if not isinstance(note, (type(None), str)):
             raise TypeError(f"Note must be a string (found '{type(note)}')")
 
-        now = datetime.now(tz=timezone.utc).replace(tzinfo=None).isoformat()
         item = item_module.object_to_item(value)
 
         with AuthenticatedClient(raises=True) as client:
             client.post(
-                f"projects/{self.id}/items/",
+                urljoin("projects", self.tenant, self.name),
                 json={
+                    **item.__metadata__,
+                    **item.__representation__,
+                    **item.__parameters__,
                     "key": key,
-                    "created_at": now,
-                    "updated_at": now,
-                    "value_type": item.__class__.__name__,
-                    "value": {
-                        "note": note,
-                        "parameters": item.__parameters__,
-                        "representation": item.__representation__.__dict__,
-                    },
+                    "run_id": self.run_id,
+                    "note": note,
                 },
             )
 
@@ -78,6 +65,8 @@ class Project:
         version: Optional[Union[Literal[-1, "all"], int]] = -1,
         metadata: bool = False,
     ):
+        raise NotImplementedError
+
         if not metadata:
 
             def dto(response):
