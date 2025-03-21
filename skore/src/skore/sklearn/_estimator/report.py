@@ -193,6 +193,12 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         >>> report._cache
         {}
         """
+        fit_time = self._timings_cache.get(("fit_time",))
+        if fit_time is None:
+            self._timings_cache = {}
+        else:
+            self._timings_cache = {("fit_time",): fit_time}
+
         self._cache = {}
 
     @progress_decorator(description="Caching predictions")
