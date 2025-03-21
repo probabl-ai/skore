@@ -589,7 +589,7 @@ class RocCurveDisplay(
                 for class_idx, class_ in enumerate(fpr):
                     fpr_est_class = fpr[class_][est_idx]
                     tpr_est_class = tpr[class_][est_idx]
-                    roc_auc_mean = np.mean(roc_auc[class_])
+                    roc_auc_mean = np.mean(roc_auc[class_][est_idx])
                     class_linestyle = LINESTYLE[(class_idx % len(LINESTYLE))][1]
 
                     line_kwargs["color"] = est_color
