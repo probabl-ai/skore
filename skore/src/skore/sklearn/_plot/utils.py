@@ -75,10 +75,7 @@ class HelpDisplayMixin:
     def _create_help_panel(self) -> Panel:
         return Panel(
             self._create_help_tree(),
-            title=(
-                f"[bold cyan]{self.__class__.__name__} for "
-                f"{self.estimator_name}[/bold cyan]"
-            ),
+            title=f"[bold cyan]{self.__class__.__name__} [/bold cyan]",
             border_style="orange1",
             expand=False,
         )

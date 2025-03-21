@@ -74,7 +74,7 @@ def test_roc_curve_display_binary_classification(pyplot, binary_classification_d
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
     assert legend.get_title().get_text() == estimator.__class__.__name__
-    assert len(legend.get_texts()) == 2
+    assert len(legend.get_texts()) == 1
 
     assert display.ax_.get_xlabel() == "False Positive Rate\n(Positive label: 1)"
     assert display.ax_.get_ylabel() == "True Positive Rate\n(Positive label: 1)"
@@ -125,7 +125,7 @@ def test_roc_curve_display_multiclass_classification(
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
     assert legend.get_title().get_text() == estimator.__class__.__name__
-    assert len(legend.get_texts()) == 4
+    assert len(legend.get_texts()) == len(estimator.classes_)
 
     assert display.ax_.get_xlabel() == "False Positive Rate"
     assert display.ax_.get_ylabel() == "True Positive Rate"
@@ -186,8 +186,8 @@ def test_roc_curve_display_plot_error_wrong_roc_curve_kwargs(
     )
     display = report.metrics.roc()
     err_msg = (
-        "You intend to plot a single ROC curve and provide multiple ROC curve "
-        "keyword arguments"
+        "You intend to plot a single ROC curve. We expect `roc_curve_kwargs` to be a "
+        "dictionary."
     )
     with pytest.raises(ValueError, match=err_msg):
         display.plot(roc_curve_kwargs=[{}, {}])
@@ -309,7 +309,7 @@ def test_roc_curve_display_cross_validation_binary_classification(
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
     assert legend.get_title().get_text() == estimator.__class__.__name__
-    assert len(legend.get_texts()) == 4
+    assert len(legend.get_texts()) == cv
 
     assert display.ax_.get_xlabel() == "False Positive Rate\n(Positive label: 1)"
     assert display.ax_.get_ylabel() == "True Positive Rate\n(Positive label: 1)"
@@ -362,7 +362,7 @@ def test_roc_curve_display_cross_validation_multiclass_classification(
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
     assert legend.get_title().get_text() == estimator.__class__.__name__
-    assert len(legend.get_texts()) == 4
+    assert len(legend.get_texts()) == cv
 
     assert display.ax_.get_xlabel() == "False Positive Rate"
     assert display.ax_.get_ylabel() == "True Positive Rate"

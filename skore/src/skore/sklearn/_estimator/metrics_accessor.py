@@ -1634,16 +1634,27 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                 pos_label=display_kwargs.get("pos_label"),
             )
 
-            display = display_class._from_predictions(
-                y_true=[y],
-                y_pred=[y_pred],
-                estimator=self._parent.estimator_,
-                estimator_name=self._parent.estimator_name_,
-                ml_task=self._parent._ml_task,
-                data_source=data_source,
-                **display_kwargs,
-            )
-
+            if display_class.__name__ == "RocCurveDisplay":
+                display = display_class._compute_data_for_display(
+                    y_true=[y],
+                    y_pred=[y_pred],
+                    report_type="estimator",
+                    estimators=[self._parent.estimator_],
+                    estimator_names=[self._parent.estimator_name_],
+                    ml_task=self._parent._ml_task,
+                    data_source=data_source,
+                    **display_kwargs,
+                )
+            else:
+                display = display_class._from_predictions(
+                    y_true=[y],
+                    y_pred=[y_pred],
+                    estimator=self._parent.estimator_,
+                    estimator_name=self._parent.estimator_name_,
+                    ml_task=self._parent._ml_task,
+                    data_source=data_source,
+                    **display_kwargs,
+                )
             # Unless random_state is an int (i.e. the call is deterministic),
             # we do not cache
             if cache_key is not None:
