@@ -563,3 +563,71 @@ def test_roc_curve_display_comparison_report_multiclass_classification(
     assert display.ax_.get_adjustable() == "box"
     assert display.ax_.get_aspect() in ("equal", 1.0)
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
+
+
+def test_roc_curve_display_comparison_report_binary_classification_kwargs(
+    pyplot, binary_classification_data
+):
+    """Check that we can pass keyword arguments to the ROC curve plot for
+    cross-validation."""
+    estimator, X_train, X_test, y_train, y_test = binary_classification_data
+    estimator_2 = clone(estimator).set_params(C=10).fit(X_train, y_train)
+    report = ComparisonReport(
+        reports={
+            "estimator_1": EstimatorReport(
+                estimator,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+            "estimator_2": EstimatorReport(
+                estimator_2,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+        }
+    )
+    display = report.metrics.roc()
+    roc_curve_kwargs = [{"color": "red"}, {"color": "blue"}]
+    display.plot(roc_curve_kwargs=roc_curve_kwargs)
+    assert display.lines_[0].get_color() == "red"
+    assert display.lines_[1].get_color() == "blue"
+
+
+@pytest.mark.parametrize(
+    "fixture_name",
+    ["binary_classification_data", "multiclass_classification_data"],
+)
+@pytest.mark.parametrize("roc_curve_kwargs", [[{"color": "red"}], "unknown"])
+def test_roc_curve_display_comparison_multiple_roc_curve_kwargs_error(
+    pyplot, fixture_name, request, roc_curve_kwargs
+):
+    """Check that we raise a proper error message when passing an inappropriate
+    value for the `roc_curve_kwargs` argument."""
+    estimator, X_train, X_test, y_train, y_test = request.getfixturevalue(fixture_name)
+
+    report = ComparisonReport(
+        reports={
+            "estimator_1": EstimatorReport(
+                estimator,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+            "estimator_2": EstimatorReport(
+                estimator,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+        }
+    )
+    display = report.metrics.roc()
+    err_msg = "You intend to plot multiple ROC curves"
+    with pytest.raises(ValueError, match=err_msg):
+        display.plot(roc_curve_kwargs=roc_curve_kwargs)

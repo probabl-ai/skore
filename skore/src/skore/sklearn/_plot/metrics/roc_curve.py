@@ -166,6 +166,7 @@ class RocCurveDisplay(
     def _validate_roc_curve_kwargs(
         self,
         roc_curve_kwargs: Union[dict[str, Any], list[dict[str, Any]], None],
+        report_type: Literal["comparison", "cross-validation", "estimator"],
     ) -> list[dict[str, Any]]:
         """Validate and format the ROC curve keyword arguments.
 
@@ -173,6 +174,9 @@ class RocCurveDisplay(
         ----------
         roc_curve_kwargs : dict or list of dict or None
             Keyword arguments to customize the ROC curves.
+
+        report_type : {"comparison", "cross-validation", "estimator"}
+            The type of report.
 
         Returns
         -------
@@ -189,7 +193,12 @@ class RocCurveDisplay(
                 "pos_label should not be None with binary classification."
             )
             n_curves = len(self.fpr[self.pos_label])
-            allow_single_dict = True
+            if report_type in ("estimator", "cross-validation"):
+                allow_single_dict = True
+            else:  # report_type == "comparison"
+                # since we compare different estimators, it does not make sense to share
+                # a single dictionary for all the estimators.
+                allow_single_dict = False
         else:
             n_curves = len(self.fpr)
             allow_single_dict = False
@@ -677,7 +686,9 @@ class RocCurveDisplay(
 
         if roc_curve_kwargs is None:
             roc_curve_kwargs = self._default_roc_curve_kwargs
-        roc_curve_kwargs = self._validate_roc_curve_kwargs(roc_curve_kwargs)
+        roc_curve_kwargs = self._validate_roc_curve_kwargs(
+            roc_curve_kwargs, self.report_type
+        )
 
         if self.report_type == "estimator":
             self.ax_, self.lines_, info_pos_label = self._plot_single_estimator(
