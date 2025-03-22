@@ -12,14 +12,16 @@ from skore.sklearn._plot.utils import sample_mpl_colormap
 
 @pytest.fixture
 def binary_classification_data():
-    X, y = make_classification(random_state=42)
+    X, y = make_classification(class_sep=0.1, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
     return LogisticRegression().fit(X_train, y_train), X_train, X_test, y_train, y_test
 
 
 @pytest.fixture
 def multiclass_classification_data():
-    X, y = make_classification(n_classes=3, n_clusters_per_class=1, random_state=42)
+    X, y = make_classification(
+        class_sep=0.1, n_classes=3, n_clusters_per_class=1, random_state=42
+    )
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
     return LogisticRegression().fit(X_train, y_train), X_train, X_test, y_train, y_test
 
@@ -145,11 +147,17 @@ def test_roc_curve_display_data_source_binary_classification(
     )
     display = report.metrics.roc(data_source="train")
     display.plot()
-    assert display.lines_[0].get_label() == "Train set (AUC = 1.00)"
+    assert (
+        display.lines_[0].get_label()
+        == f"Train set (AUC = {display.roc_auc[estimator.classes_[1]][0]:0.2f})"
+    )
 
     display = report.metrics.roc(data_source="X_y", X=X_train, y=y_train)
     display.plot()
-    assert display.lines_[0].get_label() == "AUC = 1.00"
+    assert (
+        display.lines_[0].get_label()
+        == f"AUC = {display.roc_auc[estimator.classes_[1]][0]:0.2f}"
+    )
 
 
 def test_roc_curve_display_data_source_multiclass_classification(
@@ -172,7 +180,7 @@ def test_roc_curve_display_data_source_multiclass_classification(
     display.plot()
     for class_label in estimator.classes_:
         assert display.lines_[class_label].get_label() == (
-            f"{str(class_label).title()} - AUC = 1.00"
+            f"{str(class_label).title()} - AUC = {display.roc_auc[class_label][0]:0.2f}"
         )
 
 
@@ -482,52 +490,76 @@ def test_roc_curve_display_comparison_report_binary_classification(
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
 
 
-# def test_roc_curve_display_multiclass_classification(
-#     pyplot, multiclass_classification_data
-# ):
-#     """Check the attributes and default plotting behaviour of the ROC curve plot with
-#     multiclass data."""
-#     estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
-#     report = EstimatorReport(
-#         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-#     )
-#     display = report.metrics.roc()
-#     assert isinstance(display, RocCurveDisplay)
+def test_roc_curve_display_comparison_report_multiclass_classification(
+    pyplot, multiclass_classification_data
+):
+    """Check the attributes and default plotting behaviour of the ROC curve plot with
+    multiclass data."""
+    estimator, X_train, X_test, y_train, y_test = multiclass_classification_data
+    estimator_2 = clone(estimator).set_params(C=10).fit(X_train, y_train)
+    report = ComparisonReport(
+        reports={
+            "estimator_1": EstimatorReport(
+                estimator,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+            "estimator_2": EstimatorReport(
+                estimator_2,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+        }
+    )
+    display = report.metrics.roc()
+    assert isinstance(display, RocCurveDisplay)
 
-#     # check the structure of the attributes
-#     for attr_name in ("fpr", "tpr", "roc_auc"):
-#         assert isinstance(getattr(display, attr_name), dict)
-#         assert len(getattr(display, attr_name)) == len(estimator.classes_)
+    # check the structure of the attributes
+    class_labels = report.estimator_reports_[0].estimator_.classes_
+    for attr_name in ("fpr", "tpr", "roc_auc"):
+        assert isinstance(getattr(display, attr_name), dict)
+        assert len(getattr(display, attr_name)) == len(class_labels)
 
-#         attr = getattr(display, attr_name)
-#         for class_label in estimator.classes_:
-#             assert isinstance(attr[class_label], list)
-#             assert len(attr[class_label]) == 1
+        attr = getattr(display, attr_name)
+        for class_label in class_labels:
+            assert isinstance(attr[class_label], list)
+            assert len(attr[class_label]) == 2
 
-#     display.plot()
-#     assert isinstance(display.lines_, list)
-#     assert len(display.lines_) == len(estimator.classes_)
-#     default_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
-#     for class_label, expected_color in zip(estimator.classes_, default_colors):
-#         roc_curve_mpl = display.lines_[class_label]
-#         assert isinstance(roc_curve_mpl, mpl.lines.Line2D)
-#         assert roc_curve_mpl.get_label() == (
-#             f"{str(class_label).title()} - test set "
-#             f"(AUC = {display.roc_auc[class_label][0]:0.2f})"
-#         )
-#         assert roc_curve_mpl.get_color() == expected_color
+    display.plot()
+    assert isinstance(display.lines_, list)
+    assert len(display.lines_) == len(class_labels) * 2
+    default_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
+    for estimator_idx, expected_color in zip(
+        range(len(report.report_names_)), default_colors
+    ):
+        for class_label_idx, class_label in enumerate(class_labels):
+            roc_curve_mpl = display.lines_[
+                estimator_idx * len(class_labels) + class_label_idx
+            ]
+            assert isinstance(roc_curve_mpl, mpl.lines.Line2D)
+            assert roc_curve_mpl.get_label() == (
+                f"{report.report_names_[estimator_idx]} - test set "
+                f"(AUC = {display.roc_auc[class_label][estimator_idx]:0.2f})"
+            )
+            assert roc_curve_mpl.get_color() == expected_color
 
-#     assert isinstance(display.chance_level_, mpl.lines.Line2D)
-#     assert display.chance_level_.get_label() == "Chance level (AUC = 0.5)"
-#     assert display.chance_level_.get_color() == "k"
+    assert isinstance(display.chance_level_, mpl.lines.Line2D)
+    assert display.chance_level_.get_label() == "Chance level (AUC = 0.5)"
+    assert display.chance_level_.get_color() == "k"
 
-#     assert isinstance(display.ax_, mpl.axes.Axes)
-#     legend = display.ax_.get_legend()
-#     assert legend.get_title().get_text() == estimator.__class__.__name__
-#     assert len(legend.get_texts()) == len(estimator.classes_)
+    assert isinstance(display.ax_, mpl.axes.Axes)
+    legend = display.ax_.get_legend()
+    assert (
+        legend.get_title().get_text() == r"Multiclass-Classification on $\bf{test}$ set"
+    )
+    assert len(legend.get_texts()) == 6
 
-#     assert display.ax_.get_xlabel() == "False Positive Rate"
-#     assert display.ax_.get_ylabel() == "True Positive Rate"
-#     assert display.ax_.get_adjustable() == "box"
-#     assert display.ax_.get_aspect() in ("equal", 1.0)
-#     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
+    assert display.ax_.get_xlabel() == "False Positive Rate"
+    assert display.ax_.get_ylabel() == "True Positive Rate"
+    assert display.ax_.get_adjustable() == "box"
+    assert display.ax_.get_aspect() in ("equal", 1.0)
+    assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
