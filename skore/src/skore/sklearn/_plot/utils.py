@@ -220,17 +220,6 @@ class _ClassifierCurveDisplayMixin:
 
             return curve_kwargs
 
-    def _validate_plot_params(
-        self, *, ax: Optional[Axes] = None, estimator_name: Optional[str] = None
-    ) -> tuple[Axes, Union[Figure, SubFigure], str]:
-        if ax is None:
-            _, ax = plt.subplots()
-
-        estimator_name = (
-            self.estimator_name if estimator_name is None else estimator_name
-        )
-        return ax, ax.figure, estimator_name
-
     @classmethod
     def _validate_from_predictions_params(
         cls,
