@@ -997,7 +997,10 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
                 )
                 progress.update(main_task, advance=1, refresh=True)
 
-            if display_class.__name__ == "RocCurveDisplay":
+            if display_class.__name__ in (
+                "RocCurveDisplay",
+                "PrecisionRecallCurveDisplay",
+            ):
                 display = display_class._compute_data_for_display(
                     y_true=y_true,
                     y_pred=y_pred,

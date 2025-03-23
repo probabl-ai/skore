@@ -195,7 +195,7 @@ def test_roc_curve_display_plot_error_wrong_roc_curve_kwargs(
     )
     display = report.metrics.roc()
     err_msg = (
-        "You intend to plot a single ROC curve. We expect `roc_curve_kwargs` to be a "
+        "You intend to plot a single curve. We expect `roc_curve_kwargs` to be a "
         "dictionary."
     )
     with pytest.raises(ValueError, match=err_msg):
@@ -206,7 +206,7 @@ def test_roc_curve_display_plot_error_wrong_roc_curve_kwargs(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
     display = report.metrics.roc()
-    err_msg = "You intend to plot multiple ROC curves."
+    err_msg = "You intend to plot multiple curves."
     with pytest.raises(ValueError, match=err_msg):
         display.plot(roc_curve_kwargs=[{}, {}])
 
@@ -420,7 +420,7 @@ def test_roc_curve_display_cross_validation_multiple_roc_curve_kwargs_error(
 
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
     display = report.metrics.roc()
-    err_msg = "You intend to plot multiple ROC curves"
+    err_msg = "You intend to plot multiple curves"
     with pytest.raises(ValueError, match=err_msg):
         display.plot(roc_curve_kwargs=roc_curve_kwargs)
 
@@ -469,7 +469,7 @@ def test_roc_curve_display_comparison_report_binary_classification(
     for split_idx, line in enumerate(display.lines_):
         assert isinstance(line, mpl.lines.Line2D)
         assert line.get_label() == (
-            f"{report.report_names_[split_idx]} - test set "
+            f"{report.report_names_[split_idx]} "
             f"(AUC = {display.roc_auc[display.pos_label][split_idx]:0.2f})"
         )
         assert mpl.colors.to_rgba(line.get_color()) == expected_colors[split_idx]
@@ -542,7 +542,7 @@ def test_roc_curve_display_comparison_report_multiclass_classification(
             ]
             assert isinstance(roc_curve_mpl, mpl.lines.Line2D)
             assert roc_curve_mpl.get_label() == (
-                f"{report.report_names_[estimator_idx]} - test set "
+                f"{report.report_names_[estimator_idx]} - {str(class_label).title()} "
                 f"(AUC = {display.roc_auc[class_label][estimator_idx]:0.2f})"
             )
             assert roc_curve_mpl.get_color() == expected_color
@@ -628,6 +628,6 @@ def test_roc_curve_display_comparison_multiple_roc_curve_kwargs_error(
         }
     )
     display = report.metrics.roc()
-    err_msg = "You intend to plot multiple ROC curves"
+    err_msg = "You intend to plot multiple curves"
     with pytest.raises(ValueError, match=err_msg):
         display.plot(roc_curve_kwargs=roc_curve_kwargs)

@@ -17,6 +17,26 @@ from sklearn.utils.validation import (
     check_consistent_length,
 )
 
+LINESTYLE = [
+    ("solid", "solid"),
+    ("dotted", "dotted"),
+    ("dashed", "dashed"),
+    ("dashdot", "dashdot"),
+    ("loosely dotted", (0, (1, 10))),
+    ("dotted", (0, (1, 5))),
+    ("densely dotted", (0, (1, 1))),
+    ("long dash with offset", (5, (10, 3))),
+    ("loosely dashed", (0, (5, 10))),
+    ("dashed", (0, (5, 5))),
+    ("densely dashed", (0, (5, 1))),
+    ("loosely dashdotted", (0, (3, 10, 1, 10))),
+    ("dashdotted", (0, (3, 5, 1, 5))),
+    ("densely dashdotted", (0, (3, 1, 1, 1))),
+    ("dashdotdotted", (0, (3, 5, 1, 5, 1, 5))),
+    ("loosely dashdotdotted", (0, (3, 10, 1, 10, 1, 10))),
+    ("densely dashdotdotted", (0, (3, 1, 1, 1, 1, 1))),
+]
+
 
 class HelpDisplayMixin:
     """Mixin class to add help functionality to a class."""
@@ -119,16 +139,24 @@ class _ClassifierCurveDisplayMixin:
 
     def _validate_curve_kwargs(
         self,
+        *,
         curve_param_name: str,
         curve_kwargs: Union[dict[str, Any], list[dict[str, Any]], None],
+        metric: dict[Union[int, float, bool, str], list[float]],
         report_type: Literal["comparison", "cross-validation", "estimator"],
     ) -> list[dict[str, Any]]:
         """Validate and format the classification curve keyword arguments.
 
         Parameters
         ----------
+        curve_param_name : str
+            The name of the curve parameter.
+
         curve_kwargs : dict or list of dict or None
             Keyword arguments to customize the classification curve.
+
+        metric : dict of list of float
+            One of the metric of the curve to infer how many curves we are plotting.
 
         report_type : {"comparison", "cross-validation", "estimator"}
             The type of report.
@@ -147,7 +175,7 @@ class _ClassifierCurveDisplayMixin:
             assert self.pos_label is not None, (
                 "pos_label should not be None with binary classification."
             )
-            n_curves = len(self.fpr[self.pos_label])
+            n_curves = len(metric[self.pos_label])
             if report_type in ("estimator", "cross-validation"):
                 allow_single_dict = True
             else:  # report_type == "comparison"
@@ -155,7 +183,7 @@ class _ClassifierCurveDisplayMixin:
                 # a single dictionary for all the estimators.
                 allow_single_dict = False
         else:
-            n_curves = len(self.fpr)
+            n_curves = len(metric)
             allow_single_dict = False
 
         if curve_kwargs is None:
@@ -167,14 +195,14 @@ class _ClassifierCurveDisplayMixin:
                 return curve_kwargs
             else:
                 raise ValueError(
-                    "You intend to plot a single ROC curve. We expect "
+                    "You intend to plot a single curve. We expect "
                     f"`{curve_param_name}` to be a dictionary. Got "
                     f"{type(curve_kwargs)} instead."
                 )
         else:  # n_curves > 1
             if not allow_single_dict and isinstance(curve_kwargs, dict):
                 raise ValueError(
-                    "You intend to plot multiple ROC curves. We expect "
+                    "You intend to plot multiple curves. We expect "
                     f"`{curve_param_name}` to be a list of dictionaries. Got "
                     f"{type(curve_kwargs)} instead."
                 )
@@ -184,9 +212,9 @@ class _ClassifierCurveDisplayMixin:
             # From this point, we have a list of dictionaries
             if len(curve_kwargs) != n_curves:
                 raise ValueError(
-                    "You intend to plot multiple ROC curves. We expect "
+                    "You intend to plot multiple curves. We expect "
                     f"`{curve_param_name}` to be a list of dictionaries with the "
-                    f"same length as the number of ROC curves. Got "
+                    f"same length as the number of curves. Got "
                     f"{len(curve_kwargs)} instead of {n_curves}."
                 )
 

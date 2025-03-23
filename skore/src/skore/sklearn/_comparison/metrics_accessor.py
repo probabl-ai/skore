@@ -11,12 +11,12 @@ from sklearn.utils.metaestimators import available_if
 
 from skore.externals._pandas_accessors import DirNamesMixin
 from skore.sklearn._base import _BaseAccessor, _get_cached_response_values
-from skore.sklearn._comparison.precision_recall_curve_display import (
-    PrecisionRecallCurveDisplay,
-)
 from skore.sklearn._comparison.prediction_error_display import PredictionErrorDisplay
 from skore.sklearn._comparison.report import ComparisonReport
-from skore.sklearn._plot.metrics import RocCurveDisplay
+from skore.sklearn._plot.metrics import (
+    PrecisionRecallCurveDisplay,
+    RocCurveDisplay,
+)
 from skore.utils._accessor import _check_supported_ml_task
 from skore.utils._index import flatten_multi_index
 from skore.utils._progress_bar import progress_decorator
@@ -1244,7 +1244,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 )
                 progress.update(main_task, advance=1, refresh=True)
 
-            if display_class.__name__ == "RocCurveDisplay":
+            if display_class.__name__ in (
+                "RocCurveDisplay",
+                "PrecisionRecallCurveDisplay",
+            ):
                 display = display_class._compute_data_for_display(
                     y_true=y_true,
                     y_pred=y_pred,

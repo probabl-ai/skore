@@ -1634,7 +1634,10 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                 pos_label=display_kwargs.get("pos_label"),
             )
 
-            if display_class.__name__ == "RocCurveDisplay":
+            if display_class.__name__ in (
+                "RocCurveDisplay",
+                "PrecisionRecallCurveDisplay",
+            ):
                 display = display_class._compute_data_for_display(
                     y_true=[y],
                     y_pred=[y_pred],

@@ -14,6 +14,7 @@ from sklearn.preprocessing import LabelBinarizer
 
 from skore.sklearn._plot.style import StyleDisplayMixin
 from skore.sklearn._plot.utils import (
+    LINESTYLE,
     HelpDisplayMixin,
     _ClassifierCurveDisplayMixin,
     _despine_matplotlib_axis,
@@ -21,26 +22,6 @@ from skore.sklearn._plot.utils import (
     sample_mpl_colormap,
 )
 from skore.sklearn.types import MLTask
-
-LINESTYLE = [
-    ("solid", "solid"),
-    ("dotted", "dotted"),
-    ("dashed", "dashed"),
-    ("dashdot", "dashdot"),
-    ("loosely dotted", (0, (1, 10))),
-    ("dotted", (0, (1, 5))),
-    ("densely dotted", (0, (1, 1))),
-    ("long dash with offset", (5, (10, 3))),
-    ("loosely dashed", (0, (5, 10))),
-    ("dashed", (0, (5, 5))),
-    ("densely dashed", (0, (5, 1))),
-    ("loosely dashdotted", (0, (3, 10, 1, 10))),
-    ("dashdotted", (0, (3, 5, 1, 5))),
-    ("densely dashdotted", (0, (3, 1, 1, 1))),
-    ("dashdotdotted", (0, (3, 5, 1, 5, 1, 5))),
-    ("loosely dashdotdotted", (0, (3, 10, 1, 10, 1, 10))),
-    ("densely dashdotdotted", (0, (3, 1, 1, 1, 1, 1))),
-]
 
 
 class RocCurveDisplay(
@@ -504,7 +485,7 @@ class RocCurveDisplay(
                     line_kwargs, roc_curve_kwargs[est_idx]
                 )
                 line_kwargs_validated["label"] = (
-                    f"{est_name} - {data_source} set (AUC = {roc_auc_est:0.2f})"
+                    f"{est_name} (AUC = {roc_auc_est:0.2f})"
                 )
                 (line,) = ax.plot(fpr_est, tpr_est, **line_kwargs_validated)
                 lines.append(line)
@@ -535,7 +516,8 @@ class RocCurveDisplay(
                         line_kwargs, roc_curve_kwargs[est_idx]
                     )
                     line_kwargs_validated["label"] = (
-                        f"{est_name} - {data_source} set (AUC = {roc_auc_mean:0.2f})"
+                        f"{est_name} - {str(class_).title()} "
+                        f"(AUC = {roc_auc_mean:0.2f})"
                     )
 
                     (line,) = ax.plot(
@@ -613,7 +595,10 @@ class RocCurveDisplay(
         if roc_curve_kwargs is None:
             roc_curve_kwargs = self._default_roc_curve_kwargs
         roc_curve_kwargs = self._validate_curve_kwargs(
-            "roc_curve_kwargs", roc_curve_kwargs, self.report_type
+            curve_param_name="roc_curve_kwargs",
+            curve_kwargs=roc_curve_kwargs,
+            metric=self.roc_auc,
+            report_type=self.report_type,
         )
 
         if self.report_type == "estimator":
