@@ -163,80 +163,6 @@ class RocCurveDisplay(
         self.ml_task = ml_task
         self.report_type = report_type
 
-    def _validate_roc_curve_kwargs(
-        self,
-        roc_curve_kwargs: Union[dict[str, Any], list[dict[str, Any]], None],
-        report_type: Literal["comparison", "cross-validation", "estimator"],
-    ) -> list[dict[str, Any]]:
-        """Validate and format the ROC curve keyword arguments.
-
-        Parameters
-        ----------
-        roc_curve_kwargs : dict or list of dict or None
-            Keyword arguments to customize the ROC curves.
-
-        report_type : {"comparison", "cross-validation", "estimator"}
-            The type of report.
-
-        Returns
-        -------
-        list of dict
-            Validated list of keyword arguments for each curve.
-
-        Raises
-        ------
-        ValueError
-            If the format of roc_curve_kwargs is invalid.
-        """
-        if self.ml_task == "binary-classification":
-            assert self.pos_label is not None, (
-                "pos_label should not be None with binary classification."
-            )
-            n_curves = len(self.fpr[self.pos_label])
-            if report_type in ("estimator", "cross-validation"):
-                allow_single_dict = True
-            else:  # report_type == "comparison"
-                # since we compare different estimators, it does not make sense to share
-                # a single dictionary for all the estimators.
-                allow_single_dict = False
-        else:
-            n_curves = len(self.fpr)
-            allow_single_dict = False
-
-        if roc_curve_kwargs is None:
-            return [{}] * n_curves
-        elif n_curves == 1:
-            if isinstance(roc_curve_kwargs, dict):
-                return [roc_curve_kwargs]
-            elif isinstance(roc_curve_kwargs, list) and len(roc_curve_kwargs) == 1:
-                return roc_curve_kwargs
-            else:
-                raise ValueError(
-                    "You intend to plot a single ROC curve. We expect "
-                    "`roc_curve_kwargs` to be a dictionary. Got "
-                    f"{type(roc_curve_kwargs)} instead."
-                )
-        else:  # n_curves > 1
-            if not allow_single_dict and isinstance(roc_curve_kwargs, dict):
-                raise ValueError(
-                    "You intend to plot multiple ROC curves. We expect "
-                    "`roc_curve_kwargs` to be a list of dictionaries. Got "
-                    f"{type(roc_curve_kwargs)} instead."
-                )
-            if isinstance(roc_curve_kwargs, dict):
-                return [roc_curve_kwargs] * n_curves
-
-            # From this point, we have a list of dictionaries
-            if len(roc_curve_kwargs) != n_curves:
-                raise ValueError(
-                    "You intend to plot multiple ROC curves. We expect "
-                    "`roc_curve_kwargs` to be a list of dictionaries with the "
-                    f"same length as the number of ROC curves. Got "
-                    f"{len(roc_curve_kwargs)} instead of {n_curves}."
-                )
-
-            return roc_curve_kwargs
-
     @staticmethod
     def _plot_single_estimator(
         *,
@@ -686,8 +612,8 @@ class RocCurveDisplay(
 
         if roc_curve_kwargs is None:
             roc_curve_kwargs = self._default_roc_curve_kwargs
-        roc_curve_kwargs = self._validate_roc_curve_kwargs(
-            roc_curve_kwargs, self.report_type
+        roc_curve_kwargs = self._validate_curve_kwargs(
+            "roc_curve_kwargs", roc_curve_kwargs, self.report_type
         )
 
         if self.report_type == "estimator":

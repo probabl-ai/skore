@@ -1,7 +1,7 @@
 import inspect
 from collections.abc import Sequence
 from io import StringIO
-from typing import Any, Optional, Union
+from typing import Any, Literal, Optional, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -116,6 +116,81 @@ class _ClassifierCurveDisplayMixin:
     """
 
     estimator_name: str  # defined in the concrete display class
+
+    def _validate_curve_kwargs(
+        self,
+        curve_param_name: str,
+        curve_kwargs: Union[dict[str, Any], list[dict[str, Any]], None],
+        report_type: Literal["comparison", "cross-validation", "estimator"],
+    ) -> list[dict[str, Any]]:
+        """Validate and format the classification curve keyword arguments.
+
+        Parameters
+        ----------
+        curve_kwargs : dict or list of dict or None
+            Keyword arguments to customize the classification curve.
+
+        report_type : {"comparison", "cross-validation", "estimator"}
+            The type of report.
+
+        Returns
+        -------
+        list of dict
+            Validated list of keyword arguments for each curve.
+
+        Raises
+        ------
+        ValueError
+            If the format of curve_kwargs is invalid.
+        """
+        if self.ml_task == "binary-classification":
+            assert self.pos_label is not None, (
+                "pos_label should not be None with binary classification."
+            )
+            n_curves = len(self.fpr[self.pos_label])
+            if report_type in ("estimator", "cross-validation"):
+                allow_single_dict = True
+            else:  # report_type == "comparison"
+                # since we compare different estimators, it does not make sense to share
+                # a single dictionary for all the estimators.
+                allow_single_dict = False
+        else:
+            n_curves = len(self.fpr)
+            allow_single_dict = False
+
+        if curve_kwargs is None:
+            return [{}] * n_curves
+        elif n_curves == 1:
+            if isinstance(curve_kwargs, dict):
+                return [curve_kwargs]
+            elif isinstance(curve_kwargs, list) and len(curve_kwargs) == 1:
+                return curve_kwargs
+            else:
+                raise ValueError(
+                    "You intend to plot a single ROC curve. We expect "
+                    f"`{curve_param_name}` to be a dictionary. Got "
+                    f"{type(curve_kwargs)} instead."
+                )
+        else:  # n_curves > 1
+            if not allow_single_dict and isinstance(curve_kwargs, dict):
+                raise ValueError(
+                    "You intend to plot multiple ROC curves. We expect "
+                    f"`{curve_param_name}` to be a list of dictionaries. Got "
+                    f"{type(curve_kwargs)} instead."
+                )
+            if isinstance(curve_kwargs, dict):
+                return [curve_kwargs] * n_curves
+
+            # From this point, we have a list of dictionaries
+            if len(curve_kwargs) != n_curves:
+                raise ValueError(
+                    "You intend to plot multiple ROC curves. We expect "
+                    f"`{curve_param_name}` to be a list of dictionaries with the "
+                    f"same length as the number of ROC curves. Got "
+                    f"{len(curve_kwargs)} instead of {n_curves}."
+                )
+
+            return curve_kwargs
 
     def _validate_plot_params(
         self, *, ax: Optional[Axes] = None, estimator_name: Optional[str] = None
