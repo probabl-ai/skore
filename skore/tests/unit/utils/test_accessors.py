@@ -1,6 +1,6 @@
 import pytest
 from sklearn.pipeline import make_pipeline
-from skore.externals._pandas_accessors import DirNamesMixin, _register_accessor
+from skore.externals._pandas_accessors import Accessor, DirNamesMixin
 from skore.utils._accessor import (
     _check_has_coef,
     _check_has_feature_importances,
@@ -16,11 +16,6 @@ def test_register_accessor():
     class ParentClass(DirNamesMixin):
         pass
 
-    def register_parent_class_accessor(name: str):
-        """Register an accessor for the ParentClass class."""
-        return _register_accessor(name, ParentClass)
-
-    @register_parent_class_accessor("accessor")
     class _Accessor:
         def __init__(self, parent):
             self._parent = parent
@@ -29,6 +24,7 @@ def test_register_accessor():
             return True
 
     obj = ParentClass()
+    obj.accessor = Accessor("accessor", _Accessor)
     assert hasattr(obj, "accessor")
     assert isinstance(obj.accessor, _Accessor)
     assert obj.accessor.func()
