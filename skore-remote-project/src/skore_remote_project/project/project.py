@@ -3,16 +3,15 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from functools import cached_property
 from typing import Any, Literal, Optional, Union
-from urllib.parse import urljoin
 
 from .. import item as item_module
 from ..client.client import AuthenticatedClient
 
 
 class Project:
-    def __init__(self, name: str, tenant: int):
-        self.__name = name
+    def __init__(self, tenant: str, name: str):
         self.__tenant = tenant
+        self.__name = name
 
     @property
     def name(self):
@@ -25,7 +24,7 @@ class Project:
     @cached_property
     def run_id(self):
         with AuthenticatedClient(raises=True) as client:
-            request = client.post(urljoin("projects", self.tenant, self.name, "runs"))
+            request = client.post(f"projects/{self.tenant}/{self.name}/runs")
             run = request.json()
 
             return run["id"]
@@ -47,7 +46,7 @@ class Project:
 
         with AuthenticatedClient(raises=True) as client:
             client.post(
-                urljoin("projects", self.tenant, self.name),
+                f"projects/{self.tenant}/{self.name}/items/",
                 json={
                     **item.__metadata__,
                     **item.__representation__,
