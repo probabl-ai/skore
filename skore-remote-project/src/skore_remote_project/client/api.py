@@ -142,7 +142,7 @@ def post_oauth_refresh_token(refresh_token: str):
         )
 
         response.raise_for_status()
-        tokens = response.json().get("token")
+        tokens = response.json()
 
         return (
             tokens.get("access_token"),
