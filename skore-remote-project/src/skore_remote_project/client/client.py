@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+from contextlib import suppress
 from datetime import datetime, timezone
 from functools import cached_property
 from urllib.parse import urljoin
 
-from httpx import URL, Client, Response
+from httpx import URL, Client, HTTPStatusError, Response
 
 from ..authentication.token import Token
 from .api import URI
@@ -18,6 +19,13 @@ class AuthenticationError(Exception):
 
 class AuthenticatedClient(Client):
     """Override httpx client to pass our bearer token."""
+
+    ERROR_TYPES = {
+        1: "Informational response",
+        3: "Redirect response",
+        4: "Client error",
+        5: "Server error",
+    }
 
     def __init__(self, *, raises=False):
         super().__init__()
@@ -49,7 +57,17 @@ class AuthenticatedClient(Client):
             **kwargs,
         )
 
-        if self.raises:
-            response.raise_for_status()
+        if self.raises and not response.is_success:
+            status_class = response.status_code // 100
+            error_type = self.ERROR_TYPES.get(status_class, "Invalid status code")
+            message = (
+                f"{error_type} '{response.status_code} {response.reason_phrase}' "
+                f"for url '{response.url}'"
+            )
+
+            with suppress(Exception):
+                message += f": {response.json()['message']}"
+
+            raise HTTPStatusError(message, request=response.request, response=response)
 
         return response
