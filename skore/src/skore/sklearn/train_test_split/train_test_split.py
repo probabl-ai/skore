@@ -25,6 +25,7 @@ def train_test_split(
     random_state: Optional[Union[int, RandomState]] = None,
     shuffle: bool = True,
     stratify: Optional[ArrayLike] = None,
+    return_dict: bool = False,
 ):
     """Perform train-test-split of data.
 
@@ -68,16 +69,20 @@ def train_test_split(
     stratify : array-like, optional
         If not None, data is split in a stratified fashion, using this as the
         class labels.
+    return_dict : bool, default is False
+        If True, returns a dictionary with keys instead of a list. Dictionary keys are in format ``X_train``, ``X_test``, ``y_train``, and ``y_test``.
 
     Returns
     -------
-    splitting : list
-        List containing train-test split of inputs.
+    splitting : list or dict
+        If return_dict=False (default): List containing train-test split of inputs.
         The length of the list is twice the number of arrays passed, including
         the ``X`` and ``y`` keyword arguments. If arrays are passed positionally as well
         as through ``X`` and ``y``, the output arrays are ordered as follows: first the
         arrays passed positionally, in the order they were passed, then ``X`` if it
         was passed, then ``y`` if it was passed.
+
+        If return_dict=True: Dictionary with keys ``X_train``, ``X_test``, ``y_train``, and ``y_test``, each containing respective split data.
 
     Examples
     --------
@@ -177,4 +182,12 @@ def train_test_split(
                 )
             )
 
+    if return_dict:
+        output = {
+            'X_train': output[0],
+            'X_test': output[1],
+            'y_train': output[2],
+            'y_test': output[3]
+            }
+        
     return output
