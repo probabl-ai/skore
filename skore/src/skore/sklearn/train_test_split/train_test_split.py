@@ -183,11 +183,14 @@ def train_test_split(
             )
 
     if return_dict:
-        output = {
+        result = {
             'X_train': output[0],
-            'X_test': output[1],
-            'y_train': output[2],
-            'y_test': output[3]
+            'X_test': output[1]
             }
+
+        if len(output)>2:
+            result['y_train'] = output[2]
+            result['y_test'] = output[3]
+        output = result
         
     return output
