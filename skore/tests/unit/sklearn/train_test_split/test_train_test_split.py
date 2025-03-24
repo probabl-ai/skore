@@ -180,3 +180,20 @@ def test_train_test_split_kwargs():
     output2 = train_test_split(X=X, y=y, random_state=0)
 
     assert output1 == output2
+
+
+def test_train_test_split_check_dict():
+    """Check dict is returned if `return_dict` argument is True"""
+    X = [[1]] * 20
+    y = [0] * 10 + [1] * 10
+    output = train_test_split(X, y, random_state=0, return_dict=True)
+    assert type(output) is dict
+
+
+def test_train_test_split_check_dict_unsupervised_case():
+    """Check 2 keys are is returned if `return_dict` argument is True for
+    unsupervised case."""
+
+    X = [[1]] * 20
+    output = train_test_split(X, random_state=0, return_dict=True)
+    assert len(output.keys()) == 2
