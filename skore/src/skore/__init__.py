@@ -12,6 +12,7 @@ from skore.externals._sklearn_compat import parse_version
 from skore.project import Project
 from skore.sklearn import (
     ComparisonReport,
+    CrossValidationComparisonReport,
     CrossValidationReport,
     EstimatorReport,
     PrecisionRecallCurveDisplay,
@@ -24,6 +25,7 @@ from skore.utils._show_versions import show_versions
 
 __all__ = [
     "CrossValidationReport",
+    "CrossValidationComparisonReport",
     "ComparisonReport",
     "EstimatorReport",
     "PrecisionRecallCurveDisplay",
