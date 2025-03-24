@@ -45,7 +45,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     Attributes
     ----------
-    estimator_reports_ : list of `~skore.EstimatorReport`
+    estimator_reports_ : list of :class:`~skore.EstimatorReport`
         The compared estimator reports.
 
     report_names_ : list of str
