@@ -82,7 +82,7 @@ class RocCurveDisplay(
     ml_task : {"binary-classification", "multiclass-classification"}
         The machine learning task.
 
-    report_type : {"comparison", "cross-validation", "estimator"}
+    report_type : {"comparison-estimator", "cross-validation", "estimator"}
         The type of report.
 
     Attributes
@@ -133,7 +133,7 @@ class RocCurveDisplay(
         pos_label: Union[int, float, bool, str, None],
         data_source: Literal["train", "test", "X_y"],
         ml_task: MLTask,
-        report_type: Literal["comparison", "cross-validation", "estimator"],
+        report_type: Literal["comparison-estimator", "cross-validation", "estimator"],
     ) -> None:
         self.estimator_names = estimator_names
         self.fpr = fpr
@@ -417,7 +417,7 @@ class RocCurveDisplay(
         estimator_names: list[str],
         roc_curve_kwargs: list[dict[str, Any]],
     ) -> tuple[Axes, list[Line2D], Union[str, None]]:
-        """Plot ROC curve for a cross-validated estimator.
+        """Plot ROC curve of several estimators.
 
         Parameters
         ----------
@@ -684,7 +684,7 @@ class RocCurveDisplay(
         y_true: Sequence[ArrayLike],
         y_pred: Sequence[NDArray],
         *,
-        report_type: Literal["comparison", "cross-validation", "estimator"],
+        report_type: Literal["comparison-estimator", "cross-validation", "estimator"],
         estimators: Sequence[BaseEstimator],
         estimator_names: list[str],
         ml_task: MLTask,
@@ -704,7 +704,7 @@ class RocCurveDisplay(
             confidence values, or non-thresholded measure of decisions (as returned by
             "decision_function" on some classifiers).
 
-        report_type : {"comparison", "cross-validation", "estimator"}
+        report_type : {"comparison-estimator", "cross-validation", "estimator"}
             The type of report.
 
         estimators : list of estimator instances

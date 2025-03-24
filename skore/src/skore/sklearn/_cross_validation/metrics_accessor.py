@@ -997,32 +997,19 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
                 )
                 progress.update(main_task, advance=1, refresh=True)
 
-            if display_class.__name__ in (
-                "RocCurveDisplay",
-                "PrecisionRecallCurveDisplay",
-            ):
-                display = display_class._compute_data_for_display(
-                    y_true=y_true,
-                    y_pred=y_pred,
-                    report_type="cross-validation",
-                    estimators=[
-                        report.estimator_ for report in self._parent.estimator_reports_
-                    ],
-                    estimator_names=[self._parent.estimator_name_],
-                    ml_task=self._parent._ml_task,
-                    data_source=data_source,
-                    **display_kwargs,
-                )
-            else:
-                display = display_class._from_predictions(
-                    y_true,
-                    y_pred,
-                    estimator=self._parent.estimator_reports_[0]._estimator,
-                    estimator_name=self._parent.estimator_name_,
-                    ml_task=self._parent._ml_task,
-                    data_source=data_source,
-                    **display_kwargs,
-                )
+            display = display_class._compute_data_for_display(
+                y_true=y_true,
+                y_pred=y_pred,
+                report_type="cross-validation",
+                estimators=[
+                    report.estimator_ for report in self._parent.estimator_reports_
+                ],
+                estimator_names=[self._parent.estimator_name_],
+                ml_task=self._parent._ml_task,
+                data_source=data_source,
+                **display_kwargs,
+            )
+
             # Unless random_state is an int (i.e. the call is deterministic),
             # we do not cache
             if cache_key is not None:

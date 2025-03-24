@@ -11,10 +11,10 @@ from sklearn.utils.metaestimators import available_if
 
 from skore.externals._pandas_accessors import DirNamesMixin
 from skore.sklearn._base import _BaseAccessor, _get_cached_response_values
-from skore.sklearn._comparison.prediction_error_display import PredictionErrorDisplay
 from skore.sklearn._comparison.report import ComparisonReport
 from skore.sklearn._plot.metrics import (
     PrecisionRecallCurveDisplay,
+    PredictionErrorDisplay,
     RocCurveDisplay,
 )
 from skore.utils._accessor import _check_supported_ml_task
@@ -1244,32 +1244,18 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 )
                 progress.update(main_task, advance=1, refresh=True)
 
-            if display_class.__name__ in (
-                "RocCurveDisplay",
-                "PrecisionRecallCurveDisplay",
-            ):
-                display = display_class._compute_data_for_display(
-                    y_true=y_true,
-                    y_pred=y_pred,
-                    report_type="comparison-estimator",
-                    estimators=[
-                        report.estimator_ for report in self._parent.estimator_reports_
-                    ],
-                    estimator_names=self._parent.report_names_,
-                    ml_task=self._parent._ml_task,
-                    data_source=data_source,
-                    **display_kwargs,
-                )
-            else:
-                display = display_class._from_predictions(
-                    y_true,
-                    y_pred,
-                    estimators=[r.estimator_ for r in self._parent.estimator_reports_],
-                    estimator_names=self._parent.report_names_,
-                    ml_task=self._parent._ml_task,
-                    data_source=data_source,
-                    **display_kwargs,
-                )
+            display = display_class._compute_data_for_display(
+                y_true=y_true,
+                y_pred=y_pred,
+                report_type="comparison-estimator",
+                estimators=[
+                    report.estimator_ for report in self._parent.estimator_reports_
+                ],
+                estimator_names=self._parent.report_names_,
+                ml_task=self._parent._ml_task,
+                data_source=data_source,
+                **display_kwargs,
+            )
 
             # Unless random_state is an int (i.e. the call is deterministic),
             # we do not cache

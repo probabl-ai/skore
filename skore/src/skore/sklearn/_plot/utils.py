@@ -3,11 +3,9 @@ from collections.abc import Sequence
 from io import StringIO
 from typing import Any, Literal, Optional, Union
 
-import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.colors import Colormap
-from matplotlib.figure import Figure, SubFigure
 from numpy.typing import ArrayLike
 from rich.console import Console
 from rich.panel import Panel
@@ -16,6 +14,8 @@ from sklearn.utils.validation import (
     _check_pos_label_consistency,
     check_consistent_length,
 )
+
+from skore.sklearn.types import MLTask
 
 LINESTYLE = [
     ("solid", "solid"),
@@ -135,7 +135,10 @@ class _ClassifierCurveDisplayMixin:
     the target and gather the response of the estimator.
     """
 
-    estimator_name: str  # defined in the concrete display class
+    # defined in the concrete display class
+    estimator_name: str
+    ml_task: MLTask
+    pos_label: Optional[Union[int, float, bool, str]]
 
     def _validate_curve_kwargs(
         self,
@@ -143,7 +146,7 @@ class _ClassifierCurveDisplayMixin:
         curve_param_name: str,
         curve_kwargs: Union[dict[str, Any], list[dict[str, Any]], None],
         metric: dict[Union[int, float, bool, str], list[float]],
-        report_type: Literal["comparison", "cross-validation", "estimator"],
+        report_type: Literal["comparison-estimator", "cross-validation", "estimator"],
     ) -> list[dict[str, Any]]:
         """Validate and format the classification curve keyword arguments.
 
@@ -158,7 +161,7 @@ class _ClassifierCurveDisplayMixin:
         metric : dict of list of float
             One of the metric of the curve to infer how many curves we are plotting.
 
-        report_type : {"comparison", "cross-validation", "estimator"}
+        report_type : {"comparison-estimator", "cross-validation", "estimator"}
             The type of report.
 
         Returns
@@ -178,7 +181,7 @@ class _ClassifierCurveDisplayMixin:
             n_curves = len(metric[self.pos_label])
             if report_type in ("estimator", "cross-validation"):
                 allow_single_dict = True
-            else:  # report_type == "comparison"
+            else:  # report_type == "comparison-estimator"
                 # since we compare different estimators, it does not make sense to share
                 # a single dictionary for all the estimators.
                 allow_single_dict = False

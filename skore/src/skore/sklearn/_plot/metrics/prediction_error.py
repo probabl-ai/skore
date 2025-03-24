@@ -1,12 +1,13 @@
 import numbers
+from collections import namedtuple
 from typing import Any, Literal, Optional, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import colormaps
+from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from numpy.typing import ArrayLike, NDArray
-from sklearn.base import BaseEstimator
 from sklearn.utils.validation import _num_samples, check_array, check_random_state
 
 from skore.externals._sklearn_compat import _safe_indexing
@@ -18,6 +19,8 @@ from skore.sklearn._plot.utils import (
     sample_mpl_colormap,
 )
 from skore.sklearn.types import MLTask
+
+RangeData = namedtuple("RangeData", ["min", "max"])
 
 
 class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
@@ -39,11 +42,29 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
     y_pred : list of ndarray of shape (n_samples,)
         Prediction values.
 
-    estimator_name : str
-        Name of the estimator.
+    residuals : list of ndarray of shape (n_samples,)
+        Residuals. Equal to `y_true - y_pred`.
+
+    range_y_true : RangeData
+        Global range of the true values.
+
+    range_y_pred : RangeData
+        Global range of the predicted values.
+
+    range_residuals : RangeData
+        Global range of the residuals.
+
+    estimator_names : list of str
+        Name of the estimators.
 
     data_source : {"train", "test", "X_y"}
         The data source used to display the prediction error.
+
+    ml_task : {"regression", "multioutput-regression"}
+        The machine learning task.
+
+    report_type : {"cross-validation", "estimator", "comparison-estimator"}
+        The type of report.
 
     Attributes
     ----------
@@ -55,7 +76,7 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
     errors_lines_ : matplotlib Artist or None
         Residual lines. If `with_errors=False`, then it is set to `None`.
 
-    scatter_ : matplotlib Artist
+    scatter_ : list of matplotlib Artist
         Scatter data points.
 
     ax_ : matplotlib Axes
@@ -93,13 +114,330 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
         *,
         y_true: list[NDArray],
         y_pred: list[NDArray],
-        estimator_name: str,
+        residuals: list[NDArray],
+        range_y_true: RangeData,
+        range_y_pred: RangeData,
+        range_residuals: RangeData,
+        estimator_names: list[str],
         data_source: Literal["train", "test", "X_y"],
+        ml_task: MLTask,
+        report_type: Literal["cross-validation", "estimator", "comparison-estimator"],
     ) -> None:
         self.y_true = y_true
         self.y_pred = y_pred
-        self.estimator_name = estimator_name
+        self.residuals = residuals
+        self.range_y_true = range_y_true
+        self.range_y_pred = range_y_pred
+        self.range_residuals = range_residuals
+        self.estimator_names = estimator_names
         self.data_source = data_source
+        self.ml_task = ml_task
+        self.report_type = report_type
+
+    def _validate_scatter_kwargs(
+        self,
+        *,
+        scatter_kwargs: Union[dict[str, Any], list[dict[str, Any]], None],
+    ) -> list[dict[str, Any]]:
+        """Validate and format the scatter keyword arguments.
+
+        Parameters
+        ----------
+        scatter_kwargs : dict or list of dict or None
+            Keyword arguments for the scatter plot.
+
+        Returns
+        -------
+        list of dict
+            Validated list of keyword arguments for each curve.
+
+        Raises
+        ------
+        ValueError
+            If the format of `scatter_kwargs` is invalid.
+        """
+        if scatter_kwargs is None:
+            return [{}] * len(self.y_true)
+        elif len(self.y_true) == 1:
+            if isinstance(scatter_kwargs, dict):
+                return [scatter_kwargs]
+            raise ValueError(
+                "You intend to plot the prediction error for a single estimator. We "
+                "expect `scatter_kwargs` to be a dictionary. Got "
+                f"{type(scatter_kwargs)} instead."
+            )
+        elif not isinstance(scatter_kwargs, list) or len(scatter_kwargs) != len(
+            self.y_true
+        ):
+            raise ValueError(
+                "You intend to plot prediction errors either from multiple estimators "
+                "or from a cross-validated estimator. We expect `scatter_kwargs` to be "
+                "a list of dictionaries with the same length as the number of "
+                "estimators or splits. Got "
+                f"{len(scatter_kwargs)} instead of {len(self.y_true)}."
+            )
+
+        return scatter_kwargs
+
+    @staticmethod
+    def _plot_single_estimator(
+        *,
+        y_true: list[NDArray],
+        y_pred: list[NDArray],
+        residuals: list[NDArray],
+        data_source: Literal["train", "test", "X_y"],
+        kind: Literal["actual_vs_predicted", "residual_vs_predicted"],
+        ax: Axes,
+        estimator_name: str,
+        samples_kwargs: list[dict[str, Any]],
+    ) -> list[Artist]:
+        """Plot the prediction error for a single estimator.
+
+        Parameters
+        ----------
+        y_true : list of ndarray of shape (n_samples,)
+            True values.
+
+        y_pred : list of ndarray of shape (n_samples,)
+            Prediction values.
+
+        residuals : list of ndarray of shape (n_samples,)
+            Residuals. Equal to `y_true - y_pred`.
+
+        data_source : {"train", "test", "X_y"}
+            The data source used to display the prediction error.
+
+        kind : {"actual_vs_predicted", "residual_vs_predicted"}
+            The type of plot to draw.
+
+        ax : matplotlib Axes
+            The axes on which to plot the prediction error.
+
+        estimator_name : str
+            Name of the estimator.
+
+        samples_kwargs : list of dict
+            Keyword arguments for the scatter plot.
+
+        Returns
+        -------
+        scatter : list of matplotlib Artist
+            The scatter plot.
+        """
+        scatter = []
+        scatter_kwargs: dict[str, Any] = {"color": "tab:blue", "alpha": 0.3, "s": 10}
+
+        scatter_kwargs_validated = _validate_style_kwargs(
+            scatter_kwargs, samples_kwargs[0]
+        )
+
+        y_true, y_pred, residuals = y_true[0], y_pred[0], residuals[0]
+        if data_source in ("train", "test"):
+            scatter_label = f"{data_source.title()} set"
+        else:  # data_source == "X_y"
+            scatter_label = "Data set"
+
+        if kind == "actual_vs_predicted":
+            scatter.append(
+                ax.scatter(
+                    y_pred,
+                    y_true,
+                    label=scatter_label,
+                    **scatter_kwargs_validated,
+                )
+            )
+        else:  # kind == "residual_vs_predicted"
+            scatter.append(
+                ax.scatter(
+                    y_pred,
+                    residuals,
+                    label=scatter_label,
+                    **scatter_kwargs_validated,
+                )
+            )
+
+        ax.legend(title=estimator_name)
+
+        return scatter
+
+    @staticmethod
+    def _plot_cross_validated_estimator(
+        *,
+        y_true: list[NDArray],
+        y_pred: list[NDArray],
+        residuals: list[NDArray],
+        data_source: Literal["train", "test", "X_y"],
+        kind: Literal["actual_vs_predicted", "residual_vs_predicted"],
+        ax: Axes,
+        estimator_name: str,
+        samples_kwargs: list[dict[str, Any]],
+    ) -> list[Artist]:
+        """Plot the prediction error for a cross-validated estimator.
+
+        Parameters
+        ----------
+        y_true : list of ndarray of shape (n_samples,)
+            True values.
+
+        y_pred : list of ndarray of shape (n_samples,)
+            Prediction values.
+
+        residuals : list of ndarray of shape (n_samples,)
+            Residuals. Equal to `y_true - y_pred`.
+
+        data_source : {"train", "test", "X_y"}
+            The data source used to display the prediction error.
+
+        kind : {"actual_vs_predicted", "residual_vs_predicted"}
+            The type of plot to draw.
+
+        ax : matplotlib Axes
+            The axes on which to plot the prediction error.
+
+        estimator_name : str
+            Name of the estimator.
+
+        samples_kwargs : list of dict
+            Keyword arguments for the scatter plot.
+
+        Returns
+        -------
+        scatter : list of matplotlib Artist
+            The scatter plot.
+        """
+        scatter = []
+        scatter_kwargs: dict[str, Any] = {"alpha": 0.3, "s": 10}
+        colors_markers = sample_mpl_colormap(
+            colormaps.get_cmap("tab10"),
+            len(y_true) if len(y_true) > 10 else 10,
+        )
+
+        if data_source in ("train", "test"):
+            scatter_label = f"{data_source.title()} set"
+        else:  # data_source == "X_y"
+            scatter_label = "Data set"
+
+        for split_idx in range(len(y_true)):
+            scatter_kwargs_fold = {
+                "color": colors_markers[split_idx],
+                **scatter_kwargs,
+            }
+
+            scatter_kwargs_validated = _validate_style_kwargs(
+                scatter_kwargs_fold, samples_kwargs[split_idx]
+            )
+
+            label = scatter_label + f" - split #{split_idx + 1}"
+
+            if kind == "actual_vs_predicted":
+                scatter.append(
+                    ax.scatter(
+                        y_pred[split_idx],
+                        y_true[split_idx],
+                        label=label,
+                        **scatter_kwargs_validated,
+                    )
+                )
+            else:  # kind == "residual_vs_predicted"
+                scatter.append(
+                    ax.scatter(
+                        y_pred[split_idx],
+                        residuals[split_idx],
+                        label=label,
+                        **scatter_kwargs_validated,
+                    )
+                )
+
+        ax.legend(title=estimator_name)
+
+        return scatter
+
+    @staticmethod
+    def _plot_comparison_estimator(
+        *,
+        y_true: list[NDArray],
+        y_pred: list[NDArray],
+        residuals: list[NDArray],
+        data_source: Literal["train", "test", "X_y"],
+        kind: Literal["actual_vs_predicted", "residual_vs_predicted"],
+        ax: Axes,
+        estimator_names: list[str],
+        samples_kwargs: list[dict[str, Any]],
+    ) -> list[Artist]:
+        """Plot the prediction error of several estimators.
+
+        Parameters
+        ----------
+        y_true : list of ndarray of shape (n_samples,)
+            True values.
+
+        y_pred : list of ndarray of shape (n_samples,)
+            Prediction values.
+
+        residuals : list of ndarray of shape (n_samples,)
+            Residuals. Equal to `y_true - y_pred`.
+
+        data_source : {"train", "test", "X_y"}
+            The data source used to display the prediction error.
+
+        kind : {"actual_vs_predicted", "residual_vs_predicted"}
+            The type of plot to draw.
+
+        ax : matplotlib Axes
+            The axes on which to plot the prediction error.
+
+        estimator_names : list of str
+            Name of the estimators.
+
+        samples_kwargs : list of dict
+            Keyword arguments for the scatter plot.
+
+        Returns
+        -------
+        scatter : list of matplotlib Artist
+            The scatter plot.
+        """
+        scatter = []
+        scatter_kwargs: dict[str, Any] = {"alpha": 0.3, "s": 10}
+        colors_markers = sample_mpl_colormap(
+            colormaps.get_cmap("tab10"),
+            len(y_true) if len(y_true) > 10 else 10,
+        )
+
+        for estimator_idx in range(len(y_true)):
+            scatter_kwargs_fold = {
+                "color": colors_markers[estimator_idx],
+                **scatter_kwargs,
+            }
+
+            scatter_kwargs_validated = _validate_style_kwargs(
+                scatter_kwargs_fold, samples_kwargs[estimator_idx]
+            )
+
+            label = f"{estimator_names[estimator_idx]}"
+
+            if kind == "actual_vs_predicted":
+                scatter.append(
+                    ax.scatter(
+                        y_pred[estimator_idx],
+                        y_true[estimator_idx],
+                        label=label,
+                        **scatter_kwargs_validated,
+                    )
+                )
+            else:  # kind == "residual_vs_predicted"
+                scatter.append(
+                    ax.scatter(
+                        y_pred[estimator_idx],
+                        residuals[estimator_idx],
+                        label=label,
+                        **scatter_kwargs_validated,
+                    )
+                )
+
+        ax.legend(title=f"Prediction errors on $\\bf{{{data_source}}}$ set")
+
+        return scatter
 
     def plot(
         self,
@@ -109,7 +447,7 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
         kind: Literal[
             "actual_vs_predicted", "residual_vs_predicted"
         ] = "residual_vs_predicted",
-        scatter_kwargs: Optional[dict[str, Any]] = None,
+        scatter_kwargs: Optional[Union[dict[str, Any], list[dict[str, Any]]]] = None,
         line_kwargs: Optional[dict[str, Any]] = None,
         despine: bool = True,
     ) -> None:
@@ -179,90 +517,29 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
         else:  # kind == "residual_vs_predicted"
             xlabel, ylabel = "Predicted values", "Residuals (actual - predicted)"
 
-        scatter_kwargs = (
-            self._default_scatter_kwargs if scatter_kwargs is None else scatter_kwargs
-        ) or {}
-        line_kwargs = (
-            self._default_line_kwargs if line_kwargs is None else line_kwargs
-        ) or {}
+        self.figure_, self.ax_ = (ax.figure, ax) if ax is not None else plt.subplots()
 
-        if estimator_name is None:
-            estimator_name = self.estimator_name
-
-        if ax is None:
-            _, ax = plt.subplots()
-
-        x_range_perfect_pred = [np.inf, -np.inf]
-        y_range_perfect_pred = [np.inf, -np.inf]
-        for y_true, y_pred in zip(self.y_true, self.y_pred):
-            if kind == "actual_vs_predicted":
-                min_value = min(y_pred.min(), y_true.min())
-                max_value = max(y_pred.max(), y_true.max())
-                x_range_perfect_pred[0] = min(x_range_perfect_pred[0], min_value)
-                x_range_perfect_pred[1] = max(x_range_perfect_pred[1], max_value)
-                y_range_perfect_pred[0] = min(y_range_perfect_pred[0], min_value)
-                y_range_perfect_pred[1] = max(y_range_perfect_pred[1], max_value)
-            else:
-                residuals = y_true - y_pred
-                x_range_perfect_pred[0] = min(x_range_perfect_pred[0], y_pred.min())
-                x_range_perfect_pred[1] = max(x_range_perfect_pred[1], y_pred.max())
-                y_range_perfect_pred[0] = min(y_range_perfect_pred[0], residuals.min())
-                y_range_perfect_pred[1] = max(y_range_perfect_pred[1], residuals.max())
-
-        colors_markers = sample_mpl_colormap(
-            colormaps.get_cmap("tab10"),
-            len(self.y_true) if len(self.y_true) > 10 else 10,
+        perfect_line_kwargs = _validate_style_kwargs(
+            {
+                "color": "black",
+                "alpha": 0.7,
+                "linestyle": "--",
+                "label": "Perfect predictions",
+            },
+            line_kwargs or self._default_line_kwargs or {},
         )
-        for split_idx in range(len(self.y_true)):
-            y_true, y_pred = self.y_true[split_idx], self.y_pred[split_idx]
-
-            default_scatter_kwargs = {
-                "color": colors_markers[split_idx],
-                "alpha": 0.3,
-                "s": 10,
-            }
-            prediction_error_scatter_kwargs = _validate_style_kwargs(
-                default_scatter_kwargs, scatter_kwargs
-            )
-
-            if self.data_source in ("train", "test"):
-                scatter_label = f"{self.data_source.title()} set"
-            else:  # data_source == "X_y"
-                scatter_label = "Data set"
-
-            if len(self.y_true) > 1:  # cross-validation
-                scatter_label += f" - split #{split_idx + 1}"
-
-            if kind == "actual_vs_predicted":
-                self.scatter_ = ax.scatter(
-                    y_pred,
-                    y_true,
-                    label=scatter_label,
-                    **prediction_error_scatter_kwargs,
-                )
-
-            else:  # kind == "residual_vs_predicted"
-                residuals = y_true - y_pred
-                self.scatter_ = ax.scatter(
-                    y_pred,
-                    residuals,
-                    label=scatter_label,
-                    **prediction_error_scatter_kwargs,
-                )
-
-        default_line_kwargs = {
-            "color": "black",
-            "alpha": 0.7,
-            "linestyle": "--",
-            "label": "Perfect predictions",
-        }
-        perfect_line_kwargs = _validate_style_kwargs(default_line_kwargs, line_kwargs)
 
         if kind == "actual_vs_predicted":
-            self.line_ = ax.plot(
+            # For actual vs predicted, we want the same range for both axes
+            min_value = min(self.range_y_pred.min, self.range_y_true.min)
+            max_value = max(self.range_y_pred.max, self.range_y_true.max)
+            x_range_perfect_pred = [min_value, max_value]
+            y_range_perfect_pred = [min_value, max_value]
+
+            self.line_ = self.ax_.plot(
                 x_range_perfect_pred, y_range_perfect_pred, **perfect_line_kwargs
             )[0]
-            ax.set(
+            self.ax_.set(
                 aspect="equal",
                 xlim=x_range_perfect_pred,
                 ylim=y_range_perfect_pred,
@@ -273,9 +550,15 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
                     y_range_perfect_pred[0], y_range_perfect_pred[1], num=5
                 ),
             )
-        else:
-            self.line_ = ax.plot(x_range_perfect_pred, [0, 0], **perfect_line_kwargs)[0]
-            ax.set(
+
+        else:  # kind == "residual_vs_predicted"
+            x_range_perfect_pred = [self.range_y_pred.min, self.range_y_pred.max]
+            y_range_perfect_pred = [self.range_residuals.min, self.range_residuals.max]
+
+            self.line_ = self.ax_.plot(
+                x_range_perfect_pred, [0, 0], **perfect_line_kwargs
+            )[0]
+            self.ax_.set(
                 xlim=x_range_perfect_pred,
                 ylim=y_range_perfect_pred,
                 xticks=np.linspace(
@@ -286,11 +569,55 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
                 ),
             )
 
-        ax.set(xlabel=xlabel, ylabel=ylabel)
-        ax.legend(title=estimator_name)
+        self.ax_.set(xlabel=xlabel, ylabel=ylabel)
 
-        self.ax_ = ax
-        self.figure_ = ax.figure
+        # make the scatter plot afterwards since it should take into account the line
+        # for the perfect predictions
+        if scatter_kwargs is None:
+            scatter_kwargs = self._default_scatter_kwargs
+        scatter_kwargs = self._validate_scatter_kwargs(scatter_kwargs=scatter_kwargs)
+
+        if self.report_type == "estimator":
+            self.scatter_ = self._plot_single_estimator(
+                y_true=self.y_true,
+                y_pred=self.y_pred,
+                residuals=self.residuals,
+                data_source=self.data_source,
+                kind=kind,
+                ax=self.ax_,
+                estimator_name=(
+                    self.estimator_names[0]
+                    if estimator_name is None
+                    else estimator_name
+                ),
+                samples_kwargs=scatter_kwargs,
+            )
+        elif self.report_type == "cross-validation":
+            self.scatter_ = self._plot_cross_validated_estimator(
+                y_true=self.y_true,
+                y_pred=self.y_pred,
+                residuals=self.residuals,
+                data_source=self.data_source,
+                kind=kind,
+                ax=self.ax_,
+                estimator_name=(
+                    self.estimator_names[0]
+                    if estimator_name is None
+                    else estimator_name
+                ),
+                samples_kwargs=scatter_kwargs,
+            )
+        elif self.report_type == "comparison-estimator":
+            self.scatter_ = self._plot_comparison_estimator(
+                y_true=self.y_true,
+                y_pred=self.y_pred,
+                residuals=self.residuals,
+                data_source=self.data_source,
+                kind=kind,
+                ax=self.ax_,
+                estimator_names=self.estimator_names,
+                samples_kwargs=scatter_kwargs,
+            )
 
         if despine:
             x_range = self.ax_.get_xlim()
@@ -298,17 +625,18 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
             _despine_matplotlib_axis(self.ax_, x_range=x_range, y_range=y_range)
 
     @classmethod
-    def _from_predictions(
+    def _compute_data_for_display(
         cls,
         y_true: list[ArrayLike],
         y_pred: list[ArrayLike],
         *,
-        estimator: BaseEstimator,  # currently only for consistency with other plots
-        estimator_name: str,
-        ml_task: MLTask,  # FIXME: to be used when having single-output vs. multi-output
+        report_type: Literal["cross-validation", "estimator", "comparison-estimator"],
+        estimator_names: list[str],
+        ml_task: MLTask,
         data_source: Literal["train", "test", "X_y"],
         subsample: Union[float, int, None] = 1_000,
         random_state: Optional[Union[int, np.random.RandomState]] = None,
+        **kwargs,
     ) -> "PredictionErrorDisplay":
         """Plot the prediction error given the true and predicted targets.
 
@@ -320,13 +648,10 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
         y_pred : list of array-like of shape (n_samples,)
             Predicted target values.
 
-        estimator : estimator instance
-            The estimator from which `y_pred` is obtained.
+        estimators : list of estimator instances
+            The estimators from which `y_pred` is obtained.
 
-        estimator_name : str,
-            The name of the estimator.
-
-        ml_task : {"binary-classification", "multiclass-classification"}
+        ml_task : {"regression", "multioutput-regression"}
             The machine learning task.
 
         data_source : {"train", "test", "X_y"}
@@ -342,6 +667,10 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
         random_state : int or RandomState, default=None
             Controls the randomness when `subsample` is not `None`.
             See :term:`Glossary <random_state>` for details.
+
+        **kwargs : dict
+            Additional keyword arguments that are ignored for compatibility with
+            other metrics displays. Here, `estimators` is ignored.
 
         Returns
         -------
@@ -359,7 +688,17 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
                 "(0, 1) range."
             )
 
-        y_true_display, y_pred_display = [], []
+        if ml_task != "regression":
+            raise ValueError(
+                "The machine learning task must be 'regression'. "
+                f"Got {ml_task} instead."
+            )
+
+        y_true_display, y_pred_display, residuals_display = [], [], []
+        y_true_min, y_true_max = np.inf, -np.inf
+        y_pred_min, y_pred_max = np.inf, -np.inf
+        residuals_min, residuals_max = np.inf, -np.inf
+
         for y_true_i, y_pred_i in zip(y_true, y_pred):
             n_samples = _num_samples(y_true_i)
             if subsample is None:
@@ -373,23 +712,46 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
             subsample_ = int(subsample_ / len(y_true))
             if subsample_ < n_samples:
                 indices = rng.choice(np.arange(n_samples), size=subsample_)
-                y_true_display.append(
-                    check_array(
-                        _safe_indexing(y_true_i, indices, axis=0), ensure_2d=False
-                    )
+                y_true_sample = check_array(
+                    _safe_indexing(y_true_i, indices, axis=0), ensure_2d=False
                 )
-                y_pred_display.append(
-                    check_array(
-                        _safe_indexing(y_pred_i, indices, axis=0), ensure_2d=False
-                    )
+                y_pred_sample = check_array(
+                    _safe_indexing(y_pred_i, indices, axis=0), ensure_2d=False
                 )
+                residuals_sample = y_true_sample - y_pred_sample
+
+                y_true_display.append(y_true_sample)
+                y_pred_display.append(y_pred_sample)
+                residuals_display.append(residuals_sample)
             else:
-                y_true_display.append(y_true_i)
-                y_pred_display.append(y_pred_i)
+                y_true_sample = y_true_i
+                y_pred_sample = y_pred_i
+                residuals_sample = y_true_i - y_pred_i
+
+                y_true_display.append(y_true_sample)
+                y_pred_display.append(y_pred_sample)
+                residuals_display.append(residuals_sample)
+
+            y_true_min = min(y_true_min, np.min(y_true_sample))
+            y_true_max = max(y_true_max, np.max(y_true_sample))
+            y_pred_min = min(y_pred_min, np.min(y_pred_sample))
+            y_pred_max = max(y_pred_max, np.max(y_pred_sample))
+            residuals_min = min(residuals_min, np.min(residuals_sample))
+            residuals_max = max(residuals_max, np.max(residuals_sample))
+
+        range_y_true = RangeData(min=y_true_min, max=y_true_max)
+        range_y_pred = RangeData(min=y_pred_min, max=y_pred_max)
+        range_residuals = RangeData(min=residuals_min, max=residuals_max)
 
         return cls(
             y_true=y_true_display,
             y_pred=y_pred_display,
-            estimator_name=estimator_name,
+            residuals=residuals_display,
+            range_y_true=range_y_true,
+            range_y_pred=range_y_pred,
+            range_residuals=range_residuals,
+            estimator_names=estimator_names,
             data_source=data_source,
+            ml_task=ml_task,
+            report_type=report_type,
         )
