@@ -687,7 +687,7 @@ class PrecisionRecallCurveDisplay(
         ml_task: MLTask,
         data_source: Literal["train", "test", "X_y"],
         pos_label: Union[int, float, bool, str, None],
-        drop_intermediate: bool = False,
+        drop_intermediate: bool = True,
     ) -> "PrecisionRecallCurveDisplay":
         """Plot precision-recall curve given binary class predictions.
 
@@ -720,7 +720,7 @@ class PrecisionRecallCurveDisplay(
             The class considered as the positive class when computing the
             precision and recall metrics.
 
-        drop_intermediate : bool, default=False
+        drop_intermediate : bool, default=True
             Whether to drop some suboptimal thresholds which would not appear
             on a plotted precision-recall curve. This is useful in order to
             create lighter precision-recall curves.

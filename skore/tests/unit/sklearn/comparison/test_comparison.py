@@ -699,7 +699,6 @@ def test_comparison_report_plots(
     # Ensure all attributes to test are well set
     for attribute, value in plot_attributes.items():
         display_attribute_value = getattr(display, attribute)
-
         if isinstance(value, dict):
             for k, v in value.items():
                 assert isinstance(display_attribute_value, dict)
