@@ -70,7 +70,8 @@ def train_test_split(
         If not None, data is split in a stratified fashion, using this as the
         class labels.
     return_dict : bool, default is False
-        If True, returns a dictionary with keys instead of a list. Dictionary keys are in format ``X_train``, ``X_test``, ``y_train``, and ``y_test``.
+        If True, returns a Dictionary with keys values ``X_train``, ``X_test``,
+        ``y_train``, and ``y_test`` instead of a List.
 
     Returns
     -------
@@ -82,7 +83,9 @@ def train_test_split(
         arrays passed positionally, in the order they were passed, then ``X`` if it
         was passed, then ``y`` if it was passed.
 
-        If return_dict=True: Dictionary with keys ``X_train``, ``X_test``, ``y_train``, and ``y_test``, each containing respective split data.
+        If return_dict=True: Dictionary with keys
+        ``X_train``, ``X_test``, ``y_train``, and ``y_test``,
+        each containing respective split data.
 
     Examples
     --------
@@ -183,14 +186,11 @@ def train_test_split(
             )
 
     if return_dict:
-        result = {
-            'X_train': output[0],
-            'X_test': output[1]
-            }
+        result = {"X_train": output[0], "X_test": output[1]}
 
-        if len(output)>2:
-            result['y_train'] = output[2]
-            result['y_test'] = output[3]
+        if len(output) > 2:
+            result["y_train"] = output[2]
+            result["y_test"] = output[3]
         output = result
-        
+
     return output
