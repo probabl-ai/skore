@@ -23,8 +23,8 @@ def test_register_accessor():
         def func(self):
             return True
 
+    ParentClass.accessor = Accessor("accessor", _Accessor)
     obj = ParentClass()
-    obj.accessor = Accessor("accessor", _Accessor)
     assert hasattr(obj, "accessor")
     assert isinstance(obj.accessor, _Accessor)
     assert obj.accessor.func()

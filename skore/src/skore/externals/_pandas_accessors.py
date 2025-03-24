@@ -36,18 +36,3 @@ class Accessor:
             # we're accessing the attribute of the class, i.e., Dataset.geo
             return self._accessor
         return self._accessor(obj)
-
-
-def _register_accessor(name, cls):
-    def decorator(accessor):
-        if hasattr(cls, name):
-            raise ValueError(
-                f"registration of accessor {accessor!r} under name "
-                f"{name!r} for type {cls!r} is overriding a preexisting "
-                f"attribute with the same name."
-            )
-        setattr(cls, name, Accessor(name, accessor))
-        cls._accessors.add(name)
-        return accessor
-
-    return decorator
