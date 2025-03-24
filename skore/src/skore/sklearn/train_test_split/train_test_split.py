@@ -75,7 +75,7 @@ def train_test_split(
     Returns
     -------
     splitting : list or dict
-        If return_dict=False (default): List containing train-test split of inputs.
+        If return_dict=False (the default): List containing train-test split of inputs.
         The length of the list is twice the number of arrays passed, including
         the ``X`` and ``y`` keyword arguments. If arrays are passed positionally as well
         as through ``X`` and ``y``, the output arrays are ordered as follows: first the
