@@ -312,11 +312,7 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
             len(y_true) if len(y_true) > 10 else 10,
         )
 
-        if data_source in ("train", "test"):
-            scatter_label = f"{data_source.title()} set"
-        else:  # data_source == "X_y"
-            scatter_label = "Data set"
-
+        scatter_label = f"{data_source.title()} set"
         for split_idx in range(len(y_true)):
             scatter_kwargs_fold = {
                 "color": colors_markers[split_idx],
@@ -688,7 +684,7 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
                 "(0, 1) range."
             )
 
-        if ml_task != "regression":
+        if ml_task != "regression":  # pragma: no cover
             raise ValueError(
                 "The machine learning task must be 'regression'. "
                 f"Got {ml_task} instead."

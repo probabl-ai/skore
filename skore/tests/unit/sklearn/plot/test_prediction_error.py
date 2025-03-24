@@ -384,6 +384,61 @@ def test_prediction_error_display_kwargs(pyplot, regression_data):
     assert len(display.scatter_[0].get_offsets()) == expected_subsample
 
 
+def test_prediction_error_display_cross_validation_kwargs(
+    pyplot, regression_data_no_split
+):
+    """Check that we can pass keyword arguments to the prediction error plot when
+    there is a cross-validation report."""
+    (estimator, X, y), cv = regression_data_no_split, 3
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
+    display = report.metrics.prediction_error()
+    display.plot(
+        scatter_kwargs=[{"color": "red"}, {"color": "green"}, {"color": "blue"}],
+        line_kwargs={"color": "orange"},
+    )
+    rgb_colors = [
+        [[1.0, 0.0, 0.0, 0.3]],
+        [[0.0, 0.50196078, 0.0, 0.3]],
+        [[0.0, 0.0, 1.0, 0.3]],
+    ]
+    for scatter, rgb_color in zip(display.scatter_, rgb_colors):
+        np.testing.assert_allclose(scatter.get_facecolor(), rgb_color, rtol=1e-3)
+    assert display.line_.get_color() == "orange"
+
+
+def test_prediction_error_display_comparison_estimator_kwargs(pyplot, regression_data):
+    """Check that we can pass keyword arguments to the prediction error plot when
+    there is a comparison report."""
+    estimator, X_train, X_test, y_train, y_test = regression_data
+    report = ComparisonReport(
+        reports={
+            "estimator 1": EstimatorReport(
+                estimator,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+            "estimator 2": EstimatorReport(
+                estimator,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+            ),
+        },
+    )
+    display = report.metrics.prediction_error()
+    display.plot(
+        scatter_kwargs=[{"color": "red"}, {"color": "blue"}],
+        line_kwargs={"color": "orange"},
+    )
+    rgb_colors = [[[1.0, 0.0, 0.0, 0.3]], [[0.0, 0.0, 1.0, 0.3]]]
+    for scatter, rgb_color in zip(display.scatter_, rgb_colors):
+        np.testing.assert_allclose(scatter.get_facecolor(), rgb_color, rtol=1e-3)
+    assert display.line_.get_color() == "orange"
+
+
 def test_random_state(regression_data):
     """If random_state is None (the default) the call should not be cached."""
     estimator, X_train, X_test, y_train, y_test = regression_data
@@ -470,3 +525,21 @@ def test_prediction_error_comparison_estimator_kwargs_error(
     )
     with pytest.raises(ValueError, match=err_msg):
         display.plot(scatter_kwargs=scatter_kwargs)
+
+
+def test_prediction_error_display_error_kind(pyplot, regression_data):
+    """Check that we raise an error when we pass the `kind` argument to the prediction
+    error plot. Since all reports shares the same `plot` method, we don't need to check
+    all types of reports."""
+    estimator, X_train, X_test, y_train, y_test = regression_data
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.prediction_error()
+
+    err_msg = (
+        "`kind` must be one of actual_vs_predicted, residual_vs_predicted. Got "
+        "'whatever' instead."
+    )
+    with pytest.raises(ValueError, match=err_msg):
+        display.plot(kind="whatever")
