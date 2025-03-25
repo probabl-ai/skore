@@ -5,7 +5,7 @@ from matplotlib.axes import Axes
 
 @runtime_checkable
 class Display(Protocol):
-    """Protocol for the public API of display objects."""
+    """A display that can be styled and plotted."""
 
     def plot(self, ax: Optional[Axes] = None, **kwargs: Any) -> None:
         """Plot the display."""
