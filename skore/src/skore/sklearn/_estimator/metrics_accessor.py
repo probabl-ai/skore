@@ -26,6 +26,13 @@ from skore.utils._index import flatten_multi_index
 DataSource = Literal["test", "train", "X_y"]
 
 
+def cast_numpy_to_native(value):
+    """Cast value from numpy type to native type."""
+    if hasattr(value, "item"):
+        return value.item()
+    return value
+
+
 class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
     """Accessor for metrics-related operations.
 
@@ -376,7 +383,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         data_source_hash: Optional[int] = None,
         pos_label: Optional[Union[int, float, bool, str]] = None,
         **metric_kwargs: Any,
-    ) -> Union[float, dict[Union[int, float, bool, str], float], NDArray]:
+    ) -> Union[float, dict[Union[int, float, bool, str], float], list]:
         if data_source_hash is None:
             X, y_true, data_source_hash = self._get_X_y_and_data_source_hash(
                 data_source=data_source, X=X, y=y_true
@@ -428,25 +435,21 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             )
 
             score = metric_fn(y_true, y_pred, **kwargs)
-            if isinstance(score, np.floating):
-                # convert np.float64 and np.float32 to float for consistency across
-                # functions
-                score = float(score)
             self._parent._cache[cache_key] = score
 
         if self._parent._ml_task in (
             "binary-classification",
             "multiclass-classification",
         ) and isinstance(score, np.ndarray):
-            # convert np.float64 and np.float32 to float for consistency across
-            # functions
-            return {
-                label: float(score_label)
-                for label, score_label in zip(self._parent._estimator.classes_, score)
-            }
+            return dict(
+                zip(
+                    map(cast_numpy_to_native, self._parent._estimator.classes_),
+                    map(cast_numpy_to_native, score),
+                )
+            )
         elif isinstance(score, np.ndarray):
-            return score[0] if score.size == 1 else score
-        return score
+            return score[0] if score.size == 1 else score.tolist()
+        return cast_numpy_to_native(score)
 
     @available_if(
         _check_supported_ml_task(
