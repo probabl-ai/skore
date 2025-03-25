@@ -182,11 +182,22 @@ def test_train_test_split_kwargs():
     assert output1 == output2
 
 
+def test_train_test_split_dict_kwargs():
+    """Passing data without keyword arguments with return_dict=True
+    should raise ValueError."""
+
+    X = [[1]] * 20
+    y = [0] * 10 + [1] * 10
+
+    with pytest.raises(ValueError):
+        train_test_split(X, y, random_state=0, return_dict=True)
+
+
 def test_train_test_split_check_dict():
     """Check dict is returned if `return_dict` argument is True"""
     X = [[1]] * 20
     y = [0] * 10 + [1] * 10
-    output = train_test_split(X, y, random_state=0, return_dict=True)
+    output = train_test_split(X=X, y=y, random_state=0, return_dict=True)
     assert type(output) is dict
 
 
@@ -195,5 +206,15 @@ def test_train_test_split_check_dict_unsupervised_case():
     unsupervised case."""
 
     X = [[1]] * 20
-    output = train_test_split(X, random_state=0, return_dict=True)
+    output = train_test_split(X=X, random_state=0, return_dict=True)
     assert len(output.keys()) == 2
+
+
+def test_train_test_split_check_dict_no_X_no_y():
+    """Check if a dict is returned when X, y are None and a third kwarg is passed."""
+
+    z = [[1]] * 20
+    output = train_test_split(z=z, test_size=0.33, random_state=0, return_dict=True)
+    keys = output.keys()
+    assert len(keys) == 2
+    assert list(keys) == ["z_train", "z_test"]
