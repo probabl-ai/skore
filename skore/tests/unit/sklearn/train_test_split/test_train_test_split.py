@@ -193,14 +193,14 @@ def test_train_test_split_dict_kwargs():
         ValueError,
         match="When return_dict=True, arrays must be passed as keyword arguments",
     ):
-        train_test_split(X, y, random_state=0, return_dict=True)
+        train_test_split(X, y, random_state=0, as_dict=True)
 
 
 def test_train_test_split_check_dict():
     """If `return_dict` is True then the result is a dict."""
     X = [[1]] * 20
     y = [0] * 10 + [1] * 10
-    output = train_test_split(X=X, y=y, random_state=0, return_dict=True)
+    output = train_test_split(X=X, y=y, random_state=0, as_dict=True)
     assert type(output) is dict
 
 
@@ -209,7 +209,7 @@ def test_train_test_split_check_dict_unsupervised_case():
     the result is a dict with 2 keys."""
 
     X = [[1]] * 20
-    output = train_test_split(X=X, random_state=0, return_dict=True)
+    output = train_test_split(X=X, random_state=0, as_dict=True)
     assert len(output.keys()) == 2
 
 
@@ -218,6 +218,6 @@ def test_train_test_split_check_dict_no_X_no_y():
     then the result is a dict with 2 keys."""
 
     z = [[1]] * 20
-    output = train_test_split(z=z, random_state=0, return_dict=True)
+    output = train_test_split(z=z, random_state=0, as_dict=True)
     keys = output.keys()
     assert list(keys) == ["z_train", "z_test"]
