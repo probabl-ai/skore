@@ -1,15 +1,8 @@
-from contextlib import contextmanager
 from time import perf_counter
 
 
-# https://stackoverflow.com/questions/33987060/python-context-manager-that-measures-time#69156219
-@contextmanager
-def _measure_time():
+class _measure_time:
     """Measure the time to go through the context, in seconds.
-
-    Returns
-    -------
-    Callable returning a float
 
     Examples
     --------
@@ -17,6 +10,14 @@ def _measure_time():
     ...     1+1
     >>> time_taken()  # Note: time_taken is a callable
     """
-    t1 = t2 = perf_counter()
-    yield lambda: t2 - t1
-    t2 = perf_counter()
+
+    def __enter__(self):
+        self.start = perf_counter()
+        self.end = self.start
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.end = perf_counter()
+
+    def __call__(self):
+        return self.end - self.start
