@@ -137,8 +137,8 @@ def train_test_split(
 
     if as_dict and arrays:
         raise ValueError(
-            "When return_dict=True, arrays must be passed as keyword arguments.\n"
-            "Example: train_test_split(X=X, y=y, sw=sample_weight, return_dict=True)"
+            "When as_dict=True, arrays must be passed as keyword arguments.\n"
+            "Example: train_test_split(X=X, y=y, sw=sample_weight, as_dict=True)"
         )
 
     if keyword_arrays:
