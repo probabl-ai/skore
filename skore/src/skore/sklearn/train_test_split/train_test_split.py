@@ -26,7 +26,7 @@ def train_test_split(
     shuffle: bool = True,
     stratify: Optional[ArrayLike] = None,
     return_dict: bool = False,
-    **arr,
+    **keyword_arrays: ArrayLike,
 ):
     """Perform train-test-split of data.
 
@@ -136,11 +136,13 @@ def train_test_split(
             "When return_dict=True, arrays must be passed as keyword arguments.\n"
             "Example: train_test_split(X=X, y=y, sw=sample_weight, return_dict=True)"
         )
-    elif arr:
+    elif keyword_arrays:
         if X is None and y is None:
-            arrays = tuple(arr.values())  # if X and y is not passed but other variables
-        keys += list(arr.keys())
-        new_arrays += list(arr.values())
+            arrays = tuple(
+                keyword_arrays.values()
+            )  # if X and y is not passed but other variables
+        keys += list(keyword_arrays.keys())
+        new_arrays += list(keyword_arrays.values())
 
     output = sklearn.model_selection.train_test_split(
         *new_arrays,
@@ -159,7 +161,9 @@ def train_test_split(
 
     if y is not None:
         y_labels = np.unique(y)
-        y_test = output[3] if arr else output[-1]  # when more kwargs are given
+        y_test = (
+            output[3] if keyword_arrays else output[-1]
+        )  # when more kwargs are given
     else:
         y_labels = None
         y_test = None
