@@ -322,12 +322,12 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                     index = pd.Index([metric_name], name="Metric")
                     score_array = np.array(score).reshape(-1, 1)
             elif self._parent._ml_task in ("regression", "multioutput-regression"):
-                if isinstance(score, np.ndarray):
+                if isinstance(score, list):
                     index = pd.MultiIndex.from_arrays(
                         [[metric_name] * len(score), list(range(len(score)))],
                         names=["Metric", "Output"],
                     )
-                    score_array = score.reshape(-1, 1)
+                    score_array = np.array(score).reshape(-1, 1)
                 else:
                     index = pd.Index([metric_name], name="Metric")
                     score_array = np.array(score).reshape(-1, 1)
@@ -1151,7 +1151,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         multioutput: Union[
             Literal["raw_values", "uniform_average"], ArrayLike
         ] = "raw_values",
-    ) -> Union[float, np.ndarray]:
+    ) -> Union[float, list]:
         """Compute the R² score.
 
         Parameters
@@ -1183,7 +1183,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
 
         Returns
         -------
-        float or ndarray of shape (n_outputs,)
+        float or list of len(n_outputs)
             The R² score.
 
         Examples
@@ -1224,7 +1224,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         multioutput: Union[
             Literal["raw_values", "uniform_average"], ArrayLike
         ] = "raw_values",
-    ) -> Union[float, np.ndarray]:
+    ) -> Union[float, list]:
         """Private interface of `r2` to be able to pass `data_source_hash`.
 
         `data_source_hash` is either an `int` when we already computed the hash
@@ -1244,8 +1244,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             self._parent._ml_task == "multioutput-regression"
             and multioutput == "raw_values"
         ):
-            assert isinstance(result, np.ndarray), (
-                "The R² score should be a numpy.ndarray, got "
+            assert isinstance(result, list), (
+                "The R² score should be a list, got "
                 f"{type(result)} with value {result}."
             )
             return result
@@ -1268,7 +1268,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         multioutput: Union[
             Literal["raw_values", "uniform_average"], ArrayLike
         ] = "raw_values",
-    ) -> Union[float, np.ndarray]:
+    ) -> Union[float, list]:
         """Compute the root mean squared error.
 
         Parameters
@@ -1300,7 +1300,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
 
         Returns
         -------
-        float or ndarray of shape (n_outputs,)
+        float or list of len(n_outputs)
             The root mean squared error.
 
         Examples
@@ -1341,7 +1341,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         multioutput: Union[
             Literal["raw_values", "uniform_average"], ArrayLike
         ] = "raw_values",
-    ) -> Union[float, np.ndarray]:
+    ) -> Union[float, list]:
         """Private interface of `rmse` to be able to pass `data_source_hash`.
 
         `data_source_hash` is either an `int` when we already computed the hash
@@ -1361,8 +1361,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             self._parent._ml_task == "multioutput-regression"
             and multioutput == "raw_values"
         ):
-            assert isinstance(result, np.ndarray), (
-                "The RMSE score should be a numpy.ndarray, got "
+            assert isinstance(result, list), (
+                "The RMSE score should be a list, got "
                 f"{type(result)} with value {result}."
             )
             return result
@@ -1380,7 +1380,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
         **kwargs: Any,
-    ) -> Union[float, dict[Union[int, float, bool, str], float], np.ndarray]:
+    ) -> Union[float, dict[Union[int, float, bool, str], float], list]:
         """Compute a custom metric.
 
         It brings some flexibility to compute any desired metric. However, we need to
@@ -1423,7 +1423,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
 
         Returns
         -------
-        float, dict, or ndarray of shape (n_outputs,)
+        float, dict, or list of len(n_outputs)
             The custom metric. The output type depends on the metric function.
 
         Examples
