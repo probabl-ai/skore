@@ -191,7 +191,7 @@ def test_train_test_split_dict_kwargs():
 
     with pytest.raises(
         ValueError,
-        match="When return_dict=True, arrays must be passed as keyword arguments",
+        match="When as_dict=True, arrays must be passed as keyword arguments",
     ):
         train_test_split(X, y, random_state=0, as_dict=True)
 
