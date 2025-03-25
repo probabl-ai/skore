@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import itertools
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import joblib
 
@@ -33,21 +33,33 @@ PLOTS = (
 )
 
 
+def is_primitive(obj: Any) -> bool:
+    """Check if the object is a primitive."""
+    if isinstance(obj, (type(None), bool, float, int, str)):
+        return True
+    if isinstance(obj, (list, tuple)):
+        return all(is_primitive(item) for item in obj)
+    if isinstance(obj, dict):
+        return all(
+            isinstance(k, (bool, float, int, str)) and is_primitive(v)
+            for k, v in obj.items()
+        )
+    return False
+
+
 class SkoreEstimatorReportItem(PickleItem):
     @property
     def __metadata__(self) -> dict[str, float]:
         report = self.__raw__
-        estimator = report.estimator_  # pipeline not implemented yet
+        estimator = report.estimator_
 
         return {
-            "pipeline": {estimator.__class__.__name__: estimator.get_params()},
+            "estimator_class_name": estimator.__class__.__name__,
+            "estimator_hyper_params": {
+                k: v for k, v in estimator.get_params().items() if is_primitive(v)
+            },
             "dataset_fingerprint": joblib.hash(
-                (
-                    report.X_train,
-                    report.y_train,
-                    report.X_test,
-                    report.y_test,
-                )
+                (report.X_train, report.y_train, report.X_test, report.y_test)
             ),
             "ml_task": report.ml_task,  # modify hub's allowed values
             "metrics": [

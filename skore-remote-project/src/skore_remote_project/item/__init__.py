@@ -17,8 +17,8 @@ from .plotly_figure_item import PlotlyFigureItem
 from .polars_dataframe_item import PolarsDataFrameItem
 from .polars_series_item import PolarsSeriesItem
 from .sklearn_base_estimator_item import SklearnBaseEstimatorItem
-from .skrub_table_report_item import SkrubTableReportItem
 from .skore_estimator_report_item import SkoreEstimatorReportItem
+from .skrub_table_report_item import SkrubTableReportItem
 
 
 def object_to_item(object: Any, /) -> Item:
