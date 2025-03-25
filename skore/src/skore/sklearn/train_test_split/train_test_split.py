@@ -159,7 +159,7 @@ def train_test_split(
 
     if y is not None:
         y_labels = np.unique(y)
-        y_test = output[-1]
+        y_test = output[3] if arr else output[-1]  # when more kwargs are given
     else:
         y_labels = None
         y_test = None
