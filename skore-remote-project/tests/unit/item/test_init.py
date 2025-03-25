@@ -22,6 +22,7 @@ from skore_remote_project.item import (
     PolarsDataFrameItem,
     PolarsSeriesItem,
     SklearnBaseEstimatorItem,
+    SkoreEstimatorReportItem,
     SkrubTableReportItem,
     object_to_item,
 )
@@ -52,7 +53,7 @@ from skore_remote_project.item import (
         (polars.DataFrame([{"key": "value"}]), PolarsDataFrameItem),
         (polars.Series([0, 1, 2]), PolarsSeriesItem),
         (sklearn.svm.SVC(), SklearnBaseEstimatorItem),
-        (skore.EstimatorReport(sklearn.svm.SVC(), fit=False), PickleItem),
+        (skore.EstimatorReport(sklearn.svm.SVC(), fit=False), SkoreEstimatorReportItem),
         (
             skrub.TableReport(
                 pandas.DataFrame(
