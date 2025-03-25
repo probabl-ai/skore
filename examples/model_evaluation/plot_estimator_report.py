@@ -49,10 +49,7 @@ from skore import train_test_split
 
 # If you have many dataframes to split on, you can always ask train_test_split to return a dictionary.
 # Remember, it needs to be passed as a keyword argument!
-my_dict = train_test_split(X=df, y=y, random_state=42, return_dict=True)
-
-# Since we only have 2 dataframes to split, we can simply unpack as follows.
-X_train, X_test, y_train, y_test = my_dict.values()
+split_data = train_test_split(X=df, y=y, random_state=42, as_dict=True)
 
 # %%
 # By the way, notice how skore's :func:`~skore.train_test_split` automatically warns us
@@ -67,7 +64,9 @@ X_train, X_test, y_train, y_test = my_dict.values()
 # So let's create a classifier for our task and fit it on the training set.
 from skrub import tabular_learner
 
-estimator = tabular_learner("classifier").fit(X_train, y_train)
+estimator = tabular_learner("classifier").fit(
+    split_data["X_train"], split_data["y_train"]
+)
 estimator
 
 # %%
@@ -82,9 +81,7 @@ estimator
 # detect that our estimator is already fitted and will not fit it again.
 from skore import EstimatorReport
 
-report = EstimatorReport(
-    estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-)
+report = EstimatorReport(estimator, **split_data)
 
 # %%
 #
@@ -188,7 +185,10 @@ report.metrics.log_loss(data_source="train")
 
 start = time.time()
 metric_report = report.metrics.report_metrics(
-    data_source="X_y", X=X_test, y=y_test, pos_label=pos_label
+    data_source="X_y",
+    X=split_data["X_test"],
+    y=split_data["y_test"],
+    pos_label=pos_label,
 )
 end = time.time()
 metric_report
@@ -205,7 +205,10 @@ print(f"Time taken to compute the metrics: {end - start:.2f} seconds")
 # %%
 start = time.time()
 metric_report = report.metrics.report_metrics(
-    data_source="X_y", X=X_test, y=y_test, pos_label=pos_label
+    data_source="X_y",
+    X=split_data["X_test"],
+    y=split_data["y_test"],
+    pos_label=pos_label,
 )
 end = time.time()
 metric_report
@@ -247,7 +250,7 @@ def operational_decision_cost(y_true, y_pred, amount):
 import numpy as np
 
 rng = np.random.default_rng(42)
-amount = rng.integers(low=100, high=1000, size=len(y_test))
+amount = rng.integers(low=100, high=1000, size=len(split_data["y_test"]))
 
 # %%
 #
