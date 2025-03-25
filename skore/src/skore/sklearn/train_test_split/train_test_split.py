@@ -70,9 +70,13 @@ def train_test_split(
     stratify : array-like, optional
         If not None, data is split in a stratified fashion, using this as the
         class labels.
-    return_dict : bool, default is False
+    as_dict : bool, default is False
         If True, returns a Dictionary with keys values ``X_train``, ``X_test``,
-        ``y_train``, and ``y_test`` instead of a List.
+        ``y_train``, and ``y_test`` instead of a List. Requires data to be
+        passed as keyword arguments.
+    **keyword_arrays : array-like, optional
+        Additional array-like arguments passed by keyword. Each keyword should
+        correspond to an array-like object.
 
     Returns
     -------
