@@ -47,7 +47,12 @@ pos_label, neg_label = "allowed", "disallowed"
 # and a validation set.
 from skore import train_test_split
 
-X_train, X_test, y_train, y_test = train_test_split(df, y, random_state=42)
+# If you have many dataframes to split on, you can always ask train_test_split to return a dictionary.
+# Remember, it needs to be passed as a keyword argument!
+my_dict = train_test_split(X=df, y=y, random_state=42, return_dict=True)
+
+# Since we only have 2 dataframes to split, we can simply unpack as follows.
+X_train, X_test, y_train, y_test = my_dict.values()
 
 # %%
 # By the way, notice how skore's :func:`~skore.train_test_split` automatically warns us
