@@ -25,7 +25,7 @@ def train_test_split(
     random_state: Optional[Union[int, RandomState]] = None,
     shuffle: bool = True,
     stratify: Optional[ArrayLike] = None,
-    return_dict: bool = False,
+    as_dict: bool = False,
     **keyword_arrays: ArrayLike,
 ):
     """Perform train-test-split of data.
@@ -131,7 +131,7 @@ def train_test_split(
         new_arrays.append(y)
         keys += ["y"]
 
-    if return_dict and arrays:
+    if as_dict and arrays:
         raise ValueError(
             "When return_dict=True, arrays must be passed as keyword arguments.\n"
             "Example: train_test_split(X=X, y=y, sw=sample_weight, return_dict=True)"
@@ -204,7 +204,7 @@ def train_test_split(
                 )
             )
 
-    if return_dict:
+    if as_dict:
         result = {}
         for i, k in enumerate(keys):
             train, test = i * 2, i * 2 + 1
