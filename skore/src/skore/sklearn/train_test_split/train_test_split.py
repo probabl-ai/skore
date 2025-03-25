@@ -140,7 +140,8 @@ def train_test_split(
             "When return_dict=True, arrays must be passed as keyword arguments.\n"
             "Example: train_test_split(X=X, y=y, sw=sample_weight, return_dict=True)"
         )
-    elif keyword_arrays:
+
+    if keyword_arrays:
         if X is None and y is None:
             arrays = tuple(
                 keyword_arrays.values()
