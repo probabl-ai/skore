@@ -201,11 +201,10 @@ def train_test_split(
             )
 
     if return_dict:
-        result = {"X_train": output[0], "X_test": output[1]}
-
-        if len(output) > 2:
-            result["y_train"] = output[2]
-            result["y_test"] = output[3]
+        result = {}
+        for i, k in enumerate(keys):
+            train, test = i * 2, i * 2 + 1
+            result[f"{k}_train"], result[f"{k}_test"] = output[train], output[test]
         output = result
 
     return output
