@@ -645,7 +645,7 @@ class PrecisionRecallCurveDisplay(
                     pr_curve_kwargs=pr_curve_kwargs,
                 )
             )
-        else:  # self.report_type == "comparison-estimator"
+        elif self.report_type == "comparison-estimator":
             self.ax_, self.lines_, info_pos_label = self._plot_comparison_estimator(
                 precision=self.precision,
                 recall=self.recall,
@@ -656,6 +656,11 @@ class PrecisionRecallCurveDisplay(
                 ax=self.ax_,
                 estimator_names=self.estimator_names,
                 pr_curve_kwargs=pr_curve_kwargs,
+            )
+        else:
+            raise ValueError(
+                f"`report_type` should be one of 'estimator', 'cross-validation', "
+                f"or 'comparison-estimator'. Got '{self.report_type}' instead."
             )
 
         xlabel = "Recall"

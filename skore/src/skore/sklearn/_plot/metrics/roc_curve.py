@@ -635,7 +635,7 @@ class RocCurveDisplay(
                     roc_curve_kwargs=roc_curve_kwargs,
                 )
             )
-        else:  # self.report_type == "comparison-estimator"
+        elif self.report_type == "comparison-estimator":
             self.ax_, self.lines_, info_pos_label = self._plot_comparison_estimator(
                 fpr=self.fpr,
                 tpr=self.tpr,
@@ -646,6 +646,11 @@ class RocCurveDisplay(
                 ax=self.ax_,
                 estimator_names=self.estimator_names,
                 roc_curve_kwargs=roc_curve_kwargs,
+            )
+        else:
+            raise ValueError(
+                f"`report_type` should be one of 'estimator', 'cross-validation', "
+                f"or 'comparison-estimator'. Got '{self.report_type}' instead."
             )
 
         chance_level_kwargs = _validate_style_kwargs(

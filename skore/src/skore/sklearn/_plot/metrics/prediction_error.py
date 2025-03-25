@@ -614,6 +614,11 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
                 estimator_names=self.estimator_names,
                 samples_kwargs=scatter_kwargs,
             )
+        else:
+            raise ValueError(
+                f"`report_type` should be one of 'estimator', 'cross-validation', "
+                f"or 'comparison-estimator'. Got '{self.report_type}' instead."
+            )
 
         if despine:
             x_range = self.ax_.get_xlim()

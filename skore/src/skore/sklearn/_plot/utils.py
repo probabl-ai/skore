@@ -181,10 +181,15 @@ class _ClassifierCurveDisplayMixin:
             n_curves = len(metric[self.pos_label])
             if report_type in ("estimator", "cross-validation"):
                 allow_single_dict = True
-            else:  # report_type == "comparison-estimator"
+            elif report_type == "comparison-estimator":
                 # since we compare different estimators, it does not make sense to share
                 # a single dictionary for all the estimators.
                 allow_single_dict = False
+            else:
+                raise ValueError(
+                    f"`report_type` should be one of 'estimator', 'cross-validation', "
+                    f"or 'comparison-estimator'. Got '{report_type}' instead."
+                )
         else:
             n_curves = len(metric)
             allow_single_dict = False
