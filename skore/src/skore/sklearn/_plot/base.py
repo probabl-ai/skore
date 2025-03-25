@@ -9,8 +9,6 @@ class Display(Protocol):
 
     def plot(self, ax: Optional[Axes] = None, **kwargs: Any) -> None:
         """Plot the display."""
-        ...
 
-    def set_style(self, **kwargs: Any):
+    def set_style(self, **kwargs: Any) -> None:
         """Set the style of the display."""
-        ...
