@@ -200,8 +200,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             generator = parallel(
                 joblib.delayed(getattr(report.metrics, report_metric_name))(
                     data_source=data_source,
-                    X=X,
-                    y=y,
                     **metric_kwargs,
                 )
                 for report in self._parent.reports_
