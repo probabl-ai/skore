@@ -5,7 +5,8 @@ from __future__ import annotations
 import itertools
 from typing import TYPE_CHECKING, Any
 
-import joblib
+from joblib import hash as joblib_hash
+from matplotlib.pyplot import subplots
 
 from .item import ItemTypeError, lazy_is_instance
 from .pickle_item import PickleItem
@@ -58,7 +59,7 @@ class SkoreEstimatorReportItem(PickleItem):
             "estimator_hyper_params": {
                 k: v for k, v in estimator.get_params().items() if is_primitive(v)
             },
-            "dataset_fingerprint": joblib.hash(
+            "dataset_fingerprint": joblib_hash(
                 (report.X_train, report.y_train, report.X_test, report.y_test)
             ),
             "ml_task": report.ml_task,  # modify hub's allowed values
@@ -79,18 +80,25 @@ class SkoreEstimatorReportItem(PickleItem):
         from . import object_to_item
 
         report = self.__raw__
-        representation = {}
+        representation = []
 
         for plot_name, source in itertools.product(PLOTS, ("test", "train")):
             if hasattr(report.metrics, plot_name):
-                plot = getattr(report.metrics, plot_name)(data_source=source)
-                item = object_to_item(plot)
+                figure, ax = subplots()
+                display = getattr(report.metrics, plot_name)(data_source=source)
 
-                representation[plot_name] = {
-                    "data_source": source,
-                    **item.__parameters__,
-                    **item.__representation__,
-                }
+                # construct the ``matplotlib`` figure from the ``skore`` display object
+                display.plot(ax)
+
+                item = object_to_item(figure)
+                representation.append(
+                    {
+                        "key": plot_name,
+                        "data_source": source,
+                        **item.__parameters__,
+                        **item.__representation__,
+                    }
+                )
 
         return {"related_items": representation}
 
