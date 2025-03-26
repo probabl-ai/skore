@@ -480,7 +480,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         Traceback (most recent call last):
         skore.sklearn._estimator.metrics_accessor.FitInformationUnavailableError: ...
         """
-        fit_time = self._parent._cache.get(("fit_time",))
+        fit_time = self._parent._cache.get(self._parent._fit_time_cache_key())
         if fit_time is None:
             raise FitInformationUnavailableError(
                 "The fit information is not available, perhaps because the estimator "

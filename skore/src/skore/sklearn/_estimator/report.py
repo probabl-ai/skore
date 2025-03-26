@@ -152,7 +152,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self._initialize_state()
 
         if fit_time is not None:
-            self._cache[("fit_time",)] = fit_time
+            self._cache[self._fit_time_cache_key()] = fit_time
 
     def _initialize_state(self) -> None:
         """Initialize/reset the random number generator, hash, and cache."""
@@ -172,7 +172,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
         Note that the cache might not be empty after this method is run as some
         values need to be kept, such as the fit time.
-        
+
         Examples
         --------
         >>> from sklearn.datasets import load_breast_cancer
@@ -196,11 +196,11 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         >>> len(report._cache)  # fit time still remains
         1
         """
-        fit_time = self._cache.get(("fit_time",))
+        fit_time = self._cache.get(self._fit_time_cache_key())
         if fit_time is None:
             self._cache = {}
         else:
-            self._cache = {("fit_time",): fit_time}
+            self._cache = {self._fit_time_cache_key(): fit_time}
 
     @progress_decorator(description="Caching predictions")
     def cache_predictions(
@@ -362,3 +362,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     def __repr__(self) -> str:
         """Return a string representation."""
         return f"{self.__class__.__name__}(estimator={self.estimator_}, ...)"
+
+    # Utils
+    def _fit_time_cache_key(self):
+        return (self._hash, "fit_time")

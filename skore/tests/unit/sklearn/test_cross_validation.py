@@ -204,7 +204,9 @@ def test_cross_validation_report_cache_predictions(
     report.clear_cache()
     assert report._cache == {}
     for estimator_report in report.estimator_reports_:
-        assert list(estimator_report._cache.keys()) == [("fit_time",)]
+        assert list(estimator_report._cache.keys()) == [
+            estimator_report._fit_time_cache_key()
+        ]
 
 
 def test_cross_validation_report_pickle(tmp_path, binary_classification_data):
