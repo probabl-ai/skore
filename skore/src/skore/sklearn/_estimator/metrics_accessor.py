@@ -1197,7 +1197,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         ...     y_test=y_test,
         ... )
         >>> report.metrics.r2()
-        np.float64(0.35...)
+        0.35...
         """
         return self._r2(
             data_source=data_source,
@@ -1314,7 +1314,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         ...     y_test=y_test,
         ... )
         >>> report.metrics.rmse()
-        np.float64(56.5...)
+        56.5...
         """
         return self._rmse(
             data_source=data_source,
