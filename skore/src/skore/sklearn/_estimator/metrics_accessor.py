@@ -472,7 +472,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         ...     y_test=y_test
         ... )
         >>> report.metrics._fit_time()
-        {'fit': ...}
+        {'fit_time': ...}
 
         >>> estimator = LogisticRegression().fit(X_train, y_train)
         >>> report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -486,7 +486,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                 "The fit information is not available, perhaps because the estimator "
                 "was fitted before the report was created."
             )
-        return {"fit": fit_time}
+        return {"fit_time": fit_time}
 
     def _predict_time(
         self,
@@ -518,13 +518,13 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         ... )
 
         >>> report.metrics._predict_time()  # Predictions on the test data
-        {'predict_test': ...}
+        {'predict_time_test': ...}
 
         >>> report.metrics._predict_time(data_source="train")
-        {'predict_train': ...}
+        {'predict_time_train': ...}
 
         >>> report.metrics._predict_time(data_source="X_y", X=X_test, y=y_test)
-        {'predict_X_y_f41066b51130a331835e7d66417ff728': ...}
+        {'predict_time_X_y_f41066b51130a331835e7d66417ff728': ...}
         """
         X, y, data_source_hash = self._get_X_y_and_data_source_hash(
             data_source=data_source, X=X, y=y
@@ -567,7 +567,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         data_source_ = (
             f"X_y_{data_source_hash}" if data_source == "X_y" else data_source
         )
-        return {f"predict_{data_source_}": predict_time}
+        return {f"predict_time_{data_source_}": predict_time}
 
     def timing(
         self,
@@ -611,8 +611,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         dict
             The times, in seconds, in the form of a dict of the following shape:
 
-            - If kind="fit", a single entry with key "fit".
-            - If kind="predict", a single entry with key "predict_{data_source}"
+            - If kind="fit", a single entry with key "fit_time".
+            - If kind="predict", a single entry with key "predict_time_{data_source}"
               (where data_source is "train", "test" or "X_y_{data_source_hash}").
             - If kind="auto", two entries: a concatenation of the "fit" and "predict"
               cases.
@@ -642,29 +642,29 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         ... )
 
         >>> report.metrics.timing()
-        {'fit': ..., 'predict_test': ...}
+        {'fit_time': ..., 'predict_time_test': ...}
 
         >>> report.metrics.timing(kind="fit")
-        {'fit': ...}
+        {'fit_time': ...}
 
         >>> report.metrics.timing(data_source="train")
-        {'fit': ..., 'predict_train': ...}
+        {'fit_time': ..., 'predict_time_train': ...}
 
         >>> report.metrics.timing(data_source="X_y", X=X_test, y=y_test)
-        {'fit': ..., 'predict_X_y_f41066b51130a331835e7d66417ff728': ...}
+        {'fit_time': ..., 'predict_time_X_y_f41066b51130a331835e7d66417ff728': ...}
 
         >>> report.metrics.timing(kind="predict", data_source="X_y", X=X_test, y=y_test)
-        {'predict_X_y_f41066b51130a331835e7d66417ff728': ...}
+        {'predict_time_X_y_f41066b51130a331835e7d66417ff728': ...}
 
         >>> report.metrics.timing(kind="fit", data_source="X_y", X=X_test, y=y_test)
-        {'fit': ...}
+        {'fit_time': ...}
 
         # Fit information is not available
         >>> classifier = LogisticRegression(max_iter=10_000).fit(X_train, y_train)
         >>> report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
 
         >>> report.metrics.timing()
-        {'predict_test': ...}
+        {'predict_time_test': ...}
 
         >>> report.metrics.timing(kind="fit")
         Traceback (most recent call last):
