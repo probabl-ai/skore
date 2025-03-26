@@ -119,28 +119,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
         >>> from sklearn.model_selection import train_test_split
-        >>> from skore import CrossValidationComparisonReport, EstimatorReport
+        >>> from skore import CrossValidationComparisonReport, CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
         >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
-        >>> estimator_report_1 = EstimatorReport(
-        ...     estimator_1,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> report_1 = CrossValidationReport(estimator_1, X, y)
         >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
-        >>> estimator_report_2 = EstimatorReport(
-        ...     estimator_2,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
-        >>> comparison_report = CrossValidationComparisonReport(
-        ...     [estimator_report_1, estimator_report_2]
-        ... )
+        >>> report_2 = CrossValidationReport(estimator_2, X, y)
+        >>> comparison_report = CrossValidationComparisonReport([report_1, report_2])
         >>> comparison_report.metrics.report_metrics(
         ...     scoring=["precision", "recall"],
         ...     pos_label=1,
@@ -285,28 +270,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
         >>> from sklearn.model_selection import train_test_split
-        >>> from skore import CrossValidationComparisonReport, EstimatorReport
+        >>> from skore import CrossValidationComparisonReport, CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
         >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
-        >>> estimator_report_1 = EstimatorReport(
-        ...     estimator_1,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> report_1 = CrossValidationReport(estimator_1, X, y)
         >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
-        >>> estimator_report_2 = EstimatorReport(
-        ...     estimator_2,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
-        >>> comparison_report = CrossValidationComparisonReport(
-        ...     [estimator_report_1, estimator_report_2]
-        ... )
+        >>> report_2 = CrossValidationReport(estimator_2, X, y)
+        >>> comparison_report = CrossValidationComparisonReport([report_1, report_2])
         >>> comparison_report.metrics.accuracy()
         Estimator      LogisticRegression  LogisticRegression
         Metric
@@ -394,26 +364,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from sklearn.model_selection import train_test_split
         >>> from skore import CrossValidationComparisonReport, EstimatorReport
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
         >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
-        >>> estimator_report_1 = EstimatorReport(
-        ...     estimator_1,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> report_1 = CrossValidationReport(estimator_1, X, y)
         >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
-        >>> estimator_report_2 = EstimatorReport(
-        ...     estimator_2,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
-        >>> comparison_report = CrossValidationComparisonReport(
-        ...     [estimator_report_1, estimator_report_2]
-        ... )
+        >>> report_2 = CrossValidationReport(estimator_2, X, y)
+        >>> comparison_report = CrossValidationComparisonReport([report_1, report_2])
         >>> comparison_report.metrics.precision()
         Estimator                    LogisticRegression  LogisticRegression
         Metric      Label / Average
@@ -505,26 +460,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from sklearn.model_selection import train_test_split
         >>> from skore import CrossValidationComparisonReport, EstimatorReport
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
         >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
-        >>> estimator_report_1 = EstimatorReport(
-        ...     estimator_1,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> report_1 = CrossValidationReport(estimator_1, X, y)
         >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
-        >>> estimator_report_2 = EstimatorReport(
-        ...     estimator_2,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
-        >>> comparison_report = CrossValidationComparisonReport(
-        ...     [estimator_report_1, estimator_report_2]
-        ... )
+        >>> report_2 = CrossValidationReport(estimator_2, X, y)
+        >>> comparison_report = CrossValidationComparisonReport([report_1, report_2])
         >>> comparison_report.metrics.recall()
         Estimator                    LogisticRegression  LogisticRegression
         Metric      Label / Average
@@ -581,26 +521,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from sklearn.model_selection import train_test_split
         >>> from skore import CrossValidationComparisonReport, EstimatorReport
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
         >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
-        >>> estimator_report_1 = EstimatorReport(
-        ...     estimator_1,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> report_1 = CrossValidationReport(estimator_1, X, y)
         >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
-        >>> estimator_report_2 = EstimatorReport(
-        ...     estimator_2,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
-        >>> comparison_report = CrossValidationComparisonReport(
-        ...     [estimator_report_1, estimator_report_2]
-        ... )
+        >>> report_2 = CrossValidationReport(estimator_2, X, y)
+        >>> comparison_report = CrossValidationComparisonReport([report_1, report_2])
         >>> comparison_report.metrics.brier_score()
         Estimator         LogisticRegression  LogisticRegression
         Metric
@@ -694,26 +619,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from sklearn.model_selection import train_test_split
         >>> from skore import CrossValidationComparisonReport, EstimatorReport
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
         >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
-        >>> estimator_report_1 = EstimatorReport(
-        ...     estimator_1,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> report_1 = CrossValidationReport(estimator_1, X, y)
         >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
-        >>> estimator_report_2 = EstimatorReport(
-        ...     estimator_2,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
-        >>> comparison_report = CrossValidationComparisonReport(
-        ...     [estimator_report_1, estimator_report_2]
-        ... )
+        >>> report_2 = CrossValidationReport(estimator_2, X, y)
+        >>> comparison_report = CrossValidationComparisonReport([report_1, report_2])
         >>> comparison_report.metrics.roc_auc()
         Estimator      LogisticRegression  LogisticRegression
         Metric
@@ -770,26 +680,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from sklearn.model_selection import train_test_split
         >>> from skore import CrossValidationComparisonReport, EstimatorReport
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
         >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
-        >>> estimator_report_1 = EstimatorReport(
-        ...     estimator_1,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> report_1 = CrossValidationReport(estimator_1, X, y)
         >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
-        >>> estimator_report_2 = EstimatorReport(
-        ...     estimator_2,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
-        >>> comparison_report = CrossValidationComparisonReport(
-        ...     [estimator_report_1, estimator_report_2]
-        ... )
+        >>> report_2 = CrossValidationReport(estimator_2, X, y)
+        >>> comparison_report = CrossValidationComparisonReport([report_1, report_2])
         >>> comparison_report.metrics.log_loss()
         Estimator      LogisticRegression  LogisticRegression
         Metric
@@ -856,26 +751,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from sklearn.model_selection import train_test_split
         >>> from skore import CrossValidationComparisonReport, EstimatorReport
         >>> X, y = load_diabetes(return_X_y=True)
-        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-        >>> estimator_1 = Ridge(random_state=42)
-        >>> estimator_report_1 = EstimatorReport(
-        ...     estimator_1,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
-        >>> estimator_2 = Ridge(random_state=43)
-        >>> estimator_report_2 = EstimatorReport(
-        ...     estimator_2,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
-        >>> comparison_report = CrossValidationComparisonReport(
-        ...     [estimator_report_1, estimator_report_2]
-        ... )
+        >>> estimator_1 = Ridge(max_iter=10000, random_state=42)
+        >>> report_1 = CrossValidationReport(estimator_1, X, y)
+        >>> estimator_2 = Ridge(max_iter=10000, random_state=43)
+        >>> report_2 = CrossValidationReport(estimator_2, X, y)
+        >>> comparison_report = CrossValidationComparisonReport([report_1, report_2])
         >>> comparison_report.metrics.r2()
         Estimator     Ridge    Ridge
         Metric
@@ -943,26 +823,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from sklearn.model_selection import train_test_split
         >>> from skore import CrossValidationComparisonReport, EstimatorReport
         >>> X, y = load_diabetes(return_X_y=True)
-        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-        >>> estimator_1 = Ridge(random_state=42)
-        >>> estimator_report_1 = EstimatorReport(
-        ...     estimator_1,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
-        >>> estimator_2 = Ridge(random_state=43)
-        >>> estimator_report_2 = EstimatorReport(
-        ...     estimator_2,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
-        >>> comparison_report = CrossValidationComparisonReport(
-        ...     [estimator_report_1, estimator_report_2]
-        ... )
+        >>> estimator_1 = Ridge(max_iter=10000, random_state=42)
+        >>> report_1 = CrossValidationReport(estimator_1, X, y)
+        >>> estimator_2 = Ridge(max_iter=10000, random_state=43)
+        >>> report_2 = CrossValidationReport(estimator_2, X, y)
+        >>> comparison_report = CrossValidationComparisonReport([report_1, report_2])
         >>> comparison_report.metrics.rmse()
         Estimator       Ridge       Ridge
         Metric
@@ -1044,26 +909,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from sklearn.model_selection import train_test_split
         >>> from skore import CrossValidationComparisonReport, EstimatorReport
         >>> X, y = load_diabetes(return_X_y=True)
-        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-        >>> estimator_1 = Ridge(random_state=42)
-        >>> estimator_report_1 = EstimatorReport(
-        ...     estimator_1,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
-        >>> estimator_2 = Ridge(random_state=43)
-        >>> estimator_report_2 = EstimatorReport(
-        ...     estimator_2,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
-        >>> comparison_report = CrossValidationComparisonReport(
-        ...     [estimator_report_1, estimator_report_2]
-        ... )
+        >>> estimator_1 = Ridge(max_iter=10000, random_state=42)
+        >>> report_1 = CrossValidationReport(estimator_1, X, y)
+        >>> estimator_2 = Ridge(max_iter=10000, random_state=43)
+        >>> report_2 = CrossValidationReport(estimator_2, X, y)
+        >>> comparison_report = CrossValidationComparisonReport([report_1, report_2])
         >>> comparison_report.metrics.custom_metric(
         ...     metric_function=mean_absolute_error,
         ...     response_method="predict",
@@ -1312,26 +1162,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from sklearn.model_selection import train_test_split
         >>> from skore import CrossValidationComparisonReport, EstimatorReport
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
         >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
-        >>> estimator_report_1 = EstimatorReport(
-        ...     estimator_1,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> report_1 = CrossValidationReport(estimator_1, X, y)
         >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
-        >>> estimator_report_2 = EstimatorReport(
-        ...     estimator_2,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
-        >>> comparison_report = CrossValidationComparisonReport(
-        ...     [estimator_report_1, estimator_report_2]
-        ... )
+        >>> report_2 = CrossValidationReport(estimator_2, X, y)
+        >>> comparison_report = CrossValidationComparisonReport([report_1, report_2])
         >>> display = comparison_report.metrics.roc()
         >>> display.plot()
         """
@@ -1395,26 +1230,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from sklearn.model_selection import train_test_split
         >>> from skore import CrossValidationComparisonReport, EstimatorReport
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
         >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
-        >>> estimator_report_1 = EstimatorReport(
-        ...     estimator_1,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
+        >>> report_1 = CrossValidationReport(estimator_1, X, y)
         >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
-        >>> estimator_report_2 = EstimatorReport(
-        ...     estimator_2,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
-        >>> comparison_report = CrossValidationComparisonReport(
-        ...     [estimator_report_1, estimator_report_2]
-        ... )
+        >>> report_2 = CrossValidationReport(estimator_2, X, y)
+        >>> comparison_report = CrossValidationComparisonReport([report_1, report_2])
         >>> display = comparison_report.metrics.precision_recall()
         >>> display.plot()
         """
@@ -1488,26 +1308,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from sklearn.model_selection import train_test_split
         >>> from skore import CrossValidationComparisonReport, EstimatorReport
         >>> X, y = load_diabetes(return_X_y=True)
-        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-        >>> estimator_1 = Ridge(random_state=42)
-        >>> estimator_report_1 = EstimatorReport(
-        ...     estimator_1,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
-        >>> estimator_2 = Ridge(random_state=43)
-        >>> estimator_report_2 = EstimatorReport(
-        ...     estimator_2,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
-        >>> comparison_report = CrossValidationComparisonReport(
-        ...     [estimator_report_1, estimator_report_2]
-        ... )
+        >>> estimator_1 = Ridge(max_iter=10000, random_state=42)
+        >>> report_1 = CrossValidationReport(estimator_1, X, y)
+        >>> estimator_2 = Ridge(max_iter=10000, random_state=43)
+        >>> report_2 = CrossValidationReport(estimator_2, X, y)
+        >>> comparison_report = CrossValidationComparisonReport([report_1, report_2])
         >>> display = comparison_report.metrics.prediction_error()
         >>> display.plot(kind="actual_vs_predicted")
         """
