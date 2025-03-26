@@ -554,6 +554,9 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                 response_method="predict",
                 data_source=data_source,
                 data_source_hash=data_source_hash,
+                # In binary classification, will default to
+                # self._parent.estimator_.classes_[1]
+                pos_label=None,
             )
 
             predict_time = find_in_cache()
