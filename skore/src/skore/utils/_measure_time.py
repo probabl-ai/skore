@@ -6,9 +6,10 @@ class MeasureTime:
 
     Examples
     --------
+    >>> from time import sleep
     >>> with MeasureTime() as time_taken:
-    ...     1+1
-    >>> time_taken()  # Note: time_taken is a callable
+    ...     sleep(0.05)
+    >>> assert 0 <= time_taken() <= 0.1 # Note: time_taken is a callable
     """
 
     def __enter__(self):
