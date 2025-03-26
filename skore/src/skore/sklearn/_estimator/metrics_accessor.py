@@ -1176,7 +1176,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
 
         Returns
         -------
-        float or list of len(n_outputs)
+        float or list of ``n_outputs``
             The R² score.
 
         Examples
@@ -1293,7 +1293,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
 
         Returns
         -------
-        float or list of len(n_outputs)
+        float or list of ``n_outputs``
             The root mean squared error.
 
         Examples
@@ -1416,7 +1416,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
 
         Returns
         -------
-        float, dict, or list of len(n_outputs)
+        float, dict, or list of ``n_outputs``
             The custom metric. The output type depends on the metric function.
 
         Examples
