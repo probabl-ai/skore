@@ -141,8 +141,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self._y_train = y_train
         self._X_test = X_test
         self._y_test = y_test
-
         self._initialize_state()
+
+        # Register parameters
+        self.fit = fit
 
     def _initialize_state(self) -> None:
         """Initialize/reset the random number generator, hash, and cache."""
@@ -269,11 +271,11 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             progress.update(task, advance=1, refresh=True)
 
     @property
-    def estimator_(self) -> BaseEstimator:
+    def estimator(self) -> BaseEstimator:
         return self._estimator
 
-    @estimator_.setter
-    def estimator_(self, value):
+    @estimator.setter
+    def estimator(self, value):
         raise AttributeError(
             "The estimator attribute is immutable. "
             f"Call the constructor of {self.__class__.__name__} to create a new report."
@@ -320,12 +322,12 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self._initialize_state()
 
     @property
-    def estimator_name_(self) -> str:
-        if isinstance(self._estimator, Pipeline):
-            name = self._estimator[-1].__class__.__name__
-        else:
-            name = self._estimator.__class__.__name__
-        return name
+    def estimator_name(self) -> str:
+        return (
+            self._estimator[-1]
+            if isinstance(self._estimator, Pipeline)
+            else self._estimator
+        ).__class__.__name__
 
     ####################################################################################
     # Methods related to the help and repr
@@ -333,7 +335,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     def _get_help_panel_title(self) -> str:
         return (
-            f"[bold cyan]Tools to diagnose estimator {self.estimator_name_}[/bold cyan]"
+            f"[bold cyan]Tools to diagnose estimator {self.estimator_name}[/bold cyan]"
         )
 
     def _get_help_legend(self) -> str:
@@ -343,4 +345,4 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     def __repr__(self) -> str:
         """Return a string representation."""
-        return f"{self.__class__.__name__}(estimator={self.estimator_}, ...)"
+        return f"{self.__class__.__name__}(estimator={self.estimator}, ...)"
