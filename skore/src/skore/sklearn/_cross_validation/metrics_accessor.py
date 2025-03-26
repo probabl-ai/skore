@@ -99,8 +99,9 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             Whether to flatten the `MultiIndex` columns. Flat index will always be lower
             case, do not include spaces and remove the hash symbol to ease indexing.
 
-        aggregate : {"mean", "std"} or list of such str, default=None
+        aggregate : None or list of str, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
 
         Returns
         -------
@@ -118,7 +119,6 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         >>> report.metrics.report_metrics(
         ...     scoring=["precision", "recall"],
         ...     pos_label=1,
-        ...     aggregate=["mean", "std"],
         ...     indicator_favorability=True,
         ... )
                   LogisticRegression           Favorability
@@ -249,8 +249,9 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
 
-        aggregate : {"mean", "std"} or list of such str, default=None
+        aggregate : None or list of str, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
 
         Returns
         -------
@@ -266,10 +267,10 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         >>> report.metrics.accuracy()
-                    LogisticRegression
-                                Split #0  Split #1
+                LogisticRegression
+                            mean      std
         Metric
-        Accuracy                0.94...   0.94...
+        Accuracy           0.94...  0.00...
         """
         return self.report_metrics(
             scoring=["accuracy"],
@@ -330,8 +331,9 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         pos_label : int, float, bool or str, default=None
             The positive class.
 
-        aggregate : {"mean", "std"} or list of such str, default=None
+        aggregate : None or list of str, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
 
         Returns
         -------
@@ -347,11 +349,11 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         >>> report.metrics.precision()
-                                    LogisticRegression
-                                                Split #0  Split #1
-        Metric         Label / Average
-        Precision     0                         0.96...   0.90...
-                      1                         0.93...   0.96...
+                                LogisticRegression
+                                                mean       std
+        Metric    Label / Average
+        Precision 0                         0.93...  0.04...
+                  1                         0.94...  0.02...
         """
         return self.report_metrics(
             scoring=["precision"],
@@ -415,8 +417,9 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         pos_label : int, float, bool or str, default=None
             The positive class.
 
-        aggregate : {"mean", "std"} or list of such str, default=None
+        aggregate : None or list of str, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
 
         Returns
         -------
@@ -432,11 +435,11 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         >>> report.metrics.recall()
-                                    LogisticRegression
-                                            Split #0  Split #1
-        Metric      Label / Average
-        Recall     0                         0.87...  0.94...
-                   1                         0.98...  0.94...
+                            LogisticRegression
+                                            mean       std
+        Metric Label / Average
+        Recall 0                         0.91...  0.04...
+               1                         0.96...  0.02...
         """
         return self.report_metrics(
             scoring=["recall"],
@@ -465,8 +468,9 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
 
-        aggregate : {"mean", "std"} or list of such str, default=None
+        aggregate : None or list of str, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
 
         Returns
         -------
@@ -482,10 +486,10 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         >>> report.metrics.brier_score()
-                        LogisticRegression
-                                Split #0  Split #1
+                    LogisticRegression
+                                mean       std
         Metric
-        Brier score             0.04...   0.04...
+        Brier score            0.04...  0.00...
         """
         return self.report_metrics(
             scoring=["brier_score"],
@@ -549,8 +553,9 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
               pairwise combinations of classes. Insensitive to class imbalance when
               `average == "macro"`.
 
-        aggregate : {"mean", "std"} or list of such str, default=None
+        aggregate : None or list of str, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
 
         Returns
         -------
@@ -566,10 +571,10 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         >>> report.metrics.roc_auc()
-                    LogisticRegression
-                            Split #0  Split #1
+                LogisticRegression
+                            mean       std
         Metric
-        ROC AUC             0.99...   0.98...
+        ROC AUC           0.98...  0.00...
         """
         return self.report_metrics(
             scoring=["roc_auc"],
@@ -599,8 +604,9 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
 
-        aggregate : {"mean", "std"} or list of such str, default=None
+        aggregate : None or list of str, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
 
         Returns
         -------
@@ -616,10 +622,10 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         >>> report.metrics.log_loss()
-                    LogisticRegression
-                                Split #0  Split #1
+                LogisticRegression
+                            mean       std
         Metric
-        Log loss                0.1...     0.1...
+        Log loss            0.14...  0.03...
         """
         return self.report_metrics(
             scoring=["log_loss"],
@@ -659,8 +665,9 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
 
             By default, no averaging is done.
 
-        aggregate : {"mean", "std"} or list of such str, default=None
+        aggregate : None or list of str, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
 
         Returns
         -------
@@ -676,10 +683,10 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         >>> regressor = Ridge()
         >>> report = CrossValidationReport(regressor, X=X, y=y, cv_splitter=2)
         >>> report.metrics.r2()
-                    Ridge
-                Split #0  Split #1
+                Ridge
+                    mean       std
         Metric
-        R²      0.36...   0.39...
+        R²      0.37...  0.02...
         """
         return self.report_metrics(
             scoring=["r2"],
@@ -720,8 +727,9 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
 
             By default, no averaging is done.
 
-        aggregate : {"mean", "std"} or list of such str, default=None
+        aggregate : None or list of str, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
 
         Returns
         -------
@@ -738,9 +746,9 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         >>> report = CrossValidationReport(regressor, X=X, y=y, cv_splitter=2)
         >>> report.metrics.rmse()
                     Ridge
-                    Split #0   Split #1
+                    mean       std
         Metric
-        RMSE        59.9...    61.4...
+        RMSE    60.7...  1.0...
         """
         return self.report_metrics(
             scoring=["rmse"],
@@ -791,8 +799,9 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
 
-        aggregate : {"mean", "std"} or list of such str, default=None
+        aggregate : None or list of str, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
 
         **kwargs : dict
             Any additional keyword arguments to be passed to the metric function.
@@ -816,10 +825,10 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         ...     response_method="predict",
         ...     metric_name="MAE",
         ... )
-                    Ridge
-                Split #0   Split #1
+                Ridge
+                    mean       std
         Metric
-        MAE     50.1...   52.6...
+        MAE     51.4...  1.7...
         """
         # create a scorer with `greater_is_better=True` to not alter the output of
         # `metric_function`
