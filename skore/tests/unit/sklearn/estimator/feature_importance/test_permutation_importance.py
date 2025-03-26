@@ -15,7 +15,7 @@ from skore import EstimatorReport
 
 
 @contextlib.contextmanager
-def check_changed(value):
+def check_cache_changed(value):
     """Assert that `value` has changed during context execution."""
     initial_value = copy.copy(value)
     yield
@@ -23,7 +23,7 @@ def check_changed(value):
 
 
 @contextlib.contextmanager
-def check_unchanged(value):
+def check_cache_unchanged(value):
     """Assert that `value` has not changed during context execution."""
     initial_value = copy.copy(value)
     yield
@@ -210,12 +210,12 @@ def test_cache_n_jobs(regression_data):
     X, y = regression_data
     report = EstimatorReport(LinearRegression(), X_train=X, y_train=y)
 
-    with check_changed(report._cache):
+    with check_cache_changed(report._cache):
         result = report.feature_importance.permutation(
             data_source="train", random_state=42, n_jobs=1
         )
 
-    with check_unchanged(report._cache):
+    with check_cache_unchanged(report._cache):
         cached_result = report.feature_importance.permutation(
             data_source="train", random_state=42, n_jobs=-1
         )
@@ -234,11 +234,11 @@ def test_cache_random_state(regression_data):
     report = EstimatorReport(LinearRegression(), X_train=X, y_train=y)
 
     # random_state is None so no cache
-    with check_unchanged(report._cache):
+    with check_cache_unchanged(report._cache):
         report.feature_importance.permutation(data_source="train")
 
     # random_state is a RandomState so no cache
-    with check_unchanged(report._cache):
+    with check_cache_unchanged(report._cache):
         err_msg = (
             "random_state must be an integer or None; "
             "got <class 'numpy.random.mtrand.RandomState'>"
@@ -250,12 +250,12 @@ def test_cache_random_state(regression_data):
             )
 
     # random_state is an int so the result is cached
-    with check_changed(report._cache):
+    with check_cache_changed(report._cache):
         result = report.feature_importance.permutation(
             data_source="train", random_state=42
         )
 
-    with check_unchanged(report._cache):
+    with check_cache_unchanged(report._cache):
         cached_result = report.feature_importance.permutation(
             data_source="train", random_state=42
         )
@@ -274,7 +274,7 @@ def test_cache_scoring(regression_data):
     )
 
     # Scorings are different, so cache keys should be different
-    with check_changed(report._cache):
+    with check_cache_changed(report._cache):
         report.feature_importance.permutation(
             data_source="train", scoring="rmse", random_state=42
         )
@@ -294,12 +294,12 @@ def test_cache_scoring_is_callable(regression_data, scoring):
     X, y = regression_data
     report = EstimatorReport(LinearRegression(), X_train=X, y_train=y)
 
-    with check_changed(report._cache):
+    with check_cache_changed(report._cache):
         result = report.feature_importance.permutation(
             data_source="train", scoring=scoring, random_state=42
         )
 
-    with check_unchanged(report._cache):
+    with check_cache_unchanged(report._cache):
         cached_result = report.feature_importance.permutation(
             data_source="train", scoring=copy.copy(scoring), random_state=42
         )
