@@ -26,13 +26,6 @@ from skore.utils._index import flatten_multi_index
 DataSource = Literal["test", "train", "X_y"]
 
 
-def cast_numpy_to_native(value):
-    """Cast value from numpy type to native type."""
-    if hasattr(value, "item"):
-        return value.item()
-    return value
-
-
 class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
     """Accessor for metrics-related operations.
 
@@ -435,21 +428,21 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             )
 
             score = metric_fn(y_true, y_pred, **kwargs)
+
+            if isinstance(score, np.ndarray):
+                score = score.tolist()
+            elif hasattr(score, "item"):
+                score = score.item()
+
             self._parent._cache[cache_key] = score
 
-        if self._parent._ml_task in (
-            "binary-classification",
-            "multiclass-classification",
-        ) and isinstance(score, np.ndarray):
-            return dict(
-                zip(
-                    map(cast_numpy_to_native, self._parent._estimator.classes_),
-                    map(cast_numpy_to_native, score),
-                )
-            )
-        elif isinstance(score, np.ndarray):
-            return score[0] if score.size == 1 else score.tolist()
-        return cast_numpy_to_native(score)
+        if isinstance(score, list):
+            if "classification" in self._parent._ml_task:
+                return dict(zip(self._parent._estimator.classes_.tolist(), score))
+
+            if len(score) == 1:
+                return score[0]
+        return score
 
     @available_if(
         _check_supported_ml_task(
