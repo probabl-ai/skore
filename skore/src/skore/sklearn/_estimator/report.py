@@ -15,7 +15,7 @@ from skore.externals._pandas_accessors import DirNamesMixin
 from skore.externals._sklearn_compat import is_clusterer
 from skore.sklearn._base import _BaseReport, _get_cached_response_values
 from skore.sklearn.find_ml_task import _find_ml_task
-from skore.utils._measure_time import _measure_time
+from skore.utils._measure_time import MeasureTime
 from skore.utils._parallel import Parallel, delayed
 from skore.utils._progress_bar import progress_decorator
 
@@ -95,7 +95,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 "Please provide both X_train and y_train."
             )
         estimator_ = clone(estimator)
-        with _measure_time() as fit_time:
+        with MeasureTime() as fit_time:
             estimator_.fit(X_train, y_train)
         return estimator_, fit_time()
 

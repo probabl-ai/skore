@@ -1,12 +1,12 @@
 from time import perf_counter
 
 
-class _measure_time:
+class MeasureTime:
     """Measure the time to go through the context, in seconds.
 
     Examples
     --------
-    >>> with _measure_time() as time_taken:
+    >>> with MeasureTime() as time_taken:
     ...     1+1
     >>> time_taken()  # Note: time_taken is a callable
     """
