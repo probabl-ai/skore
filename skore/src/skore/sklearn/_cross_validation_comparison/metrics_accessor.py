@@ -209,6 +209,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 results.append(result)
                 progress.update(main_task, advance=1, refresh=True)
 
+            breakpoint()
             results = pd.concat(results, axis=1)
 
             # Pop the favorability column if it exists, to:
