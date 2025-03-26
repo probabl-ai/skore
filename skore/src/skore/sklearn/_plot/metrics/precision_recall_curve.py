@@ -209,9 +209,7 @@ class PrecisionRecallCurveDisplay(
         line_kwargs: dict[str, Any] = {"drawstyle": "steps-post"}
 
         if ml_task == "binary-classification":
-            assert pos_label is not None, (
-                "pos_label should not be None with binary classification."
-            )
+            pos_label = cast(Union[int, float, bool, str], pos_label)
 
             line_kwargs_validated = _validate_style_kwargs(
                 line_kwargs, pr_curve_kwargs[0]
@@ -343,9 +341,7 @@ class PrecisionRecallCurveDisplay(
         line_kwargs: dict[str, Any] = {"drawstyle": "steps-post"}
 
         if ml_task == "binary-classification":
-            assert pos_label is not None, (
-                "pos_label should not be None with binary classification."
-            )
+            pos_label = cast(Union[int, float, bool, str], pos_label)
             for split_idx in range(len(precision[pos_label])):
                 precision_split = precision[pos_label][split_idx]
                 recall_split = recall[pos_label][split_idx]
@@ -479,9 +475,7 @@ class PrecisionRecallCurveDisplay(
         line_kwargs: dict[str, Any] = {"drawstyle": "steps-post"}
 
         if ml_task == "binary-classification":
-            assert pos_label is not None, (
-                "pos_label should not be None with binary classification."
-            )
+            pos_label = cast(Union[int, float, bool, str], pos_label)
             for est_idx, est_name in enumerate(estimator_names):
                 precision_est = precision[pos_label][est_idx]
                 recall_est = recall[pos_label][est_idx]
