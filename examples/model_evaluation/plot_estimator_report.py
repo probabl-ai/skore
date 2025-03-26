@@ -343,6 +343,33 @@ display.figure_
 plt.tight_layout()
 
 # %%
+# Another possible plot: the calibration curve.
+
+# %%
+# Specs notes.
+# It makes sense only for classification, and only when the model has a `predict_proba` method.
+# Let's also focus to binary classification for now. I find the plots for multi class very difficult to read, and therefore I'm not sure it's so useful.
+
+# %%
+from sklearn.calibration import CalibrationDisplay
+
+disp = CalibrationDisplay.from_estimator(
+    report.estimator_,
+    report.X_test,
+    report.y_test,
+    name=report.estimator_name_,
+    n_bins=8,
+    pos_label=pos_label,
+)
+plt.show()
+
+# %%
+# I could reach the same result with the following code:
+# reporter.plots.calibration_curve(pos_label=pos_label, strategy = "uniform", n_bins = 8)
+# pos_label should be mandatory.
+# the other parameters are optional, and should have default values.
+
+# %%
 #
 # Similarly to the metrics, we aggressively use the caching to avoid recomputing the
 # predictions of the model. We also cache the plot display object by detection if the
