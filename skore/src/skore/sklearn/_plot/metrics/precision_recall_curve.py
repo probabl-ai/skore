@@ -1,6 +1,6 @@
 from collections import defaultdict
 from collections.abc import Sequence
-from typing import Any, Literal, Optional, Union
+from typing import Any, Literal, Optional, Union, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -748,11 +748,8 @@ class PrecisionRecallCurveDisplay(
 
         if ml_task == "binary-classification":
             for y_true_i, y_pred_i in zip(y_true, y_pred):
-                # assert for mypy that pos_label_validated is not None
-                assert pos_label_validated is not None, (
-                    "pos_label_validated should not be None with binary classification "
-                    "once calling _validate_from_predictions_params and more precisely "
-                    "_check_pos_label_consistency."
+                pos_label_validated = cast(
+                    Union[int, float, bool, str], pos_label_validated
                 )
                 precision_i, recall_i, _ = precision_recall_curve(
                     y_true_i,
