@@ -170,6 +170,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     def clear_cache(self) -> None:
         """Clear the cache.
 
+        Note that the cache might not be empty after this method is run as some
+        values need to be kept, such as the fit time.
+        
         Examples
         --------
         >>> from sklearn.datasets import load_breast_cancer
