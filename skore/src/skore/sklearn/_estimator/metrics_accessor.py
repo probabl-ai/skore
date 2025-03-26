@@ -576,13 +576,6 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
     ) -> dict:
         """Report fit and prediction times, in seconds.
 
-        The times are reported in the form of a dict of the following shape:
-
-        - If kind="fit", a single entry with key "fit"
-        - If kind="predict", a single entry with key "predict_{data_source}"
-          (where data_source is "train", "test" or "X_y_{data_source_hash}")
-        - If kind="auto", two entries: a concatenation of the "fit" and "predict" cases.
-
         Passing kind="predict" with compute the predictions if they are not available
         in the cache.
 
@@ -613,7 +606,14 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         Returns
         -------
         dict
-            The times.
+            The times, in seconds, in the form of a dict of the following shape:
+
+            - If kind="fit", a single entry with key "fit".
+            - If kind="predict", a single entry with key "predict_{data_source}"
+              (where data_source is "train", "test" or "X_y_{data_source_hash}").
+            - If kind="auto", two entries: a concatenation of the "fit" and "predict"
+              cases.
+
 
         Raises
         ------
