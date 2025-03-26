@@ -583,6 +583,9 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
           (where data_source is "train", "test" or "X_y_{data_source_hash}")
         - If kind="auto", two entries: a concatenation of the "fit" and "predict" cases.
 
+        Passing kind="predict" with compute the predictions if they are not available
+        in the cache.
+
         Fit information might not be available, e.g. if the estimator was fitted outside
         of the EstimatorReport. In this case, passing kind="fit" will result in an
         error, and passing kind="auto" is equivalent to passing kind="predict".
