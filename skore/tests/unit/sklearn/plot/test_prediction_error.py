@@ -543,3 +543,20 @@ def test_prediction_error_display_error_kind(pyplot, regression_data):
     )
     with pytest.raises(ValueError, match=err_msg):
         display.plot(kind="whatever")
+
+
+def test_prediction_error_display_wrong_report_type(pyplot, regression_data):
+    """Check that we raise a proper error message when passing an inappropriate
+    value for the `report_type` argument."""
+    estimator, X_train, X_test, y_train, y_test = regression_data
+    estimator_report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = estimator_report.metrics.prediction_error()
+    display.report_type = "unknown"
+    err_msg = (
+        "`report_type` should be one of 'estimator', 'cross-validation', "
+        "or 'comparison-estimator'. Got 'unknown' instead."
+    )
+    with pytest.raises(ValueError, match=err_msg):
+        display.plot()
