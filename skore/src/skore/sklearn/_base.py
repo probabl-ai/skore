@@ -405,6 +405,13 @@ def _get_cached_response_values(
         )
 
     cache[cache_key] = predictions
-    cache[cache_key + ("predict_time",)] = predict_time()
+
+    predict_time_cache_key: tuple[Any, ...] = (
+        estimator_hash,
+        data_source,
+        data_source_hash,
+        "predict_time",
+    )
+    cache[predict_time_cache_key] = predict_time()
 
     return predictions

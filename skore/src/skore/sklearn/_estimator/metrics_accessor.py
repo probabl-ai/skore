@@ -532,10 +532,13 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
 
         def find_in_cache():
             # Search for first matching key in cache
-            for key in self._parent._cache:
-                if key[-3:] == (data_source, data_source_hash, "predict_time"):
-                    return self._parent._cache[key]
-            return None
+            predict_time_cache_key = (
+                self._parent._hash,
+                data_source,
+                data_source_hash,
+                "predict_time",
+            )
+            return self._parent._cache.get(predict_time_cache_key)
 
         predict_time = find_in_cache()
 
