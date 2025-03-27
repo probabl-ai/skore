@@ -180,3 +180,44 @@ def test_train_test_split_kwargs():
     output2 = train_test_split(X=X, y=y, random_state=0)
 
     assert output1 == output2
+
+
+def test_train_test_split_dict_kwargs():
+    """Passing data without keyword arguments with return_dict=True
+    should raise ValueError."""
+
+    X = [[1]] * 20
+    y = [0] * 10 + [1] * 10
+
+    with pytest.raises(
+        ValueError,
+        match="When as_dict=True, arrays must be passed as keyword arguments",
+    ):
+        train_test_split(X, y, random_state=0, as_dict=True)
+
+
+def test_train_test_split_check_dict():
+    """If `return_dict` is True then the result is a dict."""
+    X = [[1]] * 20
+    y = [0] * 10 + [1] * 10
+    output = train_test_split(X=X, y=y, random_state=0, as_dict=True)
+    assert type(output) is dict
+
+
+def test_train_test_split_check_dict_unsupervised_case():
+    """If `return_dict` is True and only `X` is passed,
+    the result is a dict with 2 keys."""
+
+    X = [[1]] * 20
+    output = train_test_split(X=X, random_state=0, as_dict=True)
+    assert len(output.keys()) == 2
+
+
+def test_train_test_split_check_dict_no_X_no_y():
+    """If the input is a keyword argument and `X` and `y` are None,
+    then the result is a dict with 2 keys."""
+
+    z = [[1]] * 20
+    output = train_test_split(z=z, random_state=0, as_dict=True)
+    keys = output.keys()
+    assert list(keys) == ["z_train", "z_test"]

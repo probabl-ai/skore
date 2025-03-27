@@ -788,7 +788,7 @@ def test_estimator_report_interaction_cache_metrics(regression_multioutput_data)
     assert not should_raise, (
         f"The value {multioutput} should be stored in one of the cache keys"
     )
-    assert result_r2_raw_values.shape == (2,)
+    assert len(result_r2_raw_values) == 2
 
     multioutput = "uniform_average"
     result_r2_uniform_average = report.metrics.r2(multioutput=multioutput)

@@ -315,12 +315,12 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                     index = pd.Index([metric_name], name="Metric")
                     score_array = np.array(score).reshape(-1, 1)
             elif self._parent._ml_task in ("regression", "multioutput-regression"):
-                if isinstance(score, np.ndarray):
+                if isinstance(score, list):
                     index = pd.MultiIndex.from_arrays(
                         [[metric_name] * len(score), list(range(len(score)))],
                         names=["Metric", "Output"],
                     )
-                    score_array = score.reshape(-1, 1)
+                    score_array = np.array(score).reshape(-1, 1)
                 else:
                     index = pd.Index([metric_name], name="Metric")
                     score_array = np.array(score).reshape(-1, 1)
@@ -376,7 +376,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         data_source_hash: Optional[int] = None,
         pos_label: Optional[Union[int, float, bool, str]] = None,
         **metric_kwargs: Any,
-    ) -> Union[float, dict[Union[int, float, bool, str], float], NDArray]:
+    ) -> Union[float, dict[Union[int, float, bool, str], float], list]:
         if data_source_hash is None:
             X, y_true, data_source_hash = self._get_X_y_and_data_source_hash(
                 data_source=data_source, X=X, y=y_true
@@ -428,24 +428,20 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             )
 
             score = metric_fn(y_true, y_pred, **kwargs)
-            if isinstance(score, np.floating):
-                # convert np.float64 and np.float32 to float for consistency across
-                # functions
-                score = float(score)
+
+            if isinstance(score, np.ndarray):
+                score = score.tolist()
+            elif hasattr(score, "item"):
+                score = score.item()
+
             self._parent._cache[cache_key] = score
 
-        if self._parent._ml_task in (
-            "binary-classification",
-            "multiclass-classification",
-        ) and isinstance(score, np.ndarray):
-            # convert np.float64 and np.float32 to float for consistency across
-            # functions
-            return {
-                label: float(score_label)
-                for label, score_label in zip(self._parent._estimator.classes_, score)
-            }
-        elif isinstance(score, np.ndarray):
-            return score[0] if score.size == 1 else score
+        if isinstance(score, list):
+            if "classification" in self._parent._ml_task:
+                return dict(zip(self._parent._estimator.classes_.tolist(), score))
+
+            if len(score) == 1:
+                return score[0]
         return score
 
     @available_if(
@@ -1148,7 +1144,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         multioutput: Union[
             Literal["raw_values", "uniform_average"], ArrayLike
         ] = "raw_values",
-    ) -> Union[float, np.ndarray]:
+    ) -> Union[float, list]:
         """Compute the R² score.
 
         Parameters
@@ -1180,7 +1176,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
 
         Returns
         -------
-        float or ndarray of shape (n_outputs,)
+        float or list of ``n_outputs``
             The R² score.
 
         Examples
@@ -1201,7 +1197,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         ...     y_test=y_test,
         ... )
         >>> report.metrics.r2()
-        np.float64(0.35...)
+        0.35...
         """
         return self._r2(
             data_source=data_source,
@@ -1221,7 +1217,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         multioutput: Union[
             Literal["raw_values", "uniform_average"], ArrayLike
         ] = "raw_values",
-    ) -> Union[float, np.ndarray]:
+    ) -> Union[float, list]:
         """Private interface of `r2` to be able to pass `data_source_hash`.
 
         `data_source_hash` is either an `int` when we already computed the hash
@@ -1241,8 +1237,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             self._parent._ml_task == "multioutput-regression"
             and multioutput == "raw_values"
         ):
-            assert isinstance(result, np.ndarray), (
-                "The R² score should be a numpy.ndarray, got "
+            assert isinstance(result, list), (
+                "The R² score should be a list, got "
                 f"{type(result)} with value {result}."
             )
             return result
@@ -1265,7 +1261,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         multioutput: Union[
             Literal["raw_values", "uniform_average"], ArrayLike
         ] = "raw_values",
-    ) -> Union[float, np.ndarray]:
+    ) -> Union[float, list]:
         """Compute the root mean squared error.
 
         Parameters
@@ -1297,7 +1293,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
 
         Returns
         -------
-        float or ndarray of shape (n_outputs,)
+        float or list of ``n_outputs``
             The root mean squared error.
 
         Examples
@@ -1318,7 +1314,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         ...     y_test=y_test,
         ... )
         >>> report.metrics.rmse()
-        np.float64(56.5...)
+        56.5...
         """
         return self._rmse(
             data_source=data_source,
@@ -1338,7 +1334,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         multioutput: Union[
             Literal["raw_values", "uniform_average"], ArrayLike
         ] = "raw_values",
-    ) -> Union[float, np.ndarray]:
+    ) -> Union[float, list]:
         """Private interface of `rmse` to be able to pass `data_source_hash`.
 
         `data_source_hash` is either an `int` when we already computed the hash
@@ -1358,8 +1354,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             self._parent._ml_task == "multioutput-regression"
             and multioutput == "raw_values"
         ):
-            assert isinstance(result, np.ndarray), (
-                "The RMSE score should be a numpy.ndarray, got "
+            assert isinstance(result, list), (
+                "The RMSE score should be a list, got "
                 f"{type(result)} with value {result}."
             )
             return result
@@ -1377,7 +1373,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
         **kwargs: Any,
-    ) -> Union[float, dict[Union[int, float, bool, str], float], np.ndarray]:
+    ) -> Union[float, dict[Union[int, float, bool, str], float], list]:
         """Compute a custom metric.
 
         It brings some flexibility to compute any desired metric. However, we need to
@@ -1420,7 +1416,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
 
         Returns
         -------
-        float, dict, or ndarray of shape (n_outputs,)
+        float, dict, or list of ``n_outputs``
             The custom metric. The output type depends on the metric function.
 
         Examples
@@ -1634,11 +1630,12 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                 pos_label=display_kwargs.get("pos_label"),
             )
 
-            display = display_class._from_predictions(
+            display = display_class._compute_data_for_display(
                 y_true=[y],
                 y_pred=[y_pred],
-                estimator=self._parent.estimator_,
-                estimator_name=self._parent.estimator_name_,
+                report_type="estimator",
+                estimators=[self._parent.estimator_],
+                estimator_names=[self._parent.estimator_name_],
                 ml_task=self._parent._ml_task,
                 data_source=data_source,
                 **display_kwargs,

@@ -40,7 +40,7 @@ def test_autoreload(tmp_path: Path):
     assert storage2["key"] == "test2"
 
     shutil.rmtree(tmp_path / "test1/")
-    os.symlink(tmp_path / "test2/", tmp_path / "test1/")
+    shutil.copytree(tmp_path / "test2/", tmp_path / "test1/")
 
     assert storage1["key"] == "test2"
     assert storage2["key"] == "test2"

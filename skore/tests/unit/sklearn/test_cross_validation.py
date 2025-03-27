@@ -25,7 +25,7 @@ from skore.sklearn._cross_validation.report import (
     _generate_estimator_report,
 )
 from skore.sklearn._estimator import EstimatorReport
-from skore.sklearn._plot.roc_curve import RocCurveDisplay
+from skore.sklearn._plot import RocCurveDisplay
 
 
 @pytest.fixture

@@ -9,8 +9,8 @@ Skore: getting started
 # %%
 # This getting started guide illustrates how to use skore and why:
 #
-# #.    Get assistance when developing your ML/DS projects to avoid common pitfalls
-#       and follow recommended practices.
+# #.    Get assistance when developing your machine learning projects to avoid common
+#       pitfalls and follow recommended practices.
 #
 #       *   :class:`skore.EstimatorReport`: get an insightful report on your estimator,
 #           for evaluation and inspection
@@ -22,7 +22,7 @@ Skore: getting started
 #
 #       *   :func:`skore.train_test_split`: get diagnostics when splitting your data
 #
-# #.    Track your ML/DS results using skore's :class:`~skore.Project`
+# #.    Track your machine learning results using skore's :class:`~skore.Project`
 #       (for storage).
 
 # %%
@@ -67,14 +67,23 @@ rf_report = EstimatorReport(
 rf_report.help()
 
 # %%
-# We can get the report metrics that was computed for us:
+# .. note::
+#   This helper is great because:
+#
+#   -   it enables users to get a glimpse at the API of the different available
+#       accessors without having to look up the online documentation,
+#   -   it provides methodological guidance: for example, we easily provide
+#       several metrics as a way to encourage users looking into them.
 
 # %%
-rf_report_metrics = rf_report.metrics.report_metrics(pos_label=1)
-rf_report_metrics
+# We can evaluate our model using the :meth:`~skore.EstimatorReport.metrics` accessor.
+# In particular, we can get the report metrics that is computed for us:
 
 # %%
-# We can also plot the ROC curve that was generated for us:
+rf_report.metrics.report_metrics(pos_label=1)
+
+# %%
+# We can also plot the ROC curve that is generated for us:
 
 # %%
 import matplotlib.pyplot as plt
@@ -84,26 +93,29 @@ roc_plot.plot()
 plt.tight_layout()
 
 # %%
-# Furthermore, we can inspect the model using the permutation feature importance:
+# Furthermore, we can inspect our model using the
+# :meth:`~skore.EstimatorReport.feature_importance` accessor.
+# In particular, we can inspect the model using the permutation feature importance:
 
 # %%
-rf_report.feature_importance.feature_permutation().T.boxplot(vert=False)
+rf_report.feature_importance.permutation().T.boxplot(vert=False)
 plt.tight_layout()
 
 # %%
 # .. seealso::
 #
 #   For more information about the motivation and usage of
-#   :class:`skore.EstimatorReport`, see :ref:`example_estimator_report` for evaluation
-#   and :ref:`example_feature_importance` for inspection.
-
+#   :class:`skore.EstimatorReport`, see the following use cases:
+#
+#   -   :ref:`example_estimator_report` for model evaluation,
+#   -   :ref:`example_feature_importance` for model inspection.
 
 # %%
 # Cross-validation with skore
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # skore has also (re-)implemented a :class:`skore.CrossValidationReport` class that
-# contains several :class:`skore.EstimatorReport` for each fold.
+# contains several :class:`skore.EstimatorReport`, one for each fold.
 
 # %%
 from skore import CrossValidationReport
@@ -120,8 +132,13 @@ cv_report.help()
 # We display the metrics for each fold:
 
 # %%
-df_cv_report_metrics = cv_report.metrics.report_metrics(pos_label=1)
-df_cv_report_metrics
+cv_report.metrics.report_metrics(pos_label=1)
+
+# %%
+# or the aggregated results:
+
+# %%
+cv_report.metrics.report_metrics(aggregate=["mean", "std"], pos_label=1)
 
 # %%
 # We display the ROC curves for each fold:
@@ -133,12 +150,10 @@ plt.tight_layout()
 
 # %%
 # We can retrieve the estimator report of a specific fold to investigate further,
-# for example the first fold:
+# for example getting the report metrics for the first fold only:
 
 # %%
-report_fold = cv_report.estimator_reports_[0]
-report_fold_metrics = report_fold.metrics.report_metrics(pos_label=1)
-report_fold_metrics
+cv_report.estimator_reports_[0].metrics.report_metrics(pos_label=1)
 
 # %%
 # .. seealso::
@@ -147,14 +162,14 @@ report_fold_metrics
 #   :class:`skore.CrossValidationReport`, see :ref:`example_use_case_employee_salaries`.
 
 # %%
-# Comparing estimators reports
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# Comparing estimator reports
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # :class:`skore.ComparisonReport` enables users to compare several estimator reports
 # (corresponding to several estimators) on a same test set, as in a benchmark of
 # estimators.
 #
-# Apart from the previous ``rf_report``, let use define another estimator report:
+# Apart from the previous ``rf_report``, let us define another estimator report:
 
 # %%
 from sklearn.ensemble import GradientBoostingClassifier
@@ -184,15 +199,14 @@ comparator.help()
 # Let us display the result of our benchmark:
 
 # %%
-benchmark_metrics = comparator.metrics.report_metrics(pos_label=1)
-benchmark_metrics
+comparator.metrics.report_metrics(pos_label=1)
 
 # %%
-# We have the result of our benchmark.
+# Thus, we easily have the result of our benchmark for several recommended metrics.
 
 # %%
-# We display the ROC curve for the two estimator reports we want to compare, by
-# superimposing them on the same figure:
+# Moreover, we can display the ROC curve for the two estimator reports we want to
+# compare, by superimposing them on the same figure:
 
 # %%
 comparator.metrics.roc().plot()
@@ -211,10 +225,10 @@ plt.tight_layout()
 import pandas as pd
 from skrub.datasets import fetch_employee_salaries
 
-dataset = fetch_employee_salaries()
-X, y = dataset.X, dataset.y
-X["date_first_hired"] = pd.to_datetime(X["date_first_hired"])
-X.head(2)
+dataset_employee = fetch_employee_salaries()
+X_employee, y_employee = dataset_employee.X, dataset_employee.y
+X_employee["date_first_hired"] = pd.to_datetime(X_employee["date_first_hired"])
+X_employee.head(2)
 
 # %%
 # We can observe that there is a ``date_first_hired`` which is time-based.
@@ -223,8 +237,8 @@ X.head(2)
 # %%
 import skore
 
-X_train, X_test, y_train, y_test = skore.train_test_split(
-    X, y, random_state=0, shuffle=False
+_, _, _, _ = skore.train_test_split(
+    X_employee, y_employee, random_state=0, shuffle=False
 )
 
 # %%
@@ -243,8 +257,8 @@ X_train, X_test, y_train, y_test = skore.train_test_split(
 # Tracking: skore project
 # =======================
 #
-# Another key feature of skore is its :class:`~skore.Project` that allows to store
-# items of many types.
+# Another key feature of skore is its :class:`~skore.Project` that allows us to store
+# and retrieve items of many types.
 
 # %%
 # Setup: creating and loading a skore project
@@ -272,7 +286,7 @@ my_project = skore.Project("my_project")
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # Now that the project exists, we can store some useful items in it (in the same
-# directory) using :func:`~skore.Project.put`), with a "universal" key-value convention,
+# directory) using :func:`~skore.Project.put`, with a "universal" key-value convention,
 # along with some annotations.
 
 # %%
@@ -289,8 +303,9 @@ my_project.put(
 # %%
 # .. note ::
 #   With the skore :func:`~skore.Project.put`, there is no need to remember the API for
-#   each type of object: ``df.to_csv(...)``, ``plt.savefig(...)``, ``np.save(...)``,
-#   etc.
+#   saving or exporting each type of object: ``df.to_csv(...)``, ``plt.savefig(...)``,
+#   ``np.save(...)``, etc.
+#   There is also the unified :func:`~skore.Project.get` for loading items.
 
 # %%
 # We can retrieve the value of an item using :meth:`~skore.Project.get`:
@@ -302,7 +317,10 @@ my_project.get("accuracy")
 # We can also retrieve the storage date and our annotation:
 
 # %%
-my_project.get("accuracy", metadata="all")
+from pprint import pprint
+
+accuracies = my_project.get("accuracy", metadata="all")
+pprint(accuracies)
 
 # %%
 # .. seealso::
@@ -332,19 +350,18 @@ my_project.put(
 # their history so that nothing is lost:
 
 # %%
-from pprint import pprint
-
-history = my_project.get("accuracy", version="all", metadata="all")
+accuracies_history = my_project.get("accuracy", metadata="all", version="all")
 # sphinx_gallery_start_ignore
 temp_dir.cleanup()
 # sphinx_gallery_end_ignore
-pprint(history)
+pprint(accuracies_history)
 
 # %%
-# These tracking functionalities are very useful to:
+# .. note::
+#   These tracking functionalities are very useful to:
 #
-# * never lose some key machine learning metrics,
-# * and observe the evolution over time / runs.
+#   -   never lose some key machine learning metrics,
+#   -   and observe the evolution over time / runs.
 
 # %%
 # .. seealso::
