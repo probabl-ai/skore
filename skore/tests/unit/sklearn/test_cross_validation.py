@@ -825,3 +825,17 @@ def test_cross_validation_report_interrupted(
     )
     assert result.shape == (1, 1)
     assert result.index == ["accuracy_score"]
+
+
+def test_cross_validation_report_brier_score_requires_probabilities():
+    """Check that the Brier score is not defined for estimator that do not
+    implement `predict_proba`.
+
+    Non-regression test for:
+    https://github.com/probabl-ai/skore/pull/1471
+    """
+    estimator = SVC()  # SVC does not implement `predict_proba` with default parameters
+    X, y = make_classification(n_classes=2, random_state=42)
+
+    report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=2)
+    assert not hasattr(report.metrics, "brier_score")
