@@ -6,7 +6,6 @@ from rich.console import Console
 from rich.theme import Theme
 
 from skore._config import config_context, get_config, set_config
-from skore.project import Project
 from skore.sklearn import (
     ComparisonReport,
     CrossValidationReport,
