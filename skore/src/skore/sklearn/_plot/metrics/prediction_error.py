@@ -521,7 +521,7 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
 
         self.figure_, self.ax_ = (ax.figure, ax) if ax is not None else plt.subplots()
 
-        line_kwargs = _validate_style_kwargs(
+        perfect_model_kwargs_validated = _validate_style_kwargs(
             {
                 "color": "black",
                 "alpha": 0.7,
@@ -541,7 +541,7 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
             self.line_ = self.ax_.plot(
                 x_range_perfect_pred,
                 y_range_perfect_pred,
-                **line_kwargs,
+                **perfect_model_kwargs_validated,
             )[0]
             self.ax_.set(
                 aspect="equal",
@@ -559,7 +559,9 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
             x_range_perfect_pred = [self.range_y_pred.min, self.range_y_pred.max]
             y_range_perfect_pred = [self.range_residuals.min, self.range_residuals.max]
 
-            self.line_ = self.ax_.plot(x_range_perfect_pred, [0, 0], **line_kwargs)[0]
+            self.line_ = self.ax_.plot(
+                x_range_perfect_pred, [0, 0], **perfect_model_kwargs_validated
+            )[0]
             self.ax_.set(
                 xlim=x_range_perfect_pred,
                 ylim=y_range_perfect_pred,
