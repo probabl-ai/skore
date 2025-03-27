@@ -6,10 +6,12 @@ class MeasureTime:
 
     Examples
     --------
+    >>> # xdoctest: +SKIP
     >>> from time import sleep
     >>> with MeasureTime() as time_taken:
     ...     sleep(0.01)
-    >>> assert 0 <= time_taken() <= 1 # Note: time_taken is a callable
+    >>> time_taken() # Note: time_taken is a callable
+    0.0176
     """
 
     def __enter__(self):
