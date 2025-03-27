@@ -75,20 +75,20 @@ def train_test_split(
         ``y_train``, and ``y_test`` instead of a List. Requires data to be
         passed as keyword arguments.
     **keyword_arrays : array-like, optional
-        Additional array-like arguments passed by keyword. Each keyword should
-        correspond to an array-like object.
+        Additional array-like arguments passed by keyword. Used to determine the keys
+        of the output dict when ``as_dict=True``.
 
     Returns
     -------
     splitting : list or dict
-        If return_dict=False (the default): List containing train-test split of inputs.
+        If ``as_dict=False`` (the default): List containing train-test split of inputs.
         The length of the list is twice the number of arrays passed, including
         the ``X`` and ``y`` keyword arguments. If arrays are passed positionally as well
         as through ``X`` and ``y``, the output arrays are ordered as follows: first the
         arrays passed positionally, in the order they were passed, then ``X`` if it
         was passed, then ``y`` if it was passed.
 
-        If return_dict=True: Dictionary with keys
+        If ``as_dict=True``: Dictionary with keys
         ``X_train``, ``X_test``, ``y_train``, and ``y_test``,
         each containing respective split data.
 
@@ -123,6 +123,15 @@ def train_test_split(
     array([[4, 5],
            [0, 1],
            [6, 7]])
+
+    >>> # Returns dictionary when as_dict is True, inputs must be keyword arguments.
+    >>> sample_weights = np.arange(10).reshape((5, 2))
+    >>> split_dict = train_test_split(
+    ...     X=X, y=y, sample_weights=sample_weights, as_dict=True, random_state=0)
+    >>> split_dict
+    {'X_train': ..., 'X_test': ...,
+     'y_train': ..., 'y_test': ...,
+     'sample_weights_train': ..., 'sample_weights_test': ...}
     """
     import sklearn.model_selection
 
