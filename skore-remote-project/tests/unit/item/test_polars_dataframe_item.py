@@ -6,7 +6,7 @@ from polars.exceptions import ComputeError
 from polars.testing import assert_frame_equal
 from pytest import raises
 from skore_remote_project.item import PolarsDataFrameItem
-from skore_remote_project.item.item import ItemTypeError, Representation
+from skore_remote_project.item.item import ItemTypeError
 
 
 class TestPolarsDataFrameItem:
@@ -42,7 +42,12 @@ class TestPolarsDataFrameItem:
         item = PolarsDataFrameItem.factory(dataframe)
         item_parameters = item.__parameters__
 
-        assert item_parameters == {"dataframe_json_str": dataframe_json_str}
+        assert item_parameters == {
+            "parameters": {
+                "class": "PolarsDataFrameItem",
+                "parameters": {"dataframe_json_str": dataframe_json_str},
+            }
+        }
 
         # Ensure parameters are JSONable
         dumps(item_parameters)
@@ -50,16 +55,18 @@ class TestPolarsDataFrameItem:
     def test_representation(self):
         dataframe = DataFrame([{"key": "value"}])
         dataframe_json_str = dataframe.write_json()
-        representation = Representation(
-            media_type="application/vnd.dataframe",
-            value={
-                "index": [0],
-                "columns": ["key"],
-                "data": [["value"]],
-                "index_names": [None],
-                "column_names": [None],
-            },
-        )
+        representation = {
+            "representation": {
+                "media_type": "application/vnd.dataframe",
+                "value": {
+                    "index": [0],
+                    "columns": ["key"],
+                    "data": [["value"]],
+                    "index_names": [None],
+                    "column_names": [None],
+                },
+            }
+        }
 
         item1 = PolarsDataFrameItem.factory(dataframe)
         item2 = PolarsDataFrameItem(dataframe_json_str)
@@ -68,5 +75,5 @@ class TestPolarsDataFrameItem:
         assert item2.__representation__ == representation
 
         # Ensure representation is JSONable
-        dumps(item1.__representation__.__dict__)
-        dumps(item2.__representation__.__dict__)
+        dumps(item1.__representation__)
+        dumps(item2.__representation__)

@@ -5,7 +5,7 @@ from pandas import Index, MultiIndex, Series
 from pandas.testing import assert_series_equal
 from pytest import raises
 from skore_remote_project.item import PandasSeriesItem
-from skore_remote_project.item.item import ItemTypeError, Representation
+from skore_remote_project.item.item import ItemTypeError
 
 ORIENT = PandasSeriesItem.ORIENT
 
@@ -36,8 +36,13 @@ class TestPandasSeriesItem:
         item_parameters = item.__parameters__
 
         assert item_parameters == {
-            "index_json_str": index_json_str,
-            "series_json_str": series_json_str,
+            "parameters": {
+                "class": "PandasSeriesItem",
+                "parameters": {
+                    "index_json_str": index_json_str,
+                    "series_json_str": series_json_str,
+                },
+            }
         }
 
         # Ensure parameters are JSONable
@@ -87,7 +92,12 @@ class TestPandasSeriesItem:
 
     def test_representation(self):
         series = Series([0, 1, 2], Index([0, 1, 2], name="myIndex"))
-        representation = Representation(media_type="application/json", value=[0, 1, 2])
+        representation = {
+            "representation": {
+                "media_type": "application/json",
+                "value": [0, 1, 2],
+            }
+        }
 
         index_json_str = series.index.to_frame(index=False).to_json(orient=ORIENT)
         series_json_str = series.reset_index(drop=True).to_json(orient=ORIENT)
@@ -99,5 +109,5 @@ class TestPandasSeriesItem:
         assert item2.__representation__ == representation
 
         # Ensure representation is JSONable
-        dumps(item1.__representation__.__dict__)
-        dumps(item2.__representation__.__dict__)
+        dumps(item1.__representation__)
+        dumps(item2.__representation__)

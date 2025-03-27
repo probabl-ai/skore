@@ -38,7 +38,7 @@ class TestMatplotlibFigureItem:
         ax.plot([1, 2, 3, 4], [1, 4, 2, 3])
 
         item = MatplotlibFigureItem.factory(figure)
-        item_parameters = item.__parameters__
+        item_parameters = item.__parameters__["parameters"]["parameters"]
 
         # matplotlib being not consistent (`xlink:href` are different between two calls)
         # we can't compare figure bytes directly
@@ -79,5 +79,3 @@ class TestMatplotlibFigureItem:
         assert (
             compare_images(tmp_path / "figure.png", tmp_path / "item2.png", 0) is None
         )
-
-    def test_representation(self, tmp_path): ...

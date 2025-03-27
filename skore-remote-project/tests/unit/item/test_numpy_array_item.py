@@ -4,11 +4,7 @@ from io import BytesIO
 import numpy
 from pytest import raises
 from skore_remote_project.item import NumpyArrayItem
-from skore_remote_project.item.item import (
-    ItemTypeError,
-    Representation,
-    bytes_to_b64_str,
-)
+from skore_remote_project.item.item import ItemTypeError, bytes_to_b64_str
 
 
 class TestNumpyArrayItem:
@@ -59,14 +55,24 @@ class TestNumpyArrayItem:
         item = NumpyArrayItem.factory(array)
         item_parameters = item.__parameters__
 
-        assert item_parameters == {"array_b64_str": array_b64_str}
+        assert item_parameters == {
+            "parameters": {
+                "class": "NumpyArrayItem",
+                "parameters": {"array_b64_str": array_b64_str},
+            }
+        }
 
         # Ensure parameters are JSONable
         json.dumps(item_parameters)
 
     def test_representation(self):
         array = numpy.array([1, 2, 3])
-        representation = Representation(media_type="application/json", value=[1, 2, 3])
+        representation = {
+            "representation": {
+                "media_type": "application/json",
+                "value": [1, 2, 3],
+            }
+        }
 
         with BytesIO() as stream:
             numpy.save(stream, array)
@@ -81,5 +87,5 @@ class TestNumpyArrayItem:
         assert item2.__representation__ == representation
 
         # Ensure representation is JSONable
-        json.dumps(item1.__representation__.__dict__)
-        json.dumps(item2.__representation__.__dict__)
+        json.dumps(item1.__representation__)
+        json.dumps(item2.__representation__)

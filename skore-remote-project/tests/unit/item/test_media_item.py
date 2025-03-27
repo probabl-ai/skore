@@ -2,7 +2,7 @@ from json import dumps
 
 import pytest
 from skore_remote_project.item import MediaItem, MediaType
-from skore_remote_project.item.item import ItemTypeError, Representation
+from skore_remote_project.item.item import ItemTypeError
 
 
 class TestMediaItem:
@@ -25,7 +25,12 @@ class TestMediaItem:
         item = MediaItem.factory("<content>", media_type)
         item_parameters = item.__parameters__
 
-        assert item_parameters == {"media": "<content>", "media_type": media_type}
+        assert item_parameters == {
+            "parameters": {
+                "class": "MediaItem",
+                "parameters": {"media": "<content>", "media_type": media_type},
+            }
+        }
 
         # Ensure parameters are JSONable
         dumps(item_parameters)
@@ -38,7 +43,12 @@ class TestMediaItem:
         assert item2.__raw__ == "<content>"
 
     def test_representation(self):
-        representation = Representation(media_type="text/markdown", value="<content>")
+        representation = {
+            "representation": {
+                "media_type": "text/markdown",
+                "value": "<content>",
+            }
+        }
 
         item1 = MediaItem.factory("<content>")
         item2 = MediaItem("<content>", MediaType.MARKDOWN.value)
@@ -47,5 +57,5 @@ class TestMediaItem:
         assert item2.__representation__ == representation
 
         # Ensure representation is JSONable
-        dumps(item1.__representation__.__dict__)
-        dumps(item2.__representation__.__dict__)
+        dumps(item1.__representation__)
+        dumps(item2.__representation__)

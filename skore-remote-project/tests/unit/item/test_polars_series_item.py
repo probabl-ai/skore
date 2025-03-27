@@ -5,7 +5,7 @@ from polars import Series
 from polars.testing import assert_series_equal
 from pytest import raises
 from skore_remote_project.item import PolarsSeriesItem
-from skore_remote_project.item.item import ItemTypeError, Representation
+from skore_remote_project.item.item import ItemTypeError
 
 
 class TestPolarsSeriesItem:
@@ -28,7 +28,12 @@ class TestPolarsSeriesItem:
         item = PolarsSeriesItem.factory(series)
         item_parameters = item.__parameters__
 
-        assert item_parameters == {"series_json_str": series_json_str}
+        assert item_parameters == {
+            "parameters": {
+                "class": "PolarsSeriesItem",
+                "parameters": {"series_json_str": series_json_str},
+            }
+        }
 
         # Ensure parameters are JSONable
         dumps(item_parameters)
@@ -46,7 +51,12 @@ class TestPolarsSeriesItem:
     def test_representation(self):
         series = Series([0, 1, 2])
         series_json_str = series.to_frame().write_json()
-        representation = Representation(media_type="application/json", value=[0, 1, 2])
+        representation = {
+            "representation": {
+                "media_type": "application/json",
+                "value": [0, 1, 2],
+            }
+        }
 
         item1 = PolarsSeriesItem.factory(series)
         item2 = PolarsSeriesItem(series_json_str)
@@ -55,5 +65,5 @@ class TestPolarsSeriesItem:
         assert item2.__representation__ == representation
 
         # Ensure representation is JSONable
-        dumps(item1.__representation__.__dict__)
-        dumps(item2.__representation__.__dict__)
+        dumps(item1.__representation__)
+        dumps(item2.__representation__)

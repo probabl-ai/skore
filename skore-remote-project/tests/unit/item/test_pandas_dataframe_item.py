@@ -5,7 +5,7 @@ from pandas import DataFrame, Index, MultiIndex
 from pandas.testing import assert_frame_equal
 from pytest import raises
 from skore_remote_project.item import PandasDataFrameItem
-from skore_remote_project.item.item import ItemTypeError, Representation
+from skore_remote_project.item.item import ItemTypeError
 
 ORIENT = PandasDataFrameItem.ORIENT
 
@@ -78,8 +78,13 @@ class TestPandasDataFrameItem:
         item_parameters = item.__parameters__
 
         assert item_parameters == {
-            "index_json_str": index_json_str,
-            "dataframe_json_str": dataframe_json_str,
+            "parameters": {
+                "class": "PandasDataFrameItem",
+                "parameters": {
+                    "index_json_str": index_json_str,
+                    "dataframe_json_str": dataframe_json_str,
+                },
+            }
         }
 
         # Ensure parameters are JSONable
@@ -87,16 +92,18 @@ class TestPandasDataFrameItem:
 
     def test_representation(self):
         dataframe = DataFrame([{"key": "value"}], Index([0], name="myIndex"))
-        representation = Representation(
-            media_type="application/vnd.dataframe",
-            value={
-                "index": [0],
-                "columns": ["key"],
-                "data": [["value"]],
-                "index_names": ["myIndex"],
-                "column_names": [None],
-            },
-        )
+        representation = {
+            "representation": {
+                "media_type": "application/vnd.dataframe",
+                "value": {
+                    "index": [0],
+                    "columns": ["key"],
+                    "data": [["value"]],
+                    "index_names": ["myIndex"],
+                    "column_names": [None],
+                },
+            }
+        }
 
         index_json_str = dataframe.index.to_frame(index=False).to_json(orient=ORIENT)
         dataframe_json_str = dataframe.reset_index(drop=True).to_json(orient=ORIENT)
@@ -108,5 +115,5 @@ class TestPandasDataFrameItem:
         assert item2.__representation__ == representation
 
         # Ensure representation is JSONable
-        dumps(item1.__representation__.__dict__)
-        dumps(item2.__representation__.__dict__)
+        dumps(item1.__representation__)
+        dumps(item2.__representation__)

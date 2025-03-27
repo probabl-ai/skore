@@ -64,9 +64,14 @@ class TestSklearnBaseEstimatorItem:
         item_parameters = item.__parameters__
 
         assert item_parameters == {
-            "estimator_html_repr": estimator_html_repr,
-            "estimator_skops_b64_str": estimator_skops_b64_str,
-            "estimator_skops_untrusted_types": estimator_skops_untrusted_types,
+            "parameters": {
+                "class": "SklearnBaseEstimatorItem",
+                "parameters": {
+                    "estimator_html_repr": estimator_html_repr,
+                    "estimator_skops_b64_str": estimator_skops_b64_str,
+                    "estimator_skops_untrusted_types": estimator_skops_untrusted_types,
+                },
+            }
         }
 
         # Ensure parameters are JSONable

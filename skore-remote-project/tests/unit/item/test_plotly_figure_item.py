@@ -4,7 +4,7 @@ import plotly.graph_objects
 import plotly.io
 import pytest
 from skore_remote_project.item import PlotlyFigureItem
-from skore_remote_project.item.item import ItemTypeError, Representation
+from skore_remote_project.item.item import ItemTypeError
 
 
 class TestPlotlyFigureItem:
@@ -29,7 +29,12 @@ class TestPlotlyFigureItem:
         item = PlotlyFigureItem.factory(figure)
         item_parameters = item.__parameters__
 
-        assert item_parameters == {"figure_json_str": figure_json_str}
+        assert item_parameters == {
+            "parameters": {
+                "class": "PlotlyFigureItem",
+                "parameters": {"figure_json_str": figure_json_str},
+            }
+        }
 
         # Ensure parameters are JSONable
         dumps(item_parameters)
@@ -49,10 +54,12 @@ class TestPlotlyFigureItem:
         bar = plotly.graph_objects.Bar(x=[1, 2, 3], y=[1, 3, 2])
         figure = plotly.graph_objects.Figure(data=[bar])
         figure_json_str = plotly.io.to_json(figure, engine="json")
-        representation = Representation(
-            media_type="application/vnd.plotly.v1+json",
-            value=loads(figure_json_str),
-        )
+        representation = {
+            "representation": {
+                "media_type": "application/vnd.plotly.v1+json",
+                "value": loads(figure_json_str),
+            }
+        }
 
         item1 = PlotlyFigureItem.factory(figure)
         item2 = PlotlyFigureItem(figure_json_str)
@@ -61,5 +68,5 @@ class TestPlotlyFigureItem:
         assert item2.__representation__ == representation
 
         # Ensure representation is JSONable
-        dumps(item1.__representation__.__dict__)
-        dumps(item2.__representation__.__dict__)
+        dumps(item1.__representation__)
+        dumps(item2.__representation__)

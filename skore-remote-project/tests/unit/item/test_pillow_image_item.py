@@ -4,11 +4,7 @@ from json import dumps
 import PIL.Image
 from pytest import raises
 from skore_remote_project.item import PillowImageItem
-from skore_remote_project.item.item import (
-    ItemTypeError,
-    Representation,
-    bytes_to_b64_str,
-)
+from skore_remote_project.item.item import ItemTypeError, bytes_to_b64_str
 
 
 class TestPillowImageItem:
@@ -36,9 +32,14 @@ class TestPillowImageItem:
         item_parameters = item.__parameters__
 
         assert item_parameters == {
-            "image_b64_str": image_b64_str,
-            "image_mode": image.mode,
-            "image_size": image.size,
+            "parameters": {
+                "class": "PillowImageItem",
+                "parameters": {
+                    "image_b64_str": image_b64_str,
+                    "image_mode": image.mode,
+                    "image_size": image.size,
+                },
+            }
         }
 
         # Ensure parameters are JSONable
@@ -69,9 +70,12 @@ class TestPillowImageItem:
 
             png_bytes = stream.getvalue()
             png_b64_str = bytes_to_b64_str(png_bytes)
-            representation = Representation(
-                media_type="image/png;base64", value=png_b64_str
-            )
+            representation = {
+                "representation": {
+                    "media_type": "image/png;base64",
+                    "value": png_b64_str,
+                }
+            }
 
         item1 = PillowImageItem.factory(image)
         item2 = PillowImageItem(
@@ -84,5 +88,5 @@ class TestPillowImageItem:
         assert item2.__representation__ == representation
 
         # Ensure representation is JSONable
-        dumps(item1.__representation__.__dict__)
-        dumps(item2.__representation__.__dict__)
+        dumps(item1.__representation__)
+        dumps(item2.__representation__)

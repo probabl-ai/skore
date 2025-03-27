@@ -4,7 +4,7 @@ import json
 import pytest
 from joblib import dump
 from skore_remote_project.item import PickleItem
-from skore_remote_project.item.item import Representation, bytes_to_b64_str
+from skore_remote_project.item.item import bytes_to_b64_str
 
 
 class TestPickleItem:
@@ -30,7 +30,12 @@ class TestPickleItem:
         item = PickleItem.factory(int)
         item_parameters = item.__parameters__
 
-        assert item_parameters == {"pickle_b64_str": pickle_b64_str}
+        assert item_parameters == {
+            "parameters": {
+                "class": "PickleItem",
+                "parameters": {"pickle_b64_str": pickle_b64_str},
+            }
+        }
 
         # Ensure parameters are JSONable
         json.dumps(item_parameters)
@@ -55,13 +60,19 @@ class TestPickleItem:
             pickle_bytes = stream.getvalue()
             pickle_b64_str = bytes_to_b64_str(pickle_bytes)
 
-        representation = Representation(
-            media_type="text/markdown",
-            value=f"```python\n{repr(int)}\n```",
-        )
+        representation = {
+            "representation": {
+                "media_type": "text/markdown",
+                "value": f"```python\n{repr(int)}\n```",
+            }
+        }
 
         item1 = PickleItem.factory(int)
         item2 = PickleItem(pickle_b64_str)
 
         assert item1.__representation__ == representation
         assert item2.__representation__ == representation
+
+        # Ensure representation is JSONable
+        json.dumps(item1.__representation__)
+        json.dumps(item2.__representation__)

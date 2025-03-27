@@ -2,7 +2,7 @@ from json import dumps, loads
 
 import pytest
 from skore_remote_project.item import JSONableItem
-from skore_remote_project.item.item import ItemTypeError, Representation
+from skore_remote_project.item.item import ItemTypeError
 
 
 class TestJSONableItem:
@@ -31,7 +31,12 @@ class TestJSONableItem:
         item = JSONableItem.factory((1, 2))
         item_parameters = item.__parameters__
 
-        assert item_parameters == {"value": [1, 2]}
+        assert item_parameters == {
+            "parameters": {
+                "class": "JSONableItem",
+                "parameters": {"value": [1, 2]},
+            }
+        }
 
         # Ensure parameters are JSONable
         dumps(item_parameters)
@@ -44,7 +49,12 @@ class TestJSONableItem:
         assert item2.__raw__ == [1, 2]
 
     def test_representation(self):
-        representation = Representation(media_type="application/json", value=[1, 2])
+        representation = {
+            "representation": {
+                "media_type": "application/json",
+                "value": [1, 2],
+            }
+        }
 
         item1 = JSONableItem.factory((1, 2))
         item2 = JSONableItem([1, 2])
@@ -53,5 +63,5 @@ class TestJSONableItem:
         assert item2.__representation__ == representation
 
         # Ensure representation is JSONable
-        dumps(item1.__representation__.__dict__)
-        dumps(item2.__representation__.__dict__)
+        dumps(item1.__representation__)
+        dumps(item2.__representation__)

@@ -3,7 +3,7 @@ from json import dumps, loads
 from altair import Chart
 from pytest import raises
 from skore_remote_project.item import AltairChartItem
-from skore_remote_project.item.item import ItemTypeError, Representation
+from skore_remote_project.item.item import ItemTypeError
 
 
 class TestAltairChartItem:
@@ -22,7 +22,12 @@ class TestAltairChartItem:
         item = AltairChartItem.factory(chart)
         item_parameters = item.__parameters__
 
-        assert item_parameters == {"chart_json_str": chart.to_json()}
+        assert item_parameters == {
+            "parameters": {
+                "class": "AltairChartItem",
+                "parameters": {"chart_json_str": chart.to_json()},
+            }
+        }
 
         # Ensure parameters are JSONable
         dumps(item_parameters)
@@ -40,10 +45,12 @@ class TestAltairChartItem:
     def test_representation(self):
         chart = Chart().mark_point()
         chart_json_str = chart.to_json()
-        representation = Representation(
-            media_type="application/vnd.vega.v5+json",
-            value=loads(chart_json_str),
-        )
+        representation = {
+            "representation": {
+                "media_type": "application/vnd.vega.v5+json",
+                "value": loads(chart_json_str),
+            }
+        }
 
         item1 = AltairChartItem.factory(chart)
         item2 = AltairChartItem(chart_json_str)
@@ -52,5 +59,5 @@ class TestAltairChartItem:
         assert item2.__representation__ == representation
 
         # Ensure representation is JSONable
-        dumps(item1.__representation__.__dict__)
-        dumps(item2.__representation__.__dict__)
+        dumps(item1.__representation__)
+        dumps(item2.__representation__)
