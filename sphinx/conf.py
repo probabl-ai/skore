@@ -150,7 +150,7 @@ html_theme_options = {
         },
         {
             "name": "Discord",
-            "url": "https://discord.gg/scBZerAGwW",
+            "url": "https://discord.probabl.ai",
             "icon": "fa-brands fa-discord",
         },
         {

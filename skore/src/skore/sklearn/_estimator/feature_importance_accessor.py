@@ -286,7 +286,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         return df
 
-    def feature_permutation(
+    def permutation(
         self,
         *,
         data_source: DataSource = "test",
@@ -399,7 +399,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         ...     y_test=y_test,
         ... )
 
-        >>> report.feature_importance.feature_permutation(
+        >>> report.feature_importance.permutation(
         ...    n_repeats=2,
         ...    random_state=0,
         ... )
@@ -409,7 +409,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 Feature #1   2.320...   2.636...
                 Feature #2   0.028...   0.022...
 
-        >>> report.feature_importance.feature_permutation(
+        >>> report.feature_importance.permutation(
         ...    scoring=["r2", "rmse"],
         ...    n_repeats=2,
         ...    random_state=0,
@@ -423,7 +423,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                Feature #1 -86.608... -92.366...
                Feature #2  -8.930...  -7.916...
 
-        >>> report.feature_importance.feature_permutation(
+        >>> report.feature_importance.permutation(
         ...    n_repeats=2,
         ...    aggregate=["mean", "std"],
         ...    random_state=0,
@@ -434,7 +434,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 Feature #1  2.478...  0.223...
                 Feature #2  0.025...  0.003...
 
-        >>> report.feature_importance.feature_permutation(
+        >>> report.feature_importance.permutation(
         ...    n_repeats=2,
         ...    aggregate=["mean", "std"],
         ...    flat_index=True,
