@@ -859,11 +859,11 @@ plt.tight_layout()
 ridge_report.help()
 
 # %%
-# We have a :meth:`~skore.EstimatorReport.feature_importance.feature_permutation`
+# We have a :meth:`~skore.EstimatorReport.feature_importance.permutation`
 # accessor:
 
 # %%
-ridge_report.feature_importance.feature_permutation(random_state=0)
+ridge_report.feature_importance.permutation(random_state=0)
 
 # %%
 # The permutation importance is often calculated several times, each time
@@ -877,14 +877,14 @@ def plot_permutation_train_test(est_report):
     fig, axes = plt.subplots(nrows=1, ncols=2, sharey=True)
 
     # Boxplot for the train set
-    est_report.feature_importance.feature_permutation(
+    est_report.feature_importance.permutation(
         data_source="train", random_state=0
     ).T.boxplot(ax=axes[0], vert=False)
     axes[0].set_title("Train set")
     axes[0].set_xlabel("r2")
 
     # Boxplot for the test set
-    est_report.feature_importance.feature_permutation(
+    est_report.feature_importance.permutation(
         data_source="test", random_state=0
     ).T.boxplot(ax=axes[1], vert=False)
     axes[1].set_title("Test set")
