@@ -530,17 +530,14 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             data_source=data_source, X=X, y=y
         )
 
-        def find_in_cache():
-            # Search for first matching key in cache
-            predict_time_cache_key = (
-                self._parent._hash,
-                data_source,
-                data_source_hash,
-                "predict_time",
-            )
-            return self._parent._cache.get(predict_time_cache_key)
+        predict_time_cache_key = (
+            self._parent._hash,
+            data_source,
+            data_source_hash,
+            "predict_time",
+        )
 
-        predict_time = find_in_cache()
+        predict_time = self._parent._cache.get(predict_time_cache_key)
 
         if predict_time is None:
             # If the time was not found in the cache, compute predictions
@@ -557,7 +554,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                 pos_label=None,
             )
 
-            predict_time = find_in_cache()
+            predict_time = self._parent._cache.get(predict_time_cache_key)
 
             if predict_time is None:
                 raise Exception(
