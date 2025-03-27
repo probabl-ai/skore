@@ -377,24 +377,18 @@ def _get_cached_response_values(
         # and it is trustful
         data_source_hash = joblib.hash(X)
 
-    if prediction_method in ("predict_proba", "decision_function"):
+    if prediction_method not in ("predict_proba", "decision_function"):
         # pos_label is only important in classification and with probabilities
         # and decision functions
-        cache_key: tuple[Any, ...] = (
-            estimator_hash,
-            pos_label,
-            prediction_method,
-            data_source,
-            data_source_hash,
-        )
-    else:
-        cache_key = (
-            estimator_hash,
-            None,
-            prediction_method,
-            data_source,
-            data_source_hash,
-        )
+        pos_label = None
+
+    cache_key: tuple[Any, ...] = (
+        estimator_hash,
+        pos_label,
+        prediction_method,
+        data_source,
+        data_source_hash,
+    )
 
     if cache_key in cache:
         cached_predictions = cache[cache_key]
