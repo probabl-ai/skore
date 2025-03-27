@@ -181,7 +181,7 @@ def test(estimator, params):
     data, kwargs, expected_index, expected_columns = params()
 
     report = EstimatorReport(estimator, **data)
-    result = report.feature_importance.feature_permutation(**kwargs)
+    result = report.feature_importance.permutation(**kwargs)
 
     # Do not check values
     pd.testing.assert_index_equal(result.index, expected_index)
@@ -193,11 +193,11 @@ def test_cache_n_jobs(regression_data):
     X, y = regression_data
     report = EstimatorReport(LinearRegression(), X_train=X, y_train=y)
 
-    result = report.feature_importance.feature_permutation(
+    result = report.feature_importance.permutation(
         data_source="train", random_state=42, n_jobs=1
     )
     assert report._cache != {}
-    cached_result = report.feature_importance.feature_permutation(
+    cached_result = report.feature_importance.permutation(
         data_source="train", random_state=42, n_jobs=-1
     )
     assert len(report._cache) == 1
@@ -216,7 +216,7 @@ def test_cache_random_state(regression_data):
     report = EstimatorReport(LinearRegression(), X_train=X, y_train=y)
 
     # random_state is None
-    report.feature_importance.feature_permutation(data_source="train")
+    report.feature_importance.permutation(data_source="train")
     # so no cache
     assert report._cache == {}
 
@@ -226,7 +226,7 @@ def test_cache_random_state(regression_data):
         "got <class 'numpy.random.mtrand.RandomState'>"
     )
     with pytest.raises(ValueError, match=err_msg):
-        report.feature_importance.feature_permutation(
+        report.feature_importance.permutation(
             data_source="train",
             random_state=np.random.RandomState(42),
         )
@@ -234,12 +234,10 @@ def test_cache_random_state(regression_data):
     assert report._cache == {}
 
     # random_state is an int
-    result = report.feature_importance.feature_permutation(
-        data_source="train", random_state=42
-    )
+    result = report.feature_importance.permutation(data_source="train", random_state=42)
     # so the result is cached
     assert report._cache != {}
-    cached_result = report.feature_importance.feature_permutation(
+    cached_result = report.feature_importance.permutation(
         data_source="train", random_state=42
     )
     assert len(report._cache) == 1
@@ -253,10 +251,10 @@ def test_cache_scoring(regression_data):
     X, y = regression_data
     report = EstimatorReport(LinearRegression(), X_train=X, y_train=y)
 
-    report.feature_importance.feature_permutation(
+    report.feature_importance.permutation(
         data_source="train", scoring="r2", random_state=42
     )
-    report.feature_importance.feature_permutation(
+    report.feature_importance.permutation(
         data_source="train", scoring="rmse", random_state=42
     )
     # Scorings are different, so cache keys should be different
@@ -277,11 +275,11 @@ def test_cache_scoring_is_callable(regression_data, scoring):
     X, y = regression_data
     report = EstimatorReport(LinearRegression(), X_train=X, y_train=y)
 
-    result = report.feature_importance.feature_permutation(
+    result = report.feature_importance.permutation(
         data_source="train", scoring=scoring, random_state=42
     )
     assert report._cache != {}
-    cached_result = report.feature_importance.feature_permutation(
+    cached_result = report.feature_importance.permutation(
         data_source="train", scoring=copy.copy(scoring), random_state=42
     )
     assert len(report._cache) == 1
@@ -295,9 +293,7 @@ def test_classification(classification_data):
     X, y = classification_data
     report = EstimatorReport(LogisticRegression(), X_train=X, y_train=y)
 
-    result = report.feature_importance.feature_permutation(
-        data_source="train", random_state=42
-    )
+    result = report.feature_importance.permutation(data_source="train", random_state=42)
 
     pd.testing.assert_index_equal(
         result.index,
@@ -317,4 +313,4 @@ def test_not_fitted(regression_data):
 
     error_msg = "This LinearRegression instance is not fitted yet"
     with pytest.raises(NotFittedError, match=error_msg):
-        report.feature_importance.feature_permutation()
+        report.feature_importance.permutation()
