@@ -458,6 +458,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
 
         Examples
         --------
+        >>> # xdoctest: +SKIP
         >>> from sklearn.datasets import make_classification
         >>> from sklearn.model_selection import train_test_split
         >>> from sklearn.linear_model import LogisticRegression
@@ -474,7 +475,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         ...     y_test=y_test
         ... )
         >>> report.metrics.fit_time()
-        0.0...
+        0.126  # may vary
 
         >>> estimator = LogisticRegression().fit(X_train, y_train)
         >>> report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -526,6 +527,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
 
         Examples
         --------
+        >>> # xdoctest: +SKIP
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
         >>> from sklearn.model_selection import train_test_split
@@ -542,17 +544,19 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         ...     y_test=y_test,
         ... )
 
-        >>> predict_time = report.metrics.predict_time()  # Predictions on the test data
-        ...
+        # Predictions on the test data
+        >>> predict_time = report.metrics.predict_time()
+        0.0027  # may vary
 
-        >>> report.metrics.predict_time() == predict_time  # Predict time is cached
+        # Predict time is cached
+        >>> report.metrics.predict_time() == predict_time
         True
 
         >>> report.metrics.predict_time(data_source="train")
-        ...
+        0.003  # may vary
 
         >>> report.metrics.predict_time(data_source="X_y", X=X_test, y=y_test)
-        ...
+        0.0028  # may vary
         """
         return self._predict_time(
             data_source=data_source, data_source_hash=None, X=X, y=y
