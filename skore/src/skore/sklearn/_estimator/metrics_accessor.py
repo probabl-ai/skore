@@ -172,7 +172,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                     "The `scoring_names` parameter should be of the same length as "
                     "the `scoring` parameter. In your case, `scoring` was set to None "
                     f"and you are using our default scores that are {len(scoring)}. "
-                    "The list is the following: {scoring}."
+                    f"The list is the following: {scoring}."
                 )
             else:
                 raise ValueError(
