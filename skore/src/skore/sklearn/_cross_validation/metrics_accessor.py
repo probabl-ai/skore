@@ -16,7 +16,7 @@ from skore.sklearn._plot import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
-from skore.utils._accessor import _check_supported_ml_task
+from skore.utils._accessor import _check_estimator_has_method, _check_supported_ml_task
 from skore.utils._index import flatten_multi_index
 from skore.utils._parallel import Parallel, delayed
 from skore.utils._progress_bar import progress_decorator
@@ -458,6 +458,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
     @available_if(
         _check_supported_ml_task(supported_ml_tasks=["binary-classification"])
     )
+    @available_if(_check_estimator_has_method(method_name="predict_proba"))
     def brier_score(
         self,
         *,
