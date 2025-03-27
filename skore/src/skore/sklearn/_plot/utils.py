@@ -1,13 +1,11 @@
 import inspect
 from collections.abc import Sequence
 from io import StringIO
-from typing import Any, Optional, Union
+from typing import Any, Literal, Optional, Union
 
-import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.colors import Colormap
-from matplotlib.figure import Figure, SubFigure
 from numpy.typing import ArrayLike
 from rich.console import Console
 from rich.panel import Panel
@@ -16,6 +14,28 @@ from sklearn.utils.validation import (
     _check_pos_label_consistency,
     check_consistent_length,
 )
+
+from skore.sklearn.types import MLTask
+
+LINESTYLE = [
+    ("solid", "solid"),
+    ("dotted", "dotted"),
+    ("dashed", "dashed"),
+    ("dashdot", "dashdot"),
+    ("loosely dotted", (0, (1, 10))),
+    ("dotted", (0, (1, 5))),
+    ("densely dotted", (0, (1, 1))),
+    ("long dash with offset", (5, (10, 3))),
+    ("loosely dashed", (0, (5, 10))),
+    ("dashed", (0, (5, 5))),
+    ("densely dashed", (0, (5, 1))),
+    ("loosely dashdotted", (0, (3, 10, 1, 10))),
+    ("dashdotted", (0, (3, 5, 1, 5))),
+    ("densely dashdotted", (0, (3, 1, 1, 1))),
+    ("dashdotdotted", (0, (3, 5, 1, 5, 1, 5))),
+    ("loosely dashdotdotted", (0, (3, 10, 1, 10, 1, 10))),
+    ("densely dashdotdotted", (0, (3, 1, 1, 1, 1, 1))),
+]
 
 
 class HelpDisplayMixin:
@@ -75,10 +95,7 @@ class HelpDisplayMixin:
     def _create_help_panel(self) -> Panel:
         return Panel(
             self._create_help_tree(),
-            title=(
-                f"[bold cyan]{self.__class__.__name__} for "
-                f"{self.estimator_name}[/bold cyan]"
-            ),
+            title=f"[bold cyan]{self.__class__.__name__} [/bold cyan]",
             border_style="orange1",
             expand=False,
         )
@@ -118,18 +135,98 @@ class _ClassifierCurveDisplayMixin:
     the target and gather the response of the estimator.
     """
 
-    estimator_name: str  # defined in the concrete display class
+    # defined in the concrete display class
+    estimator_name: str
+    ml_task: MLTask
+    pos_label: Optional[Union[int, float, bool, str]]
 
-    def _validate_plot_params(
-        self, *, ax: Optional[Axes] = None, estimator_name: Optional[str] = None
-    ) -> tuple[Axes, Union[Figure, SubFigure], str]:
-        if ax is None:
-            _, ax = plt.subplots()
+    def _validate_curve_kwargs(
+        self,
+        *,
+        curve_param_name: str,
+        curve_kwargs: Union[dict[str, Any], list[dict[str, Any]], None],
+        metric: dict[Union[int, float, bool, str], list[float]],
+        report_type: Literal["comparison-estimator", "cross-validation", "estimator"],
+    ) -> list[dict[str, Any]]:
+        """Validate and format the classification curve keyword arguments.
 
-        estimator_name = (
-            self.estimator_name if estimator_name is None else estimator_name
-        )
-        return ax, ax.figure, estimator_name
+        Parameters
+        ----------
+        curve_param_name : str
+            The name of the curve parameter.
+
+        curve_kwargs : dict or list of dict or None
+            Keyword arguments to customize the classification curve.
+
+        metric : dict of list of float
+            One of the metric of the curve to infer how many curves we are plotting.
+
+        report_type : {"comparison-estimator", "cross-validation", "estimator"}
+            The type of report.
+
+        Returns
+        -------
+        list of dict
+            Validated list of keyword arguments for each curve.
+
+        Raises
+        ------
+        ValueError
+            If the format of curve_kwargs is invalid.
+        """
+        if self.ml_task == "binary-classification":
+            assert self.pos_label is not None, (
+                "pos_label should not be None with binary classification."
+            )
+            n_curves = len(metric[self.pos_label])
+            if report_type in ("estimator", "cross-validation"):
+                allow_single_dict = True
+            elif report_type == "comparison-estimator":
+                # since we compare different estimators, it does not make sense to share
+                # a single dictionary for all the estimators.
+                allow_single_dict = False
+            else:
+                raise ValueError(
+                    f"`report_type` should be one of 'estimator', 'cross-validation', "
+                    f"or 'comparison-estimator'. Got '{report_type}' instead."
+                )
+        else:
+            n_curves = len(metric)
+            allow_single_dict = False
+
+        if curve_kwargs is None:
+            return [{}] * n_curves
+        elif n_curves == 1:
+            if isinstance(curve_kwargs, dict):
+                return [curve_kwargs]
+            elif isinstance(curve_kwargs, list) and len(curve_kwargs) == 1:
+                return curve_kwargs
+            else:
+                raise ValueError(
+                    "You intend to plot a single curve. We expect "
+                    f"`{curve_param_name}` to be a dictionary. Got "
+                    f"{type(curve_kwargs)} instead."
+                )
+        else:  # n_curves > 1
+            if not allow_single_dict and isinstance(curve_kwargs, dict):
+                raise ValueError(
+                    "You intend to plot multiple curves. We expect "
+                    f"`{curve_param_name}` to be a list of dictionaries. Got "
+                    f"{type(curve_kwargs)} instead."
+                )
+            if isinstance(curve_kwargs, dict):
+                return [curve_kwargs] * n_curves
+
+            # From this point, we have a list of dictionaries
+            if len(curve_kwargs) != n_curves:
+                raise ValueError(
+                    "You intend to plot multiple curves. We expect "
+                    f"`{curve_param_name}` to be a list of dictionaries with the "
+                    f"same length as the number of curves. Got "
+                    f"{len(curve_kwargs)} instead of {n_curves}."
+                )
+
+            return curve_kwargs
 
     @classmethod
     def _validate_from_predictions_params(
