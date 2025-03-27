@@ -20,6 +20,22 @@ def _check_supported_ml_task(supported_ml_tasks: list[str]) -> Callable:
     return check
 
 
+def _check_estimator_has_method(method_name: str) -> Callable:
+    def check(accessor: Any) -> bool:
+        parent_estimator = accessor._parent.estimator_
+
+        if hasattr(parent_estimator, method_name):
+            return True
+
+        raise AttributeError(
+            f"Estimator {parent_estimator} is not a supported estimator by "
+            f"the function called. The estimator should have a `{method_name}` "
+            "method."
+        )
+
+    return check
+
+
 def _check_has_coef() -> Callable:
     def check(accessor: Any) -> bool:
         """Check if the estimator has a `coef_` attribute."""
