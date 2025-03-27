@@ -574,11 +574,10 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
 
             predict_time = self._parent._cache.get(predict_time_cache_key)
 
-            if predict_time is None:
-                raise Exception(
-                    "Prediction was computed, but predict time was not found. "
-                    "This error should never be reached."
-                )
+            assert predict_time is not None, (
+                "Prediction was computed, but predict time was not found. "
+                "This error should never be reached."
+            )
 
         return predict_time
 
