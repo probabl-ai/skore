@@ -451,8 +451,19 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                 return score[0]
         return score
 
-    def _fit_time(self) -> dict:
+    def fit_time(self) -> float:
         """Get the time to fit the estimator, in seconds.
+
+        Returns
+        -------
+        fit_time : float
+            The time, in seconds.
+
+        Raises
+        ------
+        FitInformationUnavailableError
+            If the fit information is not available, e.g. if the estimator was fitted
+            outside of the EstimatorReport.
 
         Examples
         --------
@@ -471,12 +482,12 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         ...     X_test=X_test,
         ...     y_test=y_test
         ... )
-        >>> report.metrics._fit_time()
-        {'fit_time': ...}
+        >>> report.metrics.fit_time()
+        0.0...
 
         >>> estimator = LogisticRegression().fit(X_train, y_train)
         >>> report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-        >>> report.metrics._fit_time()
+        >>> report.metrics.fit_time()
         Traceback (most recent call last):
         skore.sklearn._estimator.metrics_accessor.FitInformationUnavailableError: ...
         """
@@ -486,18 +497,41 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                 "The fit information is not available, perhaps because the estimator "
                 "was fitted before the report was created."
             )
-        return {"fit_time": fit_time}
+        return fit_time
 
-    def _predict_time(
+    def predict_time(
         self,
         *,
         data_source: DataSource = "test",
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
-    ) -> dict:
+    ) -> float:
         """Get the time taken to compute the estimator's `predict` method.
 
-        Will compute the predictions if necessary.
+        Note that the function will compute the predictions if they are not available
+        in the cache.
+
+        Parameters
+        ----------
+        data_source : {"test", "train", "X_y"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
+        X : array-like of shape (n_samples, n_features), default=None
+            Data on which the prediction was computed. By default, we use the validation
+            set provided when creating the report.
+
+        y : array-like of shape (n_samples,), default=None
+            Target on which the prediction was computed. By default, we use the
+            validation target provided when creating the report.
+
+        Returns
+        -------
+        predict_time : float
+            The time, in seconds.
 
         Examples
         --------
@@ -517,14 +551,17 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         ...     y_test=y_test,
         ... )
 
-        >>> report.metrics._predict_time()  # Predictions on the test data
-        {'predict_time_test': ...}
+        >>> predict_time = report.metrics.predict_time()  # Predictions on the test data
+        ...
 
-        >>> report.metrics._predict_time(data_source="train")
-        {'predict_time_train': ...}
+        >>> report.metrics.predict_time() == predict_time  # Predict time is cached
+        True
 
-        >>> report.metrics._predict_time(data_source="X_y", X=X_test, y=y_test)
-        {'predict_time_X_y_f41066b51130a331835e7d66417ff728': ...}
+        >>> report.metrics.predict_time(data_source="train")
+        ...
+
+        >>> report.metrics.predict_time(data_source="X_y", X=X_test, y=y_test)
+        ...
         """
         X, y, data_source_hash = self._get_X_y_and_data_source_hash(
             data_source=data_source, X=X, y=y
@@ -562,130 +599,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                     "This error should never be reached."
                 )
 
-        data_source_ = (
-            f"X_y_{data_source_hash}" if data_source == "X_y" else data_source
-        )
-        return {f"predict_time_{data_source_}": predict_time}
-
-    def timing(
-        self,
-        *,
-        kind: Literal["fit", "predict", "auto"] = "auto",
-        data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-    ) -> dict:
-        """Report fit and prediction times, in seconds.
-
-        Passing kind="predict" with compute the predictions if they are not available
-        in the cache.
-
-        Fit information might not be available, e.g. if the estimator was fitted outside
-        of the EstimatorReport. In this case, passing kind="fit" will result in an
-        error, and passing kind="auto" is equivalent to passing kind="predict".
-
-        Parameters
-        ----------
-        kind : {"fit", "predict", "auto"}, default="auto"
-            The times to report.
-
-        data_source : {"test", "train", "X_y"}, default="test"
-            The data source to use.
-
-            - "test" : use the test set provided when creating the report.
-            - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            Data on which the prediction was computed. By default, we use the validation
-            set provided when creating the report.
-
-        y : array-like of shape (n_samples,), default=None
-            Target on which the prediction was computed. By default, we use the
-            validation target provided when creating the report.
-
-        Returns
-        -------
-        dict
-            The times, in seconds, in the form of a dict of the following shape:
-
-            - If kind="fit", a single entry with key "fit_time".
-            - If kind="predict", a single entry with key "predict_time_{data_source}"
-              (where data_source is "train", "test" or "X_y_{data_source_hash}").
-            - If kind="auto", two entries: a concatenation of the "fit" and "predict"
-              cases.
-
-
-        Raises
-        ------
-        FitInformationUnavailableError
-            If kind="fit" and the fit information is not available.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import load_breast_cancer
-        >>> from sklearn.linear_model import LogisticRegression
-        >>> from sklearn.model_selection import train_test_split
-        >>> from skore import EstimatorReport
-        >>> X_train, X_test, y_train, y_test = train_test_split(
-        ...     *load_breast_cancer(return_X_y=True), random_state=0
-        ... )
-        >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = EstimatorReport(
-        ...     classifier,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
-
-        >>> report.metrics.timing()
-        {'fit_time': ..., 'predict_time_test': ...}
-
-        >>> report.metrics.timing(kind="fit")
-        {'fit_time': ...}
-
-        >>> report.metrics.timing(data_source="train")
-        {'fit_time': ..., 'predict_time_train': ...}
-
-        >>> report.metrics.timing(data_source="X_y", X=X_test, y=y_test)
-        {'fit_time': ..., 'predict_time_X_y_f41066b51130a331835e7d66417ff728': ...}
-
-        >>> report.metrics.timing(kind="predict", data_source="X_y", X=X_test, y=y_test)
-        {'predict_time_X_y_f41066b51130a331835e7d66417ff728': ...}
-
-        >>> report.metrics.timing(kind="fit", data_source="X_y", X=X_test, y=y_test)
-        {'fit_time': ...}
-
-        # Fit information is not available
-        >>> classifier = LogisticRegression(max_iter=10_000).fit(X_train, y_train)
-        >>> report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
-
-        >>> report.metrics.timing()
-        {'predict_time_test': ...}
-
-        >>> report.metrics.timing(kind="fit")
-        Traceback (most recent call last):
-        skore.sklearn._estimator.metrics_accessor.FitInformationUnavailableError: ...
-        """
-        if kind == "fit":
-            return self._fit_time()
-
-        if kind == "predict":
-            return self._predict_time(data_source=data_source, X=X, y=y)
-
-        if kind == "auto":
-            try:
-                fit_time = self._fit_time()
-            except FitInformationUnavailableError:
-                fit_time = {}
-
-            predict_time = self._predict_time(data_source=data_source, X=X, y=y)
-            return fit_time | predict_time
-
-        raise ValueError(
-            f'kind should be one of "fit", "predict", "auto"; got "{kind}"'
-        )
+        return predict_time
 
     @available_if(
         _check_supported_ml_task(
