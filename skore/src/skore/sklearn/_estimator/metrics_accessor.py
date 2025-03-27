@@ -562,7 +562,10 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             predict_time = find_in_cache()
 
             if predict_time is None:
-                Exception("This error should never be reached")
+                raise Exception(
+                    "Prediction was computed, but predict time was not found. "
+                    "This error should never be reached."
+                )
 
         data_source_ = (
             f"X_y_{data_source_hash}" if data_source == "X_y" else data_source
