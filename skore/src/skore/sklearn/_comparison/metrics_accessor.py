@@ -18,6 +18,7 @@ from skore.sklearn._comparison.prediction_error_display import PredictionErrorDi
 from skore.sklearn._comparison.report import ComparisonReport
 from skore.sklearn._comparison.roc_curve_display import RocCurveDisplay
 from skore.utils._accessor import _check_supported_ml_task
+from skore.utils._hash import _hash
 from skore.utils._index import flatten_multi_index
 from skore.utils._progress_bar import progress_decorator
 
@@ -190,7 +191,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ordered_metric_kwargs = sorted(metric_kwargs.keys())
         for key in ordered_metric_kwargs:
             if isinstance(metric_kwargs[key], (np.ndarray, list, dict)):
-                cache_key_parts.append(joblib.hash(metric_kwargs[key]))
+                cache_key_parts.append(_hash(metric_kwargs[key]))
             else:
                 cache_key_parts.append(metric_kwargs[key])
 

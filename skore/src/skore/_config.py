@@ -4,10 +4,13 @@ import threading
 import time
 from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Any, Union
+from typing import Any, Optional, Union
+
+from skore.utils._hash import HashObject
 
 _global_config: dict[str, Any] = {
     "show_progress": True,
+    "hash_func": "md5",
 }
 _threadlocal = threading.local()
 
@@ -49,6 +52,7 @@ def get_config() -> dict[str, Any]:
 
 def set_config(
     show_progress: Union[bool, None] = None,
+    hash_func: Optional[Union[str, HashObject]] = None,
 ) -> None:
     """Set skore configuration.
 
@@ -60,6 +64,9 @@ def set_config(
     ----------
     show_progress : bool, default=None
         If True, show progress bars. Otherwise, do not show them.
+
+    hash_func : string or `hashlib`-compatible hash object, default=None
+        Hashing algorithm used for the caching.
 
     See Also
     --------
@@ -77,11 +84,15 @@ def set_config(
     if show_progress is not None:
         local_config["show_progress"] = show_progress
 
+    if hash_func is not None:
+        local_config["hash_func"] = hash_func
+
 
 @contextmanager
 def config_context(
     *,
     show_progress: Union[bool, None] = None,
+    hash_func: Optional[Union[str, HashObject]] = None,
 ) -> Generator[None, None, None]:
     """Context manager for skore configuration.
 
@@ -93,6 +104,9 @@ def config_context(
     ----------
     show_progress : bool, default=None
         If True, show progress bars. Otherwise, do not show them.
+
+    hash_func : string or `hashlib`-compatible hash object, default=None
+        Hashing algorithm used for the caching.
 
     Yields
     ------
@@ -123,6 +137,7 @@ def config_context(
     old_config = get_config()
     set_config(
         show_progress=show_progress,
+        hash_func=hash_func,
     )
 
     try:

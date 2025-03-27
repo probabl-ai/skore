@@ -1,6 +1,5 @@
 from typing import Any, Callable, Literal, Optional, Union
 
-import joblib
 import numpy as np
 import pandas as pd
 from rich.progress import Progress
@@ -17,6 +16,7 @@ from skore.sklearn._plot import (
     RocCurveDisplay,
 )
 from skore.utils._accessor import _check_supported_ml_task
+from skore.utils._hash import _hash
 from skore.utils._index import flatten_multi_index
 from skore.utils._parallel import Parallel, delayed
 from skore.utils._progress_bar import progress_decorator
@@ -170,7 +170,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         ordered_metric_kwargs = sorted(metric_kwargs.keys())
         for key in ordered_metric_kwargs:
             if isinstance(metric_kwargs[key], (np.ndarray, list, dict)):
-                cache_key_parts.append(joblib.hash(metric_kwargs[key]))
+                cache_key_parts.append(_hash(metric_kwargs[key]))
             else:
                 cache_key_parts.append(metric_kwargs[key])
         cache_key = tuple(cache_key_parts)

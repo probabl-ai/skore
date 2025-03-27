@@ -4,12 +4,12 @@ import time
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 
-import joblib
 import numpy as np
 
 from skore.externals._pandas_accessors import DirNamesMixin
 from skore.sklearn._base import _BaseReport
 from skore.sklearn._estimator.report import EstimatorReport
+from skore.utils._hash import _hash
 from skore.utils._progress_bar import progress_decorator
 
 if TYPE_CHECKING:
@@ -128,7 +128,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             raise TypeError("Expected instances of EstimatorReport")
 
         test_dataset_hashes = {
-            joblib.hash((report.X_test, report.y_test))
+            _hash((report.X_test, report.y_test))
             for report in reports
             if not ((report.X_test is None) and (report.y_test is None))
         }
