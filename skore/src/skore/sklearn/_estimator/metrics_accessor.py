@@ -33,6 +33,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
     """
 
     _SCORE_OR_LOSS_INFO: dict[str, dict[str, str]] = {
+        "fit_time": {"name": "Fit time", "icon": "(↘︎)"},
+        "predict_time": {"name": "Predict time", "icon": "(↘︎)"},
         "accuracy": {"name": "Accuracy", "icon": "(↗︎)"},
         "precision": {"name": "Precision", "icon": "(↗︎)"},
         "recall": {"name": "Recall", "icon": "(↗︎)"},
@@ -161,6 +163,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                     scoring += ["_roc_auc", "_log_loss"]
             else:
                 scoring = ["_r2", "_rmse"]
+            scoring += ["fit_time", "predict_time"]
 
         if scoring_names is not None and len(scoring_names) != len(scoring):
             if scoring_was_none:
@@ -478,6 +481,13 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         >>> report.metrics.fit_time()
         None
         """
+        return self._fit_time()
+
+    def _fit_time(self, **kwargs) -> Union[float, None]:
+        """Private interface to `fit_time`.
+
+        kwargs are available for compatibility with other metrics.
+        """
         return self._parent._cache.get(self._parent._fit_time_cache_key())
 
     def predict_time(
@@ -544,9 +554,22 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         >>> report.metrics.predict_time(data_source="X_y", X=X_test, y=y_test)
         ...
         """
-        X, y, data_source_hash = self._get_X_y_and_data_source_hash(
-            data_source=data_source, X=X, y=y
+        return self._predict_time(
+            data_source=data_source, data_source_hash=None, X=X, y=y
         )
+
+    def _predict_time(
+        self,
+        *,
+        data_source: DataSource = "test",
+        data_source_hash: Optional[int] = None,
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
+    ) -> Union[float, None]:
+        if data_source_hash is None:
+            X, _, data_source_hash = self._get_X_y_and_data_source_hash(
+                data_source=data_source, X=X, y=y
+            )
 
         predict_time_cache_key = (
             self._parent._hash,
