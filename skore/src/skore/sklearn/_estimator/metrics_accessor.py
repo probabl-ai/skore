@@ -26,13 +26,6 @@ from skore.utils._index import flatten_multi_index
 DataSource = Literal["test", "train", "X_y"]
 
 
-class FitInformationUnavailableError(Exception):
-    """The report does not contain fit information.
-
-    This can happen when the estimator is fitted before the report is created.
-    """
-
-
 class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
     """Accessor for metrics-related operations.
 
@@ -451,19 +444,14 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                 return score[0]
         return score
 
-    def fit_time(self) -> float:
+    def fit_time(self) -> Union[float, None]:
         """Get the time to fit the estimator, in seconds.
 
         Returns
         -------
-        fit_time : float
-            The time, in seconds.
-
-        Raises
-        ------
-        FitInformationUnavailableError
-            If the fit information is not available, e.g. if the estimator was fitted
-            outside of the EstimatorReport.
+        fit_time : float or None
+            The time, in seconds, or None if the fit information is not available,
+            e.g. if the estimator was fitted outside of the EstimatorReport.
 
         Examples
         --------
@@ -488,16 +476,9 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         >>> estimator = LogisticRegression().fit(X_train, y_train)
         >>> report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
         >>> report.metrics.fit_time()
-        Traceback (most recent call last):
-        skore.sklearn._estimator.metrics_accessor.FitInformationUnavailableError: ...
+        None
         """
-        fit_time = self._parent._cache.get(self._parent._fit_time_cache_key())
-        if fit_time is None:
-            raise FitInformationUnavailableError(
-                "The fit information is not available, perhaps because the estimator "
-                "was fitted before the report was created."
-            )
-        return fit_time
+        return self._parent._cache.get(self._parent._fit_time_cache_key())
 
     def predict_time(
         self,
