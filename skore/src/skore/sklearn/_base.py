@@ -370,6 +370,13 @@ def _get_cached_response_values(
         The response values.
     """
     prediction_method = _check_response_method(estimator, response_method).__name__
+
+    if data_source == "X_y" and data_source_hash is None:
+        # Only trigger hash computation if it was not previously done.
+        # If data_source_hash is not None, we internally computed ourself the hash
+        # and it is trustful
+        data_source_hash = joblib.hash(X)
+
     if prediction_method in ("predict_proba", "decision_function"):
         # pos_label is only important in classification and with probabilities
         # and decision functions
@@ -378,16 +385,16 @@ def _get_cached_response_values(
             pos_label,
             prediction_method,
             data_source,
+            data_source_hash,
         )
     else:
-        cache_key = (estimator_hash, None, prediction_method, data_source)
-
-    if data_source == "X_y" and data_source_hash is None:
-        # Only trigger hash computation if it was not previously done.
-        # If data_source_hash is not None, we internally computed ourself the hash
-        # and it is trustful
-        data_source_hash = joblib.hash(X)
-    cache_key = cache_key + (data_source_hash,)
+        cache_key = (
+            estimator_hash,
+            None,
+            prediction_method,
+            data_source,
+            data_source_hash,
+        )
 
     if cache_key in cache:
         cached_predictions = cache[cache_key]
