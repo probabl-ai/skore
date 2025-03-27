@@ -382,13 +382,12 @@ def _get_cached_response_values(
     else:
         cache_key = (estimator_hash, None, prediction_method, data_source)
 
-    if data_source == "X_y":
-        if data_source_hash is None:
-            # Only trigger hash computation if it was not previously done.
-            # If data_source_hash is not None, we internally computed ourself the hash
-            # and it is trustful
-            data_source_hash = joblib.hash(X)
-        cache_key = cache_key + (data_source_hash,)
+    if data_source == "X_y" and data_source_hash is None:
+        # Only trigger hash computation if it was not previously done.
+        # If data_source_hash is not None, we internally computed ourself the hash
+        # and it is trustful
+        data_source_hash = joblib.hash(X)
+    cache_key = cache_key + (data_source_hash,)
 
     if cache_key in cache:
         cached_predictions = cache[cache_key]
