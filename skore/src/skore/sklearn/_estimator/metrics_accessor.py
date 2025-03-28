@@ -462,6 +462,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
     ) -> Union[float, None]:
+        """Get prediction time if it has been already measured."""
         if data_source_hash is None:
             X, _, data_source_hash = self._get_X_y_and_data_source_hash(
                 data_source=data_source, X=X, y=y
