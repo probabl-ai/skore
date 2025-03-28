@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from typing import Any, Callable, Literal, Optional, Union
 
 import joblib
@@ -230,6 +231,38 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
 
             self._parent._cache[cache_key] = results
         return results
+
+    def timings(
+        self,
+        aggregate: Optional[
+            Union[Literal["mean", "std"], Sequence[Literal["mean", "std"]]]
+        ] = ("mean", "std"),
+    ) -> pd.DataFrame:
+        """Get all measured processing times related to the estimator.
+
+        The index of the returned dataframe is the name of the processing time. When
+        the estimators were not used to predict, no timings regarding the prediction
+        will be present.
+
+        Returns
+        -------
+        pd.DataFrame
+            A dataframe with the processing times.
+        """
+        timings: pd.DataFrame = pd.concat(
+            [
+                pd.Series(report.metrics.timings())
+                for report in self._parent.estimator_reports_
+            ],
+            axis=1,
+            keys=[f"Split #{i}" for i in range(len(self._parent.estimator_reports_))],
+        )
+        if aggregate:
+            if isinstance(aggregate, str):
+                aggregate = [aggregate]
+            timings = timings.aggregate(func=aggregate, axis=1)
+        timings.index = timings.index.str.replace("_", " ").str.capitalize()
+        return timings
 
     @available_if(
         _check_supported_ml_task(
