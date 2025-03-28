@@ -910,7 +910,10 @@ def plot_permutation_train_test(est_report):
         x="Importance",
         y="Feature",
         hue="Dataset",
-        palette={"Train": "blue", "Test": "#F99905"},
+        palette={
+            "Train": "blue",
+            "Test": "#F99905",  # orange
+        },
     )
 
     plt.title(
