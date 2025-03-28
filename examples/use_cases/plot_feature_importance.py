@@ -909,7 +909,7 @@ def plot_permutation_train_test(est_report):
             plt.Line2D([0], [0], color=train_color, lw=5, label="Train"),
             plt.Line2D([0], [0], color=test_color, lw=5, label="Test"),
         ],
-        loc="lower right",
+        loc="best",
         title="Dataset",
     )
 
