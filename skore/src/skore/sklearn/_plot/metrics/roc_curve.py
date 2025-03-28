@@ -266,7 +266,12 @@ class RocCurveDisplay(
 
             info_pos_label = None  # irrelevant for multiclass
 
-        ax.legend(loc="lower right", title=estimator_name)
+        ax.legend(
+            loc="upper left",
+            bbox_to_anchor=(1.02, 1),
+            title=estimator_name,
+            borderaxespad=0,
+        )
 
         return ax, lines, info_pos_label
 
@@ -396,7 +401,12 @@ class RocCurveDisplay(
                     (line,) = ax.plot(fpr_split, tpr_split, **line_kwargs_validated)
                     lines.append(line)
 
-        ax.legend(loc="lower right", title=estimator_name)
+        ax.legend(
+            loc="upper left",
+            bbox_to_anchor=(1.02, 1),
+            title=estimator_name,
+            borderaxespad=0,
+        )
 
         return ax, lines, info_pos_label
 
@@ -520,8 +530,10 @@ class RocCurveDisplay(
                     lines.append(line)
 
         ax.legend(
-            loc="lower right",
+            loc="upper left",
+            bbox_to_anchor=(1.02, 1),
             title=f"{ml_task.title()} on $\\bf{{{data_source}}}$ set",
+            borderaxespad=0,
         )
 
         return ax, lines, info_pos_label

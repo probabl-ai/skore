@@ -267,7 +267,12 @@ class PrecisionRecallCurveDisplay(
 
             info_pos_label = None  # irrelevant for multiclass
 
-        ax.legend(loc="lower left", title=estimator_name)
+        ax.legend(
+            loc="upper left",
+            bbox_to_anchor=(1.02, 1),
+            title=estimator_name,
+            borderaxespad=0,
+        )
 
         return ax, lines, info_pos_label
 
@@ -401,7 +406,12 @@ class PrecisionRecallCurveDisplay(
                     )
                     lines.append(line)
 
-        ax.legend(loc="lower left", title=estimator_name)
+        ax.legend(
+            loc="upper left",
+            bbox_to_anchor=(1.02, 1),
+            title=estimator_name,
+            borderaxespad=0,
+        )
 
         return ax, lines, info_pos_label
 
@@ -527,8 +537,10 @@ class PrecisionRecallCurveDisplay(
                     lines.append(line)
 
         ax.legend(
-            loc="lower left",
+            loc="upper left",
+            bbox_to_anchor=(1.02, 1),
             title=f"{ml_task.title()} on $\\bf{{{data_source}}}$ set",
+            borderaxespad=0,
         )
 
         return ax, lines, info_pos_label

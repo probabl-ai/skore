@@ -256,7 +256,12 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
                 )
             )
 
-        ax.legend(title=estimator_name)
+        ax.legend(
+            loc="upper left",
+            bbox_to_anchor=(1.02, 1),
+            title=estimator_name,
+            borderaxespad=0,
+        )
 
         return scatter
 
@@ -344,7 +349,12 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
                     )
                 )
 
-        ax.legend(title=estimator_name)
+        ax.legend(
+            loc="upper left",
+            bbox_to_anchor=(1.02, 1),
+            title=estimator_name,
+            borderaxespad=0,
+        )
 
         return scatter
 
@@ -431,7 +441,12 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
                     )
                 )
 
-        ax.legend(title=f"Prediction errors on $\\bf{{{data_source}}}$ set")
+        ax.legend(
+            loc="upper left",
+            bbox_to_anchor=(1.02, 1),
+            title=f"Prediction errors on $\\bf{{{data_source}}}$ set",
+            borderaxespad=0,
+        )
 
         return scatter
 
