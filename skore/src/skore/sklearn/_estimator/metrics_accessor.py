@@ -448,7 +448,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         return score
 
     def _fit_time(self, **kwargs) -> Union[float, None]:
-        """Compute time to fit the estimator.
+        """Get time to fit the estimator.
 
         kwargs are available for compatibility with other metrics.
         """
