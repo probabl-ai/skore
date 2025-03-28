@@ -479,7 +479,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
     def timings(self) -> dict:
         """Get all measured times.
 
-        When an estimator is fitted inside the EstimatorReport, the time to fit is
+        When an estimator is fitted inside the :class:`~skore.EstimatorReport`, the time to fit is
         recorded. Similarly, when predictions are computed on some data, the time to
         predict is recorded. This function returns all the recorded times.
 
