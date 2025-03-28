@@ -487,7 +487,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         -------
         timings : dict
             The recorded times, in seconds,
-            in the form of a dict with some or all of the following keys:
+            in the form of a `dict` with some or all of the following keys:
 
             - "fit_time", for the time to fit the estimator in the train set.
             - "predict_time_{data_source}", where data_source is "train", "test" or
