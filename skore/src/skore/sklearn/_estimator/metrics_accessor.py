@@ -447,120 +447,12 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                 return score[0]
         return score
 
-    def fit_time(self) -> Union[float, None]:
-        """Get the time to fit the estimator, in seconds.
-
-        Returns
-        -------
-        fit_time : float or None
-            The time, in seconds, or None if the fit information is not available,
-            e.g. if the estimator was fitted outside of the EstimatorReport.
-
-        Examples
-        --------
-        >>> # xdoctest: +SKIP
-        >>> from sklearn.datasets import make_classification
-        >>> from sklearn.model_selection import train_test_split
-        >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import EstimatorReport
-
-        >>> X, y = make_classification(random_state=42)
-        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-
-        >>> report = EstimatorReport(
-        ...     LogisticRegression(),
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test
-        ... )
-        >>> report.metrics.fit_time()
-        0.126  # may vary
-
-        >>> estimator = LogisticRegression().fit(X_train, y_train)
-        >>> report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-        >>> report.metrics.fit_time()
-        None
-        """
-        return self._fit_time()
-
     def _fit_time(self, **kwargs) -> Union[float, None]:
-        """Private interface to `fit_time`.
+        """Compute time to fit the estimator.
 
         kwargs are available for compatibility with other metrics.
         """
         return self._parent._cache.get(self._parent._fit_time_cache_key())
-
-    def predict_time(
-        self,
-        *,
-        data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-    ) -> float:
-        """Get the time taken to compute the estimator's `predict` method.
-
-        Note that the function will compute the predictions if they are not available
-        in the cache.
-
-        Parameters
-        ----------
-        data_source : {"test", "train", "X_y"}, default="test"
-            The data source to use.
-
-            - "test" : use the test set provided when creating the report.
-            - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            Data on which the prediction was computed. By default, we use the validation
-            set provided when creating the report.
-
-        y : array-like of shape (n_samples,), default=None
-            Target on which the prediction was computed. By default, we use the
-            validation target provided when creating the report.
-
-        Returns
-        -------
-        predict_time : float
-            The time, in seconds.
-
-        Examples
-        --------
-        >>> # xdoctest: +SKIP
-        >>> from sklearn.datasets import load_breast_cancer
-        >>> from sklearn.linear_model import LogisticRegression
-        >>> from sklearn.model_selection import train_test_split
-        >>> from skore import EstimatorReport
-        >>> X_train, X_test, y_train, y_test = train_test_split(
-        ...     *load_breast_cancer(return_X_y=True), random_state=0
-        ... )
-        >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = EstimatorReport(
-        ...     classifier,
-        ...     X_train=X_train,
-        ...     y_train=y_train,
-        ...     X_test=X_test,
-        ...     y_test=y_test,
-        ... )
-
-        # Predictions on the test data
-        >>> predict_time = report.metrics.predict_time()
-        0.0027  # may vary
-
-        # Predict time is cached
-        >>> report.metrics.predict_time() == predict_time
-        True
-
-        >>> report.metrics.predict_time(data_source="train")
-        0.003  # may vary
-
-        >>> report.metrics.predict_time(data_source="X_y", X=X_test, y=y_test)
-        0.0028  # may vary
-        """
-        return self._predict_time(
-            data_source=data_source, data_source_hash=None, X=X, y=y
-        )
 
     def _predict_time(
         self,

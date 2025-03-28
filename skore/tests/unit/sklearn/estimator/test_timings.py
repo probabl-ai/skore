@@ -27,7 +27,7 @@ def test_fit_time(binary_classification_data):
     estimator, data = binary_classification_data
     report = EstimatorReport(estimator, **data)
 
-    assert isinstance(report.metrics.fit_time(), float)
+    assert isinstance(report.metrics._fit_time(), float)
 
 
 def test_fit_time_estimator_already_fitted(binary_classification_data):
@@ -37,7 +37,7 @@ def test_fit_time_estimator_already_fitted(binary_classification_data):
     estimator.fit(data["X_train"], data["y_train"])
     report = EstimatorReport(estimator, X_test=data["X_test"], y_test=data["y_test"])
 
-    assert report.metrics.fit_time() is None
+    assert report.metrics._fit_time() is None
 
 
 def test_fit_time_estimator_unfitted(binary_classification_data):
@@ -45,7 +45,7 @@ def test_fit_time_estimator_unfitted(binary_classification_data):
     estimator, data = binary_classification_data
     report = EstimatorReport(estimator, fit=False, **data)
 
-    assert report.metrics.fit_time() is None
+    assert report.metrics._fit_time() is None
 
 
 @pytest.mark.parametrize("data_source", ["test", "train", "X_y"])
@@ -59,7 +59,7 @@ def test_predict_time(data_source, binary_classification_data):
     report.metrics.accuracy(data_source=data_source, X=X_, y=y_)
 
     assert isinstance(
-        report.metrics.predict_time(data_source=data_source, X=X_, y=y_), float
+        report.metrics._predict_time(data_source=data_source, X=X_, y=y_), float
     )
 
 
