@@ -1,3 +1,4 @@
+import joblib
 import pandas as pd
 import pytest
 from sklearn.datasets import make_classification
@@ -50,7 +51,8 @@ def test_predict_prefitted(data_source, binary_classification_data):
 
     if data_source == "X_y":
         X_, y_ = (data["X_test"], data["y_test"])
-        data_source_check = "X_y_ed3deae4cb54a7cf5f0e6fa6f7b4badd"
+        data_source_hash = joblib.hash((data["X_test"], data["y_test"]))
+        data_source_check = f"X_y_{data_source_hash}"
     else:
         X_, y_ = (None, None)
         data_source_check = data_source
@@ -72,6 +74,8 @@ def test_everything(binary_classification_data):
     report.metrics.accuracy(data_source="train", X=None, y=None)
     report.metrics.accuracy(data_source="test", X=None, y=None)
     report.metrics.accuracy(data_source="X_y", X=data["X_test"], y=data["y_test"])
+    data_source_hash = joblib.hash((data["X_test"], data["y_test"]))
+    data_source_check = f"X_y_{data_source_hash}"
 
     result = report.metrics.timings()
     assert isinstance(result, dict)
@@ -79,10 +83,7 @@ def test_everything(binary_classification_data):
     assert isinstance(result.get("fit_time"), float)
     assert isinstance(result.get("predict_time_train"), float)
     assert isinstance(result.get("predict_time_test"), float)
-    assert isinstance(
-        result.get("predict_time_X_y_ed3deae4cb54a7cf5f0e6fa6f7b4badd"),
-        float,
-    )
+    assert isinstance(result.get(f"predict_time_{data_source_check}"), float)
 
 
 def test_fit_time(binary_classification_data):
