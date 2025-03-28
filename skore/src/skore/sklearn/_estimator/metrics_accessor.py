@@ -474,7 +474,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             "predict_time",
         )
 
-        return self._parent._cache.get(predict_time_cache_key)
+        return self._parent._cache.get(predict_time_cache_key, default=None)
 
     def timings(self) -> dict:
         """Get all measured times.
