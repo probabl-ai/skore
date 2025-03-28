@@ -1,3 +1,4 @@
+import copy
 from typing import Any, Callable, Literal, Optional, Union
 
 import joblib
@@ -17,6 +18,7 @@ from skore.sklearn._plot.metrics import (
     RocCurveDisplay,
 )
 from skore.utils._accessor import _check_supported_ml_task
+from skore.utils._fixes import _validate_joblib_parallel_params
 from skore.utils._index import flatten_multi_index
 from skore.utils._progress_bar import progress_decorator
 
@@ -54,14 +56,15 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
         scoring: Optional[Union[list[str], Callable, SKLearnScorer]] = None,
         scoring_names: Optional[list[str]] = None,
         scoring_kwargs: Optional[dict[str, Any]] = None,
         pos_label: Optional[Union[int, float, bool, str]] = None,
         indicator_favorability: bool = False,
         flat_index: bool = False,
+        aggregate: Optional[
+            Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
+        ] = None,
     ) -> pd.DataFrame:
         """Report a set of metrics for the estimators.
 
@@ -138,8 +141,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         results = self._compute_metric_scores(
             report_metric_name="report_metrics",
             data_source=data_source,
-            X=X,
-            y=y,
+            aggregate=aggregate,
             scoring=scoring,
             pos_label=pos_label,
             scoring_kwargs=scoring_kwargs,
@@ -153,14 +155,126 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 results.index = flatten_multi_index(results.index)
         return results
 
+    def _combine_cross_validation_results(
+        self, results: list[pd.DataFrame], aggregate: None
+    ) -> pd.DataFrame:
+        # Ensure all tables have the same metrics
+
+        # Ensure all tables have a different model name
+        # If they're all different, then one can use
+        # model_name = results[0].columns[0][0]
+
+        # Don't require that all reports have the same number of splits
+
+        def add_model_name_to_index(df: pd.DataFrame, model_name: str) -> pd.DataFrame:
+            """Move the model name from the column index to the table index."""
+            df = copy.copy(df)
+
+            # Put the model name as a column
+            df["Estimator"] = model_name
+
+            # Put the model name into the index
+            if "Label / Average" in df.index.names:
+                new_index = ["Metric", "Label / Average", "Estimator"]
+            else:
+                new_index = ["Metric", "Estimator"]
+            df = df.reset_index().set_index(new_index)
+
+            # Then drop the model from the columns
+            df.columns = df.columns.droplevel(0)
+
+            return df
+
+        def reshape_results(df):
+            """Put data in the correct format.
+
+            - Index is "Metric", optionally "Label / Average", "Split"
+            - Columns are "Estimator"
+
+            Examples
+            --------
+            >>> # xdoctest: +SKIP
+            >>> df
+                                                    Split #0  Split #1  Split #2
+            Estimator Metric       Label / Average
+            m1        Precision    0                1.000000  1.000000  1.000000
+                                   1                1.000000  1.000000  1.000000
+                      ROC AUC                       1.000000  1.000000  1.000000
+            m2        Precision    0                1.000000  1.000000       NaN
+                                   1                1.000000  0.941176       NaN
+                      ROC AUC                       1.000000  0.996324       NaN
+            >>> reshape_results(df)
+            Estimator                                   m1        m2
+            Metric      Label / Average Split
+            Precision   0               Split #0  1.000000  1.000000
+                                        Split #1  1.000000  1.000000
+                                        Split #2  1.000000       NaN
+                        1               Split #0  1.000000  1.000000
+                                        Split #1  1.000000  0.941176
+                                        Split #2  1.000000       NaN
+            ROC AUC                     Split #0  1.000000  1.000000
+                                        Split #1  1.000000  0.996324
+                                        Split #2  1.000000       NaN
+            """
+            splits = df.columns
+
+            df_reset = df.reset_index()
+
+            metric_order = df_reset["Metric"].unique()
+
+            # Melt the Split columns into rows
+            if "Label / Average" in df_reset.columns:
+                id_vars = ["Estimator", "Metric", "Label / Average"]
+            else:
+                id_vars = ["Estimator", "Metric"]
+            melted_df = pd.melt(
+                df_reset,
+                id_vars=id_vars,
+                value_vars=splits,
+                var_name="Split",
+                value_name="Value",
+            )
+
+            # Now pivot to have models as columns
+            if "Label / Average" in melted_df.columns:
+                index = ["Metric", "Label / Average", "Split"]
+            else:
+                index = ["Metric", "Split"]
+            result_df = pd.pivot_table(
+                melted_df,
+                index=index,
+                columns="Estimator",
+                values="Value",
+            )
+
+            result_df = result_df.reindex(metric_order, level="Metric")
+
+            return result_df
+
+        df_model_name_in_index = pd.concat(
+            [add_model_name_to_index(df, f"m{i}") for i, df in enumerate(results, 1)]
+        )
+
+        if aggregate:
+            if isinstance(aggregate, str):
+                aggregate = [aggregate]
+
+            df = df_model_name_in_index.aggregate(func=aggregate, axis=1)
+            return df
+
+        df = reshape_results(df_model_name_in_index)
+
+        return df
+
     @progress_decorator(description="Compute metric for each split")
     def _compute_metric_scores(
         self,
         report_metric_name: str,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
+        aggregate: Optional[
+            Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
+        ] = None,
         **metric_kwargs: Any,
     ):
         # build the cache key components to finally create a tuple that will be used
@@ -193,9 +307,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             results = self._parent._cache[cache_key]
         else:
             parallel = joblib.Parallel(
-                n_jobs=self._parent.n_jobs,
-                return_as="generator",
-                require="sharedmem",
+                **_validate_joblib_parallel_params(
+                    n_jobs=self._parent.n_jobs,
+                    return_as="generator",
+                    require="sharedmem",
+                )
             )
             generator = parallel(
                 joblib.delayed(getattr(report.metrics, report_metric_name))(
@@ -204,13 +320,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 )
                 for report in self._parent.reports_
             )
-            results = []
+            individual_results = []
             for result in generator:
-                results.append(result)
+                individual_results.append(result)
                 progress.update(main_task, advance=1, refresh=True)
 
-            breakpoint()
-            results = pd.concat(results, axis=1)
+            results = self._combine_cross_validation_results(
+                individual_results, aggregate=aggregate
+            )
 
             # Pop the favorability column if it exists, to:
             # - not use it in the aggregate operation
@@ -219,8 +336,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 favorability = results.pop("Favorability").iloc[:, 0]
             else:
                 favorability = None
-
-            results.columns = pd.Index(self._parent.report_names_, name="Estimator")
 
             if favorability is not None:
                 results["Favorability"] = favorability
@@ -237,8 +352,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
     ) -> pd.DataFrame:
         """Compute the accuracy score.
 
@@ -284,8 +397,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         return self.report_metrics(
             scoring=["accuracy"],
             data_source=data_source,
-            X=X,
-            y=y,
         )
 
     @available_if(
@@ -1098,9 +1209,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 y_true=y_true,
                 y_pred=y_pred,
                 report_type="comparison-estimator",
-                estimators=[
-                    report.estimator_ for report in self._parent.reports_
-                ],
+                estimators=[report.estimator_ for report in self._parent.reports_],
                 estimator_names=self._parent.report_names_,
                 ml_task=self._parent._ml_task,
                 data_source=data_source,
