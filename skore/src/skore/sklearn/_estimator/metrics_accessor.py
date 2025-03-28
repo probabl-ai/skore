@@ -452,7 +452,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
 
         kwargs are available for compatibility with other metrics.
         """
-        return self._parent._cache.get(self._parent._fit_time_cache_key())
+        return self._parent.fit_time_
 
     def _predict_time(
         self,

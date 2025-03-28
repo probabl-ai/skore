@@ -180,10 +180,10 @@ def test_cross_validation_report_repr(binary_classification_data):
 @pytest.mark.parametrize(
     "fixture_name, expected_n_keys",
     [
-        ("binary_classification_data", 11),
-        ("binary_classification_data_svc", 11),
-        ("multiclass_classification_data", 13),
-        ("regression_data", 5),
+        ("binary_classification_data", 10),
+        ("binary_classification_data_svc", 10),
+        ("multiclass_classification_data", 12),
+        ("regression_data", 4),
     ],
 )
 @pytest.mark.parametrize("n_jobs", [None, 1, 2])
@@ -204,9 +204,7 @@ def test_cross_validation_report_cache_predictions(
     report.clear_cache()
     assert report._cache == {}
     for estimator_report in report.estimator_reports_:
-        assert list(estimator_report._cache.keys()) == [
-            estimator_report._fit_time_cache_key()
-        ]
+        assert estimator_report._cache == {}
 
 
 def test_cross_validation_report_pickle(tmp_path, binary_classification_data):

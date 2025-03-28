@@ -60,6 +60,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     estimator_name_ : str
         The name of the estimator.
 
+    fit_time_ : float or None
+        The time taken to fit the estimator, in seconds. May be None if, for example,
+        the estimator was already fitted.
+
     See Also
     --------
     skore.sklearn.cross_validation.report.CrossValidationReport
@@ -148,11 +152,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self._y_train = y_train
         self._X_test = X_test
         self._y_test = y_test
+        self.fit_time_ = fit_time
 
         self._initialize_state()
-
-        if fit_time is not None:
-            self._cache[self._fit_time_cache_key()] = fit_time
 
     def _initialize_state(self) -> None:
         """Initialize/reset the random number generator, hash, and cache."""
@@ -191,16 +193,11 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         ...     y_test=y_test,
         ... )
         >>> report.cache_predictions()
-        >>> assert len(report._cache) > 1  # cache is not empty
         >>> report.clear_cache()
-        >>> len(report._cache)  # fit time still remains
-        1
+        >>> report._cache
+        {}
         """
-        fit_time = self._cache.get(self._fit_time_cache_key())
-        if fit_time is None:
-            self._cache = {}
-        else:
-            self._cache = {self._fit_time_cache_key(): fit_time}
+        self._cache = {}
 
     @progress_decorator(description="Caching predictions")
     def cache_predictions(
@@ -362,7 +359,3 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     def __repr__(self) -> str:
         """Return a string representation."""
         return f"{self.__class__.__name__}(estimator={self.estimator_}, ...)"
-
-    # Utils
-    def _fit_time_cache_key(self):
-        return (self._hash, "fit_time")
