@@ -1,4 +1,7 @@
-from typing import Any
+from functools import wraps
+from typing import Any, Callable
+
+import seaborn as sns
 
 
 class StyleDisplayMixin:
@@ -49,3 +52,33 @@ class StyleDisplayMixin:
                 )
             setattr(self, default_attr, param_value)
         return self
+
+    @staticmethod
+    def style_plot(plot_func: Callable) -> Callable:
+        """Apply consistent style to skore displays.
+
+        This decorator:
+        1. Sets seaborn's plotting context to "talk"
+        2. Executes the plotting code
+        3. Applies tight_layout to the figure if it exists
+
+        Parameters
+        ----------
+        plot_func : callable
+            The plot function to be decorated.
+
+        Returns
+        -------
+        callable
+            The decorated plot function.
+        """
+
+        @wraps(plot_func)
+        def wrapper(self, *args: Any, **kwargs: Any) -> Any:
+            with sns.plotting_context("notebook"):
+                result = plot_func(self, *args, **kwargs)
+                if hasattr(self, "figure_"):
+                    self.figure_.tight_layout()
+                return result
+
+        return wrapper

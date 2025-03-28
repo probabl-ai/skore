@@ -23,7 +23,7 @@ from skore.sklearn.types import MLTask
 RangeData = namedtuple("RangeData", ["min", "max"])
 
 
-class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
+class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
     """Visualization of the prediction error of a regression model.
 
     This tool can display "residuals vs predicted" or "actual vs predicted"
@@ -435,6 +435,7 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
 
         return scatter
 
+    @StyleDisplayMixin.style_plot
     def plot(
         self,
         ax: Optional[Axes] = None,
