@@ -1,7 +1,7 @@
 from functools import wraps
 from typing import Any, Callable
 
-import seaborn as sns
+import matplotlib.pyplot as plt
 
 
 class StyleDisplayMixin:
@@ -75,7 +75,7 @@ class StyleDisplayMixin:
 
         @wraps(plot_func)
         def wrapper(self, *args: Any, **kwargs: Any) -> Any:
-            with sns.plotting_context("notebook"):
+            with plt.style.context("seaborn-v0_8-notebook"):
                 result = plot_func(self, *args, **kwargs)
                 if hasattr(self, "figure_"):
                     self.figure_.tight_layout()
