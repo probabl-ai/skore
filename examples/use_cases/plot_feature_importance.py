@@ -874,24 +874,52 @@ ridge_report.feature_importance.permutation(random_state=0)
 
 # %%
 def plot_permutation_train_test(est_report):
-    fig, axes = plt.subplots(nrows=1, ncols=2, sharey=True)
-
-    # Boxplot for the train set
-    est_report.feature_importance.permutation(
+    train_importance = est_report.feature_importance.permutation(
         data_source="train", random_state=0
-    ).T.boxplot(ax=axes[0], vert=False)
-    axes[0].set_title("Train set")
-    axes[0].set_xlabel("r2")
-
-    # Boxplot for the test set
-    est_report.feature_importance.permutation(
+    ).T
+    test_importance = est_report.feature_importance.permutation(
         data_source="test", random_state=0
-    ).T.boxplot(ax=axes[1], vert=False)
-    axes[1].set_title("Test set")
-    axes[1].set_xlabel("r2")
+    ).T
 
-    fig.suptitle(f"Permutation feature importance of {est_report.estimator_name_}")
-    plt.tight_layout()
+    # Rename columns to be in format (metric, column name)
+    train_importance.columns = [
+        f"({col[0]}, {col[1]})" if isinstance(col, tuple) else col
+        for col in train_importance.columns
+    ]
+    test_importance.columns = [
+        f"({col[0]}, {col[1]})" if isinstance(col, tuple) else col
+        for col in test_importance.columns
+    ]
+
+    # Convert to long format
+    train_df = train_importance.reset_index(drop=True).melt(
+        var_name="Feature", value_name="Importance"
+    )
+    train_df["Dataset"] = "Train"
+
+    test_df = test_importance.reset_index(drop=True).melt(
+        var_name="Feature", value_name="Importance"
+    )
+    test_df["Dataset"] = "Test"
+
+    combined_df = pd.concat([train_df, test_df])
+
+    plt.figure(figsize=(10, 6))
+    sns.boxplot(
+        data=combined_df,
+        x="Importance",
+        y="Feature",
+        hue="Dataset",
+        palette={"Train": "blue", "Test": "#F99905"},
+    )
+
+    plt.title(
+        f"Permutation feature importance of {est_report.estimator_name_} (Train vs Test)"
+    )
+    plt.xlabel("r2")
+    plt.ylabel("Feature")
+    plt.legend(title="Dataset")
+    plt.grid()
     plt.show()
 
 
