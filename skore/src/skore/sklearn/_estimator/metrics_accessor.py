@@ -1,4 +1,5 @@
 import inspect
+import math
 from collections.abc import Iterable
 from functools import partial
 from typing import Any, Callable, Literal, Optional, Union
@@ -447,7 +448,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                 return score[0]
         return score
 
-    def _fit_time(self, **kwargs) -> Union[float, None]:
+    def _fit_time(self, **kwargs) -> float:
         """Get time to fit the estimator.
 
         kwargs are available for compatibility with other metrics.
@@ -496,7 +497,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
               given data source.
         """
         fit_time_ = self._fit_time()
-        fit_time = {"fit_time": fit_time_} if fit_time_ is not None else {}
+        fit_time = {"fit_time": fit_time_} if not math.isnan(fit_time_) else {}
 
         # predict_time cache keys are of the form
         # (self._parent._hash, data_source, data_source_hash, "predict_time")
