@@ -474,31 +474,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             "predict_time",
         )
 
-        predict_time = self._parent._cache.get(predict_time_cache_key)
-
-        if predict_time is None:
-            # If the time was not found in the cache, compute predictions
-            _get_cached_response_values(
-                cache=self._parent._cache,
-                estimator_hash=self._parent._hash,
-                estimator=self._parent.estimator_,
-                X=X,
-                response_method="predict",
-                data_source=data_source,
-                data_source_hash=data_source_hash,
-                # In binary classification, will default to
-                # self._parent.estimator_.classes_[1]
-                pos_label=None,
-            )
-
-            predict_time = self._parent._cache.get(predict_time_cache_key)
-
-            assert predict_time is not None, (
-                "Prediction was computed, but predict time was not found. "
-                "This error should never be reached."
-            )
-
-        return predict_time
+        return self._parent._cache.get(predict_time_cache_key)
 
     def timings(self) -> dict:
         """Get all measured times.
