@@ -138,6 +138,12 @@ print(f"Time taken to compute the metrics: {end - start:.2f} seconds")
 
 # %%
 #
+# Note that when the predictions are computed, we additionally store the time the
+# operation took:
+report.metrics.predict_time()
+
+# %%
+#
 # Since we obtain a pandas dataframe, we can also use the plotting interface of
 # pandas.
 import matplotlib.pyplot as plt
