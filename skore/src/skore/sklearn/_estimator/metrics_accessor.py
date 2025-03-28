@@ -163,7 +163,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                     scoring += ["_roc_auc", "_log_loss"]
             else:
                 scoring = ["_r2", "_rmse"]
-            scoring += ["fit_time", "predict_time"]
+            scoring += ["_fit_time", "_predict_time"]
 
         if scoring_names is not None and len(scoring_names) != len(scoring):
             if scoring_was_none:
