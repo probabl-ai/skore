@@ -95,11 +95,6 @@ report.metrics.help()
 
 # %%
 #
-# Individual metrics, like the time to fit the estimator, can be called like this:
-report.metrics.fit_time()
-
-# %%
-#
 # Metrics computation with aggressive caching
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
@@ -138,9 +133,9 @@ print(f"Time taken to compute the metrics: {end - start:.2f} seconds")
 
 # %%
 #
-# Note that when the predictions are computed, we additionally store the time the
-# operation took:
-report.metrics.predict_time()
+# Note that when the model is fitted or the predictions are computed,
+# we additionally store the time the operation took:
+report.metrics.timings()
 
 # %%
 #

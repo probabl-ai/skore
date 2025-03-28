@@ -500,6 +500,44 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
 
         return predict_time
 
+    def timings(self) -> dict:
+        """Get all measured times.
+
+        When an estimator is fitted inside the EstimatorReport, the time to fit is
+        recorded. Similarly, when predictions are computed on some data, the time to
+        predict is recorded. This function returns all the recorded times.
+
+        Returns
+        -------
+        timings : dict
+            The recorded times, in seconds,
+            in the form of a dict with some or all of the following keys:
+
+            - "fit_time", for the time to fit the estimator in the train set.
+            - "predict_time_{data_source}", where data_source is "train", "test" or
+              "X_y_{data_source_hash}", for the time to compute the predictions on the
+              given data source.
+        """
+        fit_time_ = self._fit_time()
+        fit_time = {"fit_time": fit_time_} if fit_time_ is not None else {}
+
+        # predict_time cache keys are of the form
+        # (self._parent._hash, data_source, data_source_hash, "predict_time")
+
+        def make_key(k: tuple) -> str:
+            data_source, data_source_hash = k[1], k[2]
+            if data_source == "X_y":
+                return f"predict_time_X_y_{data_source_hash}"
+            return f"predict_time_{data_source}"
+
+        predict_times = {
+            make_key(k): v
+            for k, v in self._parent._cache.items()
+            if k[-1] == "predict_time"
+        }
+
+        return fit_time | predict_times
+
     @available_if(
         _check_supported_ml_task(
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
