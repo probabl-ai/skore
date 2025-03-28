@@ -60,7 +60,7 @@ class StyleDisplayMixin:
         This decorator:
         1. Sets seaborn's plotting context to "talk"
         2. Executes the plotting code
-        3. Applies tight_layout to the figure if it exists
+        3. Applies `tight_layout` to the figure if it exists
 
         Parameters
         ----------
