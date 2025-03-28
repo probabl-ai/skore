@@ -243,6 +243,29 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             self._parent._cache[cache_key] = results
         return results
 
+    def timings(self) -> pd.DataFrame:
+        """Get all measured processing times related to the different estimators.
+
+        The index of the returned dataframe is the name of the processing time. When
+        the estimators were not used to predict, no timings regarding the prediction
+        will be present.
+
+        Returns
+        -------
+        pd.DataFrame
+            A dataframe with the processing times.
+        """
+        timings: pd.DataFrame = pd.concat(
+            [
+                pd.Series(report.metrics.timings())
+                for report in self._parent.estimator_reports_
+            ],
+            axis=1,
+            keys=self._parent.report_names_,
+        )
+        timings.index = timings.index.str.replace("_", " ").str.capitalize()
+        return timings
+
     @available_if(
         _check_supported_ml_task(
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
