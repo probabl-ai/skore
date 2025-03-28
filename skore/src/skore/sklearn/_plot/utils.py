@@ -1,7 +1,7 @@
 import inspect
 from collections.abc import Sequence
 from io import StringIO
-from typing import Any, Literal, Optional, Union
+from typing import Any, Literal, Optional, Union, cast
 
 import numpy as np
 from matplotlib.axes import Axes
@@ -175,10 +175,8 @@ class _ClassifierCurveDisplayMixin:
             If the format of curve_kwargs is invalid.
         """
         if self.ml_task == "binary-classification":
-            assert self.pos_label is not None, (
-                "pos_label should not be None with binary classification."
-            )
-            n_curves = len(metric[self.pos_label])
+            pos_label = cast(Union[int, float, bool, str], self.pos_label)
+            n_curves = len(metric[pos_label])
             if report_type in ("estimator", "cross-validation"):
                 allow_single_dict = True
             elif report_type == "comparison-estimator":
