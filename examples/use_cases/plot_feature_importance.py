@@ -873,56 +873,54 @@ ridge_report.feature_importance.permutation(random_state=0)
 
 
 # %%
+
+
 def plot_permutation_train_test(est_report):
-    # Extract feature importance for train and test
-    train_importance = est_report.feature_importance.permutation(
+    _, ax = plt.subplots(figsize=(8, 6))
+
+    train_color = "blue"
+    test_color = "orange"
+
+    est_report.feature_importance.permutation(
         data_source="train", random_state=0
-    ).T
-    test_importance = est_report.feature_importance.permutation(
+    ).T.boxplot(
+        ax=ax,
+        vert=False,
+        widths=0.35,
+        patch_artist=True,
+        boxprops=dict(facecolor=train_color, alpha=0.7),
+        medianprops=dict(color="black"),
+        positions=[x + 0.4 for x in range(len(est_report.X_train.columns))],
+    )
+    est_report.feature_importance.permutation(
         data_source="test", random_state=0
-    ).T
-
-    train_importance.columns = [
-        f"({col[0]}, {col[1]})" if isinstance(col, tuple) else col
-        for col in train_importance.columns
-    ]
-    test_importance.columns = [
-        f"({col[0]}, {col[1]})" if isinstance(col, tuple) else col
-        for col in test_importance.columns
-    ]
-
-    # Convert to long format
-    train_df = train_importance.reset_index(drop=True).melt(
-        var_name="Feature", value_name="Importance"
-    )
-    train_df["Dataset"] = "Train"
-
-    test_df = test_importance.reset_index(drop=True).melt(
-        var_name="Feature", value_name="Importance"
-    )
-    test_df["Dataset"] = "Test"
-
-    combined_df = pd.concat([train_df, test_df])
-
-    plt.figure(figsize=(10, 6))
-    sns.boxplot(
-        data=combined_df,
-        x="Importance",
-        y="Feature",
-        hue="Dataset",
-        palette={
-            "Train": "blue",
-            "Test": "#F99905",  # orange
-        },
+    ).T.boxplot(
+        ax=ax,
+        vert=False,
+        widths=0.35,
+        patch_artist=True,
+        boxprops=dict(facecolor=test_color, alpha=0.7),
+        medianprops=dict(color="black"),
+        positions=range(len(est_report.X_test.columns)),
     )
 
-    plt.title(
+    ax.legend(
+        handles=[
+            plt.Line2D([], [0], color=train_color, lw=5, label="Train"),
+            plt.Line2D([0], [0], color=test_color, lw=5, label="Test"),
+        ],
+        loc="lower right",
+        title="Dataset",
+    )
+
+    ax.set_title(
         f"Permutation feature importance of {est_report.estimator_name_} (Train vs Test)"
     )
-    plt.xlabel("r2")
-    plt.ylabel("Feature")
-    plt.legend(title="Dataset")
-    plt.grid()
+    ax.set_xlabel("r2")
+    ax.set_yticks([x + 0.2 for x in range(len(est_report.X_train.columns))])
+    ax.set_yticklabels(est_report.X_train.columns)
+
+    plt.tight_layout()
     plt.show()
 
 
@@ -984,3 +982,5 @@ plot_permutation_train_test(tree_report)
 # compared to linear models.
 # The model-agnostic permutation feature importance further enabled us to compare
 # feature significance across diverse model types.
+
+# %%
