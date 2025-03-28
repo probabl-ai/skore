@@ -3,6 +3,29 @@ from typing import Any, Callable
 
 import matplotlib.pyplot as plt
 
+DEFAULT_STYLE = {
+    "font.size": 14,
+    "axes.labelsize": 14,
+    "axes.titlesize": 14,
+    "xtick.labelsize": 13,
+    "ytick.labelsize": 13,
+    "legend.fontsize": 13,
+    "legend.title_fontsize": 14,
+    "axes.linewidth": 1.25,
+    "grid.linewidth": 1.25,
+    "lines.linewidth": 1.75,
+    "lines.markersize": 6,
+    "patch.linewidth": 1.25,
+    "xtick.major.width": 1.5,
+    "ytick.major.width": 1.5,
+    "xtick.minor.width": 1.25,
+    "ytick.minor.width": 1.25,
+    "xtick.major.size": 7,
+    "ytick.major.size": 7,
+    "xtick.minor.size": 5,
+    "ytick.minor.size": 5,
+}
+
 
 class StyleDisplayMixin:
     """Mixin to control the style plot of a display."""
@@ -75,7 +98,7 @@ class StyleDisplayMixin:
 
         @wraps(plot_func)
         def wrapper(self, *args: Any, **kwargs: Any) -> Any:
-            with plt.style.context("seaborn-v0_8-notebook"):
+            with plt.style.context(DEFAULT_STYLE):
                 result = plot_func(self, *args, **kwargs)
                 if hasattr(self, "figure_"):
                     self.figure_.tight_layout()
