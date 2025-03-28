@@ -15,6 +15,7 @@ from skore.externals._pandas_accessors import DirNamesMixin
 from skore.externals._sklearn_compat import is_clusterer
 from skore.sklearn._base import _BaseReport, _get_cached_response_values
 from skore.sklearn.find_ml_task import _find_ml_task
+from skore.utils._measure_time import MeasureTime
 from skore.utils._parallel import Parallel, delayed
 from skore.utils._progress_bar import progress_decorator
 
@@ -59,6 +60,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     estimator_name_ : str
         The name of the estimator.
 
+    fit_time_ : float or None
+        The time taken to fit the estimator, in seconds. May be None if, for example,
+        the estimator was already fitted.
+
     See Also
     --------
     skore.sklearn.cross_validation.report.CrossValidationReport
@@ -87,13 +92,16 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         estimator: BaseEstimator,
         X_train: Union[ArrayLike, None],
         y_train: Union[ArrayLike, None],
-    ) -> BaseEstimator:
+    ) -> tuple[BaseEstimator, float]:
         if X_train is None or (y_train is None and not is_clusterer(estimator)):
             raise ValueError(
                 "The training data is required to fit the estimator. "
                 "Please provide both X_train and y_train."
             )
-        return clone(estimator).fit(X_train, y_train)
+        estimator_ = clone(estimator)
+        with MeasureTime() as fit_time:
+            estimator_.fit(X_train, y_train)
+        return estimator_, fit_time()
 
     @classmethod
     def _copy_estimator(cls, estimator: BaseEstimator) -> BaseEstimator:
@@ -124,14 +132,17 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self._progress_info: Optional[dict[str, Any]] = None
         self._parent_progress = None
 
+        fit_time: Optional[float] = None
         if fit == "auto":
             try:
                 check_is_fitted(estimator)
                 self._estimator = self._copy_estimator(estimator)
             except NotFittedError:
-                self._estimator = self._fit_estimator(estimator, X_train, y_train)
+                self._estimator, fit_time = self._fit_estimator(
+                    estimator, X_train, y_train
+                )
         elif fit is True:
-            self._estimator = self._fit_estimator(estimator, X_train, y_train)
+            self._estimator, fit_time = self._fit_estimator(estimator, X_train, y_train)
         else:  # fit is False
             self._estimator = self._copy_estimator(estimator)
 
@@ -141,6 +152,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self._y_train = y_train
         self._X_test = X_test
         self._y_test = y_test
+        self.fit_time_ = fit_time
 
         self._initialize_state()
 
@@ -159,6 +171,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     def clear_cache(self) -> None:
         """Clear the cache.
+
+        Note that the cache might not be empty after this method is run as some
+        values need to be kept, such as the fit time.
 
         Examples
         --------

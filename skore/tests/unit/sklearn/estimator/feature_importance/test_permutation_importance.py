@@ -1,3 +1,4 @@
+import contextlib
 import copy
 
 import numpy as np
@@ -11,6 +12,22 @@ from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 from skore import EstimatorReport
+
+
+@contextlib.contextmanager
+def check_cache_changed(value):
+    """Assert that `value` has changed during context execution."""
+    initial_value = copy.copy(value)
+    yield
+    assert value != initial_value
+
+
+@contextlib.contextmanager
+def check_cache_unchanged(value):
+    """Assert that `value` has not changed during context execution."""
+    initial_value = copy.copy(value)
+    yield
+    assert value == initial_value
 
 
 def regression_data():
@@ -193,14 +210,15 @@ def test_cache_n_jobs(regression_data):
     X, y = regression_data
     report = EstimatorReport(LinearRegression(), X_train=X, y_train=y)
 
-    result = report.feature_importance.permutation(
-        data_source="train", random_state=42, n_jobs=1
-    )
-    assert report._cache != {}
-    cached_result = report.feature_importance.permutation(
-        data_source="train", random_state=42, n_jobs=-1
-    )
-    assert len(report._cache) == 1
+    with check_cache_changed(report._cache):
+        result = report.feature_importance.permutation(
+            data_source="train", random_state=42, n_jobs=1
+        )
+
+    with check_cache_unchanged(report._cache):
+        cached_result = report.feature_importance.permutation(
+            data_source="train", random_state=42, n_jobs=-1
+        )
 
     pd.testing.assert_frame_equal(cached_result, result)
 
@@ -215,32 +233,32 @@ def test_cache_random_state(regression_data):
     X, y = regression_data
     report = EstimatorReport(LinearRegression(), X_train=X, y_train=y)
 
-    # random_state is None
-    report.feature_importance.permutation(data_source="train")
-    # so no cache
-    assert report._cache == {}
+    # random_state is None so no cache
+    with check_cache_unchanged(report._cache):
+        report.feature_importance.permutation(data_source="train")
 
-    # random_state is a RandomState
-    err_msg = (
-        "random_state must be an integer or None; "
-        "got <class 'numpy.random.mtrand.RandomState'>"
-    )
-    with pytest.raises(ValueError, match=err_msg):
-        report.feature_importance.permutation(
-            data_source="train",
-            random_state=np.random.RandomState(42),
+    # random_state is a RandomState so no cache
+    with check_cache_unchanged(report._cache):
+        err_msg = (
+            "random_state must be an integer or None; "
+            "got <class 'numpy.random.mtrand.RandomState'>"
         )
-    # so no cache
-    assert report._cache == {}
+        with pytest.raises(ValueError, match=err_msg):
+            report.feature_importance.permutation(
+                data_source="train",
+                random_state=np.random.RandomState(42),
+            )
 
-    # random_state is an int
-    result = report.feature_importance.permutation(data_source="train", random_state=42)
-    # so the result is cached
-    assert report._cache != {}
-    cached_result = report.feature_importance.permutation(
-        data_source="train", random_state=42
-    )
-    assert len(report._cache) == 1
+    # random_state is an int so the result is cached
+    with check_cache_changed(report._cache):
+        result = report.feature_importance.permutation(
+            data_source="train", random_state=42
+        )
+
+    with check_cache_unchanged(report._cache):
+        cached_result = report.feature_importance.permutation(
+            data_source="train", random_state=42
+        )
 
     pd.testing.assert_frame_equal(cached_result, result)
 
@@ -254,11 +272,12 @@ def test_cache_scoring(regression_data):
     report.feature_importance.permutation(
         data_source="train", scoring="r2", random_state=42
     )
-    report.feature_importance.permutation(
-        data_source="train", scoring="rmse", random_state=42
-    )
+
     # Scorings are different, so cache keys should be different
-    assert len(report._cache) == 2
+    with check_cache_changed(report._cache):
+        report.feature_importance.permutation(
+            data_source="train", scoring="rmse", random_state=42
+        )
 
 
 @pytest.mark.parametrize(
@@ -275,14 +294,15 @@ def test_cache_scoring_is_callable(regression_data, scoring):
     X, y = regression_data
     report = EstimatorReport(LinearRegression(), X_train=X, y_train=y)
 
-    result = report.feature_importance.permutation(
-        data_source="train", scoring=scoring, random_state=42
-    )
-    assert report._cache != {}
-    cached_result = report.feature_importance.permutation(
-        data_source="train", scoring=copy.copy(scoring), random_state=42
-    )
-    assert len(report._cache) == 1
+    with check_cache_changed(report._cache):
+        result = report.feature_importance.permutation(
+            data_source="train", scoring=scoring, random_state=42
+        )
+
+    with check_cache_unchanged(report._cache):
+        cached_result = report.feature_importance.permutation(
+            data_source="train", scoring=copy.copy(scoring), random_state=42
+        )
 
     pd.testing.assert_frame_equal(cached_result, result)
 

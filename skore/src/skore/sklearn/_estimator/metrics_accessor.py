@@ -33,6 +33,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
     """
 
     _SCORE_OR_LOSS_INFO: dict[str, dict[str, str]] = {
+        "fit_time": {"name": "Fit time", "icon": "(↘︎)"},
+        "predict_time": {"name": "Predict time", "icon": "(↘︎)"},
         "accuracy": {"name": "Accuracy", "icon": "(↗︎)"},
         "precision": {"name": "Precision", "icon": "(↗︎)"},
         "recall": {"name": "Recall", "icon": "(↗︎)"},
@@ -161,6 +163,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                     scoring += ["_roc_auc", "_log_loss"]
             else:
                 scoring = ["_r2", "_rmse"]
+            scoring += ["_fit_time", "_predict_time"]
 
         if scoring_names is not None and len(scoring_names) != len(scoring):
             if scoring_was_none:
@@ -169,7 +172,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                     "The `scoring_names` parameter should be of the same length as "
                     "the `scoring` parameter. In your case, `scoring` was set to None "
                     f"and you are using our default scores that are {len(scoring)}. "
-                    "The list is the following: {scoring}."
+                    f"The list is the following: {scoring}."
                 )
             else:
                 raise ValueError(
@@ -443,6 +446,74 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             if len(score) == 1:
                 return score[0]
         return score
+
+    def _fit_time(self, **kwargs) -> Union[float, None]:
+        """Get time to fit the estimator.
+
+        kwargs are available for compatibility with other metrics.
+        """
+        return self._parent.fit_time_
+
+    def _predict_time(
+        self,
+        *,
+        data_source: DataSource = "test",
+        data_source_hash: Optional[int] = None,
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
+    ) -> Union[float, None]:
+        """Get prediction time if it has been already measured."""
+        if data_source_hash is None:
+            X, _, data_source_hash = self._get_X_y_and_data_source_hash(
+                data_source=data_source, X=X, y=y
+            )
+
+        predict_time_cache_key = (
+            self._parent._hash,
+            data_source,
+            data_source_hash,
+            "predict_time",
+        )
+
+        return self._parent._cache.get(predict_time_cache_key, None)
+
+    def timings(self) -> dict:
+        """Get all measured processing times related to the estimator.
+
+        When an estimator is fitted inside the :class:`~skore.EstimatorReport`, the time
+        to fit is recorded. Similarly, when predictions are computed on some data, the
+        time to predict is recorded. This function returns all the recorded times.
+
+        Returns
+        -------
+        timings : dict
+            The recorded times, in seconds,
+            in the form of a `dict` with some or all of the following keys:
+
+            - "fit_time", for the time to fit the estimator in the train set.
+            - "predict_time_{data_source}", where data_source is "train", "test" or
+              "X_y_{data_source_hash}", for the time to compute the predictions on the
+              given data source.
+        """
+        fit_time_ = self._fit_time()
+        fit_time = {"fit_time": fit_time_} if fit_time_ is not None else {}
+
+        # predict_time cache keys are of the form
+        # (self._parent._hash, data_source, data_source_hash, "predict_time")
+
+        def make_key(k: tuple) -> str:
+            data_source, data_source_hash = k[1], k[2]
+            if data_source == "X_y":
+                return f"predict_time_X_y_{data_source_hash}"
+            return f"predict_time_{data_source}"
+
+        predict_times = {
+            make_key(k): v
+            for k, v in self._parent._cache.items()
+            if k[-1] == "predict_time"
+        }
+
+        return fit_time | predict_times
 
     @available_if(
         _check_supported_ml_task(

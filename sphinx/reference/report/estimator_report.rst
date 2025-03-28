@@ -51,6 +51,7 @@ estimator.
     EstimatorReport.metrics.help
     EstimatorReport.metrics.report_metrics
     EstimatorReport.metrics.custom_metric
+    EstimatorReport.metrics.timings
     EstimatorReport.metrics.accuracy
     EstimatorReport.metrics.brier_score
     EstimatorReport.metrics.log_loss

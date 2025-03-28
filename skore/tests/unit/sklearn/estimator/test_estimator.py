@@ -272,14 +272,14 @@ def test_estimator_report_repr(binary_classification_data):
 @pytest.mark.parametrize(
     "fixture_name, pass_train_data, expected_n_keys",
     [
-        ("binary_classification_data", True, 8),
-        ("binary_classification_data_svc", True, 8),
-        ("multiclass_classification_data", True, 10),
-        ("regression_data", True, 2),
-        ("binary_classification_data", False, 4),
-        ("binary_classification_data_svc", False, 4),
-        ("multiclass_classification_data", False, 5),
-        ("regression_data", False, 1),
+        ("binary_classification_data", True, 10),
+        ("binary_classification_data_svc", True, 10),
+        ("multiclass_classification_data", True, 12),
+        ("regression_data", True, 4),
+        ("binary_classification_data", False, 5),
+        ("binary_classification_data_svc", False, 5),
+        ("multiclass_classification_data", False, 6),
+        ("regression_data", False, 2),
     ],
 )
 @pytest.mark.parametrize("n_jobs", [1, 2])
@@ -328,7 +328,7 @@ def test_estimator_report_flat_index(binary_classification_data):
     estimator, X_test, y_test = binary_classification_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     result = report.metrics.report_metrics(flat_index=True)
-    assert result.shape == (6, 1)
+    assert result.shape == (8, 1)
     assert isinstance(result.index, pd.Index)
     assert result.index.tolist() == [
         "precision_0",
@@ -337,6 +337,8 @@ def test_estimator_report_flat_index(binary_classification_data):
         "recall_1",
         "roc_auc",
         "brier_score",
+        "fit_time",
+        "predict_time",
     ]
     assert result.columns.tolist() == ["RandomForestClassifier"]
 
@@ -617,10 +619,17 @@ def test_estimator_report_report_metrics_binary(
         pos_label=pos_label, data_source=data_source, **kwargs
     )
     assert "Favorability" not in result.columns
-    expected_metrics = ("precision", "recall", "roc_auc", "brier_score")
+    expected_metrics = (
+        "precision",
+        "recall",
+        "roc_auc",
+        "brier_score",
+        "fit_time",
+        "predict_time",
+    )
     # depending on `pos_label`, we report a stats for each class or not for
     # precision and recall
-    expected_nb_stats = 2 * nb_stats + 2
+    expected_nb_stats = 2 * nb_stats + 4
     _check_results_report_metrics(result, expected_metrics, expected_nb_stats)
 
     # Repeat the same experiment where we the target labels are not [0, 1] but
@@ -634,10 +643,17 @@ def test_estimator_report_report_metrics_binary(
     result = report.metrics.report_metrics(
         pos_label=pos_label_name, data_source=data_source, **kwargs
     )
-    expected_metrics = ("precision", "recall", "roc_auc", "brier_score")
+    expected_metrics = (
+        "precision",
+        "recall",
+        "roc_auc",
+        "brier_score",
+        "fit_time",
+        "predict_time",
+    )
     # depending on `pos_label`, we report a stats for each class or not for
     # precision and recall
-    expected_nb_stats = 2 * nb_stats + 2
+    expected_nb_stats = 2 * nb_stats + 4
     _check_results_report_metrics(result, expected_metrics, expected_nb_stats)
 
     estimator, X_test, y_test = binary_classification_data_svc
@@ -646,10 +662,10 @@ def test_estimator_report_report_metrics_binary(
     result = report.metrics.report_metrics(
         pos_label=pos_label, data_source=data_source, **kwargs
     )
-    expected_metrics = ("precision", "recall", "roc_auc")
+    expected_metrics = ("precision", "recall", "roc_auc", "fit_time", "predict_time")
     # depending on `pos_label`, we report a stats for each class or not for
     # precision and recall
-    expected_nb_stats = 2 * nb_stats + 1
+    expected_nb_stats = 2 * nb_stats + 3
     _check_results_report_metrics(result, expected_metrics, expected_nb_stats)
 
 
@@ -665,20 +681,27 @@ def test_estimator_report_report_metrics_multiclass(
     kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
     result = report.metrics.report_metrics(data_source=data_source, **kwargs)
     assert "Favorability" not in result.columns
-    expected_metrics = ("precision", "recall", "roc_auc", "log_loss")
+    expected_metrics = (
+        "precision",
+        "recall",
+        "roc_auc",
+        "log_loss",
+        "fit_time",
+        "predict_time",
+    )
     # since we are not averaging by default, we report 3 statistics for
     # precision, recall and roc_auc
-    expected_nb_stats = 3 * 3 + 1
+    expected_nb_stats = 3 * 3 + 3
     _check_results_report_metrics(result, expected_metrics, expected_nb_stats)
 
     estimator, X_test, y_test = multiclass_classification_data_svc
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
     result = report.metrics.report_metrics(data_source=data_source, **kwargs)
-    expected_metrics = ("precision", "recall")
+    expected_metrics = ("precision", "recall", "fit_time", "predict_time")
     # since we are not averaging by default, we report 3 statistics for
     # precision and recall
-    expected_nb_stats = 3 * 2
+    expected_nb_stats = 3 * 2 + 2
     _check_results_report_metrics(result, expected_metrics, expected_nb_stats)
 
 
@@ -690,7 +713,7 @@ def test_estimator_report_report_metrics_regression(regression_data, data_source
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     result = report.metrics.report_metrics(data_source=data_source, **kwargs)
     assert "Favorability" not in result.columns
-    expected_metrics = ("r2", "rmse")
+    expected_metrics = ("r2", "rmse", "fit_time", "predict_time")
     _check_results_report_metrics(result, expected_metrics, len(expected_metrics))
 
 
@@ -702,7 +725,7 @@ def test_estimator_report_report_metrics_scoring_kwargs(
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     assert hasattr(report.metrics, "report_metrics")
     result = report.metrics.report_metrics(scoring_kwargs={"multioutput": "raw_values"})
-    assert result.shape == (4, 1)
+    assert result.shape == (6, 1)
     assert isinstance(result.index, pd.MultiIndex)
     assert result.index.names == ["Metric", "Output"]
 
@@ -710,7 +733,7 @@ def test_estimator_report_report_metrics_scoring_kwargs(
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     assert hasattr(report.metrics, "report_metrics")
     result = report.metrics.report_metrics(scoring_kwargs={"average": None})
-    assert result.shape == (10, 1)
+    assert result.shape == (12, 1)
     assert isinstance(result.index, pd.MultiIndex)
     assert result.index.names == ["Metric", "Label / Average"]
 
@@ -718,10 +741,14 @@ def test_estimator_report_report_metrics_scoring_kwargs(
 @pytest.mark.parametrize(
     "fixture_name, scoring_names, expected_columns",
     [
-        ("regression_data", ["R2", "RMSE"], ["R2", "RMSE"]),
+        (
+            "regression_data",
+            ["R2", "RMSE", "FIT_TIME", "PREDICT_TIME"],
+            ["R2", "RMSE", "FIT_TIME", "PREDICT_TIME"],
+        ),
         (
             "multiclass_classification_data",
-            ["Precision", "Recall", "ROC AUC", "Log Loss"],
+            ["Precision", "Recall", "ROC AUC", "Log Loss", "Fit Time", "Predict Time"],
             [
                 "Precision",
                 "Precision",
@@ -733,6 +760,8 @@ def test_estimator_report_report_metrics_scoring_kwargs(
                 "ROC AUC",
                 "ROC AUC",
                 "Log Loss",
+                "Fit Time",
+                "Predict Time",
             ],
         ),
     ],
