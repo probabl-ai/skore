@@ -478,7 +478,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         return self._parent._cache.get(predict_time_cache_key, default=None)
 
     def timings(self) -> dict:
-        """Get all measured times.
+        """Get all measured processing times related to the estimator.
 
         When an estimator is fitted inside the :class:`~skore.EstimatorReport`, the time to fit is
         recorded. Similarly, when predictions are computed on some data, the time to
