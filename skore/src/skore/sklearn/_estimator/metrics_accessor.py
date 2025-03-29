@@ -1947,3 +1947,56 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         )
         assert isinstance(display, PredictionErrorDisplay)
         return display
+
+    ####################################################################################
+    # Information related to serialization
+    ####################################################################################
+
+    # This dictionary contains all the methods that should be called to serialize the
+    # object for `skore-hub`. The inner dictionary defines the list of parameters to
+    # be set. Ideally, we should make a cartesian product of the parameters and make the
+    # different calls.
+    _SERIALIZATION_INFO = {
+        "report_metrics": {
+            "data_source": ["train", "test"],
+            "indicator_favorability": [True],
+        },
+        "timings": {},
+        "accuracy": {"data_source": ["train", "test"]},
+        "precision": {
+            "data_source": ["train", "test"],
+            "average": ["binary", "macro", "micro", "weighted", "samples", None],
+        },
+        "recall": {
+            "data_source": ["train", "test"],
+            "average": ["binary", "macro", "micro", "weighted", "samples", None],
+        },
+        "brier_score": {"data_source": ["train", "test"]},
+        "roc_auc": {
+            "data_source": ["train", "test"],
+            "average": ["macro", "micro", "weighted", "samples", None],
+            "multi_class": ["ovr", "ovo"],
+        },
+        "log_loss": {"data_source": ["train", "test"]},
+        "r2": {
+            "data_source": ["train", "test"],
+            "multioutput": ["uniform_average", "raw_values"],
+        },
+        "rmse": {
+            "data_source": ["train", "test"],
+            "multioutput": ["uniform_average", "raw_values"],
+        },
+        "roc": {
+            "data_source": ["train", "test"],
+            # FIXME: No idea how to make sure that we call `pos_label` with all labels
+            # defined in `estimator_.classes_`.
+            "pos_label": [None, "estimator_.classes_"],
+        },
+        "precision_recall": {
+            "data_source": ["train", "test"],
+            # FIXME: No idea how to make sure that we call `pos_label` with all labels
+            # defined in `estimator_.classes_`.
+            "pos_label": [None, "estimator_.classes_"],
+        },
+        "prediction_error": {"data_source": ["train", "test"]},
+    }
