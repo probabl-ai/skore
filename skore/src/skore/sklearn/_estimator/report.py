@@ -285,6 +285,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     def get_predictions(
         self,
+        *,
         data_source: Literal["train", "test", "X_y"],
         response_method: str,
         X: Optional[ArrayLike] = None,

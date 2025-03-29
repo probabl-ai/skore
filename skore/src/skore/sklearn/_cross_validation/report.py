@@ -1,6 +1,6 @@
 import time
 from collections.abc import Generator
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 
 import numpy as np
 from numpy.typing import ArrayLike
@@ -289,6 +289,60 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 response_methods=response_methods, n_jobs=n_jobs
             )
             progress.update(main_task, advance=1, refresh=True)
+
+    def get_predictions(
+        self,
+        *,
+        data_source: Literal["train", "test"],
+        response_method: str,
+        pos_label: Optional[Any] = None,
+    ) -> ArrayLike:
+        """Get estimator's predictions.
+
+        This method has the advantage to reload from the cache if the predictions
+        were already computed in a previous call.
+
+        Parameters
+        ----------
+        data_source : {"test", "train"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+
+        response_method : str
+            The response method to use.
+
+        pos_label : int, float, bool or str, default=None
+            The positive class when it comes to binary classification. When
+            `response_method="predict_proba"`, it will select the column corresponding
+            to the positive class. When `response_method="decision_function"`, it will
+            negate the decision function if `pos_label` is different from
+            `estimator.classes_[1]`.
+
+        Returns
+        -------
+        list of np.ndarray of shape (n_samples,) or (n_samples, n_classes)
+            The predictions for each cross-validation split.
+
+        Raises
+        ------
+        ValueError
+            If the data source is invalid.
+        """
+        if data_source not in ("train", "test"):
+            raise ValueError(
+                f"Invalid data source: {data_source}. Valid data sources are "
+                "'train' and 'test'."
+            )
+        return [
+            report.get_predictions(
+                data_source=data_source,
+                response_method=response_method,
+                pos_label=pos_label,
+            )
+            for report in self.estimator_reports_
+        ]
 
     @property
     def estimator_(self) -> BaseEstimator:

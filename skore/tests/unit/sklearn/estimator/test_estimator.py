@@ -343,8 +343,12 @@ def test_estimator_report_flat_index(binary_classification_data):
     assert result.columns.tolist() == ["RandomForestClassifier"]
 
 
-def test_estimator_report_get_predictions_binary_classification():
-    """Check that the predictions are correctly retrieved for binary classification."""
+def test_estimator_report_get_predictions():
+    """Check the behaviour of the `get_predictions` method.
+
+    We use the binary classification because it uses all the parameters of the
+    `get_predictions` method.
+    """
     X, y = make_classification(n_classes=2, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
     estimator = LogisticRegression()
@@ -397,6 +401,19 @@ def test_estimator_report_get_predictions_binary_classification():
         data_source="X_y", response_method="decision_function", X=X_test
     )
     np.testing.assert_allclose(predictions, report.estimator_.decision_function(X_test))
+
+
+def test_estimator_report_get_predictions_error():
+    """Check that we raise an error when the data source is invalid."""
+    X, y = make_classification(n_classes=2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+    estimator = LogisticRegression()
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+
+    with pytest.raises(ValueError, match="Invalid data source"):
+        report.get_predictions(data_source="invalid", response_method="predict")
 
 
 ########################################################################################
