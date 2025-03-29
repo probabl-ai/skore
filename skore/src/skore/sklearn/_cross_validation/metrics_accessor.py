@@ -101,7 +101,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             Whether to flatten the `MultiIndex` columns. Flat index will always be lower
             case, do not include spaces and remove the hash symbol to ease indexing.
 
-        aggregate : None or list of str, default=("mean", "std")
+        aggregate : {"mean", "std}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
@@ -253,7 +253,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
 
-        aggregate : None or list of str, default=("mean", "std")
+        aggregate : {"mean", "std}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
@@ -337,7 +337,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         pos_label : int, float, bool or str, default=None
             The positive class.
 
-        aggregate : None or list of str, default=("mean", "std")
+        aggregate : {"mean", "std}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
@@ -425,7 +425,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         pos_label : int, float, bool or str, default=None
             The positive class.
 
-        aggregate : None or list of str, default=("mean", "std")
+        aggregate : {"mean", "std}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
@@ -478,7 +478,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
 
-        aggregate : None or list of str, default=("mean", "std")
+        aggregate : {"mean", "std}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
@@ -565,7 +565,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
               pairwise combinations of classes. Insensitive to class imbalance when
               `average == "macro"`.
 
-        aggregate : None or list of str, default=("mean", "std")
+        aggregate : {"mean", "std}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
@@ -618,7 +618,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
 
-        aggregate : None or list of str, default=("mean", "std")
+        aggregate : {"mean", "std}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
@@ -681,7 +681,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
 
             By default, no averaging is done.
 
-        aggregate : None or list of str, default=("mean", "std")
+        aggregate : {"mean", "std}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
@@ -745,7 +745,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
 
             By default, no averaging is done.
 
-        aggregate : None or list of str, default=("mean", "std")
+        aggregate : {"mean", "std}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
@@ -819,7 +819,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
 
-        aggregate : None or list of str, default=("mean", "std")
+        aggregate : {"mean", "std}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
