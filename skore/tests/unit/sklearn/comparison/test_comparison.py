@@ -726,3 +726,52 @@ def test_random_state(regression_model):
     report.metrics.prediction_error()
     # skore should store the y_pred of the internal estimators, but not the plot
     assert report._cache == {}
+
+
+@pytest.mark.parametrize("data_source", ["train", "test"])
+@pytest.mark.parametrize(
+    "response_method", ["predict", "predict_proba", "decision_function"]
+)
+@pytest.mark.parametrize("pos_label", [None, 0, 1])
+def test_comparison_report_get_predictions(
+    binary_classification_model, data_source, response_method, pos_label
+):
+    """Check the behaviour of the `get_predictions` method."""
+    estimator, X_train, X_test, y_train, y_test = binary_classification_model
+    estimator_report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+    report = ComparisonReport([estimator_report, estimator_report])
+
+    predictions = report.get_predictions(
+        data_source=data_source, response_method=response_method, pos_label=pos_label
+    )
+    assert len(predictions) == 2
+    for split_idx, split_predictions in enumerate(predictions):
+        if data_source == "train":
+            expected_shape = report.estimator_reports_[split_idx].y_train.shape
+        else:
+            expected_shape = report.estimator_reports_[split_idx].y_test.shape
+        assert split_predictions.shape == expected_shape
+
+
+def test_comparison_report_get_predictions_error(binary_classification_model):
+    """Check that we raise an error when the data source is invalid."""
+    estimator, X_train, X_test, y_train, y_test = binary_classification_model
+    estimator_report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+    report = ComparisonReport([estimator_report, estimator_report])
+
+    with pytest.raises(ValueError, match="Invalid data source"):
+        report.get_predictions(data_source="invalid", response_method="predict")

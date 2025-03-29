@@ -17,6 +17,7 @@ The class :class:`ComparisonReport` provides a report allowing to compare :class
     :template: autosummary/accessor_method.rst
 
     ComparisonReport.help
+    ComparisonReport.get_predictions
 
 .. autosummary::
     :toctree: ../api/
