@@ -343,6 +343,62 @@ def test_estimator_report_flat_index(binary_classification_data):
     assert result.columns.tolist() == ["RandomForestClassifier"]
 
 
+def test_estimator_report_get_predictions_binary_classification():
+    """Check that the predictions are correctly retrieved for binary classification."""
+    X, y = make_classification(n_classes=2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+    estimator = LogisticRegression()
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+
+    # check the `predict` method
+    predictions = report.get_predictions(data_source="test", response_method="predict")
+    np.testing.assert_allclose(predictions, report.estimator_.predict(X_test))
+    predictions = report.get_predictions(data_source="train", response_method="predict")
+    np.testing.assert_allclose(predictions, report.estimator_.predict(X_train))
+    predictions = report.get_predictions(
+        data_source="X_y", response_method="predict", X=X_test
+    )
+    np.testing.assert_allclose(predictions, report.estimator_.predict(X_test))
+
+    # check the validity of the `predict_proba` method
+    predictions = report.get_predictions(
+        data_source="test", response_method="predict_proba"
+    )
+    np.testing.assert_allclose(
+        predictions, report.estimator_.predict_proba(X_test)[:, 1]
+    )
+    predictions = report.get_predictions(
+        data_source="train", response_method="predict_proba", pos_label=0
+    )
+    np.testing.assert_allclose(
+        predictions, report.estimator_.predict_proba(X_train)[:, 0]
+    )
+    predictions = report.get_predictions(
+        data_source="X_y", response_method="predict_proba", X=X_test
+    )
+    np.testing.assert_allclose(
+        predictions, report.estimator_.predict_proba(X_test)[:, 1]
+    )
+
+    # check the validity of the `decision_function` method
+    predictions = report.get_predictions(
+        data_source="test", response_method="decision_function"
+    )
+    np.testing.assert_allclose(predictions, report.estimator_.decision_function(X_test))
+    predictions = report.get_predictions(
+        data_source="train", response_method="decision_function", pos_label=0
+    )
+    np.testing.assert_allclose(
+        predictions, -report.estimator_.decision_function(X_train)
+    )
+    predictions = report.get_predictions(
+        data_source="X_y", response_method="decision_function", X=X_test
+    )
+    np.testing.assert_allclose(predictions, report.estimator_.decision_function(X_test))
+
+
 ########################################################################################
 # Check the plot methods
 ########################################################################################

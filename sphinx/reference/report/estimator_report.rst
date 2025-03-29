@@ -20,6 +20,7 @@ report are accessible through accessors.
    :template: autosummary/accessor_method.rst
 
    EstimatorReport.help
+   EstimatorReport.get_predictions
 
 .. rubric:: Metrics
 
