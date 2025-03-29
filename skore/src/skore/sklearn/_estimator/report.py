@@ -328,6 +328,22 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         ------
         ValueError
             If the data source is invalid.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import make_classification
+        >>> from sklearn.model_selection import train_test_split
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> X, y = make_classification(random_state=42)
+        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        >>> estimator = LogisticRegression().fit(X_train, y_train)
+        >>> from skore import EstimatorReport
+        >>> report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+        >>> predictions = report.get_predictions(
+        ...     data_source="test", response_method="predict"
+        ... )
+        >>> predictions.shape
+        (25,)
         """
         if data_source == "test":
             X_ = self._X_test

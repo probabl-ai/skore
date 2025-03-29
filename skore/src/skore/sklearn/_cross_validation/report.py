@@ -329,6 +329,20 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         ------
         ValueError
             If the data source is invalid.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import make_classification
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> X, y = make_classification(random_state=42)
+        >>> estimator = LogisticRegression()
+        >>> from skore import CrossValidationReport
+        >>> report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=2)
+        >>> predictions = report.get_predictions(
+        ...     data_source="test", response_method="predict"
+        ... )
+        >>> print([split_predictions.shape for split_predictions in predictions])
+        [(50,), (50,)]
         """
         if data_source not in ("train", "test"):
             raise ValueError(
