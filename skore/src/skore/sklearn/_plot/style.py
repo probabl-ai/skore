@@ -2,7 +2,6 @@ from functools import wraps
 from typing import Any, Callable
 
 import matplotlib.pyplot as plt
-import seaborn as sns
 
 DEFAULT_STYLE = {
     "font.size": 14,
@@ -99,18 +98,16 @@ class StyleDisplayMixin:
 
         @wraps(plot_func)
         def wrapper(self, *args: Any, **kwargs: Any) -> Any:
-            is_interactive = plt.isinteractive()
-            with sns.plotting_context(DEFAULT_STYLE):
-                result = plot_func(self, *args, **kwargs)
-                self.figure_.tight_layout()
-            if is_interactive:
-                # the context manager from matplotlib will reset the interactive mode to
-                # the default state, before to the execution of a first plot. Therefore,
-                # it can be falsely set to non-interactive mode. We can restore the
-                # state by explicitly calling `plt.ion()`
-                #
-                # See: https://github.com/matplotlib/matplotlib/issues/26716
-                plt.ion()
+            # We need to manually handle setting the style of the parameters because
+            # `plt.style.context` as a side effect with the interactive mode.
+            # See https://github.com/matplotlib/matplotlib/issues/25041
+            original_params = {key: plt.rcParams[key] for key in DEFAULT_STYLE}
+            for key, value in DEFAULT_STYLE.items():
+                plt.rcParams[key] = value
+            result = plot_func(self, *args, **kwargs)
+            self.figure_.tight_layout()
+            for key, value in original_params.items():
+                plt.rcParams[key] = value
             return result
 
         return wrapper
