@@ -86,11 +86,8 @@ rf_report.metrics.report_metrics(pos_label=1)
 # We can also plot the ROC curve that is generated for us:
 
 # %%
-import matplotlib.pyplot as plt
-
 roc_plot = rf_report.metrics.roc()
 roc_plot.plot()
-plt.tight_layout()
 
 # %%
 # Furthermore, we can inspect our model using the
@@ -98,6 +95,8 @@ plt.tight_layout()
 # In particular, we can inspect the model using the permutation feature importance:
 
 # %%
+import matplotlib.pyplot as plt
+
 rf_report.feature_importance.permutation().T.boxplot(vert=False)
 plt.tight_layout()
 
@@ -146,7 +145,6 @@ cv_report.metrics.report_metrics(aggregate=["mean", "std"], pos_label=1)
 # %%
 roc_plot_cv = cv_report.metrics.roc()
 roc_plot_cv.plot()
-plt.tight_layout()
 
 # %%
 # We can retrieve the estimator report of a specific fold to investigate further,
@@ -210,7 +208,6 @@ comparator.metrics.report_metrics(pos_label=1)
 
 # %%
 comparator.metrics.roc().plot()
-plt.tight_layout()
 
 # %%
 # Train-test split with skore
