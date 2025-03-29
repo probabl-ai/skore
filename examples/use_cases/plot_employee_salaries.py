@@ -198,7 +198,7 @@ my_project.put("Linear model report", report)
 
 # %%
 # We can now have a look at the performance of the model with some standard metrics.
-report.metrics.report_metrics(aggregate=["mean", "std"], indicator_favorability=True)
+report.metrics.report_metrics(indicator_favorability=True)
 
 # %%
 # Second model
@@ -241,7 +241,7 @@ my_project.put("HGBDT model report", report)
 # %%
 #
 # We can now have a look at the performance of the model with some standard metrics.
-report.metrics.report_metrics(aggregate=["mean", "std"])
+report.metrics.report_metrics()
 
 # %%
 # Investigating the models
@@ -264,8 +264,8 @@ import pandas as pd
 
 results = pd.concat(
     [
-        linear_model_report.metrics.report_metrics(aggregate=["mean", "std"]),
-        hgbdt_model_report.metrics.report_metrics(aggregate=["mean", "std"]),
+        linear_model_report.metrics.report_metrics(),
+        hgbdt_model_report.metrics.report_metrics(),
     ],
     axis=1,
 )
@@ -289,13 +289,11 @@ results = pd.concat(
             scoring=scoring,
             scoring_kwargs=scoring_kwargs,
             scoring_names=scoring_names,
-            aggregate=["mean", "std"],
         ),
         hgbdt_model_report.metrics.report_metrics(
             scoring=scoring,
             scoring_kwargs=scoring_kwargs,
             scoring_names=scoring_names,
-            aggregate=["mean", "std"],
         ),
     ],
     axis=1,
