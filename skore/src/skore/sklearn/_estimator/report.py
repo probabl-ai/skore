@@ -359,3 +359,45 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     def __repr__(self) -> str:
         """Return a string representation."""
         return f"{self.__class__.__name__}(estimator={self.estimator_}, ...)"
+
+    ####################################################################################
+    # Methods related to serialization
+    ####################################################################################
+
+    def _generate_function_to_call_for_persistence(self):
+        """Generate functions and their parameters for persistence.
+
+        It should be
+
+        Yields
+        ------
+        tuple
+            A tuple containing (function, parameters_dict) where:
+            - function is the actual method to call
+            - parameters_dict is a dictionary of parameter names and their values
+        """
+        for name in self._ACCESSOR_CONFIG:
+            accessor = getattr(self, name)
+            if hasattr(accessor, "_SERIALIZATION_INFO"):
+                for func_name, params in accessor._SERIALIZATION_INFO.items():
+                    func = getattr(accessor, func_name, None)
+                    if func is None:
+                        # the function does not exit for the current estimator
+                        continue
+
+                    if not params:
+                        yield func, {}
+                        continue
+
+                    param_names = []
+                    param_values = []
+                    for param_name, values in params.items():
+                        param_names.append(param_name)
+                        param_values.append(values)
+
+                    for combination in product(*param_values):
+                        params_dict = dict(zip(param_names, combination))
+
+                        # FIXME: we need to check if we should do something like this
+                        # We should handle the case of `pos_label`
+                        yield func, params_dict

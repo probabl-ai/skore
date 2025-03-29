@@ -625,3 +625,16 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             class_name="skore.EstimatorReport.feature_importance",
             help_method_name="report.feature_importance.help()",
         )
+
+    ####################################################################################
+    # Information related to serialization
+    ####################################################################################
+
+    # This dictionary contains all the methods that should be called to serialize the
+    # object for `skore-hub`. The inner dictionary defines the list of parameters to
+    # be set. Ideally, we should make a cartesian product of the parameters and make the
+    # different calls.
+    _SERIALIZATION_INFO: dict[str, dict[str, Any]] = {
+        "coefficients": {},
+        "mean_decrease_impurity": {},
+    }
