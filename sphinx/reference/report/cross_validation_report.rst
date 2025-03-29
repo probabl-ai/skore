@@ -20,6 +20,8 @@ functionalities of the report are exposed through accessors.
    :template: autosummary/accessor_method.rst
 
    CrossValidationReport.help
+   CrossValidationReport.cache_predictions
+   CrossValidationReport.clear_cache
 
 .. rubric:: Metrics
 
