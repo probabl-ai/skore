@@ -2,6 +2,7 @@ from functools import wraps
 from typing import Any, Callable
 
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 DEFAULT_STYLE = {
     "font.size": 14,
@@ -81,7 +82,7 @@ class StyleDisplayMixin:
         """Apply consistent style to skore displays.
 
         This decorator:
-        1. Sets seaborn's plotting context to "talk"
+        1. Applies default style settings
         2. Executes the plotting code
         3. Applies `tight_layout` to the figure if it exists
 
@@ -98,10 +99,18 @@ class StyleDisplayMixin:
 
         @wraps(plot_func)
         def wrapper(self, *args: Any, **kwargs: Any) -> Any:
-            with plt.style.context(DEFAULT_STYLE):
+            is_interactive = plt.isinteractive()
+            with sns.plotting_context(DEFAULT_STYLE):
                 result = plot_func(self, *args, **kwargs)
-                if hasattr(self, "figure_"):
-                    self.figure_.tight_layout()
-                return result
+                self.figure_.tight_layout()
+            if is_interactive:
+                # the context manager from matplotlib will reset the interactive mode to
+                # the default state, before to the execution of a first plot. Therefore,
+                # it can be falsely set to non-interactive mode. We can restore the
+                # state by explicitly calling `plt.ion()`
+                #
+                # See: https://github.com/matplotlib/matplotlib/issues/26716
+                plt.ion()
+            return result
 
         return wrapper
