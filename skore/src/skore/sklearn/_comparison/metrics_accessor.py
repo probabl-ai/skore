@@ -18,6 +18,7 @@ from skore.sklearn._plot.metrics import (
     RocCurveDisplay,
 )
 from skore.utils._accessor import _check_supported_ml_task
+from skore.utils._fixes import _validate_joblib_parallel_params
 from skore.utils._index import flatten_multi_index
 from skore.utils._progress_bar import progress_decorator
 
@@ -207,9 +208,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             results = self._parent._cache[cache_key]
         else:
             parallel = joblib.Parallel(
-                n_jobs=self._parent.n_jobs,
-                return_as="generator",
-                require="sharedmem",
+                **_validate_joblib_parallel_params(
+                    n_jobs=self._parent.n_jobs,
+                    return_as="generator",
+                    require="sharedmem",
+                )
             )
             generator = parallel(
                 joblib.delayed(getattr(report.metrics, report_metric_name))(
