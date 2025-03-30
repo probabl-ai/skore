@@ -960,7 +960,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         display : display_class
             The display.
         """
-        if "random_state" in display_kwargs and display_kwargs["random_state"] is None:
+        if "seed" in display_kwargs and display_kwargs["seed"] is None:
             cache_key = None
         else:
             # Create a list of cache key components and then convert to tuple
@@ -1011,9 +1011,9 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
                 **display_kwargs,
             )
 
-            # Unless random_state is an int (i.e. the call is deterministic),
-            # we do not cache
             if cache_key is not None:
+                # Unless seed is an int (i.e. the call is deterministic),
+                # we do not cache
                 self._parent._cache[cache_key] = display
 
         return display
@@ -1130,7 +1130,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         *,
         data_source: DataSource = "test",
         subsample: Union[float, int, None] = 1_000,
-        random_state: Optional[int] = None,
+        seed: Optional[int] = None,
     ) -> PredictionErrorDisplay:
         """Plot the prediction error of a regression model.
 
@@ -1151,8 +1151,9 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             display on the scatter plot. If `None`, no subsampling will be
             applied. by default, 1,000 samples or less will be displayed.
 
-        random_state : int, default=None
-            The random state to use for the subsampling.
+        seed : int, default=None
+            The seed used to initialize the random number generator used for the
+            subsampling.
 
         Returns
         -------
@@ -1170,7 +1171,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         >>> display = report.metrics.prediction_error()
         >>> display.plot(kind="actual_vs_predicted", line_kwargs={"color": "tab:red"})
         """
-        display_kwargs = {"subsample": subsample, "random_state": random_state}
+        display_kwargs = {"subsample": subsample, "seed": seed}
         display = self._get_display(
             data_source=data_source,
             response_method="predict",

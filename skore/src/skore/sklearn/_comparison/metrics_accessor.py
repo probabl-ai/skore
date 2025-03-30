@@ -1201,7 +1201,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         display : display_class
             The display.
         """
-        if "random_state" in display_kwargs and display_kwargs["random_state"] is None:
+        if "seed" in display_kwargs and display_kwargs["seed"] is None:
             cache_key = None
         else:
             # build the cache key components to finally create a tuple that will be used
@@ -1257,9 +1257,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 **display_kwargs,
             )
 
-            # Unless random_state is an int (i.e. the call is deterministic),
-            # we do not cache
             if cache_key is not None:
+                # Unless seed is an int (i.e. the call is deterministic),
+                # we do not cache
                 self._parent._cache[cache_key] = display
 
         return display
@@ -1442,7 +1442,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
         subsample: int = 1_000,
-        random_state: Optional[int] = None,
+        seed: Optional[int] = None,
     ) -> PredictionErrorDisplay:
         """Plot the prediction error of a regression model.
 
@@ -1472,8 +1472,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             display on the scatter plot. If `None`, no subsampling will be
             applied. by default, 1,000 samples or less will be displayed.
 
-        random_state : int, default=None
-            The random state to use for the subsampling.
+        seed : int, default=None
+            The seed used to initialize the random number generator used for the
+            subsampling.
 
         Returns
         -------
@@ -1510,7 +1511,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> display = comparison_report.metrics.prediction_error()
         >>> display.plot(kind="actual_vs_predicted")
         """
-        display_kwargs = {"subsample": subsample, "random_state": random_state}
+        display_kwargs = {"subsample": subsample, "seed": seed}
         display = self._get_display(
             X=X,
             y=y,

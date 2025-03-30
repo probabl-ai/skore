@@ -8,7 +8,7 @@ from matplotlib import colormaps
 from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from numpy.typing import ArrayLike, NDArray
-from sklearn.utils.validation import _num_samples, check_array, check_random_state
+from sklearn.utils.validation import _num_samples, check_array
 
 from skore.externals._sklearn_compat import _safe_indexing
 from skore.sklearn._plot.style import StyleDisplayMixin
@@ -636,7 +636,7 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
         ml_task: MLTask,
         data_source: Literal["train", "test", "X_y"],
         subsample: Union[float, int, None] = 1_000,
-        random_state: Optional[Union[int, np.random.RandomState]] = None,
+        seed: Optional[int] = None,
         **kwargs,
     ) -> "PredictionErrorDisplay":
         """Plot the prediction error given the true and predicted targets.
@@ -665,9 +665,9 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
             display on the scatter plot. If `None`, no subsampling will be
             applied. by default, 1000 samples or less will be displayed.
 
-        random_state : int or RandomState, default=None
-            Controls the randomness when `subsample` is not `None`.
-            See :term:`Glossary <random_state>` for details.
+        seed : int, default=None
+            The seed used to initialize the random number generator used for the
+            subsampling.
 
         **kwargs : dict
             Additional keyword arguments that are ignored for compatibility with
@@ -677,7 +677,7 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
         -------
         display : PredictionErrorDisplay
         """
-        rng: np.random.RandomState = check_random_state(random_state)
+        rng = np.random.default_rng(seed)
         if isinstance(subsample, numbers.Integral):
             if subsample <= 0:
                 raise ValueError(
