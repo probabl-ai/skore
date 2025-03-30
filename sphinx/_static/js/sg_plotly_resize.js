@@ -1,15 +1,9 @@
-function resizePlotlyGraphs() {
-    // Find all plotly graph divs
-    const plotlyDivs = document.getElementsByClassName("plotly-graph-div");
+// There an interaction between plotly and bootstrap/pydata-sphinx-theme
+// that causes plotly figures to not detect the right-hand sidebar width
 
-    // Iterate through each div and resize
-    for (const div of plotlyDivs) {
-        Plotly.Plots.resize(div);
-    }
-}
+// Plotly figures are responsive, this triggers a resize event once the DOM has
+// finished loading so that they resize themselves.
 
-// Call resize when window is resized
-window.addEventListener("resize", resizePlotlyGraphs);
-
-// Initial resize call after plots are created
-document.addEventListener("DOMContentLoaded", resizePlotlyGraphs);
+document.addEventListener("DOMContentLoaded", () => {
+    window.dispatchEvent(new Event("resize"));
+  });
