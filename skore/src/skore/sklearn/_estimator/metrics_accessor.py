@@ -1619,7 +1619,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         """Return a string representation using rich."""
         return self._rich_repr(
             class_name="skore.EstimatorReport.metrics",
-            help_method_name="report.metrics.help()",
+            help_method_name="help()",
         )
 
     ####################################################################################
