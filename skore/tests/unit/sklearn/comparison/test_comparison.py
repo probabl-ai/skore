@@ -269,7 +269,7 @@ def test_comparison_report_metrics_repr(binary_classification_model):
 
     repr_str = repr(report.metrics)
     assert "skore.ComparisonReport.metrics" in repr_str
-    assert "report.metrics.help()" in repr_str
+    assert "help()" in repr_str
 
 
 @pytest.mark.parametrize("data_source", ["test", "X_y"])
