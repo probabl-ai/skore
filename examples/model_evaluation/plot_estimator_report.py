@@ -61,12 +61,10 @@ split_data = train_test_split(X=df, y=y, random_state=42, as_dict=True)
 # it does not provide some handcrafted and tailored feature engineering but still
 # provides a good starting point.
 #
-# So let's create a classifier for our task and fit it on the training set.
+# So let's create a classifier for our task.
 from skrub import tabular_learner
 
-estimator = tabular_learner("classifier").fit(
-    split_data["X_train"], split_data["y_train"]
-)
+estimator = tabular_learner("classifier")
 estimator
 
 # %%
@@ -78,7 +76,7 @@ estimator
 #
 # Now, we would be interested in getting some insights from our predictive model.
 # One way is to use the :class:`skore.EstimatorReport` class. This constructor will
-# detect that our estimator is already fitted and will not fit it again.
+# detect that our estimator is unfitted and will fit it for us on the training data.
 from skore import EstimatorReport
 
 report = EstimatorReport(estimator, **split_data)
@@ -132,6 +130,12 @@ metric_report
 
 # %%
 print(f"Time taken to compute the metrics: {end - start:.2f} seconds")
+
+# %%
+#
+# Note that when the model is fitted or the predictions are computed,
+# we additionally store the time the operation took:
+report.metrics.timings()
 
 # %%
 #

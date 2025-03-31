@@ -466,36 +466,31 @@ def test_comparison_report_report_metrics_X_y(binary_classification_model):
     )
     assert "Favorability" not in result.columns
 
-    expected = pd.DataFrame(
+    expected_index = pd.MultiIndex.from_tuples(
         [
-            [1.0, 1.0],
-            [1.0, 1.0],
-            [1.0, 1.0],
-            [1.0, 1.0],
-            [1.0, 1.0],
-            [0.01514976, 0.01514976],
+            ("Precision", 0),
+            ("Precision", 1),
+            ("Recall", 0),
+            ("Recall", 1),
+            ("ROC AUC", ""),
+            ("Brier score", ""),
+            ("Fit time", ""),
+            ("Predict time", ""),
         ],
-        columns=pd.Index(
-            ["LogisticRegression", "LogisticRegression"],
-            name="Estimator",
-        ),
-        index=pd.MultiIndex.from_tuples(
-            [
-                ("Precision", 0),
-                ("Precision", 1),
-                ("Recall", 0),
-                ("Recall", 1),
-                ("ROC AUC", ""),
-                ("Brier score", ""),
-            ],
-            names=["Metric", "Label / Average"],
-        ),
+        names=["Metric", "Label / Average"],
     )
-    pd.testing.assert_frame_equal(result, expected)
+    expected_columns = pd.Index(
+        ["LogisticRegression", "LogisticRegression"],
+        name="Estimator",
+    )
+
+    pd.testing.assert_index_equal(result.index, expected_index)
+    pd.testing.assert_index_equal(result.columns, expected_columns)
 
     assert len(comp._cache) == 1
     cached_result = list(comp._cache.values())[0]
-    pd.testing.assert_frame_equal(cached_result, expected)
+    pd.testing.assert_index_equal(cached_result.index, expected_index)
+    pd.testing.assert_index_equal(cached_result.columns, expected_columns)
 
 
 def test_comparison_report_custom_metric_X_y(binary_classification_model):
@@ -557,7 +552,7 @@ def test_cross_validation_report_flat_index(binary_classification_model):
     )
     report = ComparisonReport({"report_1": report_1, "report_2": report_2})
     result = report.metrics.report_metrics(flat_index=True)
-    assert result.shape == (6, 2)
+    assert result.shape == (8, 2)
     assert isinstance(result.index, pd.Index)
     assert result.index.tolist() == [
         "precision_0",
@@ -566,6 +561,8 @@ def test_cross_validation_report_flat_index(binary_classification_model):
         "recall_1",
         "roc_auc",
         "brier_score",
+        "fit_time",
+        "predict_time",
     ]
     assert result.columns.tolist() == ["report_1", "report_2"]
 
