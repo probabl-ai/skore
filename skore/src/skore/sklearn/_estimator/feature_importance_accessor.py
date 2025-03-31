@@ -621,7 +621,4 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
     def __repr__(self) -> str:
         """Return a string representation using rich."""
-        return self._rich_repr(
-            class_name="skore.EstimatorReport.feature_importance",
-            help_method_name="help()",
-        )
+        return self._rich_repr(class_name="skore.EstimatorReport.feature_importance")
