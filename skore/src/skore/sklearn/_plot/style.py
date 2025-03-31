@@ -102,12 +102,12 @@ class StyleDisplayMixin:
             # `plt.style.context` has a side effect with the interactive mode.
             # See https://github.com/matplotlib/matplotlib/issues/25041
             original_params = {key: plt.rcParams[key] for key in DEFAULT_STYLE}
-            for key, value in DEFAULT_STYLE.items():
-                plt.rcParams[key] = value
-            result = plot_func(self, *args, **kwargs)
-            self.figure_.tight_layout()
-            for key, value in original_params.items():
-                plt.rcParams[key] = value
+            plt.rcParams.update(DEFAULT_STYLE)
+            try:
+                result = plot_func(self, *args, **kwargs)
+                self.figure_.tight_layout()
+            finally:
+                plt.rcParams.update(original_params)
             return result
 
         return wrapper
