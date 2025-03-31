@@ -287,7 +287,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self,
         *,
         data_source: Literal["train", "test", "X_y"],
-        response_method: str,
+        response_method: Literal["predict", "predict_proba", "decision_function"],
         X: Optional[ArrayLike] = None,
         pos_label: Optional[Any] = None,
     ) -> ArrayLike:
