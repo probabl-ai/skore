@@ -64,7 +64,7 @@ model
 from skore import train_test_split
 
 X_train, X_test, y_train, y_test = train_test_split(df, y, random_state=42)
-# Let's keep a completely left-out dataset
+# Let's keep a completely separate dataset
 X_train, X_external, y_train, y_external = train_test_split(
     X_train, y_train, random_state=42
 )
