@@ -246,6 +246,66 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             self._parent._cache[cache_key] = results
         return results
 
+    def timings(self) -> pd.DataFrame:
+        """Get all measured processing times related to the different estimators.
+
+        The index of the returned dataframe is the name of the processing time. When
+        the estimators were not used to predict, no timings regarding the prediction
+        will be present.
+
+        Returns
+        -------
+        pd.DataFrame
+            A dataframe with the processing times.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import make_classification
+        >>> from sklearn.model_selection import train_test_split
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import ComparisonReport, EstimatorReport
+        >>> X, y = make_classification(random_state=42)
+        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        >>> estimator_1 = LogisticRegression()
+        >>> estimator_report_1 = EstimatorReport(
+        ...     estimator_1,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test
+        ... )
+        >>> estimator_2 = LogisticRegression(C=2)  # Different regularization
+        >>> estimator_report_2 = EstimatorReport(
+        ...     estimator_2,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test
+        ... )
+        >>> report = ComparisonReport(
+        ...     {"model1": estimator_report_1, "model2": estimator_report_2}
+        ... )
+        >>> report.metrics.timings()
+                    model1    model2
+        Fit time       ...       ...
+        >>> report.cache_predictions(response_methods=["predict"])
+        >>> report.metrics.timings()
+                            model1    model2
+        Fit time               ...       ...
+        Predict time test      ...       ...
+        Predict time train     ...       ...
+        """
+        timings: pd.DataFrame = pd.concat(
+            [
+                pd.Series(report.metrics.timings())
+                for report in self._parent.estimator_reports_
+            ],
+            axis=1,
+            keys=self._parent.report_names_,
+        )
+        timings.index = timings.index.str.replace("_", " ").str.capitalize()
+        return timings
+
     @available_if(
         _check_supported_ml_task(
             supported_ml_tasks=["binary-classification", "multiclass-classification"]

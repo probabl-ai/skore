@@ -881,3 +881,40 @@ def test_cross_validation_report_brier_score_requires_probabilities():
 
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=2)
     assert not hasattr(report.metrics, "brier_score")
+
+
+@pytest.mark.parametrize(
+    "aggregate, expected_columns",
+    [
+        (None, ["Split #0", "Split #1"]),
+        ("mean", ["mean"]),
+        ("std", ["std"]),
+        (["mean", "std"], ["mean", "std"]),
+    ],
+)
+def test_cross_validation_timings(
+    binary_classification_data, aggregate, expected_columns
+):
+    """Check the general behaviour of the `timings` method."""
+    estimator, X, y = binary_classification_data
+    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
+    timings = report.metrics.timings(aggregate=aggregate)
+    assert isinstance(timings, pd.DataFrame)
+    assert timings.index.tolist() == ["Fit time"]
+    assert timings.columns.tolist() == expected_columns
+
+    report.metrics.report_metrics(data_source="train")
+    timings = report.metrics.timings(aggregate=aggregate)
+    assert isinstance(timings, pd.DataFrame)
+    assert timings.index.tolist() == ["Fit time", "Predict time train"]
+    assert timings.columns.tolist() == expected_columns
+
+    report.metrics.report_metrics(data_source="test")
+    timings = report.metrics.timings(aggregate=aggregate)
+    assert isinstance(timings, pd.DataFrame)
+    assert timings.index.tolist() == [
+        "Fit time",
+        "Predict time train",
+        "Predict time test",
+    ]
+    assert timings.columns.tolist() == expected_columns
