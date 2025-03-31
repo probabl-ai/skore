@@ -13,9 +13,8 @@ quickly get insights from any scikit-learn estimator.
 # Loading our dataset and defining our estimator
 # ==============================================
 #
-# First, we load a dataset from skrub. Our goal is to predict if a company paid a
-# physician. The ultimate goal is to detect potential conflict of interest when it comes
-# to the actual problem that we want to solve.
+# First, we load a dataset from skrub. Our goal is to predict if a healthcare manufacturing companies paid a
+# medical doctors or hospitals. The goal of our problem is to detect potential conflict of interest.
 
 # %%
 from skrub.datasets import fetch_open_payments
