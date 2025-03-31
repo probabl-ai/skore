@@ -56,3 +56,4 @@ estimator across cross-validation folds.
     CrossValidationReport.metrics.rmse
     CrossValidationReport.metrics.roc
     CrossValidationReport.metrics.roc_auc
+    CrossValidationReport.metrics.timings

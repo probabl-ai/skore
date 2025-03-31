@@ -49,3 +49,4 @@ get the common performance metric representations.
     ComparisonReport.metrics.recall
     ComparisonReport.metrics.rmse
     ComparisonReport.metrics.roc_auc
+    ComparisonReport.metrics.timings

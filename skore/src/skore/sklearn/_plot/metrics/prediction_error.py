@@ -8,7 +8,7 @@ from matplotlib import colormaps
 from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from numpy.typing import ArrayLike, NDArray
-from sklearn.utils.validation import _num_samples, check_array, check_random_state
+from sklearn.utils.validation import _num_samples, check_array
 
 from skore.externals._sklearn_compat import _safe_indexing
 from skore.sklearn._plot.style import StyleDisplayMixin
@@ -106,8 +106,8 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
     >>> display.plot(kind="actual_vs_predicted")
     """
 
-    _default_scatter_kwargs: Union[dict[str, Any], None] = None
-    _default_line_kwargs: Union[dict[str, Any], None] = None
+    _default_data_points_kwargs: Union[dict[str, Any], None] = None
+    _default_perfect_model_kwargs: Union[dict[str, Any], None] = None
 
     def __init__(
         self,
@@ -134,16 +134,16 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
         self.ml_task = ml_task
         self.report_type = report_type
 
-    def _validate_scatter_kwargs(
+    def _validate_data_points_kwargs(
         self,
         *,
-        scatter_kwargs: Union[dict[str, Any], list[dict[str, Any]], None],
+        data_points_kwargs: Union[dict[str, Any], list[dict[str, Any]], None],
     ) -> list[dict[str, Any]]:
         """Validate and format the scatter keyword arguments.
 
         Parameters
         ----------
-        scatter_kwargs : dict or list of dict or None
+        data_points_kwargs : dict or list of dict or None
             Keyword arguments for the scatter plot.
 
         Returns
@@ -154,30 +154,30 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
         Raises
         ------
         ValueError
-            If the format of `scatter_kwargs` is invalid.
+            If the format of `data_points_kwargs` is invalid.
         """
-        if scatter_kwargs is None:
+        if data_points_kwargs is None:
             return [{}] * len(self.y_true)
         elif len(self.y_true) == 1:
-            if isinstance(scatter_kwargs, dict):
-                return [scatter_kwargs]
+            if isinstance(data_points_kwargs, dict):
+                return [data_points_kwargs]
             raise ValueError(
                 "You intend to plot the prediction error for a single estimator. We "
-                "expect `scatter_kwargs` to be a dictionary. Got "
-                f"{type(scatter_kwargs)} instead."
+                "expect `data_points_kwargs` to be a dictionary. Got "
+                f"{type(data_points_kwargs)} instead."
             )
-        elif not isinstance(scatter_kwargs, list) or len(scatter_kwargs) != len(
+        elif not isinstance(data_points_kwargs, list) or len(data_points_kwargs) != len(
             self.y_true
         ):
             raise ValueError(
                 "You intend to plot prediction errors either from multiple estimators "
-                "or from a cross-validated estimator. We expect `scatter_kwargs` to be "
-                "a list of dictionaries with the same length as the number of "
+                "or from a cross-validated estimator. We expect `data_points_kwargs` "
+                "to be a list of dictionaries with the same length as the number of "
                 "estimators or splits. Got "
-                f"{len(scatter_kwargs)} instead of {len(self.y_true)}."
+                f"{len(data_points_kwargs)} instead of {len(self.y_true)}."
             )
 
-        return scatter_kwargs
+        return data_points_kwargs
 
     @staticmethod
     def _plot_single_estimator(
@@ -225,10 +225,14 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
             The scatter plot.
         """
         scatter = []
-        scatter_kwargs: dict[str, Any] = {"color": "tab:blue", "alpha": 0.3, "s": 10}
+        data_points_kwargs: dict[str, Any] = {
+            "color": "tab:blue",
+            "alpha": 0.3,
+            "s": 10,
+        }
 
-        scatter_kwargs_validated = _validate_style_kwargs(
-            scatter_kwargs, samples_kwargs[0]
+        data_points_kwargs_validated = _validate_style_kwargs(
+            data_points_kwargs, samples_kwargs[0]
         )
 
         y_true, y_pred, residuals = y_true[0], y_pred[0], residuals[0]
@@ -243,7 +247,7 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
                     y_pred,
                     y_true,
                     label=scatter_label,
-                    **scatter_kwargs_validated,
+                    **data_points_kwargs_validated,
                 )
             )
         else:  # kind == "residual_vs_predicted"
@@ -252,7 +256,7 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
                     y_pred,
                     residuals,
                     label=scatter_label,
-                    **scatter_kwargs_validated,
+                    **data_points_kwargs_validated,
                 )
             )
 
@@ -306,7 +310,7 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
             The scatter plot.
         """
         scatter = []
-        scatter_kwargs: dict[str, Any] = {"alpha": 0.3, "s": 10}
+        data_points_kwargs: dict[str, Any] = {"alpha": 0.3, "s": 10}
         colors_markers = sample_mpl_colormap(
             colormaps.get_cmap("tab10"),
             len(y_true) if len(y_true) > 10 else 10,
@@ -314,13 +318,13 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
 
         scatter_label = f"{data_source.title()} set"
         for split_idx in range(len(y_true)):
-            scatter_kwargs_fold = {
+            data_points_kwargs_fold = {
                 "color": colors_markers[split_idx],
-                **scatter_kwargs,
+                **data_points_kwargs,
             }
 
-            scatter_kwargs_validated = _validate_style_kwargs(
-                scatter_kwargs_fold, samples_kwargs[split_idx]
+            data_points_kwargs_validated = _validate_style_kwargs(
+                data_points_kwargs_fold, samples_kwargs[split_idx]
             )
 
             label = scatter_label + f" - split #{split_idx + 1}"
@@ -331,7 +335,7 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
                         y_pred[split_idx],
                         y_true[split_idx],
                         label=label,
-                        **scatter_kwargs_validated,
+                        **data_points_kwargs_validated,
                     )
                 )
             else:  # kind == "residual_vs_predicted"
@@ -340,7 +344,7 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
                         y_pred[split_idx],
                         residuals[split_idx],
                         label=label,
-                        **scatter_kwargs_validated,
+                        **data_points_kwargs_validated,
                     )
                 )
 
@@ -394,20 +398,20 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
             The scatter plot.
         """
         scatter = []
-        scatter_kwargs: dict[str, Any] = {"alpha": 0.3, "s": 10}
+        data_points_kwargs: dict[str, Any] = {"alpha": 0.3, "s": 10}
         colors_markers = sample_mpl_colormap(
             colormaps.get_cmap("tab10"),
             len(y_true) if len(y_true) > 10 else 10,
         )
 
         for estimator_idx in range(len(y_true)):
-            scatter_kwargs_fold = {
+            data_points_kwargs_fold = {
                 "color": colors_markers[estimator_idx],
-                **scatter_kwargs,
+                **data_points_kwargs,
             }
 
-            scatter_kwargs_validated = _validate_style_kwargs(
-                scatter_kwargs_fold, samples_kwargs[estimator_idx]
+            data_points_kwargs_validated = _validate_style_kwargs(
+                data_points_kwargs_fold, samples_kwargs[estimator_idx]
             )
 
             label = f"{estimator_names[estimator_idx]}"
@@ -418,7 +422,7 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
                         y_pred[estimator_idx],
                         y_true[estimator_idx],
                         label=label,
-                        **scatter_kwargs_validated,
+                        **data_points_kwargs_validated,
                     )
                 )
             else:  # kind == "residual_vs_predicted"
@@ -427,7 +431,7 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
                         y_pred[estimator_idx],
                         residuals[estimator_idx],
                         label=label,
-                        **scatter_kwargs_validated,
+                        **data_points_kwargs_validated,
                     )
                 )
 
@@ -443,8 +447,10 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
         kind: Literal[
             "actual_vs_predicted", "residual_vs_predicted"
         ] = "residual_vs_predicted",
-        scatter_kwargs: Optional[Union[dict[str, Any], list[dict[str, Any]]]] = None,
-        line_kwargs: Optional[dict[str, Any]] = None,
+        data_points_kwargs: Optional[
+            Union[dict[str, Any], list[dict[str, Any]]]
+        ] = None,
+        perfect_model_kwargs: Optional[dict[str, Any]] = None,
         despine: bool = True,
     ) -> None:
         """Plot visualization.
@@ -471,11 +477,11 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
               between observed and predicted values, (y-axis) vs. the predicted
               values (x-axis).
 
-        scatter_kwargs : dict, default=None
+        data_points_kwargs : dict, default=None
             Dictionary with keywords passed to the `matplotlib.pyplot.scatter`
             call.
 
-        line_kwargs : dict, default=None
+        perfect_model_kwargs : dict, default=None
             Dictionary with keyword passed to the `matplotlib.pyplot.plot`
             call to draw the optimal line.
 
@@ -515,14 +521,14 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
 
         self.figure_, self.ax_ = (ax.figure, ax) if ax is not None else plt.subplots()
 
-        perfect_line_kwargs = _validate_style_kwargs(
+        perfect_model_kwargs_validated = _validate_style_kwargs(
             {
                 "color": "black",
                 "alpha": 0.7,
                 "linestyle": "--",
                 "label": "Perfect predictions",
             },
-            line_kwargs or self._default_line_kwargs or {},
+            perfect_model_kwargs or self._default_perfect_model_kwargs or {},
         )
 
         if kind == "actual_vs_predicted":
@@ -533,7 +539,9 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
             y_range_perfect_pred = [min_value, max_value]
 
             self.line_ = self.ax_.plot(
-                x_range_perfect_pred, y_range_perfect_pred, **perfect_line_kwargs
+                x_range_perfect_pred,
+                y_range_perfect_pred,
+                **perfect_model_kwargs_validated,
             )[0]
             self.ax_.set(
                 aspect="equal",
@@ -552,7 +560,7 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
             y_range_perfect_pred = [self.range_residuals.min, self.range_residuals.max]
 
             self.line_ = self.ax_.plot(
-                x_range_perfect_pred, [0, 0], **perfect_line_kwargs
+                x_range_perfect_pred, [0, 0], **perfect_model_kwargs_validated
             )[0]
             self.ax_.set(
                 xlim=x_range_perfect_pred,
@@ -569,9 +577,11 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
 
         # make the scatter plot afterwards since it should take into account the line
         # for the perfect predictions
-        if scatter_kwargs is None:
-            scatter_kwargs = self._default_scatter_kwargs
-        scatter_kwargs = self._validate_scatter_kwargs(scatter_kwargs=scatter_kwargs)
+        if data_points_kwargs is None:
+            data_points_kwargs = self._default_data_points_kwargs
+        data_points_kwargs = self._validate_data_points_kwargs(
+            data_points_kwargs=data_points_kwargs
+        )
 
         if self.report_type == "estimator":
             self.scatter_ = self._plot_single_estimator(
@@ -586,7 +596,7 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
                     if estimator_name is None
                     else estimator_name
                 ),
-                samples_kwargs=scatter_kwargs,
+                samples_kwargs=data_points_kwargs,
             )
         elif self.report_type == "cross-validation":
             self.scatter_ = self._plot_cross_validated_estimator(
@@ -601,7 +611,7 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
                     if estimator_name is None
                     else estimator_name
                 ),
-                samples_kwargs=scatter_kwargs,
+                samples_kwargs=data_points_kwargs,
             )
         elif self.report_type == "comparison-estimator":
             self.scatter_ = self._plot_comparison_estimator(
@@ -612,7 +622,7 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
                 kind=kind,
                 ax=self.ax_,
                 estimator_names=self.estimator_names,
-                samples_kwargs=scatter_kwargs,
+                samples_kwargs=data_points_kwargs,
             )
         else:
             raise ValueError(
@@ -636,7 +646,7 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
         ml_task: MLTask,
         data_source: Literal["train", "test", "X_y"],
         subsample: Union[float, int, None] = 1_000,
-        random_state: Optional[Union[int, np.random.RandomState]] = None,
+        seed: Optional[int] = None,
         **kwargs,
     ) -> "PredictionErrorDisplay":
         """Plot the prediction error given the true and predicted targets.
@@ -665,9 +675,9 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
             display on the scatter plot. If `None`, no subsampling will be
             applied. by default, 1000 samples or less will be displayed.
 
-        random_state : int or RandomState, default=None
-            Controls the randomness when `subsample` is not `None`.
-            See :term:`Glossary <random_state>` for details.
+        seed : int, default=None
+            The seed used to initialize the random number generator used for the
+            subsampling.
 
         **kwargs : dict
             Additional keyword arguments that are ignored for compatibility with
@@ -677,7 +687,7 @@ class PredictionErrorDisplay(HelpDisplayMixin, StyleDisplayMixin):
         -------
         display : PredictionErrorDisplay
         """
-        rng: np.random.RandomState = check_random_state(random_state)
+        rng = np.random.default_rng(seed)
         if isinstance(subsample, numbers.Integral):
             if subsample <= 0:
                 raise ValueError(
