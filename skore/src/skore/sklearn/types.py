@@ -7,6 +7,7 @@ from numpy.typing import ArrayLike
 
 MLTask = Literal[
     "binary-classification",
+    "classification",
     "clustering",
     "multiclass-classification",
     "multioutput-binary-classification",
