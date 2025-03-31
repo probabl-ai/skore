@@ -1,5 +1,4 @@
 import inspect
-import math
 from collections.abc import Iterable
 from functools import partial
 from typing import Any, Callable, Literal, Optional, Union
@@ -448,11 +447,21 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                 return score[0]
         return score
 
-    def _fit_time(self, **kwargs) -> float:
+    def _fit_time(self, cast: bool = True, **kwargs) -> Union[float, None]:
         """Get time to fit the estimator.
 
-        kwargs are available for compatibility with other metrics.
+        Parameters
+        ----------
+        cast : bool, default=True
+            Whether to cast the return value to a float. If `False`, the return value
+            is `None` when the estimator is not fitted.
+
+        kwargs : dict
+            Additional arguments that are ignored but present for compatibility with
+            other metrics.
         """
+        if cast and self._parent.fit_time_ is None:
+            return float("nan")
         return self._parent.fit_time_
 
     def _predict_time(
@@ -496,8 +505,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
               "X_y_{data_source_hash}", for the time to compute the predictions on the
               given data source.
         """
-        fit_time_ = self._fit_time()
-        fit_time = {"fit_time": fit_time_} if not math.isnan(fit_time_) else {}
+        fit_time_ = self._fit_time(cast=False)
+        fit_time = {"fit_time": fit_time_} if fit_time_ is not None else {}
 
         # predict_time cache keys are of the form
         # (self._parent._hash, data_source, data_source_hash, "predict_time")

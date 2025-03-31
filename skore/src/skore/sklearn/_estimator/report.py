@@ -60,9 +60,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     estimator_name_ : str
         The name of the estimator.
 
-    fit_time_ : float
+    fit_time_ : float or None
         The time taken to fit the estimator, in seconds. If the estimator is not
-        internally fitted, the value is `nan`.
+        internally fitted, the value is `None`.
 
     See Also
     --------
@@ -132,7 +132,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self._progress_info: Optional[dict[str, Any]] = None
         self._parent_progress = None
 
-        fit_time: float = float("nan")
+        fit_time: Optional[float] = None
         if fit == "auto":
             try:
                 check_is_fitted(estimator)
