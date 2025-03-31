@@ -1,6 +1,7 @@
 import inspect
 from collections.abc import Iterable
 from functools import partial
+from operator import attrgetter
 from typing import Any, Callable, Literal, Optional, Union
 
 import joblib
@@ -447,11 +448,21 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                 return score[0]
         return score
 
-    def _fit_time(self, **kwargs) -> Union[float, None]:
+    def _fit_time(self, cast: bool = True, **kwargs) -> Union[float, None]:
         """Get time to fit the estimator.
 
-        kwargs are available for compatibility with other metrics.
+        Parameters
+        ----------
+        cast : bool, default=True
+            Whether to cast the return value to a float. If `False`, the return value
+            is `None` when the estimator is not fitted.
+
+        kwargs : dict
+            Additional arguments that are ignored but present for compatibility with
+            other metrics.
         """
+        if cast and self._parent.fit_time_ is None:
+            return float("nan")
         return self._parent.fit_time_
 
     def _predict_time(
@@ -495,7 +506,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
               "X_y_{data_source_hash}", for the time to compute the predictions on the
               given data source.
         """
-        fit_time_ = self._fit_time()
+        fit_time_ = self._fit_time(cast=False)
         fit_time = {"fit_time": fit_time_} if fit_time_ is not None else {}
 
         # predict_time cache keys are of the form
@@ -515,11 +526,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
 
         return fit_time | predict_times
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
-        )
-    )
+    @available_if(attrgetter("_accuracy"))
     def accuracy(
         self,
         *,
@@ -573,6 +580,11 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         """
         return self._accuracy(data_source=data_source, data_source_hash=None, X=X, y=y)
 
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["binary-classification", "multiclass-classification"]
+        )
+    )
     def _accuracy(
         self,
         *,
@@ -601,11 +613,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         )
         return score
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
-        )
-    )
+    @available_if(attrgetter("_precision"))
     def precision(
         self,
         *,
@@ -698,6 +706,11 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             pos_label=pos_label,
         )
 
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["binary-classification", "multiclass-classification"]
+        )
+    )
     def _precision(
         self,
         *,
@@ -745,11 +758,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         )
         return result
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
-        )
-    )
+    @available_if(attrgetter("_recall"))
     def recall(
         self,
         *,
@@ -843,6 +852,11 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             pos_label=pos_label,
         )
 
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["binary-classification", "multiclass-classification"]
+        )
+    )
     def _recall(
         self,
         *,
@@ -890,10 +904,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         )
         return result
 
-    @available_if(
-        _check_supported_ml_task(supported_ml_tasks=["binary-classification"])
-    )
-    @available_if(_check_estimator_has_method(method_name="predict_proba"))
+    @available_if(attrgetter("_brier_score"))
     def brier_score(
         self,
         *,
@@ -952,6 +963,10 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             y=y,
         )
 
+    @available_if(
+        _check_supported_ml_task(supported_ml_tasks=["binary-classification"])
+    )
+    @available_if(_check_estimator_has_method(method_name="predict_proba"))
     def _brier_score(
         self,
         *,
@@ -985,11 +1000,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         )
         return result
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
-        )
-    )
+    @available_if(attrgetter("_roc_auc"))
     def roc_auc(
         self,
         *,
@@ -1085,6 +1096,11 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             multi_class=multi_class,
         )
 
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["binary-classification", "multiclass-classification"]
+        )
+    )
     def _roc_auc(
         self,
         *,
@@ -1123,11 +1139,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         )
         return result
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
-        )
-    )
+    @available_if(attrgetter("_log_loss"))
     def log_loss(
         self,
         *,
@@ -1179,6 +1191,11 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             y=y,
         )
 
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["binary-classification", "multiclass-classification"]
+        )
+    )
     def _log_loss(
         self,
         *,
@@ -1206,11 +1223,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         )
         return result
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["regression", "multioutput-regression"]
-        )
-    )
+    @available_if(attrgetter("_r2"))
     def r2(
         self,
         *,
@@ -1283,6 +1296,11 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             multioutput=multioutput,
         )
 
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["regression", "multioutput-regression"]
+        )
+    )
     def _r2(
         self,
         *,
@@ -1323,11 +1341,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         )
         return result
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["regression", "multioutput-regression"]
-        )
-    )
+    @available_if(attrgetter("_rmse"))
     def rmse(
         self,
         *,
@@ -1400,6 +1414,11 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             multioutput=multioutput,
         )
 
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["regression", "multioutput-regression"]
+        )
+    )
     def _rmse(
         self,
         *,

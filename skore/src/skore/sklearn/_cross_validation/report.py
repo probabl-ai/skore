@@ -15,6 +15,7 @@ from skore.sklearn._base import _BaseReport
 from skore.sklearn._estimator.report import EstimatorReport
 from skore.sklearn.find_ml_task import _find_ml_task
 from skore.sklearn.types import SKLearnCrossValidator
+from skore.utils._fixes import _validate_joblib_parallel_params
 from skore.utils._parallel import Parallel, delayed
 from skore.utils._progress_bar import progress_decorator
 
@@ -174,7 +175,11 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         n_splits = self._cv_splitter.get_n_splits(self._X, self._y)
         progress.update(task, total=n_splits)
 
-        parallel = Parallel(n_jobs=self.n_jobs, return_as="generator")
+        parallel = Parallel(
+            **_validate_joblib_parallel_params(
+                n_jobs=self.n_jobs, return_as="generator"
+            )
+        )
         # do not split the data to take advantage of the memory mapping
         generator = parallel(
             delayed(_generate_estimator_report)(
