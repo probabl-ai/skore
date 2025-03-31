@@ -112,7 +112,7 @@ class HelpDisplayMixin:
         console = Console(file=string_buffer, force_terminal=False)
         console.print(
             Panel(
-                "Get guidance using the display.help() method",
+                "Get guidance using the help() method",
                 title=f"[cyan]{self.__class__.__name__}[/cyan]",
                 border_style="orange1",
                 expand=False,

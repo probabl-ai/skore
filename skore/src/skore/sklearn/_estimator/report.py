@@ -15,6 +15,7 @@ from skore.externals._pandas_accessors import DirNamesMixin
 from skore.externals._sklearn_compat import is_clusterer
 from skore.sklearn._base import _BaseReport, _get_cached_response_values
 from skore.sklearn.find_ml_task import _find_ml_task
+from skore.utils._fixes import _validate_joblib_parallel_params
 from skore.utils._measure_time import MeasureTime
 from skore.utils._parallel import Parallel, delayed
 from skore.utils._progress_bar import progress_decorator
@@ -61,8 +62,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         The name of the estimator.
 
     fit_time_ : float or None
-        The time taken to fit the estimator, in seconds. May be None if, for example,
-        the estimator was already fitted.
+        The time taken to fit the estimator, in seconds. If the estimator is not
+        internally fitted, the value is `None`.
 
     See Also
     --------
@@ -257,7 +258,11 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         if self._X_train is not None:
             data_sources += [("train", self._X_train)]
 
-        parallel = Parallel(n_jobs=n_jobs, return_as="generator", require="sharedmem")
+        parallel = Parallel(
+            **_validate_joblib_parallel_params(
+                n_jobs=n_jobs, return_as="generator", require="sharedmem"
+            )
+        )
         generator = parallel(
             delayed(_get_cached_response_values)(
                 cache=self._cache,

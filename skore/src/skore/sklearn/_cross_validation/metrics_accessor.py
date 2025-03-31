@@ -17,6 +17,7 @@ from skore.sklearn._plot import (
     RocCurveDisplay,
 )
 from skore.utils._accessor import _check_estimator_report_has_method
+from skore.utils._fixes import _validate_joblib_parallel_params
 from skore.utils._index import flatten_multi_index
 from skore.utils._parallel import Parallel, delayed
 from skore.utils._progress_bar import progress_decorator
@@ -186,9 +187,11 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             results = self._parent._cache[cache_key]
         else:
             parallel = Parallel(
-                n_jobs=self._parent.n_jobs,
-                return_as="generator",
-                require="sharedmem",
+                **_validate_joblib_parallel_params(
+                    n_jobs=self._parent.n_jobs,
+                    return_as="generator",
+                    require="sharedmem",
+                )
             )
             generator = parallel(
                 delayed(getattr(report.metrics, report_metric_name))(
@@ -887,10 +890,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
 
     def __repr__(self) -> str:
         """Return a string representation using rich."""
-        return self._rich_repr(
-            class_name="skore.CrossValidationReport.metrics",
-            help_method_name="report.metrics.help()",
-        )
+        return self._rich_repr(class_name="skore.CrossValidationReport.metrics")
 
     ####################################################################################
     # Methods related to displays
