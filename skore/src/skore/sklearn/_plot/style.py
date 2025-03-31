@@ -99,7 +99,7 @@ class StyleDisplayMixin:
         @wraps(plot_func)
         def wrapper(self, *args: Any, **kwargs: Any) -> Any:
             # We need to manually handle setting the style of the parameters because
-            # `plt.style.context` as a side effect with the interactive mode.
+            # `plt.style.context` has a side effect with the interactive mode.
             # See https://github.com/matplotlib/matplotlib/issues/25041
             original_params = {key: plt.rcParams[key] for key in DEFAULT_STYLE}
             for key, value in DEFAULT_STYLE.items():
