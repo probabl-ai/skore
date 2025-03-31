@@ -5,25 +5,40 @@
 
 # %%
 import numpy as np
+import pandas as pd
 
 rng = np.random.default_rng(42)
 
 known_ml_tasks = ["binary-classification", "multiclass-classification", "regression"]
 ml_task = rng.choice(known_ml_tasks, size=10)
 
+index_reg_vs_clf = rng.choice([True, False], size=10)
+
+r2_score = rng.uniform(0, 1, size=10)
+
+r2_score[index_reg_vs_clf] = np.nan
+
+accuracy_score = rng.uniform(0, 1, size=10)
+precision_score = rng.uniform(0, 1, size=10)
+recall_score = rng.uniform(0, 1, size=10)
+
+accuracy_score[~index_reg_vs_clf] = np.nan
+precision_score[~index_reg_vs_clf] = np.nan
+recall_score[~index_reg_vs_clf] = np.nan
+
+
+df = pd.DataFrame(
+    {
+        "ml_task": ml_task,
+        "r2_score": r2_score,
+        "accuracy_score": accuracy_score,
+        "precision_score": precision_score,
+        "recall_score": recall_score,
+    }
+)
+
 # %%
-from sklearn.datasets import make_classification
-from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import train_test_split
+df
 
-X, y = make_classification(random_state=42)
-X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-estimator = LogisticRegression().fit(X_train, y_train)
-from skore import EstimatorReport
-
-report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-
-# %%
-report.metrics.report_metrics(scoring_kwargs={"average": "macro"})
 
 # %%
