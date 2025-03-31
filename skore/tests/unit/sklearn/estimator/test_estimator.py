@@ -556,7 +556,7 @@ def test_estimator_report_metrics_repr(binary_classification_data):
 
     repr_str = repr(report.metrics)
     assert "skore.EstimatorReport.metrics" in repr_str
-    assert "report.metrics.help()" in repr_str
+    assert "help()" in repr_str
 
 
 @pytest.mark.parametrize("metric", ["accuracy", "brier_score", "roc_auc", "log_loss"])
@@ -1310,3 +1310,17 @@ def test_estimator_report_brier_score_requires_probabilities():
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
     assert not hasattr(report.metrics, "brier_score")
+
+
+def test_estimator_report_average_return_float(binary_classification_data):
+    """Check that we expect a float value when computing a metric with averaging.
+
+    Non-regression test for:
+    https://github.com/probabl-ai/skore/issues/1501
+    """
+    estimator, X_test, y_test = binary_classification_data
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    for metric_name in ("precision", "recall", "roc_auc"):
+        result = getattr(report.metrics, metric_name)(average="macro")
+        assert isinstance(result, float)

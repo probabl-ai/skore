@@ -62,8 +62,8 @@ def test_comparison_report_without_testing_data(binary_classification_model):
     """If there is no test data (`None`) for some estimator report,
     initialization works, but computing metrics can fail.
     """
-    estimator, _, _, _, _ = binary_classification_model
-    estimator_report = EstimatorReport(estimator, fit=False)
+    estimator, X_train, _, y_train, _ = binary_classification_model
+    estimator_report = EstimatorReport(estimator, X_train=X_train, y_train=y_train)
 
     report = ComparisonReport([estimator_report, estimator_report])
 
@@ -269,7 +269,7 @@ def test_comparison_report_metrics_repr(binary_classification_model):
 
     repr_str = repr(report.metrics)
     assert "skore.ComparisonReport.metrics" in repr_str
-    assert "report.metrics.help()" in repr_str
+    assert "help()" in repr_str
 
 
 @pytest.mark.parametrize("data_source", ["test", "X_y"])

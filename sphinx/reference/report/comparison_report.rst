@@ -10,7 +10,8 @@ The class :class:`ComparisonReport` provides a report allowing to compare :class
     :template: base.rst
 
     ComparisonReport
-
+    ComparisonReport.cache_predictions
+    ComparisonReport.clear_cache
 .. autosummary::
     :toctree: ../api/
     :nosignatures:

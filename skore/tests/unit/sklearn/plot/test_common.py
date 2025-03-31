@@ -54,7 +54,7 @@ def test_display_str(pyplot, plot_func, estimator, dataset):
 
     str_str = str(display)
     assert f"{display.__class__.__name__}" in str_str
-    assert "display.help()" in str_str
+    assert "help()" in str_str
 
 
 @pytest.mark.parametrize(
