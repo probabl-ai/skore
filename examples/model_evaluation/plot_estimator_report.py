@@ -14,7 +14,7 @@ quickly get insights from any scikit-learn estimator.
 # ==============================================
 #
 # First, we load a dataset from skrub. Our goal is to predict if a healthcare manufacturing companies paid a
-# medical doctors or hospitals. The goal of our problem is to detect potential conflict of interest.
+# medical doctors or hospitals, in order to detect potential conflict of interest.
 
 # %%
 from skrub.datasets import fetch_open_payments
