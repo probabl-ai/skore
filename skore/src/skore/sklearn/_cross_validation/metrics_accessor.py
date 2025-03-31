@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from typing import Any, Callable, Literal, Optional, Union
 
 import joblib
@@ -233,6 +234,61 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
 
             self._parent._cache[cache_key] = results
         return results
+
+    def timings(
+        self,
+        aggregate: Optional[
+            Union[Literal["mean", "std"], Sequence[Literal["mean", "std"]]]
+        ] = ("mean", "std"),
+    ) -> pd.DataFrame:
+        """Get all measured processing times related to the estimator.
+
+        The index of the returned dataframe is the name of the processing time. When
+        the estimators were not used to predict, no timings regarding the prediction
+        will be present.
+
+        Parameters
+        ----------
+        aggregate : {"mean", "std"} or list of such str, default=None
+            Function to aggregate the timings across the cross-validation splits.
+
+        Returns
+        -------
+        pd.DataFrame
+            A dataframe with the processing times.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import make_classification
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> X, y = make_classification(random_state=42)
+        >>> estimator = LogisticRegression()
+        >>> from skore import CrossValidationReport
+        >>> report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=2)
+        >>> report.metrics.timings()
+                      mean       std
+        Fit time       ...       ...
+        >>> report.cache_predictions(response_methods=["predict"])
+        >>> report.metrics.timings()
+                                mean       std
+        Fit time                 ...       ...
+        Predict time test        ...       ...
+        Predict time train       ...       ...
+        """
+        timings: pd.DataFrame = pd.concat(
+            [
+                pd.Series(report.metrics.timings())
+                for report in self._parent.estimator_reports_
+            ],
+            axis=1,
+            keys=[f"Split #{i}" for i in range(len(self._parent.estimator_reports_))],
+        )
+        if aggregate:
+            if isinstance(aggregate, str):
+                aggregate = [aggregate]
+            timings = timings.aggregate(func=aggregate, axis=1)
+        timings.index = timings.index.str.replace("_", " ").str.capitalize()
+        return timings
 
     @available_if(
         _check_supported_ml_task(
@@ -960,7 +1016,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         display : display_class
             The display.
         """
-        if "random_state" in display_kwargs and display_kwargs["random_state"] is None:
+        if "seed" in display_kwargs and display_kwargs["seed"] is None:
             cache_key = None
         else:
             # Create a list of cache key components and then convert to tuple
@@ -1011,9 +1067,9 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
                 **display_kwargs,
             )
 
-            # Unless random_state is an int (i.e. the call is deterministic),
-            # we do not cache
             if cache_key is not None:
+                # Unless seed is an int (i.e. the call is deterministic),
+                # we do not cache
                 self._parent._cache[cache_key] = display
 
         return display
@@ -1130,7 +1186,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         *,
         data_source: DataSource = "test",
         subsample: Union[float, int, None] = 1_000,
-        random_state: Optional[int] = None,
+        seed: Optional[int] = None,
     ) -> PredictionErrorDisplay:
         """Plot the prediction error of a regression model.
 
@@ -1151,8 +1207,9 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             display on the scatter plot. If `None`, no subsampling will be
             applied. by default, 1,000 samples or less will be displayed.
 
-        random_state : int, default=None
-            The random state to use for the subsampling.
+        seed : int, default=None
+            The seed used to initialize the random number generator used for the
+            subsampling.
 
         Returns
         -------
@@ -1168,9 +1225,11 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         >>> regressor = Ridge()
         >>> report = CrossValidationReport(regressor, X=X, y=y, cv_splitter=2)
         >>> display = report.metrics.prediction_error()
-        >>> display.plot(kind="actual_vs_predicted", line_kwargs={"color": "tab:red"})
+        >>> display.plot(
+        ...     kind="actual_vs_predicted", perfect_model_kwargs={"color": "tab:red"}
+        ... )
         """
-        display_kwargs = {"subsample": subsample, "random_state": random_state}
+        display_kwargs = {"subsample": subsample, "seed": seed}
         display = self._get_display(
             data_source=data_source,
             response_method="predict",

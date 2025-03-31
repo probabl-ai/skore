@@ -448,11 +448,21 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                 return score[0]
         return score
 
-    def _fit_time(self, **kwargs) -> Union[float, None]:
+    def _fit_time(self, cast: bool = True, **kwargs) -> Union[float, None]:
         """Get time to fit the estimator.
 
-        kwargs are available for compatibility with other metrics.
+        Parameters
+        ----------
+        cast : bool, default=True
+            Whether to cast the return value to a float. If `False`, the return value
+            is `None` when the estimator is not fitted.
+
+        kwargs : dict
+            Additional arguments that are ignored but present for compatibility with
+            other metrics.
         """
+        if cast and self._parent.fit_time_ is None:
+            return float("nan")
         return self._parent.fit_time_
 
     def _predict_time(
@@ -495,8 +505,30 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             - "predict_time_{data_source}", where data_source is "train", "test" or
               "X_y_{data_source_hash}", for the time to compute the predictions on the
               given data source.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import make_classification
+        >>> from sklearn.model_selection import train_test_split
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> X, y = make_classification(random_state=42)
+        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        >>> estimator = LogisticRegression()
+        >>> from skore import EstimatorReport
+        >>> report = EstimatorReport(
+        ...     estimator,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> report.metrics.timings()
+        {'fit_time': ...}
+        >>> report.cache_predictions(response_methods=["predict"])
+        >>> report.metrics.timings()
+        {'fit_time': ..., 'predict_time_test': ...}
         """
-        fit_time_ = self._fit_time()
+        fit_time_ = self._fit_time(cast=False)
         fit_time = {"fit_time": fit_time_} if fit_time_ is not None else {}
 
         # predict_time cache keys are of the form
@@ -1687,7 +1719,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         # build the cache key components to finally create a tuple that will be used
         # to check if the metric has already been computed
 
-        if "random_state" in display_kwargs and display_kwargs["random_state"] is None:
+        if "seed" in display_kwargs and display_kwargs["seed"] is None:
             cache_key = None
         else:
             cache_key_parts: list[Any] = [self._parent._hash, display_class.__name__]
@@ -1723,9 +1755,9 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                 **display_kwargs,
             )
 
-            # Unless random_state is an int (i.e. the call is deterministic),
-            # we do not cache
             if cache_key is not None:
+                # Unless seed is an int (i.e. the call is deterministic),
+                # we do not cache
                 self._parent._cache[cache_key] = display
 
         return display
@@ -1888,7 +1920,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
         subsample: Union[float, int, None] = 1_000,
-        random_state: Optional[int] = None,
+        seed: Optional[int] = None,
     ) -> PredictionErrorDisplay:
         """Plot the prediction error of a regression model.
 
@@ -1918,8 +1950,9 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             display on the scatter plot. If `None`, no subsampling will be
             applied. by default, 1,000 samples or less will be displayed.
 
-        random_state : int, default=None
-            The random state to use for the subsampling.
+        seed : int, default=None
+            The seed used to initialize the random number generator used for the
+            subsampling.
 
         Returns
         -------
@@ -1944,9 +1977,9 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         ...     y_test=y_test,
         ... )
         >>> display = report.metrics.prediction_error()
-        >>> display.plot(line_kwargs={"color": "tab:red"})
+        >>> display.plot(perfect_model_kwargs={"color": "tab:red"})
         """
-        display_kwargs = {"subsample": subsample, "random_state": random_state}
+        display_kwargs = {"subsample": subsample, "seed": seed}
         display = self._get_display(
             X=X,
             y=y,

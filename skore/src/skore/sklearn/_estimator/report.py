@@ -62,8 +62,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         The name of the estimator.
 
     fit_time_ : float or None
-        The time taken to fit the estimator, in seconds. May be None if, for example,
-        the estimator was already fitted.
+        The time taken to fit the estimator, in seconds. If the estimator is not
+        internally fitted, the value is `None`.
 
     See Also
     --------

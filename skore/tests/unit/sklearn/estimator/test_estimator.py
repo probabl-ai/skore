@@ -449,9 +449,9 @@ def test_estimator_report_display_regression(pyplot, regression_data, display):
     estimator, X_test, y_test = regression_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     assert hasattr(report.metrics, display)
-    display_first_call = getattr(report.metrics, display)(random_state=0)
+    display_first_call = getattr(report.metrics, display)(seed=0)
     assert report._cache != {}
-    display_second_call = getattr(report.metrics, display)(random_state=0)
+    display_second_call = getattr(report.metrics, display)(seed=0)
     assert display_first_call is display_second_call
 
 
@@ -483,11 +483,11 @@ def test_estimator_report_display_regression_external_data(
     report = EstimatorReport(estimator)
     assert hasattr(report.metrics, display)
     display_first_call = getattr(report.metrics, display)(
-        data_source="X_y", X=X_test, y=y_test, random_state=0
+        data_source="X_y", X=X_test, y=y_test, seed=0
     )
     assert report._cache != {}
     display_second_call = getattr(report.metrics, display)(
-        data_source="X_y", X=X_test, y=y_test, random_state=0
+        data_source="X_y", X=X_test, y=y_test, seed=0
     )
     assert display_first_call is display_second_call
 

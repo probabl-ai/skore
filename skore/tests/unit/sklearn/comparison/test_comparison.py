@@ -747,7 +747,6 @@ def test_comparison_report_get_predictions(
     )
 
     report = ComparisonReport([estimator_report, estimator_report])
-
     predictions = report.get_predictions(
         data_source=data_source, response_method=response_method, pos_label=pos_label
     )
@@ -775,3 +774,37 @@ def test_comparison_report_get_predictions_error(binary_classification_model):
 
     with pytest.raises(ValueError, match="Invalid data source"):
         report.get_predictions(data_source="invalid", response_method="predict")
+
+
+def test_comparison_report_timings(binary_classification_model):
+    """Check the general behaviour of the `timings` method."""
+    estimator, X_train, X_test, y_train, y_test = binary_classification_model
+    estimator_report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+    report = ComparisonReport([estimator_report, estimator_report])
+    timings = report.metrics.timings()
+    assert isinstance(timings, pd.DataFrame)
+    assert timings.index.tolist() == ["Fit time"]
+    assert timings.columns.tolist() == report.report_names_
+
+    report.metrics.report_metrics(data_source="train")
+    timings = report.metrics.timings()
+    assert isinstance(timings, pd.DataFrame)
+    assert timings.index.tolist() == ["Fit time", "Predict time train"]
+    assert timings.columns.tolist() == report.report_names_
+
+    report.metrics.report_metrics(data_source="test")
+    timings = report.metrics.timings()
+    assert isinstance(timings, pd.DataFrame)
+    assert timings.index.tolist() == [
+        "Fit time",
+        "Predict time train",
+        "Predict time test",
+    ]
+    assert timings.columns.tolist() == report.report_names_
