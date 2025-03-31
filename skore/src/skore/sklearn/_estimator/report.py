@@ -288,6 +288,87 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         for _ in generator:
             progress.update(task, advance=1, refresh=True)
 
+    def get_predictions(
+        self,
+        *,
+        data_source: Literal["train", "test", "X_y"],
+        response_method: Literal["predict", "predict_proba", "decision_function"],
+        X: Optional[ArrayLike] = None,
+        pos_label: Optional[Any] = None,
+    ) -> ArrayLike:
+        """Get estimator's predictions.
+
+        This method has the advantage to reload from the cache if the predictions
+        were already computed in a previous call.
+
+        Parameters
+        ----------
+        data_source : {"test", "train", "X_y"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
+        response_method : {"predict", "predict_proba", "decision_function"}
+            The response method to use.
+
+        X : array-like of shape (n_samples, n_features), optional
+            When `data_source` is "X_y", the input features on which to compute the
+            response method.
+
+        pos_label : int, float, bool or str, default=None
+            The positive class when it comes to binary classification. When
+            `response_method="predict_proba"`, it will select the column corresponding
+            to the positive class. When `response_method="decision_function"`, it will
+            negate the decision function if `pos_label` is different from
+            `estimator.classes_[1]`.
+
+        Returns
+        -------
+        np.ndarray of shape (n_samples,) or (n_samples, n_classes)
+            The predictions.
+
+        Raises
+        ------
+        ValueError
+            If the data source is invalid.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import make_classification
+        >>> from sklearn.model_selection import train_test_split
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> X, y = make_classification(random_state=42)
+        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        >>> estimator = LogisticRegression().fit(X_train, y_train)
+        >>> from skore import EstimatorReport
+        >>> report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+        >>> predictions = report.get_predictions(
+        ...     data_source="test", response_method="predict"
+        ... )
+        >>> predictions.shape
+        (25,)
+        """
+        if data_source == "test":
+            X_ = self._X_test
+        elif data_source == "train":
+            X_ = self._X_train
+        elif data_source == "X_y":
+            X_ = X
+        else:
+            raise ValueError(f"Invalid data source: {data_source}")
+
+        return _get_cached_response_values(
+            cache=self._cache,
+            estimator_hash=self._hash,
+            estimator=self._estimator,
+            X=X_,
+            response_method=response_method,
+            pos_label=pos_label,
+            data_source=data_source,
+        )
+
     @property
     def estimator_(self) -> BaseEstimator:
         return self._estimator

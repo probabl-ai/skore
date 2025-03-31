@@ -207,6 +207,41 @@ def test_cross_validation_report_cache_predictions(
         assert estimator_report._cache == {}
 
 
+@pytest.mark.parametrize("data_source", ["train", "test"])
+@pytest.mark.parametrize(
+    "response_method", ["predict", "predict_proba", "decision_function"]
+)
+@pytest.mark.parametrize("pos_label", [None, 0, 1])
+def test_cross_validation_report_get_predictions(
+    data_source, response_method, pos_label
+):
+    """Check the behaviour of the `get_predictions` method."""
+    X, y = make_classification(n_classes=2, random_state=42)
+    estimator = LogisticRegression()
+    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
+
+    predictions = report.get_predictions(
+        data_source=data_source, response_method=response_method, pos_label=pos_label
+    )
+    assert len(predictions) == 2
+    for split_idx, split_predictions in enumerate(predictions):
+        if data_source == "train":
+            expected_shape = report.estimator_reports_[split_idx].y_train.shape
+        else:
+            expected_shape = report.estimator_reports_[split_idx].y_test.shape
+        assert split_predictions.shape == expected_shape
+
+
+def test_cross_validation_report_get_predictions_error():
+    """Check that we raise an error when the data source is invalid."""
+    X, y = make_classification(n_classes=2, random_state=42)
+    estimator = LogisticRegression()
+    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
+
+    with pytest.raises(ValueError, match="Invalid data source"):
+        report.get_predictions(data_source="invalid", response_method="predict")
+
+
 def test_cross_validation_report_pickle(tmp_path, binary_classification_data):
     """Check that we can pickle an cross-validation report.
 
