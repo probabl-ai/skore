@@ -494,6 +494,28 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             - "predict_time_{data_source}", where data_source is "train", "test" or
               "X_y_{data_source_hash}", for the time to compute the predictions on the
               given data source.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import make_classification
+        >>> from sklearn.model_selection import train_test_split
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> X, y = make_classification(random_state=42)
+        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        >>> estimator = LogisticRegression()
+        >>> from skore import EstimatorReport
+        >>> report = EstimatorReport(
+        ...     estimator,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> report.metrics.timings()
+        {'fit_time': ...}
+        >>> report.cache_predictions(response_methods=["predict"])
+        >>> report.metrics.timings()
+        {'fit_time': ..., 'predict_time_test': ...}
         """
         fit_time_ = self._fit_time()
         fit_time = {"fit_time": fit_time_} if fit_time_ is not None else {}

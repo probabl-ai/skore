@@ -244,10 +244,33 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         the estimators were not used to predict, no timings regarding the prediction
         will be present.
 
+        Parameters
+        ----------
+        aggregate : {"mean", "std"} or list of such str, default=None
+            Function to aggregate the timings across the cross-validation splits.
+
         Returns
         -------
         pd.DataFrame
             A dataframe with the processing times.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import make_classification
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> X, y = make_classification(random_state=42)
+        >>> estimator = LogisticRegression()
+        >>> from skore import CrossValidationReport
+        >>> report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=2)
+        >>> report.metrics.timings()
+                      mean       std
+        Fit time       ...       ...
+        >>> report.cache_predictions(response_methods=["predict"])
+        >>> report.metrics.timings()
+                                mean       std
+        Fit time                 ...       ...
+        Predict time test        ...       ...
+        Predict time train       ...       ...
         """
         timings: pd.DataFrame = pd.concat(
             [
