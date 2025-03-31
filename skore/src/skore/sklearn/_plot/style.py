@@ -82,7 +82,7 @@ class StyleDisplayMixin:
 
         This decorator:
         1. Applies default style settings
-        2. Executes the plotting code
+        2. Executes `plot_func`
         3. Applies `tight_layout` to the figure if it exists
 
         Parameters
