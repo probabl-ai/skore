@@ -305,7 +305,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
 
-        response_method : str
+        response_method : {"predict", "predict_proba", "decision_function"}
             The response method to use.
 
         X : array-like of shape (n_samples, n_features), optional

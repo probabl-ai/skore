@@ -310,7 +310,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
 
-        response_method : str
+        response_method : {"predict", "predict_proba", "decision_function"}
             The response method to use.
 
         pos_label : int, float, bool or str, default=None
