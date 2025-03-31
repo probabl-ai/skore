@@ -1224,7 +1224,9 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         >>> regressor = Ridge()
         >>> report = CrossValidationReport(regressor, X=X, y=y, cv_splitter=2)
         >>> display = report.metrics.prediction_error()
-        >>> display.plot(kind="actual_vs_predicted", line_kwargs={"color": "tab:red"})
+        >>> display.plot(
+        ...     kind="actual_vs_predicted", perfect_model_kwargs={"color": "tab:red"}
+        ... )
         """
         display_kwargs = {"subsample": subsample, "random_state": random_state}
         display = self._get_display(

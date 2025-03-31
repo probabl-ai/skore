@@ -1976,7 +1976,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         ...     y_test=y_test,
         ... )
         >>> display = report.metrics.prediction_error()
-        >>> display.plot(line_kwargs={"color": "tab:red"})
+        >>> display.plot(perfect_model_kwargs={"color": "tab:red"})
         """
         display_kwargs = {"subsample": subsample, "random_state": random_state}
         display = self._get_display(
