@@ -5,7 +5,7 @@ import joblib
 from skore.externals._sklearn_compat import parse_version
 
 
-# FIXME: Remove this function once we support joblib >= 1.4
+# FIXME: Remove this function once we support only joblib >= 1.4
 def _validate_joblib_parallel_params(**kwargs: Any) -> dict[str, Any]:
     """Validate the parameters for `joblib.Parallel`.
 
