@@ -278,18 +278,18 @@ def test_cross_validation_report_display_regression(pyplot, regression_data, dis
     estimator, X, y = regression_data
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
     assert hasattr(report.metrics, display)
-    display_first_call = getattr(report.metrics, display)(random_state=0)
+    display_first_call = getattr(report.metrics, display)(seed=0)
     assert report._cache != {}
-    display_second_call = getattr(report.metrics, display)(random_state=0)
+    display_second_call = getattr(report.metrics, display)(seed=0)
     assert display_first_call is display_second_call
 
 
-def test_random_state(regression_data):
-    """If random_state is None (the default) the call should not be cached."""
+def test_seed_none(regression_data):
+    """If `seed` is None (the default) the call should not be cached."""
     estimator, X, y = regression_data
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
 
-    report.metrics.prediction_error()
+    report.metrics.prediction_error(seed=None)
     # skore should store the y_pred of the internal estimators, but not the plot
     assert report._cache == {}
 
