@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import Any, Callable, Literal, Optional, Union
+from typing import Any, Callable, Literal, Optional, Union, cast
 
 import joblib
 import numpy as np
@@ -1116,13 +1116,15 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         """
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
-        display = self._get_display(
-            data_source=data_source,
-            response_method=response_method,
-            display_class=RocCurveDisplay,
-            display_kwargs=display_kwargs,
+        display = cast(
+            RocCurveDisplay,
+            self._get_display(
+                data_source=data_source,
+                response_method=response_method,
+                display_class=RocCurveDisplay,
+                display_kwargs=display_kwargs,
+            ),
         )
-        assert isinstance(display, RocCurveDisplay)
         return display
 
     @available_if(
@@ -1167,13 +1169,15 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         """
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
-        display = self._get_display(
-            data_source=data_source,
-            response_method=response_method,
-            display_class=PrecisionRecallCurveDisplay,
-            display_kwargs=display_kwargs,
+        display = cast(
+            PrecisionRecallCurveDisplay,
+            self._get_display(
+                data_source=data_source,
+                response_method=response_method,
+                display_class=PrecisionRecallCurveDisplay,
+                display_kwargs=display_kwargs,
+            ),
         )
-        assert isinstance(display, PrecisionRecallCurveDisplay)
         return display
 
     @available_if(
@@ -1230,11 +1234,13 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         ... )
         """
         display_kwargs = {"subsample": subsample, "seed": seed}
-        display = self._get_display(
-            data_source=data_source,
-            response_method="predict",
-            display_class=PredictionErrorDisplay,
-            display_kwargs=display_kwargs,
+        display = cast(
+            PredictionErrorDisplay,
+            self._get_display(
+                data_source=data_source,
+                response_method="predict",
+                display_class=PredictionErrorDisplay,
+                display_kwargs=display_kwargs,
+            ),
         )
-        assert isinstance(display, PredictionErrorDisplay)
         return display
