@@ -13,6 +13,6 @@ def _validate_joblib_parallel_params(**kwargs: Any) -> dict[str, Any]:
     because it is not supported by joblib < 1.4.
     """
     joblib_version = parse_version(joblib.__version__)
-    if joblib_version < parse_version("1.4") and "return_as" in kwargs:
-        del kwargs["return_as"]
+    if joblib_version < parse_version("1.4"):
+        kwargs.pop("return_as", None)
     return kwargs
