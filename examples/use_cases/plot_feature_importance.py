@@ -873,24 +873,53 @@ ridge_report.feature_importance.permutation(random_state=0)
 
 
 # %%
-def plot_permutation_train_test(est_report):
-    fig, axes = plt.subplots(nrows=1, ncols=2, sharey=True)
 
-    # Boxplot for the train set
+
+def plot_permutation_train_test(est_report):
+    _, ax = plt.subplots(figsize=(8, 6))
+
+    train_color = "blue"
+    test_color = "orange"
+
     est_report.feature_importance.permutation(
         data_source="train", random_state=0
-    ).T.boxplot(ax=axes[0], vert=False)
-    axes[0].set_title("Train set")
-    axes[0].set_xlabel("r2")
-
-    # Boxplot for the test set
+    ).T.boxplot(
+        ax=ax,
+        vert=False,
+        widths=0.35,
+        patch_artist=True,
+        boxprops=dict(facecolor=train_color, alpha=0.7),
+        medianprops=dict(color="black"),
+        positions=[x + 0.4 for x in range(len(est_report.X_train.columns))],
+    )
     est_report.feature_importance.permutation(
         data_source="test", random_state=0
-    ).T.boxplot(ax=axes[1], vert=False)
-    axes[1].set_title("Test set")
-    axes[1].set_xlabel("r2")
+    ).T.boxplot(
+        ax=ax,
+        vert=False,
+        widths=0.35,
+        patch_artist=True,
+        boxprops=dict(facecolor=test_color, alpha=0.7),
+        medianprops=dict(color="black"),
+        positions=range(len(est_report.X_test.columns)),
+    )
 
-    fig.suptitle(f"Permutation feature importance of {est_report.estimator_name_}")
+    ax.legend(
+        handles=[
+            plt.Line2D([0], [0], color=train_color, lw=5, label="Train"),
+            plt.Line2D([0], [0], color=test_color, lw=5, label="Test"),
+        ],
+        loc="best",
+        title="Dataset",
+    )
+
+    ax.set_title(
+        f"Permutation feature importance of {est_report.estimator_name_} (Train vs Test)"
+    )
+    ax.set_xlabel("r2")
+    ax.set_yticks([x + 0.2 for x in range(len(est_report.X_train.columns))])
+    ax.set_yticklabels(est_report.X_train.columns)
+
     plt.tight_layout()
     plt.show()
 
@@ -953,3 +982,5 @@ plot_permutation_train_test(tree_report)
 # compared to linear models.
 # The model-agnostic permutation feature importance further enabled us to compare
 # feature significance across diverse model types.
+
+# %%

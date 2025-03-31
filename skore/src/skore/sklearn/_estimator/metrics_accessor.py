@@ -731,7 +731,9 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             pos_label=pos_label,
             average=average,
         )
-        if self._parent._ml_task == "binary-classification" and pos_label is not None:
+        if self._parent._ml_task == "binary-classification" and (
+            pos_label is not None or average is not None
+        ):
             assert isinstance(result, float), (
                 "The precision score should be a float, got "
                 f"{type(result)} with value {result}."
@@ -874,7 +876,9 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             pos_label=pos_label,
             average=average,
         )
-        if self._parent._ml_task == "binary-classification" and pos_label is not None:
+        if self._parent._ml_task == "binary-classification" and (
+            pos_label is not None or average is not None
+        ):
             assert isinstance(result, float), (
                 "The precision score should be a float, got "
                 f"{type(result)} with value {result}."
