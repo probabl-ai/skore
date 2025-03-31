@@ -863,7 +863,7 @@ ridge_report.help()
 # accessor:
 
 # %%
-ridge_report.feature_importance.permutation(random_state=0)
+ridge_report.feature_importance.permutation(seed=0)
 
 # %%
 # The permutation importance is often calculated several times, each time
@@ -881,9 +881,7 @@ def plot_permutation_train_test(est_report):
     train_color = "blue"
     test_color = "orange"
 
-    est_report.feature_importance.permutation(
-        data_source="train", random_state=0
-    ).T.boxplot(
+    est_report.feature_importance.permutation(data_source="train", seed=0).T.boxplot(
         ax=ax,
         vert=False,
         widths=0.35,
@@ -892,9 +890,7 @@ def plot_permutation_train_test(est_report):
         medianprops=dict(color="black"),
         positions=[x + 0.4 for x in range(len(est_report.X_train.columns))],
     )
-    est_report.feature_importance.permutation(
-        data_source="test", random_state=0
-    ).T.boxplot(
+    est_report.feature_importance.permutation(data_source="test", seed=0).T.boxplot(
         ax=ax,
         vert=False,
         widths=0.35,

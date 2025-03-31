@@ -278,18 +278,18 @@ def test_cross_validation_report_display_regression(pyplot, regression_data, dis
     estimator, X, y = regression_data
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
     assert hasattr(report.metrics, display)
-    display_first_call = getattr(report.metrics, display)(random_state=0)
+    display_first_call = getattr(report.metrics, display)(seed=0)
     assert report._cache != {}
-    display_second_call = getattr(report.metrics, display)(random_state=0)
+    display_second_call = getattr(report.metrics, display)(seed=0)
     assert display_first_call is display_second_call
 
 
-def test_random_state(regression_data):
-    """If random_state is None (the default) the call should not be cached."""
+def test_seed_none(regression_data):
+    """If `seed` is None (the default) the call should not be cached."""
     estimator, X, y = regression_data
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
 
-    report.metrics.prediction_error()
+    report.metrics.prediction_error(seed=None)
     # skore should store the y_pred of the internal estimators, but not the plot
     assert report._cache == {}
 
@@ -881,3 +881,40 @@ def test_cross_validation_report_brier_score_requires_probabilities():
 
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=2)
     assert not hasattr(report.metrics, "brier_score")
+
+
+@pytest.mark.parametrize(
+    "aggregate, expected_columns",
+    [
+        (None, ["Split #0", "Split #1"]),
+        ("mean", ["mean"]),
+        ("std", ["std"]),
+        (["mean", "std"], ["mean", "std"]),
+    ],
+)
+def test_cross_validation_timings(
+    binary_classification_data, aggregate, expected_columns
+):
+    """Check the general behaviour of the `timings` method."""
+    estimator, X, y = binary_classification_data
+    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
+    timings = report.metrics.timings(aggregate=aggregate)
+    assert isinstance(timings, pd.DataFrame)
+    assert timings.index.tolist() == ["Fit time"]
+    assert timings.columns.tolist() == expected_columns
+
+    report.metrics.report_metrics(data_source="train")
+    timings = report.metrics.timings(aggregate=aggregate)
+    assert isinstance(timings, pd.DataFrame)
+    assert timings.index.tolist() == ["Fit time", "Predict time train"]
+    assert timings.columns.tolist() == expected_columns
+
+    report.metrics.report_metrics(data_source="test")
+    timings = report.metrics.timings(aggregate=aggregate)
+    assert isinstance(timings, pd.DataFrame)
+    assert timings.index.tolist() == [
+        "Fit time",
+        "Predict time train",
+        "Predict time test",
+    ]
+    assert timings.columns.tolist() == expected_columns
