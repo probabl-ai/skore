@@ -1621,10 +1621,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
 
     def __repr__(self) -> str:
         """Return a string representation using rich."""
-        return self._rich_repr(
-            class_name="skore.EstimatorReport.metrics",
-            help_method_name="report.metrics.help()",
-        )
+        return self._rich_repr(class_name="skore.EstimatorReport.metrics")
 
     ####################################################################################
     # Methods related to displays
