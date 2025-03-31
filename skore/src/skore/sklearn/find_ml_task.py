@@ -138,7 +138,8 @@ def _find_ml_task(y, estimator=None) -> MLTask:
             else:
                 # fallback on the target
                 if y is None:
-                    return "unknown"
+                    # we cannot do better than classification
+                    return "classification"
 
     # fallback on the target
     if y is None:

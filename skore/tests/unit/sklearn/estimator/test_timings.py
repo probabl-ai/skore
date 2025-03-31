@@ -1,3 +1,5 @@
+import math
+
 import joblib
 import pandas as pd
 import pytest
@@ -51,7 +53,7 @@ def test_predict_prefitted(data_source, binary_classification_data):
 
     if data_source == "X_y":
         X_, y_ = (data["X_test"], data["y_test"])
-        data_source_hash = joblib.hash((data["X_test"], data["y_test"]))
+        data_source_hash = joblib.hash((X_, y_))
         data_source_check = f"X_y_{data_source_hash}"
     else:
         X_, y_ = (None, None)
@@ -75,7 +77,7 @@ def test_everything(binary_classification_data):
     report.metrics.accuracy(data_source="test", X=None, y=None)
     report.metrics.accuracy(data_source="X_y", X=data["X_test"], y=data["y_test"])
     data_source_hash = joblib.hash((data["X_test"], data["y_test"]))
-    data_source_check = f"X_y_{data_source_hash}"
+    data_source_check = f"predict_time_X_y_{data_source_hash}"
 
     result = report.metrics.timings()
     assert isinstance(result, dict)
@@ -83,7 +85,7 @@ def test_everything(binary_classification_data):
     assert isinstance(result.get("fit_time"), float)
     assert isinstance(result.get("predict_time_train"), float)
     assert isinstance(result.get("predict_time_test"), float)
-    assert isinstance(result.get(f"predict_time_{data_source_check}"), float)
+    assert isinstance(result.get(data_source_check), float)
 
 
 def test_fit_time(binary_classification_data):
@@ -92,7 +94,7 @@ def test_fit_time(binary_classification_data):
     estimator, data = binary_classification_data
     report = EstimatorReport(estimator, **data)
 
-    assert isinstance(report.metrics._fit_time(), float)
+    assert isinstance(report.metrics._fit_time(cast=False), float)
 
 
 def test_fit_time_estimator_already_fitted(binary_classification_data):
@@ -102,7 +104,8 @@ def test_fit_time_estimator_already_fitted(binary_classification_data):
     estimator.fit(data["X_train"], data["y_train"])
     report = EstimatorReport(estimator, X_test=data["X_test"], y_test=data["y_test"])
 
-    assert report.metrics._fit_time() is None
+    assert report.metrics._fit_time(cast=False) is None
+    assert math.isnan(report.metrics._fit_time(cast=True))
 
 
 def test_fit_time_estimator_unfitted(binary_classification_data):
@@ -110,7 +113,8 @@ def test_fit_time_estimator_unfitted(binary_classification_data):
     estimator, data = binary_classification_data
     report = EstimatorReport(estimator, fit=False, **data)
 
-    assert report.metrics._fit_time() is None
+    assert report.metrics._fit_time(cast=False) is None
+    assert math.isnan(report.metrics._fit_time(cast=True))
 
 
 @pytest.mark.parametrize("data_source", ["test", "train", "X_y"])
