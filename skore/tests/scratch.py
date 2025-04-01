@@ -224,25 +224,8 @@ class MetaDataFrame(pd.DataFrame):
         self._current_fig = fig
         self._current_dimensions = dimensions
 
-        # Register callbacks for interactive selections
-        self._register_callbacks(fig)
-
         display(fig)
         return ""
-
-    def _register_callbacks(self, fig):
-        """
-        Register callbacks for the interactive figure.
-
-        This method is kept for API compatibility but currently does not
-        register callbacks, as we use an explicit approach instead.
-
-        Parameters
-        ----------
-        fig : plotly.graph_objects.FigureWidget
-            The figure widget to register callbacks for.
-        """
-        pass  # We'll use an explicit approach instead of callbacks
 
     def update_selection(self):
         """
