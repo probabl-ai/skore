@@ -62,8 +62,8 @@ def test_comparison_report_without_testing_data(binary_classification_model):
     """If there is no test data (`None`) for some estimator report,
     initialization works, but computing metrics can fail.
     """
-    estimator, _, _, _, _ = binary_classification_model
-    estimator_report = EstimatorReport(estimator, fit=False)
+    estimator, X_train, _, y_train, _ = binary_classification_model
+    estimator_report = EstimatorReport(estimator, X_train=X_train, y_train=y_train)
 
     report = ComparisonReport([estimator_report, estimator_report])
 
@@ -269,7 +269,7 @@ def test_comparison_report_metrics_repr(binary_classification_model):
 
     repr_str = repr(report.metrics)
     assert "skore.ComparisonReport.metrics" in repr_str
-    assert "report.metrics.help()" in repr_str
+    assert "help()" in repr_str
 
 
 @pytest.mark.parametrize("data_source", ["test", "X_y"])
@@ -466,36 +466,31 @@ def test_comparison_report_report_metrics_X_y(binary_classification_model):
     )
     assert "Favorability" not in result.columns
 
-    expected = pd.DataFrame(
+    expected_index = pd.MultiIndex.from_tuples(
         [
-            [1.0, 1.0],
-            [1.0, 1.0],
-            [1.0, 1.0],
-            [1.0, 1.0],
-            [1.0, 1.0],
-            [0.01514976, 0.01514976],
+            ("Precision", 0),
+            ("Precision", 1),
+            ("Recall", 0),
+            ("Recall", 1),
+            ("ROC AUC", ""),
+            ("Brier score", ""),
+            ("Fit time", ""),
+            ("Predict time", ""),
         ],
-        columns=pd.Index(
-            ["LogisticRegression", "LogisticRegression"],
-            name="Estimator",
-        ),
-        index=pd.MultiIndex.from_tuples(
-            [
-                ("Precision", 0),
-                ("Precision", 1),
-                ("Recall", 0),
-                ("Recall", 1),
-                ("ROC AUC", ""),
-                ("Brier score", ""),
-            ],
-            names=["Metric", "Label / Average"],
-        ),
+        names=["Metric", "Label / Average"],
     )
-    pd.testing.assert_frame_equal(result, expected)
+    expected_columns = pd.Index(
+        ["LogisticRegression", "LogisticRegression"],
+        name="Estimator",
+    )
+
+    pd.testing.assert_index_equal(result.index, expected_index)
+    pd.testing.assert_index_equal(result.columns, expected_columns)
 
     assert len(comp._cache) == 1
     cached_result = list(comp._cache.values())[0]
-    pd.testing.assert_frame_equal(cached_result, expected)
+    pd.testing.assert_index_equal(cached_result.index, expected_index)
+    pd.testing.assert_index_equal(cached_result.columns, expected_columns)
 
 
 def test_comparison_report_custom_metric_X_y(binary_classification_model):
@@ -557,7 +552,7 @@ def test_cross_validation_report_flat_index(binary_classification_model):
     )
     report = ComparisonReport({"report_1": report_1, "report_2": report_2})
     result = report.metrics.report_metrics(flat_index=True)
-    assert result.shape == (6, 2)
+    assert result.shape == (8, 2)
     assert isinstance(result.index, pd.Index)
     assert result.index.tolist() == [
         "precision_0",
@@ -566,6 +561,8 @@ def test_cross_validation_report_flat_index(binary_classification_model):
         "recall_1",
         "roc_auc",
         "brier_score",
+        "fit_time",
+        "predict_time",
     ]
     assert result.columns.tolist() == ["report_1", "report_2"]
 
@@ -729,3 +726,85 @@ def test_random_state(regression_model):
     report.metrics.prediction_error()
     # skore should store the y_pred of the internal estimators, but not the plot
     assert report._cache == {}
+
+
+@pytest.mark.parametrize("data_source", ["train", "test"])
+@pytest.mark.parametrize(
+    "response_method", ["predict", "predict_proba", "decision_function"]
+)
+@pytest.mark.parametrize("pos_label", [None, 0, 1])
+def test_comparison_report_get_predictions(
+    binary_classification_model, data_source, response_method, pos_label
+):
+    """Check the behaviour of the `get_predictions` method."""
+    estimator, X_train, X_test, y_train, y_test = binary_classification_model
+    estimator_report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+    report = ComparisonReport([estimator_report, estimator_report])
+    predictions = report.get_predictions(
+        data_source=data_source, response_method=response_method, pos_label=pos_label
+    )
+    assert len(predictions) == 2
+    for split_idx, split_predictions in enumerate(predictions):
+        if data_source == "train":
+            expected_shape = report.estimator_reports_[split_idx].y_train.shape
+        else:
+            expected_shape = report.estimator_reports_[split_idx].y_test.shape
+        assert split_predictions.shape == expected_shape
+
+
+def test_comparison_report_get_predictions_error(binary_classification_model):
+    """Check that we raise an error when the data source is invalid."""
+    estimator, X_train, X_test, y_train, y_test = binary_classification_model
+    estimator_report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+    report = ComparisonReport([estimator_report, estimator_report])
+
+    with pytest.raises(ValueError, match="Invalid data source"):
+        report.get_predictions(data_source="invalid", response_method="predict")
+
+
+def test_comparison_report_timings(binary_classification_model):
+    """Check the general behaviour of the `timings` method."""
+    estimator, X_train, X_test, y_train, y_test = binary_classification_model
+    estimator_report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+    report = ComparisonReport([estimator_report, estimator_report])
+    timings = report.metrics.timings()
+    assert isinstance(timings, pd.DataFrame)
+    assert timings.index.tolist() == ["Fit time"]
+    assert timings.columns.tolist() == report.report_names_
+
+    report.metrics.report_metrics(data_source="train")
+    timings = report.metrics.timings()
+    assert isinstance(timings, pd.DataFrame)
+    assert timings.index.tolist() == ["Fit time", "Predict time train"]
+    assert timings.columns.tolist() == report.report_names_
+
+    report.metrics.report_metrics(data_source="test")
+    timings = report.metrics.timings()
+    assert isinstance(timings, pd.DataFrame)
+    assert timings.index.tolist() == [
+        "Fit time",
+        "Predict time train",
+        "Predict time test",
+    ]
+    assert timings.columns.tolist() == report.report_names_

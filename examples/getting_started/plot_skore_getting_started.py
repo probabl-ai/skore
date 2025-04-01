@@ -98,7 +98,7 @@ plt.tight_layout()
 # In particular, we can inspect the model using the permutation feature importance:
 
 # %%
-rf_report.feature_importance.permutation().T.boxplot(vert=False)
+rf_report.feature_importance.permutation(seed=0).T.boxplot(vert=False)
 plt.tight_layout()
 
 # %%

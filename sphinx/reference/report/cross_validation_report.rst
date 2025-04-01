@@ -20,6 +20,9 @@ functionalities of the report are exposed through accessors.
    :template: autosummary/accessor_method.rst
 
    CrossValidationReport.help
+   CrossValidationReport.cache_predictions
+   CrossValidationReport.clear_cache
+   CrossValidationReport.get_predictions
 
 .. rubric:: Metrics
 
@@ -54,3 +57,4 @@ estimator across cross-validation folds.
     CrossValidationReport.metrics.rmse
     CrossValidationReport.metrics.roc
     CrossValidationReport.metrics.roc_auc
+    CrossValidationReport.metrics.timings
