@@ -24,6 +24,9 @@ DEFAULT_STYLE = {
     "ytick.major.size": 7,
     "xtick.minor.size": 5,
     "ytick.minor.size": 5,
+    "legend.loc": "upper left",
+    "legend.bbox_to_anchor": (1.02, 1),
+    "legend.borderaxespad": 0,
 }
 
 
@@ -83,7 +86,7 @@ class StyleDisplayMixin:
         This decorator:
         1. Applies default style settings
         2. Executes `plot_func`
-        3. Applies `tight_layout` to the figure if it exists
+        3. Applies `tight_layout`
 
         Parameters
         ----------

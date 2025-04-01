@@ -63,6 +63,8 @@ def test_precision_recall_curve_display_binary_classification(
         assert len(attr[estimator.classes_[1]]) == 1
 
     display.plot()
+    assert hasattr(display, "ax_")
+    assert hasattr(display, "figure_")
     assert isinstance(display.lines_, list)
     assert len(display.lines_) == 1
     precision_recall_curve_mpl = display.lines_[0]
@@ -109,6 +111,8 @@ def test_precision_recall_curve_cross_validation_display_binary_classification(
         assert len(attr[pos_label]) == cv
 
     display.plot()
+    assert hasattr(display, "ax_")
+    assert hasattr(display, "figure_")
     assert isinstance(display.lines_, list)
     assert len(display.lines_) == cv
     expected_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
