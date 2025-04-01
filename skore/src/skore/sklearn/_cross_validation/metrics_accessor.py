@@ -17,7 +17,7 @@ from skore.sklearn._plot import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
-from skore.utils._accessor import _check_estimator_has_method, _check_supported_ml_task
+from skore.utils._accessor import _check_estimator_report_has_method
 from skore.utils._fixes import _validate_joblib_parallel_params
 from skore.utils._index import flatten_multi_index
 from skore.utils._parallel import Parallel, delayed
@@ -290,11 +290,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         timings.index = timings.index.str.replace("_", " ").str.capitalize()
         return timings
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
-        )
-    )
+    @available_if(_check_estimator_report_has_method("metrics", "accuracy"))
     def accuracy(
         self,
         *,
@@ -341,11 +337,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             aggregate=aggregate,
         )
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
-        )
-    )
+    @available_if(_check_estimator_report_has_method("metrics", "precision"))
     def precision(
         self,
         *,
@@ -427,11 +419,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             scoring_kwargs={"average": average},
         )
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
-        )
-    )
+    @available_if(_check_estimator_report_has_method("metrics", "recall"))
     def recall(
         self,
         *,
@@ -514,10 +502,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             scoring_kwargs={"average": average},
         )
 
-    @available_if(
-        _check_supported_ml_task(supported_ml_tasks=["binary-classification"])
-    )
-    @available_if(_check_estimator_has_method(method_name="predict_proba"))
+    @available_if(_check_estimator_report_has_method("metrics", "brier_score"))
     def brier_score(
         self,
         *,
@@ -564,11 +549,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             aggregate=aggregate,
         )
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
-        )
-    )
+    @available_if(_check_estimator_report_has_method("metrics", "roc_auc"))
     def roc_auc(
         self,
         *,
@@ -651,11 +632,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             scoring_kwargs={"average": average, "multi_class": multi_class},
         )
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
-        )
-    )
+    @available_if(_check_estimator_report_has_method("metrics", "log_loss"))
     def log_loss(
         self,
         *,
@@ -702,11 +679,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             aggregate=aggregate,
         )
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["regression", "multioutput-regression"]
-        )
-    )
+    @available_if(_check_estimator_report_has_method("metrics", "r2"))
     def r2(
         self,
         *,
@@ -765,11 +738,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             scoring_kwargs={"multioutput": multioutput},
         )
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["regression", "multioutput-regression"]
-        )
-    )
+    @available_if(_check_estimator_report_has_method("metrics", "rmse"))
     def rmse(
         self,
         *,
@@ -1074,11 +1043,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
 
         return display
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
-        )
-    )
+    @available_if(_check_estimator_report_has_method("metrics", "roc"))
     def roc(
         self,
         *,
@@ -1127,11 +1092,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         )
         return display
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
-        )
-    )
+    @available_if(_check_estimator_report_has_method("metrics", "precision_recall"))
     def precision_recall(
         self,
         *,
@@ -1180,11 +1141,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         )
         return display
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["regression", "multioutput-regression"]
-        )
-    )
+    @available_if(_check_estimator_report_has_method("metrics", "prediction_error"))
     def prediction_error(
         self,
         *,
