@@ -93,6 +93,60 @@ def case_different_split_numbers():
     return report, kwargs, expected_index, expected_columns
 
 
+def case_flat_index_different_split_numbers():
+    report, kwargs, expected_index, expected_columns = case_different_split_numbers()
+
+    kwargs = {"flat_index": True}
+
+    expected_columns = pd.Index(["m1", "m2"], name="Estimator")
+    expected_index = pd.Index(
+        [
+            "precision_0_split_0",
+            "precision_0_split_1",
+            "precision_0_split_2",
+            "precision_0_split_3",
+            "precision_0_split_4",
+            "precision_1_split_0",
+            "precision_1_split_1",
+            "precision_1_split_2",
+            "precision_1_split_3",
+            "precision_1_split_4",
+            "recall_0_split_0",
+            "recall_0_split_1",
+            "recall_0_split_2",
+            "recall_0_split_3",
+            "recall_0_split_4",
+            "recall_1_split_0",
+            "recall_1_split_1",
+            "recall_1_split_2",
+            "recall_1_split_3",
+            "recall_1_split_4",
+            "roc_auc_split_0",
+            "roc_auc_split_1",
+            "roc_auc_split_2",
+            "roc_auc_split_3",
+            "roc_auc_split_4",
+            "brier_score_split_0",
+            "brier_score_split_1",
+            "brier_score_split_2",
+            "brier_score_split_3",
+            "brier_score_split_4",
+            "fit_time_split_0",
+            "fit_time_split_1",
+            "fit_time_split_2",
+            "fit_time_split_3",
+            "fit_time_split_4",
+            "predict_time_split_0",
+            "predict_time_split_1",
+            "predict_time_split_2",
+            "predict_time_split_3",
+            "predict_time_split_4",
+        ]
+    )
+
+    return report, kwargs, expected_index, expected_columns
+
+
 def case_aggregate_different_split_numbers():
     report, _, _, _ = case_different_split_numbers()
 
@@ -129,6 +183,7 @@ def case_aggregate_different_split_numbers():
     "case",
     [
         case_different_split_numbers,
+        case_flat_index_different_split_numbers,
         case_aggregate_different_split_numbers,
     ],
 )
