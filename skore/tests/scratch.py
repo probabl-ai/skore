@@ -35,15 +35,30 @@ regressor = rng.choice(["Ridge", "RandomForestRegressor"], size=size)
 classifier = rng.choice(["LogisticRegression", "RandomForestClassifier"], size=size)
 learner = np.where(index_reg_vs_clf, classifier, regressor)
 
+# Create scalers with constraint: RandomForest always has None as scaler
+possible_scalers = ["StandardScaler", "MinMaxScaler", "None"]
+scaler = np.array([rng.choice(possible_scalers) for _ in range(size)])
+
+# For RandomForest models, set scaler to None
+is_random_forest = np.array(
+    [(l == "RandomForestRegressor" or l == "RandomForestClassifier") for l in learner]
+)
+scaler[is_random_forest] = "None"
+
+# Create encoders randomly
+possible_encoders = ["OneHotEncoder", "None", "OrdinalEncoder"]
+encoder = np.array([rng.choice(possible_encoders) for _ in range(size)])
 
 data = {
     "ml_task": ml_task,
     "learner": learner,
+    "scaler": scaler,
+    "encoder": encoder,
     "r2_score": r2_score,
+    "rmse": rmse,
     "accuracy_score": accuracy_score,
     "precision_score": precision_score,
     "recall_score": recall_score,
-    "rmse": rmse,
     "log_loss": log_loss,
 }
 
@@ -135,6 +150,8 @@ class MetaDataFrame(pd.DataFrame):
         # Define mapping between display names and column names
         self._dimension_to_column = {
             "Learner": "learner",
+            "Scaler": "scaler",
+            "Encoder": "encoder",
             "ML Task": "ml_task",
             "R2 Score": "r2_score",
             "RMSE": "rmse",
@@ -234,7 +251,11 @@ class MetaDataFrame(pd.DataFrame):
             # Prepare columns for the plot based on metric selection
             columns_to_show = []
 
-            # Always include learner as the leftmost dimension
+            # Include categorical dimensions in the desired order: scaler, encoder, learner
+            if "scaler" in self.columns:
+                columns_to_show.append("scaler")
+            if "encoder" in self.columns:
+                columns_to_show.append("encoder")
             if "learner" in self.columns:
                 columns_to_show.append("learner")
 
@@ -251,45 +272,108 @@ class MetaDataFrame(pd.DataFrame):
 
             # Add each dimension with appropriate configuration
             for col in columns_to_show:
-                if col == "learner":
-                    # Get unique learner values
-                    unique_learners = filtered_df["learner"].unique().tolist()
-                    # Map each learner to a numerical value
-                    learner_to_value = {
-                        learner: i for i, learner in enumerate(sorted(unique_learners))
-                    }
-                    values = [
-                        learner_to_value[learner] for learner in filtered_df["learner"]
-                    ]
+                if col in ["learner", "scaler", "encoder"]:
+                    # Get unique categorical values
+                    unique_values = filtered_df[col].unique().tolist()
+                    # Map each value to a normalized numerical index (0 to 1 range)
+                    n_values = len(unique_values)
+                    if n_values > 1:
+                        # Map to evenly spaced points between 0.1 and 0.9
+                        spacing = 0.8 / (n_values - 1)
+                        value_to_index = {
+                            value: 0.1 + i * spacing
+                            for i, value in enumerate(sorted(unique_values))
+                        }
+                    else:
+                        # If only one value, place it at 0.5
+                        value_to_index = {unique_values[0]: 0.5}
 
-                    dimensions.append(
-                        dict(
-                            range=[0, len(unique_learners) - 1],
-                            label="Learner",
-                            values=values,
-                            tickvals=list(range(len(unique_learners))),
-                            ticktext=sorted(unique_learners),
-                        )
+                    # Add controlled jitter that keeps values within proper bounds
+                    base_values = np.array(
+                        [value_to_index[value] for value in filtered_df[col]]
                     )
-                elif col in ["rmse", "log_loss"]:
-                    # For RMSE and Log Loss, show full range
-                    values = filtered_df[col].fillna(0).tolist()
-                    max_val = max(filtered_df[col].dropna().max() * 1.1, 1)
+
+                    # Apply asymmetric jitter that avoids the edges
+                    jitter = np.zeros_like(base_values)
+
+                    # Process each unique value to apply appropriate jitter
+                    for value in unique_values:
+                        mask = filtered_df[col] == value
+                        val_position = value_to_index[value]
+
+                        # For edge categories, use asymmetric jitter to avoid boundaries
+                        if val_position <= 0.1:  # Lowest category
+                            # Only apply positive jitter
+                            jitter[mask] = rng.uniform(0.01, 0.03, size=mask.sum())
+                        elif val_position >= 0.9:  # Highest category
+                            # Only apply negative jitter
+                            jitter[mask] = rng.uniform(-0.03, -0.01, size=mask.sum())
+                        else:  # Middle categories
+                            # Apply balanced jitter
+                            jitter_range = min(0.03, spacing / 3)
+                            jitter[mask] = rng.uniform(
+                                -jitter_range, jitter_range, size=mask.sum()
+                            )
+
+                    values = base_values + jitter
+
+                    # Additional safety: ensure values stay well within [0.02, 0.98] range for selection
+                    values = np.clip(values, 0.02, 0.98).tolist()
+
+                    # Create the dimension with standardized range
                     dimensions.append(
                         dict(
-                            range=[0, max_val],
+                            range=[0, 1],  # Standardized range for all dimensions
                             label=self._column_to_dimension.get(
                                 col, col.replace("_", " ").title()
                             ),
                             values=values,
+                            tickvals=[
+                                value_to_index[val] for val in sorted(unique_values)
+                            ],
+                            ticktext=sorted(unique_values),
                         )
                     )
+                elif col in ["rmse", "log_loss"]:
+                    # For RMSE and Log Loss, normalize to [0, 1] range
+                    if filtered_df[col].dropna().size > 0:
+                        max_val = (
+                            filtered_df[col].dropna().max() * 1.1
+                        )  # Add 10% margin
+                        # Normalize values to [0, 1] range
+                        values = (filtered_df[col].fillna(0) / max_val).tolist()
+                        dimensions.append(
+                            dict(
+                                range=[0, 1],  # Standardized range
+                                label=self._column_to_dimension.get(
+                                    col, col.replace("_", " ").title()
+                                ),
+                                values=values,
+                                # Add custom tick marks that show the original scale
+                                tickvals=[0, 0.25, 0.5, 0.75, 1],
+                                ticktext=[
+                                    "0",
+                                    f"{max_val*0.25:.1f}",
+                                    f"{max_val*0.5:.1f}",
+                                    f"{max_val*0.75:.1f}",
+                                    f"{max_val:.1f}",
+                                ],
+                            )
+                        )
+                    else:
+                        # Fallback if no valid data
+                        dimensions.append(
+                            dict(
+                                range=[0, 1],
+                                label=self._column_to_dimension.get(
+                                    col, col.replace("_", " ").title()
+                                ),
+                                values=[0] * len(filtered_df),
+                            )
+                        )
                 else:
-                    # For other numerical columns, handle NaN values by setting
-                    # valid range
-                    values = (
-                        filtered_df[col].fillna(0).tolist()
-                    )  # Ensure proper conversion to list
+                    # For other numerical columns (already in 0-1 range)
+                    values = filtered_df[col].fillna(0).tolist()
                     dimensions.append(
                         dict(
                             range=[0, 1],  # All metrics are between 0 and 1
@@ -337,13 +421,15 @@ class MetaDataFrame(pd.DataFrame):
                     f"Parallel Coordinates Plot for {self._task_dropdown.value} Task "
                     f"- {self._metric_dropdown.value}"
                 ),
+                title_x=0.5,  # Center the title
+                title_y=0.97,  # Position the title higher
                 font=dict(size=14),
                 plot_bgcolor="white",
                 paper_bgcolor="white",
                 height=600,
                 width=900,
                 margin=dict(
-                    l=150, r=180, t=80, b=80
+                    l=150, r=180, t=120, b=80  # Increased top margin
                 ),  # Significantly increased right margin for colorbar
             )
 
@@ -440,34 +526,35 @@ class MetaDataFrame(pd.DataFrame):
         query_parts.append(f"ml_task == '{task_value}'")
 
         for dim_name, range_values in self._current_selection.items():
-            # Handle learner dimension
-            if dim_name == "Learner":
+            # Handle categorical dimensions
+            if dim_name in ["Learner", "Scaler", "Encoder"]:
                 # Get the tick values and text for the dimension
-                learner_dim = None
+                categorical_dim = None
                 for dim in self._current_dimensions:
-                    if dim["label"] == "Learner":
-                        learner_dim = dim
+                    if dim["label"] == dim_name:
+                        categorical_dim = dim
                         break
 
                 if (
-                    learner_dim
-                    and "ticktext" in learner_dim
-                    and "tickvals" in learner_dim
+                    categorical_dim
+                    and "ticktext" in categorical_dim
+                    and "tickvals" in categorical_dim
                 ):
-                    # Find which learners fall within the range
-                    selected_learners = []
+                    # Find which values fall within the range
+                    selected_values = []
                     min_val, max_val = range_values
 
-                    for i, val in enumerate(learner_dim["tickvals"]):
+                    for i, val in enumerate(categorical_dim["tickvals"]):
                         if min_val <= val <= max_val:
-                            selected_learners.append(learner_dim["ticktext"][i])
+                            selected_values.append(categorical_dim["ticktext"][i])
 
-                    if selected_learners:
-                        learners_str = ", ".join(
-                            [f"'{learner}'" for learner in selected_learners]
+                    if selected_values:
+                        col_name = self._dimension_to_column[dim_name]
+                        values_str = ", ".join(
+                            [f"'{value}'" for value in selected_values]
                         )
-                        query_parts.append(f"learner.isin([{learners_str}])")
-            # Handle categorical dimension (ML Task)
+                        query_parts.append(f"{col_name}.isin([{values_str}])")
+            # Handle ML Task
             elif dim_name == "ML Task":
                 if range_values[0] >= 0 and range_values[1] <= 0.5:
                     query_parts.append("ml_task == 'regression'")
