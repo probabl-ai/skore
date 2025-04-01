@@ -129,16 +129,16 @@ cv_report = CrossValidationReport(rf, X, y, cv_splitter=5)
 cv_report.help()
 
 # %%
-# We display the metrics for each fold:
+# We display the mean and standard deviation of for each metric:
 
 # %%
 cv_report.metrics.report_metrics(pos_label=1)
 
 # %%
-# or the aggregated results:
+# or by individual fold:
 
 # %%
-cv_report.metrics.report_metrics(aggregate=["mean", "std"], pos_label=1)
+cv_report.metrics.report_metrics(aggregate=None, pos_label=1)
 
 # %%
 # We display the ROC curves for each fold:
