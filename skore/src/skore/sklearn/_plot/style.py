@@ -26,7 +26,6 @@ DEFAULT_STYLE = {
     "ytick.minor.size": 5,
     "legend.loc": "upper left",
     "legend.borderaxespad": 0,
-    "axes.bbox": (1.02, 1),
 }
 
 
