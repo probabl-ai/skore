@@ -4,11 +4,26 @@
 # experiment.
 
 # %%
+from typing import Literal, Union
+
+import ipywidgets as widgets
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
-import ipywidgets as widgets
-from IPython.display import display, clear_output
+from IPython.display import clear_output, display
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+
+# Import scikit-learn models
+from sklearn.linear_model import LogisticRegression, Ridge
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import (
+    MinMaxScaler,
+    OneHotEncoder,
+    OrdinalEncoder,
+    StandardScaler,
+)
+from skore import ComparisonReport, EstimatorReport
 
 rng = np.random.default_rng(42)
 
@@ -49,7 +64,20 @@ scaler[is_random_forest] = "None"
 possible_encoders = ["OneHotEncoder", "None", "OrdinalEncoder"]
 encoder = np.array([rng.choice(possible_encoders) for _ in range(size)])
 
+# Generate dataset hash-like identifiers (2 for regression, 2 for classification)
+reg_datasets = ["reg_dataset_" + hex(rng.integers(10000, 99999))[2:] for _ in range(2)]
+clf_datasets = ["clf_dataset_" + hex(rng.integers(10000, 99999))[2:] for _ in range(2)]
+
+# Assign datasets based on task type
+dataset = []
+for is_clf in index_reg_vs_clf:
+    if is_clf:
+        dataset.append(rng.choice(clf_datasets))
+    else:
+        dataset.append(rng.choice(reg_datasets))
+
 data = {
+    "dataset": dataset,
     "ml_task": ml_task,
     "learner": learner,
     "scaler": scaler,
@@ -63,7 +91,6 @@ data = {
 }
 
 # %%
-from IPython.display import display
 from plotly.graph_objects import FigureWidget
 
 
@@ -102,6 +129,8 @@ class MetaDataFrame(pd.DataFrame):
         Output area for the plot.
     _invert_colormap : list
         List of metrics that should have inverted colormaps (lower is better).
+    _show_dataset_toggle : ipywidgets.Checkbox
+        Checkbox for toggling dataset dimension visibility.
 
     Methods
     -------
@@ -132,6 +161,7 @@ class MetaDataFrame(pd.DataFrame):
         "_metric_dropdown",
         "_output",
         "_invert_colormap",
+        "_show_dataset_toggle",
     ]
 
     def __init__(self, *args, **kwargs):
@@ -149,6 +179,7 @@ class MetaDataFrame(pd.DataFrame):
 
         # Define mapping between display names and column names
         self._dimension_to_column = {
+            "Dataset": "dataset",
             "Learner": "learner",
             "Scaler": "scaler",
             "Encoder": "encoder",
@@ -186,9 +217,15 @@ class MetaDataFrame(pd.DataFrame):
             disabled=False,
         )
 
+        # Create toggle for dataset dimension
+        self._show_dataset_toggle = widgets.Checkbox(
+            value=True, description="Show Dataset", disabled=False
+        )
+
         # Set up callbacks
         self._task_dropdown.observe(self._on_task_change, names="value")
         self._metric_dropdown.observe(self._on_metric_change, names="value")
+        self._show_dataset_toggle.observe(self._on_dataset_toggle_change, names="value")
 
         # Output area for the plot
         self._output = widgets.Output()
@@ -216,6 +253,11 @@ class MetaDataFrame(pd.DataFrame):
     def _on_metric_change(self, change):
         """Handle metric dropdown change event."""
         # Update the plot when metric selection changes
+        self.update_plot()
+
+    def _on_dataset_toggle_change(self, change):
+        """Handle dataset toggle change event."""
+        # Update the plot when dataset visibility changes
         self.update_plot()
 
     @property
@@ -251,6 +293,10 @@ class MetaDataFrame(pd.DataFrame):
             # Prepare columns for the plot based on metric selection
             columns_to_show = []
 
+            # Include dataset as the leftmost dimension if toggle is on
+            if self._show_dataset_toggle.value and "dataset" in self.columns:
+                columns_to_show.append("dataset")
+
             # Include categorical dimensions in the desired order: scaler, encoder, learner
             if "scaler" in self.columns:
                 columns_to_show.append("scaler")
@@ -272,7 +318,7 @@ class MetaDataFrame(pd.DataFrame):
 
             # Add each dimension with appropriate configuration
             for col in columns_to_show:
-                if col in ["learner", "scaler", "encoder"]:
+                if col in ["learner", "scaler", "encoder", "dataset"]:
                     # Get unique categorical values
                     unique_values = filtered_df[col].unique().tolist()
                     # Map each value to a normalized numerical index (0 to 1 range)
@@ -335,42 +381,27 @@ class MetaDataFrame(pd.DataFrame):
                         )
                     )
                 elif col in ["rmse", "log_loss"]:
-                    # For RMSE and Log Loss, normalize to [0, 1] range
+                    # For RMSE and Log Loss, use actual values (not normalized)
+                    values = filtered_df[col].fillna(0).tolist()
+
+                    # Get min and max for the range with some padding
                     if filtered_df[col].dropna().size > 0:
+                        min_val = 0  # Always start at 0 for these metrics
                         max_val = (
                             filtered_df[col].dropna().max() * 1.1
                         )  # Add 10% margin
-                        # Normalize values to [0, 1] range
-                        values = (filtered_df[col].fillna(0) / max_val).tolist()
-                        dimensions.append(
-                            dict(
-                                range=[0, 1],  # Standardized range
-                                label=self._column_to_dimension.get(
-                                    col, col.replace("_", " ").title()
-                                ),
-                                values=values,
-                                # Add custom tick marks that show the original scale
-                                tickvals=[0, 0.25, 0.5, 0.75, 1],
-                                ticktext=[
-                                    "0",
-                                    f"{max_val*0.25:.1f}",
-                                    f"{max_val*0.5:.1f}",
-                                    f"{max_val*0.75:.1f}",
-                                    f"{max_val:.1f}",
-                                ],
-                            )
-                        )
                     else:
-                        # Fallback if no valid data
-                        dimensions.append(
-                            dict(
-                                range=[0, 1],
-                                label=self._column_to_dimension.get(
-                                    col, col.replace("_", " ").title()
-                                ),
-                                values=[0] * len(filtered_df),
-                            )
+                        min_val, max_val = 0, 1
+
+                    dimensions.append(
+                        dict(
+                            range=[min_val, max_val],
+                            label=self._column_to_dimension.get(
+                                col, col.replace("_", " ").title()
+                            ),
+                            values=values,
                         )
+                    )
                 else:
                     # For other numerical columns (already in 0-1 range)
                     values = filtered_df[col].fillna(0).tolist()
@@ -429,7 +460,10 @@ class MetaDataFrame(pd.DataFrame):
                 height=600,
                 width=900,
                 margin=dict(
-                    l=150, r=180, t=120, b=80  # Increased top margin
+                    l=150,
+                    r=180,
+                    t=120,
+                    b=80,  # Increased top margin
                 ),  # Significantly increased right margin for colorbar
             )
 
@@ -453,7 +487,9 @@ class MetaDataFrame(pd.DataFrame):
             An empty string, as the display is handled by IPython.display.
         """
         # Create a container for the controls and plot
-        controls = widgets.HBox([self._task_dropdown, self._metric_dropdown])
+        controls = widgets.HBox(
+            [self._task_dropdown, self._metric_dropdown, self._show_dataset_toggle]
+        )
         display(widgets.VBox([controls, self._output]))
 
         # Initialize the plot
@@ -527,7 +563,7 @@ class MetaDataFrame(pd.DataFrame):
 
         for dim_name, range_values in self._current_selection.items():
             # Handle categorical dimensions
-            if dim_name in ["Learner", "Scaler", "Encoder"]:
+            if dim_name in ["Learner", "Scaler", "Encoder", "Dataset"]:
                 # Get the tick values and text for the dimension
                 categorical_dim = None
                 for dim in self._current_dimensions:
@@ -565,12 +601,12 @@ class MetaDataFrame(pd.DataFrame):
                     # No constraint needed as it includes both categories
                     pass
             else:
-                # Handle numerical dimensions
+                # Handle numerical dimensions - use the actual column values for range
+                # queries
                 col_name = self._dimension_to_column.get(dim_name)
                 if col_name:
-                    # Add range query for numerical columns
-                    min_val = range_values[0]
-                    max_val = range_values[1]
+                    # Check if we need to apply normalization for the query
+                    min_val, max_val = range_values
 
                     # Format with appropriate precision
                     query_parts.append(
@@ -583,7 +619,21 @@ class MetaDataFrame(pd.DataFrame):
         else:
             return ""
 
-    def to_frame(self):
+    def filter(self) -> "MetaDataFrame":
+        """
+        Filter the dataframe based on the current selection.
+
+        Returns
+        -------
+        MetaDataFrame
+            A filtered MetaDataFrame containing the same data.
+        """
+        query_string = self.get_selection_query()
+        if query_string:
+            return self.query(query_string)
+        return self
+
+    def to_frame(self, filter: bool = True) -> pd.DataFrame:
         """
         Convert this MetaDataFrame to a regular pandas DataFrame.
 
@@ -591,12 +641,190 @@ class MetaDataFrame(pd.DataFrame):
         data as this MetaDataFrame, without the enhanced visualization
         capabilities.
 
+        Parameters
+        ----------
+        filter : bool, default=True
+            If True, the DataFrame will be filtered according to the current
+            selection in the parallel coordinates plot.
+
         Returns
         -------
         pandas.DataFrame
             A standard pandas DataFrame containing the same data.
         """
-        return pd.DataFrame(self)
+        df = pd.DataFrame(self)
+        if filter is not None and (query_string := self.get_selection_query()):
+            return df.query(query_string)
+        return df
+
+    def reports(
+        self,
+        filter: bool = True,
+        return_as: Literal["list", "dict", "ComparisonReport"] = "ComparisonReport",
+    ) -> Union[list, dict[str, EstimatorReport], ComparisonReport]:
+        """
+        Return reports related to the current selection. The reports can be as a
+        ComparisonReport.
+
+        Parameters
+        ----------
+        filter : bool, default=True
+            If True, the DataFrame will be filtered according to the current
+            selection in the parallel coordinates plot.
+
+        return_as : {"list", "dict", "ComparisonReport"}, default="ComparisonReport"
+            The type of object to return.
+        """
+        df = self if not filter else self.filter()
+        # FIXME: this is a mock implementation
+        # Create a dictionary to map model strings to their class constructors
+        model_classes = {
+            "Ridge": Ridge,
+            "RandomForestRegressor": RandomForestRegressor,
+            "LogisticRegression": LogisticRegression,
+            "RandomForestClassifier": RandomForestClassifier,
+        }
+
+        # Create a dictionary to map scaler strings to their class constructors
+        scaler_classes = {
+            "StandardScaler": StandardScaler,
+            "MinMaxScaler": MinMaxScaler,
+            "None": None,
+        }
+
+        # Create a dictionary to map encoder strings to their class constructors
+        encoder_classes = {
+            "OneHotEncoder": OneHotEncoder,
+            "OrdinalEncoder": OrdinalEncoder,
+            "None": None,
+        }
+
+        # Initialize result containers
+        reports_list = []
+        reports_dict = {}
+
+        # Get all unique datasets and tasks in the filtered dataframe
+        unique_datasets = df["dataset"].unique()
+
+        # Generate dataset cache: mapping from dataset name to (X, y) data
+        dataset_cache = {}
+
+        # Generate a dataset for each unique dataset name
+        n_samples, n_features = 100, 5
+
+        for dataset_name in unique_datasets:
+            # Get the task for this dataset
+            dataset_rows = df[df["dataset"] == dataset_name]
+            # All rows with the same dataset should have the same task
+            task = dataset_rows["ml_task"].iloc[0]
+
+            # Set a seed based on the dataset name (for reproducibility)
+            dataset_seed = sum(ord(c) for c in dataset_name) % 10000
+            dataset_rng = np.random.RandomState(dataset_seed)
+
+            # Generate X data
+            X = dataset_rng.rand(n_samples, n_features)
+
+            # Generate appropriate labels based on task type
+            if task == "regression":
+                y = dataset_rng.rand(n_samples) * 100  # Scale to make it more realistic
+            else:  # classification
+                y = dataset_rng.choice([0, 1], size=n_samples)
+
+            # Cache the dataset
+            dataset_cache[dataset_name] = {"X": X, "y": y, "task": task}
+
+        # Process each unique combination in the filtered DataFrame
+        for idx, row in df.iterrows():
+            # Get model, scaler, and encoder information
+            learner_name = row["learner"]
+            scaler_name = row["scaler"]
+            encoder_name = row["encoder"]
+            task = row["ml_task"]
+            dataset_name = row["dataset"]
+
+            # Create a unique identifier for this configuration
+            config_id = f"{dataset_name}_{learner_name}_{scaler_name}_{encoder_name}"
+
+            # Get the dataset from the cache
+            if dataset_name not in dataset_cache:
+                print(f"Warning: Dataset {dataset_name} not found in cache.")
+                continue
+
+            dataset = dataset_cache[dataset_name]
+            X, y = dataset["X"], dataset["y"]
+
+            # Split data into train and test sets
+            X_train, X_test, y_train, y_test = train_test_split(
+                X, y, test_size=0.2, random_state=42
+            )
+
+            try:
+                # Instantiate the model based on the learner name
+                model_class = model_classes[learner_name]
+
+                # Create preprocessing steps based on scaler and encoder
+                preprocessing_steps = []
+
+                if scaler_name != "None" and scaler_classes[scaler_name] is not None:
+                    scaler = scaler_classes[scaler_name]()
+                    preprocessing_steps.append(("scaler", scaler))
+
+                if encoder_name != "None" and encoder_classes[encoder_name] is not None:
+                    # In a real scenario, you'd apply the encoder only to categorical
+                    # columns Here we're just mocking it
+                    encoder = encoder_classes[encoder_name]()
+                    if encoder_name == "OneHotEncoder":
+                        encoder.set_params(handle_unknown="ignore")
+                    else:
+                        encoder.set_params(
+                            handle_unknown="use_encoded_value", unknown_value=-1
+                        )
+                    preprocessing_steps.append(("encoder", encoder))
+
+                # Create the final model (pipeline or just the model)
+                if preprocessing_steps:
+                    # Use a pipeline if preprocessing is needed
+                    pipeline = Pipeline(
+                        preprocessing_steps + [("model", model_class())]
+                    )
+                    estimator = pipeline
+                else:
+                    # Use the model directly if no preprocessing
+                    estimator = model_class()
+
+                # Fit the model
+                estimator.fit(X_train, y_train)
+
+                # Create an EstimatorReport
+                report = EstimatorReport(
+                    estimator=estimator,
+                    X_train=X_train,
+                    y_train=y_train,
+                    X_test=X_test,
+                    y_test=y_test,
+                )
+
+                # Add to result containers
+                reports_list.append(report)
+                reports_dict[config_id] = report
+
+            except Exception as e:
+                print(f"Error creating report for {config_id}: {e}")
+                continue
+
+        # Return the appropriate container based on user preference
+        if return_as == "list":
+            return reports_list
+        elif return_as == "dict":
+            return reports_dict
+        else:  # ComparisonReport
+            if reports_dict:
+                return ComparisonReport(reports_dict)
+            else:
+                raise ValueError(
+                    "No valid reports could be generated for the selection."
+                )
 
 
 # %%
@@ -604,10 +832,12 @@ df = MetaDataFrame(data)
 df
 
 # %%
-query_string = df.get_selection_query()
-query_string
+comparison_report = df.reports(filter=True)
+comparison_report.metrics.report_metrics()
 
 # %%
-df.query(df.get_selection_query()).to_frame()
+roc_display = comparison_report.metrics.roc()
+roc_display.plot()
+_ = roc_display.ax_.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
 
 # %%
