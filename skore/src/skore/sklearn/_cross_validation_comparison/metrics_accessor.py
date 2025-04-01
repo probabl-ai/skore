@@ -10,6 +10,7 @@ from sklearn.metrics import make_scorer
 from sklearn.metrics._scorer import _BaseScorer as SKLearnScorer
 from sklearn.utils.metaestimators import available_if
 
+from skore import config_context
 from skore.externals._pandas_accessors import DirNamesMixin
 from skore.sklearn._base import _BaseAccessor, _get_cached_response_values
 from skore.sklearn._plot.metrics import (
@@ -325,9 +326,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 for report in self._parent.reports_
             )
             individual_results = []
-            for result in generator:
-                individual_results.append(result)
-                progress.update(main_task, advance=1, refresh=True)
+            with config_context(show_progress=False):
+                for result in generator:
+                    individual_results.append(result)
+                    progress.update(main_task, advance=1, refresh=True)
 
             results = self._combine_cross_validation_results(
                 individual_results, aggregate=aggregate
