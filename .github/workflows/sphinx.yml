@@ -65,6 +65,8 @@ on:
       - 'skore/**'
   release:
     types: [released]
+  merge_group:
+    types: [checks_requested]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

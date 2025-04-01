@@ -97,7 +97,7 @@ roc_plot.plot()
 # %%
 import matplotlib.pyplot as plt
 
-rf_report.feature_importance.permutation().T.boxplot(vert=False)
+rf_report.feature_importance.permutation(seed=0).T.boxplot(vert=False)
 plt.tight_layout()
 
 # %%

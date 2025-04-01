@@ -20,4 +20,4 @@ def test_estimator_report_feature_importance_repr(regression_data):
 
     repr_str = repr(report.feature_importance)
     assert "skore.EstimatorReport.feature_importance" in repr_str
-    assert "report.feature_importance.help()" in repr_str
+    assert "help()" in repr_str
