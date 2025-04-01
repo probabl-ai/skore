@@ -25,8 +25,8 @@ DEFAULT_STYLE = {
     "xtick.minor.size": 5,
     "ytick.minor.size": 5,
     "legend.loc": "upper left",
-    "legend.bbox_to_anchor": (1.02, 1),
     "legend.borderaxespad": 0,
+    "axes.bbox": (1.02, 1),
 }
 
 
