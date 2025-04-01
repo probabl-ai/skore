@@ -2,7 +2,7 @@ import inspect
 from collections.abc import Iterable
 from functools import partial
 from operator import attrgetter
-from typing import Any, Callable, Literal, Optional, Union
+from typing import Any, Callable, Literal, Optional, Union, cast
 
 import joblib
 import numpy as np
@@ -629,11 +629,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             data_source_hash=data_source_hash,
             response_method="predict",
         )
-        assert isinstance(score, float), (
-            "The accuracy score should be a float, got "
-            f"{type(score)} with value {score}."
-        )
-        return score
+        return cast(float, score)
 
     @available_if(attrgetter("_precision"))
     def precision(
@@ -769,16 +765,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         if self._parent._ml_task == "binary-classification" and (
             pos_label is not None or average is not None
         ):
-            assert isinstance(result, float), (
-                "The precision score should be a float, got "
-                f"{type(result)} with value {result}."
-            )
-            return result
-        assert isinstance(result, dict), (
-            "The precision score should be a dict, got "
-            f"{type(result)} with value {result}."
-        )
-        return result
+            return cast(float, result)
+        return cast(dict[Union[int, float, bool, str], float], result)
 
     @available_if(attrgetter("_recall"))
     def recall(
@@ -915,16 +903,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         if self._parent._ml_task == "binary-classification" and (
             pos_label is not None or average is not None
         ):
-            assert isinstance(result, float), (
-                "The precision score should be a float, got "
-                f"{type(result)} with value {result}."
-            )
-            return result
-        assert isinstance(result, dict), (
-            "The precision score should be a dict, got "
-            f"{type(result)} with value {result}."
-        )
-        return result
+            return cast(float, result)
+        return cast(dict[Union[int, float, bool, str], float], result)
 
     @available_if(attrgetter("_brier_score"))
     def brier_score(
@@ -1016,11 +996,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             response_method="predict_proba",
             pos_label=self._parent._estimator.classes_[-1],
         )
-        assert isinstance(result, float), (
-            "The Brier score should be a float, got "
-            f"{type(result)} with value {result}."
-        )
-        return result
+        return cast(float, result)
 
     @available_if(attrgetter("_roc_auc"))
     def roc_auc(
@@ -1150,16 +1126,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             multi_class=multi_class,
         )
         if self._parent._ml_task == "multiclass-classification" and average is None:
-            assert isinstance(result, dict), (
-                "The ROC AUC score should be a dict, got "
-                f"{type(result)} with value {result}."
-            )
-            return result
-        assert isinstance(result, float), (
-            "The ROC AUC score should be a float, got "
-            f"{type(result)} with value {result}."
-        )
-        return result
+            return cast(dict[Union[int, float, bool, str], float], result)
+        return cast(float, result)
 
     @available_if(attrgetter("_log_loss"))
     def log_loss(
@@ -1240,10 +1208,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             data_source_hash=data_source_hash,
             response_method="predict_proba",
         )
-        assert isinstance(result, float), (
-            f"The log loss should be a float, got {type(result)} with value {result}."
-        )
-        return result
+        return cast(float, result)
 
     @available_if(attrgetter("_r2"))
     def r2(
@@ -1353,15 +1318,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             self._parent._ml_task == "multioutput-regression"
             and multioutput == "raw_values"
         ):
-            assert isinstance(result, list), (
-                "The R² score should be a list, got "
-                f"{type(result)} with value {result}."
-            )
-            return result
-        assert isinstance(result, float), (
-            f"The R² score should be a float, got {type(result)} with value {result}."
-        )
-        return result
+            return cast(list, result)
+        return cast(float, result)
 
     @available_if(attrgetter("_rmse"))
     def rmse(
@@ -1471,15 +1429,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             self._parent._ml_task == "multioutput-regression"
             and multioutput == "raw_values"
         ):
-            assert isinstance(result, list), (
-                "The RMSE score should be a list, got "
-                f"{type(result)} with value {result}."
-            )
-            return result
-        assert isinstance(result, float), (
-            f"The RMSE score should be a float, got {type(result)} with value {result}."
-        )
-        return result
+            return cast(list, result)
+        return cast(float, result)
 
     def custom_metric(
         self,
@@ -1824,15 +1775,17 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         """
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
-        display = self._get_display(
-            X=X,
-            y=y,
-            data_source=data_source,
-            response_method=response_method,
-            display_class=RocCurveDisplay,
-            display_kwargs=display_kwargs,
+        display = cast(
+            RocCurveDisplay,
+            self._get_display(
+                X=X,
+                y=y,
+                data_source=data_source,
+                response_method=response_method,
+                display_class=RocCurveDisplay,
+                display_kwargs=display_kwargs,
+            ),
         )
-        assert isinstance(display, RocCurveDisplay)
         return display
 
     @available_if(
@@ -1897,15 +1850,17 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         """
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
-        display = self._get_display(
-            X=X,
-            y=y,
-            data_source=data_source,
-            response_method=response_method,
-            display_class=PrecisionRecallCurveDisplay,
-            display_kwargs=display_kwargs,
+        display = cast(
+            PrecisionRecallCurveDisplay,
+            self._get_display(
+                X=X,
+                y=y,
+                data_source=data_source,
+                response_method=response_method,
+                display_class=PrecisionRecallCurveDisplay,
+                display_kwargs=display_kwargs,
+            ),
         )
-        assert isinstance(display, PrecisionRecallCurveDisplay)
         return display
 
     @available_if(
@@ -1980,13 +1935,15 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         >>> display.plot(perfect_model_kwargs={"color": "tab:red"})
         """
         display_kwargs = {"subsample": subsample, "seed": seed}
-        display = self._get_display(
-            X=X,
-            y=y,
-            data_source=data_source,
-            response_method="predict",
-            display_class=PredictionErrorDisplay,
-            display_kwargs=display_kwargs,
+        display = cast(
+            PredictionErrorDisplay,
+            self._get_display(
+                X=X,
+                y=y,
+                data_source=data_source,
+                response_method="predict",
+                display_class=PredictionErrorDisplay,
+                display_kwargs=display_kwargs,
+            ),
         )
-        assert isinstance(display, PredictionErrorDisplay)
         return display
