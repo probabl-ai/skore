@@ -7,6 +7,8 @@
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
+import ipywidgets as widgets
+from IPython.display import display, clear_output
 
 rng = np.random.default_rng(42)
 
@@ -14,23 +16,35 @@ size = 100
 index_reg_vs_clf = rng.choice([True, False], size=size)
 ml_task = ["classification" if idx else "regression" for idx in index_reg_vs_clf]
 
+rmse = rng.uniform(0, 100, size=size)
+rmse[index_reg_vs_clf] = np.nan
 r2_score = rng.uniform(0, 1, size=size)
 r2_score[index_reg_vs_clf] = np.nan
 
+log_loss = rng.uniform(0, 100, size=size)
 accuracy_score = rng.uniform(0, 1, size=size)
 precision_score = rng.uniform(0, 1, size=size)
 recall_score = rng.uniform(0, 1, size=size)
 
+log_loss[~index_reg_vs_clf] = np.nan
 accuracy_score[~index_reg_vs_clf] = np.nan
 precision_score[~index_reg_vs_clf] = np.nan
 recall_score[~index_reg_vs_clf] = np.nan
 
+regressor = rng.choice(["Ridge", "RandomForestRegressor"], size=size)
+classifier = rng.choice(["LogisticRegression", "RandomForestClassifier"], size=size)
+learner = np.where(index_reg_vs_clf, classifier, regressor)
+
+
 data = {
     "ml_task": ml_task,
+    "learner": learner,
     "r2_score": r2_score,
     "accuracy_score": accuracy_score,
     "precision_score": precision_score,
     "recall_score": recall_score,
+    "rmse": rmse,
+    "log_loss": log_loss,
 }
 
 # %%
@@ -65,6 +79,14 @@ class MetaDataFrame(pd.DataFrame):
         List of dimension configurations for the parallel coordinates plot.
     _current_selection : dict
         Dictionary storing the current selection ranges for each dimension.
+    _task_dropdown : ipywidgets.Dropdown
+        Dropdown for selecting ML task (regression or classification).
+    _metric_dropdown : ipywidgets.Dropdown
+        Dropdown for selecting relevant performance metrics based on the task.
+    _output : ipywidgets.Output
+        Output area for the plot.
+    _invert_colormap : list
+        List of metrics that should have inverted colormaps (lower is better).
 
     Methods
     -------
@@ -74,11 +96,13 @@ class MetaDataFrame(pd.DataFrame):
         Generates a pandas query string based on the visual selection.
     to_frame
         Converts the MetaDataFrame to a standard pandas DataFrame.
+    update_plot
+        Updates the parallel coordinates plot based on selected task and metrics.
 
     Examples
     --------
     >>> df = MetaDataFrame(data)
-    >>> df  # Displays interactive parallel coordinates plot
+    >>> df  # Displays interactive parallel coordinates plot with dropdowns
     >>> query = df.get_selection_query()
     >>> filtered_df = df.query(query)
     """
@@ -89,6 +113,10 @@ class MetaDataFrame(pd.DataFrame):
         "_current_fig",
         "_current_dimensions",
         "_current_selection",
+        "_task_dropdown",
+        "_metric_dropdown",
+        "_output",
+        "_invert_colormap",
     ]
 
     def __init__(self, *args, **kwargs):
@@ -106,18 +134,72 @@ class MetaDataFrame(pd.DataFrame):
 
         # Define mapping between display names and column names
         self._dimension_to_column = {
+            "Learner": "learner",
             "ML Task": "ml_task",
             "R2 Score": "r2_score",
+            "RMSE": "rmse",
             "Accuracy Score": "accuracy_score",
             "Precision Score": "precision_score",
             "Recall Score": "recall_score",
+            "Log Loss": "log_loss",
         }
         self._column_to_dimension = {v: k for k, v in self._dimension_to_column.items()}
+
+        # Define metrics where lower values are better (for inverted colormap)
+        self._invert_colormap = ["RMSE", "Log Loss"]
 
         # Store the current figure, dimension filters, and selections
         self._current_fig = None
         self._current_dimensions = None
         self._current_selection = {}
+
+        # Create dropdowns for task and metric selection
+        self._task_dropdown = widgets.Dropdown(
+            options=["Regression", "Classification"],
+            value="Classification",
+            description="ML Task:",
+            disabled=False,
+        )
+
+        # Initialize metric dropdown with classification metrics - Log Loss as default
+        self._metric_dropdown = widgets.Dropdown(
+            options=["Log Loss", "Accuracy Score", "Precision Score", "Recall Score"],
+            value="Log Loss",
+            description="Metrics:",
+            disabled=False,
+        )
+
+        # Set up callbacks
+        self._task_dropdown.observe(self._on_task_change, names="value")
+        self._metric_dropdown.observe(self._on_metric_change, names="value")
+
+        # Output area for the plot
+        self._output = widgets.Output()
+
+    def _on_task_change(self, change):
+        """Handle task dropdown change event."""
+        task = change["new"]
+
+        # Update metric dropdown options based on selected task
+        if task == "Regression":
+            self._metric_dropdown.options = ["RMSE", "R2 Score"]
+            self._metric_dropdown.value = "RMSE"
+        elif task == "Classification":
+            self._metric_dropdown.options = [
+                "Log Loss",
+                "Accuracy Score",
+                "Precision Score",
+                "Recall Score",
+            ]
+            self._metric_dropdown.value = "Log Loss"
+
+        # Update the plot
+        self.update_plot()
+
+    def _on_metric_change(self, change):
+        """Handle metric dropdown change event."""
+        # Update the plot when metric selection changes
+        self.update_plot()
 
     @property
     def _constructor(self):
@@ -134,97 +216,163 @@ class MetaDataFrame(pd.DataFrame):
         """
         return MetaDataFrame
 
+    def update_plot(self):
+        """
+        Update the parallel coordinates plot based on the selected task and metrics.
+        """
+        with self._output:
+            clear_output(wait=True)
+
+            # Filter data based on task selection
+            filtered_df = self
+
+            if self._task_dropdown.value == "Regression":
+                filtered_df = self[self["ml_task"] == "regression"]
+            elif self._task_dropdown.value == "Classification":
+                filtered_df = self[self["ml_task"] == "classification"]
+
+            # Prepare columns for the plot based on metric selection
+            columns_to_show = []
+
+            # Always include learner as the leftmost dimension
+            if "learner" in self.columns:
+                columns_to_show.append("learner")
+
+            # Add metrics based on selection
+            task = self._task_dropdown.value
+            metric = self._metric_dropdown.value
+
+            # Add the selected metric
+            col_name = self._dimension_to_column[metric]
+            columns_to_show.append(col_name)
+
+            # Create dimensions list for parallel coordinates plot
+            dimensions = []
+
+            # Add each dimension with appropriate configuration
+            for col in columns_to_show:
+                if col == "learner":
+                    # Get unique learner values
+                    unique_learners = filtered_df["learner"].unique().tolist()
+                    # Map each learner to a numerical value
+                    learner_to_value = {
+                        learner: i for i, learner in enumerate(sorted(unique_learners))
+                    }
+                    values = [
+                        learner_to_value[learner] for learner in filtered_df["learner"]
+                    ]
+
+                    dimensions.append(
+                        dict(
+                            range=[0, len(unique_learners) - 1],
+                            label="Learner",
+                            values=values,
+                            tickvals=list(range(len(unique_learners))),
+                            ticktext=sorted(unique_learners),
+                        )
+                    )
+                elif col in ["rmse", "log_loss"]:
+                    # For RMSE and Log Loss, show full range
+                    values = filtered_df[col].fillna(0).tolist()
+                    max_val = max(filtered_df[col].dropna().max() * 1.1, 1)
+                    dimensions.append(
+                        dict(
+                            range=[0, max_val],
+                            label=self._column_to_dimension.get(
+                                col, col.replace("_", " ").title()
+                            ),
+                            values=values,
+                        )
+                    )
+                else:
+                    # For other numerical columns, handle NaN values by setting
+                    # valid range
+                    values = (
+                        filtered_df[col].fillna(0).tolist()
+                    )  # Ensure proper conversion to list
+                    dimensions.append(
+                        dict(
+                            range=[0, 1],  # All metrics are between 0 and 1
+                            label=self._column_to_dimension.get(
+                                col, col.replace("_", " ").title()
+                            ),
+                            values=values,
+                        )
+                    )
+
+            # Get the selected metric column for coloring
+            color_column = self._dimension_to_column[metric]
+            color_values = filtered_df[color_column].fillna(0).tolist()
+
+            # Use viridis colormap for all tasks, inverted for RMSE and Log Loss
+            colorscale = "viridis"
+            if metric in self._invert_colormap:
+                colorscale = "viridis_r"  # Inverted viridis
+
+            colorbar = dict(
+                title=metric,
+                thickness=15,
+                x=1.05,  # Move colorbar further to the right
+                xpad=10,  # Add padding between plot and colorbar
+            )
+
+            # Create the figure
+            regular_fig = go.Figure(
+                data=go.Parcoords(
+                    line=dict(
+                        color=color_values,
+                        colorscale=colorscale,
+                        showscale=True,
+                        colorbar=colorbar,
+                    ),
+                    dimensions=dimensions,
+                )
+            )
+
+            # Convert to FigureWidget for interactivity
+            fig = FigureWidget(regular_fig)
+
+            fig.update_layout(
+                title=(
+                    f"Parallel Coordinates Plot for {self._task_dropdown.value} Task "
+                    f"- {self._metric_dropdown.value}"
+                ),
+                font=dict(size=14),
+                plot_bgcolor="white",
+                paper_bgcolor="white",
+                height=600,
+                width=900,
+                margin=dict(
+                    l=150, r=180, t=80, b=80
+                ),  # Significantly increased right margin for colorbar
+            )
+
+            # Store the current figure and dimensions for later use
+            self._current_fig = fig
+            self._current_dimensions = dimensions
+
+            display(fig)
+
     def _repr_html_(self):
         """
-        Create and display an interactive parallel coordinates plot.
+        Create and display an interactive parallel coordinates plot with dropdown controls.
 
         This method is automatically called when the DataFrame is displayed
-        in a Jupyter notebook. It creates a parallel coordinates plot using
-        Plotly with the ML Task in the center to visualize relationships
-        between different metrics.
+        in a Jupyter notebook. It creates dropdown menus for task and metric selection,
+        along with a parallel coordinates plot.
 
         Returns
         -------
         str
             An empty string, as the display is handled by IPython.display.
         """
-        # Rearrange columns to have ml_task in the center
-        columns_order = [
-            "r2_score",
-            "ml_task",
-            "accuracy_score",
-            "precision_score",
-            "recall_score",
-        ]
+        # Create a container for the controls and plot
+        controls = widgets.HBox([self._task_dropdown, self._metric_dropdown])
+        display(widgets.VBox([controls, self._output]))
 
-        # Create dimensions list for parallel coordinates plot
-        dimensions = []
+        # Initialize the plot
+        self.update_plot()
 
-        # Add each dimension with appropriate configuration
-        for col in columns_order:
-            if col == "ml_task":
-                # For categorical ml_task column, set as a dimension
-                values = [0 if task == "regression" else 1 for task in self["ml_task"]]
-                dimensions.append(
-                    dict(
-                        range=[0, 1],
-                        label="ML Task",
-                        values=values,
-                        tickvals=[0, 1],
-                        ticktext=["Regression", "Classification"],
-                    )
-                )
-            else:
-                # For numerical columns, handle NaN values by setting valid range
-                values = (
-                    self[col].fillna(0).tolist()
-                )  # Ensure proper conversion to list
-                dimensions.append(
-                    dict(
-                        range=[0, 1],  # All metrics are between 0 and 1
-                        label=self._column_to_dimension.get(
-                            col, col.replace("_", " ").title()
-                        ),
-                        values=values,
-                    )
-                )
-
-        # STEP 1: First create a regular figure (this helps ensure lines are rendered)
-        regular_fig = go.Figure(
-            data=go.Parcoords(
-                line=dict(
-                    color=self["ml_task"]
-                    .map({"regression": 0, "classification": 1})
-                    .tolist(),
-                    colorscale=[[0, "blue"], [1, "red"]],
-                    showscale=True,
-                    colorbar=dict(
-                        title="ML Task",
-                        tickvals=[0, 1],
-                        ticktext=["Regression", "Classification"],
-                    ),
-                ),
-                dimensions=dimensions,
-            )
-        )
-
-        # STEP 2: Convert to FigureWidget for interactivity
-        fig = FigureWidget(regular_fig)
-
-        fig.update_layout(
-            title="Parallel Coordinates Plot with ML Task in Center",
-            font=dict(size=14),
-            plot_bgcolor="white",
-            paper_bgcolor="white",
-            height=600,
-            width=900,
-        )
-
-        # Store the current figure and dimensions for later use
-        self._current_fig = fig
-        self._current_dimensions = dimensions
-
-        display(fig)
         return ""
 
     def update_selection(self):
@@ -279,15 +427,48 @@ class MetaDataFrame(pd.DataFrame):
         # First update the selection to ensure we have the latest state
         self.update_selection()
 
-        # Rest of the method remains the same
+        # Build the query string based on current selections and task filter
         if not self._current_selection:
-            return ""
+            # Always apply the task filter
+            task_value = self._task_dropdown.value.lower()
+            return f"ml_task == '{task_value}'"
 
         query_parts = []
 
+        # Always add task filter
+        task_value = self._task_dropdown.value.lower()
+        query_parts.append(f"ml_task == '{task_value}'")
+
         for dim_name, range_values in self._current_selection.items():
+            # Handle learner dimension
+            if dim_name == "Learner":
+                # Get the tick values and text for the dimension
+                learner_dim = None
+                for dim in self._current_dimensions:
+                    if dim["label"] == "Learner":
+                        learner_dim = dim
+                        break
+
+                if (
+                    learner_dim
+                    and "ticktext" in learner_dim
+                    and "tickvals" in learner_dim
+                ):
+                    # Find which learners fall within the range
+                    selected_learners = []
+                    min_val, max_val = range_values
+
+                    for i, val in enumerate(learner_dim["tickvals"]):
+                        if min_val <= val <= max_val:
+                            selected_learners.append(learner_dim["ticktext"][i])
+
+                    if selected_learners:
+                        learners_str = ", ".join(
+                            [f"'{learner}'" for learner in selected_learners]
+                        )
+                        query_parts.append(f"learner.isin([{learners_str}])")
             # Handle categorical dimension (ML Task)
-            if dim_name == "ML Task":
+            elif dim_name == "ML Task":
                 if range_values[0] >= 0 and range_values[1] <= 0.5:
                     query_parts.append("ml_task == 'regression'")
                 elif range_values[0] > 0.5 and range_values[1] <= 1:
@@ -339,7 +520,6 @@ df
 query_string = df.get_selection_query()
 query_string
 
-# %%
 # %%
 df.query(df.get_selection_query()).to_frame()
 
