@@ -476,7 +476,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
         >>> from sklearn.model_selection import train_test_split
-        >>> from skore import CrossValidationComparisonReport, EstimatorReport
+        >>> from skore import CrossValidationComparisonReport, CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
         >>> report_1 = CrossValidationReport(estimator_1, X, y)
@@ -560,7 +560,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
         >>> from sklearn.model_selection import train_test_split
-        >>> from skore import CrossValidationComparisonReport, EstimatorReport
+        >>> from skore import CrossValidationComparisonReport, CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
         >>> report_1 = CrossValidationReport(estimator_1, X, y)
@@ -608,7 +608,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
         >>> from sklearn.model_selection import train_test_split
-        >>> from skore import CrossValidationComparisonReport, EstimatorReport
+        >>> from skore import CrossValidationComparisonReport, CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
         >>> report_1 = CrossValidationReport(estimator_1, X, y)
@@ -693,7 +693,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
         >>> from sklearn.model_selection import train_test_split
-        >>> from skore import CrossValidationComparisonReport, EstimatorReport
+        >>> from skore import CrossValidationComparisonReport, CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
         >>> report_1 = CrossValidationReport(estimator_1, X, y)
@@ -741,7 +741,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
         >>> from sklearn.model_selection import train_test_split
-        >>> from skore import CrossValidationComparisonReport, EstimatorReport
+        >>> from skore import CrossValidationComparisonReport, CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
         >>> report_1 = CrossValidationReport(estimator_1, X, y)
@@ -799,7 +799,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from sklearn.datasets import load_diabetes
         >>> from sklearn.linear_model import Ridge
         >>> from sklearn.model_selection import train_test_split
-        >>> from skore import CrossValidationComparisonReport, EstimatorReport
+        >>> from skore import CrossValidationComparisonReport, CrossValidationReport
         >>> X, y = load_diabetes(return_X_y=True)
         >>> estimator_1 = Ridge(max_iter=10000, random_state=42)
         >>> report_1 = CrossValidationReport(estimator_1, X, y)
@@ -858,7 +858,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from sklearn.datasets import load_diabetes
         >>> from sklearn.linear_model import Ridge
         >>> from sklearn.model_selection import train_test_split
-        >>> from skore import CrossValidationComparisonReport, EstimatorReport
+        >>> from skore import CrossValidationComparisonReport, CrossValidationReport
         >>> X, y = load_diabetes(return_X_y=True)
         >>> estimator_1 = Ridge(max_iter=10000, random_state=42)
         >>> report_1 = CrossValidationReport(estimator_1, X, y)
@@ -931,7 +931,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from sklearn.linear_model import Ridge
         >>> from sklearn.metrics import mean_absolute_error
         >>> from sklearn.model_selection import train_test_split
-        >>> from skore import CrossValidationComparisonReport, EstimatorReport
+        >>> from skore import CrossValidationComparisonReport, CrossValidationReport
         >>> X, y = load_diabetes(return_X_y=True)
         >>> estimator_1 = Ridge(max_iter=10000, random_state=42)
         >>> report_1 = CrossValidationReport(estimator_1, X, y)
@@ -1179,7 +1179,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
         >>> from sklearn.model_selection import train_test_split
-        >>> from skore import CrossValidationComparisonReport, EstimatorReport
+        >>> from skore import CrossValidationComparisonReport, CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
         >>> report_1 = CrossValidationReport(estimator_1, X, y)
@@ -1247,7 +1247,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
         >>> from sklearn.model_selection import train_test_split
-        >>> from skore import CrossValidationComparisonReport, EstimatorReport
+        >>> from skore import CrossValidationComparisonReport, CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
         >>> report_1 = CrossValidationReport(estimator_1, X, y)
@@ -1325,7 +1325,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from sklearn.datasets import load_diabetes
         >>> from sklearn.linear_model import Ridge
         >>> from sklearn.model_selection import train_test_split
-        >>> from skore import CrossValidationComparisonReport, EstimatorReport
+        >>> from skore import CrossValidationComparisonReport, CrossValidationReport
         >>> X, y = load_diabetes(return_X_y=True)
         >>> estimator_1 = Ridge(max_iter=10000, random_state=42)
         >>> report_1 = CrossValidationReport(estimator_1, X, y)
