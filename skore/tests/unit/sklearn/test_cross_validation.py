@@ -328,17 +328,16 @@ def _normalize_metric_name(index):
 
 def _check_results_single_metric(report, metric, expected_n_splits, expected_nb_stats):
     assert hasattr(report.metrics, metric)
-    result = getattr(report.metrics, metric)()
+    result = getattr(report.metrics, metric)(aggregate=None)
     assert isinstance(result, pd.DataFrame)
     assert result.shape[1] == expected_n_splits
     # check that we hit the cache
-    result_with_cache = getattr(report.metrics, metric)()
+    result_with_cache = getattr(report.metrics, metric)(aggregate=None)
     pd.testing.assert_frame_equal(result, result_with_cache)
 
     # check that the columns contains the expected split names
     split_names = result.columns.get_level_values(1).unique()
-    # expected_split_names = [f"Split #{i}" for i in range(expected_n_splits)]
-    expected_split_names = ["mean", "std"]
+    expected_split_names = [f"Split #{i}" for i in range(expected_n_splits)]
     assert list(split_names) == expected_split_names
 
     # check that something was written to the cache
@@ -663,6 +662,7 @@ def test_cross_validation_report_report_metrics_with_scorer(regression_data):
     result = report.metrics.report_metrics(
         scoring=[r2_score, median_absolute_error_scorer],
         scoring_kwargs={"response_method": "predict"},  # only dispatched to r2_score
+        aggregate=None,
     )
     assert result.shape == (2, 2)
 
@@ -675,12 +675,9 @@ def test_cross_validation_report_report_metrics_with_scorer(regression_data):
         ]
         for est_rep in report.estimator_reports_
     ]
-    expected_result = np.transpose(expected_result)
     np.testing.assert_allclose(
         result.to_numpy(),
-        np.stack(
-            [expected_result.mean(axis=1), expected_result.std(axis=1, ddof=1)], axis=1
-        ),
+        np.transpose(expected_result),
     )
 
 
