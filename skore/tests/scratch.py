@@ -832,6 +832,12 @@ df = MetaDataFrame(data)
 df
 
 # %%
+df.get_selection_query()
+
+# %%
+df.to_frame(filter=True).sort_values(by="accuracy_score", ascending=False)
+
+# %%
 comparison_report = df.reports(filter=True)
 comparison_report.metrics.report_metrics()
 
