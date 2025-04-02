@@ -37,6 +37,7 @@ extensions = [
     "sphinx_copybutton",
     "sphinx_tabs.tabs",
     "sphinx_autosummary_accessors",
+    "autoshortsummary",
 ]
 exclude_patterns = ["build", "Thumbs.db", ".DS_Store"]
 
