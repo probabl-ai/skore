@@ -25,7 +25,7 @@ from skore.sklearn.types import MLTask
 
 
 class PrecisionRecallCurveDisplay(
-    HelpDisplayMixin, _ClassifierCurveDisplayMixin, StyleDisplayMixin
+    StyleDisplayMixin, HelpDisplayMixin, _ClassifierCurveDisplayMixin
 ):
     """Precision Recall visualization.
 
@@ -267,7 +267,7 @@ class PrecisionRecallCurveDisplay(
 
             info_pos_label = None  # irrelevant for multiclass
 
-        ax.legend(loc="lower left", title=estimator_name)
+        ax.legend(bbox_to_anchor=(1.02, 1), title=estimator_name)
 
         return ax, lines, info_pos_label
 
@@ -401,7 +401,7 @@ class PrecisionRecallCurveDisplay(
                     )
                     lines.append(line)
 
-        ax.legend(loc="lower left", title=estimator_name)
+        ax.legend(bbox_to_anchor=(1.02, 1), title=estimator_name)
 
         return ax, lines, info_pos_label
 
@@ -527,12 +527,13 @@ class PrecisionRecallCurveDisplay(
                     lines.append(line)
 
         ax.legend(
-            loc="lower left",
+            bbox_to_anchor=(1.02, 1),
             title=f"{ml_task.title()} on $\\bf{{{data_source}}}$ set",
         )
 
         return ax, lines, info_pos_label
 
+    @StyleDisplayMixin.style_plot
     def plot(
         self,
         ax: Optional[Axes] = None,

@@ -71,6 +71,8 @@ def test_prediction_error_display_regression(pyplot, regression_data, subsample)
     assert display.range_residuals.max == np.max(display.residuals[0])
 
     display.plot()
+    assert hasattr(display, "ax_")
+    assert hasattr(display, "figure_")
     assert isinstance(display.line_, mpl.lines.Line2D)
     assert display.line_.get_label() == "Perfect predictions"
     assert display.line_.get_color() == "black"

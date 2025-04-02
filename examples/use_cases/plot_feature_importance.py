@@ -253,7 +253,6 @@ ridge_report.metrics.report_metrics()
 
 # %%
 ridge_report.metrics.prediction_error().plot(kind="actual_vs_predicted")
-plt.tight_layout()
 
 # %%
 # We can observe that the model has issues predicting large house prices, due to the
@@ -430,7 +429,6 @@ comparator.metrics.report_metrics()
 
 # %%
 engineered_ridge_report.metrics.prediction_error().plot(kind="actual_vs_predicted")
-plt.tight_layout()
 
 # %%
 # About the clipping issue, compared to the prediction error of our previous model

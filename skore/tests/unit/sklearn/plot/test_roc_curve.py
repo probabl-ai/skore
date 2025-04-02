@@ -60,6 +60,8 @@ def test_roc_curve_display_binary_classification(pyplot, binary_classification_d
         assert len(attr[estimator.classes_[1]]) == 1
 
     display.plot()
+    assert hasattr(display, "ax_")
+    assert hasattr(display, "figure_")
     assert isinstance(display.lines_, list)
     assert len(display.lines_) == 1
     roc_curve_mpl = display.lines_[0]
@@ -109,6 +111,8 @@ def test_roc_curve_display_multiclass_classification(
             assert len(attr[class_label]) == 1
 
     display.plot()
+    assert hasattr(display, "ax_")
+    assert hasattr(display, "figure_")
     assert isinstance(display.lines_, list)
     assert len(display.lines_) == len(estimator.classes_)
     default_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
