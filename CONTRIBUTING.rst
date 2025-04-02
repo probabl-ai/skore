@@ -56,8 +56,18 @@ Install dependencies and setup pre-commit with:
     make install-skore
 
 
-Pull request format
--------------------
+Choosing an issue
+-----------------
+
+If you are starting to contribute to open-source, you can start by an [issue tagged `good first issue`](https://github.com/probabl-ai/skore/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22good%20first%20issue%22).
+
+The implementation of some issues are not very detailed. You can either propose a solution, or choose only the issues with a Status "Ready".
+
+You can also contribute to the code base without a specific issue related; in that case, please be precise in the description of your pull request.
+
+
+Pull requests
+-------------
 
 We use the `conventional commits <https://www.conventionalcommits.org/en/v1.0.0/#summary>`_ format, and we automatically check that the PR title fits this format.
 
