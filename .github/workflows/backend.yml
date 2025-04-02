@@ -1,22 +1,6 @@
 name: backend
 
-on:
-  pull_request:
-    paths:
-      - '.github/workflows/backend.yml'
-      - 'skore/**'
-  push:
-    branches:
-      - main
-  merge_group:
-    types: [checks_requested]
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
-permissions:
-  contents: read
+on: [workflow_call]
 
 defaults:
   run:
