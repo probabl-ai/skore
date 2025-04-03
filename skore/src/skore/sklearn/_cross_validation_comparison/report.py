@@ -70,7 +70,6 @@ class CrossValidationComparisonReport(_BaseReport, DirNamesMixin):
     >>> report_2 = CrossValidationReport(estimator_2, X, y)
     >>> CrossValidationComparisonReport([report_1, report_2])
     ...
-    # Pass a dict to name the reports
     >>> CrossValidationComparisonReport({"model1": report_1, "model2": report_2})
     ...
     """
