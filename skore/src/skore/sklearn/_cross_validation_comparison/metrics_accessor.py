@@ -1,4 +1,5 @@
 import copy
+from collections.abc import Sequence
 from typing import Any, Callable, Literal, Optional, Union
 
 import joblib
@@ -25,6 +26,7 @@ from skore.utils._progress_bar import progress_decorator
 from .report import CrossValidationComparisonReport
 
 DataSource = Literal["test", "train"]
+Aggregate = Union[Literal["mean", "std"], Sequence[Literal["mean", "std"]]]
 
 
 class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
@@ -62,9 +64,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         pos_label: Optional[Union[int, float, bool, str]] = None,
         indicator_favorability: bool = False,
         flat_index: bool = False,
-        aggregate: Optional[
-            Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
-        ] = None,
+        aggregate: Optional[Aggregate] = None,
     ) -> pd.DataFrame:
         """Report a set of metrics for the estimators.
 
@@ -157,9 +157,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     def _combine_cross_validation_results(
         self,
         results: list[pd.DataFrame],
-        aggregate: Optional[
-            Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
-        ],
+        aggregate: Optional[Aggregate],
     ) -> pd.DataFrame:
         # Ensure all tables have the same metrics
 
@@ -275,9 +273,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         report_metric_name: str,
         *,
         data_source: DataSource = "test",
-        aggregate: Optional[
-            Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
-        ] = None,
+        aggregate: Optional[Aggregate] = None,
         **metric_kwargs: Any,
     ):
         # build the cache key components to finally create a tuple that will be used
