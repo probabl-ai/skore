@@ -115,13 +115,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Examples
         --------
         >>> from sklearn.datasets import load_breast_cancer
-        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.dummy import DummyClassifier
         >>> from sklearn.model_selection import train_test_split
         >>> from skore import CrossValidationComparisonReport, CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
+        >>> estimator_1 = DummyClassifier()
         >>> report_1 = CrossValidationReport(estimator_1, X, y)
-        >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
+        >>> estimator_2 = DummyClassifier(strategy="most_frequent")
         >>> report_2 = CrossValidationReport(estimator_2, X, y)
         >>> comparison_report = CrossValidationComparisonReport([report_1, report_2])
         >>> comparison_report.metrics.report_metrics(
@@ -396,13 +396,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Examples
         --------
         >>> from sklearn.datasets import load_breast_cancer
-        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.dummy import DummyClassifier
         >>> from sklearn.model_selection import train_test_split
         >>> from skore import CrossValidationComparisonReport, CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
+        >>> estimator_1 = DummyClassifier()
         >>> report_1 = CrossValidationReport(estimator_1, X, y)
-        >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
+        >>> estimator_2 = DummyClassifier(strategy="most_frequent")
         >>> report_2 = CrossValidationReport(estimator_2, X, y)
         >>> comparison_report = CrossValidationComparisonReport([report_1, report_2])
         >>> comparison_report.metrics.accuracy()
@@ -482,13 +482,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Examples
         --------
         >>> from sklearn.datasets import load_breast_cancer
-        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.dummy import DummyClassifier
         >>> from sklearn.model_selection import train_test_split
         >>> from skore import CrossValidationComparisonReport, CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
+        >>> estimator_1 = DummyClassifier()
         >>> report_1 = CrossValidationReport(estimator_1, X, y)
-        >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
+        >>> estimator_2 = DummyClassifier(strategy="most_frequent")
         >>> report_2 = CrossValidationReport(estimator_2, X, y)
         >>> comparison_report = CrossValidationComparisonReport([report_1, report_2])
         >>> comparison_report.metrics.precision()
@@ -573,13 +573,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Examples
         --------
         >>> from sklearn.datasets import load_breast_cancer
-        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.dummy import DummyClassifier
         >>> from sklearn.model_selection import train_test_split
         >>> from skore import CrossValidationComparisonReport, CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
+        >>> estimator_1 = DummyClassifier()
         >>> report_1 = CrossValidationReport(estimator_1, X, y)
-        >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
+        >>> estimator_2 = DummyClassifier(strategy="most_frequent")
         >>> report_2 = CrossValidationReport(estimator_2, X, y)
         >>> comparison_report = CrossValidationComparisonReport([report_1, report_2])
         >>> comparison_report.metrics.recall()
@@ -629,13 +629,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Examples
         --------
         >>> from sklearn.datasets import load_breast_cancer
-        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.dummy import DummyClassifier
         >>> from sklearn.model_selection import train_test_split
         >>> from skore import CrossValidationComparisonReport, CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
+        >>> estimator_1 = DummyClassifier()
         >>> report_1 = CrossValidationReport(estimator_1, X, y)
-        >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
+        >>> estimator_2 = DummyClassifier(strategy="most_frequent")
         >>> report_2 = CrossValidationReport(estimator_2, X, y)
         >>> comparison_report = CrossValidationComparisonReport([report_1, report_2])
         >>> comparison_report.metrics.brier_score()
@@ -721,13 +721,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Examples
         --------
         >>> from sklearn.datasets import load_breast_cancer
-        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.dummy import DummyClassifier
         >>> from sklearn.model_selection import train_test_split
         >>> from skore import CrossValidationComparisonReport, CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
+        >>> estimator_1 = DummyClassifier()
         >>> report_1 = CrossValidationReport(estimator_1, X, y)
-        >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
+        >>> estimator_2 = DummyClassifier(strategy="most_frequent")
         >>> report_2 = CrossValidationReport(estimator_2, X, y)
         >>> comparison_report = CrossValidationComparisonReport([report_1, report_2])
         >>> comparison_report.metrics.roc_auc()
@@ -776,13 +776,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Examples
         --------
         >>> from sklearn.datasets import load_breast_cancer
-        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.dummy import DummyClassifier
         >>> from sklearn.model_selection import train_test_split
         >>> from skore import CrossValidationComparisonReport, CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
+        >>> estimator_1 = DummyClassifier()
         >>> report_1 = CrossValidationReport(estimator_1, X, y)
-        >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
+        >>> estimator_2 = DummyClassifier(strategy="most_frequent")
         >>> report_2 = CrossValidationReport(estimator_2, X, y)
         >>> comparison_report = CrossValidationComparisonReport([report_1, report_2])
         >>> comparison_report.metrics.log_loss()
@@ -841,13 +841,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Examples
         --------
         >>> from sklearn.datasets import load_diabetes
-        >>> from sklearn.linear_model import Ridge
+        >>> from sklearn.dummy import DummyRegressor
         >>> from sklearn.model_selection import train_test_split
         >>> from skore import CrossValidationComparisonReport, CrossValidationReport
         >>> X, y = load_diabetes(return_X_y=True)
-        >>> estimator_1 = Ridge(max_iter=10000, random_state=42)
+        >>> estimator_1 = DummyRegressor()
         >>> report_1 = CrossValidationReport(estimator_1, X, y)
-        >>> estimator_2 = Ridge(max_iter=10000, random_state=43)
+        >>> estimator_2 = DummyRegressor(strategy="median")
         >>> report_2 = CrossValidationReport(estimator_2, X, y)
         >>> comparison_report = CrossValidationComparisonReport([report_1, report_2])
         >>> comparison_report.metrics.r2()
@@ -907,13 +907,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Examples
         --------
         >>> from sklearn.datasets import load_diabetes
-        >>> from sklearn.linear_model import Ridge
+        >>> from sklearn.dummy import DummyRegressor
         >>> from sklearn.model_selection import train_test_split
         >>> from skore import CrossValidationComparisonReport, CrossValidationReport
         >>> X, y = load_diabetes(return_X_y=True)
-        >>> estimator_1 = Ridge(max_iter=10000, random_state=42)
+        >>> estimator_1 = DummyRegressor()
         >>> report_1 = CrossValidationReport(estimator_1, X, y)
-        >>> estimator_2 = Ridge(max_iter=10000, random_state=43)
+        >>> estimator_2 = DummyRegressor(strategy="median")
         >>> report_2 = CrossValidationReport(estimator_2, X, y)
         >>> comparison_report = CrossValidationComparisonReport([report_1, report_2])
         >>> comparison_report.metrics.rmse()
@@ -986,14 +986,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Examples
         --------
         >>> from sklearn.datasets import load_diabetes
-        >>> from sklearn.linear_model import Ridge
+        >>> from sklearn.dummy import DummyRegressor
         >>> from sklearn.metrics import mean_absolute_error
         >>> from sklearn.model_selection import train_test_split
         >>> from skore import CrossValidationComparisonReport, CrossValidationReport
         >>> X, y = load_diabetes(return_X_y=True)
-        >>> estimator_1 = Ridge(max_iter=10000, random_state=42)
+        >>> estimator_1 = DummyRegressor()
         >>> report_1 = CrossValidationReport(estimator_1, X, y)
-        >>> estimator_2 = Ridge(max_iter=10000, random_state=43)
+        >>> estimator_2 = DummyRegressor(strategy="median")
         >>> report_2 = CrossValidationReport(estimator_2, X, y)
         >>> comparison_report = CrossValidationComparisonReport([report_1, report_2])
         >>> comparison_report.metrics.custom_metric(
@@ -1217,13 +1217,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Examples
         --------
         >>> from sklearn.datasets import load_breast_cancer
-        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.dummy import DummyClassifier
         >>> from sklearn.model_selection import train_test_split
         >>> from skore import CrossValidationComparisonReport, CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
+        >>> estimator_1 = DummyClassifier()
         >>> report_1 = CrossValidationReport(estimator_1, X, y)
-        >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
+        >>> estimator_2 = DummyClassifier(strategy="most_frequent")
         >>> report_2 = CrossValidationReport(estimator_2, X, y)
         >>> comparison_report = CrossValidationComparisonReport([report_1, report_2])
         >>> display = comparison_report.metrics.roc()
@@ -1272,13 +1272,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Examples
         --------
         >>> from sklearn.datasets import load_breast_cancer
-        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.dummy import DummyClassifier
         >>> from sklearn.model_selection import train_test_split
         >>> from skore import CrossValidationComparisonReport, CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
+        >>> estimator_1 = DummyClassifier()
         >>> report_1 = CrossValidationReport(estimator_1, X, y)
-        >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
+        >>> estimator_2 = DummyClassifier(strategy="most_frequent")
         >>> report_2 = CrossValidationReport(estimator_2, X, y)
         >>> comparison_report = CrossValidationComparisonReport([report_1, report_2])
         >>> display = comparison_report.metrics.precision_recall()
@@ -1337,13 +1337,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Examples
         --------
         >>> from sklearn.datasets import load_diabetes
-        >>> from sklearn.linear_model import Ridge
+        >>> from sklearn.dummy import DummyRegressor
         >>> from sklearn.model_selection import train_test_split
         >>> from skore import CrossValidationComparisonReport, CrossValidationReport
         >>> X, y = load_diabetes(return_X_y=True)
-        >>> estimator_1 = Ridge(max_iter=10000, random_state=42)
+        >>> estimator_1 = DummyRegressor()
         >>> report_1 = CrossValidationReport(estimator_1, X, y)
-        >>> estimator_2 = Ridge(max_iter=10000, random_state=43)
+        >>> estimator_2 = DummyRegressor(strategy="median")
         >>> report_2 = CrossValidationReport(estimator_2, X, y)
         >>> comparison_report = CrossValidationComparisonReport([report_1, report_2])
         >>> display = comparison_report.metrics.prediction_error()
