@@ -366,6 +366,63 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             self._parent._cache[cache_key] = results
         return results
 
+    def timings(
+        self,
+        aggregate: Optional[Aggregate] = ("mean", "std"),
+    ) -> pd.DataFrame:
+        """Get all measured processing times related to the estimator.
+
+        The index of the returned dataframe is the name of the processing time. When
+        the estimators were not used to predict, no timings regarding the prediction
+        will be present.
+
+        Parameters
+        ----------
+        aggregate : {"mean", "std"} or list of such str, default=None
+            Function to aggregate the timings across the cross-validation splits.
+
+        Returns
+        -------
+        pd.DataFrame
+            A dataframe with the processing times.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.dummy import DummyClassifier
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import CrossValidationComparisonReport, CrossValidationReport
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> estimator_1 = DummyClassifier()
+        >>> report_1 = CrossValidationReport(estimator_1, X, y)
+        >>> estimator_2 = DummyClassifier(strategy="most_frequent")
+        >>> report_2 = CrossValidationReport(estimator_2, X, y)
+        >>> comparison_report = CrossValidationComparisonReport([report_1, report_2])
+        >>> comparison_report.cache_predictions(response_methods=["predict"])
+        >>> comparison_report.metrics.timings()
+                                                 mean       std
+        Metric                    Estimator
+        Fit time                  m1              ...       ...
+        Predict time test         m1              ...       ...
+        Predict time train        m1              ...       ...
+        Fit time                  m2              ...       ...
+        Predict time test         m2              ...       ...
+        Predict time train        m2              ...       ...
+        """
+        results = [
+            report.metrics.timings(aggregate=None) for report in self._parent.reports_
+        ]
+
+        # Put dataframes in the right shape
+        for i, result in enumerate(results):
+            result.index.name = "Metric"
+            result.columns = pd.MultiIndex.from_product(
+                [[self._parent.report_names_[i]], result.columns]
+            )
+
+        timings = self._combine_cross_validation_results(results, aggregate=aggregate)
+        return timings
+
     @available_if(
         _check_supported_ml_task(
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
