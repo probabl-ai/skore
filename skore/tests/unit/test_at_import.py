@@ -1,16 +1,20 @@
 import importlib
-from unittest.mock import patch
+import sys
+from unittest.mock import Mock, patch
 
-import pytest
+from pytest import warns
 
 
 def test_warning_old_joblib():
-    """Test that importing skore with old joblib version raises a warning."""
+    function = Mock()
+
     with (
+        patch.dict("sys.modules"),
         patch("joblib.__version__", "1.3.0"),
-        pytest.warns(
-            UserWarning, match="Because your version of joblib is older than 1.4"
-        ),
+        patch("skore._config.set_config", function),
+        warns(UserWarning, match="Because your version of joblib is older than 1.4"),
     ):
-        # Use importlib instead of raw `import`, to force re-importing
-        importlib.reload(importlib.import_module("skore"))
+        sys.modules.pop("skore", None)
+        importlib.import_module("skore")
+
+    function.assert_called_with(show_progress=False)
