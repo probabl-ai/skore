@@ -2,7 +2,7 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_index_equal
 from sklearn.datasets import make_classification
-from sklearn.linear_model import LogisticRegression
+from sklearn.dummy import DummyClassifier
 from skore import CrossValidationComparisonReport, CrossValidationReport
 
 
@@ -11,8 +11,8 @@ def case_different_split_numbers():
 
     report = CrossValidationComparisonReport(
         [
-            CrossValidationReport(LogisticRegression(), X, y),
-            CrossValidationReport(LogisticRegression(), X, y, cv_splitter=3),
+            CrossValidationReport(DummyClassifier(), X, y),
+            CrossValidationReport(DummyClassifier(), X, y, cv_splitter=3),
         ]
     )
 
