@@ -15,6 +15,7 @@ from sphinx_gallery.sorting import ExplicitOrder
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath("sphinxext"))
 from github_link import make_linkcode_resolve  # noqa
+from matplotlib_skore_scraper import matplotlib_skore_scraper  # noqa
 
 project = "skore"
 copyright = "2024, Probabl"
@@ -72,15 +73,6 @@ subsections_order = [
     "../examples/technical_details",
 ]
 
-
-# Augment the dpi of matplotlib figures in Sphinx examples
-# https://sphinx-gallery.github.io/stable/advanced.html#resetting-before-each-example
-def reset_mpl(gallery_conf, fname):
-    import matplotlib
-
-    matplotlib.rcParams["figure.dpi"] = 200
-
-
 # sphinx_gallery options
 sphinx_gallery_conf = {
     "examples_dirs": "../examples",  # path to example scripts
@@ -97,7 +89,8 @@ sphinx_gallery_conf = {
     },
     "backreferences_dir": "reference/api",
     "doc_module": "skore",
-    "reset_modules": (reset_mpl, "seaborn"),
+    # "reset_modules": (reset_mpl, "seaborn"),
+    "image_scrapers": [matplotlib_skore_scraper],
     "abort_on_example_error": True,
 }
 
