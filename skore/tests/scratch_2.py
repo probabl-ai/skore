@@ -32,10 +32,10 @@ size = 100
 index_reg_vs_clf = rng.choice([True, False], size=size)
 ml_task = ["classification" if idx else "regression" for idx in index_reg_vs_clf]
 
+median_absolute_error = rng.uniform(0, 100, size=size)
+median_absolute_error[index_reg_vs_clf] = np.nan
 rmse = rng.uniform(0, 100, size=size)
 rmse[index_reg_vs_clf] = np.nan
-r2_score = rng.uniform(0, 1, size=size)
-r2_score[index_reg_vs_clf] = np.nan
 
 log_loss = rng.uniform(0, 100, size=size)
 mean_average_precision = rng.uniform(0, 1, size=size)
@@ -85,7 +85,7 @@ data = {
     "learner": learner,
     "scaler": scaler,
     "encoder": encoder,
-    "r2_score": r2_score,
+    "median_absolute_error": median_absolute_error,
     "rmse": rmse,
     "mean_average_precision": mean_average_precision,
     "macro_roc_auc": macro_roc_auc,
@@ -134,8 +134,8 @@ class MetaDataFrame(pd.DataFrame):
             "Scaler": "scaler",
             "Encoder": "encoder",
             "ML Task": "ml_task",
-            "R2 Score": "r2_score",
             "RMSE": "rmse",
+            "MedAE": "median_absolute_error",
             "mean Average Precision": "mean_average_precision",
             "macro ROC AUC": "macro_roc_auc",
             "Log Loss": "log_loss",
@@ -179,7 +179,7 @@ class MetaDataFrame(pd.DataFrame):
             "Fit Time",
             "Predict Time",
         ]
-        regression_metrics = ["R2 Score", "RMSE", "Fit Time", "Predict Time"]
+        regression_metrics = ["MedAE", "RMSE", "Fit Time", "Predict Time"]
 
         # Create task dropdown
         self._task_dropdown = widgets.Dropdown(
@@ -390,7 +390,7 @@ class MetaDataFrame(pd.DataFrame):
                 ]
                 color_metric = self._color_metric_dropdown[task].value
             else:
-                available_metrics = ["R2 Score", "RMSE", "Fit Time", "Predict Time"]
+                available_metrics = ["MedAE", "RMSE", "Fit Time", "Predict Time"]
                 selected_metrics = [
                     m
                     for m in available_metrics
@@ -476,11 +476,21 @@ class MetaDataFrame(pd.DataFrame):
                 margin=dict(l=150, r=150, t=100, b=30),  # Increased margins
             )
 
+            # Convert to FigureWidget for interactivity and callbacks
+            f_widget = FigureWidget(fig)
+
+            # Setup callback for selection changes
+            def selection_change_callback(trace, points, selector):
+                self.update_selection()
+
+            # Add callback to detect selection changes
+            f_widget.data[0].on_selection(selection_change_callback)
+
             # Store current figure and dimensions
-            self._current_fig = fig
+            self._current_fig = f_widget
             self._current_dimensions = dimensions
 
-            display(fig)
+            display(f_widget)
 
     def _repr_html_(self):
         """Display the interactive plot and controls."""
@@ -521,7 +531,7 @@ class MetaDataFrame(pd.DataFrame):
             [
                 self._metric_checkboxes["regression"]["Fit Time"],
                 self._metric_checkboxes["regression"]["Predict Time"],
-                self._metric_checkboxes["regression"]["R2 Score"],
+                self._metric_checkboxes["regression"]["MedAE"],
                 self._metric_checkboxes["regression"]["RMSE"],
             ],
             layout=widgets.Layout(
@@ -560,6 +570,180 @@ class MetaDataFrame(pd.DataFrame):
         self._update_plot()
 
         return ""
+
+    def update_selection(self):
+        """
+        Update the selection based on the current state of the plot.
+
+        This method explicitly captures the current selection state from
+        the parallel coordinates plot. It should be called when you want
+        to capture the current visual selection before querying.
+
+        Returns
+        -------
+        MetaDataFrame
+            Self reference for method chaining.
+        """
+        if not self._current_fig or not hasattr(
+            self._current_fig.data[0], "dimensions"
+        ):
+            return self
+
+        # Extract the constraint ranges from the plot data
+        selection_data = {}
+        for i, dim in enumerate(self._current_fig.data[0].dimensions):
+            if hasattr(dim, "constraintrange") and dim.constraintrange:
+                dim_name = dim.label
+                selection_data[dim_name] = dim.constraintrange
+
+        # Store the selection data
+        self._current_selection = selection_data
+        return self
+
+    def query_string_selection(self):
+        """
+        Generate a pandas query string based on user selections in the plot.
+
+        This method translates the visual selections made on the parallel
+        coordinates plot into a pandas query string that can be used to
+        filter the dataframe.
+
+        Returns
+        -------
+        str
+            A query string that can be used with DataFrame.query() to filter
+            the original dataframe based on the visual selection.
+            Returns an empty string if no selections are active.
+
+        Examples
+        --------
+        >>> query_string = df.query_string_selection()
+        >>> filtered_df = df.query(query_string)
+        """
+        # First update the selection to ensure we have the latest state
+        self.update_selection()
+
+        # Get current task from dropdown
+        task = self._task_dropdown.value
+
+        # Build the query string based on current selections and task filter
+        query_parts = []
+
+        # Always add task filter
+        query_parts.append(f"ml_task == '{task}'")
+
+        # If we have a dataset selected, add that as a filter
+        if hasattr(self._dataset_dropdown, "value") and self._dataset_dropdown.value:
+            dataset_name = self._dataset_dropdown.value
+            query_parts.append(f"dataset == '{dataset_name}'")
+
+        # Add selection constraints if any
+        for dim_name, range_values in self._current_selection.items():
+            # Handle Learner dimension
+            if dim_name == "Learner":
+                # Find which learner values fall within the selected range
+                learner_values = self["learner"].unique()
+                learner_codes = pd.Categorical(learner_values).codes
+
+                selected_learners = []
+                min_val, max_val = range_values
+
+                for i, learner in enumerate(learner_values):
+                    # Get the jittered code value for this learner
+                    code_val = learner_codes[i]
+                    if min_val <= code_val <= max_val:
+                        selected_learners.append(learner)
+
+                if selected_learners:
+                    values_str = ", ".join(
+                        [f"'{value}'" for value in selected_learners]
+                    )
+                    query_parts.append(f"learner.isin([{values_str}])")
+
+            # Handle numerical dimensions
+            elif dim_name in self._column_to_dimension.values():
+                # Find the column name that corresponds to this dimension label
+                col_name = None
+                for col, label in self._column_to_dimension.items():
+                    if label == dim_name:
+                        col_name = col
+                        break
+
+                if col_name:
+                    min_val, max_val = range_values
+                    query_parts.append(
+                        f"({col_name} >= {min_val:.6f} and {col_name} <= {max_val:.6f})"
+                    )
+
+        # Join all query parts with logical AND
+        if query_parts:
+            return " and ".join(query_parts)
+        else:
+            return ""
+
+    def filter(self):
+        """
+        Filter the dataframe based on the current selection in the parallel coordinate
+        plot.
+
+        Returns
+        -------
+        MetaDataFrame
+            A filtered MetaDataFrame containing only the rows that match the selection.
+        """
+        query_string = self.query_string_selection()
+        if query_string:
+            return self.query(query_string)
+
+        # If no query string but we have a selected dataset and task, filter based on
+        # those
+        task = self._task_dropdown.value
+        if hasattr(self._dataset_dropdown, "value") and self._dataset_dropdown.value:
+            dataset_name = self._dataset_dropdown.value
+            return self[(self["ml_task"] == task) & (self["dataset"] == dataset_name)]
+
+        # Otherwise, just filter based on task
+        return self[self["ml_task"] == task]
+
+    def to_frame(self, filter=True):
+        """
+        Convert this MetaDataFrame to a regular pandas DataFrame.
+
+        This method creates a standard pandas DataFrame containing the same
+        data as this MetaDataFrame, without the enhanced visualization
+        capabilities.
+
+        Parameters
+        ----------
+        filter : bool, default=True
+            If True, the DataFrame will be filtered according to the current
+            selection in the parallel coordinates plot.
+
+        Returns
+        -------
+        pandas.DataFrame
+            A standard pandas DataFrame containing the same data.
+        """
+        df = pd.DataFrame(self)
+        if filter:
+            query_string = self.query_string_selection()
+            if query_string:
+                return df.query(query_string)
+
+            # If no query string but we have a selected dataset and task, filter based
+            # on those
+            task = self._task_dropdown.value
+            if (
+                hasattr(self._dataset_dropdown, "value")
+                and self._dataset_dropdown.value
+            ):
+                dataset_name = self._dataset_dropdown.value
+                return df[(df["ml_task"] == task) & (df["dataset"] == dataset_name)]
+
+            # Otherwise, just filter based on task
+            return df[df["ml_task"] == task]
+
+        return df
 
 
 # %%
