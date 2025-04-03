@@ -114,14 +114,6 @@ class CrossValidationComparisonReport(_BaseReport, DirNamesMixin):
                 f"Expected all estimators to have the same ML usecase; got {ml_tasks}"
             )
 
-        # test_dataset_hashes = {
-        #     joblib.hash((report.X_test, report.y_test))
-        #     for report in reports
-        #     if not ((report.X_test is None) and (report.y_test is None))
-        # }
-        # if len(test_dataset_hashes) > 1:
-        #     raise ValueError("Expected all estimators to have the same testing data.")
-
         if report_names is None:
             self.report_names_ = [report.estimator_name_ for report in reports]
         else:
