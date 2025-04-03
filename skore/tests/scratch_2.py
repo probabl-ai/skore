@@ -38,14 +38,12 @@ r2_score = rng.uniform(0, 1, size=size)
 r2_score[index_reg_vs_clf] = np.nan
 
 log_loss = rng.uniform(0, 100, size=size)
-accuracy_score = rng.uniform(0, 1, size=size)
-precision_score = rng.uniform(0, 1, size=size)
-recall_score = rng.uniform(0, 1, size=size)
+mean_average_precision = rng.uniform(0, 1, size=size)
+macro_roc_auc = rng.uniform(0, 1, size=size)
 
 log_loss[~index_reg_vs_clf] = np.nan
-accuracy_score[~index_reg_vs_clf] = np.nan
-precision_score[~index_reg_vs_clf] = np.nan
-recall_score[~index_reg_vs_clf] = np.nan
+mean_average_precision[~index_reg_vs_clf] = np.nan
+macro_roc_auc[~index_reg_vs_clf] = np.nan
 
 regressor = rng.choice(["Ridge", "RandomForestRegressor"], size=size)
 classifier = rng.choice(["LogisticRegression", "RandomForestClassifier"], size=size)
@@ -89,13 +87,13 @@ data = {
     "encoder": encoder,
     "r2_score": r2_score,
     "rmse": rmse,
-    "accuracy_score": accuracy_score,
-    "precision_score": precision_score,
-    "recall_score": recall_score,
+    "mean_average_precision": mean_average_precision,
+    "macro_roc_auc": macro_roc_auc,
     "log_loss": log_loss,
     "fit_time": fit_time,
     "predict_time": predict_time,
 }
+
 
 # %%
 class MetaDataFrame(pd.DataFrame):
@@ -138,9 +136,8 @@ class MetaDataFrame(pd.DataFrame):
             "ML Task": "ml_task",
             "R2 Score": "r2_score",
             "RMSE": "rmse",
-            "Accuracy Score": "accuracy_score",
-            "Precision Score": "precision_score",
-            "Recall Score": "recall_score",
+            "mean Average Precision": "mean_average_precision",
+            "macro ROC AUC": "macro_roc_auc",
             "Log Loss": "log_loss",
             "Fit Time": "fit_time",
             "Predict Time": "predict_time",
@@ -148,7 +145,7 @@ class MetaDataFrame(pd.DataFrame):
         self._column_to_dimension = {v: k for k, v in self._dimension_to_column.items()}
 
         # Define metrics where lower values are better (for inverted colormap)
-        self._invert_colormap = ["RMSE", "Log Loss"]
+        self._invert_colormap = ["RMSE", "Log Loss", "Fit Time", "Predict Time"]
 
         # Store the current figure, dimension filters, and selections
         self._current_fig = None
@@ -159,28 +156,41 @@ class MetaDataFrame(pd.DataFrame):
         # This prevents recursion issues
         if args and isinstance(args[0], dict):
             input_data = args[0]
-            ml_task_array = np.array(input_data.get('ml_task', []))
-            dataset_array = np.array(input_data.get('dataset', []))
+            ml_task_array = np.array(input_data.get("ml_task", []))
+            dataset_array = np.array(input_data.get("dataset", []))
 
             # Get unique datasets for classification and regression tasks
-            self._clf_datasets = np.unique(dataset_array[ml_task_array == 'classification']).tolist()
-            self._reg_datasets = np.unique(dataset_array[ml_task_array == 'regression']).tolist()
+            self._clf_datasets = np.unique(
+                dataset_array[ml_task_array == "classification"]
+            ).tolist()
+            self._reg_datasets = np.unique(
+                dataset_array[ml_task_array == "regression"]
+            ).tolist()
         else:
             # Fallback to empty lists if we can't determine from input
             self._clf_datasets = []
             self._reg_datasets = []
 
         # Define metric sets with fit_time and predict_time
-        classification_metrics = ["Accuracy Score", "Precision Score", "Recall Score", "Log Loss", "Fit Time", "Predict Time"]
+        classification_metrics = [
+            "mean Average Precision",
+            "macro ROC AUC",
+            "Log Loss",
+            "Fit Time",
+            "Predict Time",
+        ]
         regression_metrics = ["R2 Score", "RMSE", "Fit Time", "Predict Time"]
 
         # Create task dropdown
         self._task_dropdown = widgets.Dropdown(
-            options=[("Classification", "classification"), ("Regression", "regression")],
+            options=[
+                ("Classification", "classification"),
+                ("Regression", "regression"),
+            ],
             value="classification",
             description="Task Type:",
             disabled=False,
-            layout=widgets.Layout(width='200px')
+            layout=widgets.Layout(width="200px"),
         )
 
         # Create dataset dropdown that will update based on task
@@ -188,31 +198,34 @@ class MetaDataFrame(pd.DataFrame):
             options=self._clf_datasets,  # Default to classification datasets
             description="Dataset:",
             disabled=False,
-            layout=widgets.Layout(width='250px')
+            layout=widgets.Layout(width="250px"),
         )
 
         # Initialize metric checkboxes as dictionaries
-        self._metric_checkboxes = {
-            "classification": {},
-            "regression": {}
-        }
+        self._metric_checkboxes = {"classification": {}, "regression": {}}
 
         # Create classification metric checkboxes
         for metric in classification_metrics:
+            # Set time metrics to be unchecked by default
+            default_value = metric not in ["Fit Time", "Predict Time"]
             self._metric_checkboxes["classification"][metric] = widgets.Checkbox(
-                value=True,
+                indent=False,
+                value=default_value,
                 description=metric,
                 disabled=False,
-                layout=widgets.Layout(width='auto')
+                layout=widgets.Layout(width="auto"),
             )
 
         # Create regression metric checkboxes
         for metric in regression_metrics:
+            # Set time metrics to be unchecked by default
+            default_value = metric not in ["Fit Time", "Predict Time"]
             self._metric_checkboxes["regression"][metric] = widgets.Checkbox(
-                value=True,
+                indent=False,
+                value=default_value,
                 description=metric,
                 disabled=False,
-                layout=widgets.Layout(width='auto')
+                layout=widgets.Layout(width="auto"),
             )
 
         # Create color metric dropdowns
@@ -222,25 +235,26 @@ class MetaDataFrame(pd.DataFrame):
                 value="Log Loss",  # Default for classification
                 description="Color by:",
                 disabled=False,
-                layout=widgets.Layout(width='200px')
+                layout=widgets.Layout(width="200px"),
             ),
             "regression": widgets.Dropdown(
                 options=regression_metrics,
                 value="RMSE",  # Default for regression
                 description="Color by:",
                 disabled=False,
-                layout=widgets.Layout(width='200px')
-            )
+                layout=widgets.Layout(width="200px"),
+            ),
         }
 
         # Create containers for metric checkboxes
         self._classification_metrics_box = widgets.HBox(
-            [widgets.Label("Metrics:")] +
-            [self._metric_checkboxes["classification"][m] for m in classification_metrics]
+            [
+                self._metric_checkboxes["classification"][m]
+                for m in classification_metrics
+            ]
         )
 
         self._regression_metrics_box = widgets.HBox(
-            [widgets.Label("Metrics:")] +
             [self._metric_checkboxes["regression"][m] for m in regression_metrics]
         )
 
@@ -251,7 +265,9 @@ class MetaDataFrame(pd.DataFrame):
         # Set up metric checkbox callbacks
         for task in ["classification", "regression"]:
             for metric in self._metric_checkboxes[task]:
-                self._metric_checkboxes[task][metric].observe(self._update_plot, names="value")
+                self._metric_checkboxes[task][metric].observe(
+                    self._update_plot, names="value"
+                )
             self._color_metric_dropdown[task].observe(self._update_plot, names="value")
 
         # Output area for the plot
@@ -282,17 +298,17 @@ class MetaDataFrame(pd.DataFrame):
         task = self._task_dropdown.value
 
         if task == "classification":
-            self._classification_metrics_box.layout.display = ''
-            self._color_metric_dropdown["classification"].layout.display = ''
+            self._classification_metrics_box.layout.display = ""
+            self._color_metric_dropdown["classification"].layout.display = ""
 
-            self._regression_metrics_box.layout.display = 'none'
-            self._color_metric_dropdown["regression"].layout.display = 'none'
+            self._regression_metrics_box.layout.display = "none"
+            self._color_metric_dropdown["regression"].layout.display = "none"
         else:
-            self._classification_metrics_box.layout.display = 'none'
-            self._color_metric_dropdown["classification"].layout.display = 'none'
+            self._classification_metrics_box.layout.display = "none"
+            self._color_metric_dropdown["classification"].layout.display = "none"
 
-            self._regression_metrics_box.layout.display = ''
-            self._color_metric_dropdown["regression"].layout.display = ''
+            self._regression_metrics_box.layout.display = ""
+            self._color_metric_dropdown["regression"].layout.display = ""
 
     @property
     def _constructor(self):
@@ -300,9 +316,40 @@ class MetaDataFrame(pd.DataFrame):
         return MetaDataFrame
 
     def _add_jitter(self, values, amount=0.05):
-        """Add jitter to categorical values to improve visualization."""
+        """
+        Add jitter to categorical values to improve visualization.
+
+        Applies asymmetric jitter for edge values to ensure selection works properly:
+        - Lowest category gets only positive jitter
+        - Highest category gets only negative jitter
+        - Middle categories get balanced jitter
+        """
+        # Convert to categorical codes (0, 1, 2, etc.)
         categories = pd.Categorical(values).codes
-        return categories + rng.uniform(-amount, amount, size=len(values))
+
+        # Get unique category codes
+        unique_codes = np.unique(categories)
+        min_code = unique_codes.min()
+        max_code = unique_codes.max()
+
+        # Initialize jitter array
+        jitter = np.zeros_like(categories, dtype=float)
+
+        # Apply appropriate jitter based on position
+        for code in unique_codes:
+            mask = categories == code
+
+            if code == min_code:  # Bottom category
+                # Apply only positive jitter
+                jitter[mask] = rng.uniform(0, amount, size=mask.sum())
+            elif code == max_code:  # Top category
+                # Apply only negative jitter
+                jitter[mask] = rng.uniform(-amount, 0, size=mask.sum())
+            else:  # Middle categories
+                # Apply balanced jitter
+                jitter[mask] = rng.uniform(-amount, amount, size=mask.sum())
+
+        return categories + jitter
 
     def _update_plot(self, change=None):
         """Update the parallel coordinates plot based on the selected options."""
@@ -311,7 +358,10 @@ class MetaDataFrame(pd.DataFrame):
 
             task = self._task_dropdown.value
 
-            if not hasattr(self._dataset_dropdown, 'value') or not self._dataset_dropdown.value:
+            if (
+                not hasattr(self._dataset_dropdown, "value")
+                or not self._dataset_dropdown.value
+            ):
                 display(widgets.HTML("No dataset available for selected task."))
                 return
 
@@ -326,16 +376,27 @@ class MetaDataFrame(pd.DataFrame):
 
             # Get selected metrics and color metric based on task
             if task == "classification":
-                available_metrics = ["Accuracy Score", "Precision Score", "Recall Score", "Log Loss", "Fit Time", "Predict Time"]
-                selected_metrics = [m for m in available_metrics if self._metric_checkboxes[task][m].value]
+                available_metrics = [
+                    "mean Average Precision",
+                    "macro ROC AUC",
+                    "Log Loss",
+                    "Fit Time",
+                    "Predict Time",
+                ]
+                selected_metrics = [
+                    m
+                    for m in available_metrics
+                    if self._metric_checkboxes[task][m].value
+                ]
                 color_metric = self._color_metric_dropdown[task].value
             else:
                 available_metrics = ["R2 Score", "RMSE", "Fit Time", "Predict Time"]
-                selected_metrics = [m for m in available_metrics if self._metric_checkboxes[task][m].value]
+                selected_metrics = [
+                    m
+                    for m in available_metrics
+                    if self._metric_checkboxes[task][m].value
+                ]
                 color_metric = self._color_metric_dropdown[task].value
-
-            # Debug selected metrics
-            print(f"Selected metrics: {selected_metrics}")
 
             # Convert display names to column names
             selected_columns = [self._dimension_to_column[m] for m in selected_metrics]
@@ -354,13 +415,17 @@ class MetaDataFrame(pd.DataFrame):
                     label="Learner",
                     values=filtered_df["learner_jittered"],
                     ticktext=filtered_df["learner"].unique().tolist(),
-                    tickvals=self._add_jitter(filtered_df["learner"].unique(), amount=0)
+                    tickvals=self._add_jitter(
+                        filtered_df["learner"].unique(), amount=0
+                    ),
                 )
             )
 
             # Categorize metrics
             time_metrics = ["fit_time", "predict_time"]
-            statistical_metrics = [col for col in selected_columns if col not in time_metrics]
+            statistical_metrics = [
+                col for col in selected_columns if col not in time_metrics
+            ]
 
             # 2. Add time metrics
             for col in time_metrics:
@@ -368,7 +433,7 @@ class MetaDataFrame(pd.DataFrame):
                     dimensions.append(
                         dict(
                             label=self._column_to_dimension[col],
-                            values=filtered_df[col].fillna(0).tolist()
+                            values=filtered_df[col].fillna(0).tolist(),
                         )
                     )
 
@@ -378,12 +443,14 @@ class MetaDataFrame(pd.DataFrame):
                     dimensions.append(
                         dict(
                             label=self._column_to_dimension[col],
-                            values=filtered_df[col].fillna(0).tolist()
+                            values=filtered_df[col].fillna(0).tolist(),
                         )
                     )
 
             # Create colorscale (invert for metrics where lower is better)
-            colorscale = "Viridis_r" if color_metric in self._invert_colormap else "Viridis"
+            colorscale = (
+                "Viridis_r" if color_metric in self._invert_colormap else "Viridis"
+            )
 
             # Create the figure
             fig = go.Figure(
@@ -392,17 +459,21 @@ class MetaDataFrame(pd.DataFrame):
                         color=filtered_df[color_column].fillna(0).tolist(),
                         colorscale=colorscale,
                         showscale=True,
-                        colorbar=dict(title=color_metric)
+                        colorbar=dict(title=color_metric),
                     ),
-                    dimensions=dimensions
+                    dimensions=dimensions,
                 )
             )
+
+            # Set consistent width and layout
+            plot_width = 900  # Width in pixels
 
             fig.update_layout(
                 title=f"Parallel Coordinates Plot - {dataset_name} ({task})",
                 title_y=0.97,  # Move title higher
                 height=600,
-                margin=dict(l=150, r=150, t=100, b=30)  # Increased margins
+                width=plot_width,  # Set fixed width
+                margin=dict(l=150, r=150, t=100, b=30),  # Increased margins
             )
 
             # Store current figure and dimensions
@@ -413,51 +484,70 @@ class MetaDataFrame(pd.DataFrame):
 
     def _repr_html_(self):
         """Display the interactive plot and controls."""
-        # Create controls layout
-        controls_row1 = widgets.HBox([
-            self._task_dropdown,
-            self._dataset_dropdown,
-            self._color_metric_dropdown["classification"],
-            self._color_metric_dropdown["regression"]
-        ])
+        # Set consistent width for controls and plot
+        controls_width = "900px"
 
-        # Organize metric checkboxes differently to make all visible
-        # Improve layout with a VBox for classification metrics
-        clf_metrics_layout = widgets.VBox([
-            widgets.HTML("<b>Classification Metrics:</b>"),
-            widgets.HBox([
-                self._metric_checkboxes["classification"]["Accuracy Score"],
-                self._metric_checkboxes["classification"]["Precision Score"],
-                self._metric_checkboxes["classification"]["Recall Score"],
-            ]),
-            widgets.HBox([
-                self._metric_checkboxes["classification"]["Log Loss"],
+        # Create controls layout with specific spacing
+        controls_row1 = widgets.HBox(
+            [
+                self._task_dropdown,
+                self._dataset_dropdown,
+                self._color_metric_dropdown["classification"],
+                self._color_metric_dropdown["regression"],
+            ],
+            layout=widgets.Layout(
+                width=controls_width, justify_content="space-between"
+            ),
+        )
+
+        # Reorganize classification metrics to be in one row and span the width
+        clf_metrics_container = widgets.HBox(
+            [
                 self._metric_checkboxes["classification"]["Fit Time"],
                 self._metric_checkboxes["classification"]["Predict Time"],
-            ])
-        ])
+                self._metric_checkboxes["classification"]["mean Average Precision"],
+                self._metric_checkboxes["classification"]["macro ROC AUC"],
+                self._metric_checkboxes["classification"]["Log Loss"],
+            ],
+            layout=widgets.Layout(
+                width=controls_width, justify_content="space-between"
+            ),
+        )
 
-        # Improve layout with a VBox for regression metrics
-        reg_metrics_layout = widgets.VBox([
-            widgets.HTML("<b>Regression Metrics:</b>"),
-            widgets.HBox([
-                self._metric_checkboxes["regression"]["R2 Score"],
-                self._metric_checkboxes["regression"]["RMSE"],
+        self._classification_metrics_box = clf_metrics_container
+
+        # Reorganize regression metrics to be in one row and span the width
+        reg_metrics_container = widgets.HBox(
+            [
                 self._metric_checkboxes["regression"]["Fit Time"],
                 self._metric_checkboxes["regression"]["Predict Time"],
-            ])
-        ])
+                self._metric_checkboxes["regression"]["R2 Score"],
+                self._metric_checkboxes["regression"]["RMSE"],
+            ],
+            layout=widgets.Layout(
+                width=controls_width, justify_content="space-between"
+            ),
+        )
 
-        # Replace old metrics boxes with new layout
-        self._classification_metrics_box = clf_metrics_layout
-        self._regression_metrics_box = reg_metrics_layout
+        self._regression_metrics_box = reg_metrics_container
 
-        controls_row2 = widgets.HBox([
-            self._classification_metrics_box,
-            self._regression_metrics_box
-        ])
+        # Create a container for the metrics with proper left alignment
+        controls_row2 = widgets.HBox(
+            [
+                widgets.VBox(
+                    [self._classification_metrics_box, self._regression_metrics_box]
+                )
+            ],
+            layout=widgets.Layout(width=controls_width),
+        )
 
-        controls = widgets.VBox([controls_row1, controls_row2])
+        # Apply consistent width to entire controls container
+        controls = widgets.VBox(
+            [controls_row1, controls_row2], layout=widgets.Layout(width=controls_width)
+        )
+
+        # Apply consistent width to output container
+        self._output.layout.width = controls_width
 
         # Initialize widget visibility
         self._update_task_widgets()
@@ -470,6 +560,7 @@ class MetaDataFrame(pd.DataFrame):
         self._update_plot()
 
         return ""
+
 
 # %%
 df = MetaDataFrame(data)
