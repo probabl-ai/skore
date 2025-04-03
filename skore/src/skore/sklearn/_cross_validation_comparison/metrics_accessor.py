@@ -4,7 +4,6 @@ from typing import Any, Callable, Literal, Optional, Union
 import joblib
 import numpy as np
 import pandas as pd
-from numpy.typing import ArrayLike
 from rich.progress import Progress
 from sklearn.metrics import make_scorer
 from sklearn.metrics._scorer import _BaseScorer as SKLearnScorer
@@ -71,20 +70,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            New data on which to compute the metric. By default, we use the validation
-            set provided when creating the report.
-
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the target
-            provided when creating the report.
 
         scoring : list of str, callable, or scorer, default=None
             The metrics to report. You can get the possible list of strings by calling
@@ -371,20 +361,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            New data on which to compute the metric. By default, we use the validation
-            set provided when creating the report.
-
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the target
-            provided when creating the report.
 
         Returns
         -------
@@ -426,8 +407,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
         average: Optional[
             Literal["binary", "macro", "micro", "weighted", "samples"]
         ] = None,
@@ -437,20 +416,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            New data on which to compute the metric. By default, we use the validation
-            set provided when creating the report.
-
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the target
-            provided when creating the report.
 
         average : {"binary", "macro", "micro", "weighted", "samples"} or None, \
                 default=None
@@ -541,7 +511,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
 
         average : {"binary","macro", "micro", "weighted", "samples"} or None, \
                 default=None
@@ -1087,8 +1056,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     def _get_display(
         self,
         *,
-        X: Union[ArrayLike, None],
-        y: Union[ArrayLike, None],
         data_source: DataSource,
         response_method: Union[str, list[str]],
         display_class: type[
@@ -1100,18 +1067,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         Parameters
         ----------
-        X : array-like of shape (n_samples, n_features)
-            The data.
-
-        y : array-like of shape (n_samples,)
-            The target.
-
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
 
         response_method : str
             The response method.
@@ -1151,8 +1111,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             for report in self._parent.reports_:
                 report_X, report_y, _ = report.metrics._get_X_y_and_data_source_hash(
                     data_source=data_source,
-                    X=X,
-                    y=y,
+                    X=None,
+                    y=None,
                 )
 
                 y_true.append(report_y)
@@ -1197,28 +1157,17 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
         pos_label: Optional[Union[int, float, bool, str]] = None,
     ) -> RocCurveDisplay:
         """Plot the ROC curve.
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            New data on which to compute the metric. By default, we use the validation
-            set provided when creating the report.
-
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the target
-            provided when creating the report.
 
         pos_label : int, float, bool or str, default=None
             The positive class.
@@ -1246,8 +1195,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
         display = self._get_display(
-            X=X,
-            y=y,
             data_source=data_source,
             response_method=response_method,
             display_class=RocCurveDisplay,
@@ -1265,28 +1212,17 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
         pos_label: Optional[Union[int, float, bool, str]] = None,
     ) -> PrecisionRecallCurveDisplay:
         """Plot the precision-recall curve.
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            New data on which to compute the metric. By default, we use the validation
-            set provided when creating the report.
-
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the target
-            provided when creating the report.
 
         pos_label : int, float, bool or str, default=None
             The positive class.
@@ -1314,8 +1250,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
         display = self._get_display(
-            X=X,
-            y=y,
             data_source=data_source,
             response_method=response_method,
             display_class=PrecisionRecallCurveDisplay,
@@ -1333,8 +1267,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
         subsample: int = 1_000,
         random_state: Optional[int] = None,
     ) -> PredictionErrorDisplay:
@@ -1344,20 +1276,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            New data on which to compute the metric. By default, we use the validation
-            set provided when creating the report.
-
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the target
-            provided when creating the report.
 
         subsample : float, int or None, default=1_000
             Sampling the samples to be shown on the scatter plot. If `float`,
@@ -1391,8 +1314,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         """
         display_kwargs = {"subsample": subsample, "random_state": random_state}
         display = self._get_display(
-            X=X,
-            y=y,
             data_source=data_source,
             response_method="predict",
             display_class=PredictionErrorDisplay,
