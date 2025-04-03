@@ -63,9 +63,6 @@ If you are starting to contribute to open-source, you can start by an [issue tag
 
 The implementation of some issues are not very detailed. You can either propose a solution, or choose only the issues with a Status "Ready".
 
-You can also contribute to the code base without a specific issue related; in that case, please be precise in the description of your pull request.
-
-
 Pull requests
 -------------
 
@@ -73,7 +70,10 @@ We use the `conventional commits <https://www.conventionalcommits.org/en/v1.0.0/
 
 - In particular, commits are "sentence case", meaning that the ``fix: Fix issue`` title passes, while ``fix: fix issue`` does not.
 - Generally, the description of a commit should start with a verb in the imperative voice, so that it would properly complete the sentence: ``When applied, this commit will [...]``.
-- Examples of correct PR titles: ``docs: Update the docstrings`` or ``feat: Remove CrossValidationAggregationItem``
+- Examples of correct PR titles: ``docs: Update the docstrings`` or ``feat: Remove CrossValidationAggregationItem``.
+
+Skore is a company-driven project. We might provide extensive help to bring PRs to be merged to meet internal deadlines. In such cases, we will warn you in the PR.
+
 
 Tests
 -----
