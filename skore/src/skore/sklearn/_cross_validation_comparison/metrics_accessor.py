@@ -103,6 +103,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             Whether to flatten the `MultiIndex` columns. Flat index will always be lower
             case, do not include spaces and remove the hash symbol to ease indexing.
 
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
+
         Returns
         -------
         pd.DataFrame
@@ -130,6 +134,23 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Recall    m1          ...  ...
         Precision m2          ...  ...
         Recall    m2          ...  ...
+        >>> comparison_report.metrics.report_metrics(
+        ...     scoring=["precision", "recall"],
+        ...     pos_label=1,
+        ...     aggregate=None,
+        ... )
+        Estimator            m1   m2
+        Metric    Split
+        Precision Split #0  ...  ...
+                  Split #1  ...  ...
+                  Split #2  ...  ...
+                  Split #3  ...  ...
+                  Split #4  ...  ...
+        Recall    Split #0  ...  ...
+                  Split #1  ...  ...
+                  Split #2  ...  ...
+                  Split #3  ...  ...
+                  Split #4  ...  ...
         """
         results = self._compute_metric_scores(
             report_metric_name="report_metrics",
@@ -277,6 +298,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             report_metric_name,
             data_source,
         ]
+        if aggregate is None:
+            cache_key_parts.append(aggregate)
+        else:
+            cache_key_parts.extend(tuple(aggregate))
 
         # we need to enforce the order of the parameter for a specific metric
         # to make sure that we hit the cache in a consistent way
@@ -347,6 +372,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
+        aggregate: Optional[Aggregate] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the accuracy score.
 
@@ -357,6 +383,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
 
         Returns
         -------
@@ -384,6 +414,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         return self.report_metrics(
             scoring=["accuracy"],
             data_source=data_source,
+            aggregate=aggregate,
         )
 
     @available_if(
@@ -399,6 +430,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             Literal["binary", "macro", "micro", "weighted", "samples"]
         ] = None,
         pos_label: Optional[Union[int, float, bool, str]] = None,
+        aggregate: Optional[Aggregate] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the precision score.
 
@@ -438,6 +470,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         pos_label : int, float, bool or str, default=None
             The positive class.
 
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
+
         Returns
         -------
         pd.DataFrame
@@ -468,6 +504,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             data_source=data_source,
             pos_label=pos_label,
             scoring_kwargs={"average": average},
+            aggregate=aggregate,
         )
 
     @available_if(
@@ -483,6 +520,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             Literal["binary", "macro", "micro", "weighted", "samples"]
         ] = None,
         pos_label: Optional[Union[int, float, bool, str]] = None,
+        aggregate: Optional[Aggregate] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the recall score.
 
@@ -523,6 +561,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         pos_label : int, float, bool or str, default=None
             The positive class.
 
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
+
         Returns
         -------
         pd.DataFrame
@@ -553,6 +595,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             data_source=data_source,
             pos_label=pos_label,
             scoring_kwargs={"average": average},
+            aggregate=aggregate,
         )
 
     @available_if(
@@ -562,6 +605,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
+        aggregate: Optional[Aggregate] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the Brier score.
 
@@ -572,6 +616,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
 
         Returns
         -------
@@ -599,6 +647,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         return self.report_metrics(
             scoring=["brier_score"],
             data_source=data_source,
+            aggregate=aggregate,
         )
 
     @available_if(
@@ -614,6 +663,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             Literal["auto", "macro", "micro", "weighted", "samples"]
         ] = None,
         multi_class: Literal["raise", "ovr", "ovo"] = "ovr",
+        aggregate: Optional[Aggregate] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the ROC AUC score.
 
@@ -659,6 +709,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
               pairwise combinations of classes. Insensitive to class imbalance when
               `average == "macro"`.
 
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
+
         Returns
         -------
         pd.DataFrame
@@ -686,6 +740,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             scoring=["roc_auc"],
             data_source=data_source,
             scoring_kwargs={"average": average, "multi_class": multi_class},
+            aggregate=aggregate,
         )
 
     @available_if(
@@ -697,6 +752,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
+        aggregate: Optional[Aggregate] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the log loss.
 
@@ -707,6 +763,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
 
         Returns
         -------
@@ -734,6 +794,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         return self.report_metrics(
             scoring=["log_loss"],
             data_source=data_source,
+            aggregate=aggregate,
         )
 
     @available_if(
@@ -746,6 +807,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         *,
         data_source: DataSource = "test",
         multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
+        aggregate: Optional[Aggregate] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the R² score.
 
@@ -766,6 +828,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             - "uniform_average": Errors of all outputs are averaged with uniform weight.
 
             By default, no averaging is done.
+
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
 
         Returns
         -------
@@ -794,6 +860,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             scoring=["r2"],
             data_source=data_source,
             scoring_kwargs={"multioutput": multioutput},
+            aggregate=aggregate,
         )
 
     @available_if(
@@ -806,6 +873,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         *,
         data_source: DataSource = "test",
         multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
+        aggregate: Optional[Aggregate] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the root mean squared error.
 
@@ -826,6 +894,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             - "uniform_average": Errors of all outputs are averaged with uniform weight.
 
             By default, no averaging is done.
+
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
 
         Returns
         -------
@@ -854,6 +926,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             scoring=["rmse"],
             data_source=data_source,
             scoring_kwargs={"multioutput": multioutput},
+            aggregate=aggregate,
         )
 
     def custom_metric(
@@ -863,6 +936,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         *,
         metric_name: Optional[str] = None,
         data_source: DataSource = "test",
+        aggregate: Optional[Aggregate] = ("mean", "std"),
         **kwargs: Any,
     ) -> pd.DataFrame:
         """Compute a custom metric.
@@ -896,6 +970,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
 
         **kwargs : dict
             Any additional keyword arguments to be passed to the metric function.
@@ -940,6 +1018,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             scoring=[scorer],
             data_source=data_source,
             scoring_names=[metric_name] if metric_name is not None else None,
+            aggregate=aggregate,
         )
 
     ####################################################################################
