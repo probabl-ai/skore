@@ -6,31 +6,6 @@ from sklearn.linear_model import LogisticRegression
 from skore import CrossValidationComparisonReport, CrossValidationReport
 
 
-def test_metrics_binary_classification():
-    """Check the metrics work."""
-    X, y = make_classification(random_state=42)
-    cv_report = CrossValidationReport(LogisticRegression(), X, y)
-
-    comp = CrossValidationComparisonReport([cv_report, cv_report])
-
-    result = comp.metrics.accuracy()
-
-    expected_columns = pd.Index(["m1", "m2"], name="Estimator")
-    expected_index = pd.MultiIndex.from_tuples(
-        [
-            ("Accuracy", "Split #0"),
-            ("Accuracy", "Split #1"),
-            ("Accuracy", "Split #2"),
-            ("Accuracy", "Split #3"),
-            ("Accuracy", "Split #4"),
-        ],
-        names=["Metric", "Split"],
-    )
-
-    assert_index_equal(result.index, expected_index)
-    assert_index_equal(result.columns, expected_columns)
-
-
 def case_different_split_numbers():
     X, y = make_classification(random_state=42)
 
@@ -41,7 +16,7 @@ def case_different_split_numbers():
         ]
     )
 
-    kwargs = {}
+    kwargs = {"aggregate": None}
 
     expected_columns = pd.Index(["m1", "m2"], name="Estimator")
     expected_index = pd.MultiIndex.from_tuples(
@@ -96,7 +71,7 @@ def case_different_split_numbers():
 def case_flat_index_different_split_numbers():
     report, kwargs, expected_index, expected_columns = case_different_split_numbers()
 
-    kwargs = {"flat_index": True}
+    kwargs = {"aggregate": None, "flat_index": True}
 
     expected_columns = pd.Index(["m1", "m2"], name="Estimator")
     expected_index = pd.Index(
@@ -150,7 +125,7 @@ def case_flat_index_different_split_numbers():
 def case_aggregate_different_split_numbers():
     report, _, _, _ = case_different_split_numbers()
 
-    kwargs = {"aggregate": ("mean", "std")}
+    kwargs = {}
 
     expected_index = pd.MultiIndex.from_tuples(
         [
