@@ -6,7 +6,7 @@ from sklearn.dummy import DummyClassifier
 from skore import CrossValidationComparisonReport, CrossValidationReport
 
 
-def comparison_report():
+def comparison_report_classification():
     X, y = make_classification(random_state=42)
 
     report = CrossValidationComparisonReport(
@@ -71,7 +71,7 @@ def case_different_split_numbers():
         names=["Metric", "Label / Average", "Split"],
     )
 
-    return comparison_report(), kwargs, expected_index, expected_columns
+    return comparison_report_classification(), kwargs, expected_index, expected_columns
 
 
 def case_flat_index_different_split_numbers():
