@@ -388,25 +388,32 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         # - what if time_metric = "fit", and data_source != "train"?
 
         # Question
-        # should this become an accessor method, e.g. `plots`,
-        # the equivalent to `metrics`?
+        # - should this become an accessor method, e.g. `plots`,
+        #      the equivalent to `metrics`?
+        # - how to deal with perf metric? should it be consistent with
+        #     the metric name or the column name in metrics report?
 
         # TODO
         # - add example
         # - add test
         # - add kwargs
 
+        if time_metric == "fit":
+            x_label = "Fit time"
+        elif time_metric == "predict":
+            x_label = "Predict time"
+
         scatter_data = self.metrics.report_metrics().T.reset_index()
         scatter_data.plot(
             kind="scatter",
-            x="Fit time",
+            x=x_label,
             y="Brier score",
             title="Performance vs Time (s)",
         )
 
         # Add labels to the points with a small offset
         text = scatter_data["Estimator"]
-        x = scatter_data["Fit time"]
+        x = scatter_data[x_label]
         y = scatter_data["Brier score"]
         for label, x_coord, y_coord in zip(text, x, y):
             plt.annotate(
