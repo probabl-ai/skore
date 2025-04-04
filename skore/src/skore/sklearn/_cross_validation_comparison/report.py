@@ -114,12 +114,16 @@ class CrossValidationComparisonReport(_BaseReport, DirNamesMixin):
                 f"Expected all estimators to have the same ML usecase; got {ml_tasks}"
             )
 
-        if report_names is None:
-            self.report_names_ = [report.estimator_name_ for report in reports]
-        else:
-            self.report_names_ = report_names
-
         self.reports_ = reports
+
+        if report_names is not None:
+            self.report_names_ = report_names
+        else:
+            self.report_names_ = (
+                CrossValidationComparisonReport._deduplicate_report_names(
+                    [report.estimator_name_ for report in reports]
+                )
+            )
 
         # used to know if a parent launches a progress bar manager
         self._progress_info: Optional[dict[str, Any]] = None
@@ -133,6 +137,40 @@ class CrossValidationComparisonReport(_BaseReport, DirNamesMixin):
         )
         self._cache: dict[tuple[Any, ...], Any] = {}
         self._ml_task = self.reports_[0]._ml_task
+
+    @staticmethod
+    def _deduplicate_report_names(report_names_: list[str]) -> list[str]:
+        """De-duplicate report names that appear several times.
+
+        Leave the other report names alone.
+
+        Examples
+        --------
+        >>> from skore import CrossValidationComparisonReport as CVCReport
+        >>> CVCReport._deduplicate_report_names(['a', 'b'])
+        ['a', 'b']
+        >>> CVCReport._deduplicate_report_names(['a', 'a'])
+        ['a_1', 'a_2']
+        >>> CVCReport._deduplicate_report_names(['a', 'b', 'a'])
+        ['a_1', 'b', 'a_2']
+        >>> CVCReport._deduplicate_report_names(['a', 'b', 'a', 'b'])
+        ['a_1', 'b_1', 'a_2', 'b_2']
+        >>> CVCReport._deduplicate_report_names([])
+        []
+        >>> CVCReport._deduplicate_report_names(['a'])
+        ['a']
+        """
+        result = report_names_.copy()
+        for report_name in report_names_:
+            indexes_of_report_names = [
+                index for index, name in enumerate(report_names_) if name == report_name
+            ]
+            if len(indexes_of_report_names) == 1:
+                # report name appears only once
+                continue
+            for n, index in enumerate(indexes_of_report_names, start=1):
+                result[index] = f"{report_name}_{n}"
+        return result
 
     def clear_cache(self) -> None:
         """Clear the cache.
