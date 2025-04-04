@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import itertools
+from numbers import Number
 from typing import TYPE_CHECKING, Any
 
 from joblib import hash as joblib_hash
@@ -53,6 +54,25 @@ class SkoreEstimatorReportItem(PickleItem):
     def __metadata__(self) -> dict[str, float]:
         report = self.__raw__
         estimator = report.estimator_
+        metrics = []
+
+        for metric_name, source in itertools.product(METRICS, ("test", "train")):
+            if not hasattr(report.metrics, metric_name):
+                continue
+
+            value = getattr(report.metrics, metric_name)(data_source=source)
+
+            if isinstance(value, Number):
+                # Ignore list[value] (multi-output)
+                # Ignore {label: value} (multi-class)
+                metrics.append(
+                    {
+                        "name": metric_name,
+                        "value": value,
+                        "data_source": source,
+                        "greater_is_better": None,  # how to get efficiently?
+                    }
+                )
 
         return {
             "estimator_class_name": estimator.__class__.__name__,
@@ -63,16 +83,7 @@ class SkoreEstimatorReportItem(PickleItem):
                 (report.X_train, report.y_train, report.X_test, report.y_test)
             ),
             "ml_task": report.ml_task,  # modify hub's allowed values
-            "metrics": [
-                {
-                    "name": metric_name,
-                    "value": getattr(report.metrics, metric_name)(data_source=source),
-                    "data_source": source,
-                    "greater_is_better": None,  # how to get efficiently?
-                }
-                for metric_name, source in itertools.product(METRICS, ("test", "train"))
-                if hasattr(report.metrics, metric_name)
-            ],
+            "metrics": metrics,
         }
 
     @property
