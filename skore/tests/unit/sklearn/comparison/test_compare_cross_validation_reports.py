@@ -1,6 +1,6 @@
 import pandas as pd
 import pytest
-from pandas.testing import assert_index_equal
+from pandas.testing import assert_frame_equal, assert_index_equal
 from sklearn.datasets import make_classification, make_regression
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from skore import CrossValidationComparisonReport, CrossValidationReport
@@ -185,6 +185,38 @@ def case_accuracy():
     return report, kwargs, expected_index, expected_columns
 
 
+def case_favorability():
+    report, _, _, _ = case_different_split_numbers()
+
+    kwargs = {"indicator_favorability": True}
+
+    expected_index = pd.MultiIndex.from_tuples(
+        [
+            ("Precision", 0, "DummyClassifier_1"),
+            ("Precision", 1, "DummyClassifier_1"),
+            ("Recall", 0, "DummyClassifier_1"),
+            ("Recall", 1, "DummyClassifier_1"),
+            ("ROC AUC", "", "DummyClassifier_1"),
+            ("Brier score", "", "DummyClassifier_1"),
+            ("Fit time", "", "DummyClassifier_1"),
+            ("Predict time", "", "DummyClassifier_1"),
+            ("Precision", 0, "DummyClassifier_2"),
+            ("Precision", 1, "DummyClassifier_2"),
+            ("Recall", 0, "DummyClassifier_2"),
+            ("Recall", 1, "DummyClassifier_2"),
+            ("ROC AUC", "", "DummyClassifier_2"),
+            ("Brier score", "", "DummyClassifier_2"),
+            ("Fit time", "", "DummyClassifier_2"),
+            ("Predict time", "", "DummyClassifier_2"),
+        ],
+        names=["Metric", "Label / Average", "Estimator"],
+    )
+
+    expected_columns = pd.Index(["mean", "std", "Favorability"])
+
+    return report, kwargs, expected_index, expected_columns
+
+
 def comparison_report_regression():
     X, y = make_regression(random_state=42)
 
@@ -226,6 +258,7 @@ def case_regression():
         case_flat_index_different_split_numbers,
         case_aggregate_different_split_numbers,
         case_accuracy,
+        case_favorability,
         case_regression,
     ],
 )
