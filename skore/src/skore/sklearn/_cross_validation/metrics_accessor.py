@@ -1,4 +1,3 @@
-from collections.abc import Sequence
 from typing import Any, Callable, Literal, Optional, Union, cast
 
 import joblib
@@ -17,6 +16,7 @@ from skore.sklearn._plot import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
+from skore.sklearn.types import Aggregate
 from skore.utils._accessor import _check_estimator_report_has_method
 from skore.utils._fixes import _validate_joblib_parallel_params
 from skore.utils._index import flatten_multi_index
@@ -24,7 +24,6 @@ from skore.utils._parallel import Parallel, delayed
 from skore.utils._progress_bar import progress_decorator
 
 DataSource = Literal["test", "train"]
-Aggregate = Union[Literal["mean", "std"], Sequence[Literal["mean", "std"]]]
 
 
 class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
