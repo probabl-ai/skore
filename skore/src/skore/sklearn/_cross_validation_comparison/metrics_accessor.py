@@ -380,6 +380,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
     def timings(
         self,
+        *,
+        data_source: DataSource = "test",
         aggregate: Optional[Aggregate] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Get all measured processing times related to the estimator.
@@ -390,6 +392,12 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         Parameters
         ----------
+        data_source : {"test", "train"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+
         aggregate : {"mean", "std"} or list of such str, default=None
             Function to aggregate the timings across the cross-validation splits.
 
@@ -413,24 +421,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> comparison_report.cache_predictions(response_methods=["predict"])
         >>> comparison_report.metrics.timings()
         """
-        results = [
-            report.metrics.timings(aggregate=None) for report in self._parent.reports_
-        ]
-
-        # Put dataframes in the right shape
-        for i, result in enumerate(results):
-            result.index.name = "Metric"
-            result.columns = pd.MultiIndex.from_product(
-                [[self._parent.report_names_[i]], result.columns]
-            )
-
-        timings = self._combine_cross_validation_results(
-            results,
-            self._parent.report_names_,
-            indicator_favorability=False,
+        return self.report_metrics(
+            scoring=["fit_time", "predict_time"],
+            data_source=data_source,
             aggregate=aggregate,
         )
-        return timings
 
     @available_if(
         _check_supported_ml_task(
