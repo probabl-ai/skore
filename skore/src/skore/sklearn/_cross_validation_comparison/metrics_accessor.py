@@ -384,7 +384,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source: DataSource = "test",
         aggregate: Optional[Aggregate] = ("mean", "std"),
     ) -> pd.DataFrame:
-        """Get all measured processing times related to the estimator.
+        """Get all measured processing times.
 
         The index of the returned dataframe is the name of the processing time. When
         the estimators were not used to predict, no timings regarding the prediction
