@@ -128,29 +128,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     scoring=["precision", "recall"],
         ...     pos_label=1,
         ... )
-                             mean  std
-        Metric    Estimator
-        Precision m1          ...  ...
-        Recall    m1          ...  ...
-        Precision m2          ...  ...
-        Recall    m2          ...  ...
         >>> comparison_report.metrics.report_metrics(
         ...     scoring=["precision", "recall"],
         ...     pos_label=1,
         ...     aggregate=None,
         ... )
-        Estimator            m1   m2
-        Metric    Split
-        Precision Split #0  ...  ...
-                  Split #1  ...  ...
-                  Split #2  ...  ...
-                  Split #3  ...  ...
-                  Split #4  ...  ...
-        Recall    Split #0  ...  ...
-                  Split #1  ...  ...
-                  Split #2  ...  ...
-                  Split #3  ...  ...
-                  Split #4  ...  ...
         """
         results = self._compute_metric_scores(
             report_metric_name="report_metrics",
@@ -397,14 +379,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> comparison_report = CrossValidationComparisonReport([report_1, report_2])
         >>> comparison_report.cache_predictions(response_methods=["predict"])
         >>> comparison_report.metrics.timings()
-                                                 mean       std
-        Metric                    Estimator
-        Fit time                  m1              ...       ...
-        Predict time test         m1              ...       ...
-        Predict time train        m1              ...       ...
-        Fit time                  m2              ...       ...
-        Predict time test         m2              ...       ...
-        Predict time train        m2              ...       ...
         """
         results = [
             report.metrics.timings(aggregate=None) for report in self._parent.reports_
@@ -463,10 +437,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> report_2 = CrossValidationReport(estimator_2, X, y)
         >>> comparison_report = CrossValidationComparisonReport([report_1, report_2])
         >>> comparison_report.metrics.accuracy()
-                                mean   std
-        Metric       Estimator
-        Accuracy     m1          ...   ...
-                     m2          ...   ...
         """
         return self.report_metrics(
             scoring=["accuracy"],
@@ -549,12 +519,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> report_2 = CrossValidationReport(estimator_2, X, y)
         >>> comparison_report = CrossValidationComparisonReport([report_1, report_2])
         >>> comparison_report.metrics.precision()
-                                                 mean       std
-        Metric    Label / Average Estimator
-        Precision 0               m1              ...       ...
-                  1               m1              ...       ...
-                  0               m2              ...       ...
-                  1               m2              ...       ...
         """
         return self.report_metrics(
             scoring=["precision"],
@@ -640,12 +604,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> report_2 = CrossValidationReport(estimator_2, X, y)
         >>> comparison_report = CrossValidationComparisonReport([report_1, report_2])
         >>> comparison_report.metrics.recall()
-                                              mean       std
-        Metric Label / Average Estimator
-        Recall 0               m1              ...       ...
-               1               m1              ...       ...
-               0               m2              ...       ...
-               1               m2              ...       ...
         """
         return self.report_metrics(
             scoring=["recall"],
@@ -696,10 +654,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> report_2 = CrossValidationReport(estimator_2, X, y)
         >>> comparison_report = CrossValidationComparisonReport([report_1, report_2])
         >>> comparison_report.metrics.brier_score()
-                                mean   std
-        Metric       Estimator
-        Brier score  m1          ...   ...
-                     m2          ...   ...
         """
         return self.report_metrics(
             scoring=["brier_score"],
@@ -788,10 +742,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> report_2 = CrossValidationReport(estimator_2, X, y)
         >>> comparison_report = CrossValidationComparisonReport([report_1, report_2])
         >>> comparison_report.metrics.roc_auc()
-                                mean   std
-        Metric       Estimator
-        ROC AUC      m1          ...   ...
-                     m2          ...   ...
         """
         return self.report_metrics(
             scoring=["roc_auc"],
@@ -843,10 +793,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> report_2 = CrossValidationReport(estimator_2, X, y)
         >>> comparison_report = CrossValidationComparisonReport([report_1, report_2])
         >>> comparison_report.metrics.log_loss()
-                                mean   std
-        Metric       Estimator
-        Log loss     m1          ...   ...
-                     m2          ...   ...
         """
         return self.report_metrics(
             scoring=["log_loss"],
@@ -908,10 +854,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> report_2 = CrossValidationReport(estimator_2, X, y)
         >>> comparison_report = CrossValidationComparisonReport([report_1, report_2])
         >>> comparison_report.metrics.r2()
-                          mean   std
-        Metric Estimator
-        R²     m1          ...   ...
-               m2          ...   ...
         """
         return self.report_metrics(
             scoring=["r2"],
@@ -974,10 +916,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> report_2 = CrossValidationReport(estimator_2, X, y)
         >>> comparison_report = CrossValidationComparisonReport([report_1, report_2])
         >>> comparison_report.metrics.rmse()
-                          mean   std
-        Metric Estimator
-        RMSE   m1          ...   ...
-               m2          ...   ...
         """
         return self.report_metrics(
             scoring=["rmse"],
@@ -1058,10 +996,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     response_method="predict",
         ...     metric_name="MAE",
         ... )
-                          mean   std
-        Metric Estimator
-        MAE    m1          ...   ...
-               m2          ...   ...
         """
         # create a scorer with `greater_is_better=True` to not alter the output of
         # `metric_function`
