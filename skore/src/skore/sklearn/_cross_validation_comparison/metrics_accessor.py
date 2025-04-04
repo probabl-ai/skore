@@ -154,6 +154,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     def _combine_cross_validation_results(
         results: list[pd.DataFrame],
         estimator_names: list[str],
+        indicator_favorability: bool,
         aggregate: Optional[Aggregate],
     ) -> pd.DataFrame:
         """Combine a list of dataframes.
@@ -175,6 +176,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         estimator_names : list of str of len (len(results))
             The name to give the estimator for each dataframe.
+
+        indicator_favorability : bool
+            Whether to keep the Favorability column.
 
         aggregate : Aggregate
             How to aggregate the resulting dataframe.
@@ -265,6 +269,18 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
             return result_df
 
+        results = results.copy()
+
+        # Pop the favorability column if it exists, to:
+        # - not use it in the aggregate operation
+        # - later to only report a single column and not by split columns
+        if indicator_favorability:
+            favorability = results[0]["Favorability"]
+            for result in results:
+                result.pop("Favorability")
+        else:
+            favorability = None
+
         df_model_name_in_index = pd.concat(
             [
                 add_model_name_to_index(df, estimator_name)
@@ -277,9 +293,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 aggregate = [aggregate]
 
             df = df_model_name_in_index.aggregate(func=aggregate, axis=1)
-            return df
+        else:
+            df = reshape_results(df_model_name_in_index)
 
-        df = reshape_results(df_model_name_in_index)
+        if favorability is not None:
+            df["Favorability"] = favorability
 
         return df
 
@@ -349,19 +367,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                     progress.update(main_task, advance=1, refresh=True)
 
             results = _MetricsAccessor._combine_cross_validation_results(
-                individual_results, self._parent.report_names_, aggregate=aggregate
+                individual_results,
+                self._parent.report_names_,
+                indicator_favorability=metric_kwargs.get(
+                    "indicator_favorability", False
+                ),
+                aggregate=aggregate,
             )
-
-            # Pop the favorability column if it exists, to:
-            # - not use it in the aggregate operation
-            # - later to only report a single column and not by split columns
-            if metric_kwargs.get("indicator_favorability", False):
-                favorability = results.pop("Favorability").iloc[:, 0]
-            else:
-                favorability = None
-
-            if favorability is not None:
-                results["Favorability"] = favorability
 
             self._parent._cache[cache_key] = results
         return results
@@ -413,7 +425,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             )
 
         timings = self._combine_cross_validation_results(
-            results, self._parent.report_names_, aggregate=aggregate
+            results,
+            self._parent.report_names_,
+            indicator_favorability=False,
+            aggregate=aggregate,
         )
         return timings
 
