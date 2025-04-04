@@ -201,15 +201,10 @@ comparator.metrics.report_metrics(pos_label=1)
 
 # %%
 # We can highlight the performance metric gain against timings
-comparator.metrics.report_metrics().loc[
-    ["Fit time", "Brier score"]
-].T.reset_index().plot(kind="scatter", x="Fit time", y="Brier score")
-plt.tight_layout()
+comparator.plot_perf_against_time(perf_metric="Brier score")
 
 # %%
-scatter_data = (
-    comparator.metrics.report_metrics().loc[["Fit time", "Brier score"]].T.reset_index()
-)
+scatter_data = comparator.metrics.report_metrics().T.reset_index()
 scatter_data.plot(kind="scatter", x="Fit time", y="Brier score")
 
 # Add labels to the points with a small offset
