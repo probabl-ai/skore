@@ -1,4 +1,4 @@
-"""Tests of metrics `CrossValidationComparisonReport.metrics`."""
+"""Tests of metrics available in `CrossValidationComparisonReport.metrics`."""
 
 import pandas as pd
 import pytest
