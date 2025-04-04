@@ -71,6 +71,7 @@ class SkoreEstimatorReportItem(PickleItem):
                         "value": value,
                         "data_source": source,
                         "greater_is_better": None,  # how to get efficiently?
+                        "position": None,  # int: to plot, None: to ignore
                     }
                 )
 
