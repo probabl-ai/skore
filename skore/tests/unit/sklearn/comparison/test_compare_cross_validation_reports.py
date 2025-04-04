@@ -1,8 +1,8 @@
 import pandas as pd
 import pytest
 from pandas.testing import assert_index_equal
-from sklearn.datasets import make_classification
-from sklearn.dummy import DummyClassifier
+from sklearn.datasets import make_classification, make_regression
+from sklearn.dummy import DummyClassifier, DummyRegressor
 from skore import CrossValidationComparisonReport, CrossValidationReport
 
 
@@ -162,12 +162,47 @@ def case_aggregate_different_split_numbers():
     return report, kwargs, expected_index, expected_columns
 
 
+def comparison_report_regression():
+    X, y = make_regression(random_state=42)
+
+    report = CrossValidationComparisonReport(
+        [
+            CrossValidationReport(DummyRegressor(), X, y),
+            CrossValidationReport(DummyRegressor(), X, y, cv_splitter=3),
+        ]
+    )
+
+    return report
+
+
+def case_regression():
+    kwargs = {}
+
+    expected_columns = pd.Index(["mean", "std"])
+    expected_index = pd.MultiIndex.from_tuples(
+        [
+            ("R²", "DummyRegressor_1"),
+            ("RMSE", "DummyRegressor_1"),
+            ("Fit time", "DummyRegressor_1"),
+            ("Predict time", "DummyRegressor_1"),
+            ("R²", "DummyRegressor_2"),
+            ("RMSE", "DummyRegressor_2"),
+            ("Fit time", "DummyRegressor_2"),
+            ("Predict time", "DummyRegressor_2"),
+        ],
+        names=["Metric", "Estimator"],
+    )
+
+    return comparison_report_regression(), kwargs, expected_index, expected_columns
+
+
 @pytest.mark.parametrize(
     "case",
     [
         case_different_split_numbers,
         case_flat_index_different_split_numbers,
         case_aggregate_different_split_numbers,
+        case_regression,
     ],
 )
 def test_report_metrics(case):
