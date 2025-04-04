@@ -162,6 +162,29 @@ def case_aggregate_different_split_numbers():
     return report, kwargs, expected_index, expected_columns
 
 
+def case_accuracy():
+    report, _, _, _ = case_different_split_numbers()
+
+    kwargs = {"scoring": ["accuracy"], "aggregate": None}
+
+    expected_index = pd.MultiIndex.from_tuples(
+        [
+            ("Accuracy", "Split #0"),
+            ("Accuracy", "Split #1"),
+            ("Accuracy", "Split #2"),
+            ("Accuracy", "Split #3"),
+            ("Accuracy", "Split #4"),
+        ],
+        names=("Metric", "Split"),
+    )
+
+    expected_columns = pd.Index(
+        ["DummyClassifier_1", "DummyClassifier_2"], name="Estimator"
+    )
+
+    return report, kwargs, expected_index, expected_columns
+
+
 def comparison_report_regression():
     X, y = make_regression(random_state=42)
 
@@ -202,6 +225,7 @@ def case_regression():
         case_different_split_numbers,
         case_flat_index_different_split_numbers,
         case_aggregate_different_split_numbers,
+        case_accuracy,
         case_regression,
     ],
 )
