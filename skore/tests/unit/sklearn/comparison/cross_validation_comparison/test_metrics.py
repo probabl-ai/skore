@@ -5,6 +5,7 @@ import pytest
 from pandas.testing import assert_index_equal
 from sklearn.datasets import make_classification, make_regression
 from sklearn.dummy import DummyClassifier, DummyRegressor
+from sklearn.metrics import accuracy_score
 from skore import CrossValidationComparisonReport, CrossValidationReport
 
 expected_columns = pd.Index(["mean", "std"])
@@ -203,6 +204,18 @@ def case_rmse():
 def test_metrics(case):
     report, scoring, expected_index, expected_columns = case()
 
+    result = getattr(report.metrics, scoring)()
+    assert_index_equal(result.index, expected_index)
+    assert_index_equal(result.columns, expected_columns)
+
+
+def test_custom_metric():
+    report, scoring, expected_index, expected_columns = case_accuracy()
+
+    result = report.metrics.custom_metric(
+        metric_function=accuracy_score,
+        response_method="predict",
+    )
     result = getattr(report.metrics, scoring)()
     assert_index_equal(result.index, expected_index)
     assert_index_equal(result.columns, expected_columns)
