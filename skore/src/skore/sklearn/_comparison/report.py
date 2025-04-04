@@ -387,6 +387,10 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         # - what if a metrics need pos_label?
         # - what if time_metric = "fit", and data_source != "train"?
 
+        # Question
+        # should this become an accessor method, e.g. `plots`,
+        # the equivalent to `metrics`?
+
         # TODO
         # - add example
         # - add test
