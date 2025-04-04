@@ -235,3 +235,12 @@ def test_report_metrics(case):
     result = report.metrics.report_metrics(**kwargs)
     assert_index_equal(result.index, expected_index)
     assert_index_equal(result.columns, expected_columns)
+
+
+def test_cache():
+    report, _, expected_index, expected_columns = case_regression()
+
+    result = report.metrics.report_metrics()
+    cached_result = report.metrics.report_metrics()
+
+    assert_frame_equal(result, cached_result)
