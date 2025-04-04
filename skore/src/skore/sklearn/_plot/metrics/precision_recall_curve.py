@@ -21,9 +21,7 @@ from skore.sklearn._plot.utils import (
     _validate_style_kwargs,
     sample_mpl_colormap,
 )
-from skore.sklearn.types import MLTask
-
-PositiveLabel = Union[int, float, bool, str]
+from skore.sklearn.types import MLTask, PositiveLabel
 
 
 class PrecisionRecallCurveDisplay(

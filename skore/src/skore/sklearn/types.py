@@ -17,6 +17,8 @@ MLTask = Literal[
     "unknown",
 ]
 
+PositiveLabel = Union[int, float, bool, str]
+
 
 class SKLearnScorer(Protocol):
     """Protocol defining the interface of scikit-learn's _BaseScorer."""
