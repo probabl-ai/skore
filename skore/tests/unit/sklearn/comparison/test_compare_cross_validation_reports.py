@@ -7,7 +7,7 @@ from skore import CrossValidationComparisonReport, CrossValidationReport
 
 
 def comparison_report_classification():
-    X, y = make_classification(random_state=42)
+    X, y = make_classification(class_sep=0.1, random_state=42)
 
     report = CrossValidationComparisonReport(
         [
