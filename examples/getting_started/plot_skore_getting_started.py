@@ -200,6 +200,35 @@ comparator.help()
 comparator.metrics.report_metrics(pos_label=1)
 
 # %%
+# We can highlight the performance metric gain against timings
+comparator.metrics.report_metrics().loc[
+    ["Fit time", "Brier score"]
+].T.reset_index().plot(kind="scatter", x="Fit time", y="Brier score")
+plt.tight_layout()
+
+# %%
+scatter_data = (
+    comparator.metrics.report_metrics().loc[["Fit time", "Brier score"]].T.reset_index()
+)
+scatter_data.plot(kind="scatter", x="Fit time", y="Brier score")
+
+# Add labels to the points with a small offset
+text = scatter_data["Estimator"]
+x = scatter_data["Fit time"]
+y = scatter_data["Brier score"]
+for label, x_coord, y_coord in zip(text, x, y):
+    plt.annotate(
+        label,
+        (x_coord, y_coord),
+        textcoords="offset points",
+        xytext=(10, 10),
+        bbox=dict(
+            boxstyle="round,pad=0.3", edgecolor="gray", facecolor="white", alpha=0.7
+        ),
+    )
+plt.tight_layout()
+
+# %%
 # Thus, we easily have the result of our benchmark for several recommended metrics.
 
 # %%
