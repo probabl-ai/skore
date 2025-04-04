@@ -279,3 +279,20 @@ def test_cache():
     cached_result = report.metrics.report_metrics()
 
     assert_frame_equal(result, cached_result)
+
+
+def test_init_with_report_names(cv_report_classification):
+    """If the estimators are passed as a dict,
+    then the estimator names are the dict keys."""
+
+    comp = CrossValidationComparisonReport(
+        {
+            "r1": cv_report_classification,
+            "r2": cv_report_classification,
+        }
+    )
+
+    pd.testing.assert_index_equal(
+        comp.metrics.report_metrics(aggregate=None).columns,
+        pd.Index(["r1", "r2"], name="Estimator"),
+    )
