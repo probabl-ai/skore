@@ -22,7 +22,9 @@ def comparison_report():
 def case_different_split_numbers():
     kwargs = {"aggregate": None}
 
-    expected_columns = pd.Index(["m1", "m2"], name="Estimator")
+    expected_columns = pd.Index(
+        ["DummyClassifier_1", "DummyClassifier_2"], name="Estimator"
+    )
     expected_index = pd.MultiIndex.from_tuples(
         [
             ("Precision", 0, "Split #0"),
@@ -77,7 +79,9 @@ def case_flat_index_different_split_numbers():
 
     kwargs = {"aggregate": None, "flat_index": True}
 
-    expected_columns = pd.Index(["m1", "m2"], name="Estimator")
+    expected_columns = pd.Index(
+        ["DummyClassifier_1", "DummyClassifier_2"], name="Estimator"
+    )
     expected_index = pd.Index(
         [
             "precision_0_split_0",
@@ -133,22 +137,22 @@ def case_aggregate_different_split_numbers():
 
     expected_index = pd.MultiIndex.from_tuples(
         [
-            ("Precision", 0, "m1"),
-            ("Precision", 1, "m1"),
-            ("Recall", 0, "m1"),
-            ("Recall", 1, "m1"),
-            ("ROC AUC", "", "m1"),
-            ("Brier score", "", "m1"),
-            ("Fit time", "", "m1"),
-            ("Predict time", "", "m1"),
-            ("Precision", 0, "m2"),
-            ("Precision", 1, "m2"),
-            ("Recall", 0, "m2"),
-            ("Recall", 1, "m2"),
-            ("ROC AUC", "", "m2"),
-            ("Brier score", "", "m2"),
-            ("Fit time", "", "m2"),
-            ("Predict time", "", "m2"),
+            ("Precision", 0, "DummyClassifier_1"),
+            ("Precision", 1, "DummyClassifier_1"),
+            ("Recall", 0, "DummyClassifier_1"),
+            ("Recall", 1, "DummyClassifier_1"),
+            ("ROC AUC", "", "DummyClassifier_1"),
+            ("Brier score", "", "DummyClassifier_1"),
+            ("Fit time", "", "DummyClassifier_1"),
+            ("Predict time", "", "DummyClassifier_1"),
+            ("Precision", 0, "DummyClassifier_2"),
+            ("Precision", 1, "DummyClassifier_2"),
+            ("Recall", 0, "DummyClassifier_2"),
+            ("Recall", 1, "DummyClassifier_2"),
+            ("ROC AUC", "", "DummyClassifier_2"),
+            ("Brier score", "", "DummyClassifier_2"),
+            ("Fit time", "", "DummyClassifier_2"),
+            ("Predict time", "", "DummyClassifier_2"),
         ],
         names=["Metric", "Label / Average", "Estimator"],
     )

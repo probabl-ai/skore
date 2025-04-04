@@ -150,20 +150,35 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 results.index = flatten_multi_index(results.index)
         return results
 
+    @staticmethod
     def _combine_cross_validation_results(
-        self,
         results: list[pd.DataFrame],
-        aggregate: Optional[
-            Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
-        ],
+        estimator_names: list[str],
+        aggregate: Optional[Aggregate],
     ) -> pd.DataFrame:
-        # Ensure all tables have the same metrics
+        """Combine a list of dataframes.
 
-        # Ensure all tables have a different model name
-        # If they're all different, then one can use
-        # model_name = results[0].columns[0][0]
+        Parameters
+        ----------
+        results : pd.DataFrame
+            The dataframes to combine.
+            They are assumed to originate from a `CrossValidationReport.metrics`
+            computation. In particular, there are several assumptions made:
 
-        # Don't require that all reports have the same number of splits
+            - every dataframe has the form:
+                - index: Index "Metric", or MultiIndex ["Metric", "Label / Average"]
+                - columns: MultiIndex with levels ["Estimator", "Splits"] (can be
+                  unnamed)
+            - all dataframes have the same metrics
+
+            The dataframes are not required to have the same number of columns (splits).
+
+        estimator_names : list of str of len (len(results))
+            The name to give the estimator for each dataframe.
+
+        aggregate : Aggregate
+            How to aggregate the resulting dataframe.
+        """
 
         def add_model_name_to_index(df: pd.DataFrame, model_name: str) -> pd.DataFrame:
             """Move the model name from the column index to the table index."""
@@ -251,7 +266,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             return result_df
 
         df_model_name_in_index = pd.concat(
-            [add_model_name_to_index(df, f"m{i}") for i, df in enumerate(results, 1)]
+            [
+                add_model_name_to_index(df, estimator_name)
+                for df, estimator_name in zip(results, estimator_names)
+            ]
         )
 
         if aggregate:
@@ -330,8 +348,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                     individual_results.append(result)
                     progress.update(main_task, advance=1, refresh=True)
 
-            results = self._combine_cross_validation_results(
-                individual_results, aggregate=aggregate
+            results = _MetricsAccessor._combine_cross_validation_results(
+                individual_results, self._parent.report_names_, aggregate=aggregate
             )
 
             # Pop the favorability column if it exists, to:
@@ -394,7 +412,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 [[self._parent.report_names_[i]], result.columns]
             )
 
-        timings = self._combine_cross_validation_results(results, aggregate=aggregate)
+        timings = self._combine_cross_validation_results(
+            results, self._parent.report_names_, aggregate=aggregate
+        )
         return timings
 
     @available_if(
