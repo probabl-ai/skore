@@ -1,3 +1,5 @@
+"""Tests of `CrossValidationComparisonReport.metrics.report_metrics`."""
+
 import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal, assert_index_equal
