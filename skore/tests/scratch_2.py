@@ -124,7 +124,7 @@ class ParallelCoordinatePlotWidget:
                 value=default_value,
                 description=metric,
                 disabled=False,
-                layout=widgets.Layout(width="auto"),
+                layout=widgets.Layout(width="auto", margin="0px 20px 0px 0px"),
             )
 
         # Create regression metric checkboxes
@@ -136,7 +136,7 @@ class ParallelCoordinatePlotWidget:
                 value=default_value,
                 description=metric,
                 disabled=False,
-                layout=widgets.Layout(width="auto"),
+                layout=widgets.Layout(width="auto", margin="0px 20px 0px 0px"),
             )
 
         # Create color metric dropdowns
@@ -425,9 +425,7 @@ class ParallelCoordinatePlotWidget:
                 self.color_metric_dropdown["classification"],
                 self.color_metric_dropdown["regression"],
             ],
-            layout=widgets.Layout(
-                width=controls_width, justify_content="space-between"
-            ),
+            layout=widgets.Layout(width=controls_width),
         )
 
         # Reorganize classification metrics to be in one row and span the width
@@ -439,9 +437,7 @@ class ParallelCoordinatePlotWidget:
                 self.metric_checkboxes["classification"]["macro ROC AUC"],
                 self.metric_checkboxes["classification"]["Log Loss"],
             ],
-            layout=widgets.Layout(
-                width=controls_width, justify_content="space-between"
-            ),
+            layout=widgets.Layout(width=controls_width),
         )
 
         self.classification_metrics_box = clf_metrics_container
