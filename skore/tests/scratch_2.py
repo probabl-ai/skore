@@ -368,14 +368,12 @@ class ParallelCoordinatePlotWidget:
             )
 
             # Set consistent width and layout
-            plot_width = 900  # Width in pixels
+            plot_width = 800  # Width in pixels
 
             fig.update_layout(
-                title=f"Parallel Coordinates Plot - {dataset_name} ({task})",
-                title_y=0.97,  # Move title higher
                 height=600,
                 width=plot_width,  # Set fixed width
-                margin=dict(l=150, r=150, t=100, b=30),  # Increased margins
+                margin=dict(l=150, r=150, t=50, b=30),  # Increased margins
             )
 
             # Convert to FigureWidget for interactivity and callbacks
@@ -415,70 +413,164 @@ class ParallelCoordinatePlotWidget:
     def create_layout(self):
         """Create and return the widget layout."""
         # Set consistent width for controls and plot
-        controls_width = "900px"
+        controls_width = "800px"
 
-        # Create controls layout with specific spacing
-        controls_row1 = widgets.HBox(
+        # Create controls layout with specific spacing using GridBox
+        controls_header = widgets.GridBox(
             [
                 self.task_dropdown,
                 self.dataset_dropdown,
                 self.color_metric_dropdown["classification"],
                 self.color_metric_dropdown["regression"],
             ],
-            layout=widgets.Layout(width=controls_width),
+            layout=widgets.Layout(
+                width=controls_width,
+                grid_template_columns="repeat(4, auto)",
+                grid_gap="10px",
+                align_items="center",
+            ),
         )
 
-        # Reorganize classification metrics to be in one row and span the width
-        clf_metrics_container = widgets.HBox(
+        # Labels for the different metric types
+        comp_metrics_label_clf = widgets.Label(
+            value="Computation Metrics: ",
+            layout=widgets.Layout(padding="5px 0px")
+        )
+
+        stat_metrics_label_clf = widgets.Label(
+            value="Statistical Metrics: ",
+            layout=widgets.Layout(padding="5px 0px")
+        )
+
+        comp_metrics_label_reg = widgets.Label(
+            value="Computation Metrics: ",
+            layout=widgets.Layout(padding="5px 0px")
+        )
+
+        stat_metrics_label_reg = widgets.Label(
+            value="Statistical Metrics: ",
+            layout=widgets.Layout(padding="5px 0px")
+        )
+
+        # Classification metrics - Using GridBox for better alignment
+        # First row: Computation metrics
+        clf_computation_row = widgets.GridBox(
             [
+                comp_metrics_label_clf,
                 self.metric_checkboxes["classification"]["Fit Time"],
                 self.metric_checkboxes["classification"]["Predict Time"],
+            ],
+            layout=widgets.Layout(
+                width=controls_width,
+                grid_template_columns="200px auto auto",
+                align_items="center",
+            ),
+        )
+
+        # Second row: Statistical metrics
+        clf_statistical_row = widgets.GridBox(
+            [
+                stat_metrics_label_clf,
                 self.metric_checkboxes["classification"]["mean Average Precision"],
                 self.metric_checkboxes["classification"]["macro ROC AUC"],
                 self.metric_checkboxes["classification"]["Log Loss"],
             ],
-            layout=widgets.Layout(width=controls_width),
+            layout=widgets.Layout(
+                width=controls_width,
+                grid_template_columns="200px auto auto auto",
+                align_items="center",
+            ),
         )
 
-        self.classification_metrics_box = clf_metrics_container
+        # Combined classification metrics container
+        self.classification_metrics_box = widgets.GridBox(
+            [clf_computation_row, clf_statistical_row],
+            layout=widgets.Layout(
+                width=controls_width,
+                grid_template_rows="auto auto",
+                grid_gap="5px",
+                align_items="center",
+            ),
+        )
 
-        # Reorganize regression metrics to be in one row and span the width
-        reg_metrics_container = widgets.HBox(
+        # Regression metrics - Using GridBox for better alignment
+        # First row: Computation metrics
+        reg_computation_row = widgets.GridBox(
             [
+                comp_metrics_label_reg,
                 self.metric_checkboxes["regression"]["Fit Time"],
                 self.metric_checkboxes["regression"]["Predict Time"],
+            ],
+            layout=widgets.Layout(
+                width=controls_width,
+                grid_template_columns="200px auto auto",
+                align_items="center",
+            ),
+        )
+
+        # Second row: Statistical metrics
+        reg_statistical_row = widgets.GridBox(
+            [
+                stat_metrics_label_reg,
                 self.metric_checkboxes["regression"]["MedAE"],
                 self.metric_checkboxes["regression"]["RMSE"],
             ],
             layout=widgets.Layout(
-                width=controls_width, justify_content="space-between"
+                width=controls_width,
+                grid_template_columns="200px auto auto",
+                align_items="center",
             ),
         )
 
-        self.regression_metrics_box = reg_metrics_container
+        # Combined regression metrics container
+        self.regression_metrics_box = widgets.GridBox(
+            [reg_computation_row, reg_statistical_row],
+            layout=widgets.Layout(
+                width=controls_width,
+                grid_template_rows="auto auto",
+                grid_gap="5px",
+                align_items="center",
+            ),
+        )
 
-        # Create a container for the metrics with proper left alignment
-        controls_row2 = widgets.HBox(
-            [
-                widgets.VBox(
-                    [self.classification_metrics_box, self.regression_metrics_box]
-                )
-            ],
-            layout=widgets.Layout(width=controls_width),
+        # Create a container for the metrics
+        controls_metrics = widgets.GridBox(
+            [self.classification_metrics_box, self.regression_metrics_box],
+            layout=widgets.Layout(
+                width=controls_width,
+                grid_template_rows="auto auto",
+                grid_gap="10px",
+                align_items="center",
+            ),
         )
 
         # Apply consistent width to entire controls container
-        controls = widgets.VBox(
-            [controls_row1, controls_row2], layout=widgets.Layout(width=controls_width)
+        controls = widgets.GridBox(
+            [controls_header, controls_metrics],
+            layout=widgets.Layout(
+                width=controls_width,
+                grid_template_rows="auto auto",
+                grid_gap="10px",
+                align_items="center",
+                margin="0px 0px 5px 0px",
+            ),
         )
 
-        # Apply consistent width to output container
+        # Apply consistent width to output container and reduce its top margin
         self.output.layout.width = controls_width
+        self.output.layout.margin = "0px"
 
         # Initialize widget visibility
         self._update_task_widgets()
 
-        return widgets.VBox([controls, self.output])
+        # Create a compact main container with minimal spacing
+        return widgets.VBox(
+            [controls, self.output],
+            layout=widgets.Layout(
+                width=controls_width,
+                spacing="0px",
+            )
+        )
 
     def display(self):
         """Display the widgets and initialize the plot."""
