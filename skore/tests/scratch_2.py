@@ -909,3 +909,6 @@ df.query_string_selection()
 df
 
 # %%
+df.iloc[:3].to_frame(filter=False)
+
+# %%
