@@ -301,7 +301,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         return df
 
-    @progress_decorator(description="Compute metric for each split")
+    @progress_decorator(description="Compute metric for each CrossValidationReport")
     def _compute_metric_scores(
         self,
         report_metric_name: str,
