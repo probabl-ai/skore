@@ -12,7 +12,8 @@ def make_classifier():
     return DummyClassifier(strategy="uniform", random_state=0)
 
 
-def comparison_report_classification():
+@pytest.fixture
+def report():
     X, y = make_classification(class_sep=0.1, random_state=42)
 
     report = CrossValidationComparisonReport(
@@ -25,205 +26,8 @@ def comparison_report_classification():
     return report
 
 
-def case_different_split_numbers():
-    kwargs = {"aggregate": None}
-
-    expected_columns = pd.Index(
-        ["DummyClassifier_1", "DummyClassifier_2"], name="Estimator"
-    )
-    expected_index = pd.MultiIndex.from_tuples(
-        [
-            ("Precision", 0, "Split #0"),
-            ("Precision", 0, "Split #1"),
-            ("Precision", 0, "Split #2"),
-            ("Precision", 0, "Split #3"),
-            ("Precision", 0, "Split #4"),
-            ("Precision", 1, "Split #0"),
-            ("Precision", 1, "Split #1"),
-            ("Precision", 1, "Split #2"),
-            ("Precision", 1, "Split #3"),
-            ("Precision", 1, "Split #4"),
-            ("Recall", 0, "Split #0"),
-            ("Recall", 0, "Split #1"),
-            ("Recall", 0, "Split #2"),
-            ("Recall", 0, "Split #3"),
-            ("Recall", 0, "Split #4"),
-            ("Recall", 1, "Split #0"),
-            ("Recall", 1, "Split #1"),
-            ("Recall", 1, "Split #2"),
-            ("Recall", 1, "Split #3"),
-            ("Recall", 1, "Split #4"),
-            ("ROC AUC", "", "Split #0"),
-            ("ROC AUC", "", "Split #1"),
-            ("ROC AUC", "", "Split #2"),
-            ("ROC AUC", "", "Split #3"),
-            ("ROC AUC", "", "Split #4"),
-            ("Brier score", "", "Split #0"),
-            ("Brier score", "", "Split #1"),
-            ("Brier score", "", "Split #2"),
-            ("Brier score", "", "Split #3"),
-            ("Brier score", "", "Split #4"),
-            ("Fit time", "", "Split #0"),
-            ("Fit time", "", "Split #1"),
-            ("Fit time", "", "Split #2"),
-            ("Fit time", "", "Split #3"),
-            ("Fit time", "", "Split #4"),
-            ("Predict time", "", "Split #0"),
-            ("Predict time", "", "Split #1"),
-            ("Predict time", "", "Split #2"),
-            ("Predict time", "", "Split #3"),
-            ("Predict time", "", "Split #4"),
-        ],
-        names=["Metric", "Label / Average", "Split"],
-    )
-
-    return comparison_report_classification(), kwargs, expected_index, expected_columns
-
-
-def case_flat_index_different_split_numbers():
-    report, kwargs, expected_index, expected_columns = case_different_split_numbers()
-
-    kwargs = {"aggregate": None, "flat_index": True}
-
-    expected_columns = pd.Index(
-        ["DummyClassifier_1", "DummyClassifier_2"], name="Estimator"
-    )
-    expected_index = pd.Index(
-        [
-            "precision_0_split_0",
-            "precision_0_split_1",
-            "precision_0_split_2",
-            "precision_0_split_3",
-            "precision_0_split_4",
-            "precision_1_split_0",
-            "precision_1_split_1",
-            "precision_1_split_2",
-            "precision_1_split_3",
-            "precision_1_split_4",
-            "recall_0_split_0",
-            "recall_0_split_1",
-            "recall_0_split_2",
-            "recall_0_split_3",
-            "recall_0_split_4",
-            "recall_1_split_0",
-            "recall_1_split_1",
-            "recall_1_split_2",
-            "recall_1_split_3",
-            "recall_1_split_4",
-            "roc_auc_split_0",
-            "roc_auc_split_1",
-            "roc_auc_split_2",
-            "roc_auc_split_3",
-            "roc_auc_split_4",
-            "brier_score_split_0",
-            "brier_score_split_1",
-            "brier_score_split_2",
-            "brier_score_split_3",
-            "brier_score_split_4",
-            "fit_time_split_0",
-            "fit_time_split_1",
-            "fit_time_split_2",
-            "fit_time_split_3",
-            "fit_time_split_4",
-            "predict_time_split_0",
-            "predict_time_split_1",
-            "predict_time_split_2",
-            "predict_time_split_3",
-            "predict_time_split_4",
-        ]
-    )
-
-    return report, kwargs, expected_index, expected_columns
-
-
-def case_aggregate_different_split_numbers():
-    report, _, _, _ = case_different_split_numbers()
-
-    kwargs = {}
-
-    expected_index = pd.MultiIndex.from_tuples(
-        [
-            ("Precision", 0, "DummyClassifier_1"),
-            ("Precision", 1, "DummyClassifier_1"),
-            ("Recall", 0, "DummyClassifier_1"),
-            ("Recall", 1, "DummyClassifier_1"),
-            ("ROC AUC", "", "DummyClassifier_1"),
-            ("Brier score", "", "DummyClassifier_1"),
-            ("Fit time", "", "DummyClassifier_1"),
-            ("Predict time", "", "DummyClassifier_1"),
-            ("Precision", 0, "DummyClassifier_2"),
-            ("Precision", 1, "DummyClassifier_2"),
-            ("Recall", 0, "DummyClassifier_2"),
-            ("Recall", 1, "DummyClassifier_2"),
-            ("ROC AUC", "", "DummyClassifier_2"),
-            ("Brier score", "", "DummyClassifier_2"),
-            ("Fit time", "", "DummyClassifier_2"),
-            ("Predict time", "", "DummyClassifier_2"),
-        ],
-        names=["Metric", "Label / Average", "Estimator"],
-    )
-
-    expected_columns = pd.Index(["mean", "std"])
-
-    return report, kwargs, expected_index, expected_columns
-
-
-def case_accuracy():
-    report, _, _, _ = case_different_split_numbers()
-
-    kwargs = {"scoring": ["accuracy"], "aggregate": None}
-
-    expected_index = pd.MultiIndex.from_tuples(
-        [
-            ("Accuracy", "Split #0"),
-            ("Accuracy", "Split #1"),
-            ("Accuracy", "Split #2"),
-            ("Accuracy", "Split #3"),
-            ("Accuracy", "Split #4"),
-        ],
-        names=("Metric", "Split"),
-    )
-
-    expected_columns = pd.Index(
-        ["DummyClassifier_1", "DummyClassifier_2"], name="Estimator"
-    )
-
-    return report, kwargs, expected_index, expected_columns
-
-
-def case_favorability():
-    report, _, _, _ = case_different_split_numbers()
-
-    kwargs = {"indicator_favorability": True}
-
-    expected_index = pd.MultiIndex.from_tuples(
-        [
-            ("Precision", 0, "DummyClassifier_1"),
-            ("Precision", 1, "DummyClassifier_1"),
-            ("Recall", 0, "DummyClassifier_1"),
-            ("Recall", 1, "DummyClassifier_1"),
-            ("ROC AUC", "", "DummyClassifier_1"),
-            ("Brier score", "", "DummyClassifier_1"),
-            ("Fit time", "", "DummyClassifier_1"),
-            ("Predict time", "", "DummyClassifier_1"),
-            ("Precision", 0, "DummyClassifier_2"),
-            ("Precision", 1, "DummyClassifier_2"),
-            ("Recall", 0, "DummyClassifier_2"),
-            ("Recall", 1, "DummyClassifier_2"),
-            ("ROC AUC", "", "DummyClassifier_2"),
-            ("Brier score", "", "DummyClassifier_2"),
-            ("Fit time", "", "DummyClassifier_2"),
-            ("Predict time", "", "DummyClassifier_2"),
-        ],
-        names=["Metric", "Label / Average", "Estimator"],
-    )
-
-    expected_columns = pd.Index(["mean", "std", "Favorability"])
-
-    return report, kwargs, expected_index, expected_columns
-
-
-def comparison_report_regression():
+@pytest.fixture
+def report_regression():
     X, y = make_regression(random_state=42)
 
     report = CrossValidationComparisonReport(
@@ -236,49 +40,92 @@ def comparison_report_regression():
     return report
 
 
-def case_regression():
-    kwargs = {}
+def test_different_split_numbers(report):
+    result = report.metrics.report_metrics(aggregate=None)
 
-    expected_columns = pd.Index(["mean", "std"])
-    expected_index = pd.MultiIndex.from_tuples(
-        [
-            ("R²", "DummyRegressor_1"),
-            ("RMSE", "DummyRegressor_1"),
-            ("Fit time", "DummyRegressor_1"),
-            ("Predict time", "DummyRegressor_1"),
-            ("R²", "DummyRegressor_2"),
-            ("RMSE", "DummyRegressor_2"),
-            ("Fit time", "DummyRegressor_2"),
-            ("Predict time", "DummyRegressor_2"),
-        ],
-        names=["Metric", "Estimator"],
+    assert_index_equal(
+        result.columns,
+        pd.Index(["DummyClassifier_1", "DummyClassifier_2"], name="Estimator"),
+    )
+    assert result.index.names == ["Metric", "Label / Average", "Split"]
+    assert len(result) == ((2 * 2) + (4 * 1)) * 5
+
+
+def test_flat_index_different_split_numbers(report):
+    result = report.metrics.report_metrics(
+        aggregate=None,
+        flat_index=True,
     )
 
-    return comparison_report_regression(), kwargs, expected_index, expected_columns
+    assert_index_equal(
+        result.columns,
+        pd.Index(["DummyClassifier_1", "DummyClassifier_2"], name="Estimator"),
+    )
+    assert len(result) == ((2 * 2) + (4 * 1)) * 5
 
 
-@pytest.mark.parametrize(
-    "case",
-    [
-        case_different_split_numbers,
-        case_flat_index_different_split_numbers,
-        case_aggregate_different_split_numbers,
-        case_accuracy,
-        case_favorability,
-        case_regression,
-    ],
-)
-def test_report_metrics(case):
-    report, kwargs, expected_index, expected_columns = case()
+def test_aggregate_different_split_numbers(report):
+    result = report.metrics.report_metrics()
 
-    result = report.metrics.report_metrics(**kwargs)
-    assert_index_equal(result.index, expected_index)
-    assert_index_equal(result.columns, expected_columns)
+    assert_index_equal(result.columns, pd.Index(["mean", "std"]))
+    assert len(result) == ((2 * 2) + (4 * 1)) * 2
 
 
-def test_cache():
-    report, _, expected_index, expected_columns = case_regression()
+def test_accuracy(report):
+    result = report.metrics.report_metrics(
+        scoring=["accuracy"],
+        aggregate=None,
+    )
 
+    assert_index_equal(
+        result.columns,
+        pd.Index(["DummyClassifier_1", "DummyClassifier_2"], name="Estimator"),
+    )
+    assert_index_equal(
+        result.index,
+        pd.MultiIndex.from_tuples(
+            [
+                ("Accuracy", "Split #0"),
+                ("Accuracy", "Split #1"),
+                ("Accuracy", "Split #2"),
+                ("Accuracy", "Split #3"),
+                ("Accuracy", "Split #4"),
+            ],
+            names=("Metric", "Split"),
+        ),
+    )
+
+
+def test_favorability(report):
+    result = report.metrics.report_metrics(indicator_favorability=True)
+
+    assert_index_equal(result.columns, pd.Index(["mean", "std", "Favorability"]))
+    assert len(result) == 16
+
+
+def test_regression(report_regression):
+    result = report_regression.metrics.report_metrics()
+
+    assert_index_equal(result.columns, pd.Index(["mean", "std"]))
+    assert_index_equal(
+        result.index,
+        pd.MultiIndex.from_tuples(
+            [
+                ("R²", "DummyRegressor_1"),
+                ("RMSE", "DummyRegressor_1"),
+                ("Fit time", "DummyRegressor_1"),
+                ("Predict time", "DummyRegressor_1"),
+                ("R²", "DummyRegressor_2"),
+                ("RMSE", "DummyRegressor_2"),
+                ("Fit time", "DummyRegressor_2"),
+                ("Predict time", "DummyRegressor_2"),
+            ],
+            names=["Metric", "Estimator"],
+        ),
+    )
+
+
+def test_cache(report):
     result = report.metrics.report_metrics()
     cached_result = report.metrics.report_metrics()
 
@@ -290,16 +137,11 @@ def test_init_with_report_names():
     then the estimator names are the dict keys."""
 
     X, y = make_classification(class_sep=0.1, random_state=42)
-    report = CrossValidationReport(make_classifier(), X, y)
+    cv_report = CrossValidationReport(make_classifier(), X, y)
 
-    comp = CrossValidationComparisonReport(
-        {
-            "r1": report,
-            "r2": report,
-        }
-    )
+    comp = CrossValidationComparisonReport({"r1": cv_report, "r2": cv_report})
 
-    pd.testing.assert_index_equal(
+    assert_index_equal(
         comp.metrics.report_metrics(aggregate=None).columns,
         pd.Index(["r1", "r2"], name="Estimator"),
     )
