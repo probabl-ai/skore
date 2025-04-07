@@ -16,8 +16,12 @@ def comparison_report_classification():
 
     report = CrossValidationComparisonReport(
         [
-            CrossValidationReport(DummyClassifier(), X, y),
-            CrossValidationReport(DummyClassifier(), X, y, cv_splitter=3),
+            CrossValidationReport(
+                DummyClassifier(strategy="uniform", random_state=0), X, y
+            ),
+            CrossValidationReport(
+                DummyClassifier(strategy="uniform", random_state=0), X, y, cv_splitter=3
+            ),
         ]
     )
 
