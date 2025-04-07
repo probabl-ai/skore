@@ -546,9 +546,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> from sklearn.model_selection import train_test_split
         >>> from skore import CrossValidationComparisonReport, CrossValidationReport
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> estimator_1 = DummyClassifier()
+        >>> estimator_1 = DummyClassifier(strategy="uniform", random_state=0)
         >>> report_1 = CrossValidationReport(estimator_1, X, y)
-        >>> estimator_2 = DummyClassifier(strategy="most_frequent")
+        >>> estimator_2 = DummyClassifier(strategy="uniform", random_state=1)
         >>> report_2 = CrossValidationReport(estimator_2, X, y)
         >>> comparison_report = CrossValidationComparisonReport([report_1, report_2])
         >>> comparison_report.metrics.precision()

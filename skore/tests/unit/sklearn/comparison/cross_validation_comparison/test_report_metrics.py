@@ -8,13 +8,17 @@ from sklearn.dummy import DummyClassifier, DummyRegressor
 from skore import CrossValidationComparisonReport, CrossValidationReport
 
 
+def make_classifier():
+    return DummyClassifier(strategy="uniform", random_state=0)
+
+
 def comparison_report_classification():
     X, y = make_classification(class_sep=0.1, random_state=42)
 
     report = CrossValidationComparisonReport(
         [
-            CrossValidationReport(DummyClassifier(), X, y),
-            CrossValidationReport(DummyClassifier(), X, y, cv_splitter=3),
+            CrossValidationReport(make_classifier(), X, y),
+            CrossValidationReport(make_classifier(), X, y, cv_splitter=3),
         ]
     )
 
@@ -286,7 +290,7 @@ def test_init_with_report_names():
     then the estimator names are the dict keys."""
 
     X, y = make_classification(class_sep=0.1, random_state=42)
-    report = CrossValidationReport(DummyClassifier(), X, y)
+    report = CrossValidationReport(make_classifier(), X, y)
 
     comp = CrossValidationComparisonReport(
         {
