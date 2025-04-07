@@ -35,15 +35,11 @@ class ModelExplorerWidget:
         dimension_to_column,
         column_to_dimension,
         invert_colormap,
-        clf_datasets,
-        reg_datasets,
     ):
         self.df = dataframe
         self.dimension_to_column = dimension_to_column
         self.column_to_dimension = column_to_dimension
         self.invert_colormap = invert_colormap
-        self.clf_datasets = clf_datasets
-        self.reg_datasets = reg_datasets
 
         # Initialize attributes
         self.current_fig = None
@@ -51,8 +47,15 @@ class ModelExplorerWidget:
         self.current_selection = {}
 
         classification_metrics = ["mean Average Precision", "macro ROC AUC", "Log Loss"]
-        regression_metrics = ["MedAE", "RMSE"]
+        regression_metrics = ["median Absolute Error", "RMSE"]
         time_metrics = ["Fit Time", "Predict Time"]
+
+        self._clf_datasets = self.df.query("ml_task == 'classification'")[
+            "dataset"
+        ].unique()
+        self._reg_datasets = self.df.query("ml_task == 'regression'")[
+            "dataset"
+        ].unique()
 
         # Initialize widgets
         self.task_dropdown = widgets.Dropdown(
@@ -68,7 +71,7 @@ class ModelExplorerWidget:
 
         # Create dataset dropdown that will update based on task
         self.dataset_dropdown = widgets.Dropdown(
-            options=self.clf_datasets,  # Default to classification datasets
+            options=self._clf_datasets,
             description="Dataset:",
             disabled=False,
             layout=widgets.Layout(width="250px"),
@@ -161,13 +164,13 @@ class ModelExplorerWidget:
 
         # Update dataset dropdown options based on task
         if task == "classification":
-            self.dataset_dropdown.options = self.clf_datasets
-            if self.clf_datasets:
-                self.dataset_dropdown.value = self.clf_datasets[0]
+            self.dataset_dropdown.options = self._clf_datasets
+            if len(self._clf_datasets):
+                self.dataset_dropdown.value = self._clf_datasets[0]
         else:
-            self.dataset_dropdown.options = self.reg_datasets
-            if self.reg_datasets:
-                self.dataset_dropdown.value = self.reg_datasets[0]
+            self.dataset_dropdown.options = self._reg_datasets
+            if len(self._reg_datasets):
+                self.dataset_dropdown.value = self._reg_datasets[0]
 
         # Update UI visibility
         self._update_task_widgets()
@@ -331,6 +334,7 @@ class ModelExplorerWidget:
                         colorbar=dict(title=color_metric),
                     ),
                     dimensions=dimensions,
+                    labelangle=-30,
                 )
             )
 
@@ -338,9 +342,10 @@ class ModelExplorerWidget:
             plot_width = 800  # Width in pixels
 
             fig.update_layout(
-                height=300,
+                font=dict(size=16),
+                height=500,  # Increased height to accommodate staggered labels
                 width=plot_width,  # Set fixed width
-                margin=dict(l=150, r=150, t=50, b=30),  # Increased margins
+                margin=dict(l=200, r=150, t=120, b=30),  # Increased top margin for labels
             )
 
             # Convert to FigureWidget for interactivity and callbacks
@@ -475,7 +480,7 @@ class ModelExplorerWidget:
         reg_statistical_row = widgets.GridBox(
             [
                 stat_metrics_label_reg,
-                self.metric_checkboxes["regression"]["MedAE"],
+                self.metric_checkboxes["regression"]["median Absolute Error"],
                 self.metric_checkboxes["regression"]["RMSE"],
             ],
             layout=widgets.Layout(

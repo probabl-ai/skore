@@ -25,8 +25,6 @@ class MetaDataFrame(pd.DataFrame):
         "_dimension_to_column",
         "_column_to_dimension",
         "_invert_colormap",
-        "_clf_datasets",
-        "_reg_datasets",
         "_plot_widget",
     ]
 
@@ -44,7 +42,7 @@ class MetaDataFrame(pd.DataFrame):
             "Encoder": "encoder",
             "ML Task": "ml_task",
             "RMSE": "rmse",
-            "MedAE": "median_absolute_error",
+            "median Absolute Error": "median_absolute_error",
             "mean Average Precision": "mean_average_precision",
             "macro ROC AUC": "macro_roc_auc",
             "Log Loss": "log_loss",
@@ -59,27 +57,8 @@ class MetaDataFrame(pd.DataFrame):
             "Log Loss",
             "Fit Time",
             "Predict Time",
-            "MedAE",
+            "median Absolute Error",
         ]
-
-        # Extract dataset information from input data instead of filtering self
-        # This prevents recursion issues
-        if args and isinstance(args[0], dict):
-            input_data = args[0]
-            ml_task_array = np.array(input_data.get("ml_task", []))
-            dataset_array = np.array(input_data.get("dataset", []))
-
-            # Get unique datasets for classification and regression tasks
-            self._clf_datasets = np.unique(
-                dataset_array[ml_task_array == "classification"]
-            ).tolist()
-            self._reg_datasets = np.unique(
-                dataset_array[ml_task_array == "regression"]
-            ).tolist()
-        else:
-            # Fallback to empty lists if we can't determine from input
-            self._clf_datasets = []
-            self._reg_datasets = []
 
     @property
     def _constructor(self):
@@ -100,8 +79,6 @@ class MetaDataFrame(pd.DataFrame):
             dimension_to_column=self._dimension_to_column,
             column_to_dimension=self._column_to_dimension,
             invert_colormap=self._invert_colormap,
-            clf_datasets=self._clf_datasets,
-            reg_datasets=self._reg_datasets,
         )
 
         # Display the updated widget
