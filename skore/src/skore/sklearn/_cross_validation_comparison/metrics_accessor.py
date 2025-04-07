@@ -11,7 +11,7 @@ from sklearn.utils.metaestimators import available_if
 
 from skore import config_context
 from skore.externals._pandas_accessors import DirNamesMixin
-from skore.sklearn._base import _BaseAccessor, _get_cached_response_values
+from skore.sklearn._base import _BaseAccessor
 from skore.sklearn._plot.metrics import (
     PrecisionRecallCurveDisplay,
     PredictionErrorDisplay,
@@ -1113,102 +1113,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     # Methods related to displays
     ####################################################################################
 
-    @progress_decorator(description="Computing predictions for display")
-    def _get_display(
-        self,
-        *,
-        data_source: DataSource,
-        response_method: Union[str, list[str]],
-        display_class: type[
-            Union[RocCurveDisplay, PrecisionRecallCurveDisplay, PredictionErrorDisplay]
-        ],
-        display_kwargs: dict[str, Any],
-    ) -> Union[RocCurveDisplay, PrecisionRecallCurveDisplay, PredictionErrorDisplay]:
-        """Get the display from the cache or compute it.
-
-        Parameters
-        ----------
-        data_source : {"test", "train"}, default="test"
-            The data source to use.
-
-            - "test" : use the test set provided when creating the report.
-            - "train" : use the train set provided when creating the report.
-
-        response_method : str
-            The response method.
-
-        display_class : class
-            The display class.
-
-        display_kwargs : dict
-            The display kwargs used by `display_class._from_predictions`.
-
-        Returns
-        -------
-        display : display_class
-            The display.
-        """
-        if "seed" in display_kwargs and display_kwargs["seed"] is None:
-            cache_key = None
-        else:
-            # build the cache key components to finally create a tuple that will be used
-            # to check if the metric has already been computed
-            cache_key_parts: list[Any] = [self._parent._hash, display_class.__name__]
-            cache_key_parts.extend(display_kwargs.values())
-            cache_key_parts.append(data_source)
-            cache_key = tuple(cache_key_parts)
-
-        assert self._progress_info is not None, "Progress info not set"
-        progress = self._progress_info["current_progress"]
-        main_task = self._progress_info["current_task"]
-        total_estimators = len(self._parent.reports_)
-        progress.update(main_task, total=total_estimators)
-
-        if cache_key in self._parent._cache:
-            display = self._parent._cache[cache_key]
-        else:
-            y_true, y_pred = [], []
-
-            for report in self._parent.reports_:
-                report_X, report_y, _ = report.metrics._get_X_y_and_data_source_hash(
-                    data_source=data_source,
-                    X=None,
-                    y=None,
-                )
-
-                y_true.append(report_y)
-                y_pred.append(
-                    _get_cached_response_values(
-                        cache=report._cache,
-                        estimator_hash=report._hash,
-                        estimator=report._estimator,
-                        X=report_X,
-                        response_method=response_method,
-                        data_source=data_source,
-                        data_source_hash=None,
-                        pos_label=display_kwargs.get("pos_label"),
-                    )
-                )
-                progress.update(main_task, advance=1, refresh=True)
-
-            display = display_class._compute_data_for_display(
-                y_true=y_true,
-                y_pred=y_pred,
-                report_type="comparison-estimator",
-                estimators=[report.estimator_ for report in self._parent.reports_],
-                estimator_names=self._parent.report_names_,
-                ml_task=self._parent._ml_task,
-                data_source=data_source,
-                **display_kwargs,
-            )
-
-            # Unless random_state is an int (i.e. the call is deterministic),
-            # we do not cache
-            if cache_key is not None:
-                self._parent._cache[cache_key] = display
-
-        return display
-
     @available_if(
         _check_supported_ml_task(
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
@@ -1240,6 +1144,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         Examples
         --------
+        >>> # xdoctest: +SKIP
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.dummy import DummyClassifier
         >>> from sklearn.model_selection import train_test_split
@@ -1253,16 +1158,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> display = comparison_report.metrics.roc()
         >>> display.plot()
         """
-        response_method = ("predict_proba", "decision_function")
-        display_kwargs = {"pos_label": pos_label}
-        display = self._get_display(
-            data_source=data_source,
-            response_method=response_method,
-            display_class=RocCurveDisplay,
-            display_kwargs=display_kwargs,
-        )
-        assert isinstance(display, RocCurveDisplay)
-        return display
+        raise NotImplementedError()
 
     @available_if(
         _check_supported_ml_task(
@@ -1295,6 +1191,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         Examples
         --------
+        >>> # xdoctest: +SKIP
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.dummy import DummyClassifier
         >>> from sklearn.model_selection import train_test_split
@@ -1308,16 +1205,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> display = comparison_report.metrics.precision_recall()
         >>> display.plot()
         """
-        response_method = ("predict_proba", "decision_function")
-        display_kwargs = {"pos_label": pos_label}
-        display = self._get_display(
-            data_source=data_source,
-            response_method=response_method,
-            display_class=PrecisionRecallCurveDisplay,
-            display_kwargs=display_kwargs,
-        )
-        assert isinstance(display, PrecisionRecallCurveDisplay)
-        return display
+        raise NotImplementedError()
 
     @available_if(
         _check_supported_ml_task(
@@ -1361,6 +1249,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         Examples
         --------
+        >>> # xdoctest: +SKIP
         >>> from sklearn.datasets import load_diabetes
         >>> from sklearn.dummy import DummyRegressor
         >>> from sklearn.model_selection import train_test_split
@@ -1374,12 +1263,4 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> display = comparison_report.metrics.prediction_error()
         >>> display.plot(kind="actual_vs_predicted")
         """
-        display_kwargs = {"subsample": subsample, "seed": seed}
-        display = self._get_display(
-            data_source=data_source,
-            response_method="predict",
-            display_class=PredictionErrorDisplay,
-            display_kwargs=display_kwargs,
-        )
-        assert isinstance(display, PredictionErrorDisplay)
-        return display
+        raise NotImplementedError()
