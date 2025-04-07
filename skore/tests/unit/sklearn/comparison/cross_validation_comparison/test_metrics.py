@@ -41,18 +41,39 @@ def comparison_report_regression():
     return report
 
 
-def case_timings():
+def case_timings_no_predictions():
     expected_index = pd.MultiIndex.from_tuples(
         [
             ("Fit time", "DummyClassifier_1"),
-            ("Predict time", "DummyClassifier_1"),
             ("Fit time", "DummyClassifier_2"),
-            ("Predict time", "DummyClassifier_2"),
         ],
         names=["Metric", "Estimator"],
     )
     return (
         comparison_report_classification(),
+        "timings",
+        expected_index,
+        expected_columns,
+    )
+
+
+def case_timings_with_predictions():
+    expected_index = pd.MultiIndex.from_tuples(
+        [
+            ("Fit time", "DummyClassifier_1"),
+            ("Predict time test", "DummyClassifier_1"),
+            ("Predict time train", "DummyClassifier_1"),
+            ("Fit time", "DummyClassifier_2"),
+            ("Predict time test", "DummyClassifier_2"),
+            ("Predict time train", "DummyClassifier_2"),
+        ],
+        names=["Metric", "Estimator"],
+    )
+
+    report = comparison_report_classification()
+    report.cache_predictions()
+    return (
+        report,
         "timings",
         expected_index,
         expected_columns,
@@ -194,7 +215,8 @@ def case_rmse():
 @pytest.mark.parametrize(
     "case",
     [
-        case_timings,
+        case_timings_no_predictions,
+        case_timings_with_predictions,
         case_accuracy,
         case_precision,
         case_recall,
