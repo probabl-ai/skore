@@ -1755,6 +1755,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
 
         Examples
         --------
+        >>> import matplotlib.pyplot as plt
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
         >>> from sklearn.model_selection import train_test_split
@@ -1772,6 +1773,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         ... )
         >>> display = report.metrics.roc()
         >>> display.plot(roc_curve_kwargs={"color": "tab:red"})
+        >>> plt.close()
         """
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
@@ -1830,6 +1832,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
 
         Examples
         --------
+        >>> import matplotlib.pyplot as plt
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
         >>> from sklearn.model_selection import train_test_split
@@ -1847,6 +1850,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         ... )
         >>> display = report.metrics.precision_recall()
         >>> display.plot(pr_curve_kwargs={"color": "tab:red"})
+        >>> plt.close()
         """
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
@@ -1916,6 +1920,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
 
         Examples
         --------
+        >>> import matplotlib.pyplot as plt
         >>> from sklearn.datasets import load_diabetes
         >>> from sklearn.linear_model import Ridge
         >>> from sklearn.model_selection import train_test_split
@@ -1933,6 +1938,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         ... )
         >>> display = report.metrics.prediction_error()
         >>> display.plot(perfect_model_kwargs={"color": "tab:red"})
+        >>> plt.close()
         """
         display_kwargs = {"subsample": subsample, "seed": seed}
         display = cast(

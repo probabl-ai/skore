@@ -1367,6 +1367,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         Examples
         --------
+        >>> import matplotlib.pyplot as plt
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
         >>> from sklearn.model_selection import train_test_split
@@ -1394,6 +1395,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ... )
         >>> display = comparison_report.metrics.roc()
         >>> display.plot()
+        >>> plt.close()
         """
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
@@ -1452,6 +1454,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         Examples
         --------
+        >>> import matplotlib.pyplot as plt
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
         >>> from sklearn.model_selection import train_test_split
@@ -1479,6 +1482,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ... )
         >>> display = comparison_report.metrics.precision_recall()
         >>> display.plot()
+        >>> plt.close()
         """
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
@@ -1548,6 +1552,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         Examples
         --------
+        >>> import matplotlib.pyplot as plt
         >>> from sklearn.datasets import load_diabetes
         >>> from sklearn.linear_model import Ridge
         >>> from sklearn.model_selection import train_test_split
@@ -1575,6 +1580,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ... )
         >>> display = comparison_report.metrics.prediction_error()
         >>> display.plot(kind="actual_vs_predicted")
+        >>> plt.close()
         """
         display_kwargs = {"subsample": subsample, "seed": seed}
         display = cast(
