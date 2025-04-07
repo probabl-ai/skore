@@ -98,7 +98,7 @@ class CrossValidationComparisonReport(_BaseReport, DirNamesMixin):
             raise TypeError(f"Expected reports to be an iterable; got {type(reports)}")
 
         if len(reports) < 2:
-            raise ValueError("At least 2 instances of EstimatorReport are needed")
+            raise ValueError("At least 2 instances of CrossValidationReport are needed")
 
         report_names = (
             list(map(str, reports.keys())) if isinstance(reports, dict) else None
