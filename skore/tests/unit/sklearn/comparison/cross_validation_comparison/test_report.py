@@ -29,11 +29,11 @@ def test_init_wrong_parameters(cv_report_classification):
         CrossValidationComparisonReport(cv_report_classification)
 
     with pytest.raises(
-        ValueError, match="At least 2 instances of EstimatorReport are needed"
+        ValueError, match="At least 2 instances of CrossValidationReport are needed"
     ):
         CrossValidationComparisonReport([cv_report_classification])
 
-    with pytest.raises(TypeError, match="Expected instances of EstimatorReport"):
+    with pytest.raises(TypeError, match="Expected instances of CrossValidationReport"):
         CrossValidationComparisonReport([None, cv_report_classification])
 
 

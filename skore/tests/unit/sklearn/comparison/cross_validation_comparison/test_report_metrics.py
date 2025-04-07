@@ -281,14 +281,17 @@ def test_cache():
     assert_frame_equal(result, cached_result)
 
 
-def test_init_with_report_names(cv_report_classification):
+def test_init_with_report_names():
     """If the estimators are passed as a dict,
     then the estimator names are the dict keys."""
 
+    X, y = make_classification(class_sep=0.1, random_state=42)
+    report = CrossValidationReport(DummyClassifier(), X, y)
+
     comp = CrossValidationComparisonReport(
         {
-            "r1": cv_report_classification,
-            "r2": cv_report_classification,
+            "r1": report,
+            "r2": report,
         }
     )
 
