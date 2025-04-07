@@ -472,8 +472,16 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         data_source_hash: Optional[int] = None,
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
+        cast: bool = True,
     ) -> Union[float, None]:
-        """Get prediction time if it has been already measured."""
+        """Get prediction time if it has been already measured.
+
+        Parameters
+        ----------
+        cast : bool, default=True
+            Whether to cast the numbers to floats. If `False`, the return value
+            is `None` when the predictions have never been computed.
+        """
         if data_source_hash is None:
             X, _, data_source_hash = self._get_X_y_and_data_source_hash(
                 data_source=data_source, X=X, y=y
@@ -486,7 +494,9 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             "predict_time",
         )
 
-        return self._parent._cache.get(predict_time_cache_key, None)
+        return self._parent._cache.get(
+            predict_time_cache_key, (float("nan") if cast else None)
+        )
 
     def timings(self) -> dict:
         """Get all measured processing times related to the estimator.
