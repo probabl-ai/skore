@@ -1,3 +1,4 @@
+import copy
 import re
 from io import BytesIO
 
@@ -47,12 +48,23 @@ def test_init_different_ml_usecases(cv_report_classification, cv_report_regressi
         )
 
 
+def test_init_non_distinct_reports(cv_report_classification):
+    """If the passed estimators are not distinct objects, raise an error."""
+
+    with pytest.raises(
+        ValueError, match="Compared CrossValidationReports must be distinct objects"
+    ):
+        CrossValidationComparisonReport(
+            [cv_report_classification, cv_report_classification]
+        )
+
+
 def test_non_string_report_names(cv_report_classification):
     """If the estimators are passed as a dict with non-string keys,
     then the estimator names are the dict keys converted to strings."""
 
     report = CrossValidationComparisonReport(
-        {0: cv_report_classification, "1": cv_report_classification}
+        {0: cv_report_classification, "1": copy.copy(cv_report_classification)}
     )
     assert report.report_names_ == ["0", "1"]
 
@@ -60,7 +72,7 @@ def test_non_string_report_names(cv_report_classification):
 @pytest.fixture
 def report(cv_report_classification):
     return CrossValidationComparisonReport(
-        [cv_report_classification, cv_report_classification]
+        [cv_report_classification, copy.copy(cv_report_classification)]
     )
 
 

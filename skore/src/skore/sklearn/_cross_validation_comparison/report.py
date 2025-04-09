@@ -138,6 +138,9 @@ class CrossValidationComparisonReport(_BaseReport, DirNamesMixin):
                 f"Expected all estimators to have the same ML usecase; got {ml_tasks}"
             )
 
+        if len(set(id(report) for report in reports)) < len(reports):
+            raise ValueError("Compared CrossValidationReports must be distinct objects")
+
         if report_names is not None:
             report_names_ = report_names
         else:
