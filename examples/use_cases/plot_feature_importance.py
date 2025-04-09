@@ -253,6 +253,7 @@ ridge_report.metrics.report_metrics()
 
 # %%
 ridge_report.metrics.prediction_error().plot(kind="actual_vs_predicted")
+plt.tight_layout()
 
 # %%
 # We can observe that the model has issues predicting large house prices, due to the
@@ -429,6 +430,7 @@ comparator.metrics.report_metrics()
 
 # %%
 engineered_ridge_report.metrics.prediction_error().plot(kind="actual_vs_predicted")
+plt.tight_layout()
 
 # %%
 # About the clipping issue, compared to the prediction error of our previous model
@@ -910,7 +912,7 @@ def plot_permutation_train_test(est_report):
     ax.set_title(
         f"Permutation feature importance of {est_report.estimator_name_} (Train vs Test)"
     )
-    ax.set_xlabel("r2")
+    ax.set_xlabel("$R^2$")
     ax.set_yticks([x + 0.2 for x in range(len(est_report.X_train.columns))])
     ax.set_yticklabels(est_report.X_train.columns)
 

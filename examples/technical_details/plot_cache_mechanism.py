@@ -220,9 +220,12 @@ print(f"Time taken: {end - start:.2f} seconds")
 #
 # The cache also speeds up plots. Let's create a ROC curve:
 
+import matplotlib.pyplot as plt
+
 start = time.time()
 display = report.metrics.roc(pos_label="allowed")
 display.plot()
+plt.tight_layout()
 end = time.time()
 
 # %%
@@ -234,6 +237,7 @@ print(f"Time taken: {end - start:.2f} seconds")
 start = time.time()
 display = report.metrics.roc(pos_label="allowed")
 display.plot()
+plt.tight_layout()
 end = time.time()
 
 # %%
@@ -244,6 +248,7 @@ print(f"Time taken: {end - start:.2f} seconds")
 # We only use the cache to retrieve the `display` object and not directly the matplotlib
 # figure. It means that we can still customize the cached plot before displaying it:
 display.plot(roc_curve_kwargs={"color": "tab:orange"})
+plt.tight_layout()
 
 # %%
 #

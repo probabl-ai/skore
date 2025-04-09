@@ -349,6 +349,7 @@ display.help()
 # %%
 display.plot()
 _ = display.ax_.set_title("Example of a ROC curve")
+plt.tight_layout()
 
 # %%
 #
@@ -360,6 +361,7 @@ start = time.time()
 # we already trigger the computation of the predictions in a previous call
 display = report.metrics.roc(pos_label=pos_label)
 display.plot()
+plt.tight_layout()
 end = time.time()
 
 # %%
@@ -374,6 +376,7 @@ report.clear_cache()
 start = time.time()
 display = report.metrics.roc(pos_label=pos_label)
 display.plot()
+plt.tight_layout()
 end = time.time()
 
 # %%
