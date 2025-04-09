@@ -94,36 +94,9 @@ class CrossValidationComparisonReport(_BaseReport, DirNamesMixin):
         - all reports are :class:`~skore.CrossValidationReport`,
         - all estimators are in the same ML use case,
         """
-        if not isinstance(reports, Iterable):
-            raise TypeError(f"Expected reports to be an iterable; got {type(reports)}")
-
-        if len(reports) < 2:
-            raise ValueError("At least 2 instances of CrossValidationReport are needed")
-
-        report_names = (
-            list(map(str, reports.keys())) if isinstance(reports, dict) else None
+        self.reports_, self.report_names_ = (
+            CrossValidationComparisonReport._validate_reports(reports)
         )
-        reports = list(reports.values()) if isinstance(reports, dict) else reports
-
-        if not all(isinstance(report, CrossValidationReport) for report in reports):
-            raise TypeError("Expected instances of CrossValidationReport")
-
-        ml_tasks = {report: report._ml_task for report in reports}
-        if len(set(ml_tasks.values())) > 1:
-            raise ValueError(
-                f"Expected all estimators to have the same ML usecase; got {ml_tasks}"
-            )
-
-        self.reports_ = reports
-
-        if report_names is not None:
-            self.report_names_ = report_names
-        else:
-            self.report_names_ = (
-                CrossValidationComparisonReport._deduplicate_report_names(
-                    [report.estimator_name_ for report in reports]
-                )
-            )
 
         # used to know if a parent launches a progress bar manager
         self._progress_info: Optional[dict[str, Any]] = None
@@ -171,6 +144,40 @@ class CrossValidationComparisonReport(_BaseReport, DirNamesMixin):
             for n, index in enumerate(indexes_of_report_names, start=1):
                 result[index] = f"{report_name}_{n}"
         return result
+
+    @staticmethod
+    def _validate_reports(
+        reports: Union[list[CrossValidationReport], dict[str, CrossValidationReport]],
+    ) -> tuple[list[CrossValidationReport], list[str]]:
+        """Validate a list or dict of CrossValidationReports."""
+        if not isinstance(reports, Iterable):
+            raise TypeError(f"Expected reports to be an iterable; got {type(reports)}")
+
+        if len(reports) < 2:
+            raise ValueError("At least 2 instances of CrossValidationReport are needed")
+
+        report_names = (
+            list(map(str, reports.keys())) if isinstance(reports, dict) else None
+        )
+        reports = list(reports.values()) if isinstance(reports, dict) else reports
+
+        if not all(isinstance(report, CrossValidationReport) for report in reports):
+            raise TypeError("Expected instances of CrossValidationReport")
+
+        ml_tasks = {report: report._ml_task for report in reports}
+        if len(set(ml_tasks.values())) > 1:
+            raise ValueError(
+                f"Expected all estimators to have the same ML usecase; got {ml_tasks}"
+            )
+
+        if report_names is not None:
+            report_names_ = report_names
+        else:
+            report_names_ = CrossValidationComparisonReport._deduplicate_report_names(
+                [report.estimator_name_ for report in reports]
+            )
+
+        return reports, report_names_
 
     def clear_cache(self) -> None:
         """Clear the cache.
