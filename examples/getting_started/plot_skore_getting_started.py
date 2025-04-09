@@ -77,7 +77,8 @@ rf_report.help()
 
 # %%
 # We can evaluate our model using the :meth:`~skore.EstimatorReport.metrics` accessor.
-# In particular, we can get the report metrics that is computed for us:
+# In particular, we can get the report metrics that is computed for us (including the
+# fit and prediction times):
 
 # %%
 rf_report.metrics.report_metrics(pos_label=1)
