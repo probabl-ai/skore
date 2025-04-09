@@ -137,7 +137,7 @@ cv_report = CrossValidationReport(rf, X, y, cv_splitter=5)
 cv_report.help()
 
 # %%
-# We display the mean and standard deviation of for each metric:
+# We display the mean and standard deviation for each metric:
 
 # %%
 cv_report.metrics.report_metrics(pos_label=1)
