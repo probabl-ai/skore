@@ -202,7 +202,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         progress = self._parent._progress_info["current_progress"]
         main_task = self._parent._progress_info["current_task"]
 
-        total_estimators = len(self._parent.estimator_reports_)
+        total_estimators = len(self._parent.reports_)
         progress.update(main_task, total=total_estimators)
 
         if cache_key in self._parent._cache:
@@ -222,7 +222,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                     y=y,
                     **metric_kwargs,
                 )
-                for report in self._parent.estimator_reports_
+                for report in self._parent.reports_
             )
             results = []
             for result in generator:
@@ -297,10 +297,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Predict time train (s)     ...       ...
         """
         timings: pd.DataFrame = pd.concat(
-            [
-                pd.Series(report.metrics.timings())
-                for report in self._parent.estimator_reports_
-            ],
+            [pd.Series(report.metrics.timings()) for report in self._parent.reports_],
             axis=1,
             keys=self._parent.report_names_,
         )
@@ -1287,7 +1284,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         assert self._parent._progress_info is not None, "Progress info not set"
         progress = self._parent._progress_info["current_progress"]
         main_task = self._parent._progress_info["current_task"]
-        total_estimators = len(self._parent.estimator_reports_)
+        total_estimators = len(self._parent.reports_)
         progress.update(main_task, total=total_estimators)
 
         if cache_key in self._parent._cache:
@@ -1295,7 +1292,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         else:
             y_true, y_pred = [], []
 
-            for report in self._parent.estimator_reports_:
+            for report in self._parent.reports_:
                 report_X, report_y, _ = report.metrics._get_X_y_and_data_source_hash(
                     data_source=data_source,
                     X=X,
@@ -1321,9 +1318,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 y_true=y_true,
                 y_pred=y_pred,
                 report_type="comparison-estimator",
-                estimators=[
-                    report.estimator_ for report in self._parent.estimator_reports_
-                ],
+                estimators=[report.estimator_ for report in self._parent.reports_],
                 estimator_names=self._parent.report_names_,
                 ml_task=self._parent._ml_task,
                 data_source=data_source,

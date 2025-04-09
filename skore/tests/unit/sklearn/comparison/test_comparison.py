@@ -754,9 +754,9 @@ def test_comparison_report_get_predictions(
     assert len(predictions) == 2
     for split_idx, split_predictions in enumerate(predictions):
         if data_source == "train":
-            expected_shape = report.estimator_reports_[split_idx].y_train.shape
+            expected_shape = report.reports_[split_idx].y_train.shape
         else:
-            expected_shape = report.estimator_reports_[split_idx].y_test.shape
+            expected_shape = report.reports_[split_idx].y_test.shape
         assert split_predictions.shape == expected_shape
 
 
