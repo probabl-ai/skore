@@ -523,7 +523,7 @@ def test_roc_curve_display_comparison_report_multiclass_classification(
     assert isinstance(display, RocCurveDisplay)
 
     # check the structure of the attributes
-    class_labels = report.estimator_reports_[0].estimator_.classes_
+    class_labels = report.reports_[0].estimator_.classes_
     for attr_name in ("fpr", "tpr", "roc_auc"):
         assert isinstance(getattr(display, attr_name), dict)
         assert len(getattr(display, attr_name)) == len(class_labels)
