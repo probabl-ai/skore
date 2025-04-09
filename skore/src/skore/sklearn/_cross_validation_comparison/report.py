@@ -79,38 +79,6 @@ class CrossValidationComparisonReport(_BaseReport, DirNamesMixin):
     }
     metrics: _MetricsAccessor
 
-    def __init__(
-        self,
-        reports: Union[list[CrossValidationReport], dict[str, CrossValidationReport]],
-        *,
-        n_jobs: Optional[int] = None,
-    ) -> None:
-        """
-        ComparisonReport instance initializer.
-
-        Notes
-        -----
-        We check that the reports can be compared:
-        - all reports are :class:`~skore.CrossValidationReport`,
-        - all estimators are in the same ML use case,
-        """
-        self.reports_, self.report_names_ = (
-            CrossValidationComparisonReport._validate_reports(reports)
-        )
-
-        # used to know if a parent launches a progress bar manager
-        self._progress_info: Optional[dict[str, Any]] = None
-        self._parent_progress = None
-
-        # NEEDED FOR METRICS ACCESSOR
-        self.n_jobs = n_jobs
-        self._rng = np.random.default_rng(time.time_ns())
-        self._hash = self._rng.integers(
-            low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
-        )
-        self._cache: dict[tuple[Any, ...], Any] = {}
-        self._ml_task = self.reports_[0]._ml_task
-
     @staticmethod
     def _deduplicate_report_names(report_names_: list[str]) -> list[str]:
         """De-duplicate report names that appear several times.
@@ -178,6 +146,38 @@ class CrossValidationComparisonReport(_BaseReport, DirNamesMixin):
             )
 
         return reports, report_names_
+
+    def __init__(
+        self,
+        reports: Union[list[CrossValidationReport], dict[str, CrossValidationReport]],
+        *,
+        n_jobs: Optional[int] = None,
+    ) -> None:
+        """
+        ComparisonReport instance initializer.
+
+        Notes
+        -----
+        We check that the reports can be compared:
+        - all reports are :class:`~skore.CrossValidationReport`,
+        - all estimators are in the same ML use case,
+        """
+        self.reports_, self.report_names_ = (
+            CrossValidationComparisonReport._validate_reports(reports)
+        )
+
+        # used to know if a parent launches a progress bar manager
+        self._progress_info: Optional[dict[str, Any]] = None
+        self._parent_progress = None
+
+        # NEEDED FOR METRICS ACCESSOR
+        self.n_jobs = n_jobs
+        self._rng = np.random.default_rng(time.time_ns())
+        self._hash = self._rng.integers(
+            low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
+        )
+        self._cache: dict[tuple[Any, ...], Any] = {}
+        self._ml_task = self.reports_[0]._ml_task
 
     def clear_cache(self) -> None:
         """Clear the cache.
