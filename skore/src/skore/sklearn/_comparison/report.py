@@ -46,7 +46,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     Attributes
     ----------
-    estimator_reports_ : list of :class:`~skore.EstimatorReport`
+    reports_ : list of :class:`~skore.EstimatorReport`
         The compared estimator reports.
 
     report_names_ : list of str
@@ -145,7 +145,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         else:
             self.report_names_ = report_names
 
-        self.estimator_reports_ = reports
+        self.reports_ = reports
 
         # used to know if a parent launches a progress bar manager
         self._progress_info: Optional[dict[str, Any]] = None
@@ -158,7 +158,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
         )
         self._cache: dict[tuple[Any, ...], Any] = {}
-        self._ml_task = self.estimator_reports_[0]._ml_task
+        self._ml_task = self.reports_[0]._ml_task
 
     def clear_cache(self) -> None:
         """Clear the cache.
@@ -193,7 +193,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         >>> report._cache
         {}
         """
-        for report in self.estimator_reports_:
+        for report in self.reports_:
             report.clear_cache()
         self._cache = {}
 
@@ -255,13 +255,13 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         progress = self._progress_info["current_progress"]
         main_task = self._progress_info["current_task"]
 
-        total_estimators = len(self.estimator_reports_)
+        total_estimators = len(self.reports_)
         progress.update(main_task, total=total_estimators)
 
-        for estimator_report in self.estimator_reports_:
+        for report in self.reports_:
             # Pass the progress manager to child tasks
-            estimator_report._parent_progress = progress
-            estimator_report.cache_predictions(
+            report._parent_progress = progress
+            report.cache_predictions(
                 response_methods=response_methods, n_jobs=n_jobs
             )
             progress.update(main_task, advance=1, refresh=True)
@@ -345,7 +345,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                 response_method=response_method,
                 pos_label=pos_label,
             )
-            for report in self.estimator_reports_
+            for report in self.reports_
         ]
 
     ####################################################################################
