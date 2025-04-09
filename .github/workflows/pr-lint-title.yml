@@ -1,4 +1,4 @@
-name: lint title in PR
+name: pr-lint-title
 
 on:
   pull_request:

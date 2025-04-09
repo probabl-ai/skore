@@ -197,7 +197,7 @@ jobs:
           name: backend-coverage
           path: skore/coverage/
 
-  backend-all-green:
+  backend:
     needs:
       - backend-changes
       - backend-lint
