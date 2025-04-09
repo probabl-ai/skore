@@ -4,12 +4,10 @@ from typing import Any, Callable, Literal, Optional, Union
 import joblib
 import numpy as np
 import pandas as pd
-from rich.progress import Progress
 from sklearn.metrics import make_scorer
 from sklearn.metrics._scorer import _BaseScorer as SKLearnScorer
 from sklearn.utils.metaestimators import available_if
 
-from skore import config_context
 from skore.externals._pandas_accessors import DirNamesMixin
 from skore.sklearn._base import _BaseAccessor
 from skore.sklearn._plot.metrics import (
@@ -49,9 +47,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
     def __init__(self, parent: CrossValidationComparisonReport) -> None:
         super().__init__(parent)
-
-        self._progress_info: Optional[dict[str, Any]] = None
-        self._parent_progress: Optional[Progress] = None
 
     def report_metrics(
         self,
@@ -335,12 +330,15 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         cache_key = tuple(cache_key_parts)
 
-        assert self._progress_info is not None, "Progress info not set"
-        progress = self._progress_info["current_progress"]
-        main_task = self._progress_info["current_task"]
+        assert self._parent._progress_info is not None, "Progress info not set"
+        progress = self._parent._progress_info["current_progress"]
+        main_task = self._parent._progress_info["current_task"]
 
         total_estimators = len(self._parent.reports_)
         progress.update(main_task, total=total_estimators)
+
+        for report in self._parent.reports_:
+            report._parent_progress = progress
 
         if cache_key in self._parent._cache:
             results = self._parent._cache[cache_key]
@@ -361,10 +359,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 for report in self._parent.reports_
             )
             individual_results = []
-            with config_context(show_progress=False):
-                for result in generator:
-                    individual_results.append(result)
-                    progress.update(main_task, advance=1, refresh=True)
+            for result in generator:
+                individual_results.append(result)
+                progress.update(main_task, advance=1, refresh=True)
 
             results = _MetricsAccessor._combine_cross_validation_results(
                 individual_results,
