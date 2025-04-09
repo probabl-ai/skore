@@ -137,9 +137,10 @@ def test_init_with_report_names():
     then the estimator names are the dict keys."""
 
     X, y = make_classification(class_sep=0.1, random_state=42)
-    cv_report = CrossValidationReport(make_classifier(), X, y)
+    cv_report1 = CrossValidationReport(make_classifier(), X, y)
+    cv_report2 = CrossValidationReport(make_classifier(), X, y)
 
-    comp = CrossValidationComparisonReport({"r1": cv_report, "r2": cv_report})
+    comp = CrossValidationComparisonReport({"r1": cv_report1, "r2": cv_report2})
 
     assert_index_equal(
         comp.metrics.report_metrics(aggregate=None).columns,
