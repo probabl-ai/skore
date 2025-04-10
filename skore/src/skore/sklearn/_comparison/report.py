@@ -202,7 +202,17 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         else:
             deduped_report_names = report_names
 
-        return reports_list, deduped_report_names
+        if isinstance(reports_list[0], CrossValidationReport):
+            reports_type = "CrossValidationReport"
+        elif isinstance(reports_list[0], EstimatorReport):
+            reports_type = "EstimatorReport"
+        else:
+            raise TypeError(
+                "Report type is undetermined. "
+                "This error should have been caught during validation."
+            )
+
+        return reports_list, deduped_report_names, reports_type
 
     def __init__(
         self,
@@ -226,17 +236,9 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         - all estimators have non-empty X_test and y_test,
         - all estimators have the same X_test and y_test.
         """
-        self.reports_, self.report_names_ = ComparisonReport._validate_reports(reports)
-
-        if isinstance(self.reports_[0], CrossValidationReport):
-            self._reports_type = "CrossValidationReport"
-        elif isinstance(self.reports_[0], EstimatorReport):
-            self._reports_type = "EstimatorReport"
-        else:
-            raise TypeError(
-                "Report type is undetermined. "
-                "This error should have been caught during validation."
-            )
+        self.reports_, self.report_names_, self._reports_type = (
+            ComparisonReport._validate_reports(reports)
+        )
 
         self._progress_info: Optional[dict[str, Any]] = None
         self._parent_progress = None
