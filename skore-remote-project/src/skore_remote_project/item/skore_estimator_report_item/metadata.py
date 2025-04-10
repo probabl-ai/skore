@@ -1,7 +1,6 @@
 from contextlib import suppress
 from inspect import getmembers, ismethod
 
-
 from joblib import hash
 
 
@@ -55,8 +54,8 @@ class Metadata:
 
         def scalar(name, data_source, greater_is_better, position, /):
             with suppress(AttributeError, TypeError):
-                metric = getattr(self.report.metrics, name)
-                value = float(metric(data_source=data_source))
+                function = getattr(self.report.metrics, name)
+                value = float(function(data_source=data_source))
 
                 return {
                     "name": name,
