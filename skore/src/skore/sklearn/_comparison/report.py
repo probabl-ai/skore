@@ -220,11 +220,9 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         """
         self.reports_, self.report_names_ = ComparisonReport._validate_reports(reports)
 
-        # used to know if a parent launches a progress bar manager
         self._progress_info: Optional[dict[str, Any]] = None
         self._parent_progress = None
 
-        # NEEDED FOR METRICS ACCESSOR
         self.n_jobs = n_jobs
         self._rng = np.random.default_rng(time.time_ns())
         self._hash = self._rng.integers(
