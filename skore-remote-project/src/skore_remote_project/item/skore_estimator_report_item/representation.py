@@ -1,7 +1,7 @@
-from contextlib import suppress
 from inspect import signature
 from operator import attrgetter
 
+from matplotlib.pyplot import subplots
 from sklearn.utils import estimator_html_repr
 
 from ..matplotlib_figure_item import MatplotlibFigureItem
@@ -14,14 +14,19 @@ class Representation:
         self.report = report
 
     def mpl(self, name, category, **kwargs):
-        with suppress(AttributeError):
+        try:
             function = attrgetter(name)(self.report)
+        except AttributeError:
+            return None
+        else:
             function_parameters = signature(function).parameters
             function_kwargs = {
                 k: v for k, v in kwargs.items() if k in function_parameters
             }
+            display = function(**function_kwargs)
+            figure, ax = subplots()
+            display.plot(ax)
 
-            figure = function(**function_kwargs).plot().figure_
             item = MatplotlibFigureItem.factory(figure)
             item_representation = item.__representation__
 
@@ -33,13 +38,15 @@ class Representation:
             }
 
     def pd(self, name, category, **kwargs):
-        with suppress(AttributeError):
+        try:
             function = attrgetter(name)(self.report)
+        except AttributeError:
+            return None
+        else:
             function_parameters = signature(function).parameters
             function_kwargs = {
                 k: v for k, v in kwargs.items() if k in function_parameters
             }
-
             dataframe = function(**function_kwargs)
             item = PandasDataFrameItem.factory(dataframe)
             item_representation = item.__representation__
