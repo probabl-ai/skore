@@ -208,6 +208,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         total_estimators = len(self._parent.reports_)
         progress.update(main_task, total=total_estimators)
 
+        # Ensure that there is only one Progress instance
+        for report in self._parent.reports_:
+            report._parent_progress = progress
+
         if cache_key in self._parent._cache:
             results = self._parent._cache[cache_key]
         else:
