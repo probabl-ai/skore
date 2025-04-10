@@ -503,25 +503,49 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Predict time test (s)      ...       ...
         Predict time train (s)     ...       ...
         """
-        timings: pd.DataFrame = pd.concat(
-            [pd.Series(report.metrics.timings()) for report in self._parent.reports_],
-            axis=1,
-            keys=self._parent.report_names_,
-        )
+        if self._parent._reports_type == "EstimatorReport":
+            timings: pd.DataFrame = pd.concat(
+                [
+                    pd.Series(report.metrics.timings())
+                    for report in self._parent.reports_
+                ],
+                axis=1,
+                keys=self._parent.report_names_,
+            )
+            timings.index = timings.index.str.replace("_", " ").str.capitalize()
 
-        timings.index = timings.index.str.replace("_", " ").str.capitalize()
+            # Add (s) to time measurements
+            new_index = []
+            for idx in timings.index:
+                if "time" in idx.lower():
+                    new_index.append(f"{idx} (s)")
+                else:
+                    new_index.append(idx)
 
-        # Add (s) to time measurements
-        new_index = []
-        for idx in timings.index:
-            if "time" in idx.lower():
-                new_index.append(f"{idx} (s)")
-            else:
-                new_index.append(idx)
+            timings.index = pd.Index(new_index)
 
-        timings.index = pd.Index(new_index)
+            return timings
 
-        return timings
+        else:  # "CrossValidationReport"
+            results = [
+                report.metrics.timings(aggregate=None)
+                for report in self._parent.reports_
+            ]
+
+            # Put dataframes in the right shape
+            for i, result in enumerate(results):
+                result.index.name = "Metric"
+                result.columns = pd.MultiIndex.from_product(
+                    [[self._parent.report_names_[i]], result.columns]
+                )
+
+            timings = self._combine_cross_validation_results(
+                results,
+                self._parent.report_names_,
+                indicator_favorability=False,
+                aggregate=aggregate,
+            )
+            return timings
 
     @available_if(
         _check_supported_ml_task(
