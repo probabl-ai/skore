@@ -1,13 +1,17 @@
 from contextlib import suppress
+from functools import partial
 from inspect import getmembers, ismethod
+
 
 from joblib import hash
 
 
+def metadata(function):
+    function.metadata = ...
+    return function
+
+
 class Metadata:
-    def metadata(function):
-        function.metadata = ...
-        return function
 
     def __init__(self, report):
         self.report = report
@@ -50,168 +54,39 @@ class Metadata:
         # Position: int (to display in parallel coordinates plot) | None (to ignore)
         #
 
-        def accuracy_train():
+        def scalar(name, data_source, greater_is_better=None, position=None, /):
             with suppress(AttributeError, TypeError):
+                metric = getattr(self.report.metrics, name)
+                value = float(metric(data_source=data_source))
+
                 return {
-                    "name": "accuracy_train",
-                    "value": float(self.report.metrics.accuracy(data_source="train")),
-                    "data_source": "train",
-                    "greater_is_better": True,
-                    "position": None,
+                    "name": name,
+                    "value": value,
+                    "data_source": data_source,
+                    "greater_is_better": greater_is_better,
+                    "position": position,
                 }
 
-        def accuracy_test():
-            with suppress(AttributeError, TypeError):
-                return {
-                    "name": "accuracy_test",
-                    "value": float(self.report.metrics.accuracy(data_source="test")),
-                    "data_source": "test",
-                    "greater_is_better": True,
-                    "position": None,
-                }
+        # fmt: off
+        accuracy_train = metadata(partial(scalar, "accuracy", "train", True))  # noqa: E501, F841
+        accuracy_test = metadata(partial(scalar, "accuracy", "test", True))  # noqa: E501, F841
+        brier_score_train = metadata(partial(scalar, "brier_score", "train", False))  # noqa: E501, F841
+        brier_score_test = metadata(partial(scalar, "brier_score", "test", False))  # noqa: E501, F841
+        log_loss_train = metadata(partial(scalar, "log_loss", "train", False))  # noqa: E501, F841
+        log_loss_test = metadata(partial(scalar, "log_loss", "test", False))  # noqa: E501, F841
+        precision_train = metadata(partial(scalar, "precision", "train", True))  # noqa: E501, F841
+        precision_test = metadata(partial(scalar, "precision", "test", True))  # noqa: E501, F841
+        r2_train = metadata(partial(scalar, "r2", "train", True))  # noqa: E501, F841
+        r2_test = metadata(partial(scalar, "r2", "test", True))  # noqa: E501, F841
+        recall_train = metadata(partial(scalar, "recall", "train", True))  # noqa: E501, F841
+        recall_test = metadata(partial(scalar, "recall", "test", True))  # noqa: E501, F841
+        rmse_train = metadata(partial(scalar, "rmse", "train", False))  # noqa: E501, F841
+        rmse_test = metadata(partial(scalar, "rmse", "test", False))  # noqa: E501, F841
+        roc_auc_train = metadata(partial(scalar, "roc_auc", "train", True))  # noqa: E501, F841
+        roc_auc_test = metadata(partial(scalar, "roc_auc", "test", True))  # noqa: E501, F841
+        # fmt: on
 
-        def brier_score_train():
-            with suppress(AttributeError, TypeError):
-                return {
-                    "name": "brier_score_train",
-                    "value": float(
-                        self.report.metrics.brier_score(data_source="train")
-                    ),
-                    "data_source": "train",
-                    "greater_is_better": False,
-                    "position": None,
-                }
-
-        def brier_score_test():
-            with suppress(AttributeError, TypeError):
-                return {
-                    "name": "brier_score_test",
-                    "value": float(self.report.metrics.brier_score(data_source="test")),
-                    "data_source": "test",
-                    "greater_is_better": False,
-                    "position": None,
-                }
-
-        def log_loss_train():
-            with suppress(AttributeError, TypeError):
-                return {
-                    "name": "log_loss_train",
-                    "value": float(self.report.metrics.log_loss(data_source="train")),
-                    "data_source": "train",
-                    "greater_is_better": False,
-                    "position": None,
-                }
-
-        def log_loss_test():
-            with suppress(AttributeError, TypeError):
-                return {
-                    "name": "log_loss_test",
-                    "value": float(self.report.metrics.log_loss(data_source="test")),
-                    "data_source": "test",
-                    "greater_is_better": False,
-                    "position": None,
-                }
-
-        def precision_train():
-            with suppress(AttributeError, TypeError):
-                return {
-                    "name": "precision_train",
-                    "value": float(self.report.metrics.precision(data_source="train")),
-                    "data_source": "train",
-                    "greater_is_better": True,
-                    "position": None,
-                }
-
-        def precision_test():
-            with suppress(AttributeError, TypeError):
-                return {
-                    "name": "precision_test",
-                    "value": float(self.report.metrics.precision(data_source="test")),
-                    "data_source": "test",
-                    "greater_is_better": True,
-                    "position": None,
-                }
-
-        def r2_train():
-            with suppress(AttributeError, TypeError):
-                return {
-                    "name": "r2_train",
-                    "value": float(self.report.metrics.r2(data_source="train")),
-                    "data_source": "train",
-                    "greater_is_better": True,
-                    "position": None,
-                }
-
-        def r2_test():
-            with suppress(AttributeError, TypeError):
-                return {
-                    "name": "r2_test",
-                    "value": float(self.report.metrics.r2(data_source="test")),
-                    "data_source": "test",
-                    "greater_is_better": True,
-                    "position": None,
-                }
-
-        def recall_train():
-            with suppress(AttributeError, TypeError):
-                return {
-                    "name": "recall_train",
-                    "value": float(self.report.metrics.recall(data_source="train")),
-                    "data_source": "train",
-                    "greater_is_better": True,
-                    "position": None,
-                }
-
-        def recall_test():
-            with suppress(AttributeError, TypeError):
-                return {
-                    "name": "recall_test",
-                    "value": float(self.report.metrics.recall(data_source="test")),
-                    "data_source": "test",
-                    "greater_is_better": True,
-                    "position": None,
-                }
-
-        def rmse_train():
-            with suppress(AttributeError, TypeError):
-                return {
-                    "name": "rmse_train",
-                    "value": float(self.report.metrics.rmse(data_source="train")),
-                    "data_source": "train",
-                    "greater_is_better": False,
-                    "position": None,
-                }
-
-        def rmse_test():
-            with suppress(AttributeError, TypeError):
-                return {
-                    "name": "rmse_test",
-                    "value": float(self.report.metrics.rmse(data_source="test")),
-                    "data_source": "test",
-                    "greater_is_better": False,
-                    "position": None,
-                }
-
-        def roc_auc_train():
-            with suppress(AttributeError, TypeError):
-                return {
-                    "name": "roc_auc_train",
-                    "value": float(self.report.metrics.roc_auc(data_source="train")),
-                    "data_source": "train",
-                    "greater_is_better": True,
-                    "position": None,
-                }
-
-        def roc_auc_test():
-            with suppress(AttributeError, TypeError):
-                return {
-                    "name": "roc_auc_test",
-                    "value": float(self.report.metrics.roc_auc(data_source="test")),
-                    "data_source": "test",
-                    "greater_is_better": True,
-                    "position": None,
-                }
-
+        @metadata
         def fit_time():
             with suppress(KeyError):
                 return {
@@ -224,7 +99,11 @@ class Metadata:
         return list(
             filter(
                 lambda value: value is not None,
-                (metric() for metric in locals().values() if callable(metric)),
+                (
+                    metric()
+                    for metric in locals().values()
+                    if callable(metric) and hasattr(metric, "metadata")
+                ),
             )
         )
 
