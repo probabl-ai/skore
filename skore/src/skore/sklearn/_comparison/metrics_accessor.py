@@ -1,3 +1,4 @@
+import copy
 from typing import Any, Callable, Literal, Optional, Union, cast
 
 import joblib
@@ -193,6 +194,157 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             results["Favorability"] = favorability
 
         return results
+
+    @staticmethod
+    def _combine_cross_validation_results(
+        results: list[pd.DataFrame],
+        estimator_names: list[str],
+        indicator_favorability: bool,
+        aggregate: Optional[Aggregate],
+    ) -> pd.DataFrame:
+        """Combine a list of dataframes.
+
+        Parameters
+        ----------
+        results : pd.DataFrame
+            The dataframes to combine.
+            They are assumed to originate from a `CrossValidationReport.metrics`
+            computation. In particular, there are several assumptions made:
+
+            - every dataframe has the form:
+                - index: Index "Metric", or MultiIndex ["Metric", "Label / Average"]
+                - columns: MultiIndex with levels ["Estimator", "Splits"] (can be
+                  unnamed)
+            - all dataframes have the same metrics
+
+            The dataframes are not required to have the same number of columns (splits).
+
+        estimator_names : list of str of len (len(results))
+            The name to give the estimator for each dataframe.
+
+        indicator_favorability : bool
+            Whether to keep the Favorability column.
+
+        aggregate : Aggregate
+            How to aggregate the resulting dataframe.
+        """
+
+        def add_model_name_to_index(df: pd.DataFrame, model_name: str) -> pd.DataFrame:
+            """Move the model name from the column index to the table index."""
+            df = copy.copy(df)
+
+            # Put the model name as a column
+            df["Estimator"] = model_name
+
+            # Put the model name into the index
+            if "Label / Average" in df.index.names:
+                new_index = ["Metric", "Label / Average", "Estimator"]
+            else:
+                new_index = ["Metric", "Estimator"]
+            df = df.reset_index().set_index(new_index)
+
+            # Then drop the model from the columns
+            df.columns = df.columns.droplevel(0)
+
+            return df
+
+        def reshape_results(df):
+            """Put data in the correct format.
+
+            - Index is "Metric", optionally "Label / Average", "Split"
+            - Columns are "Estimator"
+
+            Examples
+            --------
+            >>> # xdoctest: +SKIP
+            >>> df
+                                                    Split #0  Split #1  Split #2
+            Estimator Metric       Label / Average
+            m1        Precision    0                1.000000  1.000000  1.000000
+                                   1                1.000000  1.000000  1.000000
+                      ROC AUC                       1.000000  1.000000  1.000000
+            m2        Precision    0                1.000000  1.000000       NaN
+                                   1                1.000000  0.941176       NaN
+                      ROC AUC                       1.000000  0.996324       NaN
+            >>> reshape_results(df)
+            Estimator                                   m1        m2
+            Metric      Label / Average Split
+            Precision   0               Split #0  1.000000  1.000000
+                                        Split #1  1.000000  1.000000
+                                        Split #2  1.000000       NaN
+                        1               Split #0  1.000000  1.000000
+                                        Split #1  1.000000  0.941176
+                                        Split #2  1.000000       NaN
+            ROC AUC                     Split #0  1.000000  1.000000
+                                        Split #1  1.000000  0.996324
+                                        Split #2  1.000000       NaN
+            """
+            splits = df.columns
+
+            df_reset = df.reset_index()
+
+            metric_order = df_reset["Metric"].unique()
+
+            # Melt the Split columns into rows
+            if "Label / Average" in df_reset.columns:
+                id_vars = ["Estimator", "Metric", "Label / Average"]
+            else:
+                id_vars = ["Estimator", "Metric"]
+            melted_df = pd.melt(
+                df_reset,
+                id_vars=id_vars,
+                value_vars=splits,
+                var_name="Split",
+                value_name="Value",
+            )
+
+            # Now pivot to have models as columns
+            if "Label / Average" in melted_df.columns:
+                index = ["Metric", "Label / Average", "Split"]
+            else:
+                index = ["Metric", "Split"]
+            result_df = pd.pivot_table(
+                melted_df,
+                index=index,
+                columns="Estimator",
+                values="Value",
+            )
+
+            result_df = result_df.reindex(metric_order, level="Metric")
+
+            return result_df
+
+        results = results.copy()
+
+        # Pop the favorability column if it exists, to:
+        # - not use it in the aggregate operation
+        # - later to only report a single column and not by split columns
+        if indicator_favorability:
+            favorability = results[0]["Favorability"]
+            for result in results:
+                result.pop("Favorability")
+        else:
+            favorability = None
+
+        df_model_name_in_index = pd.concat(
+            [
+                add_model_name_to_index(df, estimator_name)
+                for df, estimator_name in zip(results, estimator_names)
+            ]
+        )
+
+        if aggregate:
+            if isinstance(aggregate, str):
+                aggregate = [aggregate]
+
+            df = df_model_name_in_index.aggregate(func=aggregate, axis=1)
+        else:
+            df = reshape_results(df_model_name_in_index)
+
+        if favorability is not None:
+            df["Favorability"] = favorability
+
+        return df
 
     @progress_decorator(description="Compute metric for each split")
     def _compute_metric_scores(
