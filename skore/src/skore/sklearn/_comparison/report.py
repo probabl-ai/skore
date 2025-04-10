@@ -10,6 +10,7 @@ from numpy.typing import ArrayLike
 
 from skore.externals._pandas_accessors import DirNamesMixin
 from skore.sklearn._base import _BaseReport
+from skore.sklearn._cross_validation.report import CrossValidationReport
 from skore.sklearn._estimator.report import EstimatorReport
 from skore.utils._progress_bar import progress_decorator
 
@@ -94,6 +95,76 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         "metrics": {"name": "metrics"},
     }
     metrics: _MetricsAccessor
+
+    @staticmethod
+    def _deduplicate_report_names(report_names_: list[str]) -> list[str]:
+        """De-duplicate report names that appear several times.
+
+        Leave the other report names alone.
+
+        Examples
+        --------
+        >>> ComparisonReport._deduplicate_report_names(['a', 'b'])
+        ['a', 'b']
+        >>> ComparisonReport._deduplicate_report_names(['a', 'a'])
+        ['a_1', 'a_2']
+        >>> ComparisonReport._deduplicate_report_names(['a', 'b', 'a'])
+        ['a_1', 'b', 'a_2']
+        >>> ComparisonReport._deduplicate_report_names(['a', 'b', 'a', 'b'])
+        ['a_1', 'b_1', 'a_2', 'b_2']
+        >>> ComparisonReport._deduplicate_report_names([])
+        []
+        >>> ComparisonReport._deduplicate_report_names(['a'])
+        ['a']
+        """
+        result = report_names_.copy()
+        for report_name in report_names_:
+            indexes_of_report_names = [
+                index for index, name in enumerate(report_names_) if name == report_name
+            ]
+            if len(indexes_of_report_names) == 1:
+                # report name appears only once
+                continue
+            for n, index in enumerate(indexes_of_report_names, start=1):
+                result[index] = f"{report_name}_{n}"
+        return result
+
+    @staticmethod
+    def _validate_cross_validation_reports(
+        reports: Union[list[CrossValidationReport], dict[str, CrossValidationReport]],
+    ) -> tuple[list[CrossValidationReport], list[str]]:
+        """Validate a list or dict of CrossValidationReports."""
+        if not isinstance(reports, Iterable):
+            raise TypeError(f"Expected reports to be an iterable; got {type(reports)}")
+
+        if len(reports) < 2:
+            raise ValueError("At least 2 instances of CrossValidationReport are needed")
+
+        report_names = (
+            list(map(str, reports.keys())) if isinstance(reports, dict) else None
+        )
+        reports = list(reports.values()) if isinstance(reports, dict) else reports
+
+        if not all(isinstance(report, CrossValidationReport) for report in reports):
+            raise TypeError("Expected instances of CrossValidationReport")
+
+        ml_tasks = {report: report._ml_task for report in reports}
+        if len(set(ml_tasks.values())) > 1:
+            raise ValueError(
+                f"Expected all estimators to have the same ML usecase; got {ml_tasks}"
+            )
+
+        if len(set(id(report) for report in reports)) < len(reports):
+            raise ValueError("Compared CrossValidationReports must be distinct objects")
+
+        if report_names is not None:
+            report_names_ = report_names
+        else:
+            report_names_ = ComparisonReport._deduplicate_report_names(
+                [report.estimator_name_ for report in reports]
+            )
+
+        return reports, report_names_
 
     @staticmethod
     def _validate_reports(
