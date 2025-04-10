@@ -1,11 +1,11 @@
-"""Tests of `CrossValidationComparisonReport.metrics.report_metrics`."""
+"""Tests of `ComparisonReport.metrics.report_metrics`."""
 
 import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal, assert_index_equal
 from sklearn.datasets import make_classification, make_regression
 from sklearn.dummy import DummyClassifier, DummyRegressor
-from skore import CrossValidationComparisonReport, CrossValidationReport
+from skore import ComparisonReport, CrossValidationReport
 
 
 def make_classifier():
@@ -16,7 +16,7 @@ def make_classifier():
 def report():
     X, y = make_classification(class_sep=0.1, random_state=42)
 
-    report = CrossValidationComparisonReport(
+    report = ComparisonReport(
         [
             CrossValidationReport(make_classifier(), X, y),
             CrossValidationReport(make_classifier(), X, y, cv_splitter=3),
@@ -30,7 +30,7 @@ def report():
 def report_regression():
     X, y = make_regression(random_state=42)
 
-    report = CrossValidationComparisonReport(
+    report = ComparisonReport(
         [
             CrossValidationReport(DummyRegressor(), X, y),
             CrossValidationReport(DummyRegressor(), X, y, cv_splitter=3),
@@ -140,7 +140,7 @@ def test_init_with_report_names():
     cv_report1 = CrossValidationReport(make_classifier(), X, y)
     cv_report2 = CrossValidationReport(make_classifier(), X, y)
 
-    comp = CrossValidationComparisonReport({"r1": cv_report1, "r2": cv_report2})
+    comp = ComparisonReport({"r1": cv_report1, "r2": cv_report2})
 
     assert_index_equal(
         comp.metrics.report_metrics(aggregate=None).columns,
