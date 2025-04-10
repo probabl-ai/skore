@@ -134,12 +134,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         reports: Union[list[CrossValidationReport], dict[str, CrossValidationReport]],
     ) -> tuple[list[CrossValidationReport], list[str]]:
         """Validate a list or dict of CrossValidationReports."""
-        if not isinstance(reports, Iterable):
-            raise TypeError(f"Expected reports to be an iterable; got {type(reports)}")
-
-        if len(reports) < 2:
-            raise ValueError("At least 2 instances of CrossValidationReport are needed")
-
         report_names = (
             list(map(str, reports.keys())) if isinstance(reports, dict) else None
         )
@@ -171,12 +165,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         reports: Union[list[EstimatorReport], dict[str, EstimatorReport]],
     ) -> tuple[list[EstimatorReport], list[str]]:
         """Validate a list or dict of EstimatorReports."""
-        if not isinstance(reports, Iterable):
-            raise TypeError(f"Expected reports to be an iterable; got {type(reports)}")
-
-        if len(reports) < 2:
-            raise ValueError("At least 2 instances of EstimatorReport are needed")
-
         report_names = (
             list(map(str, reports.keys())) if isinstance(reports, dict) else None
         )
@@ -223,6 +211,12 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         - all estimators have non-empty X_test and y_test,
         - all estimators have the same X_test and y_test.
         """
+        if not isinstance(reports, Iterable):
+            raise TypeError(f"Expected reports to be an iterable; got {type(reports)}")
+
+        if len(reports) < 2:
+            raise ValueError("Expected at least 2 reports to compare")
+
         self.reports_, self.report_names_ = (
             ComparisonReport._validate_estimator_reports(reports)
         )
