@@ -129,34 +129,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                 result[index] = f"{report_name}_{n}"
         return result
 
-    @staticmethod
-    def _validate_cross_validation_reports(
-        reports: list[Any],
-    ) -> tuple[list[CrossValidationReport], list[str]]:
-        """Validate CrossValidationReports."""
-        if not all(isinstance(report, CrossValidationReport) for report in reports):
-            raise TypeError("Expected instances of CrossValidationReport")
-
-        return reports
-
-    @staticmethod
-    def _validate_estimator_reports(
-        reports: list[Any],
-    ) -> tuple[list[EstimatorReport], list[str]]:
-        """Validate EstimatorReports."""
-        if not all(isinstance(report, EstimatorReport) for report in reports):
-            raise TypeError("Expected instances of EstimatorReport")
-
-        test_dataset_hashes = {
-            joblib.hash((report.X_test, report.y_test))
-            for report in reports
-            if not ((report.X_test is None) and (report.y_test is None))
-        }
-        if len(test_dataset_hashes) > 1:
-            raise ValueError("Expected all estimators to have the same testing data.")
-
-        return reports
-
     def __init__(
         self,
         reports: Union[
@@ -191,11 +163,24 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         reports_list = list(reports.values()) if isinstance(reports, dict) else reports
 
         if isinstance(reports_list[0], EstimatorReport):
-            self.reports_ = ComparisonReport._validate_estimator_reports(reports_list)
+            if not all(isinstance(report, EstimatorReport) for report in reports_list):
+                raise TypeError("Expected instances of EstimatorReport")
+
+            test_dataset_hashes = {
+                joblib.hash((report.X_test, report.y_test))
+                for report in reports_list
+                if not ((report.X_test is None) and (report.y_test is None))
+            }
+            if len(test_dataset_hashes) > 1:
+                raise ValueError(
+                    "Expected all estimators to have the same testing data."
+                )
+
         elif isinstance(reports_list[0], CrossValidationReport):
-            self.reports_ = ComparisonReport._validate_cross_validation_reports(
-                reports_list
-            )
+            if not all(
+                isinstance(report, CrossValidationReport) for report in reports_list
+            ):
+                raise TypeError("Expected instances of CrossValidationReport")
         else:
             raise TypeError(
                 f"Expected instances of {EstimatorReport.__name__} "
@@ -203,10 +188,10 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                 f"got {type(reports_list[0])}"
             )
 
-        if len(set(id(report) for report in reports)) < len(reports):
+        if len(set(id(report) for report in reports_list)) < len(reports_list):
             raise ValueError("Expected reports to be distinct objects")
 
-        ml_tasks = {report: report._ml_task for report in self.reports_}
+        ml_tasks = {report: report._ml_task for report in reports_list}
         if len(set(ml_tasks.values())) > 1:
             raise ValueError(
                 f"Expected all estimators to have the same ML usecase; got {ml_tasks}"
@@ -214,10 +199,12 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
         if report_names is None:
             self.report_names_ = ComparisonReport._deduplicate_report_names(
-                [report.estimator_name_ for report in self.reports_]
+                [report.estimator_name_ for report in reports_list]
             )
         else:
             self.report_names_ = report_names
+
+        self.reports_ = reports_list
 
         # used to know if a parent launches a progress bar manager
         self._progress_info: Optional[dict[str, Any]] = None
