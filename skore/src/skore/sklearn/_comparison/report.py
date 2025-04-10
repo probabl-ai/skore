@@ -89,6 +89,12 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     >>> report = ComparisonReport(
     ...     {"model1": estimator_report_1, "model2": estimator_report_2}
     ... )
+
+    >>> from skore import CrossValidationReport
+    >>> report_1 = CrossValidationReport(estimator_1, X, y)
+    >>> report_2 = CrossValidationReport(estimator_2, X, y)
+    >>> report = ComparisonReport([report_1, report_2])
+    >>> report = ComparisonReport({"model1": report_1, "model2": report_2})
     """
 
     _ACCESSOR_CONFIG: dict[str, dict[str, str]] = {
