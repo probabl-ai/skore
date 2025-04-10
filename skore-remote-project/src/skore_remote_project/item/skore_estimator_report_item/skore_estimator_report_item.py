@@ -18,7 +18,7 @@ class SkoreEstimatorReportItem(PickleItem):
 
     @property
     def __representation__(self) -> dict[str, dict]:
-        return {"related_items": dict(Representation(self.__raw__))}
+        return {"related_items": list(Representation(self.__raw__))}
 
     @classmethod
     def factory(cls, report: EstimatorReport, /) -> SkoreEstimatorReportItem:

@@ -19,13 +19,12 @@ class Representation:
     @representation
     def precision_recall_train(self):
         with suppress(AttributeError):
-            pr = self.report.feature_importance.precision_recall(data_source="train")
+            pr = self.report.metrics.precision_recall(data_source="train")
             item = MatplotlibFigureItem.factory(pr.plot().figure_)
             item_representation = item.__representation__
 
             return {
                 "category": "performance",
-                "key": "precision_recall_train",
                 "attributes": {"data_source": "train"},
                 **item_representation,
             }
@@ -33,13 +32,12 @@ class Representation:
     @representation
     def precision_recall_test(self):
         with suppress(AttributeError):
-            pr = self.report.feature_importance.precision_recall(data_source="test")
+            pr = self.report.metrics.precision_recall(data_source="test")
             item = MatplotlibFigureItem.factory(pr.plot().figure_)
             item_representation = item.__representation__
 
             return {
                 "category": "performance",
-                "key": "precision_recall_test",
                 "attributes": {"data_source": "test"},
                 **item_representation,
             }
@@ -47,13 +45,12 @@ class Representation:
     @representation
     def prediction_error_train(self):
         with suppress(AttributeError):
-            pe = self.report.feature_importance.prediction_error(data_source="train")
+            pe = self.report.metrics.prediction_error(data_source="train")
             item = MatplotlibFigureItem.factory(pe.plot().figure_)
             item_representation = item.__representation__
 
             return {
                 "category": "performance",
-                "key": "prediction_error_train",
                 "attributes": {"data_source": "train"},
                 **item_representation,
             }
@@ -61,13 +58,12 @@ class Representation:
     @representation
     def prediction_error_test(self):
         with suppress(AttributeError):
-            pe = self.report.feature_importance.prediction_error(data_source="test")
+            pe = self.report.metrics.prediction_error(data_source="test")
             item = MatplotlibFigureItem.factory(pe.plot().figure_)
             item_representation = item.__representation__
 
             return {
                 "category": "performance",
-                "key": "prediction_error_test",
                 "attributes": {"data_source": "test"},
                 **item_representation,
             }
@@ -75,13 +71,12 @@ class Representation:
     @representation
     def roc_train(self):
         with suppress(AttributeError):
-            roc = self.report.feature_importance.roc(data_source="train")
+            roc = self.report.metrics.roc(data_source="train")
             item = MatplotlibFigureItem.factory(roc.plot().figure_)
             item_representation = item.__representation__
 
             return {
                 "category": "performance",
-                "key": "roc_train",
                 "attributes": {"data_source": "train"},
                 **item_representation,
             }
@@ -89,13 +84,12 @@ class Representation:
     @representation
     def roc_test(self):
         with suppress(AttributeError):
-            roc = self.report.feature_importance.roc(data_source="test")
+            roc = self.report.metrics.roc(data_source="test")
             item = MatplotlibFigureItem.factory(roc.plot().figure_)
             item_representation = item.__representation__
 
             return {
                 "category": "performance",
-                "key": "roc_test",
                 "attributes": {"data_source": "test"},
                 **item_representation,
             }
@@ -108,7 +102,6 @@ class Representation:
 
         return {
             "category": "feature_importance",
-            "key": "permutation_train",
             "attributes": {"data_source": "train", "method": "permutation"},
             **item_representation,
         }
@@ -121,7 +114,6 @@ class Representation:
 
         return {
             "category": "feature_importance",
-            "key": "permutation_test",
             "attributes": {"data_source": "test", "method": "permutation"},
             **item_representation,
         }
@@ -135,7 +127,6 @@ class Representation:
 
             return {
                 "category": "feature_importance",
-                "key": "mean_decrease_impurity",
                 "attributes": {"method": "mean_decrease_impurity"},
                 **item_representation,
             }
@@ -149,7 +140,6 @@ class Representation:
 
             return {
                 "category": "feature_importance",
-                "key": "coefficients",
                 "attributes": {"method": "coefficients"},
                 **item_representation,
             }
@@ -162,7 +152,6 @@ class Representation:
 
         return {
             "category": "model",
-            "key": "estimator_html_repr",
             "attributes": None,
             **item_representation,
         }
@@ -171,4 +160,4 @@ class Representation:
         for key, method in getmembers(self):
             if ismethod(method) and hasattr(method, "representation"):
                 if (value := method()) is not None:
-                    yield (key, value)
+                    yield (value | {"key": key})
