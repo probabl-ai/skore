@@ -175,6 +175,29 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 )
         return results
 
+    @staticmethod
+    def _combine_estimator_results(
+        results: list[pd.DataFrame],
+        estimator_names: list[str],
+        indicator_favorability: bool,
+    ) -> pd.DataFrame:
+        results = pd.concat(results, axis=1)
+
+        # Pop the favorability column if it exists, to:
+        # - not use it in the aggregate operation
+        # - later to only report a single column and not by split columns
+        if indicator_favorability:
+            favorability = results.pop("Favorability").iloc[:, 0]
+        else:
+            favorability = None
+
+        results.columns = pd.Index(estimator_names, name="Estimator")
+
+        if favorability is not None:
+            results["Favorability"] = favorability
+
+        return results
+
     @progress_decorator(description="Compute metric for each split")
     def _compute_metric_scores(
         self,
@@ -240,20 +263,13 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 individual_results.append(result)
                 progress.update(main_task, advance=1, refresh=True)
 
-            results = pd.concat(individual_results, axis=1)
-
-            # Pop the favorability column if it exists, to:
-            # - not use it in the aggregate operation
-            # - later to only report a single column and not by split columns
-            if metric_kwargs.get("indicator_favorability", False):
-                favorability = results.pop("Favorability").iloc[:, 0]
-            else:
-                favorability = None
-
-            results.columns = pd.Index(self._parent.report_names_, name="Estimator")
-
-            if favorability is not None:
-                results["Favorability"] = favorability
+            _MetricsAccessor._combine_estimator_results(
+                individual_results,
+                estimator_names=self._parent.report_names_,
+                indicator_favorability=metric_kwargs.get(
+                    "indicator_favorability", False
+                ),
+            )
 
             self._parent._cache[cache_key] = results
         return results
