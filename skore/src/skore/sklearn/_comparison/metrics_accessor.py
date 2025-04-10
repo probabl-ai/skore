@@ -411,13 +411,23 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 individual_results.append(result)
                 progress.update(main_task, advance=1, refresh=True)
 
-            _MetricsAccessor._combine_estimator_results(
-                individual_results,
-                estimator_names=self._parent.report_names_,
-                indicator_favorability=metric_kwargs.get(
-                    "indicator_favorability", False
-                ),
-            )
+            if self._parent._reports_type == "EstimatorReport":
+                results = _MetricsAccessor._combine_estimator_results(
+                    individual_results,
+                    estimator_names=self._parent.report_names_,
+                    indicator_favorability=metric_kwargs.get(
+                        "indicator_favorability", False
+                    ),
+                )
+            else:  # "CrossValidationReport"
+                results = _MetricsAccessor._combine_cross_validation_results(
+                    individual_results,
+                    estimator_names=self._parent.report_names_,
+                    indicator_favorability=metric_kwargs.get(
+                        "indicator_favorability", False
+                    ),
+                    aggregate=aggregate,
+                )
 
             self._parent._cache[cache_key] = results
         return results
