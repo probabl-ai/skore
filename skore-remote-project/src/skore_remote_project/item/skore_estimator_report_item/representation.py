@@ -19,10 +19,8 @@ class Representation:
     @representation
     def precision_recall_train(self):
         with suppress(AttributeError):
-            precision_recall = self.report.feature_importance.precision_recall(
-                data_source="train"
-            )
-            item = MatplotlibFigureItem.factory(precision_recall.plot().figure_)
+            pr = self.report.feature_importance.precision_recall(data_source="train")
+            item = MatplotlibFigureItem.factory(pr.plot().figure_)
             item_representation = item.__representation__
 
             return {
@@ -35,10 +33,8 @@ class Representation:
     @representation
     def precision_recall_test(self):
         with suppress(AttributeError):
-            precision_recall = self.report.feature_importance.precision_recall(
-                data_source="test"
-            )
-            item = MatplotlibFigureItem.factory(precision_recall.plot().figure_)
+            pr = self.report.feature_importance.precision_recall(data_source="test")
+            item = MatplotlibFigureItem.factory(pr.plot().figure_)
             item_representation = item.__representation__
 
             return {
@@ -51,10 +47,8 @@ class Representation:
     @representation
     def prediction_error_train(self):
         with suppress(AttributeError):
-            prediction_error = self.report.feature_importance.prediction_error(
-                data_source="train"
-            )
-            item = MatplotlibFigureItem.factory(prediction_error.plot().figure_)
+            pe = self.report.feature_importance.prediction_error(data_source="train")
+            item = MatplotlibFigureItem.factory(pe.plot().figure_)
             item_representation = item.__representation__
 
             return {
@@ -67,10 +61,8 @@ class Representation:
     @representation
     def prediction_error_test(self):
         with suppress(AttributeError):
-            prediction_error = self.report.feature_importance.prediction_error(
-                data_source="test"
-            )
-            item = MatplotlibFigureItem.factory(prediction_error.plot().figure_)
+            pe = self.report.feature_importance.prediction_error(data_source="test")
+            item = MatplotlibFigureItem.factory(pe.plot().figure_)
             item_representation = item.__representation__
 
             return {
@@ -110,24 +102,21 @@ class Representation:
 
     @representation
     def permutation_train(self):
-        with suppress(AttributeError):
-            permutation = self.report.feature_importance.permutation(
-                data_source="train"
-            )
-            item = PandasDataFrameItem.factory(permutation)
-            item_representation = item.__representation__
+        p = self.report.feature_importance.permutation(data_source="train")
+        item = PandasDataFrameItem.factory(p)
+        item_representation = item.__representation__
 
-            return {
-                "category": "feature_importance",
-                "key": "permutation_train",
-                "attributes": {"data_source": "train", "method": "permutation"},
-                **item_representation,
-            }
+        return {
+            "category": "feature_importance",
+            "key": "permutation_train",
+            "attributes": {"data_source": "train", "method": "permutation"},
+            **item_representation,
+        }
 
     @representation
     def permutation_test(self):
-        permutation = self.report.feature_importance.permutation(data_source="test")
-        item = PandasDataFrameItem.factory(permutation)
+        p = self.report.feature_importance.permutation(data_source="test")
+        item = PandasDataFrameItem.factory(p)
         item_representation = item.__representation__
 
         return {
@@ -140,10 +129,8 @@ class Representation:
     @representation
     def mean_decrease_impurity(self):
         with suppress(AttributeError):
-            mean_decrease_impurity = (
-                self.report.feature_importance.mean_decrease_impurity()
-            )
-            item = PandasDataFrameItem.factory(mean_decrease_impurity)
+            mdi = self.report.feature_importance.mean_decrease_impurity()
+            item = PandasDataFrameItem.factory(mdi)
             item_representation = item.__representation__
 
             return {
@@ -156,8 +143,8 @@ class Representation:
     @representation
     def coefficients(self):
         with suppress(AttributeError):
-            coefficients = self.report.feature_importance.coefficients()
-            item = PandasDataFrameItem.factory(coefficients)
+            c = self.report.feature_importance.coefficients()
+            item = PandasDataFrameItem.factory(c)
             item_representation = item.__representation__
 
             return {
@@ -169,8 +156,8 @@ class Representation:
 
     @representation
     def estimator_html_repr(self):
-        html = estimator_html_repr(self.report.estimator_)
-        item = MediaItem.factory(html, media_type="text/html")
+        e = estimator_html_repr(self.report.estimator_)
+        item = MediaItem.factory(e, media_type="text/html")
         item_representation = item.__representation__
 
         return {
