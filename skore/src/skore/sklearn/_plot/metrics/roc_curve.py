@@ -25,7 +25,7 @@ from skore.sklearn.types import MLTask
 
 
 class RocCurveDisplay(
-    HelpDisplayMixin, _ClassifierCurveDisplayMixin, StyleDisplayMixin
+    StyleDisplayMixin, HelpDisplayMixin, _ClassifierCurveDisplayMixin
 ):
     """ROC Curve visualization.
 
@@ -266,7 +266,7 @@ class RocCurveDisplay(
 
             info_pos_label = None  # irrelevant for multiclass
 
-        ax.legend(loc="lower right", title=estimator_name)
+        ax.legend(bbox_to_anchor=(1.02, 1), title=estimator_name)
 
         return ax, lines, info_pos_label
 
@@ -396,7 +396,7 @@ class RocCurveDisplay(
                     (line,) = ax.plot(fpr_split, tpr_split, **line_kwargs_validated)
                     lines.append(line)
 
-        ax.legend(loc="lower right", title=estimator_name)
+        ax.legend(bbox_to_anchor=(1.02, 1), title=estimator_name)
 
         return ax, lines, info_pos_label
 
@@ -520,12 +520,13 @@ class RocCurveDisplay(
                     lines.append(line)
 
         ax.legend(
-            loc="lower right",
+            bbox_to_anchor=(1.02, 1),
             title=f"{ml_task.title()} on $\\bf{{{data_source}}}$ set",
         )
 
         return ax, lines, info_pos_label
 
+    @StyleDisplayMixin.style_plot
     def plot(
         self,
         ax: Optional[Axes] = None,

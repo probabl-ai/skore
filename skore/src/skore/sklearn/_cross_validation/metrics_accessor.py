@@ -1,4 +1,5 @@
-from typing import Any, Callable, Literal, Optional, Union
+from collections.abc import Sequence
+from typing import Any, Callable, Literal, Optional, Union, cast
 
 import joblib
 import numpy as np
@@ -16,7 +17,8 @@ from skore.sklearn._plot import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
-from skore.utils._accessor import _check_supported_ml_task
+from skore.utils._accessor import _check_estimator_report_has_method
+from skore.utils._fixes import _validate_joblib_parallel_params
 from skore.utils._index import flatten_multi_index
 from skore.utils._parallel import Parallel, delayed
 from skore.utils._progress_bar import progress_decorator
@@ -60,8 +62,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         indicator_favorability: bool = False,
         flat_index: bool = False,
         aggregate: Optional[
-            Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
-        ] = None,
+            Union[Literal["mean", "std"], Sequence[Literal["mean", "std"]]]
+        ] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Report a set of metrics for our estimator.
 
@@ -100,8 +102,9 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             Whether to flatten the `MultiIndex` columns. Flat index will always be lower
             case, do not include spaces and remove the hash symbol to ease indexing.
 
-        aggregate : {"mean", "std"} or list of such str, default=None
+        aggregate : {"mean", "std}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
 
         Returns
         -------
@@ -119,7 +122,6 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         >>> report.metrics.report_metrics(
         ...     scoring=["precision", "recall"],
         ...     pos_label=1,
-        ...     aggregate=["mean", "std"],
         ...     indicator_favorability=True,
         ... )
                   LogisticRegression           Favorability
@@ -152,7 +154,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         *,
         data_source: DataSource = "test",
         aggregate: Optional[
-            Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
+            Union[Literal["mean", "std"], Sequence[Literal["mean", "std"]]]
         ] = None,
         **metric_kwargs: Any,
     ) -> pd.DataFrame:
@@ -186,9 +188,11 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             results = self._parent._cache[cache_key]
         else:
             parallel = Parallel(
-                n_jobs=self._parent.n_jobs,
-                return_as="generator",
-                require="sharedmem",
+                **_validate_joblib_parallel_params(
+                    n_jobs=self._parent.n_jobs,
+                    return_as="generator",
+                    require="sharedmem",
+                )
             )
             generator = parallel(
                 delayed(getattr(report.metrics, report_metric_name))(
@@ -231,18 +235,69 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             self._parent._cache[cache_key] = results
         return results
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
+    def timings(
+        self,
+        aggregate: Optional[
+            Union[Literal["mean", "std"], Sequence[Literal["mean", "std"]]]
+        ] = ("mean", "std"),
+    ) -> pd.DataFrame:
+        """Get all measured processing times related to the estimator.
+
+        The index of the returned dataframe is the name of the processing time. When
+        the estimators were not used to predict, no timings regarding the prediction
+        will be present.
+
+        Parameters
+        ----------
+        aggregate : {"mean", "std"} or list of such str, default=None
+            Function to aggregate the timings across the cross-validation splits.
+
+        Returns
+        -------
+        pd.DataFrame
+            A dataframe with the processing times.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import make_classification
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> X, y = make_classification(random_state=42)
+        >>> estimator = LogisticRegression()
+        >>> from skore import CrossValidationReport
+        >>> report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=2)
+        >>> report.metrics.timings()
+                      mean       std
+        Fit time       ...       ...
+        >>> report.cache_predictions(response_methods=["predict"])
+        >>> report.metrics.timings()
+                                mean       std
+        Fit time                 ...       ...
+        Predict time test        ...       ...
+        Predict time train       ...       ...
+        """
+        timings: pd.DataFrame = pd.concat(
+            [
+                pd.Series(report.metrics.timings())
+                for report in self._parent.estimator_reports_
+            ],
+            axis=1,
+            keys=[f"Split #{i}" for i in range(len(self._parent.estimator_reports_))],
         )
-    )
+        if aggregate:
+            if isinstance(aggregate, str):
+                aggregate = [aggregate]
+            timings = timings.aggregate(func=aggregate, axis=1)
+        timings.index = timings.index.str.replace("_", " ").str.capitalize()
+        return timings
+
+    @available_if(_check_estimator_report_has_method("metrics", "accuracy"))
     def accuracy(
         self,
         *,
         data_source: DataSource = "test",
         aggregate: Optional[
-            Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
-        ] = None,
+            Union[Literal["mean", "std"], Sequence[Literal["mean", "std"]]]
+        ] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the accuracy score.
 
@@ -254,8 +309,9 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
 
-        aggregate : {"mean", "std"} or list of such str, default=None
+        aggregate : {"mean", "std}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
 
         Returns
         -------
@@ -271,10 +327,10 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         >>> report.metrics.accuracy()
-                    LogisticRegression
-                                Split #0  Split #1
+                LogisticRegression
+                            mean      std
         Metric
-        Accuracy                0.94...   0.94...
+        Accuracy           0.94...  0.00...
         """
         return self.report_metrics(
             scoring=["accuracy"],
@@ -282,11 +338,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             aggregate=aggregate,
         )
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
-        )
-    )
+    @available_if(_check_estimator_report_has_method("metrics", "precision"))
     def precision(
         self,
         *,
@@ -296,8 +348,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         ] = None,
         pos_label: Optional[Union[int, float, bool, str]] = None,
         aggregate: Optional[
-            Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
-        ] = None,
+            Union[Literal["mean", "std"], Sequence[Literal["mean", "std"]]]
+        ] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the precision score.
 
@@ -337,8 +389,9 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         pos_label : int, float, bool or str, default=None
             The positive class.
 
-        aggregate : {"mean", "std"} or list of such str, default=None
+        aggregate : {"mean", "std}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
 
         Returns
         -------
@@ -354,11 +407,11 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         >>> report.metrics.precision()
-                                    LogisticRegression
-                                                Split #0  Split #1
-        Metric         Label / Average
-        Precision     0                         0.96...   0.90...
-                      1                         0.93...   0.96...
+                                LogisticRegression
+                                                mean       std
+        Metric    Label / Average
+        Precision 0                         0.93...  0.04...
+                  1                         0.94...  0.02...
         """
         return self.report_metrics(
             scoring=["precision"],
@@ -368,11 +421,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             scoring_kwargs={"average": average},
         )
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
-        )
-    )
+    @available_if(_check_estimator_report_has_method("metrics", "recall"))
     def recall(
         self,
         *,
@@ -382,8 +431,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         ] = None,
         pos_label: Optional[Union[int, float, bool, str]] = None,
         aggregate: Optional[
-            Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
-        ] = None,
+            Union[Literal["mean", "std"], Sequence[Literal["mean", "std"]]]
+        ] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the recall score.
 
@@ -424,8 +473,9 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         pos_label : int, float, bool or str, default=None
             The positive class.
 
-        aggregate : {"mean", "std"} or list of such str, default=None
+        aggregate : {"mean", "std}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
 
         Returns
         -------
@@ -441,11 +491,11 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         >>> report.metrics.recall()
-                                    LogisticRegression
-                                            Split #0  Split #1
-        Metric      Label / Average
-        Recall     0                         0.87...  0.94...
-                   1                         0.98...  0.94...
+                            LogisticRegression
+                                            mean       std
+        Metric Label / Average
+        Recall 0                         0.91...  0.04...
+               1                         0.96...  0.02...
         """
         return self.report_metrics(
             scoring=["recall"],
@@ -455,16 +505,14 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             scoring_kwargs={"average": average},
         )
 
-    @available_if(
-        _check_supported_ml_task(supported_ml_tasks=["binary-classification"])
-    )
+    @available_if(_check_estimator_report_has_method("metrics", "brier_score"))
     def brier_score(
         self,
         *,
         data_source: DataSource = "test",
         aggregate: Optional[
-            Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
-        ] = None,
+            Union[Literal["mean", "std"], Sequence[Literal["mean", "std"]]]
+        ] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the Brier score.
 
@@ -476,8 +524,9 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
 
-        aggregate : {"mean", "std"} or list of such str, default=None
+        aggregate : {"mean", "std}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
 
         Returns
         -------
@@ -493,10 +542,10 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         >>> report.metrics.brier_score()
-                        LogisticRegression
-                                Split #0  Split #1
+                    LogisticRegression
+                                mean       std
         Metric
-        Brier score             0.04...   0.04...
+        Brier score            0.04...  0.00...
         """
         return self.report_metrics(
             scoring=["brier_score"],
@@ -504,11 +553,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             aggregate=aggregate,
         )
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
-        )
-    )
+    @available_if(_check_estimator_report_has_method("metrics", "roc_auc"))
     def roc_auc(
         self,
         *,
@@ -516,8 +561,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         average: Optional[Literal["macro", "micro", "weighted", "samples"]] = None,
         multi_class: Literal["raise", "ovr", "ovo"] = "ovr",
         aggregate: Optional[
-            Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
-        ] = None,
+            Union[Literal["mean", "std"], Sequence[Literal["mean", "std"]]]
+        ] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the ROC AUC score.
 
@@ -562,8 +607,9 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
               pairwise combinations of classes. Insensitive to class imbalance when
               `average == "macro"`.
 
-        aggregate : {"mean", "std"} or list of such str, default=None
+        aggregate : {"mean", "std}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
 
         Returns
         -------
@@ -579,10 +625,10 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         >>> report.metrics.roc_auc()
-                    LogisticRegression
-                            Split #0  Split #1
+                LogisticRegression
+                            mean       std
         Metric
-        ROC AUC             0.99...   0.98...
+        ROC AUC           0.98...  0.00...
         """
         return self.report_metrics(
             scoring=["roc_auc"],
@@ -591,18 +637,14 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             scoring_kwargs={"average": average, "multi_class": multi_class},
         )
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
-        )
-    )
+    @available_if(_check_estimator_report_has_method("metrics", "log_loss"))
     def log_loss(
         self,
         *,
         data_source: DataSource = "test",
         aggregate: Optional[
-            Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
-        ] = None,
+            Union[Literal["mean", "std"], Sequence[Literal["mean", "std"]]]
+        ] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the log loss.
 
@@ -614,8 +656,9 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
 
-        aggregate : {"mean", "std"} or list of such str, default=None
+        aggregate : {"mean", "std}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
 
         Returns
         -------
@@ -631,10 +674,10 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, cv_splitter=2)
         >>> report.metrics.log_loss()
-                    LogisticRegression
-                                Split #0  Split #1
+                LogisticRegression
+                            mean       std
         Metric
-        Log loss                0.1...     0.1...
+        Log loss            0.14...  0.03...
         """
         return self.report_metrics(
             scoring=["log_loss"],
@@ -642,19 +685,15 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             aggregate=aggregate,
         )
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["regression", "multioutput-regression"]
-        )
-    )
+    @available_if(_check_estimator_report_has_method("metrics", "r2"))
     def r2(
         self,
         *,
         data_source: DataSource = "test",
         multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
         aggregate: Optional[
-            Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
-        ] = None,
+            Union[Literal["mean", "std"], Sequence[Literal["mean", "std"]]]
+        ] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the R² score.
 
@@ -676,8 +715,9 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
 
             By default, no averaging is done.
 
-        aggregate : {"mean", "std"} or list of such str, default=None
+        aggregate : {"mean", "std}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
 
         Returns
         -------
@@ -693,10 +733,10 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         >>> regressor = Ridge()
         >>> report = CrossValidationReport(regressor, X=X, y=y, cv_splitter=2)
         >>> report.metrics.r2()
-                    Ridge
-                Split #0  Split #1
+                Ridge
+                    mean       std
         Metric
-        R²      0.36...   0.39...
+        R²      0.37...  0.02...
         """
         return self.report_metrics(
             scoring=["r2"],
@@ -705,19 +745,15 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             scoring_kwargs={"multioutput": multioutput},
         )
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["regression", "multioutput-regression"]
-        )
-    )
+    @available_if(_check_estimator_report_has_method("metrics", "rmse"))
     def rmse(
         self,
         *,
         data_source: DataSource = "test",
         multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
         aggregate: Optional[
-            Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
-        ] = None,
+            Union[Literal["mean", "std"], Sequence[Literal["mean", "std"]]]
+        ] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the root mean squared error.
 
@@ -739,8 +775,9 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
 
             By default, no averaging is done.
 
-        aggregate : {"mean", "std"} or list of such str, default=None
+        aggregate : {"mean", "std}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
 
         Returns
         -------
@@ -757,9 +794,9 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         >>> report = CrossValidationReport(regressor, X=X, y=y, cv_splitter=2)
         >>> report.metrics.rmse()
                     Ridge
-                    Split #0   Split #1
+                    mean       std
         Metric
-        RMSE        59.9...    61.4...
+        RMSE    60.7...  1.0...
         """
         return self.report_metrics(
             scoring=["rmse"],
@@ -776,8 +813,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         metric_name: Optional[str] = None,
         data_source: DataSource = "test",
         aggregate: Optional[
-            Union[Literal["mean", "std"], list[Literal["mean", "std"]]]
-        ] = None,
+            Union[Literal["mean", "std"], Sequence[Literal["mean", "std"]]]
+        ] = ("mean", "std"),
         **kwargs,
     ) -> pd.DataFrame:
         """Compute a custom metric.
@@ -812,8 +849,9 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
 
-        aggregate : {"mean", "std"} or list of such str, default=None
+        aggregate : {"mean", "std}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
 
         **kwargs : dict
             Any additional keyword arguments to be passed to the metric function.
@@ -837,10 +875,10 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         ...     response_method="predict",
         ...     metric_name="MAE",
         ... )
-                    Ridge
-                Split #0   Split #1
+                Ridge
+                    mean       std
         Metric
-        MAE     50.1...   52.6...
+        MAE     51.4...  1.7...
         """
         # create a scorer with `greater_is_better=True` to not alter the output of
         # `metric_function`
@@ -917,10 +955,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
 
     def __repr__(self) -> str:
         """Return a string representation using rich."""
-        return self._rich_repr(
-            class_name="skore.CrossValidationReport.metrics",
-            help_method_name="report.metrics.help()",
-        )
+        return self._rich_repr(class_name="skore.CrossValidationReport.metrics")
 
     ####################################################################################
     # Methods related to displays
@@ -959,7 +994,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         display : display_class
             The display.
         """
-        if "random_state" in display_kwargs and display_kwargs["random_state"] is None:
+        if "seed" in display_kwargs and display_kwargs["seed"] is None:
             cache_key = None
         else:
             # Create a list of cache key components and then convert to tuple
@@ -1010,18 +1045,14 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
                 **display_kwargs,
             )
 
-            # Unless random_state is an int (i.e. the call is deterministic),
-            # we do not cache
             if cache_key is not None:
+                # Unless seed is an int (i.e. the call is deterministic),
+                # we do not cache
                 self._parent._cache[cache_key] = display
 
         return display
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
-        )
-    )
+    @available_if(_check_estimator_report_has_method("metrics", "roc"))
     def roc(
         self,
         *,
@@ -1059,20 +1090,18 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         """
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
-        display = self._get_display(
-            data_source=data_source,
-            response_method=response_method,
-            display_class=RocCurveDisplay,
-            display_kwargs=display_kwargs,
+        display = cast(
+            RocCurveDisplay,
+            self._get_display(
+                data_source=data_source,
+                response_method=response_method,
+                display_class=RocCurveDisplay,
+                display_kwargs=display_kwargs,
+            ),
         )
-        assert isinstance(display, RocCurveDisplay)
         return display
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
-        )
-    )
+    @available_if(_check_estimator_report_has_method("metrics", "precision_recall"))
     def precision_recall(
         self,
         *,
@@ -1110,26 +1139,24 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         """
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
-        display = self._get_display(
-            data_source=data_source,
-            response_method=response_method,
-            display_class=PrecisionRecallCurveDisplay,
-            display_kwargs=display_kwargs,
+        display = cast(
+            PrecisionRecallCurveDisplay,
+            self._get_display(
+                data_source=data_source,
+                response_method=response_method,
+                display_class=PrecisionRecallCurveDisplay,
+                display_kwargs=display_kwargs,
+            ),
         )
-        assert isinstance(display, PrecisionRecallCurveDisplay)
         return display
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["regression", "multioutput-regression"]
-        )
-    )
+    @available_if(_check_estimator_report_has_method("metrics", "prediction_error"))
     def prediction_error(
         self,
         *,
         data_source: DataSource = "test",
         subsample: Union[float, int, None] = 1_000,
-        random_state: Optional[int] = None,
+        seed: Optional[int] = None,
     ) -> PredictionErrorDisplay:
         """Plot the prediction error of a regression model.
 
@@ -1150,8 +1177,9 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             display on the scatter plot. If `None`, no subsampling will be
             applied. by default, 1,000 samples or less will be displayed.
 
-        random_state : int, default=None
-            The random state to use for the subsampling.
+        seed : int, default=None
+            The seed used to initialize the random number generator used for the
+            subsampling.
 
         Returns
         -------
@@ -1167,14 +1195,18 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         >>> regressor = Ridge()
         >>> report = CrossValidationReport(regressor, X=X, y=y, cv_splitter=2)
         >>> display = report.metrics.prediction_error()
-        >>> display.plot(kind="actual_vs_predicted", line_kwargs={"color": "tab:red"})
+        >>> display.plot(
+        ...     kind="actual_vs_predicted", perfect_model_kwargs={"color": "tab:red"}
+        ... )
         """
-        display_kwargs = {"subsample": subsample, "random_state": random_state}
-        display = self._get_display(
-            data_source=data_source,
-            response_method="predict",
-            display_class=PredictionErrorDisplay,
-            display_kwargs=display_kwargs,
+        display_kwargs = {"subsample": subsample, "seed": seed}
+        display = cast(
+            PredictionErrorDisplay,
+            self._get_display(
+                data_source=data_source,
+                response_method="predict",
+                display_class=PredictionErrorDisplay,
+                display_kwargs=display_kwargs,
+            ),
         )
-        assert isinstance(display, PredictionErrorDisplay)
         return display

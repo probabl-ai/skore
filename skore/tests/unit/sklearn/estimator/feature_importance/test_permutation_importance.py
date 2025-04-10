@@ -1,3 +1,4 @@
+import contextlib
 import copy
 
 import numpy as np
@@ -11,6 +12,22 @@ from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 from skore import EstimatorReport
+
+
+@contextlib.contextmanager
+def check_cache_changed(value):
+    """Assert that `value` has changed during context execution."""
+    initial_value = copy.copy(value)
+    yield
+    assert value != initial_value
+
+
+@contextlib.contextmanager
+def check_cache_unchanged(value):
+    """Assert that `value` has not changed during context execution."""
+    initial_value = copy.copy(value)
+    yield
+    assert value == initial_value
 
 
 def regression_data():
@@ -49,7 +66,7 @@ multi_index_pandas = pd.MultiIndex.from_product(
 def case_default_args_numpy():
     data = regression_data()
 
-    kwargs = {"random_state": 42}
+    kwargs = {"seed": 42}
 
     return data, kwargs, multi_index_numpy, repeat_columns
 
@@ -57,7 +74,7 @@ def case_default_args_numpy():
 def case_r2_numpy():
     data = regression_data()
 
-    kwargs = {"scoring": make_scorer(r2_score), "random_state": 42}
+    kwargs = {"scoring": make_scorer(r2_score), "seed": 42}
 
     return (
         data,
@@ -70,7 +87,7 @@ def case_r2_numpy():
 def case_train_numpy():
     data = regression_data()
 
-    kwargs = {"data_source": "train", "scoring": "r2", "random_state": 42}
+    kwargs = {"data_source": "train", "scoring": "r2", "seed": 42}
 
     return data, kwargs, multi_index_numpy, repeat_columns
 
@@ -78,7 +95,7 @@ def case_train_numpy():
 def case_several_scoring_numpy():
     data = regression_data()
 
-    kwargs = {"scoring": ["r2", "rmse"], "random_state": 42}
+    kwargs = {"scoring": ["r2", "rmse"], "seed": 42}
 
     expected_index = pd.MultiIndex.from_product(
         [
@@ -95,7 +112,7 @@ def case_X_y():
     data = regression_data()
     X, y = data["X_train"], data["y_train"]
 
-    kwargs = {"data_source": "X_y", "X": X, "y": y, "random_state": 42}
+    kwargs = {"data_source": "X_y", "X": X, "y": y, "seed": 42}
 
     return data, kwargs, multi_index_numpy, repeat_columns
 
@@ -103,7 +120,7 @@ def case_X_y():
 def case_aggregate():
     data = regression_data()
 
-    kwargs = {"data_source": "train", "aggregate": "mean", "random_state": 42}
+    kwargs = {"data_source": "train", "aggregate": "mean", "seed": 42}
 
     return data, kwargs, multi_index_numpy, pd.Index(["mean"], dtype="object")
 
@@ -111,7 +128,7 @@ def case_aggregate():
 def case_default_args_pandas():
     data = regression_data_dataframe()
 
-    kwargs = {"random_state": 42}
+    kwargs = {"seed": 42}
 
     return data, kwargs, multi_index_pandas, repeat_columns
 
@@ -119,7 +136,7 @@ def case_default_args_pandas():
 def case_r2_pandas():
     data = regression_data_dataframe()
 
-    kwargs = {"scoring": make_scorer(r2_score), "random_state": 42}
+    kwargs = {"scoring": make_scorer(r2_score), "seed": 42}
 
     return (
         data,
@@ -132,7 +149,7 @@ def case_r2_pandas():
 def case_train_pandas():
     data = regression_data_dataframe()
 
-    kwargs = {"data_source": "train", "random_state": 42}
+    kwargs = {"data_source": "train", "seed": 42}
 
     return data, kwargs, multi_index_pandas, repeat_columns
 
@@ -140,7 +157,7 @@ def case_train_pandas():
 def case_several_scoring_pandas():
     data = regression_data_dataframe()
 
-    kwargs = {"scoring": ["r2", "rmse"], "random_state": 42}
+    kwargs = {"scoring": ["r2", "rmse"], "seed": 42}
 
     expected_index = pd.MultiIndex.from_product(
         [
@@ -193,54 +210,53 @@ def test_cache_n_jobs(regression_data):
     X, y = regression_data
     report = EstimatorReport(LinearRegression(), X_train=X, y_train=y)
 
-    result = report.feature_importance.permutation(
-        data_source="train", random_state=42, n_jobs=1
-    )
-    assert report._cache != {}
-    cached_result = report.feature_importance.permutation(
-        data_source="train", random_state=42, n_jobs=-1
-    )
-    assert len(report._cache) == 1
+    with check_cache_changed(report._cache):
+        result = report.feature_importance.permutation(
+            data_source="train", seed=42, n_jobs=1
+        )
+
+    with check_cache_unchanged(report._cache):
+        cached_result = report.feature_importance.permutation(
+            data_source="train", seed=42, n_jobs=-1
+        )
 
     pd.testing.assert_frame_equal(cached_result, result)
 
 
-def test_cache_random_state(regression_data):
-    """If `random_state` is not an int (the default is None)
+def test_cache_seed(regression_data):
+    """If `seed` is not an int (the default is None)
     then the result is not cached.
 
-    `random_state` must be an int or None.
+    `seed` must be an int or None.
     """
 
     X, y = regression_data
     report = EstimatorReport(LinearRegression(), X_train=X, y_train=y)
 
-    # random_state is None
-    report.feature_importance.permutation(data_source="train")
-    # so no cache
-    assert report._cache == {}
+    # seed is None so no cache
+    with check_cache_unchanged(report._cache):
+        report.feature_importance.permutation(data_source="train")
 
-    # random_state is a RandomState
-    err_msg = (
-        "random_state must be an integer or None; "
-        "got <class 'numpy.random.mtrand.RandomState'>"
-    )
-    with pytest.raises(ValueError, match=err_msg):
-        report.feature_importance.permutation(
-            data_source="train",
-            random_state=np.random.RandomState(42),
+    # seed is a RandomState so no cache
+    with check_cache_unchanged(report._cache):
+        err_msg = (
+            "seed must be an integer or None; "
+            "got <class 'numpy.random.mtrand.RandomState'>"
         )
-    # so no cache
-    assert report._cache == {}
+        with pytest.raises(ValueError, match=err_msg):
+            report.feature_importance.permutation(
+                data_source="train",
+                seed=np.random.RandomState(42),
+            )
 
-    # random_state is an int
-    result = report.feature_importance.permutation(data_source="train", random_state=42)
-    # so the result is cached
-    assert report._cache != {}
-    cached_result = report.feature_importance.permutation(
-        data_source="train", random_state=42
-    )
-    assert len(report._cache) == 1
+    # seed is an int so the result is cached
+    with check_cache_changed(report._cache):
+        result = report.feature_importance.permutation(data_source="train", seed=42)
+
+    with check_cache_unchanged(report._cache):
+        cached_result = report.feature_importance.permutation(
+            data_source="train", seed=42
+        )
 
     pd.testing.assert_frame_equal(cached_result, result)
 
@@ -251,14 +267,13 @@ def test_cache_scoring(regression_data):
     X, y = regression_data
     report = EstimatorReport(LinearRegression(), X_train=X, y_train=y)
 
-    report.feature_importance.permutation(
-        data_source="train", scoring="r2", random_state=42
-    )
-    report.feature_importance.permutation(
-        data_source="train", scoring="rmse", random_state=42
-    )
+    report.feature_importance.permutation(data_source="train", scoring="r2", seed=42)
+
     # Scorings are different, so cache keys should be different
-    assert len(report._cache) == 2
+    with check_cache_changed(report._cache):
+        report.feature_importance.permutation(
+            data_source="train", scoring="rmse", seed=42
+        )
 
 
 @pytest.mark.parametrize(
@@ -275,14 +290,15 @@ def test_cache_scoring_is_callable(regression_data, scoring):
     X, y = regression_data
     report = EstimatorReport(LinearRegression(), X_train=X, y_train=y)
 
-    result = report.feature_importance.permutation(
-        data_source="train", scoring=scoring, random_state=42
-    )
-    assert report._cache != {}
-    cached_result = report.feature_importance.permutation(
-        data_source="train", scoring=copy.copy(scoring), random_state=42
-    )
-    assert len(report._cache) == 1
+    with check_cache_changed(report._cache):
+        result = report.feature_importance.permutation(
+            data_source="train", scoring=scoring, seed=42
+        )
+
+    with check_cache_unchanged(report._cache):
+        cached_result = report.feature_importance.permutation(
+            data_source="train", scoring=copy.copy(scoring), seed=42
+        )
 
     pd.testing.assert_frame_equal(cached_result, result)
 
@@ -293,7 +309,7 @@ def test_classification(classification_data):
     X, y = classification_data
     report = EstimatorReport(LogisticRegression(), X_train=X, y_train=y)
 
-    result = report.feature_importance.permutation(data_source="train", random_state=42)
+    result = report.feature_importance.permutation(data_source="train", seed=42)
 
     pd.testing.assert_index_equal(
         result.index,

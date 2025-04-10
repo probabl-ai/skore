@@ -272,14 +272,14 @@ def test_estimator_report_repr(binary_classification_data):
 @pytest.mark.parametrize(
     "fixture_name, pass_train_data, expected_n_keys",
     [
-        ("binary_classification_data", True, 8),
-        ("binary_classification_data_svc", True, 8),
-        ("multiclass_classification_data", True, 10),
-        ("regression_data", True, 2),
-        ("binary_classification_data", False, 4),
-        ("binary_classification_data_svc", False, 4),
-        ("multiclass_classification_data", False, 5),
-        ("regression_data", False, 1),
+        ("binary_classification_data", True, 10),
+        ("binary_classification_data_svc", True, 10),
+        ("multiclass_classification_data", True, 12),
+        ("regression_data", True, 4),
+        ("binary_classification_data", False, 5),
+        ("binary_classification_data_svc", False, 5),
+        ("multiclass_classification_data", False, 6),
+        ("regression_data", False, 2),
     ],
 )
 @pytest.mark.parametrize("n_jobs", [1, 2])
@@ -328,7 +328,7 @@ def test_estimator_report_flat_index(binary_classification_data):
     estimator, X_test, y_test = binary_classification_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     result = report.metrics.report_metrics(flat_index=True)
-    assert result.shape == (6, 1)
+    assert result.shape == (8, 1)
     assert isinstance(result.index, pd.Index)
     assert result.index.tolist() == [
         "precision_0",
@@ -337,8 +337,83 @@ def test_estimator_report_flat_index(binary_classification_data):
         "recall_1",
         "roc_auc",
         "brier_score",
+        "fit_time",
+        "predict_time",
     ]
     assert result.columns.tolist() == ["RandomForestClassifier"]
+
+
+def test_estimator_report_get_predictions():
+    """Check the behaviour of the `get_predictions` method.
+
+    We use the binary classification because it uses all the parameters of the
+    `get_predictions` method.
+    """
+    X, y = make_classification(n_classes=2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+    estimator = LogisticRegression()
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+
+    # check the `predict` method
+    predictions = report.get_predictions(data_source="test", response_method="predict")
+    np.testing.assert_allclose(predictions, report.estimator_.predict(X_test))
+    predictions = report.get_predictions(data_source="train", response_method="predict")
+    np.testing.assert_allclose(predictions, report.estimator_.predict(X_train))
+    predictions = report.get_predictions(
+        data_source="X_y", response_method="predict", X=X_test
+    )
+    np.testing.assert_allclose(predictions, report.estimator_.predict(X_test))
+
+    # check the validity of the `predict_proba` method
+    predictions = report.get_predictions(
+        data_source="test", response_method="predict_proba"
+    )
+    np.testing.assert_allclose(
+        predictions, report.estimator_.predict_proba(X_test)[:, 1]
+    )
+    predictions = report.get_predictions(
+        data_source="train", response_method="predict_proba", pos_label=0
+    )
+    np.testing.assert_allclose(
+        predictions, report.estimator_.predict_proba(X_train)[:, 0]
+    )
+    predictions = report.get_predictions(
+        data_source="X_y", response_method="predict_proba", X=X_test
+    )
+    np.testing.assert_allclose(
+        predictions, report.estimator_.predict_proba(X_test)[:, 1]
+    )
+
+    # check the validity of the `decision_function` method
+    predictions = report.get_predictions(
+        data_source="test", response_method="decision_function"
+    )
+    np.testing.assert_allclose(predictions, report.estimator_.decision_function(X_test))
+    predictions = report.get_predictions(
+        data_source="train", response_method="decision_function", pos_label=0
+    )
+    np.testing.assert_allclose(
+        predictions, -report.estimator_.decision_function(X_train)
+    )
+    predictions = report.get_predictions(
+        data_source="X_y", response_method="decision_function", X=X_test
+    )
+    np.testing.assert_allclose(predictions, report.estimator_.decision_function(X_test))
+
+
+def test_estimator_report_get_predictions_error():
+    """Check that we raise an error when the data source is invalid."""
+    X, y = make_classification(n_classes=2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+    estimator = LogisticRegression()
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+
+    with pytest.raises(ValueError, match="Invalid data source"):
+        report.get_predictions(data_source="invalid", response_method="predict")
 
 
 ########################################################################################
@@ -374,9 +449,9 @@ def test_estimator_report_display_regression(pyplot, regression_data, display):
     estimator, X_test, y_test = regression_data
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     assert hasattr(report.metrics, display)
-    display_first_call = getattr(report.metrics, display)(random_state=0)
+    display_first_call = getattr(report.metrics, display)(seed=0)
     assert report._cache != {}
-    display_second_call = getattr(report.metrics, display)(random_state=0)
+    display_second_call = getattr(report.metrics, display)(seed=0)
     assert display_first_call is display_second_call
 
 
@@ -408,11 +483,11 @@ def test_estimator_report_display_regression_external_data(
     report = EstimatorReport(estimator)
     assert hasattr(report.metrics, display)
     display_first_call = getattr(report.metrics, display)(
-        data_source="X_y", X=X_test, y=y_test, random_state=0
+        data_source="X_y", X=X_test, y=y_test, seed=0
     )
     assert report._cache != {}
     display_second_call = getattr(report.metrics, display)(
-        data_source="X_y", X=X_test, y=y_test, random_state=0
+        data_source="X_y", X=X_test, y=y_test, seed=0
     )
     assert display_first_call is display_second_call
 
@@ -481,7 +556,7 @@ def test_estimator_report_metrics_repr(binary_classification_data):
 
     repr_str = repr(report.metrics)
     assert "skore.EstimatorReport.metrics" in repr_str
-    assert "report.metrics.help()" in repr_str
+    assert "help()" in repr_str
 
 
 @pytest.mark.parametrize("metric", ["accuracy", "brier_score", "roc_auc", "log_loss"])
@@ -617,10 +692,17 @@ def test_estimator_report_report_metrics_binary(
         pos_label=pos_label, data_source=data_source, **kwargs
     )
     assert "Favorability" not in result.columns
-    expected_metrics = ("precision", "recall", "roc_auc", "brier_score")
+    expected_metrics = (
+        "precision",
+        "recall",
+        "roc_auc",
+        "brier_score",
+        "fit_time",
+        "predict_time",
+    )
     # depending on `pos_label`, we report a stats for each class or not for
     # precision and recall
-    expected_nb_stats = 2 * nb_stats + 2
+    expected_nb_stats = 2 * nb_stats + 4
     _check_results_report_metrics(result, expected_metrics, expected_nb_stats)
 
     # Repeat the same experiment where we the target labels are not [0, 1] but
@@ -634,10 +716,17 @@ def test_estimator_report_report_metrics_binary(
     result = report.metrics.report_metrics(
         pos_label=pos_label_name, data_source=data_source, **kwargs
     )
-    expected_metrics = ("precision", "recall", "roc_auc", "brier_score")
+    expected_metrics = (
+        "precision",
+        "recall",
+        "roc_auc",
+        "brier_score",
+        "fit_time",
+        "predict_time",
+    )
     # depending on `pos_label`, we report a stats for each class or not for
     # precision and recall
-    expected_nb_stats = 2 * nb_stats + 2
+    expected_nb_stats = 2 * nb_stats + 4
     _check_results_report_metrics(result, expected_metrics, expected_nb_stats)
 
     estimator, X_test, y_test = binary_classification_data_svc
@@ -646,10 +735,10 @@ def test_estimator_report_report_metrics_binary(
     result = report.metrics.report_metrics(
         pos_label=pos_label, data_source=data_source, **kwargs
     )
-    expected_metrics = ("precision", "recall", "roc_auc")
+    expected_metrics = ("precision", "recall", "roc_auc", "fit_time", "predict_time")
     # depending on `pos_label`, we report a stats for each class or not for
     # precision and recall
-    expected_nb_stats = 2 * nb_stats + 1
+    expected_nb_stats = 2 * nb_stats + 3
     _check_results_report_metrics(result, expected_metrics, expected_nb_stats)
 
 
@@ -665,20 +754,27 @@ def test_estimator_report_report_metrics_multiclass(
     kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
     result = report.metrics.report_metrics(data_source=data_source, **kwargs)
     assert "Favorability" not in result.columns
-    expected_metrics = ("precision", "recall", "roc_auc", "log_loss")
+    expected_metrics = (
+        "precision",
+        "recall",
+        "roc_auc",
+        "log_loss",
+        "fit_time",
+        "predict_time",
+    )
     # since we are not averaging by default, we report 3 statistics for
     # precision, recall and roc_auc
-    expected_nb_stats = 3 * 3 + 1
+    expected_nb_stats = 3 * 3 + 3
     _check_results_report_metrics(result, expected_metrics, expected_nb_stats)
 
     estimator, X_test, y_test = multiclass_classification_data_svc
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
     result = report.metrics.report_metrics(data_source=data_source, **kwargs)
-    expected_metrics = ("precision", "recall")
+    expected_metrics = ("precision", "recall", "fit_time", "predict_time")
     # since we are not averaging by default, we report 3 statistics for
     # precision and recall
-    expected_nb_stats = 3 * 2
+    expected_nb_stats = 3 * 2 + 2
     _check_results_report_metrics(result, expected_metrics, expected_nb_stats)
 
 
@@ -690,7 +786,7 @@ def test_estimator_report_report_metrics_regression(regression_data, data_source
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     result = report.metrics.report_metrics(data_source=data_source, **kwargs)
     assert "Favorability" not in result.columns
-    expected_metrics = ("r2", "rmse")
+    expected_metrics = ("r2", "rmse", "fit_time", "predict_time")
     _check_results_report_metrics(result, expected_metrics, len(expected_metrics))
 
 
@@ -702,7 +798,7 @@ def test_estimator_report_report_metrics_scoring_kwargs(
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     assert hasattr(report.metrics, "report_metrics")
     result = report.metrics.report_metrics(scoring_kwargs={"multioutput": "raw_values"})
-    assert result.shape == (4, 1)
+    assert result.shape == (6, 1)
     assert isinstance(result.index, pd.MultiIndex)
     assert result.index.names == ["Metric", "Output"]
 
@@ -710,7 +806,7 @@ def test_estimator_report_report_metrics_scoring_kwargs(
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     assert hasattr(report.metrics, "report_metrics")
     result = report.metrics.report_metrics(scoring_kwargs={"average": None})
-    assert result.shape == (10, 1)
+    assert result.shape == (12, 1)
     assert isinstance(result.index, pd.MultiIndex)
     assert result.index.names == ["Metric", "Label / Average"]
 
@@ -718,10 +814,14 @@ def test_estimator_report_report_metrics_scoring_kwargs(
 @pytest.mark.parametrize(
     "fixture_name, scoring_names, expected_columns",
     [
-        ("regression_data", ["R2", "RMSE"], ["R2", "RMSE"]),
+        (
+            "regression_data",
+            ["R2", "RMSE", "FIT_TIME", "PREDICT_TIME"],
+            ["R2", "RMSE", "FIT_TIME", "PREDICT_TIME"],
+        ),
         (
             "multiclass_classification_data",
-            ["Precision", "Recall", "ROC AUC", "Log Loss"],
+            ["Precision", "Recall", "ROC AUC", "Log Loss", "Fit Time", "Predict Time"],
             [
                 "Precision",
                 "Precision",
@@ -733,6 +833,8 @@ def test_estimator_report_report_metrics_scoring_kwargs(
                 "ROC AUC",
                 "ROC AUC",
                 "Log Loss",
+                "Fit Time",
+                "Predict Time",
             ],
         ),
     ],
@@ -1191,3 +1293,34 @@ def test_estimator_has_no_deep_copy():
             y_train=y_train,
             y_test=y_test,
         )
+
+
+def test_estimator_report_brier_score_requires_probabilities():
+    """Check that the Brier score is not defined for estimator that do not
+    implement `predict_proba`.
+
+    Non-regression test for:
+    https://github.com/probabl-ai/skore/pull/1471
+    """
+    estimator = SVC()  # SVC does not implement `predict_proba` with default parameters
+    X, y = make_classification(n_classes=2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    assert not hasattr(report.metrics, "brier_score")
+
+
+def test_estimator_report_average_return_float(binary_classification_data):
+    """Check that we expect a float value when computing a metric with averaging.
+
+    Non-regression test for:
+    https://github.com/probabl-ai/skore/issues/1501
+    """
+    estimator, X_test, y_test = binary_classification_data
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    for metric_name in ("precision", "recall", "roc_auc"):
+        result = getattr(report.metrics, metric_name)(average="macro")
+        assert isinstance(result, float)

@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 
 import joblib
 import numpy as np
+from numpy.typing import ArrayLike
 
 from skore.externals._pandas_accessors import DirNamesMixin
 from skore.sklearn._base import _BaseReport
@@ -266,6 +267,88 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                 response_methods=response_methods, n_jobs=n_jobs
             )
             progress.update(main_task, advance=1, refresh=True)
+
+    def get_predictions(
+        self,
+        *,
+        data_source: Literal["train", "test", "X_y"],
+        response_method: Literal["predict", "predict_proba", "decision_function"],
+        pos_label: Optional[Any] = None,
+    ) -> ArrayLike:
+        """Get estimator's predictions.
+
+        This method has the advantage to reload from the cache if the predictions
+        were already computed in a previous call.
+
+        Parameters
+        ----------
+        data_source : {"test", "train", "X_y"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
+        response_method : {"predict", "predict_proba", "decision_function"}
+            The response method to use.
+
+        pos_label : int, float, bool or str, default=None
+            The positive class when it comes to binary classification. When
+            `response_method="predict_proba"`, it will select the column corresponding
+            to the positive class. When `response_method="decision_function"`, it will
+            negate the decision function if `pos_label` is different from
+            `estimator.classes_[1]`.
+
+        Returns
+        -------
+        list of np.ndarray of shape (n_samples,) or (n_samples, n_classes)
+            The predictions for each cross-validation split.
+
+        Raises
+        ------
+        ValueError
+            If the data source is invalid.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import make_classification
+        >>> from sklearn.model_selection import train_test_split
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import ComparisonReport, EstimatorReport
+        >>> X, y = make_classification(random_state=42)
+        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        >>> estimator_1 = LogisticRegression()
+        >>> estimator_report_1 = EstimatorReport(
+        ...     estimator_1,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test
+        ... )
+        >>> estimator_2 = LogisticRegression(C=2)  # Different regularization
+        >>> estimator_report_2 = EstimatorReport(
+        ...     estimator_2,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test
+        ... )
+        >>> report = ComparisonReport([estimator_report_1, estimator_report_2])
+        >>> report.cache_predictions()
+        >>> predictions = report.get_predictions(
+        ...     data_source="test", response_method="predict"
+        ... )
+        >>> print([split_predictions.shape for split_predictions in predictions])
+        [(25,), (25,)]
+        """
+        return [
+            report.get_predictions(
+                data_source=data_source,
+                response_method=response_method,
+                pos_label=pos_label,
+            )
+            for report in self.estimator_reports_
+        ]
 
     ####################################################################################
     # Methods related to the help and repr

@@ -15,6 +15,8 @@ from skore.externals._pandas_accessors import DirNamesMixin
 from skore.externals._sklearn_compat import is_clusterer
 from skore.sklearn._base import _BaseReport, _get_cached_response_values
 from skore.sklearn.find_ml_task import _find_ml_task
+from skore.utils._fixes import _validate_joblib_parallel_params
+from skore.utils._measure_time import MeasureTime
 from skore.utils._parallel import Parallel, delayed
 from skore.utils._progress_bar import progress_decorator
 
@@ -59,6 +61,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     estimator_name_ : str
         The name of the estimator.
 
+    fit_time_ : float or None
+        The time taken to fit the estimator, in seconds. If the estimator is not
+        internally fitted, the value is `None`.
+
     See Also
     --------
     skore.sklearn.cross_validation.report.CrossValidationReport
@@ -87,13 +93,16 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         estimator: BaseEstimator,
         X_train: Union[ArrayLike, None],
         y_train: Union[ArrayLike, None],
-    ) -> BaseEstimator:
+    ) -> tuple[BaseEstimator, float]:
         if X_train is None or (y_train is None and not is_clusterer(estimator)):
             raise ValueError(
                 "The training data is required to fit the estimator. "
                 "Please provide both X_train and y_train."
             )
-        return clone(estimator).fit(X_train, y_train)
+        estimator_ = clone(estimator)
+        with MeasureTime() as fit_time:
+            estimator_.fit(X_train, y_train)
+        return estimator_, fit_time()
 
     @classmethod
     def _copy_estimator(cls, estimator: BaseEstimator) -> BaseEstimator:
@@ -124,14 +133,17 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self._progress_info: Optional[dict[str, Any]] = None
         self._parent_progress = None
 
+        fit_time: Optional[float] = None
         if fit == "auto":
             try:
                 check_is_fitted(estimator)
                 self._estimator = self._copy_estimator(estimator)
             except NotFittedError:
-                self._estimator = self._fit_estimator(estimator, X_train, y_train)
+                self._estimator, fit_time = self._fit_estimator(
+                    estimator, X_train, y_train
+                )
         elif fit is True:
-            self._estimator = self._fit_estimator(estimator, X_train, y_train)
+            self._estimator, fit_time = self._fit_estimator(estimator, X_train, y_train)
         else:  # fit is False
             self._estimator = self._copy_estimator(estimator)
 
@@ -141,6 +153,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self._y_train = y_train
         self._X_test = X_test
         self._y_test = y_test
+        self.fit_time_ = fit_time
 
         self._initialize_state()
 
@@ -159,6 +172,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     def clear_cache(self) -> None:
         """Clear the cache.
+
+        Note that the cache might not be empty after this method is run as some
+        values need to be kept, such as the fit time.
 
         Examples
         --------
@@ -242,7 +258,11 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         if self._X_train is not None:
             data_sources += [("train", self._X_train)]
 
-        parallel = Parallel(n_jobs=n_jobs, return_as="generator", require="sharedmem")
+        parallel = Parallel(
+            **_validate_joblib_parallel_params(
+                n_jobs=n_jobs, return_as="generator", require="sharedmem"
+            )
+        )
         generator = parallel(
             delayed(_get_cached_response_values)(
                 cache=self._cache,
@@ -267,6 +287,87 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         progress.update(task, total=total_iterations)
         for _ in generator:
             progress.update(task, advance=1, refresh=True)
+
+    def get_predictions(
+        self,
+        *,
+        data_source: Literal["train", "test", "X_y"],
+        response_method: Literal["predict", "predict_proba", "decision_function"],
+        X: Optional[ArrayLike] = None,
+        pos_label: Optional[Any] = None,
+    ) -> ArrayLike:
+        """Get estimator's predictions.
+
+        This method has the advantage to reload from the cache if the predictions
+        were already computed in a previous call.
+
+        Parameters
+        ----------
+        data_source : {"test", "train", "X_y"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
+        response_method : {"predict", "predict_proba", "decision_function"}
+            The response method to use.
+
+        X : array-like of shape (n_samples, n_features), optional
+            When `data_source` is "X_y", the input features on which to compute the
+            response method.
+
+        pos_label : int, float, bool or str, default=None
+            The positive class when it comes to binary classification. When
+            `response_method="predict_proba"`, it will select the column corresponding
+            to the positive class. When `response_method="decision_function"`, it will
+            negate the decision function if `pos_label` is different from
+            `estimator.classes_[1]`.
+
+        Returns
+        -------
+        np.ndarray of shape (n_samples,) or (n_samples, n_classes)
+            The predictions.
+
+        Raises
+        ------
+        ValueError
+            If the data source is invalid.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import make_classification
+        >>> from sklearn.model_selection import train_test_split
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> X, y = make_classification(random_state=42)
+        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        >>> estimator = LogisticRegression().fit(X_train, y_train)
+        >>> from skore import EstimatorReport
+        >>> report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+        >>> predictions = report.get_predictions(
+        ...     data_source="test", response_method="predict"
+        ... )
+        >>> predictions.shape
+        (25,)
+        """
+        if data_source == "test":
+            X_ = self._X_test
+        elif data_source == "train":
+            X_ = self._X_train
+        elif data_source == "X_y":
+            X_ = X
+        else:
+            raise ValueError(f"Invalid data source: {data_source}")
+
+        return _get_cached_response_values(
+            cache=self._cache,
+            estimator_hash=self._hash,
+            estimator=self._estimator,
+            X=X_,
+            response_method=response_method,
+            pos_label=pos_label,
+            data_source=data_source,
+        )
 
     @property
     def ml_task(self) -> str:

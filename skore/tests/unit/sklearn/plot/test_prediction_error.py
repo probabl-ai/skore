@@ -71,6 +71,8 @@ def test_prediction_error_display_regression(pyplot, regression_data, subsample)
     assert display.range_residuals.max == np.max(display.residuals[0])
 
     display.plot()
+    assert hasattr(display, "ax_")
+    assert hasattr(display, "figure_")
     assert isinstance(display.line_, mpl.lines.Line2D)
     assert display.line_.get_label() == "Perfect predictions"
     assert display.line_.get_color() == "black"
@@ -342,7 +344,9 @@ def test_prediction_error_display_kwargs(pyplot, regression_data):
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
     display = report.metrics.prediction_error()
-    display.plot(scatter_kwargs={"color": "red"}, line_kwargs={"color": "blue"})
+    display.plot(
+        data_points_kwargs={"color": "red"}, perfect_model_kwargs={"color": "blue"}
+    )
     np.testing.assert_allclose(display.scatter_[0].get_facecolor(), [[1, 0, 0, 0.3]])
     assert display.line_.get_color() == "blue"
 
@@ -354,13 +358,16 @@ def test_prediction_error_display_kwargs(pyplot, regression_data):
         rtol=1e-3,
     )
     assert display.line_.get_color() == "black"
-    display.set_style(scatter_kwargs={"color": "red"}, line_kwargs={"color": "blue"})
+    display.set_style(
+        data_points_kwargs={"color": "red"}, perfect_model_kwargs={"color": "blue"}
+    )
     display.plot()
     np.testing.assert_allclose(display.scatter_[0].get_facecolor(), [[1, 0, 0, 0.3]])
     assert display.line_.get_color() == "blue"
     # overwrite the style that was set above
     display.plot(
-        scatter_kwargs={"color": "tab:orange"}, line_kwargs={"color": "tab:green"}
+        data_points_kwargs={"color": "tab:orange"},
+        perfect_model_kwargs={"color": "tab:green"},
     )
     np.testing.assert_allclose(
         display.scatter_[0].get_facecolor(),
@@ -393,8 +400,8 @@ def test_prediction_error_display_cross_validation_kwargs(
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
     display = report.metrics.prediction_error()
     display.plot(
-        scatter_kwargs=[{"color": "red"}, {"color": "green"}, {"color": "blue"}],
-        line_kwargs={"color": "orange"},
+        data_points_kwargs=[{"color": "red"}, {"color": "green"}, {"color": "blue"}],
+        perfect_model_kwargs={"color": "orange"},
     )
     rgb_colors = [
         [[1.0, 0.0, 0.0, 0.3]],
@@ -430,8 +437,8 @@ def test_prediction_error_display_comparison_estimator_kwargs(pyplot, regression
     )
     display = report.metrics.prediction_error()
     display.plot(
-        scatter_kwargs=[{"color": "red"}, {"color": "blue"}],
-        line_kwargs={"color": "orange"},
+        data_points_kwargs=[{"color": "red"}, {"color": "blue"}],
+        perfect_model_kwargs={"color": "orange"},
     )
     rgb_colors = [[[1.0, 0.0, 0.0, 0.3]], [[0.0, 0.0, 1.0, 0.3]]]
     for scatter, rgb_color in zip(display.scatter_, rgb_colors):
@@ -447,12 +454,12 @@ def test_random_state(regression_data):
     )
     report.metrics.prediction_error()
     # skore should store the y_pred, but not the plot
-    assert len(report._cache) == 1
+    assert len(report._cache) == 2
 
 
-@pytest.mark.parametrize("scatter_kwargs", ["not a dict", [{"color": "red"}]])
+@pytest.mark.parametrize("data_points_kwargs", ["not a dict", [{"color": "red"}]])
 def test_prediction_error_single_estimator_kwargs_error(
-    pyplot, regression_data, scatter_kwargs
+    pyplot, regression_data, data_points_kwargs
 ):
     """Check that we raise an error when we pass keyword arguments to the prediction
     error plot if there is a single estimator."""
@@ -464,15 +471,15 @@ def test_prediction_error_single_estimator_kwargs_error(
 
     err_msg = (
         "You intend to plot the prediction error for a single estimator. We expect "
-        "`scatter_kwargs` to be a dictionary."
+        "`data_points_kwargs` to be a dictionary."
     )
     with pytest.raises(ValueError, match=err_msg):
-        display.plot(scatter_kwargs=scatter_kwargs)
+        display.plot(data_points_kwargs=data_points_kwargs)
 
 
-@pytest.mark.parametrize("scatter_kwargs", ["not a list", [{"color": "red"}]])
+@pytest.mark.parametrize("data_points_kwargs", ["not a list", [{"color": "red"}]])
 def test_prediction_error_cross_validation_kwargs_error(
-    pyplot, regression_data_no_split, scatter_kwargs
+    pyplot, regression_data_no_split, data_points_kwargs
 ):
     """Check that we raise an error when we pass keyword arguments to the prediction
     error plot if there is a cross-validation report."""
@@ -482,17 +489,17 @@ def test_prediction_error_cross_validation_kwargs_error(
 
     err_msg = (
         "You intend to plot prediction errors either from multiple estimators "
-        "or from a cross-validated estimator. We expect `scatter_kwargs` to be "
+        "or from a cross-validated estimator. We expect `data_points_kwargs` to be "
         "a list of dictionaries with the same length as the number of "
         "estimators or splits."
     )
     with pytest.raises(ValueError, match=err_msg):
-        display.plot(scatter_kwargs=scatter_kwargs)
+        display.plot(data_points_kwargs=data_points_kwargs)
 
 
-@pytest.mark.parametrize("scatter_kwargs", ["not a list", [{"color": "red"}]])
+@pytest.mark.parametrize("data_points_kwargs", ["not a list", [{"color": "red"}]])
 def test_prediction_error_comparison_estimator_kwargs_error(
-    pyplot, regression_data, scatter_kwargs
+    pyplot, regression_data, data_points_kwargs
 ):
     """Check that we raise an error when we pass keyword arguments to the prediction
     error plot if there is a comparison report."""
@@ -519,12 +526,12 @@ def test_prediction_error_comparison_estimator_kwargs_error(
 
     err_msg = (
         "You intend to plot prediction errors either from multiple estimators "
-        "or from a cross-validated estimator. We expect `scatter_kwargs` to be "
+        "or from a cross-validated estimator. We expect `data_points_kwargs` to be "
         "a list of dictionaries with the same length as the number of "
         "estimators or splits."
     )
     with pytest.raises(ValueError, match=err_msg):
-        display.plot(scatter_kwargs=scatter_kwargs)
+        display.plot(data_points_kwargs=data_points_kwargs)
 
 
 def test_prediction_error_display_error_kind(pyplot, regression_data):

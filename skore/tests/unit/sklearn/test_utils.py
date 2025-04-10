@@ -100,7 +100,7 @@ def test_find_ml_task_without_estimator(target, expected_task):
 @pytest.mark.parametrize(
     "estimator, expected",
     [
-        (DummyClassifier(), "unknown"),
+        (DummyClassifier(), "classification"),
         (DummyRegressor(), "regression"),
     ],
 )

@@ -2,10 +2,9 @@ import inspect
 import re
 from abc import ABC, abstractmethod
 from io import StringIO
-from typing import Any, Generic, Literal, Optional, TypeVar, Union
+from typing import Any, Generic, Literal, Optional, TypeVar, Union, cast
 
 import joblib
-import numpy as np
 from numpy.typing import ArrayLike, NDArray
 from rich.console import Console, Group
 from rich.panel import Panel
@@ -14,6 +13,7 @@ from sklearn.base import BaseEstimator
 from sklearn.utils._response import _check_response_method, _get_response_values
 
 from skore.externals._sklearn_compat import is_clusterer
+from skore.utils._measure_time import MeasureTime
 
 
 class _HelpMixin(ABC):
@@ -96,13 +96,13 @@ class _HelpMixin(ABC):
 
         console.print(self._create_help_panel())
 
-    def _rich_repr(self, class_name: str, help_method_name: str) -> str:
+    def _rich_repr(self, class_name: str) -> str:
         """Return a string representation using rich."""
         string_buffer = StringIO()
         console = Console(file=string_buffer, force_terminal=False)
         console.print(
             Panel(
-                f"Get guidance using the {help_method_name} method",
+                "Get guidance using the help() method",
                 title=f"[cyan]{class_name}[/cyan]",
                 border_style="orange1",
                 expand=False,
@@ -321,7 +321,7 @@ class _BaseAccessor(_HelpMixin, Generic[ParentT]):
 
 def _get_cached_response_values(
     *,
-    cache: dict[tuple[Any, ...], ArrayLike],
+    cache: dict[tuple[Any, ...], Any],
     estimator_hash: int,
     estimator: BaseEstimator,
     X: Union[ArrayLike, None],
@@ -369,38 +369,47 @@ def _get_cached_response_values(
         The response values.
     """
     prediction_method = _check_response_method(estimator, response_method).__name__
-    if prediction_method in ("predict_proba", "decision_function"):
+
+    if data_source == "X_y" and data_source_hash is None:
+        # Only trigger hash computation if it was not previously done.
+        # If data_source_hash is not None, we internally computed ourself the hash
+        # and it is trustful
+        data_source_hash = joblib.hash(X)
+
+    if prediction_method not in ("predict_proba", "decision_function"):
         # pos_label is only important in classification and with probabilities
         # and decision functions
-        cache_key: tuple[Any, ...] = (
-            estimator_hash,
-            pos_label,
-            prediction_method,
-            data_source,
-        )
-    else:
-        cache_key = (estimator_hash, None, prediction_method, data_source)
+        pos_label = None
 
-    if data_source == "X_y":
-        if data_source_hash is None:
-            # Only trigger hash computation if it was not previously done.
-            # If data_source_hash is not None, we internally computed ourself the hash
-            # and it is trustful
-            data_source_hash = joblib.hash(X)
-        cache_key = cache_key + (data_source_hash,)
+    cache_key: tuple[Any, ...] = (
+        estimator_hash,
+        pos_label,
+        prediction_method,
+        data_source,
+        data_source_hash,
+    )
 
     if cache_key in cache:
-        cached_predictions = cache[cache_key]
-        assert isinstance(cached_predictions, np.ndarray)
+        cached_predictions = cast(NDArray, cache[cache_key])
         return cached_predictions
 
-    predictions, _ = _get_response_values(
-        estimator,
-        X=X,
-        response_method=prediction_method,
-        pos_label=pos_label,
-        return_response_method_used=False,
-    )
+    with MeasureTime() as predict_time:
+        predictions, _ = _get_response_values(
+            estimator,
+            X=X,
+            response_method=prediction_method,
+            pos_label=pos_label,
+            return_response_method_used=False,
+        )
+
     cache[cache_key] = predictions
+
+    predict_time_cache_key: tuple[Any, ...] = (
+        estimator_hash,
+        data_source,
+        data_source_hash,
+        "predict_time",
+    )
+    cache[predict_time_cache_key] = predict_time()
 
     return predictions

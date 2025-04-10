@@ -297,7 +297,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         n_repeats: int = 5,
         max_samples: float = 1.0,
         n_jobs: Optional[int] = None,
-        random_state: Optional[int] = None,
+        seed: Optional[int] = None,
         flat_index: bool = False,
     ) -> pd.DataFrame:
         """Report the permutation feature importance.
@@ -308,10 +308,10 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         the value of `scoring` between with and without the permutation, which gives an
         indication on the impact of the feature.
 
-        By default, `random_state` is set to `None`, which means the function will
+        By default, `seed` is set to `None`, which means the function will
         return a different result at every call. In that case, the results are not
         cached. If you wish to take advantage of skore's caching capabilities, make
-        sure you set the `random_state` parameter.
+        sure you set the `seed` parameter.
 
         Parameters
         ----------
@@ -368,9 +368,9 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         n_jobs : int or None, default=None
             Number of jobs to run in parallel. -1 means using all processors.
 
-        random_state : int or None, default=None
-            Pseudo-random number generator to control the permutations of each feature.
-            Pass an int to get reproducible results across function calls.
+        seed : int or None, default=None
+            The seed used to initialize the random number generator used for the
+            permutations.
 
         flat_index : bool, default=False
             Whether to flatten the multi-index columns. Flat index will always be lower
@@ -401,7 +401,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         >>> report.feature_importance.permutation(
         ...    n_repeats=2,
-        ...    random_state=0,
+        ...    seed=0,
         ... )
         Repeat              Repeat #0  Repeat #1
         Metric  Feature
@@ -412,7 +412,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> report.feature_importance.permutation(
         ...    scoring=["r2", "rmse"],
         ...    n_repeats=2,
-        ...    random_state=0,
+        ...    seed=0,
         ... )
         Repeat             Repeat #0  Repeat #1
         Metric Feature
@@ -426,7 +426,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> report.feature_importance.permutation(
         ...    n_repeats=2,
         ...    aggregate=["mean", "std"],
-        ...    random_state=0,
+        ...    seed=0,
         ... )
                                 mean       std
         Metric  Feature
@@ -438,7 +438,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         ...    n_repeats=2,
         ...    aggregate=["mean", "std"],
         ...    flat_index=True,
-        ...    random_state=0,
+        ...    seed=0,
         ... )
                           mean       std
         r2_feature_0  0.792...  0.131...
@@ -455,7 +455,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             n_repeats=n_repeats,
             max_samples=max_samples,
             n_jobs=n_jobs,
-            random_state=random_state,
+            seed=seed,
             flat_index=flat_index,
         )
 
@@ -471,7 +471,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         n_repeats: int = 5,
         max_samples: float = 1.0,
         n_jobs: Optional[int] = None,
-        random_state: Optional[int] = None,
+        seed: Optional[int] = None,
         flat_index: bool = False,
     ) -> pd.DataFrame:
         """Private interface of `feature_permutation` to pass `data_source_hash`.
@@ -487,11 +487,11 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 data_source=data_source, X=X, y=y
             )
 
-        # If random_state is None, then we do not do any caching
-        if random_state is None:
+        # If seed is None, then we do not do any caching
+        if seed is None:
             cache_key = None
 
-        elif isinstance(random_state, int):
+        elif isinstance(seed, int):
             # build the cache key components to finally create a tuple that will be used
             # to check if the metric has already been computed
             cache_key_parts: list[Any] = [
@@ -516,7 +516,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             kwargs = {
                 "n_repeats": n_repeats,
                 "max_samples": max_samples,
-                "random_state": random_state,
+                "seed": seed,
             }
             for _, v in sorted(kwargs.items()):
                 cache_key_parts.append(v)
@@ -524,9 +524,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             cache_key = tuple(cache_key_parts)
 
         else:
-            raise ValueError(
-                f"random_state must be an integer or None; got {type(random_state)}"
-            )
+            raise ValueError(f"seed must be an integer or None; got {type(seed)}")
 
         if cache_key in self._parent._cache:
             score = self._parent._cache[cache_key]
@@ -538,7 +536,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 scoring=checked_scoring,
                 n_repeats=n_repeats,
                 n_jobs=n_jobs,
-                random_state=random_state,
+                random_state=seed,
                 max_samples=max_samples,
             )
             score = sklearn_score.get("importances")
@@ -591,9 +589,9 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 )
                 score = pd.DataFrame(data=data, index=index, columns=columns)
 
-            # Unless random_state is an int (i.e. the call is deterministic),
-            # we do not cache
             if cache_key is not None:
+                # Unless seed is an int (i.e. the call is deterministic),
+                # we do not cache
                 self._parent._cache[cache_key] = score
 
         if aggregate:
@@ -621,7 +619,4 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
     def __repr__(self) -> str:
         """Return a string representation using rich."""
-        return self._rich_repr(
-            class_name="skore.EstimatorReport.feature_importance",
-            help_method_name="report.feature_importance.help()",
-        )
+        return self._rich_repr(class_name="skore.EstimatorReport.feature_importance")
