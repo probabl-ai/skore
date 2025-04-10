@@ -16,7 +16,7 @@ from skore.sklearn._plot.metrics import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
-from skore.sklearn.types import PositiveLabel
+from skore.sklearn.types import Aggregate, PositiveLabel
 from skore.utils._accessor import _check_supported_ml_task
 from skore.utils._fixes import _validate_joblib_parallel_params
 from skore.utils._index import flatten_multi_index
@@ -59,6 +59,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         pos_label: Optional[PositiveLabel] = None,
         indicator_favorability: bool = False,
         flat_index: bool = False,
+        aggregate: Optional[Aggregate] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Report a set of metrics for the estimators.
 
@@ -105,6 +106,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         flat_index : bool, default=False
             Whether to flatten the `MultiIndex` columns. Flat index will always be lower
             case, do not include spaces and remove the hash symbol to ease indexing.
+
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
 
         Returns
         -------
@@ -157,6 +162,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             scoring_kwargs=scoring_kwargs,
             scoring_names=scoring_names,
             indicator_favorability=indicator_favorability,
+            aggregate=aggregate,
         )
         if flat_index:
             if isinstance(results.columns, pd.MultiIndex):
@@ -173,6 +179,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source: DataSource = "test",
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
+        aggregate: Optional[Aggregate] = ("mean", "std"),
         **metric_kwargs: Any,
     ):
         # build the cache key components to finally create a tuple that will be used
@@ -243,12 +250,21 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             self._parent._cache[cache_key] = results
         return results
 
-    def timings(self) -> pd.DataFrame:
+    def timings(
+        self,
+        aggregate: Optional[Aggregate] = ("mean", "std"),
+    ) -> pd.DataFrame:
         """Get all measured processing times related to the different estimators.
 
         The index of the returned dataframe is the name of the processing time. When
         the estimators were not used to predict, no timings regarding the prediction
         will be present.
+
+        Parameters
+        ----------
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
 
         Returns
         -------
@@ -311,6 +327,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source: DataSource = "test",
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
+        aggregate: Optional[Aggregate] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the accuracy score.
 
@@ -330,6 +347,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         y : array-like of shape (n_samples,), default=None
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
+
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
 
         Returns
         -------
@@ -390,6 +411,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             Literal["binary", "macro", "micro", "weighted", "samples"]
         ] = None,
         pos_label: Optional[PositiveLabel] = None,
+        aggregate: Optional[Aggregate] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the precision score.
 
@@ -437,6 +459,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         pos_label : int, float, bool or str, default=None
             The positive class.
+
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
 
         Returns
         -------
@@ -500,6 +526,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             Literal["binary", "macro", "micro", "weighted", "samples"]
         ] = None,
         pos_label: Optional[PositiveLabel] = None,
+        aggregate: Optional[Aggregate] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the recall score.
 
@@ -548,6 +575,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         pos_label : int, float, bool or str, default=None
             The positive class.
+
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
 
         Returns
         -------
@@ -605,6 +636,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source: DataSource = "test",
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
+        aggregate: Optional[Aggregate] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the Brier score.
 
@@ -624,6 +656,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         y : array-like of shape (n_samples,), default=None
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
+
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
 
         Returns
         -------
@@ -684,6 +720,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             Literal["auto", "macro", "micro", "weighted", "samples"]
         ] = None,
         multi_class: Literal["raise", "ovr", "ovo"] = "ovr",
+        aggregate: Optional[Aggregate] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the ROC AUC score.
 
@@ -737,6 +774,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             - "ovo": Stands for One-vs-one. Computes the average AUC of all possible
               pairwise combinations of classes. Insensitive to class imbalance when
               `average == "macro"`.
+
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
 
         Returns
         -------
@@ -794,6 +835,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source: DataSource = "test",
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
+        aggregate: Optional[Aggregate] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the log loss.
 
@@ -813,6 +855,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         y : array-like of shape (n_samples,), default=None
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
+
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
 
         Returns
         -------
@@ -870,6 +916,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
         multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
+        aggregate: Optional[Aggregate] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the R² score.
 
@@ -899,6 +946,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             - "uniform_average": Errors of all outputs are averaged with uniform weight.
 
             By default, no averaging is done.
+
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
 
         Returns
         -------
@@ -957,6 +1008,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
         multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
+        aggregate: Optional[Aggregate] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the root mean squared error.
 
@@ -986,6 +1038,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             - "uniform_average": Errors of all outputs are averaged with uniform weight.
 
             By default, no averaging is done.
+
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
 
         Returns
         -------
@@ -1041,6 +1097,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source: DataSource = "test",
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
+        aggregate: Optional[Aggregate] = ("mean", "std"),
         **kwargs: Any,
     ) -> pd.DataFrame:
         """Compute a custom metric.
@@ -1086,6 +1143,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         **kwargs : dict
             Any additional keyword arguments to be passed to the metric function.
+
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
 
         Returns
         -------
