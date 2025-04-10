@@ -167,7 +167,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         return reports, report_names_
 
     @staticmethod
-    def _validate_reports(
+    def _validate_estimator_reports(
         reports: Union[list[EstimatorReport], dict[str, EstimatorReport]],
     ) -> tuple[list[EstimatorReport], list[str]]:
         """Validate a list or dict of EstimatorReports."""
@@ -223,7 +223,9 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         - all estimators have non-empty X_test and y_test,
         - all estimators have the same X_test and y_test.
         """
-        self.reports_, self.report_names_ = ComparisonReport._validate_reports(reports)
+        self.reports_, self.report_names_ = (
+            ComparisonReport._validate_estimator_reports(reports)
+        )
 
         # used to know if a parent launches a progress bar manager
         self._progress_info: Optional[dict[str, Any]] = None
