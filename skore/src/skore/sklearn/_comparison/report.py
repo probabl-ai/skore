@@ -137,9 +137,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         if not all(isinstance(report, CrossValidationReport) for report in reports):
             raise TypeError("Expected instances of CrossValidationReport")
 
-        if len(set(id(report) for report in reports)) < len(reports):
-            raise ValueError("Compared CrossValidationReports must be distinct objects")
-
         return reports
 
     @staticmethod
@@ -205,6 +202,9 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                 f"or {CrossValidationReport.__name__}, "
                 f"got {type(reports_list[0])}"
             )
+
+        if len(set(id(report) for report in reports)) < len(reports):
+            raise ValueError("Expected reports to be distinct objects")
 
         ml_tasks = {report: report._ml_task for report in self.reports_}
         if len(set(ml_tasks.values())) > 1:
