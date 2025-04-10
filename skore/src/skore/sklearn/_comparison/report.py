@@ -131,7 +131,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     @staticmethod
     def _validate_cross_validation_reports(
-        reports: list[Any], report_names: Optional[list[str]]
+        reports: list[Any],
     ) -> tuple[list[CrossValidationReport], list[str]]:
         """Validate CrossValidationReports."""
         if not all(isinstance(report, CrossValidationReport) for report in reports):
@@ -140,18 +140,11 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         if len(set(id(report) for report in reports)) < len(reports):
             raise ValueError("Compared CrossValidationReports must be distinct objects")
 
-        if report_names is not None:
-            report_names_ = report_names
-        else:
-            report_names_ = ComparisonReport._deduplicate_report_names(
-                [report.estimator_name_ for report in reports]
-            )
-
-        return reports, report_names_
+        return reports
 
     @staticmethod
     def _validate_estimator_reports(
-        reports: list[Any], report_names: Optional[list[str]]
+        reports: list[Any],
     ) -> tuple[list[EstimatorReport], list[str]]:
         """Validate EstimatorReports."""
         if not all(isinstance(report, EstimatorReport) for report in reports):
@@ -165,12 +158,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         if len(test_dataset_hashes) > 1:
             raise ValueError("Expected all estimators to have the same testing data.")
 
-        if report_names is None:
-            report_names_ = [report.estimator_name_ for report in reports]
-        else:
-            report_names_ = report_names
-
-        return reports, report_names_
+        return reports
 
     def __init__(
         self,
@@ -206,18 +194,10 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         reports_list = list(reports.values()) if isinstance(reports, dict) else reports
 
         if isinstance(reports_list[0], EstimatorReport):
-            self.reports_, self.report_names_ = (
-                ComparisonReport._validate_estimator_reports(
-                    reports_list,
-                    report_names,
-                )
-            )
+            self.reports_ = ComparisonReport._validate_estimator_reports(reports_list)
         elif isinstance(reports_list[0], CrossValidationReport):
-            self.reports_, self.report_names_ = (
-                ComparisonReport._validate_cross_validation_reports(
-                    reports_list,
-                    report_names,
-                )
+            self.reports_ = ComparisonReport._validate_cross_validation_reports(
+                reports_list
             )
         else:
             raise TypeError(
@@ -231,6 +211,13 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             raise ValueError(
                 f"Expected all estimators to have the same ML usecase; got {ml_tasks}"
             )
+
+        if report_names is None:
+            self.report_names_ = ComparisonReport._deduplicate_report_names(
+                [report.estimator_name_ for report in self.reports_]
+            )
+        else:
+            self.report_names_ = report_names
 
         # used to know if a parent launches a progress bar manager
         self._progress_info: Optional[dict[str, Any]] = None
