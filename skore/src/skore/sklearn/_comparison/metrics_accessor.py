@@ -142,10 +142,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     scoring=["precision", "recall"],
         ...     pos_label=1,
         ... )
-        Estimator       LogisticRegression  LogisticRegression
+        Estimator       LogisticRegression_1  LogisticRegression_2
         Metric
-        Precision                  0.96...             0.96...
-        Recall                     0.97...             0.97...
+        Precision                    0.96...               0.96...
+        Recall                       0.97...               0.97...
         """
         results = self._compute_metric_scores(
             report_metric_name="report_metrics",
@@ -364,9 +364,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     [estimator_report_1, estimator_report_2]
         ... )
         >>> comparison_report.metrics.accuracy()
-        Estimator      LogisticRegression  LogisticRegression
+        Estimator      LogisticRegression_1  LogisticRegression_2
         Metric
-        Accuracy                  0.96...             0.96...
+        Accuracy                    0.96...               0.96...
         """
         return self.report_metrics(
             scoring=["accuracy"],
@@ -471,10 +471,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     [estimator_report_1, estimator_report_2]
         ... )
         >>> comparison_report.metrics.precision()
-        Estimator                    LogisticRegression  LogisticRegression
+        Estimator                    LogisticRegression_1  LogisticRegression_2
         Metric      Label / Average
-        Precision                 0             0.96...             0.96...
-                                  1             0.96...             0.96...
+        Precision                 0               0.96...               0.96...
+                                  1               0.96...               0.96...
         """
         return self.report_metrics(
             scoring=["precision"],
@@ -582,10 +582,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     [estimator_report_1, estimator_report_2]
         ... )
         >>> comparison_report.metrics.recall()
-        Estimator                    LogisticRegression  LogisticRegression
+        Estimator                    LogisticRegression_1  LogisticRegression_2
         Metric      Label / Average
-        Recall                    0            0.944...            0.944...
-                                  1            0.977...            0.977...
+        Recall                    0              0.944...              0.944...
+                                  1              0.977...              0.977...
         """
         return self.report_metrics(
             scoring=["recall"],
@@ -658,9 +658,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     [estimator_report_1, estimator_report_2]
         ... )
         >>> comparison_report.metrics.brier_score()
-        Estimator         LogisticRegression  LogisticRegression
+        Estimator         LogisticRegression_1  LogisticRegression_2
         Metric
-        Brier score                  0.025...            0.025...
+        Brier score                   0.025...              0.025...
         """
         return self.report_metrics(
             scoring=["brier_score"],
@@ -771,9 +771,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     [estimator_report_1, estimator_report_2]
         ... )
         >>> comparison_report.metrics.roc_auc()
-        Estimator      LogisticRegression  LogisticRegression
+        Estimator      LogisticRegression_1  LogisticRegression_2
         Metric
-        ROC AUC                   0.99...             0.99...
+        ROC AUC                     0.99...               0.99...
         """
         return self.report_metrics(
             scoring=["roc_auc"],
@@ -847,9 +847,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     [estimator_report_1, estimator_report_2]
         ... )
         >>> comparison_report.metrics.log_loss()
-        Estimator      LogisticRegression  LogisticRegression
+        Estimator      LogisticRegression_1  LogisticRegression_2
         Metric
-        Log loss                 0.082...            0.082...
+        Log loss                   0.082...              0.082...
         """
         return self.report_metrics(
             scoring=["log_loss"],
@@ -933,9 +933,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     [estimator_report_1, estimator_report_2]
         ... )
         >>> comparison_report.metrics.r2()
-        Estimator     Ridge    Ridge
+        Estimator     Ridge_1    Ridge_2
         Metric
-        R²          0.43...  0.43...
+        R²            0.43...    0.43...
         """
         return self.report_metrics(
             scoring=["r2"],
@@ -1020,9 +1020,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     [estimator_report_1, estimator_report_2]
         ... )
         >>> comparison_report.metrics.rmse()
-        Estimator       Ridge       Ridge
+        Estimator       Ridge_1       Ridge_2
         Metric
-        RMSE        55.726...   55.726...
+        RMSE          55.726...     55.726...
         """
         return self.report_metrics(
             scoring=["rmse"],
@@ -1125,9 +1125,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     response_method="predict",
         ...     metric_name="MAE",
         ... )
-        Estimator      Ridge      Ridge
+        Estimator      Ridge_1      Ridge_2
         Metric
-        MAE         45.91...   45.91...
+        MAE           45.91...     45.91...
         """
         # create a scorer with `greater_is_better=True` to not alter the output of
         # `metric_function`

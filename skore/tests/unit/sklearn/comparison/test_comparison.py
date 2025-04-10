@@ -172,7 +172,7 @@ def test_comparison_report_init_without_report_names(binary_classification_model
 
     pd.testing.assert_index_equal(
         comp.metrics.accuracy().columns,
-        pd.Index(["LogisticRegression", "LogisticRegression"], name="Estimator"),
+        pd.Index(["LogisticRegression_1", "LogisticRegression_2"], name="Estimator"),
     )
 
 
@@ -282,7 +282,7 @@ def test_comparison_report_metrics_repr(binary_classification_model):
             pd.DataFrame(
                 [[1.0, 1.0]],
                 columns=pd.Index(
-                    ["LogisticRegression", "LogisticRegression"],
+                    ["LogisticRegression_1", "LogisticRegression_2"],
                     name="Estimator",
                 ),
                 index=pd.Index(["Accuracy"], dtype="object", name="Metric"),
@@ -293,7 +293,7 @@ def test_comparison_report_metrics_repr(binary_classification_model):
             pd.DataFrame(
                 [[1.0, 1.0], [1.0, 1.0]],
                 columns=pd.Index(
-                    ["LogisticRegression", "LogisticRegression"],
+                    ["LogisticRegression_1", "LogisticRegression_2"],
                     name="Estimator",
                 ),
                 index=pd.MultiIndex.from_tuples(
@@ -307,7 +307,7 @@ def test_comparison_report_metrics_repr(binary_classification_model):
             pd.DataFrame(
                 [[1.0, 1.0], [1.0, 1.0]],
                 columns=pd.Index(
-                    ["LogisticRegression", "LogisticRegression"],
+                    ["LogisticRegression_1", "LogisticRegression_2"],
                     name="Estimator",
                 ),
                 index=pd.MultiIndex.from_tuples(
@@ -321,7 +321,7 @@ def test_comparison_report_metrics_repr(binary_classification_model):
             pd.DataFrame(
                 [[0.026684, 0.026684]],
                 columns=pd.Index(
-                    ["LogisticRegression", "LogisticRegression"],
+                    ["LogisticRegression_1", "LogisticRegression_2"],
                     name="Estimator",
                 ),
                 index=pd.Index(["Brier score"], dtype="object", name="Metric"),
@@ -332,7 +332,7 @@ def test_comparison_report_metrics_repr(binary_classification_model):
             pd.DataFrame(
                 [[1.0, 1.0]],
                 columns=pd.Index(
-                    ["LogisticRegression", "LogisticRegression"],
+                    ["LogisticRegression_1", "LogisticRegression_2"],
                     name="Estimator",
                 ),
                 index=pd.Index(["ROC AUC"], dtype="object", name="Metric"),
@@ -343,7 +343,7 @@ def test_comparison_report_metrics_repr(binary_classification_model):
             pd.DataFrame(
                 [[0.113233, 0.113233]],
                 columns=pd.Index(
-                    ["LogisticRegression", "LogisticRegression"],
+                    ["LogisticRegression_1", "LogisticRegression_2"],
                     name="Estimator",
                 ),
                 index=pd.Index(["Log loss"], dtype="object", name="Metric"),
@@ -394,7 +394,7 @@ def test_comparison_report_metrics_binary_classification(
             pd.DataFrame(
                 [[0.27699, 0.27699]],
                 columns=pd.Index(
-                    ["LinearRegression", "LinearRegression"],
+                    ["LinearRegression_1", "LinearRegression_2"],
                     name="Estimator",
                 ),
                 index=pd.Index(["RMSE"], dtype="object", name="Metric"),
@@ -405,7 +405,7 @@ def test_comparison_report_metrics_binary_classification(
             pd.DataFrame(
                 [[0.680319, 0.680319]],
                 columns=pd.Index(
-                    ["LinearRegression", "LinearRegression"],
+                    ["LinearRegression_1", "LinearRegression_2"],
                     name="Estimator",
                 ),
                 index=pd.Index(["R²"], dtype="object", name="Metric"),
@@ -481,7 +481,7 @@ def test_comparison_report_report_metrics_X_y(binary_classification_model):
         names=["Metric", "Label / Average"],
     )
     expected_columns = pd.Index(
-        ["LogisticRegression", "LogisticRegression"],
+        ["LogisticRegression_1", "LogisticRegression_2"],
         name="Estimator",
     )
 
@@ -510,7 +510,7 @@ def test_comparison_report_custom_metric_X_y(binary_classification_model):
     expected = pd.DataFrame(
         [[0.0, 0.0]],
         columns=pd.Index(
-            ["LogisticRegression", "LogisticRegression"], name="Estimator"
+            ["LogisticRegression_1", "LogisticRegression_2"], name="Estimator"
         ),
         index=pd.Index(["MAE"], name="Metric"),
     )
