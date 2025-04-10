@@ -15,7 +15,7 @@ from sklearn.utils.validation import (
     check_consistent_length,
 )
 
-from skore.sklearn.types import MLTask
+from skore.sklearn.types import MLTask, PositiveLabel
 
 LINESTYLE = [
     ("solid", "solid"),
@@ -138,14 +138,14 @@ class _ClassifierCurveDisplayMixin:
     # defined in the concrete display class
     estimator_name: str
     ml_task: MLTask
-    pos_label: Optional[Union[int, float, bool, str]]
+    pos_label: Optional[PositiveLabel]
 
     def _validate_curve_kwargs(
         self,
         *,
         curve_param_name: str,
         curve_kwargs: Union[dict[str, Any], list[dict[str, Any]], None],
-        metric: dict[Union[int, float, bool, str], list[float]],
+        metric: dict[PositiveLabel, list[float]],
         report_type: Literal["comparison-estimator", "cross-validation", "estimator"],
     ) -> list[dict[str, Any]]:
         """Validate and format the classification curve keyword arguments.
@@ -175,7 +175,7 @@ class _ClassifierCurveDisplayMixin:
             If the format of curve_kwargs is invalid.
         """
         if self.ml_task == "binary-classification":
-            pos_label = cast(Union[int, float, bool, str], self.pos_label)
+            pos_label = cast(PositiveLabel, self.pos_label)
             n_curves = len(metric[pos_label])
             if report_type in ("estimator", "cross-validation"):
                 allow_single_dict = True
@@ -233,7 +233,7 @@ class _ClassifierCurveDisplayMixin:
         y_pred: Sequence[ArrayLike],
         *,
         ml_task: str,
-        pos_label: Optional[Union[int, float, bool, str]] = None,
+        pos_label: Optional[PositiveLabel] = None,
     ) -> Union[int, float, bool, str, None]:
         for y_true_i, y_pred_i in zip(y_true, y_pred):
             check_consistent_length(y_true_i, y_pred_i)

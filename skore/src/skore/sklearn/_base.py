@@ -13,6 +13,7 @@ from sklearn.base import BaseEstimator
 from sklearn.utils._response import _check_response_method, _get_response_values
 
 from skore.externals._sklearn_compat import is_clusterer
+from skore.sklearn.types import PositiveLabel
 from skore.utils._measure_time import MeasureTime
 
 
@@ -326,7 +327,7 @@ def _get_cached_response_values(
     estimator: BaseEstimator,
     X: Union[ArrayLike, None],
     response_method: Union[str, list[str], tuple[str, ...]],
-    pos_label: Optional[Union[int, float, bool, str]] = None,
+    pos_label: Optional[PositiveLabel] = None,
     data_source: Literal["test", "train", "X_y"] = "test",
     data_source_hash: Optional[int] = None,
 ) -> NDArray:
