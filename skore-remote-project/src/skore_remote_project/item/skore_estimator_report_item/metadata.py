@@ -1,7 +1,7 @@
 from contextlib import suppress
 from inspect import getmembers, ismethod
 
-from joblib import hash as joblib_hash
+from joblib import hash
 
 
 class Metadata:
@@ -26,7 +26,7 @@ class Metadata:
 
     @metadata
     def dataset_fingerprint(self):
-        return joblib_hash(
+        return hash(
             (
                 self.report.X_train,
                 self.report.y_train,
@@ -229,6 +229,7 @@ class Metadata:
         )
 
     def __iter__(self):
-        for name, member in getmembers(self):
-            if ismethod(member) and hasattr(member, "metadata"):
-                yield (name, member())
+        for key, method in getmembers(self):
+            if ismethod(method) and hasattr(method, "metadata"):
+                if (value := method()) is not None:
+                    yield (key, value)
