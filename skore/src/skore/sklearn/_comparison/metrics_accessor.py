@@ -17,6 +17,7 @@ from skore.sklearn._plot.metrics import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
+from skore.sklearn.types import PositiveLabel
 from skore.utils._accessor import _check_supported_ml_task
 from skore.utils._fixes import _validate_joblib_parallel_params
 from skore.utils._index import flatten_multi_index
@@ -59,7 +60,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         scoring: Optional[Union[list[str], Callable, SKLearnScorer]] = None,
         scoring_names: Optional[list[str]] = None,
         scoring_kwargs: Optional[dict[str, Any]] = None,
-        pos_label: Optional[Union[int, float, bool, str]] = None,
+        pos_label: Optional[PositiveLabel] = None,
         indicator_favorability: bool = False,
         flat_index: bool = False,
     ) -> pd.DataFrame:
@@ -395,7 +396,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         average: Optional[
             Literal["binary", "macro", "micro", "weighted", "samples"]
         ] = None,
-        pos_label: Optional[Union[int, float, bool, str]] = None,
+        pos_label: Optional[PositiveLabel] = None,
     ) -> pd.DataFrame:
         """Compute the precision score.
 
@@ -505,7 +506,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         average: Optional[
             Literal["binary", "macro", "micro", "weighted", "samples"]
         ] = None,
-        pos_label: Optional[Union[int, float, bool, str]] = None,
+        pos_label: Optional[PositiveLabel] = None,
     ) -> pd.DataFrame:
         """Compute the recall score.
 
@@ -1335,7 +1336,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source: DataSource = "test",
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
-        pos_label: Optional[Union[int, float, bool, str]] = None,
+        pos_label: Optional[PositiveLabel] = None,
     ) -> RocCurveDisplay:
         """Plot the ROC curve.
 
@@ -1420,7 +1421,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source: DataSource = "test",
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
-        pos_label: Optional[Union[int, float, bool, str]] = None,
+        pos_label: Optional[PositiveLabel] = None,
     ) -> PrecisionRecallCurveDisplay:
         """Plot the precision-recall curve.
 
