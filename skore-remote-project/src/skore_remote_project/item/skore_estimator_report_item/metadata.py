@@ -1,5 +1,4 @@
 from contextlib import suppress
-from functools import partial
 from inspect import getmembers, ismethod
 
 
@@ -54,7 +53,7 @@ class Metadata:
         # Position: int (to display in parallel coordinates plot) | None (to ignore)
         #
 
-        def scalar(name, data_source, greater_is_better=None, position=None, /):
+        def scalar(name, data_source, greater_is_better, position, /):
             with suppress(AttributeError, TypeError):
                 metric = getattr(self.report.metrics, name)
                 value = float(metric(data_source=data_source))
@@ -67,26 +66,6 @@ class Metadata:
                     "position": position,
                 }
 
-        # fmt: off
-        accuracy_train = metadata(partial(scalar, "accuracy", "train", True))  # noqa: E501, F841
-        accuracy_test = metadata(partial(scalar, "accuracy", "test", True))  # noqa: E501, F841
-        brier_score_train = metadata(partial(scalar, "brier_score", "train", False))  # noqa: E501, F841
-        brier_score_test = metadata(partial(scalar, "brier_score", "test", False))  # noqa: E501, F841
-        log_loss_train = metadata(partial(scalar, "log_loss", "train", False))  # noqa: E501, F841
-        log_loss_test = metadata(partial(scalar, "log_loss", "test", False))  # noqa: E501, F841
-        precision_train = metadata(partial(scalar, "precision", "train", True))  # noqa: E501, F841
-        precision_test = metadata(partial(scalar, "precision", "test", True))  # noqa: E501, F841
-        r2_train = metadata(partial(scalar, "r2", "train", True))  # noqa: E501, F841
-        r2_test = metadata(partial(scalar, "r2", "test", True))  # noqa: E501, F841
-        recall_train = metadata(partial(scalar, "recall", "train", True))  # noqa: E501, F841
-        recall_test = metadata(partial(scalar, "recall", "test", True))  # noqa: E501, F841
-        rmse_train = metadata(partial(scalar, "rmse", "train", False))  # noqa: E501, F841
-        rmse_test = metadata(partial(scalar, "rmse", "test", False))  # noqa: E501, F841
-        roc_auc_train = metadata(partial(scalar, "roc_auc", "train", True))  # noqa: E501, F841
-        roc_auc_test = metadata(partial(scalar, "roc_auc", "test", True))  # noqa: E501, F841
-        # fmt: on
-
-        @metadata
         def fit_time():
             with suppress(KeyError):
                 return {
@@ -100,9 +79,23 @@ class Metadata:
             filter(
                 lambda value: value is not None,
                 (
-                    metric()
-                    for metric in locals().values()
-                    if callable(metric) and hasattr(metric, "metadata")
+                    scalar("accuracy", "train", True, None),
+                    scalar("accuracy", "test", True, None),
+                    scalar("brier_score", "train", False, None),
+                    scalar("brier_score", "test", False, None),
+                    scalar("log_loss", "train", False, None),
+                    scalar("log_loss", "test", False, None),
+                    scalar("precision", "train", True, None),
+                    scalar("precision", "test", True, None),
+                    scalar("r2", "train", True, None),
+                    scalar("r2", "test", True, None),
+                    scalar("recall", "train", True, None),
+                    scalar("recall", "test", True, None),
+                    scalar("rmse", "train", False, None),
+                    scalar("rmse", "test", False, None),
+                    scalar("roc_auc", "train", True, None),
+                    scalar("roc_auc", "test", True, None),
+                    fit_time(),
                 ),
             )
         )
