@@ -96,6 +96,8 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     }
     metrics: _MetricsAccessor
 
+    _reports_type: Literal["EstimatorReport", "CrossValidationReport"]
+
     @staticmethod
     def _deduplicate_report_names(report_names_: list[str]) -> list[str]:
         """De-duplicate report names that appear several times.
@@ -219,6 +221,16 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         - all estimators have the same X_test and y_test.
         """
         self.reports_, self.report_names_ = ComparisonReport._validate_reports(reports)
+
+        if isinstance(self.reports_[0], CrossValidationReport):
+            self._reports_type = "CrossValidationReport"
+        elif isinstance(self.reports_[0], EstimatorReport):
+            self._reports_type = "EstimatorReport"
+        else:
+            raise TypeError(
+                "Report type is undetermined. "
+                "This error should have been caught during validation."
+            )
 
         self._progress_info: Optional[dict[str, Any]] = None
         self._parent_progress = None
