@@ -1532,6 +1532,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         display : display_class
             The display.
         """
+        if self._parent._reports_type == "CrossValidationReport":
+            raise NotImplementedError()
+
         if "seed" in display_kwargs and display_kwargs["seed"] is None:
             cache_key = None
         else:
