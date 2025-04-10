@@ -227,12 +227,12 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 )
                 for report in self._parent.reports_
             )
-            results = []
+            individual_results = []
             for result in generator:
-                results.append(result)
+                individual_results.append(result)
                 progress.update(main_task, advance=1, refresh=True)
 
-            results = pd.concat(results, axis=1)
+            results = pd.concat(individual_results, axis=1)
 
             # Pop the favorability column if it exists, to:
             # - not use it in the aggregate operation
