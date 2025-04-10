@@ -137,12 +137,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         if not all(isinstance(report, CrossValidationReport) for report in reports):
             raise TypeError("Expected instances of CrossValidationReport")
 
-        ml_tasks = {report: report._ml_task for report in reports}
-        if len(set(ml_tasks.values())) > 1:
-            raise ValueError(
-                f"Expected all estimators to have the same ML usecase; got {ml_tasks}"
-            )
-
         if len(set(id(report) for report in reports)) < len(reports):
             raise ValueError("Compared CrossValidationReports must be distinct objects")
 
@@ -170,12 +164,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         }
         if len(test_dataset_hashes) > 1:
             raise ValueError("Expected all estimators to have the same testing data.")
-
-        ml_tasks = {report: report._ml_task for report in reports}
-        if len(set(ml_tasks.values())) > 1:
-            raise ValueError(
-                f"Expected all estimators to have the same ML usecase; got {ml_tasks}"
-            )
 
         if report_names is None:
             report_names_ = [report.estimator_name_ for report in reports]
@@ -236,6 +224,12 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                 f"Expected instances of {EstimatorReport.__name__} "
                 f"or {CrossValidationReport.__name__}, "
                 f"got {type(reports_list[0])}"
+            )
+
+        ml_tasks = {report: report._ml_task for report in self.reports_}
+        if len(set(ml_tasks.values())) > 1:
+            raise ValueError(
+                f"Expected all estimators to have the same ML usecase; got {ml_tasks}"
             )
 
         # used to know if a parent launches a progress bar manager
