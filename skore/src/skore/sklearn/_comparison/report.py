@@ -129,28 +129,18 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                 result[index] = f"{report_name}_{n}"
         return result
 
-    def __init__(
-        self,
+    @staticmethod
+    def _validate_reports(
         reports: Union[
             list[EstimatorReport],
             dict[str, EstimatorReport],
             list[CrossValidationReport],
             dict[str, CrossValidationReport],
         ],
-        *,
-        n_jobs: Optional[int] = None,
-    ) -> None:
-        """
-        ComparisonReport instance initializer.
-
-        Notes
-        -----
-        We check that the estimator reports can be compared:
-        - all reports are estimator reports,
-        - all estimators are in the same ML use case,
-        - all estimators have non-empty X_test and y_test,
-        - all estimators have the same X_test and y_test.
-        """
+    ) -> tuple[
+        Union[list[EstimatorReport], list[CrossValidationReport]],
+        list[str],
+    ]:
         if not isinstance(reports, Iterable):
             raise TypeError(f"Expected reports to be an iterable; got {type(reports)}")
 
@@ -198,13 +188,37 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             )
 
         if report_names is None:
-            self.report_names_ = ComparisonReport._deduplicate_report_names(
+            deduped_report_names = ComparisonReport._deduplicate_report_names(
                 [report.estimator_name_ for report in reports_list]
             )
         else:
-            self.report_names_ = report_names
+            deduped_report_names = report_names
 
-        self.reports_ = reports_list
+        return reports_list, deduped_report_names
+
+    def __init__(
+        self,
+        reports: Union[
+            list[EstimatorReport],
+            dict[str, EstimatorReport],
+            list[CrossValidationReport],
+            dict[str, CrossValidationReport],
+        ],
+        *,
+        n_jobs: Optional[int] = None,
+    ) -> None:
+        """
+        ComparisonReport instance initializer.
+
+        Notes
+        -----
+        We check that the estimator reports can be compared:
+        - all reports are estimator reports,
+        - all estimators are in the same ML use case,
+        - all estimators have non-empty X_test and y_test,
+        - all estimators have the same X_test and y_test.
+        """
+        self.reports_, self.report_names_ = ComparisonReport._validate_reports(reports)
 
         # used to know if a parent launches a progress bar manager
         self._progress_info: Optional[dict[str, Any]] = None
