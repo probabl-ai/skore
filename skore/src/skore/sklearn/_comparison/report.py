@@ -131,14 +131,9 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     @staticmethod
     def _validate_cross_validation_reports(
-        reports: Union[list[CrossValidationReport], dict[str, CrossValidationReport]],
+        reports: list[Any], report_names: Optional[list[str]]
     ) -> tuple[list[CrossValidationReport], list[str]]:
-        """Validate a list or dict of CrossValidationReports."""
-        report_names = (
-            list(map(str, reports.keys())) if isinstance(reports, dict) else None
-        )
-        reports = list(reports.values()) if isinstance(reports, dict) else reports
-
+        """Validate CrossValidationReports."""
         if not all(isinstance(report, CrossValidationReport) for report in reports):
             raise TypeError("Expected instances of CrossValidationReport")
 
@@ -162,14 +157,9 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     @staticmethod
     def _validate_estimator_reports(
-        reports: Union[list[EstimatorReport], dict[str, EstimatorReport]],
+        reports: list[Any], report_names: Optional[list[str]]
     ) -> tuple[list[EstimatorReport], list[str]]:
-        """Validate a list or dict of EstimatorReports."""
-        report_names = (
-            list(map(str, reports.keys())) if isinstance(reports, dict) else None
-        )
-        reports = list(reports.values()) if isinstance(reports, dict) else reports
-
+        """Validate EstimatorReports."""
         if not all(isinstance(report, EstimatorReport) for report in reports):
             raise TypeError("Expected instances of EstimatorReport")
 
@@ -196,7 +186,12 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     def __init__(
         self,
-        reports: Union[list[EstimatorReport], dict[str, EstimatorReport]],
+        reports: Union[
+            list[EstimatorReport],
+            dict[str, EstimatorReport],
+            list[CrossValidationReport],
+            dict[str, CrossValidationReport],
+        ],
         *,
         n_jobs: Optional[int] = None,
     ) -> None:
@@ -217,9 +212,31 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         if len(reports) < 2:
             raise ValueError("Expected at least 2 reports to compare")
 
-        self.reports_, self.report_names_ = (
-            ComparisonReport._validate_estimator_reports(reports)
+        report_names = (
+            list(map(str, reports.keys())) if isinstance(reports, dict) else None
         )
+        reports_list = list(reports.values()) if isinstance(reports, dict) else reports
+
+        if isinstance(reports_list[0], EstimatorReport):
+            self.reports_, self.report_names_ = (
+                ComparisonReport._validate_estimator_reports(
+                    reports_list,
+                    report_names,
+                )
+            )
+        elif isinstance(reports_list[0], CrossValidationReport):
+            self.reports_, self.report_names_ = (
+                ComparisonReport._validate_cross_validation_reports(
+                    reports_list,
+                    report_names,
+                )
+            )
+        else:
+            raise TypeError(
+                f"Expected instances of {EstimatorReport.__name__} "
+                f"or {CrossValidationReport.__name__}, "
+                f"got {type(reports_list[0])}"
+            )
 
         # used to know if a parent launches a progress bar manager
         self._progress_info: Optional[dict[str, Any]] = None
