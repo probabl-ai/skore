@@ -1,4 +1,4 @@
-"""Tests of metrics available in `CrossValidationComparisonReport.metrics`."""
+"""Tests of metrics available in `ComparisonReport.metrics`."""
 
 import pandas as pd
 import pytest
@@ -6,7 +6,7 @@ from pandas.testing import assert_index_equal
 from sklearn.datasets import make_classification, make_regression
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.metrics import accuracy_score
-from skore import CrossValidationComparisonReport, CrossValidationReport
+from skore import ComparisonReport, CrossValidationReport
 
 expected_columns = pd.Index(["mean", "std"])
 
@@ -14,7 +14,7 @@ expected_columns = pd.Index(["mean", "std"])
 def comparison_report_classification():
     X, y = make_classification(class_sep=0.1, random_state=42)
 
-    report = CrossValidationComparisonReport(
+    report = ComparisonReport(
         [
             CrossValidationReport(
                 DummyClassifier(strategy="uniform", random_state=0), X, y
@@ -31,7 +31,7 @@ def comparison_report_classification():
 def comparison_report_regression():
     X, y = make_regression(random_state=42)
 
-    report = CrossValidationComparisonReport(
+    report = ComparisonReport(
         [
             CrossValidationReport(DummyRegressor(), X, y),
             CrossValidationReport(DummyRegressor(), X, y, cv_splitter=3),

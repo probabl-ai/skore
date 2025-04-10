@@ -6,7 +6,7 @@ import joblib
 import pytest
 from sklearn.datasets import make_classification, make_regression
 from sklearn.dummy import DummyClassifier, DummyRegressor
-from skore import CrossValidationComparisonReport, CrossValidationReport
+from skore import ComparisonReport, CrossValidationReport
 
 
 @pytest.fixture
@@ -27,15 +27,16 @@ def test_init_wrong_parameters(cv_report_classification):
     """If the input is not valid, raise."""
 
     with pytest.raises(TypeError, match="Expected reports to be an iterable"):
-        CrossValidationComparisonReport(cv_report_classification)
+        ComparisonReport(cv_report_classification)
+
+    with pytest.raises(ValueError, match="Expected at least 2 reports to compare"):
+        ComparisonReport([cv_report_classification])
 
     with pytest.raises(
-        ValueError, match="At least 2 instances of CrossValidationReport are needed"
+        TypeError,
+        match="Expected instances of EstimatorReport or CrossValidationReport",
     ):
-        CrossValidationComparisonReport([cv_report_classification])
-
-    with pytest.raises(TypeError, match="Expected instances of CrossValidationReport"):
-        CrossValidationComparisonReport([None, cv_report_classification])
+        ComparisonReport([None, cv_report_classification])
 
 
 def test_init_different_ml_usecases(cv_report_classification, cv_report_regression):
@@ -43,27 +44,21 @@ def test_init_different_ml_usecases(cv_report_classification, cv_report_regressi
     with pytest.raises(
         ValueError, match="Expected all estimators to have the same ML usecase"
     ):
-        CrossValidationComparisonReport(
-            [cv_report_regression, cv_report_classification]
-        )
+        ComparisonReport([cv_report_regression, cv_report_classification])
 
 
 def test_init_non_distinct_reports(cv_report_classification):
     """If the passed estimators are not distinct objects, raise an error."""
 
-    with pytest.raises(
-        ValueError, match="Compared CrossValidationReports must be distinct objects"
-    ):
-        CrossValidationComparisonReport(
-            [cv_report_classification, cv_report_classification]
-        )
+    with pytest.raises(ValueError, match="Expected reports to be distinct objects"):
+        ComparisonReport([cv_report_classification, cv_report_classification])
 
 
 def test_non_string_report_names(cv_report_classification):
     """If the estimators are passed as a dict with non-string keys,
     then the estimator names are the dict keys converted to strings."""
 
-    report = CrossValidationComparisonReport(
+    report = ComparisonReport(
         {0: cv_report_classification, "1": copy.copy(cv_report_classification)}
     )
     assert report.report_names_ == ["0", "1"]
@@ -71,7 +66,7 @@ def test_non_string_report_names(cv_report_classification):
 
 @pytest.fixture
 def report(cv_report_classification):
-    return CrossValidationComparisonReport(
+    return ComparisonReport(
         [cv_report_classification, copy.copy(cv_report_classification)]
     )
 
@@ -92,13 +87,13 @@ def test_help(capsys, report):
 def test_repr(report):
     """Check the `__repr__` works."""
 
-    assert "CrossValidationComparisonReport" in repr(report)
+    assert "ComparisonReport" in repr(report)
 
 
 def test_metrics_repr(report):
     """Check the repr method of `report.metrics`."""
     repr_str = repr(report.metrics)
-    assert "skore.CrossValidationComparisonReport.metrics" in repr_str
+    assert "skore.ComparisonReport.metrics" in repr_str
     assert "help()" in repr_str
 
 
