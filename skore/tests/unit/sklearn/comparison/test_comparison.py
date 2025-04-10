@@ -52,7 +52,10 @@ def test_comparison_report_init_wrong_parameters(binary_classification_model):
     with pytest.raises(ValueError, match="Expected at least 2 reports to compare"):
         ComparisonReport([estimator_report])
 
-    with pytest.raises(TypeError, match="Expected instances of EstimatorReport"):
+    with pytest.raises(
+        TypeError,
+        match="Expected instances of EstimatorReport or CrossValidationReport",
+    ):
         ComparisonReport([None, estimator_report])
 
 
