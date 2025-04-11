@@ -85,11 +85,9 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     ...     y_test=y_test
     ... )
     >>> report = ComparisonReport([estimator_report_1, estimator_report_2])
-    ...
     >>> report = ComparisonReport(
     ...     {"model1": estimator_report_1, "model2": estimator_report_2}
     ... )
-    ...
     """
 
     _ACCESSOR_CONFIG: dict[str, dict[str, str]] = {
