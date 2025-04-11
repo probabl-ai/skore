@@ -708,7 +708,7 @@ def test_comparison_report_plots(
         elif isinstance(value, list):
             assert_allclose(display_attribute_value, value, atol=1e-2)
         else:
-            raise NotImplementedError
+            raise NotImplementedError()
 
     # Ensure plot is callable
     display.plot()
