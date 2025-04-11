@@ -594,6 +594,25 @@ def test_estimator_report_report_metrics_indicator_favorability(
     assert indicator["Brier score"].tolist() == ["(↘︎)"]
 
 
+def test_comparison_report_aggregate(binary_classification_model):
+    """Passing `aggregate` should have no effect, as this argument is only relevant
+    when comparing `CrossValidationReport`s."""
+    estimator, X_train, X_test, y_train, y_test = binary_classification_model
+    estimator_report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+    report = ComparisonReport([estimator_report, copy(estimator_report)])
+    assert_allclose(
+        report.metrics.report_metrics(aggregate="mean"),
+        report.metrics.report_metrics(),
+    )
+
+
 @pytest.mark.parametrize("plot_data_source", ["test", "X_y"])
 @pytest.mark.parametrize(
     "plot_ml_task, plot_name, plot_cls, plot_attributes",
