@@ -252,3 +252,24 @@ def test_metrics_X_y():
     X, y = make_classification(class_sep=0.1, random_state=42)
     with pytest.raises(NotImplementedError):
         report.metrics.accuracy(data_source="X_y", X=X, y=y)
+
+
+### Test plots
+
+
+@pytest.mark.parametrize(
+    "plot_ml_task, plot_name",
+    [
+        ("binary_classification", "roc"),
+        ("binary_classification", "precision_recall"),
+        ("regression", "prediction_error"),
+    ],
+)
+def test_comparison_report_plots(plot_ml_task, plot_name):
+    if plot_ml_task == "binary_classification":
+        comp = comparison_report_classification()
+    elif plot_ml_task == "regression":
+        comp = comparison_report_regression()
+
+    with pytest.raises(NotImplementedError):
+        getattr(comp.metrics, plot_name)()
