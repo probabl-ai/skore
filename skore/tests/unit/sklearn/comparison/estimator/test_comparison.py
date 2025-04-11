@@ -54,8 +54,7 @@ def test_comparison_report_init_wrong_parameters(binary_classification_model):
         ComparisonReport([estimator_report])
 
     with pytest.raises(
-        TypeError,
-        match="Expected instances of EstimatorReport or CrossValidationReport",
+        TypeError, match="Expected .* EstimatorReport or .* CrossValidationReport"
     ):
         ComparisonReport([None, estimator_report])
 
