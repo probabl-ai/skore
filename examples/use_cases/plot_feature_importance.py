@@ -566,10 +566,10 @@ fig = px.scatter(X_plot, x="AveOccup", y="squared_error", color="split")
 fig
 
 # %%
-plot_map(X_train_plot, "squared_error_train")
+plot_map(X_train_plot, "squared_error")
 
 # %%
-plot_map(X_test_plot, "squared_error_test")
+plot_map(X_test_plot, "squared_error")
 
 # %%
 # Compromising on complexity
