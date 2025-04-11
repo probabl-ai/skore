@@ -92,7 +92,12 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     ...     {"model1": estimator_report_1, "model2": estimator_report_2}
     ... )
 
-    >>> from skore import CrossValidationReport
+    >>> from sklearn.datasets import make_classification
+    >>> from sklearn.linear_model import LogisticRegression
+    >>> from skore import ComparisonReport, CrossValidationReport
+    >>> X, y = make_classification(random_state=42)
+    >>> estimator_1 = LogisticRegression()
+    >>> estimator_2 = LogisticRegression(C=2)  # Different regularization
     >>> report_1 = CrossValidationReport(estimator_1, X, y)
     >>> report_2 = CrossValidationReport(estimator_2, X, y)
     >>> report = ComparisonReport([report_1, report_2])
