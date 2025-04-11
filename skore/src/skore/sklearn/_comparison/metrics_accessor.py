@@ -4,7 +4,6 @@ import joblib
 import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike
-from rich.progress import Progress
 from sklearn.metrics import make_scorer
 from sklearn.metrics._scorer import _BaseScorer as SKLearnScorer
 from sklearn.utils.metaestimators import available_if
@@ -17,6 +16,7 @@ from skore.sklearn._plot.metrics import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
+from skore.sklearn.types import PositiveLabel
 from skore.utils._accessor import _check_supported_ml_task
 from skore.utils._fixes import _validate_joblib_parallel_params
 from skore.utils._index import flatten_multi_index
@@ -47,9 +47,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     def __init__(self, parent: ComparisonReport) -> None:
         super().__init__(parent)
 
-        self._progress_info: Optional[dict[str, Any]] = None
-        self._parent_progress: Optional[Progress] = None
-
     def report_metrics(
         self,
         *,
@@ -59,7 +56,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         scoring: Optional[Union[list[str], Callable, SKLearnScorer]] = None,
         scoring_names: Optional[list[str]] = None,
         scoring_kwargs: Optional[dict[str, Any]] = None,
-        pos_label: Optional[Union[int, float, bool, str]] = None,
+        pos_label: Optional[PositiveLabel] = None,
         indicator_favorability: bool = False,
         flat_index: bool = False,
     ) -> pd.DataFrame:
@@ -197,9 +194,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         cache_key = tuple(cache_key_parts)
 
-        assert self._progress_info is not None, "Progress info not set"
-        progress = self._progress_info["current_progress"]
-        main_task = self._progress_info["current_task"]
+        assert self._parent._progress_info is not None, "Progress info not set"
+        progress = self._parent._progress_info["current_progress"]
+        main_task = self._parent._progress_info["current_task"]
 
         total_estimators = len(self._parent.estimator_reports_)
         progress.update(main_task, total=total_estimators)
@@ -395,7 +392,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         average: Optional[
             Literal["binary", "macro", "micro", "weighted", "samples"]
         ] = None,
-        pos_label: Optional[Union[int, float, bool, str]] = None,
+        pos_label: Optional[PositiveLabel] = None,
     ) -> pd.DataFrame:
         """Compute the precision score.
 
@@ -505,7 +502,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         average: Optional[
             Literal["binary", "macro", "micro", "weighted", "samples"]
         ] = None,
-        pos_label: Optional[Union[int, float, bool, str]] = None,
+        pos_label: Optional[PositiveLabel] = None,
     ) -> pd.DataFrame:
         """Compute the recall score.
 
@@ -1271,9 +1268,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             cache_key_parts.append(data_source)
             cache_key = tuple(cache_key_parts)
 
-        assert self._progress_info is not None, "Progress info not set"
-        progress = self._progress_info["current_progress"]
-        main_task = self._progress_info["current_task"]
+        assert self._parent._progress_info is not None, "Progress info not set"
+        progress = self._parent._progress_info["current_progress"]
+        main_task = self._parent._progress_info["current_task"]
         total_estimators = len(self._parent.estimator_reports_)
         progress.update(main_task, total=total_estimators)
 
@@ -1335,7 +1332,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source: DataSource = "test",
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
-        pos_label: Optional[Union[int, float, bool, str]] = None,
+        pos_label: Optional[PositiveLabel] = None,
     ) -> RocCurveDisplay:
         """Plot the ROC curve.
 
@@ -1420,7 +1417,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source: DataSource = "test",
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
-        pos_label: Optional[Union[int, float, bool, str]] = None,
+        pos_label: Optional[PositiveLabel] = None,
     ) -> PrecisionRecallCurveDisplay:
         """Plot the precision-recall curve.
 

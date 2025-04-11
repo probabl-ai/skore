@@ -20,7 +20,7 @@ from skore.sklearn._plot import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
-from skore.sklearn.types import SKLearnScorer
+from skore.sklearn.types import PositiveLabel, SKLearnScorer
 from skore.utils._accessor import _check_estimator_has_method, _check_supported_ml_task
 from skore.utils._index import flatten_multi_index
 
@@ -60,7 +60,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         scoring: Optional[list[Union[str, Callable, SKLearnScorer]]] = None,
         scoring_names: Optional[list[Union[str, None]]] = None,
         scoring_kwargs: Optional[dict[str, Any]] = None,
-        pos_label: Optional[Union[int, float, bool, str]] = None,
+        pos_label: Optional[PositiveLabel] = None,
         indicator_favorability: bool = False,
         flat_index: bool = False,
     ) -> pd.DataFrame:
@@ -378,9 +378,9 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         response_method: Union[str, list[str], tuple[str, ...]],
         data_source: DataSource = "test",
         data_source_hash: Optional[int] = None,
-        pos_label: Optional[Union[int, float, bool, str]] = None,
+        pos_label: Optional[PositiveLabel] = None,
         **metric_kwargs: Any,
-    ) -> Union[float, dict[Union[int, float, bool, str], float], list]:
+    ) -> Union[float, dict[PositiveLabel, float], list]:
         if data_source_hash is None:
             X, y_true, data_source_hash = self._get_X_y_and_data_source_hash(
                 data_source=data_source, X=X, y=y_true
@@ -472,8 +472,16 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         data_source_hash: Optional[int] = None,
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
+        cast: bool = True,
     ) -> Union[float, None]:
-        """Get prediction time if it has been already measured."""
+        """Get prediction time if it has been already measured.
+
+        Parameters
+        ----------
+        cast : bool, default=True
+            Whether to cast the numbers to floats. If `False`, the return value
+            is `None` when the predictions have never been computed.
+        """
         if data_source_hash is None:
             X, _, data_source_hash = self._get_X_y_and_data_source_hash(
                 data_source=data_source, X=X, y=y
@@ -486,7 +494,9 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             "predict_time",
         )
 
-        return self._parent._cache.get(predict_time_cache_key, None)
+        return self._parent._cache.get(
+            predict_time_cache_key, (float("nan") if cast else None)
+        )
 
     def timings(self) -> dict:
         """Get all measured processing times related to the estimator.
@@ -641,8 +651,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         average: Optional[
             Literal["binary", "macro", "micro", "weighted", "samples"]
         ] = None,
-        pos_label: Optional[Union[int, float, bool, str]] = None,
-    ) -> Union[float, dict[Union[int, float, bool, str], float]]:
+        pos_label: Optional[PositiveLabel] = None,
+    ) -> Union[float, dict[PositiveLabel, float]]:
         """Compute the precision score.
 
         Parameters
@@ -739,8 +749,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         average: Optional[
             Literal["binary", "macro", "micro", "weighted", "samples"]
         ] = None,
-        pos_label: Optional[Union[int, float, bool, str]] = None,
-    ) -> Union[float, dict[Union[int, float, bool, str], float]]:
+        pos_label: Optional[PositiveLabel] = None,
+    ) -> Union[float, dict[PositiveLabel, float]]:
         """Private interface of `precision` to be able to pass `data_source_hash`.
 
         `data_source_hash` is either an `int` when we already computed the hash
@@ -766,7 +776,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             pos_label is not None or average is not None
         ):
             return cast(float, result)
-        return cast(dict[Union[int, float, bool, str], float], result)
+        return cast(dict[PositiveLabel, float], result)
 
     @available_if(attrgetter("_recall"))
     def recall(
@@ -778,8 +788,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         average: Optional[
             Literal["binary", "macro", "micro", "weighted", "samples"]
         ] = None,
-        pos_label: Optional[Union[int, float, bool, str]] = None,
-    ) -> Union[float, dict[Union[int, float, bool, str], float]]:
+        pos_label: Optional[PositiveLabel] = None,
+    ) -> Union[float, dict[PositiveLabel, float]]:
         """Compute the recall score.
 
         Parameters
@@ -877,8 +887,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         average: Optional[
             Literal["binary", "macro", "micro", "weighted", "samples"]
         ] = None,
-        pos_label: Optional[Union[int, float, bool, str]] = None,
-    ) -> Union[float, dict[Union[int, float, bool, str], float]]:
+        pos_label: Optional[PositiveLabel] = None,
+    ) -> Union[float, dict[PositiveLabel, float]]:
         """Private interface of `recall` to be able to pass `data_source_hash`.
 
         `data_source_hash` is either an `int` when we already computed the hash
@@ -904,7 +914,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             pos_label is not None or average is not None
         ):
             return cast(float, result)
-        return cast(dict[Union[int, float, bool, str], float], result)
+        return cast(dict[PositiveLabel, float], result)
 
     @available_if(attrgetter("_brier_score"))
     def brier_score(
@@ -1007,7 +1017,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         y: Optional[ArrayLike] = None,
         average: Optional[Literal["macro", "micro", "weighted", "samples"]] = None,
         multi_class: Literal["raise", "ovr", "ovo"] = "ovr",
-    ) -> Union[float, dict[Union[int, float, bool, str], float]]:
+    ) -> Union[float, dict[PositiveLabel, float]]:
         """Compute the ROC AUC score.
 
         Parameters
@@ -1108,7 +1118,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         y: Optional[ArrayLike] = None,
         average: Optional[Literal["macro", "micro", "weighted", "samples"]] = None,
         multi_class: Literal["raise", "ovr", "ovo"] = "ovr",
-    ) -> Union[float, dict[Union[int, float, bool, str], float]]:
+    ) -> Union[float, dict[PositiveLabel, float]]:
         """Private interface of `roc_auc` to be able to pass `data_source_hash`.
 
         `data_source_hash` is either an `int` when we already computed the hash
@@ -1126,7 +1136,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             multi_class=multi_class,
         )
         if self._parent._ml_task == "multiclass-classification" and average is None:
-            return cast(dict[Union[int, float, bool, str], float], result)
+            return cast(dict[PositiveLabel, float], result)
         return cast(float, result)
 
     @available_if(attrgetter("_log_loss"))
@@ -1441,7 +1451,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
         **kwargs: Any,
-    ) -> Union[float, dict[Union[int, float, bool, str], float], list]:
+    ) -> Union[float, dict[PositiveLabel, float], list]:
         """Compute a custom metric.
 
         It brings some flexibility to compute any desired metric. However, we need to
@@ -1724,7 +1734,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         data_source: DataSource = "test",
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
-        pos_label: Optional[Union[int, float, bool, str]] = None,
+        pos_label: Optional[PositiveLabel] = None,
     ) -> RocCurveDisplay:
         """Plot the ROC curve.
 
@@ -1799,7 +1809,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         data_source: DataSource = "test",
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
-        pos_label: Optional[Union[int, float, bool, str]] = None,
+        pos_label: Optional[PositiveLabel] = None,
     ) -> PrecisionRecallCurveDisplay:
         """Plot the precision-recall curve.
 

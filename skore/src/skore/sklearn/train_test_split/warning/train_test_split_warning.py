@@ -18,4 +18,3 @@ class TrainTestSplitWarning(Warning):
         warning
             None if the check passed, otherwise the warning message.
         """
-        ...

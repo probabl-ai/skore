@@ -21,7 +21,7 @@ from skore.sklearn._plot.utils import (
     _validate_style_kwargs,
     sample_mpl_colormap,
 )
-from skore.sklearn.types import MLTask
+from skore.sklearn.types import MLTask, PositiveLabel
 
 
 class RocCurveDisplay(
@@ -126,9 +126,9 @@ class RocCurveDisplay(
     def __init__(
         self,
         *,
-        fpr: dict[Union[int, float, bool, str], list[ArrayLike]],
-        tpr: dict[Union[int, float, bool, str], list[ArrayLike]],
-        roc_auc: dict[Union[int, float, bool, str], list[float]],
+        fpr: dict[PositiveLabel, list[ArrayLike]],
+        tpr: dict[PositiveLabel, list[ArrayLike]],
+        roc_auc: dict[PositiveLabel, list[float]],
         estimator_names: list[str],
         pos_label: Union[int, float, bool, str, None],
         data_source: Literal["train", "test", "X_y"],
@@ -147,9 +147,9 @@ class RocCurveDisplay(
     @staticmethod
     def _plot_single_estimator(
         *,
-        fpr: dict[Union[int, float, bool, str], list[ArrayLike]],
-        tpr: dict[Union[int, float, bool, str], list[ArrayLike]],
-        roc_auc: dict[Union[int, float, bool, str], list[float]],
+        fpr: dict[PositiveLabel, list[ArrayLike]],
+        tpr: dict[PositiveLabel, list[ArrayLike]],
+        roc_auc: dict[PositiveLabel, list[float]],
         pos_label: Union[int, float, bool, str, None],
         data_source: Literal["train", "test", "X_y"],
         ml_task: MLTask,
@@ -214,7 +214,7 @@ class RocCurveDisplay(
         line_kwargs: dict[str, Any] = {}
 
         if ml_task == "binary-classification":
-            pos_label = cast(Union[int, float, bool, str], pos_label)
+            pos_label = cast(PositiveLabel, pos_label)
             if data_source in ("train", "test"):
                 line_kwargs["label"] = (
                     f"{data_source.title()} set (AUC = {roc_auc[pos_label][0]:0.2f})"
@@ -273,9 +273,9 @@ class RocCurveDisplay(
     @staticmethod
     def _plot_cross_validated_estimator(
         *,
-        fpr: dict[Union[int, float, bool, str], list[ArrayLike]],
-        tpr: dict[Union[int, float, bool, str], list[ArrayLike]],
-        roc_auc: dict[Union[int, float, bool, str], list[float]],
+        fpr: dict[PositiveLabel, list[ArrayLike]],
+        tpr: dict[PositiveLabel, list[ArrayLike]],
+        roc_auc: dict[PositiveLabel, list[float]],
         pos_label: Union[int, float, bool, str, None],
         data_source: Literal["train", "test", "X_y"],
         ml_task: MLTask,
@@ -339,7 +339,7 @@ class RocCurveDisplay(
         line_kwargs: dict[str, Any] = {}
 
         if ml_task == "binary-classification":
-            pos_label = cast(Union[int, float, bool, str], pos_label)
+            pos_label = cast(PositiveLabel, pos_label)
             for split_idx in range(len(fpr[pos_label])):
                 fpr_split = fpr[pos_label][split_idx]
                 tpr_split = tpr[pos_label][split_idx]
@@ -403,9 +403,9 @@ class RocCurveDisplay(
     @staticmethod
     def _plot_comparison_estimator(
         *,
-        fpr: dict[Union[int, float, bool, str], list[ArrayLike]],
-        tpr: dict[Union[int, float, bool, str], list[ArrayLike]],
-        roc_auc: dict[Union[int, float, bool, str], list[float]],
+        fpr: dict[PositiveLabel, list[ArrayLike]],
+        tpr: dict[PositiveLabel, list[ArrayLike]],
+        roc_auc: dict[PositiveLabel, list[float]],
         pos_label: Union[int, float, bool, str, None],
         data_source: Literal["train", "test", "X_y"],
         ml_task: MLTask,
@@ -469,7 +469,7 @@ class RocCurveDisplay(
         line_kwargs: dict[str, Any] = {}
 
         if ml_task == "binary-classification":
-            pos_label = cast(Union[int, float, bool, str], pos_label)
+            pos_label = cast(PositiveLabel, pos_label)
             for est_idx, est_name in enumerate(estimator_names):
                 fpr_est = fpr[pos_label][est_idx]
                 tpr_est = tpr[pos_label][est_idx]
@@ -735,9 +735,9 @@ class RocCurveDisplay(
             y_true, y_pred, ml_task=ml_task, pos_label=pos_label
         )
 
-        fpr: dict[Union[int, float, bool, str], list[ArrayLike]] = defaultdict(list)
-        tpr: dict[Union[int, float, bool, str], list[ArrayLike]] = defaultdict(list)
-        roc_auc: dict[Union[int, float, bool, str], list[float]] = defaultdict(list)
+        fpr: dict[PositiveLabel, list[ArrayLike]] = defaultdict(list)
+        tpr: dict[PositiveLabel, list[ArrayLike]] = defaultdict(list)
+        roc_auc: dict[PositiveLabel, list[float]] = defaultdict(list)
 
         if ml_task == "binary-classification":
             for y_true_i, y_pred_i in zip(y_true, y_pred):
@@ -748,9 +748,7 @@ class RocCurveDisplay(
                     drop_intermediate=drop_intermediate,
                 )
                 roc_auc_i = auc(fpr_i, tpr_i)
-                pos_label_validated = cast(
-                    Union[int, float, bool, str], pos_label_validated
-                )
+                pos_label_validated = cast(PositiveLabel, pos_label_validated)
                 fpr[pos_label_validated].append(fpr_i)
                 tpr[pos_label_validated].append(tpr_i)
                 roc_auc[pos_label_validated].append(roc_auc_i)
