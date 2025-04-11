@@ -85,7 +85,7 @@ rf_report.metrics.report_metrics(pos_label=1)
 
 # %%
 # For inspection, we can also retrieve the predictions, on the train set for example
-# (here we display only the first 10 predictions for concisness purposes):
+# (here we display only the first 10 predictions for conciseness purposes):
 
 # %%
 rf_report.get_predictions(data_source="train", response_method="predict")[0:10]
