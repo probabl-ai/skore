@@ -8,13 +8,19 @@ from sklearn.dummy import DummyClassifier, DummyRegressor
 from skore import ComparisonReport, CrossValidationReport
 
 
+@pytest.fixture
+def classification_data():
+    X, y = make_classification(class_sep=0.1, random_state=42)
+    return X, y
+
+
 def make_classifier():
     return DummyClassifier(strategy="uniform", random_state=0)
 
 
 @pytest.fixture
-def report():
-    X, y = make_classification(class_sep=0.1, random_state=42)
+def report(classification_data):
+    X, y = classification_data
 
     report = ComparisonReport(
         [
@@ -132,11 +138,11 @@ def test_cache(report):
     assert_frame_equal(result, cached_result)
 
 
-def test_init_with_report_names():
+def test_init_with_report_names(classification_data):
     """If the estimators are passed as a dict,
     then the estimator names are the dict keys."""
 
-    X, y = make_classification(class_sep=0.1, random_state=42)
+    X, y = classification_data
     cv_report1 = CrossValidationReport(make_classifier(), X, y)
     cv_report2 = CrossValidationReport(make_classifier(), X, y)
 
