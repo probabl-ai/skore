@@ -163,11 +163,14 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         )
         reports_list = list(reports.values()) if isinstance(reports, dict) else reports
 
+        reports_type: ReportType
         if isinstance(reports_list[0], EstimatorReport):
             if not all(isinstance(report, EstimatorReport) for report in reports_list):
                 raise TypeError("Expected instances of EstimatorReport")
 
             reports_list = cast(list[EstimatorReport], reports_list)
+            reports_type = "EstimatorReport"
+
             test_dataset_hashes = {
                 joblib.hash((report.X_test, report.y_test))
                 for report in reports_list
@@ -185,6 +188,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                 raise TypeError("Expected instances of CrossValidationReport")
 
             reports_list = cast(list[CrossValidationReport], reports_list)
+            reports_type = "CrossValidationReport"
         else:
             raise TypeError(
                 f"Expected instances of {EstimatorReport.__name__} "
@@ -207,17 +211,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             )
         else:
             deduped_report_names = report_names
-
-        reports_type: ReportType
-        if isinstance(reports_list[0], CrossValidationReport):
-            reports_type = "CrossValidationReport"
-        elif isinstance(reports_list[0], EstimatorReport):
-            reports_type = "EstimatorReport"
-        else:
-            raise TypeError(
-                "Report type is undetermined. "
-                "This error should have been caught during validation."
-            )
 
         return reports_list, deduped_report_names, reports_type
 
