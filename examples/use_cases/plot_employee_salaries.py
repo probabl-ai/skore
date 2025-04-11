@@ -94,7 +94,7 @@ y
 # ===============
 
 # %%
-# Let's start by creating a simple baseline model using some out-of-the-box tools.
+# Let's start by creating a tree-based model using some out-of-the-box tools.
 #
 # For feature engineering we use skrub's :class:`~skrub.TableVectorizer`.
 # To deal with the high cardinality of the categorical features, we use a
