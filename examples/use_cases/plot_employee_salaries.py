@@ -222,7 +222,7 @@ model
 # Evaluation
 # ^^^^^^^^^^
 #
-# Now, we want to evaluate this complex model via cross-validation (with 5 folds).
+# Now, we want to evaluate this linear model via cross-validation (with 5 folds).
 # For that, we use skore's :class:`~skore.CrossValidationReport` to investigate the
 # performance of our model.
 report = CrossValidationReport(estimator=model, X=df, y=y, cv_splitter=5, n_jobs=4)
