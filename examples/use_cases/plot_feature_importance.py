@@ -536,13 +536,14 @@ X_plot = pd.concat([X_train_plot, X_test_plot])
 X_plot.sample(10)
 
 # %%
-# Visualizing the distributions
+# Visualizing the distributions:
 
 # %%
 sns.histplot(data=X_train_plot, x="squared_error", bins=30)
 plt.title("Train set")
 plt.show()
 
+# %%
 sns.histplot(data=X_test_plot, x="squared_error", bins=30)
 plt.title("Test set")
 plt.show()
