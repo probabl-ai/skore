@@ -165,11 +165,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             indicator_favorability=indicator_favorability,
             aggregate=aggregate,
         )
-        if flat_index:
-            if isinstance(results.columns, pd.MultiIndex):
-                results.columns = flatten_multi_index(results.columns)
-            if isinstance(results.index, pd.MultiIndex):
-                results.index = flatten_multi_index(results.index)
+        if flat_index and isinstance(results.index, pd.MultiIndex):
+            results.index = flatten_multi_index(results.index)
         return results
 
     @staticmethod
