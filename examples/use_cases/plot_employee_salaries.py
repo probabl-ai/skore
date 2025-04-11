@@ -144,7 +144,7 @@ report.metrics.report_metrics()
 
 
 # %%
-# Complex model
+# Linear model
 # =========
 #
 # Now that we have established a baseline, we shall proceed to define a rather more complex predictive model that uses
