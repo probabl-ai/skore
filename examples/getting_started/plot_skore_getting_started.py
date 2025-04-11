@@ -216,7 +216,6 @@ comparator.metrics.report_metrics(pos_label=1)
 
 # %%
 comparator.metrics.roc().plot()
-plt.tight_layout()
 
 # %%
 # Train-test split with skore
