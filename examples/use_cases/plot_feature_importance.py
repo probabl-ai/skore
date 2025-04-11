@@ -502,6 +502,76 @@ X_train_plot.insert(0, "clustering_labels", clustering_labels)
 plot_map(X_train_plot, "clustering_labels")
 
 # %%
+# Inspecting the prediction error at the sample level
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+# %%
+# Computing the prediction error at the sample level, named ``squared_error``, on the train and test sets:
+
+# %%
+
+# retrieving the predictions
+y_train_pred = engineered_ridge_report.get_predictions(
+    data_source="train", response_method="predict"
+)
+y_test_pred = engineered_ridge_report.get_predictions(
+    data_source="test", response_method="predict"
+)
+
+# computing the squarred error at the sample level
+squared_error_train = (y_train - y_train_pred) ** 2
+squared_error_test = (y_test - y_test_pred) ** 2
+
+# adding the squarred error to our dataframes
+X_train_plot.insert(0, "squared_error", squared_error_train)
+X_test_plot = X_test.copy()
+X_test_plot.insert(0, "squared_error", squared_error_test)
+
+# concatenating
+X_train_plot.insert(0, "split", "train")
+X_test_plot.insert(0, "split", "test")
+X_plot = pd.concat([X_train_plot, X_test_plot])
+
+# %%
+X_plot.sample(10)
+
+# %%
+# Visualizing the distributions
+
+# %%
+sns.histplot(data=X_train_plot, x="squared_error", bins=30)
+plt.title("Train set")
+plt.show()
+
+sns.histplot(data=X_test_plot, x="squared_error", bins=30)
+plt.title("Test set")
+plt.show()
+
+# %%
+# Let us look into the associations between the ``squared_error`` and the other features:
+
+# %%
+from skrub import column_associations
+
+column_associations(X_train_plot).query("left_column_name == 'squared_error'")
+
+# %%
+column_associations(X_test_plot).query("left_column_name == 'squared_error'")
+
+# %%
+# We observe that the ``AveOccup`` leads a large squared error: our model is not able to deal well with that feature.
+
+# %%
+fig = px.scatter(X_plot, x="AveOccup", y="squared_error", color="split")
+fig
+
+# %%
+plot_map(X_train_plot, "squared_error_train")
+
+# %%
+plot_map(X_test_plot, "squared_error_test")
+
+# %%
 # Compromising on complexity
 # --------------------------
 
