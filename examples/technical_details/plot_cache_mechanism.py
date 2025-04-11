@@ -247,7 +247,6 @@ print(f"Time taken: {end - start:.2f} seconds")
 # We only use the cache to retrieve the `display` object and not directly the matplotlib
 # figure. It means that we can still customize the cached plot before displaying it:
 display.plot(roc_curve_kwargs={"color": "tab:orange"})
-plt.tight_layout()
 
 # %%
 #
