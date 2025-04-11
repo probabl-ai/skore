@@ -315,8 +315,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the train set provided when creating the report and the target
-              variable.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+              This option is not implemented yet; it is made available for compatibility
+              reasons.
 
         response_method : {"predict", "predict_proba", "decision_function"}
             The response method to use.
@@ -356,7 +357,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         >>> print([split_predictions.shape for split_predictions in predictions])
         [(50,), (50,)]
         """
-        if data_source not in ("train", "test", "X_y"):
+        if data_source == "X_y":
+            raise NotImplementedError()
+        if data_source not in ("train", "test"):
             raise ValueError(
                 f"Invalid data source: {data_source}. Valid data sources are "
                 "'train', 'test' and 'X_y'."
