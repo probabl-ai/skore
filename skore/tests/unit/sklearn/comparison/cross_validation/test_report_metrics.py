@@ -49,12 +49,9 @@ def report_regression():
 def test_different_split_numbers(report):
     result = report.metrics.report_metrics(aggregate=None)
 
-    assert_index_equal(
-        result.columns,
-        pd.Index(["DummyClassifier_1", "DummyClassifier_2"], name="Estimator"),
-    )
-    assert result.index.names == ["Metric", "Label / Average", "Split"]
-    assert len(result) == ((2 * 2) + (4 * 1)) * 5
+    assert_index_equal(result.columns, pd.Index(["Value"]))
+    assert result.index.names == ["Metric", "Label / Average", "Estimator", "Split"]
+    assert len(result) == 64
 
 
 def test_flat_index_different_split_numbers(report):
@@ -63,18 +60,15 @@ def test_flat_index_different_split_numbers(report):
         flat_index=True,
     )
 
-    assert_index_equal(
-        result.columns,
-        pd.Index(["DummyClassifier_1", "DummyClassifier_2"], name="Estimator"),
-    )
-    assert len(result) == ((2 * 2) + (4 * 1)) * 5
+    assert_index_equal(result.columns, pd.Index(["Value"]))
+    assert len(result) == 64
 
 
 def test_aggregate_different_split_numbers(report):
     result = report.metrics.report_metrics()
 
     assert_index_equal(result.columns, pd.Index(["mean", "std"]))
-    assert len(result) == ((2 * 2) + (4 * 1)) * 2
+    assert len(result) == 16
 
 
 def test_aggregate_sequence_of_one_element(report):
@@ -102,21 +96,21 @@ def test_accuracy(report):
         aggregate=None,
     )
 
-    assert_index_equal(
-        result.columns,
-        pd.Index(["DummyClassifier_1", "DummyClassifier_2"], name="Estimator"),
-    )
+    assert_index_equal(result.columns, pd.Index(["Value"]))
     assert_index_equal(
         result.index,
         pd.MultiIndex.from_tuples(
             [
-                ("Accuracy", "Split #0"),
-                ("Accuracy", "Split #1"),
-                ("Accuracy", "Split #2"),
-                ("Accuracy", "Split #3"),
-                ("Accuracy", "Split #4"),
+                ("Accuracy", "DummyClassifier_1", "Split #0"),
+                ("Accuracy", "DummyClassifier_1", "Split #1"),
+                ("Accuracy", "DummyClassifier_1", "Split #2"),
+                ("Accuracy", "DummyClassifier_1", "Split #3"),
+                ("Accuracy", "DummyClassifier_1", "Split #4"),
+                ("Accuracy", "DummyClassifier_2", "Split #0"),
+                ("Accuracy", "DummyClassifier_2", "Split #1"),
+                ("Accuracy", "DummyClassifier_2", "Split #2"),
             ],
-            names=("Metric", "Split"),
+            names=("Metric", "Estimator", "Split"),
         ),
     )
 
@@ -137,12 +131,12 @@ def test_regression(report_regression):
         pd.MultiIndex.from_tuples(
             [
                 ("R²", "DummyRegressor_1"),
-                ("RMSE", "DummyRegressor_1"),
-                ("Fit time", "DummyRegressor_1"),
-                ("Predict time", "DummyRegressor_1"),
                 ("R²", "DummyRegressor_2"),
+                ("RMSE", "DummyRegressor_1"),
                 ("RMSE", "DummyRegressor_2"),
+                ("Fit time", "DummyRegressor_1"),
                 ("Fit time", "DummyRegressor_2"),
+                ("Predict time", "DummyRegressor_1"),
                 ("Predict time", "DummyRegressor_2"),
             ],
             names=["Metric", "Estimator"],
@@ -168,7 +162,11 @@ def test_init_with_report_names(classification_data):
     comp = ComparisonReport({"r1": cv_report1, "r2": cv_report2})
 
     assert_index_equal(
-        comp.metrics.report_metrics(aggregate=None).columns,
+        (
+            comp.metrics.report_metrics(aggregate=None)
+            .index.get_level_values("Estimator")
+            .unique()
+        ),
         pd.Index(["r1", "r2"], name="Estimator"),
     )
 

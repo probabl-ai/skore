@@ -61,10 +61,10 @@ def case_timings_with_predictions():
     expected_index = pd.MultiIndex.from_tuples(
         [
             ("Fit time", "DummyClassifier_1"),
-            ("Predict time test", "DummyClassifier_1"),
-            ("Predict time train", "DummyClassifier_1"),
             ("Fit time", "DummyClassifier_2"),
+            ("Predict time test", "DummyClassifier_1"),
             ("Predict time test", "DummyClassifier_2"),
+            ("Predict time train", "DummyClassifier_1"),
             ("Predict time train", "DummyClassifier_2"),
         ],
         names=["Metric", "Estimator"],
@@ -100,8 +100,8 @@ def case_precision():
     expected_index = pd.MultiIndex.from_tuples(
         [
             ("Precision", 0, "DummyClassifier_1"),
-            ("Precision", 1, "DummyClassifier_1"),
             ("Precision", 0, "DummyClassifier_2"),
+            ("Precision", 1, "DummyClassifier_1"),
             ("Precision", 1, "DummyClassifier_2"),
         ],
         names=["Metric", "Label / Average", "Estimator"],
@@ -118,8 +118,8 @@ def case_recall():
     expected_index = pd.MultiIndex.from_tuples(
         [
             ("Recall", 0, "DummyClassifier_1"),
-            ("Recall", 1, "DummyClassifier_1"),
             ("Recall", 0, "DummyClassifier_2"),
+            ("Recall", 1, "DummyClassifier_1"),
             ("Recall", 1, "DummyClassifier_2"),
         ],
         names=["Metric", "Label / Average", "Estimator"],
