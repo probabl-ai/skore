@@ -1,10 +1,9 @@
-from typing import Any, Callable, Literal, Optional, Union
+from typing import Any, Callable, Literal, Optional, Union, cast
 
 import joblib
 import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike
-from rich.progress import Progress
 from sklearn.metrics import make_scorer
 from sklearn.metrics._scorer import _BaseScorer as SKLearnScorer
 from sklearn.utils.metaestimators import available_if
@@ -17,7 +16,9 @@ from skore.sklearn._plot.metrics import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
+from skore.sklearn.types import PositiveLabel
 from skore.utils._accessor import _check_supported_ml_task
+from skore.utils._fixes import _validate_joblib_parallel_params
 from skore.utils._index import flatten_multi_index
 from skore.utils._progress_bar import progress_decorator
 
@@ -46,9 +47,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
     def __init__(self, parent: ComparisonReport) -> None:
         super().__init__(parent)
 
-        self._progress_info: Optional[dict[str, Any]] = None
-        self._parent_progress: Optional[Progress] = None
-
     def report_metrics(
         self,
         *,
@@ -58,7 +56,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         scoring: Optional[Union[list[str], Callable, SKLearnScorer]] = None,
         scoring_names: Optional[list[str]] = None,
         scoring_kwargs: Optional[dict[str, Any]] = None,
-        pos_label: Optional[Union[int, float, bool, str]] = None,
+        pos_label: Optional[PositiveLabel] = None,
         indicator_favorability: bool = False,
         flat_index: bool = False,
     ) -> pd.DataFrame:
@@ -196,9 +194,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         cache_key = tuple(cache_key_parts)
 
-        assert self._progress_info is not None, "Progress info not set"
-        progress = self._progress_info["current_progress"]
-        main_task = self._progress_info["current_task"]
+        assert self._parent._progress_info is not None, "Progress info not set"
+        progress = self._parent._progress_info["current_progress"]
+        main_task = self._parent._progress_info["current_task"]
 
         total_estimators = len(self._parent.estimator_reports_)
         progress.update(main_task, total=total_estimators)
@@ -207,9 +205,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             results = self._parent._cache[cache_key]
         else:
             parallel = joblib.Parallel(
-                n_jobs=self._parent.n_jobs,
-                return_as="generator",
-                require="sharedmem",
+                **_validate_joblib_parallel_params(
+                    n_jobs=self._parent.n_jobs,
+                    return_as="generator",
+                    require="sharedmem",
+                )
             )
             generator = parallel(
                 joblib.delayed(getattr(report.metrics, report_metric_name))(
@@ -242,6 +242,66 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
             self._parent._cache[cache_key] = results
         return results
+
+    def timings(self) -> pd.DataFrame:
+        """Get all measured processing times related to the different estimators.
+
+        The index of the returned dataframe is the name of the processing time. When
+        the estimators were not used to predict, no timings regarding the prediction
+        will be present.
+
+        Returns
+        -------
+        pd.DataFrame
+            A dataframe with the processing times.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import make_classification
+        >>> from sklearn.model_selection import train_test_split
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import ComparisonReport, EstimatorReport
+        >>> X, y = make_classification(random_state=42)
+        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        >>> estimator_1 = LogisticRegression()
+        >>> estimator_report_1 = EstimatorReport(
+        ...     estimator_1,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test
+        ... )
+        >>> estimator_2 = LogisticRegression(C=2)  # Different regularization
+        >>> estimator_report_2 = EstimatorReport(
+        ...     estimator_2,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test
+        ... )
+        >>> report = ComparisonReport(
+        ...     {"model1": estimator_report_1, "model2": estimator_report_2}
+        ... )
+        >>> report.metrics.timings()
+                    model1    model2
+        Fit time       ...       ...
+        >>> report.cache_predictions(response_methods=["predict"])
+        >>> report.metrics.timings()
+                            model1    model2
+        Fit time               ...       ...
+        Predict time test      ...       ...
+        Predict time train     ...       ...
+        """
+        timings: pd.DataFrame = pd.concat(
+            [
+                pd.Series(report.metrics.timings())
+                for report in self._parent.estimator_reports_
+            ],
+            axis=1,
+            keys=self._parent.report_names_,
+        )
+        timings.index = timings.index.str.replace("_", " ").str.capitalize()
+        return timings
 
     @available_if(
         _check_supported_ml_task(
@@ -332,7 +392,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         average: Optional[
             Literal["binary", "macro", "micro", "weighted", "samples"]
         ] = None,
-        pos_label: Optional[Union[int, float, bool, str]] = None,
+        pos_label: Optional[PositiveLabel] = None,
     ) -> pd.DataFrame:
         """Compute the precision score.
 
@@ -442,7 +502,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         average: Optional[
             Literal["binary", "macro", "micro", "weighted", "samples"]
         ] = None,
-        pos_label: Optional[Union[int, float, bool, str]] = None,
+        pos_label: Optional[PositiveLabel] = None,
     ) -> pd.DataFrame:
         """Compute the recall score.
 
@@ -1148,10 +1208,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
     def __repr__(self) -> str:
         """Return a string representation using rich."""
-        return self._rich_repr(
-            class_name="skore.ComparisonReport.metrics",
-            help_method_name="report.metrics.help()",
-        )
+        return self._rich_repr(class_name="skore.ComparisonReport.metrics")
 
     ####################################################################################
     # Methods related to displays
@@ -1201,7 +1258,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         display : display_class
             The display.
         """
-        if "random_state" in display_kwargs and display_kwargs["random_state"] is None:
+        if "seed" in display_kwargs and display_kwargs["seed"] is None:
             cache_key = None
         else:
             # build the cache key components to finally create a tuple that will be used
@@ -1211,9 +1268,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             cache_key_parts.append(data_source)
             cache_key = tuple(cache_key_parts)
 
-        assert self._progress_info is not None, "Progress info not set"
-        progress = self._progress_info["current_progress"]
-        main_task = self._progress_info["current_task"]
+        assert self._parent._progress_info is not None, "Progress info not set"
+        progress = self._parent._progress_info["current_progress"]
+        main_task = self._parent._progress_info["current_task"]
         total_estimators = len(self._parent.estimator_reports_)
         progress.update(main_task, total=total_estimators)
 
@@ -1257,9 +1314,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 **display_kwargs,
             )
 
-            # Unless random_state is an int (i.e. the call is deterministic),
-            # we do not cache
             if cache_key is not None:
+                # Unless seed is an int (i.e. the call is deterministic),
+                # we do not cache
                 self._parent._cache[cache_key] = display
 
         return display
@@ -1275,7 +1332,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source: DataSource = "test",
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
-        pos_label: Optional[Union[int, float, bool, str]] = None,
+        pos_label: Optional[PositiveLabel] = None,
     ) -> RocCurveDisplay:
         """Plot the ROC curve.
 
@@ -1336,15 +1393,17 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         """
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
-        display = self._get_display(
-            X=X,
-            y=y,
-            data_source=data_source,
-            response_method=response_method,
-            display_class=RocCurveDisplay,
-            display_kwargs=display_kwargs,
+        display = cast(
+            RocCurveDisplay,
+            self._get_display(
+                X=X,
+                y=y,
+                data_source=data_source,
+                response_method=response_method,
+                display_class=RocCurveDisplay,
+                display_kwargs=display_kwargs,
+            ),
         )
-        assert isinstance(display, RocCurveDisplay)
         return display
 
     @available_if(
@@ -1358,7 +1417,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source: DataSource = "test",
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
-        pos_label: Optional[Union[int, float, bool, str]] = None,
+        pos_label: Optional[PositiveLabel] = None,
     ) -> PrecisionRecallCurveDisplay:
         """Plot the precision-recall curve.
 
@@ -1419,15 +1478,17 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         """
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
-        display = self._get_display(
-            X=X,
-            y=y,
-            data_source=data_source,
-            response_method=response_method,
-            display_class=PrecisionRecallCurveDisplay,
-            display_kwargs=display_kwargs,
+        display = cast(
+            PrecisionRecallCurveDisplay,
+            self._get_display(
+                X=X,
+                y=y,
+                data_source=data_source,
+                response_method=response_method,
+                display_class=PrecisionRecallCurveDisplay,
+                display_kwargs=display_kwargs,
+            ),
         )
-        assert isinstance(display, PrecisionRecallCurveDisplay)
         return display
 
     @available_if(
@@ -1442,7 +1503,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
         subsample: int = 1_000,
-        random_state: Optional[int] = None,
+        seed: Optional[int] = None,
     ) -> PredictionErrorDisplay:
         """Plot the prediction error of a regression model.
 
@@ -1472,8 +1533,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             display on the scatter plot. If `None`, no subsampling will be
             applied. by default, 1,000 samples or less will be displayed.
 
-        random_state : int, default=None
-            The random state to use for the subsampling.
+        seed : int, default=None
+            The seed used to initialize the random number generator used for the
+            subsampling.
 
         Returns
         -------
@@ -1510,14 +1572,16 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         >>> display = comparison_report.metrics.prediction_error()
         >>> display.plot(kind="actual_vs_predicted")
         """
-        display_kwargs = {"subsample": subsample, "random_state": random_state}
-        display = self._get_display(
-            X=X,
-            y=y,
-            data_source=data_source,
-            response_method="predict",
-            display_class=PredictionErrorDisplay,
-            display_kwargs=display_kwargs,
+        display_kwargs = {"subsample": subsample, "seed": seed}
+        display = cast(
+            PredictionErrorDisplay,
+            self._get_display(
+                X=X,
+                y=y,
+                data_source=data_source,
+                response_method="predict",
+                display_class=PredictionErrorDisplay,
+                display_kwargs=display_kwargs,
+            ),
         )
-        assert isinstance(display, PredictionErrorDisplay)
         return display

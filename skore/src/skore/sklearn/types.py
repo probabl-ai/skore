@@ -1,12 +1,13 @@
 """Types between parts of the sklearn module."""
 
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from typing import Any, Callable, Literal, Protocol, Union
 
 from numpy.typing import ArrayLike
 
 MLTask = Literal[
     "binary-classification",
+    "classification",
     "clustering",
     "multiclass-classification",
     "multioutput-binary-classification",
@@ -15,6 +16,11 @@ MLTask = Literal[
     "regression",
     "unknown",
 ]
+
+PositiveLabel = Union[int, float, bool, str]
+
+
+Aggregate = Union[Literal["mean", "std"], Sequence[Literal["mean", "std"]]]
 
 
 class SKLearnScorer(Protocol):
@@ -30,7 +36,6 @@ class SKLearnCrossValidator(Protocol):
 
     def get_n_splits(self, X: Any = None, y: Any = None, groups: Any = None) -> int:
         """Return the number of splitting iterations in the cross-validator."""
-        ...
 
     def split(
         self, X: ArrayLike, y: Any = None, groups: Any = None
@@ -58,4 +63,3 @@ class SKLearnCrossValidator(Protocol):
         test : ndarray
             The testing set indices for that split.
         """
-        ...

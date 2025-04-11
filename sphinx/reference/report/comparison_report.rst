@@ -10,13 +10,15 @@ The class :class:`ComparisonReport` provides a report allowing to compare :class
     :template: base.rst
 
     ComparisonReport
-
+    ComparisonReport.cache_predictions
+    ComparisonReport.clear_cache
 .. autosummary::
     :toctree: ../api/
     :nosignatures:
     :template: autosummary/accessor_method.rst
 
     ComparisonReport.help
+    ComparisonReport.get_predictions
 
 .. autosummary::
     :toctree: ../api/
@@ -48,3 +50,4 @@ get the common performance metric representations.
     ComparisonReport.metrics.recall
     ComparisonReport.metrics.rmse
     ComparisonReport.metrics.roc_auc
+    ComparisonReport.metrics.timings

@@ -1,6 +1,6 @@
 import time
 from collections.abc import Generator
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 
 import numpy as np
 from numpy.typing import ArrayLike
@@ -15,6 +15,7 @@ from skore.sklearn._base import _BaseReport
 from skore.sklearn._estimator.report import EstimatorReport
 from skore.sklearn.find_ml_task import _find_ml_task
 from skore.sklearn.types import SKLearnCrossValidator
+from skore.utils._fixes import _validate_joblib_parallel_params
 from skore.utils._parallel import Parallel, delayed
 from skore.utils._progress_bar import progress_decorator
 
@@ -174,7 +175,11 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         n_splits = self._cv_splitter.get_n_splits(self._X, self._y)
         progress.update(task, total=n_splits)
 
-        parallel = Parallel(n_jobs=self.n_jobs, return_as="generator")
+        parallel = Parallel(
+            **_validate_joblib_parallel_params(
+                n_jobs=self.n_jobs, return_as="generator"
+            )
+        )
         # do not split the data to take advantage of the memory mapping
         generator = parallel(
             delayed(_generate_estimator_report)(
@@ -289,6 +294,74 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 response_methods=response_methods, n_jobs=n_jobs
             )
             progress.update(main_task, advance=1, refresh=True)
+
+    def get_predictions(
+        self,
+        *,
+        data_source: Literal["train", "test"],
+        response_method: Literal["predict", "predict_proba", "decision_function"],
+        pos_label: Optional[Any] = None,
+    ) -> ArrayLike:
+        """Get estimator's predictions.
+
+        This method has the advantage to reload from the cache if the predictions
+        were already computed in a previous call.
+
+        Parameters
+        ----------
+        data_source : {"test", "train"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+
+        response_method : {"predict", "predict_proba", "decision_function"}
+            The response method to use.
+
+        pos_label : int, float, bool or str, default=None
+            The positive class when it comes to binary classification. When
+            `response_method="predict_proba"`, it will select the column corresponding
+            to the positive class. When `response_method="decision_function"`, it will
+            negate the decision function if `pos_label` is different from
+            `estimator.classes_[1]`.
+
+        Returns
+        -------
+        list of np.ndarray of shape (n_samples,) or (n_samples, n_classes)
+            The predictions for each cross-validation split.
+
+        Raises
+        ------
+        ValueError
+            If the data source is invalid.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import make_classification
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> X, y = make_classification(random_state=42)
+        >>> estimator = LogisticRegression()
+        >>> from skore import CrossValidationReport
+        >>> report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=2)
+        >>> predictions = report.get_predictions(
+        ...     data_source="test", response_method="predict"
+        ... )
+        >>> print([split_predictions.shape for split_predictions in predictions])
+        [(50,), (50,)]
+        """
+        if data_source not in ("train", "test"):
+            raise ValueError(
+                f"Invalid data source: {data_source}. Valid data sources are "
+                "'train' and 'test'."
+            )
+        return [
+            report.get_predictions(
+                data_source=data_source,
+                response_method=response_method,
+                pos_label=pos_label,
+            )
+            for report in self.estimator_reports_
+        ]
 
     @property
     def estimator_(self) -> BaseEstimator:

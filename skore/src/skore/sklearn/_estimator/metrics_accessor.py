@@ -1,7 +1,8 @@
 import inspect
 from collections.abc import Iterable
 from functools import partial
-from typing import Any, Callable, Literal, Optional, Union
+from operator import attrgetter
+from typing import Any, Callable, Literal, Optional, Union, cast
 
 import joblib
 import numpy as np
@@ -19,7 +20,7 @@ from skore.sklearn._plot import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
-from skore.sklearn.types import SKLearnScorer
+from skore.sklearn.types import PositiveLabel, SKLearnScorer
 from skore.utils._accessor import _check_estimator_has_method, _check_supported_ml_task
 from skore.utils._index import flatten_multi_index
 
@@ -59,7 +60,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         scoring: Optional[list[Union[str, Callable, SKLearnScorer]]] = None,
         scoring_names: Optional[list[Union[str, None]]] = None,
         scoring_kwargs: Optional[dict[str, Any]] = None,
-        pos_label: Optional[Union[int, float, bool, str]] = None,
+        pos_label: Optional[PositiveLabel] = None,
         indicator_favorability: bool = False,
         flat_index: bool = False,
     ) -> pd.DataFrame:
@@ -377,9 +378,9 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         response_method: Union[str, list[str], tuple[str, ...]],
         data_source: DataSource = "test",
         data_source_hash: Optional[int] = None,
-        pos_label: Optional[Union[int, float, bool, str]] = None,
+        pos_label: Optional[PositiveLabel] = None,
         **metric_kwargs: Any,
-    ) -> Union[float, dict[Union[int, float, bool, str], float], list]:
+    ) -> Union[float, dict[PositiveLabel, float], list]:
         if data_source_hash is None:
             X, y_true, data_source_hash = self._get_X_y_and_data_source_hash(
                 data_source=data_source, X=X, y=y_true
@@ -447,11 +448,21 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                 return score[0]
         return score
 
-    def _fit_time(self, **kwargs) -> Union[float, None]:
+    def _fit_time(self, cast: bool = True, **kwargs) -> Union[float, None]:
         """Get time to fit the estimator.
 
-        kwargs are available for compatibility with other metrics.
+        Parameters
+        ----------
+        cast : bool, default=True
+            Whether to cast the return value to a float. If `False`, the return value
+            is `None` when the estimator is not fitted.
+
+        kwargs : dict
+            Additional arguments that are ignored but present for compatibility with
+            other metrics.
         """
+        if cast and self._parent.fit_time_ is None:
+            return float("nan")
         return self._parent.fit_time_
 
     def _predict_time(
@@ -461,8 +472,16 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         data_source_hash: Optional[int] = None,
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
+        cast: bool = True,
     ) -> Union[float, None]:
-        """Get prediction time if it has been already measured."""
+        """Get prediction time if it has been already measured.
+
+        Parameters
+        ----------
+        cast : bool, default=True
+            Whether to cast the numbers to floats. If `False`, the return value
+            is `None` when the predictions have never been computed.
+        """
         if data_source_hash is None:
             X, _, data_source_hash = self._get_X_y_and_data_source_hash(
                 data_source=data_source, X=X, y=y
@@ -475,7 +494,9 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             "predict_time",
         )
 
-        return self._parent._cache.get(predict_time_cache_key, None)
+        return self._parent._cache.get(
+            predict_time_cache_key, (float("nan") if cast else None)
+        )
 
     def timings(self) -> dict:
         """Get all measured processing times related to the estimator.
@@ -494,8 +515,30 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             - "predict_time_{data_source}", where data_source is "train", "test" or
               "X_y_{data_source_hash}", for the time to compute the predictions on the
               given data source.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import make_classification
+        >>> from sklearn.model_selection import train_test_split
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> X, y = make_classification(random_state=42)
+        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        >>> estimator = LogisticRegression()
+        >>> from skore import EstimatorReport
+        >>> report = EstimatorReport(
+        ...     estimator,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> report.metrics.timings()
+        {'fit_time': ...}
+        >>> report.cache_predictions(response_methods=["predict"])
+        >>> report.metrics.timings()
+        {'fit_time': ..., 'predict_time_test': ...}
         """
-        fit_time_ = self._fit_time()
+        fit_time_ = self._fit_time(cast=False)
         fit_time = {"fit_time": fit_time_} if fit_time_ is not None else {}
 
         # predict_time cache keys are of the form
@@ -515,11 +558,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
 
         return fit_time | predict_times
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
-        )
-    )
+    @available_if(attrgetter("_accuracy"))
     def accuracy(
         self,
         *,
@@ -573,6 +612,11 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         """
         return self._accuracy(data_source=data_source, data_source_hash=None, X=X, y=y)
 
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["binary-classification", "multiclass-classification"]
+        )
+    )
     def _accuracy(
         self,
         *,
@@ -595,17 +639,9 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             data_source_hash=data_source_hash,
             response_method="predict",
         )
-        assert isinstance(score, float), (
-            "The accuracy score should be a float, got "
-            f"{type(score)} with value {score}."
-        )
-        return score
+        return cast(float, score)
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
-        )
-    )
+    @available_if(attrgetter("_precision"))
     def precision(
         self,
         *,
@@ -615,8 +651,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         average: Optional[
             Literal["binary", "macro", "micro", "weighted", "samples"]
         ] = None,
-        pos_label: Optional[Union[int, float, bool, str]] = None,
-    ) -> Union[float, dict[Union[int, float, bool, str], float]]:
+        pos_label: Optional[PositiveLabel] = None,
+    ) -> Union[float, dict[PositiveLabel, float]]:
         """Compute the precision score.
 
         Parameters
@@ -698,6 +734,11 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             pos_label=pos_label,
         )
 
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["binary-classification", "multiclass-classification"]
+        )
+    )
     def _precision(
         self,
         *,
@@ -708,8 +749,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         average: Optional[
             Literal["binary", "macro", "micro", "weighted", "samples"]
         ] = None,
-        pos_label: Optional[Union[int, float, bool, str]] = None,
-    ) -> Union[float, dict[Union[int, float, bool, str], float]]:
+        pos_label: Optional[PositiveLabel] = None,
+    ) -> Union[float, dict[PositiveLabel, float]]:
         """Private interface of `precision` to be able to pass `data_source_hash`.
 
         `data_source_hash` is either an `int` when we already computed the hash
@@ -734,22 +775,10 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         if self._parent._ml_task == "binary-classification" and (
             pos_label is not None or average is not None
         ):
-            assert isinstance(result, float), (
-                "The precision score should be a float, got "
-                f"{type(result)} with value {result}."
-            )
-            return result
-        assert isinstance(result, dict), (
-            "The precision score should be a dict, got "
-            f"{type(result)} with value {result}."
-        )
-        return result
+            return cast(float, result)
+        return cast(dict[PositiveLabel, float], result)
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
-        )
-    )
+    @available_if(attrgetter("_recall"))
     def recall(
         self,
         *,
@@ -759,8 +788,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         average: Optional[
             Literal["binary", "macro", "micro", "weighted", "samples"]
         ] = None,
-        pos_label: Optional[Union[int, float, bool, str]] = None,
-    ) -> Union[float, dict[Union[int, float, bool, str], float]]:
+        pos_label: Optional[PositiveLabel] = None,
+    ) -> Union[float, dict[PositiveLabel, float]]:
         """Compute the recall score.
 
         Parameters
@@ -843,6 +872,11 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             pos_label=pos_label,
         )
 
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["binary-classification", "multiclass-classification"]
+        )
+    )
     def _recall(
         self,
         *,
@@ -853,8 +887,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         average: Optional[
             Literal["binary", "macro", "micro", "weighted", "samples"]
         ] = None,
-        pos_label: Optional[Union[int, float, bool, str]] = None,
-    ) -> Union[float, dict[Union[int, float, bool, str], float]]:
+        pos_label: Optional[PositiveLabel] = None,
+    ) -> Union[float, dict[PositiveLabel, float]]:
         """Private interface of `recall` to be able to pass `data_source_hash`.
 
         `data_source_hash` is either an `int` when we already computed the hash
@@ -879,21 +913,10 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         if self._parent._ml_task == "binary-classification" and (
             pos_label is not None or average is not None
         ):
-            assert isinstance(result, float), (
-                "The precision score should be a float, got "
-                f"{type(result)} with value {result}."
-            )
-            return result
-        assert isinstance(result, dict), (
-            "The precision score should be a dict, got "
-            f"{type(result)} with value {result}."
-        )
-        return result
+            return cast(float, result)
+        return cast(dict[PositiveLabel, float], result)
 
-    @available_if(
-        _check_supported_ml_task(supported_ml_tasks=["binary-classification"])
-    )
-    @available_if(_check_estimator_has_method(method_name="predict_proba"))
+    @available_if(attrgetter("_brier_score"))
     def brier_score(
         self,
         *,
@@ -952,6 +975,10 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             y=y,
         )
 
+    @available_if(
+        _check_supported_ml_task(supported_ml_tasks=["binary-classification"])
+    )
+    @available_if(_check_estimator_has_method(method_name="predict_proba"))
     def _brier_score(
         self,
         *,
@@ -979,17 +1006,9 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             response_method="predict_proba",
             pos_label=self._parent._estimator.classes_[-1],
         )
-        assert isinstance(result, float), (
-            "The Brier score should be a float, got "
-            f"{type(result)} with value {result}."
-        )
-        return result
+        return cast(float, result)
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
-        )
-    )
+    @available_if(attrgetter("_roc_auc"))
     def roc_auc(
         self,
         *,
@@ -998,7 +1017,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         y: Optional[ArrayLike] = None,
         average: Optional[Literal["macro", "micro", "weighted", "samples"]] = None,
         multi_class: Literal["raise", "ovr", "ovo"] = "ovr",
-    ) -> Union[float, dict[Union[int, float, bool, str], float]]:
+    ) -> Union[float, dict[PositiveLabel, float]]:
         """Compute the ROC AUC score.
 
         Parameters
@@ -1085,6 +1104,11 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             multi_class=multi_class,
         )
 
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["binary-classification", "multiclass-classification"]
+        )
+    )
     def _roc_auc(
         self,
         *,
@@ -1094,7 +1118,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         y: Optional[ArrayLike] = None,
         average: Optional[Literal["macro", "micro", "weighted", "samples"]] = None,
         multi_class: Literal["raise", "ovr", "ovo"] = "ovr",
-    ) -> Union[float, dict[Union[int, float, bool, str], float]]:
+    ) -> Union[float, dict[PositiveLabel, float]]:
         """Private interface of `roc_auc` to be able to pass `data_source_hash`.
 
         `data_source_hash` is either an `int` when we already computed the hash
@@ -1112,22 +1136,10 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             multi_class=multi_class,
         )
         if self._parent._ml_task == "multiclass-classification" and average is None:
-            assert isinstance(result, dict), (
-                "The ROC AUC score should be a dict, got "
-                f"{type(result)} with value {result}."
-            )
-            return result
-        assert isinstance(result, float), (
-            "The ROC AUC score should be a float, got "
-            f"{type(result)} with value {result}."
-        )
-        return result
+            return cast(dict[PositiveLabel, float], result)
+        return cast(float, result)
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
-        )
-    )
+    @available_if(attrgetter("_log_loss"))
     def log_loss(
         self,
         *,
@@ -1179,6 +1191,11 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             y=y,
         )
 
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["binary-classification", "multiclass-classification"]
+        )
+    )
     def _log_loss(
         self,
         *,
@@ -1201,16 +1218,9 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             data_source_hash=data_source_hash,
             response_method="predict_proba",
         )
-        assert isinstance(result, float), (
-            f"The log loss should be a float, got {type(result)} with value {result}."
-        )
-        return result
+        return cast(float, result)
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["regression", "multioutput-regression"]
-        )
-    )
+    @available_if(attrgetter("_r2"))
     def r2(
         self,
         *,
@@ -1283,6 +1293,11 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             multioutput=multioutput,
         )
 
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["regression", "multioutput-regression"]
+        )
+    )
     def _r2(
         self,
         *,
@@ -1313,21 +1328,10 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             self._parent._ml_task == "multioutput-regression"
             and multioutput == "raw_values"
         ):
-            assert isinstance(result, list), (
-                "The R² score should be a list, got "
-                f"{type(result)} with value {result}."
-            )
-            return result
-        assert isinstance(result, float), (
-            f"The R² score should be a float, got {type(result)} with value {result}."
-        )
-        return result
+            return cast(list, result)
+        return cast(float, result)
 
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["regression", "multioutput-regression"]
-        )
-    )
+    @available_if(attrgetter("_rmse"))
     def rmse(
         self,
         *,
@@ -1400,6 +1404,11 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             multioutput=multioutput,
         )
 
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["regression", "multioutput-regression"]
+        )
+    )
     def _rmse(
         self,
         *,
@@ -1430,15 +1439,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             self._parent._ml_task == "multioutput-regression"
             and multioutput == "raw_values"
         ):
-            assert isinstance(result, list), (
-                "The RMSE score should be a list, got "
-                f"{type(result)} with value {result}."
-            )
-            return result
-        assert isinstance(result, float), (
-            f"The RMSE score should be a float, got {type(result)} with value {result}."
-        )
-        return result
+            return cast(list, result)
+        return cast(float, result)
 
     def custom_metric(
         self,
@@ -1449,7 +1451,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
         **kwargs: Any,
-    ) -> Union[float, dict[Union[int, float, bool, str], float], list]:
+    ) -> Union[float, dict[PositiveLabel, float], list]:
         """Compute a custom metric.
 
         It brings some flexibility to compute any desired metric. However, we need to
@@ -1621,10 +1623,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
 
     def __repr__(self) -> str:
         """Return a string representation using rich."""
-        return self._rich_repr(
-            class_name="skore.EstimatorReport.metrics",
-            help_method_name="report.metrics.help()",
-        )
+        return self._rich_repr(class_name="skore.EstimatorReport.metrics")
 
     ####################################################################################
     # Methods related to displays
@@ -1681,7 +1680,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         # build the cache key components to finally create a tuple that will be used
         # to check if the metric has already been computed
 
-        if "random_state" in display_kwargs and display_kwargs["random_state"] is None:
+        if "seed" in display_kwargs and display_kwargs["seed"] is None:
             cache_key = None
         else:
             cache_key_parts: list[Any] = [self._parent._hash, display_class.__name__]
@@ -1717,9 +1716,9 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                 **display_kwargs,
             )
 
-            # Unless random_state is an int (i.e. the call is deterministic),
-            # we do not cache
             if cache_key is not None:
+                # Unless seed is an int (i.e. the call is deterministic),
+                # we do not cache
                 self._parent._cache[cache_key] = display
 
         return display
@@ -1735,7 +1734,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         data_source: DataSource = "test",
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
-        pos_label: Optional[Union[int, float, bool, str]] = None,
+        pos_label: Optional[PositiveLabel] = None,
     ) -> RocCurveDisplay:
         """Plot the ROC curve.
 
@@ -1786,15 +1785,17 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         """
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
-        display = self._get_display(
-            X=X,
-            y=y,
-            data_source=data_source,
-            response_method=response_method,
-            display_class=RocCurveDisplay,
-            display_kwargs=display_kwargs,
+        display = cast(
+            RocCurveDisplay,
+            self._get_display(
+                X=X,
+                y=y,
+                data_source=data_source,
+                response_method=response_method,
+                display_class=RocCurveDisplay,
+                display_kwargs=display_kwargs,
+            ),
         )
-        assert isinstance(display, RocCurveDisplay)
         return display
 
     @available_if(
@@ -1808,7 +1809,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         data_source: DataSource = "test",
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
-        pos_label: Optional[Union[int, float, bool, str]] = None,
+        pos_label: Optional[PositiveLabel] = None,
     ) -> PrecisionRecallCurveDisplay:
         """Plot the precision-recall curve.
 
@@ -1859,15 +1860,17 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         """
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
-        display = self._get_display(
-            X=X,
-            y=y,
-            data_source=data_source,
-            response_method=response_method,
-            display_class=PrecisionRecallCurveDisplay,
-            display_kwargs=display_kwargs,
+        display = cast(
+            PrecisionRecallCurveDisplay,
+            self._get_display(
+                X=X,
+                y=y,
+                data_source=data_source,
+                response_method=response_method,
+                display_class=PrecisionRecallCurveDisplay,
+                display_kwargs=display_kwargs,
+            ),
         )
-        assert isinstance(display, PrecisionRecallCurveDisplay)
         return display
 
     @available_if(
@@ -1882,7 +1885,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
         subsample: Union[float, int, None] = 1_000,
-        random_state: Optional[int] = None,
+        seed: Optional[int] = None,
     ) -> PredictionErrorDisplay:
         """Plot the prediction error of a regression model.
 
@@ -1912,8 +1915,9 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             display on the scatter plot. If `None`, no subsampling will be
             applied. by default, 1,000 samples or less will be displayed.
 
-        random_state : int, default=None
-            The random state to use for the subsampling.
+        seed : int, default=None
+            The seed used to initialize the random number generator used for the
+            subsampling.
 
         Returns
         -------
@@ -1938,16 +1942,18 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         ...     y_test=y_test,
         ... )
         >>> display = report.metrics.prediction_error()
-        >>> display.plot(line_kwargs={"color": "tab:red"})
+        >>> display.plot(perfect_model_kwargs={"color": "tab:red"})
         """
-        display_kwargs = {"subsample": subsample, "random_state": random_state}
-        display = self._get_display(
-            X=X,
-            y=y,
-            data_source=data_source,
-            response_method="predict",
-            display_class=PredictionErrorDisplay,
-            display_kwargs=display_kwargs,
+        display_kwargs = {"subsample": subsample, "seed": seed}
+        display = cast(
+            PredictionErrorDisplay,
+            self._get_display(
+                X=X,
+                y=y,
+                data_source=data_source,
+                response_method="predict",
+                display_class=PredictionErrorDisplay,
+                display_kwargs=display_kwargs,
+            ),
         )
-        assert isinstance(display, PredictionErrorDisplay)
         return display

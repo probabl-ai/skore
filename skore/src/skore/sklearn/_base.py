@@ -2,10 +2,9 @@ import inspect
 import re
 from abc import ABC, abstractmethod
 from io import StringIO
-from typing import Any, Generic, Literal, Optional, TypeVar, Union
+from typing import Any, Generic, Literal, Optional, TypeVar, Union, cast
 
 import joblib
-import numpy as np
 from numpy.typing import ArrayLike, NDArray
 from rich.console import Console, Group
 from rich.panel import Panel
@@ -14,6 +13,7 @@ from sklearn.base import BaseEstimator
 from sklearn.utils._response import _check_response_method, _get_response_values
 
 from skore.externals._sklearn_compat import is_clusterer
+from skore.sklearn.types import PositiveLabel
 from skore.utils._measure_time import MeasureTime
 
 
@@ -97,13 +97,13 @@ class _HelpMixin(ABC):
 
         console.print(self._create_help_panel())
 
-    def _rich_repr(self, class_name: str, help_method_name: str) -> str:
+    def _rich_repr(self, class_name: str) -> str:
         """Return a string representation using rich."""
         string_buffer = StringIO()
         console = Console(file=string_buffer, force_terminal=False)
         console.print(
             Panel(
-                f"Get guidance using the {help_method_name} method",
+                "Get guidance using the help() method",
                 title=f"[cyan]{class_name}[/cyan]",
                 border_style="orange1",
                 expand=False,
@@ -327,7 +327,7 @@ def _get_cached_response_values(
     estimator: BaseEstimator,
     X: Union[ArrayLike, None],
     response_method: Union[str, list[str], tuple[str, ...]],
-    pos_label: Optional[Union[int, float, bool, str]] = None,
+    pos_label: Optional[PositiveLabel] = None,
     data_source: Literal["test", "train", "X_y"] = "test",
     data_source_hash: Optional[int] = None,
 ) -> NDArray:
@@ -391,8 +391,7 @@ def _get_cached_response_values(
     )
 
     if cache_key in cache:
-        cached_predictions = cache[cache_key]
-        assert isinstance(cached_predictions, np.ndarray)
+        cached_predictions = cast(NDArray, cache[cache_key])
         return cached_predictions
 
     with MeasureTime() as predict_time:

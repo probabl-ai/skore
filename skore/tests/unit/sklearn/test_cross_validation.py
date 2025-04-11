@@ -207,6 +207,41 @@ def test_cross_validation_report_cache_predictions(
         assert estimator_report._cache == {}
 
 
+@pytest.mark.parametrize("data_source", ["train", "test"])
+@pytest.mark.parametrize(
+    "response_method", ["predict", "predict_proba", "decision_function"]
+)
+@pytest.mark.parametrize("pos_label", [None, 0, 1])
+def test_cross_validation_report_get_predictions(
+    data_source, response_method, pos_label
+):
+    """Check the behaviour of the `get_predictions` method."""
+    X, y = make_classification(n_classes=2, random_state=42)
+    estimator = LogisticRegression()
+    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
+
+    predictions = report.get_predictions(
+        data_source=data_source, response_method=response_method, pos_label=pos_label
+    )
+    assert len(predictions) == 2
+    for split_idx, split_predictions in enumerate(predictions):
+        if data_source == "train":
+            expected_shape = report.estimator_reports_[split_idx].y_train.shape
+        else:
+            expected_shape = report.estimator_reports_[split_idx].y_test.shape
+        assert split_predictions.shape == expected_shape
+
+
+def test_cross_validation_report_get_predictions_error():
+    """Check that we raise an error when the data source is invalid."""
+    X, y = make_classification(n_classes=2, random_state=42)
+    estimator = LogisticRegression()
+    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
+
+    with pytest.raises(ValueError, match="Invalid data source"):
+        report.get_predictions(data_source="invalid", response_method="predict")
+
+
 def test_cross_validation_report_pickle(tmp_path, binary_classification_data):
     """Check that we can pickle an cross-validation report.
 
@@ -241,8 +276,8 @@ def test_cross_validation_report_flat_index(binary_classification_data):
         "predict_time",
     ]
     assert result.columns.tolist() == [
-        "randomforestclassifier_split_0",
-        "randomforestclassifier_split_1",
+        "randomforestclassifier_mean",
+        "randomforestclassifier_std",
     ]
 
 
@@ -278,18 +313,18 @@ def test_cross_validation_report_display_regression(pyplot, regression_data, dis
     estimator, X, y = regression_data
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
     assert hasattr(report.metrics, display)
-    display_first_call = getattr(report.metrics, display)(random_state=0)
+    display_first_call = getattr(report.metrics, display)(seed=0)
     assert report._cache != {}
-    display_second_call = getattr(report.metrics, display)(random_state=0)
+    display_second_call = getattr(report.metrics, display)(seed=0)
     assert display_first_call is display_second_call
 
 
-def test_random_state(regression_data):
-    """If random_state is None (the default) the call should not be cached."""
+def test_seed_none(regression_data):
+    """If `seed` is None (the default) the call should not be cached."""
     estimator, X, y = regression_data
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
 
-    report.metrics.prediction_error()
+    report.metrics.prediction_error(seed=None)
     # skore should store the y_pred of the internal estimators, but not the plot
     assert report._cache == {}
 
@@ -316,7 +351,7 @@ def test_cross_validation_report_metrics_repr(binary_classification_data):
 
     repr_str = repr(report.metrics)
     assert "skore.CrossValidationReport.metrics" in repr_str
-    assert "report.metrics.help()" in repr_str
+    assert "help()" in repr_str
 
 
 def _normalize_metric_name(index):
@@ -330,11 +365,11 @@ def _normalize_metric_name(index):
 
 def _check_results_single_metric(report, metric, expected_n_splits, expected_nb_stats):
     assert hasattr(report.metrics, metric)
-    result = getattr(report.metrics, metric)()
+    result = getattr(report.metrics, metric)(aggregate=None)
     assert isinstance(result, pd.DataFrame)
     assert result.shape[1] == expected_n_splits
     # check that we hit the cache
-    result_with_cache = getattr(report.metrics, metric)()
+    result_with_cache = getattr(report.metrics, metric)(aggregate=None)
     pd.testing.assert_frame_equal(result, result_with_cache)
 
     # check that the columns contains the expected split names
@@ -375,7 +410,8 @@ def _check_results_report_metric(
 
     # check that the columns contains the expected split names
     split_names = result.columns.get_level_values(1).unique()
-    expected_split_names = [f"Split #{i}" for i in range(expected_n_splits)]
+    # expected_split_names = [f"Split #{i}" for i in range(expected_n_splits)]
+    expected_split_names = ["mean", "std"]
     assert list(split_names) == expected_split_names
 
     _check_metrics_names(result, expected_metrics, expected_nb_stats)
@@ -701,6 +737,7 @@ def test_cross_validation_report_report_metrics_with_scorer(regression_data):
     result = report.metrics.report_metrics(
         scoring=[r2_score, median_absolute_error_scorer],
         scoring_kwargs={"response_method": "predict"},  # only dispatched to r2_score
+        aggregate=None,
     )
     assert result.shape == (2, 2)
 
@@ -865,7 +902,7 @@ def test_cross_validation_report_interrupted(
         metric_function=accuracy_score,
         response_method="predict",
     )
-    assert result.shape == (1, 1)
+    assert result.shape == (1, 2)
     assert result.index == ["accuracy_score"]
 
 
@@ -881,3 +918,40 @@ def test_cross_validation_report_brier_score_requires_probabilities():
 
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=2)
     assert not hasattr(report.metrics, "brier_score")
+
+
+@pytest.mark.parametrize(
+    "aggregate, expected_columns",
+    [
+        (None, ["Split #0", "Split #1"]),
+        ("mean", ["mean"]),
+        ("std", ["std"]),
+        (["mean", "std"], ["mean", "std"]),
+    ],
+)
+def test_cross_validation_timings(
+    binary_classification_data, aggregate, expected_columns
+):
+    """Check the general behaviour of the `timings` method."""
+    estimator, X, y = binary_classification_data
+    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
+    timings = report.metrics.timings(aggregate=aggregate)
+    assert isinstance(timings, pd.DataFrame)
+    assert timings.index.tolist() == ["Fit time"]
+    assert timings.columns.tolist() == expected_columns
+
+    report.metrics.report_metrics(data_source="train")
+    timings = report.metrics.timings(aggregate=aggregate)
+    assert isinstance(timings, pd.DataFrame)
+    assert timings.index.tolist() == ["Fit time", "Predict time train"]
+    assert timings.columns.tolist() == expected_columns
+
+    report.metrics.report_metrics(data_source="test")
+    timings = report.metrics.timings(aggregate=aggregate)
+    assert isinstance(timings, pd.DataFrame)
+    assert timings.index.tolist() == [
+        "Fit time",
+        "Predict time train",
+        "Predict time test",
+    ]
+    assert timings.columns.tolist() == expected_columns

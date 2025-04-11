@@ -21,11 +21,11 @@ from skore.sklearn._plot.utils import (
     _validate_style_kwargs,
     sample_mpl_colormap,
 )
-from skore.sklearn.types import MLTask
+from skore.sklearn.types import MLTask, PositiveLabel
 
 
 class PrecisionRecallCurveDisplay(
-    HelpDisplayMixin, _ClassifierCurveDisplayMixin, StyleDisplayMixin
+    StyleDisplayMixin, HelpDisplayMixin, _ClassifierCurveDisplayMixin
 ):
     """Precision Recall visualization.
 
@@ -125,7 +125,7 @@ class PrecisionRecallCurveDisplay(
         recall: dict[Any, list[ArrayLike]],
         average_precision: dict[Any, list[float]],
         estimator_names: list[str],
-        pos_label: Union[int, float, bool, str, None],
+        pos_label: Optional[PositiveLabel],
         data_source: Literal["train", "test", "X_y"],
         ml_task: MLTask,
         report_type: Literal["comparison-estimator", "cross-validation", "estimator"],
@@ -145,7 +145,7 @@ class PrecisionRecallCurveDisplay(
         precision: dict[Any, list[ArrayLike]],
         recall: dict[Any, list[ArrayLike]],
         average_precision: dict[Any, list[float]],
-        pos_label: Union[int, float, bool, str, None],
+        pos_label: Optional[PositiveLabel],
         data_source: Literal["train", "test", "X_y"],
         ml_task: MLTask,
         ax: Axes,
@@ -209,7 +209,7 @@ class PrecisionRecallCurveDisplay(
         line_kwargs: dict[str, Any] = {"drawstyle": "steps-post"}
 
         if ml_task == "binary-classification":
-            pos_label = cast(Union[int, float, bool, str], pos_label)
+            pos_label = cast(PositiveLabel, pos_label)
 
             line_kwargs_validated = _validate_style_kwargs(
                 line_kwargs, pr_curve_kwargs[0]
@@ -267,17 +267,17 @@ class PrecisionRecallCurveDisplay(
 
             info_pos_label = None  # irrelevant for multiclass
 
-        ax.legend(loc="lower left", title=estimator_name)
+        ax.legend(bbox_to_anchor=(1.02, 1), title=estimator_name)
 
         return ax, lines, info_pos_label
 
     @staticmethod
     def _plot_cross_validated_estimator(
         *,
-        precision: dict[Union[int, float, bool, str], list[ArrayLike]],
-        recall: dict[Union[int, float, bool, str], list[ArrayLike]],
-        average_precision: dict[Union[int, float, bool, str], list[float]],
-        pos_label: Union[int, float, bool, str, None],
+        precision: dict[PositiveLabel, list[ArrayLike]],
+        recall: dict[PositiveLabel, list[ArrayLike]],
+        average_precision: dict[PositiveLabel, list[float]],
+        pos_label: Optional[PositiveLabel],
         data_source: Literal["train", "test", "X_y"],
         ml_task: MLTask,
         ax: Axes,
@@ -341,7 +341,7 @@ class PrecisionRecallCurveDisplay(
         line_kwargs: dict[str, Any] = {"drawstyle": "steps-post"}
 
         if ml_task == "binary-classification":
-            pos_label = cast(Union[int, float, bool, str], pos_label)
+            pos_label = cast(PositiveLabel, pos_label)
             for split_idx in range(len(precision[pos_label])):
                 precision_split = precision[pos_label][split_idx]
                 recall_split = recall[pos_label][split_idx]
@@ -401,17 +401,17 @@ class PrecisionRecallCurveDisplay(
                     )
                     lines.append(line)
 
-        ax.legend(loc="lower left", title=estimator_name)
+        ax.legend(bbox_to_anchor=(1.02, 1), title=estimator_name)
 
         return ax, lines, info_pos_label
 
     @staticmethod
     def _plot_comparison_estimator(
         *,
-        precision: dict[Union[int, float, bool, str], list[ArrayLike]],
-        recall: dict[Union[int, float, bool, str], list[ArrayLike]],
-        average_precision: dict[Union[int, float, bool, str], list[float]],
-        pos_label: Union[int, float, bool, str, None],
+        precision: dict[PositiveLabel, list[ArrayLike]],
+        recall: dict[PositiveLabel, list[ArrayLike]],
+        average_precision: dict[PositiveLabel, list[float]],
+        pos_label: Optional[PositiveLabel],
         data_source: Literal["train", "test", "X_y"],
         ml_task: MLTask,
         ax: Axes,
@@ -475,7 +475,7 @@ class PrecisionRecallCurveDisplay(
         line_kwargs: dict[str, Any] = {"drawstyle": "steps-post"}
 
         if ml_task == "binary-classification":
-            pos_label = cast(Union[int, float, bool, str], pos_label)
+            pos_label = cast(PositiveLabel, pos_label)
             for est_idx, est_name in enumerate(estimator_names):
                 precision_est = precision[pos_label][est_idx]
                 recall_est = recall[pos_label][est_idx]
@@ -527,12 +527,13 @@ class PrecisionRecallCurveDisplay(
                     lines.append(line)
 
         ax.legend(
-            loc="lower left",
+            bbox_to_anchor=(1.02, 1),
             title=f"{ml_task.title()} on $\\bf{{{data_source}}}$ set",
         )
 
         return ax, lines, info_pos_label
 
+    @StyleDisplayMixin.style_plot
     def plot(
         self,
         ax: Optional[Axes] = None,
@@ -685,7 +686,7 @@ class PrecisionRecallCurveDisplay(
         estimator_names: list[str],
         ml_task: MLTask,
         data_source: Literal["train", "test", "X_y"],
-        pos_label: Union[int, float, bool, str, None],
+        pos_label: Optional[PositiveLabel],
         drop_intermediate: bool = True,
     ) -> "PrecisionRecallCurveDisplay":
         """Plot precision-recall curve given binary class predictions.
@@ -732,19 +733,13 @@ class PrecisionRecallCurveDisplay(
             y_true, y_pred, ml_task=ml_task, pos_label=pos_label
         )
 
-        precision: dict[Union[int, float, bool, str], list[ArrayLike]] = defaultdict(
-            list
-        )
-        recall: dict[Union[int, float, bool, str], list[ArrayLike]] = defaultdict(list)
-        average_precision: dict[Union[int, float, bool, str], list[float]] = (
-            defaultdict(list)
-        )
+        precision: dict[PositiveLabel, list[ArrayLike]] = defaultdict(list)
+        recall: dict[PositiveLabel, list[ArrayLike]] = defaultdict(list)
+        average_precision: dict[PositiveLabel, list[float]] = defaultdict(list)
 
         if ml_task == "binary-classification":
             for y_true_i, y_pred_i in zip(y_true, y_pred):
-                pos_label_validated = cast(
-                    Union[int, float, bool, str], pos_label_validated
-                )
+                pos_label_validated = cast(PositiveLabel, pos_label_validated)
                 precision_i, recall_i, _ = precision_recall_curve(
                     y_true_i,
                     y_pred_i,

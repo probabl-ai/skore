@@ -13,9 +13,8 @@ quickly get insights from any scikit-learn estimator.
 # Loading our dataset and defining our estimator
 # ==============================================
 #
-# First, we load a dataset from skrub. Our goal is to predict if a company paid a
-# physician. The ultimate goal is to detect potential conflict of interest when it comes
-# to the actual problem that we want to solve.
+# First, we load a dataset from skrub. Our goal is to predict if a healthcare manufacturing companies paid a
+# medical doctors or hospitals, in order to detect potential conflict of interest.
 
 # %%
 from skrub.datasets import fetch_open_payments
@@ -335,7 +334,6 @@ report.metrics.help()
 # Let's start by plotting the ROC curve for our binary classification task.
 display = report.metrics.roc(pos_label=pos_label)
 display.plot()
-plt.tight_layout()
 
 # %%
 #
@@ -350,9 +348,7 @@ display.help()
 
 # %%
 display.plot()
-display.ax_.set_title("Example of a ROC curve")
-display.figure_
-plt.tight_layout()
+_ = display.ax_.set_title("Example of a ROC curve")
 
 # %%
 #
@@ -364,7 +360,6 @@ start = time.time()
 # we already trigger the computation of the predictions in a previous call
 display = report.metrics.roc(pos_label=pos_label)
 display.plot()
-plt.tight_layout()
 end = time.time()
 
 # %%
@@ -379,7 +374,6 @@ report.clear_cache()
 start = time.time()
 display = report.metrics.roc(pos_label=pos_label)
 display.plot()
-plt.tight_layout()
 end = time.time()
 
 # %%

@@ -64,6 +64,10 @@ model
 from skore import train_test_split
 
 X_train, X_test, y_train, y_test = train_test_split(df, y, random_state=42)
+# Let's keep a completely separate dataset
+X_train, X_external, y_train, y_external = train_test_split(
+    X_train, y_train, random_state=42
+)
 
 # %%
 # Caching the predictions for fast metric computation
@@ -172,7 +176,7 @@ print(f"Time taken: {end - start:.2f} seconds")
 # The report can also work with external data. We use `data_source="X_y"` to indicate
 # that we want to pass those external data.
 start = time.time()
-result = report.metrics.log_loss(data_source="X_y", X=X_test, y=y_test)
+result = report.metrics.log_loss(data_source="X_y", X=X_external, y=y_external)
 end = time.time()
 result
 
@@ -185,7 +189,7 @@ print(f"Time taken: {end - start:.2f} seconds")
 # or test sets because it needs to compute a hash of the new data for later retrieval.
 # Let's calculate it again:
 start = time.time()
-result = report.metrics.log_loss(data_source="X_y", X=X_test, y=y_test)
+result = report.metrics.log_loss(data_source="X_y", X=X_external, y=y_external)
 end = time.time()
 result
 
@@ -198,7 +202,7 @@ print(f"Time taken: {end - start:.2f} seconds")
 # The remaining time corresponds to the hash computation.
 # Let's compute the ROC AUC on the same data:
 start = time.time()
-result = report.metrics.roc_auc(data_source="X_y", X=X_test, y=y_test)
+result = report.metrics.roc_auc(data_source="X_y", X=X_external, y=y_external)
 end = time.time()
 result
 
@@ -215,13 +219,11 @@ print(f"Time taken: {end - start:.2f} seconds")
 # ^^^^^^^^^^^^^^^^^^^^
 #
 # The cache also speeds up plots. Let's create a ROC curve:
-import matplotlib.pyplot as plt
 
 start = time.time()
 display = report.metrics.roc(pos_label="allowed")
 display.plot()
 end = time.time()
-plt.tight_layout()
 
 # %%
 print(f"Time taken: {end - start:.2f} seconds")
@@ -233,7 +235,6 @@ start = time.time()
 display = report.metrics.roc(pos_label="allowed")
 display.plot()
 end = time.time()
-plt.tight_layout()
 
 # %%
 print(f"Time taken: {end - start:.2f} seconds")
@@ -243,7 +244,6 @@ print(f"Time taken: {end - start:.2f} seconds")
 # We only use the cache to retrieve the `display` object and not directly the matplotlib
 # figure. It means that we can still customize the cached plot before displaying it:
 display.plot(roc_curve_kwargs={"color": "tab:orange"})
-plt.tight_layout()
 
 # %%
 #
@@ -272,7 +272,7 @@ report.help()
 # exposed.
 # The first call will be slow because it computes the predictions for each fold.
 start = time.time()
-result = report.metrics.report_metrics(aggregate=["mean", "std"])
+result = report.metrics.report_metrics()
 end = time.time()
 result
 
@@ -283,7 +283,7 @@ print(f"Time taken: {end - start:.2f} seconds")
 #
 # But the subsequent calls are fast because the predictions are cached.
 start = time.time()
-result = report.metrics.report_metrics(aggregate=["mean", "std"])
+result = report.metrics.report_metrics()
 end = time.time()
 result
 
