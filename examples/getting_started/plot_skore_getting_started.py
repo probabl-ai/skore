@@ -154,7 +154,6 @@ cv_report.metrics.report_metrics(aggregate=None, pos_label=1)
 # %%
 roc_plot_cv = cv_report.metrics.roc()
 roc_plot_cv.plot()
-plt.tight_layout()
 
 # %%
 # We can retrieve the estimator report of a specific fold to investigate further,
