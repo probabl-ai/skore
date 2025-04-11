@@ -362,6 +362,12 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             data_source,
         ]
 
+        if self._parent._reports_type == "CrossValidationReport":
+            if aggregate is None:
+                cache_key_parts.append(aggregate)
+            else:
+                cache_key_parts.extend(tuple(aggregate))
+
         # we need to enforce the order of the parameter for a specific metric
         # to make sure that we hit the cache in a consistent way
         ordered_metric_kwargs = sorted(metric_kwargs.keys())
