@@ -90,7 +90,7 @@ my_project.put("Input data summary", table_report)
 y
 
 # %%
-# Simple model
+# Tree-based model
 # ===============
 
 # %%
