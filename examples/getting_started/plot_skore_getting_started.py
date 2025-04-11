@@ -94,8 +94,6 @@ rf_report.get_predictions(data_source="train", response_method="predict")[0:10]
 # We can also plot the ROC curve that is generated for us:
 
 # %%
-import matplotlib.pyplot as plt
-
 roc_plot = rf_report.metrics.roc()
 roc_plot.plot()
 
@@ -105,6 +103,8 @@ roc_plot.plot()
 # In particular, we can inspect the model using the permutation feature importance:
 
 # %%
+import matplotlib.pyplot as plt
+
 rf_report.feature_importance.permutation(seed=0).T.boxplot(vert=False)
 plt.tight_layout()
 

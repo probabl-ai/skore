@@ -41,8 +41,6 @@ df_cv_report_metrics
 # Display the ROC curve that was generated for you:
 
 # %%
-import matplotlib.pyplot as plt
-
 roc_plot = cv_report.metrics.roc()
 roc_plot.plot()
 
