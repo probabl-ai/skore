@@ -225,7 +225,6 @@ import matplotlib.pyplot as plt
 start = time.time()
 display = report.metrics.roc(pos_label="allowed")
 display.plot()
-plt.tight_layout()
 end = time.time()
 
 # %%
