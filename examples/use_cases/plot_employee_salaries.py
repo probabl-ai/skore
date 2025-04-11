@@ -90,13 +90,72 @@ my_project.put("Input data summary", table_report)
 y
 
 # %%
+# Tree-based model
+# ===============
+
+# %%
+# Let's start by creating a tree-based model using some out-of-the-box tools.
+#
+# For feature engineering we use skrub's :class:`~skrub.TableVectorizer`.
+# To deal with the high cardinality of the categorical features, we use a
+# :class:`~skrub.TextEncoder` that uses a language model and an embedding model to
+# encode the categorical features.
+#
+# Finally, we use a :class:`~sklearn.ensemble.HistGradientBoostingRegressor` as a
+# base estimator that is a rather robust model.
+#
 # Modelling
-# =========
+# ^^^^^^^^^
+
+from skrub import TableVectorizer, TextEncoder
+from sklearn.ensemble import HistGradientBoostingRegressor
+from sklearn.pipeline import make_pipeline
+
+model = make_pipeline(
+    TableVectorizer(high_cardinality=TextEncoder()),
+    HistGradientBoostingRegressor(),
+)
+model
+
+# %%
+# Evaluation
+# ^^^^^^^^^^
+#
+# Let us compute the cross-validation report for this model using :class:`skore.CrossValidationReport`:
+from skore import CrossValidationReport
+
+report = CrossValidationReport(estimator=model, X=df, y=y, cv_splitter=5, n_jobs=4)
+report.help()
 
 # %%
 #
-# In a first attempt, we define a rather complex predictive model that uses
-# a linear model as a base estimator.
+# We cache the predictions for later use.
+report.cache_predictions(n_jobs=4)
+
+# %%
+#
+# We store the report in our skore project.
+my_project.put("HGBT model report", report)
+
+# %%
+#
+# We can now have a look at the performance of the model with some standard metrics.
+report.metrics.report_metrics()
+
+
+# %%
+# Linear model
+# =========
+#
+# Now that we have established a first model that serves as a baseline,
+# we shall proceed to define a quite complex linear model
+# (a pipeline with a complex feature engineering that uses
+# a linear model as the base estimator).
+
+# %%
+# Modelling
+# ^^^^^^^^^
+
 import numpy as np
 from sklearn.compose import make_column_transformer
 from sklearn.pipeline import make_pipeline
@@ -160,17 +219,12 @@ model
 # * Finally, we fit a :class:`~sklearn.linear_model.RidgeCV` model.
 
 # %%
-# Model evaluation using :class:`skore.CrossValidationReport`
-# ============================================================
+# Evaluation
+# ^^^^^^^^^^
 #
-# First model
-# ^^^^^^^^^^^
-#
-# Now, we want to evaluate this complex model via cross-validation (with 5 folds).
+# Now, we want to evaluate this linear model via cross-validation (with 5 folds).
 # For that, we use skore's :class:`~skore.CrossValidationReport` to investigate the
 # performance of our model.
-from skore import CrossValidationReport
-
 report = CrossValidationReport(estimator=model, X=df, y=y, cv_splitter=5, n_jobs=4)
 report.help()
 
@@ -201,60 +255,17 @@ my_project.put("Linear model report", report)
 report.metrics.report_metrics(indicator_favorability=True)
 
 # %%
-# Second model
-# ^^^^^^^^^^^^
-#
-# Now that we have our first baseline model, we can try an out-of-the-box model:
-# skrub's :class:`~skrub.TableVectorizer` that makes the feature engineering for us.
-# To deal with the high cardinality of the categorical features, we use a
-# :class:`~skrub.TextEncoder` that uses a language model and an embedding model to
-# encode the categorical features.
-#
-# Finally, we use a :class:`~sklearn.ensemble.HistGradientBoostingRegressor` as a
-# base estimator that is a rather robust model.
-from skrub import TableVectorizer, TextEncoder
-from sklearn.ensemble import HistGradientBoostingRegressor
-from sklearn.pipeline import make_pipeline
-
-model = make_pipeline(
-    TableVectorizer(high_cardinality=TextEncoder()),
-    HistGradientBoostingRegressor(),
-)
-model
-
-# %%
-#
-# Let us compute the cross-validation report for this model.
-report = CrossValidationReport(estimator=model, X=df, y=y, cv_splitter=5, n_jobs=4)
-report.help()
-
-# %%
-#
-# We cache the predictions for later use.
-report.cache_predictions(n_jobs=4)
-
-# %%
-#
-# We store the report in our skore project.
-my_project.put("HGBDT model report", report)
-
-# %%
-#
-# We can now have a look at the performance of the model with some standard metrics.
-report.metrics.report_metrics()
-
-# %%
-# Investigating the models
-# ^^^^^^^^^^^^^^^^^^^^^^^^
+# Comparing the models
+# ====================
 #
 # At this point, we may not have been cautious and could have already overwritten the
-# report and model from our initial attempt.
+# report and model from our initial (tree-based model) attempt.
 # Fortunately, since we saved the reports in our skore project, we can easily recover
 # them.
 # So, let us retrieve those reports.
 
+hgbt_model_report = my_project.get("HGBT model report")
 linear_model_report = my_project.get("Linear model report")
-hgbdt_model_report = my_project.get("HGBDT model report")
 
 # %%
 #
@@ -264,8 +275,8 @@ import pandas as pd
 
 results = pd.concat(
     [
+        hgbt_model_report.metrics.report_metrics(),
         linear_model_report.metrics.report_metrics(),
-        hgbdt_model_report.metrics.report_metrics(),
     ],
     axis=1,
 )
@@ -285,12 +296,12 @@ scoring_kwargs = {"response_method": "predict"}
 scoring_names = ["R2", "RMSE", "MAE"]
 results = pd.concat(
     [
-        linear_model_report.metrics.report_metrics(
+        hgbt_model_report.metrics.report_metrics(
             scoring=scoring,
             scoring_kwargs=scoring_kwargs,
             scoring_names=scoring_names,
         ),
-        hgbdt_model_report.metrics.report_metrics(
+        linear_model_report.metrics.report_metrics(
             scoring=scoring,
             scoring_kwargs=scoring_kwargs,
             scoring_names=scoring_names,
@@ -324,6 +335,7 @@ for split_idx, (ax, estimator_report) in enumerate(
     estimator_report.metrics.prediction_error().plot(kind="actual_vs_predicted", ax=ax)
     ax.set_title(f"Split #{split_idx + 1}")
     ax.legend(loc="lower right")
+
 plt.tight_layout()
 # sphinx_gallery_start_ignore
 temp_dir.cleanup()
