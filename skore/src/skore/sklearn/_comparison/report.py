@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Any, Literal, Optional, Union
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union, cast
 
 import joblib
 import numpy as np
@@ -16,6 +16,8 @@ from skore.utils._progress_bar import progress_decorator
 
 if TYPE_CHECKING:
     from skore.sklearn._estimator.metrics_accessor import _MetricsAccessor
+
+    ReportType = Literal["EstimatorReport", "CrossValidationReport"]
 
 
 class ComparisonReport(_BaseReport, DirNamesMixin):
@@ -102,7 +104,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     }
     metrics: _MetricsAccessor
 
-    _reports_type: Literal["EstimatorReport", "CrossValidationReport"]
+    _reports_type: ReportType
 
     @staticmethod
     def _deduplicate_report_names(report_names_: list[str]) -> list[str]:
@@ -148,6 +150,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     ) -> tuple[
         Union[list[EstimatorReport], list[CrossValidationReport]],
         list[str],
+        ReportType,
     ]:
         if not isinstance(reports, Iterable):
             raise TypeError(f"Expected reports to be an iterable; got {type(reports)}")
@@ -164,6 +167,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             if not all(isinstance(report, EstimatorReport) for report in reports_list):
                 raise TypeError("Expected instances of EstimatorReport")
 
+            reports_list = cast(list[EstimatorReport], reports_list)
             test_dataset_hashes = {
                 joblib.hash((report.X_test, report.y_test))
                 for report in reports_list
@@ -179,6 +183,8 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                 isinstance(report, CrossValidationReport) for report in reports_list
             ):
                 raise TypeError("Expected instances of CrossValidationReport")
+
+            reports_list = cast(list[CrossValidationReport], reports_list)
         else:
             raise TypeError(
                 f"Expected instances of {EstimatorReport.__name__} "
@@ -202,6 +208,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         else:
             deduped_report_names = report_names
 
+        reports_type: ReportType
         if isinstance(reports_list[0], CrossValidationReport):
             reports_type = "CrossValidationReport"
         elif isinstance(reports_list[0], EstimatorReport):
