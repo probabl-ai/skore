@@ -386,17 +386,22 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         # - what if a metrics in not computed on all the estimators?
         # - what if a metrics need pos_label?
         # - what if time_metric = "fit", and data_source != "train"?
+        # > data source does not apply to fit. Let's be clear in the axis labels.
 
         # Question
         # - should this become an accessor method, e.g. `plots`,
         #      the equivalent to `metrics`?
+        # > should be in the accessor model_selection
         # - how to deal with perf metric? should it be consistent with
         #     the metric name or the column name in metrics report?
+        # > available in _SCORE_OR_LOSS_INFO
 
         # TODO
         # - add example
         # - add test
         # - add kwargs
+        # - turn into display
+        # - change name to sth like `pairwise_plot`
 
         if time_metric == "fit":
             x_label = "Fit time"
