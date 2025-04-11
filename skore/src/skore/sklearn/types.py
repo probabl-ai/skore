@@ -36,7 +36,6 @@ class SKLearnCrossValidator(Protocol):
 
     def get_n_splits(self, X: Any = None, y: Any = None, groups: Any = None) -> int:
         """Return the number of splitting iterations in the cross-validator."""
-        ...
 
     def split(
         self, X: ArrayLike, y: Any = None, groups: Any = None
@@ -64,4 +63,3 @@ class SKLearnCrossValidator(Protocol):
         test : ndarray
             The testing set indices for that split.
         """
-        ...
