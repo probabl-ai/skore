@@ -27,6 +27,8 @@ class ModelExplorerWidget:
         List of classification dataset names.
     reg_datasets : list
         List of regression dataset names.
+    seed : int, default=0
+        Seed for the jittering categorical columns.
     """
 
     def __init__(
@@ -35,13 +37,13 @@ class ModelExplorerWidget:
         dimension_to_column,
         column_to_dimension,
         invert_colormap,
+        seed=0,
     ):
         self.df = dataframe
         self.dimension_to_column = dimension_to_column
         self.column_to_dimension = column_to_dimension
         self.invert_colormap = invert_colormap
 
-        # Initialize attributes
         self.current_fig = None
         self.current_dimensions = None
         self.current_selection = {}
@@ -57,7 +59,6 @@ class ModelExplorerWidget:
             "dataset"
         ].unique()
 
-        # Initialize widgets
         self.task_dropdown = widgets.Dropdown(
             options=[
                 ("Classification", "classification"),
@@ -69,7 +70,6 @@ class ModelExplorerWidget:
             layout=widgets.Layout(width="200px"),
         )
 
-        # Create dataset dropdown that will update based on task
         self.dataset_dropdown = widgets.Dropdown(
             options=self._clf_datasets,
             description="Dataset:",
@@ -77,10 +77,7 @@ class ModelExplorerWidget:
             layout=widgets.Layout(width="250px"),
         )
 
-        # Initialize metric checkboxes as dictionaries
         self.metric_checkboxes = {"classification": {}, "regression": {}}
-
-        # Create classification metric checkboxes
         for metric in classification_metrics + time_metrics:
             default_value = metric not in time_metrics
             self.metric_checkboxes["classification"][metric] = widgets.Checkbox(
@@ -90,8 +87,6 @@ class ModelExplorerWidget:
                 disabled=False,
                 layout=widgets.Layout(width="auto", margin="0px 10px 0px 0px"),
             )
-
-        # Create regression metric checkboxes
         for metric in regression_metrics + time_metrics:
             default_value = metric not in time_metrics
             self.metric_checkboxes["regression"][metric] = widgets.Checkbox(
@@ -101,68 +96,51 @@ class ModelExplorerWidget:
                 disabled=False,
                 layout=widgets.Layout(width="auto", margin="0px 10px 0px 0px"),
             )
-
-        # Create color metric dropdowns
         self.color_metric_dropdown = {
             "classification": widgets.Dropdown(
                 options=classification_metrics + time_metrics,
-                value="Log Loss",  # Default for classification
+                value="Log Loss",
                 description="Color by:",
                 disabled=False,
                 layout=widgets.Layout(width="200px"),
             ),
             "regression": widgets.Dropdown(
                 options=regression_metrics + time_metrics,
-                value="RMSE",  # Default for regression
+                value="RMSE",
                 description="Color by:",
                 disabled=False,
                 layout=widgets.Layout(width="200px"),
             ),
         }
-
-        # Create containers for metric checkboxes
         self.classification_metrics_box = widgets.HBox(
             [
-                self.metric_checkboxes["classification"][m]
-                for m in classification_metrics + time_metrics
+                self.metric_checkboxes["classification"][metric]
+                for metric in classification_metrics + time_metrics
             ]
         )
-
         self.regression_metrics_box = widgets.HBox(
             [
-                self.metric_checkboxes["regression"][m]
-                for m in regression_metrics + time_metrics
+                self.metric_checkboxes["regression"][metric]
+                for metric in regression_metrics + time_metrics
             ]
         )
 
-        # Set up callbacks
-        self._setup_callbacks()
-
-        # Output area for the plot
-        self.output = widgets.Output()
-
-    def _setup_callbacks(self):
-        """Set up widget callbacks."""
-        # Task dropdown callback
+        # callbacks
         self.task_dropdown.observe(self._on_task_change, names="value")
-
-        # Dataset dropdown callback
         self.dataset_dropdown.observe(self._update_plot, names="value")
-
-        # Metric checkbox callbacks
-        for task in ["classification", "regression"]:
+        for task in self.metric_checkboxes:
             for metric in self.metric_checkboxes[task]:
                 self.metric_checkboxes[task][metric].observe(
                     self._update_plot, names="value"
                 )
-            # Color metric dropdown callback
             self.color_metric_dropdown[task].observe(self._update_plot, names="value")
+
+        self.output = widgets.Output()
 
     def _on_task_change(self, change):
         """Handle task dropdown change event."""
         task = change["new"]
 
-        # Update dataset dropdown options based on task
         if task == "classification":
             self.dataset_dropdown.options = self._clf_datasets
             if len(self._clf_datasets):
@@ -172,10 +150,7 @@ class ModelExplorerWidget:
             if len(self._reg_datasets):
                 self.dataset_dropdown.value = self._reg_datasets[0]
 
-        # Update UI visibility
         self._update_task_widgets()
-
-        # Update the plot
         self._update_plot()
 
     def _update_task_widgets(self):
@@ -195,39 +170,16 @@ class ModelExplorerWidget:
             self.regression_metrics_box.layout.display = ""
             self.color_metric_dropdown["regression"].layout.display = ""
 
-    def _add_jitter(self, values, amount=0.05):
-        """
-        Add jitter to categorical values to improve visualization.
-
-        Applies asymmetric jitter for edge values to ensure selection works properly:
-        - Lowest category gets only positive jitter
-        - Highest category gets only negative jitter
-        - Middle categories get balanced jitter
-        """
-        # Convert to categorical codes (0, 1, 2, etc.)
+    def _add_jitter(self, values, amount=0.01):
+        """Add jitter to categorical values to improve visualization."""
+        rng = np.random.default_rng(0)
         categories = pd.Categorical(values).codes
+        jitter = rng.uniform(-amount, amount, size=len(categories))
+        for sign, cat in zip([1, -1], [0, len(categories) - 1]):
+            jitter[categories == cat] = np.abs(
+                jitter[categories == cat], out=jitter[categories == cat]
+            ) * sign
 
-        # Get unique category codes
-        unique_codes = np.unique(categories)
-        min_code = unique_codes.min()
-        max_code = unique_codes.max()
-
-        # Initialize jitter array
-        jitter = np.zeros_like(categories, dtype=float)
-
-        # Apply appropriate jitter based on position
-        for code in unique_codes:
-            mask = categories == code
-
-            if code == min_code:  # Bottom category
-                # Apply only positive jitter
-                jitter[mask] = np.random.uniform(0, amount, size=mask.sum())
-            elif code == max_code:  # Top category
-                # Apply only negative jitter
-                jitter[mask] = np.random.uniform(-amount, 0, size=mask.sum())
-            else:  # Middle categories
-                # Apply balanced jitter
-                jitter[mask] = np.random.uniform(-amount, amount, size=mask.sum())
 
         return categories + jitter
 
@@ -345,7 +297,9 @@ class ModelExplorerWidget:
                 font=dict(size=16),
                 height=500,  # Increased height to accommodate staggered labels
                 width=plot_width,  # Set fixed width
-                margin=dict(l=200, r=150, t=120, b=30),  # Increased top margin for labels
+                margin=dict(
+                    l=200, r=150, t=120, b=30
+                ),  # Increased top margin for labels
             )
 
             # Convert to FigureWidget for interactivity and callbacks
