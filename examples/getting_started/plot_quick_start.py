@@ -45,7 +45,6 @@ import matplotlib.pyplot as plt
 
 roc_plot = cv_report.metrics.roc()
 roc_plot.plot()
-plt.tight_layout()
 
 # %%
 # Skore project: storing some items
