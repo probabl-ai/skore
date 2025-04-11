@@ -164,10 +164,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         reports_list = list(reports.values()) if isinstance(reports, dict) else reports
 
         reports_type: ReportType
-        if isinstance(reports_list[0], EstimatorReport):
-            if not all(isinstance(report, EstimatorReport) for report in reports_list):
-                raise TypeError("Expected instances of EstimatorReport")
-
+        if all(isinstance(report, EstimatorReport) for report in reports_list):
             reports_list = cast(list[EstimatorReport], reports_list)
             reports_type = "EstimatorReport"
 
@@ -181,19 +178,13 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                     "Expected all estimators to have the same testing data."
                 )
 
-        elif isinstance(reports_list[0], CrossValidationReport):
-            if not all(
-                isinstance(report, CrossValidationReport) for report in reports_list
-            ):
-                raise TypeError("Expected instances of CrossValidationReport")
-
+        elif all(isinstance(report, CrossValidationReport) for report in reports_list):
             reports_list = cast(list[CrossValidationReport], reports_list)
             reports_type = "CrossValidationReport"
         else:
             raise TypeError(
-                f"Expected instances of {EstimatorReport.__name__} "
-                f"or {CrossValidationReport.__name__}, "
-                f"got {type(reports_list[0])}"
+                f"Expected list or dict of {EstimatorReport.__name__} "
+                f"or list of dict of {CrossValidationReport.__name__}"
             )
 
         if len(set(id(report) for report in reports_list)) < len(reports_list):

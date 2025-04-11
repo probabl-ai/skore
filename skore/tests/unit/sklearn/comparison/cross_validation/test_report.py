@@ -39,8 +39,7 @@ def test_init_wrong_parameters(cv_report_classification):
         ComparisonReport([cv_report_classification])
 
     with pytest.raises(
-        TypeError,
-        match="Expected instances of EstimatorReport or CrossValidationReport",
+        TypeError, match="Expected .* EstimatorReport or .* CrossValidationReport"
     ):
         ComparisonReport([None, cv_report_classification])
 
