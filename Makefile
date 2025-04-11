@@ -1,5 +1,5 @@
 install-skore:
-	python -m pip install -e './skore[test, sphinx, dev]'
+	python -m pip install -e './skore[test,sphinx,dev]'
 	pre-commit install
 
 lint:
