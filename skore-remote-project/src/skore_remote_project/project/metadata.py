@@ -1,41 +1,100 @@
 import pandas as pd
 
 from .. import item as item_module
+from ..client.client import AuthenticatedClient
 
 
 class Metadata(pd.DataFrame):
     _metadata = ["project"]
 
-    def fill(self, project):
+    def __init__(self, project, /):
         self.project = project
 
-        # retrieve reports summaries
-        # get:/reports/
+        with AuthenticatedClient(raises=True) as client:
+            response = client.get(
+                "/".join(
+                    (
+                        "projects",
+                        self.project.tenant,
+                        self.project.name,
+                        "experiments",
+                        "estimator-reports",
+                    )
+                )
+            )
 
-        kwargs = dict(copy=False)
-        args = [
-            pd.DataFrame(
-                {
-                    "A": [1, 2, 3],
-                    "B": [4, 5, 6],
-                    "C": [7, 8, 9],
-                },
+            summaries = response.json()["experiments"]["estimator_reports"]
+            indexes = [summary.pop("id") for summary in summaries]
+
+            def dto(summary):
+                return {
+                    "run_id": summary["run_id"],
+                    "ml_task": summary["ml_task"],
+                    "estimator_class_name": summary["estimator_class_name"],
+                    "dataset_fingerprint": summary["estimator_class_name"],
+                    "date": summary["created_at"],
+                    **(
+                        (
+                            (
+                                f'{metric["name"]}_{metric["data_source"]}'
+                                if metric["data_source"] is not None
+                                else metric["name"]
+                            ),
+                            metric["value"],
+                        )
+                        for metric in summary["metrics"]
+                    ),
+                }
+
+            # transform summaries, nested metrics, remove useless columns etc
+            # [
+            #     {
+            #         "id": 0,
+            #         "project_id": 0,
+            #         "creator_id": "string",
+            #         "run_id": 0,
+            #         "key": "string",
+            #         "ml_task": "regression",
+            #         "estimator_class_name": "string",
+            #         "dataset_fingerprint": "string",
+            #         "metrics": [
+            #             {
+            #                 "report_id": 0,
+            #                 "name": "string",
+            #                 "data_source": "string",
+            #                 "value": 0,
+            #                 "greater_is_better": true,
+            #             }
+            #         ],
+            #         "created_at": "2025-04-11T14:31:07.004Z",
+            #         "updated_at": "2025-04-11T14:31:07.004Z",
+            #     }
+            # ]
+
+            breakpoint()
+
+        super().__init__(
+            data=pd.DataFrame(
+                map(dto, summaries),
                 index=pd.MultiIndex.from_arrays(
                     [
-                        pd.RangeIndex(3),
-                        pd.Index(["RID-1", "RID-2", "RID-3"], name="id"),
+                        pd.RangeIndex(len(summaries)),
+                        pd.Index(indexes, name="id"),
                     ]
                 ),
-            )
-        ]
-
-        super().__init__(*args, **kwargs)
-
-        return self
+            ),
+            copy=False,
+        )
 
     @property
     def _constructor(self):
-        return Metadata
+        def _constructor_with_fallback(cls, *args, **kwargs):
+            metadata = cls(*args, *kwargs)
+            # Metadata.__init__(metadata, *args, **kwargs)
+
+            return metadata
+
+        return _constructor_with_fallback
 
     def reports(self):
         if not hasattr(self, "project") or "id" not in self.index.names:
