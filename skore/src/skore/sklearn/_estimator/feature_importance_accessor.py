@@ -17,6 +17,7 @@ from sklearn.utils.metaestimators import available_if
 from skore.externals._pandas_accessors import DirNamesMixin
 from skore.sklearn._base import _BaseAccessor
 from skore.sklearn._estimator.report import EstimatorReport
+from skore.sklearn.types import Aggregate
 from skore.utils._accessor import _check_has_coef, _check_has_feature_importances
 from skore.utils._index import flatten_multi_index
 
@@ -139,9 +140,6 @@ def _check_scoring(scoring: Any) -> Union[Scoring, None]:
             "scoring must be a string, callable, list, tuple or dict; "
             f"got {type(scoring)}"
         )
-
-
-Aggregation = Literal["mean", "std"]
 
 
 class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
@@ -292,7 +290,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         data_source: DataSource = "test",
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
-        aggregate: Optional[Union[Aggregation, list[Aggregation]]] = None,
+        aggregate: Optional[Aggregate] = None,
         scoring: Optional[Scoring] = None,
         n_repeats: int = 5,
         max_samples: float = 1.0,
@@ -466,7 +464,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         data_source_hash: Optional[int] = None,
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
-        aggregate: Optional[Union[Aggregation, list[Aggregation]]] = None,
+        aggregate: Optional[Aggregate] = None,
         scoring: Optional[Scoring] = None,
         n_repeats: int = 5,
         max_samples: float = 1.0,
