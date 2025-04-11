@@ -77,6 +77,14 @@ def test_aggregate_different_split_numbers(report):
     assert len(result) == ((2 * 2) + (4 * 1)) * 2
 
 
+def test_aggregate_sequence_of_one_element(report):
+    """Passing a list of one string is the same as passing the string itself."""
+    assert_frame_equal(
+        report.metrics.report_metrics(aggregate="mean"),
+        report.metrics.report_metrics(aggregate=["mean"]),
+    )
+
+
 def test_accuracy(report):
     result = report.metrics.report_metrics(
         scoring=["accuracy"],
