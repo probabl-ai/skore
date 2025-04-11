@@ -374,7 +374,6 @@ report.clear_cache()
 start = time.time()
 display = report.metrics.roc(pos_label=pos_label)
 display.plot()
-plt.tight_layout()
 end = time.time()
 
 # %%
