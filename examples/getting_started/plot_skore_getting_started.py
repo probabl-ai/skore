@@ -98,7 +98,6 @@ import matplotlib.pyplot as plt
 
 roc_plot = rf_report.metrics.roc()
 roc_plot.plot()
-plt.tight_layout()
 
 # %%
 # Furthermore, we can inspect our model using the
