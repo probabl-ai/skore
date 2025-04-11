@@ -352,9 +352,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         for report in self.reports_:
             # Pass the progress manager to child tasks
             report._parent_progress = progress
-            report.cache_predictions(
-                response_methods=response_methods, n_jobs=n_jobs
-            )
+            report.cache_predictions(response_methods=response_methods, n_jobs=n_jobs)
             progress.update(main_task, advance=1, refresh=True)
 
     def get_predictions(
