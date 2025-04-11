@@ -59,7 +59,7 @@ sphinx = [
   "polars",
   "pydata-sphinx-theme",
   "seaborn",
-  "sentence-transformers",
+  "sentence-transformers<4",  # core dumped on `>=4,<4.0.2`
   "skrub",
   "sphinx-copybutton",
   "sphinx-design",
