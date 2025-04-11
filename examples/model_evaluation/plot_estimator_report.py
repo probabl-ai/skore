@@ -349,7 +349,6 @@ display.help()
 # %%
 display.plot()
 _ = display.ax_.set_title("Example of a ROC curve")
-plt.tight_layout()
 
 # %%
 #
