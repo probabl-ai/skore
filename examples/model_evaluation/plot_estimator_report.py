@@ -361,7 +361,6 @@ start = time.time()
 # we already trigger the computation of the predictions in a previous call
 display = report.metrics.roc(pos_label=pos_label)
 display.plot()
-plt.tight_layout()
 end = time.time()
 
 # %%
