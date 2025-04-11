@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Any, Literal, Optional, Union
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union, cast
 
 import joblib
 import numpy as np
@@ -10,11 +10,14 @@ from numpy.typing import ArrayLike
 
 from skore.externals._pandas_accessors import DirNamesMixin
 from skore.sklearn._base import _BaseReport
+from skore.sklearn._cross_validation.report import CrossValidationReport
 from skore.sklearn._estimator.report import EstimatorReport
 from skore.utils._progress_bar import progress_decorator
 
 if TYPE_CHECKING:
     from skore.sklearn._estimator.metrics_accessor import _MetricsAccessor
+
+    ReportType = Literal["EstimatorReport", "CrossValidationReport"]
 
 
 class ComparisonReport(_BaseReport, DirNamesMixin):
@@ -46,7 +49,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     Attributes
     ----------
-    estimator_reports_ : list of :class:`~skore.EstimatorReport`
+    reports_ : list of :class:`~skore.EstimatorReport`
         The compared estimator reports.
 
     report_names_ : list of str
@@ -88,6 +91,17 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     >>> report = ComparisonReport(
     ...     {"model1": estimator_report_1, "model2": estimator_report_2}
     ... )
+
+    >>> from sklearn.datasets import make_classification
+    >>> from sklearn.linear_model import LogisticRegression
+    >>> from skore import ComparisonReport, CrossValidationReport
+    >>> X, y = make_classification(random_state=42)
+    >>> estimator_1 = LogisticRegression()
+    >>> estimator_2 = LogisticRegression(C=2)  # Different regularization
+    >>> report_1 = CrossValidationReport(estimator_1, X, y)
+    >>> report_2 = CrossValidationReport(estimator_2, X, y)
+    >>> report = ComparisonReport([report_1, report_2])
+    >>> report = ComparisonReport({"model1": report_1, "model2": report_2})
     """
 
     _ACCESSOR_CONFIG: dict[str, dict[str, str]] = {
@@ -95,9 +109,115 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     }
     metrics: _MetricsAccessor
 
+    _reports_type: ReportType
+
+    @staticmethod
+    def _deduplicate_report_names(report_names_: list[str]) -> list[str]:
+        """De-duplicate report names that appear several times.
+
+        Leave the other report names alone.
+
+        Examples
+        --------
+        >>> ComparisonReport._deduplicate_report_names(['a', 'b'])
+        ['a', 'b']
+        >>> ComparisonReport._deduplicate_report_names(['a', 'a'])
+        ['a_1', 'a_2']
+        >>> ComparisonReport._deduplicate_report_names(['a', 'b', 'a'])
+        ['a_1', 'b', 'a_2']
+        >>> ComparisonReport._deduplicate_report_names(['a', 'b', 'a', 'b'])
+        ['a_1', 'b_1', 'a_2', 'b_2']
+        >>> ComparisonReport._deduplicate_report_names([])
+        []
+        >>> ComparisonReport._deduplicate_report_names(['a'])
+        ['a']
+        """
+        result = report_names_.copy()
+        for report_name in report_names_:
+            indexes_of_report_names = [
+                index for index, name in enumerate(report_names_) if name == report_name
+            ]
+            if len(indexes_of_report_names) == 1:
+                # report name appears only once
+                continue
+            for n, index in enumerate(indexes_of_report_names, start=1):
+                result[index] = f"{report_name}_{n}"
+        return result
+
+    @staticmethod
+    def _validate_reports(
+        reports: Union[
+            list[EstimatorReport],
+            dict[str, EstimatorReport],
+            list[CrossValidationReport],
+            dict[str, CrossValidationReport],
+        ],
+    ) -> tuple[
+        Union[list[EstimatorReport], list[CrossValidationReport]],
+        list[str],
+        ReportType,
+    ]:
+        if not isinstance(reports, Iterable):
+            raise TypeError(f"Expected reports to be an iterable; got {type(reports)}")
+
+        if len(reports) < 2:
+            raise ValueError("Expected at least 2 reports to compare")
+
+        report_names = (
+            list(map(str, reports.keys())) if isinstance(reports, dict) else None
+        )
+        reports_list = list(reports.values()) if isinstance(reports, dict) else reports
+
+        reports_type: ReportType
+        if all(isinstance(report, EstimatorReport) for report in reports_list):
+            reports_list = cast(list[EstimatorReport], reports_list)
+            reports_type = "EstimatorReport"
+
+            test_dataset_hashes = {
+                joblib.hash((report.X_test, report.y_test))
+                for report in reports_list
+                if not ((report.X_test is None) and (report.y_test is None))
+            }
+            if len(test_dataset_hashes) > 1:
+                raise ValueError(
+                    "Expected all estimators to have the same testing data."
+                )
+
+        elif all(isinstance(report, CrossValidationReport) for report in reports_list):
+            reports_list = cast(list[CrossValidationReport], reports_list)
+            reports_type = "CrossValidationReport"
+        else:
+            raise TypeError(
+                f"Expected list or dict of {EstimatorReport.__name__} "
+                f"or list of dict of {CrossValidationReport.__name__}"
+            )
+
+        if len(set(id(report) for report in reports_list)) < len(reports_list):
+            raise ValueError("Expected reports to be distinct objects")
+
+        ml_tasks = {report: report._ml_task for report in reports_list}
+        if len(set(ml_tasks.values())) > 1:
+            raise ValueError(
+                f"Expected all estimators to have the same ML usecase; got {ml_tasks}"
+            )
+
+        if report_names is None:
+            deduped_report_names = ComparisonReport._deduplicate_report_names(
+                [report.estimator_name_ for report in reports_list]
+            )
+        else:
+            deduped_report_names = report_names
+
+        return reports_list, deduped_report_names, reports_type
+
     def __init__(
         self,
-        reports: Union[list[EstimatorReport], dict[str, EstimatorReport]],
+        reports: Union[
+            list[EstimatorReport],
+            dict[str, EstimatorReport],
+            list[CrossValidationReport],
+            dict[str, CrossValidationReport],
+        ],
         *,
         n_jobs: Optional[int] = None,
     ) -> None:
@@ -112,53 +232,20 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         - all estimators have non-empty X_test and y_test,
         - all estimators have the same X_test and y_test.
         """
-        if not isinstance(reports, Iterable):
-            raise TypeError(f"Expected reports to be an iterable; got {type(reports)}")
-
-        if len(reports) < 2:
-            raise ValueError("At least 2 instances of EstimatorReport are needed")
-
-        report_names = (
-            list(map(str, reports.keys())) if isinstance(reports, dict) else None
+        self.reports_, self.report_names_, self._reports_type = (
+            ComparisonReport._validate_reports(reports)
         )
-        reports = list(reports.values()) if isinstance(reports, dict) else reports
 
-        if not all(isinstance(report, EstimatorReport) for report in reports):
-            raise TypeError("Expected instances of EstimatorReport")
-
-        test_dataset_hashes = {
-            joblib.hash((report.X_test, report.y_test))
-            for report in reports
-            if not ((report.X_test is None) and (report.y_test is None))
-        }
-        if len(test_dataset_hashes) > 1:
-            raise ValueError("Expected all estimators to have the same testing data.")
-
-        ml_tasks = {report: report._ml_task for report in reports}
-        if len(set(ml_tasks.values())) > 1:
-            raise ValueError(
-                f"Expected all estimators to have the same ML usecase; got {ml_tasks}"
-            )
-
-        if report_names is None:
-            self.report_names_ = [report.estimator_name_ for report in reports]
-        else:
-            self.report_names_ = report_names
-
-        self.estimator_reports_ = reports
-
-        # used to know if a parent launches a progress bar manager
         self._progress_info: Optional[dict[str, Any]] = None
         self._parent_progress = None
 
-        # NEEDED FOR METRICS ACCESSOR
         self.n_jobs = n_jobs
         self._rng = np.random.default_rng(time.time_ns())
         self._hash = self._rng.integers(
             low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
         )
         self._cache: dict[tuple[Any, ...], Any] = {}
-        self._ml_task = self.estimator_reports_[0]._ml_task
+        self._ml_task = self.reports_[0]._ml_task
 
     def clear_cache(self) -> None:
         """Clear the cache.
@@ -193,7 +280,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         >>> report._cache
         {}
         """
-        for report in self.estimator_reports_:
+        for report in self.reports_:
             report.clear_cache()
         self._cache = {}
 
@@ -222,7 +309,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         >>> from sklearn.datasets import make_classification
         >>> from sklearn.linear_model import LogisticRegression
         >>> from sklearn.model_selection import train_test_split
-        >>> from skore import ComparisonReport
+        >>> from skore import ComparisonReport, EstimatorReport
         >>> X, y = make_classification(random_state=42)
         >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
         >>> estimator_1 = LogisticRegression()
@@ -255,15 +342,13 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         progress = self._progress_info["current_progress"]
         main_task = self._progress_info["current_task"]
 
-        total_estimators = len(self.estimator_reports_)
+        total_estimators = len(self.reports_)
         progress.update(main_task, total=total_estimators)
 
-        for estimator_report in self.estimator_reports_:
+        for report in self.reports_:
             # Pass the progress manager to child tasks
-            estimator_report._parent_progress = progress
-            estimator_report.cache_predictions(
-                response_methods=response_methods, n_jobs=n_jobs
-            )
+            report._parent_progress = progress
+            report.cache_predictions(response_methods=response_methods, n_jobs=n_jobs)
             progress.update(main_task, advance=1, refresh=True)
 
     def get_predictions(
@@ -345,7 +430,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                 response_method=response_method,
                 pos_label=pos_label,
             )
-            for report in self.estimator_reports_
+            for report in self.reports_
         ]
 
     ####################################################################################

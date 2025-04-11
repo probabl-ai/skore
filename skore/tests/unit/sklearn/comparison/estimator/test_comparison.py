@@ -1,4 +1,5 @@
 import re
+from copy import copy
 from io import BytesIO
 
 import joblib
@@ -10,7 +11,7 @@ from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import train_test_split
 from skore import ComparisonReport, EstimatorReport
-from skore.sklearn._comparison.metrics_accessor import (
+from skore.sklearn._plot.metrics import (
     PrecisionRecallCurveDisplay,
     PredictionErrorDisplay,
     RocCurveDisplay,
@@ -49,12 +50,12 @@ def test_comparison_report_init_wrong_parameters(binary_classification_model):
     with pytest.raises(TypeError, match="Expected reports to be an iterable"):
         ComparisonReport(estimator_report)
 
-    with pytest.raises(
-        ValueError, match="At least 2 instances of EstimatorReport are needed"
-    ):
+    with pytest.raises(ValueError, match="Expected at least 2 reports to compare"):
         ComparisonReport([estimator_report])
 
-    with pytest.raises(TypeError, match="Expected instances of EstimatorReport"):
+    with pytest.raises(
+        TypeError, match="Expected .* EstimatorReport or .* CrossValidationReport"
+    ):
         ComparisonReport([None, estimator_report])
 
 
@@ -65,7 +66,7 @@ def test_comparison_report_without_testing_data(binary_classification_model):
     estimator, X_train, _, y_train, _ = binary_classification_model
     estimator_report = EstimatorReport(estimator, X_train=X_train, y_train=y_train)
 
-    report = ComparisonReport([estimator_report, estimator_report])
+    report = ComparisonReport([estimator_report, copy(estimator_report)])
 
     with pytest.raises(ValueError, match="No test data"):
         report.metrics.report_metrics(data_source="test")
@@ -132,7 +133,7 @@ def test_comparison_report_init_different_ml_usecases(
     with pytest.raises(
         ValueError, match="Expected all estimators to have the same ML usecase"
     ):
-        ComparisonReport([linear_regression_report, logistic_regression_report])
+        ComparisonReport([linear_regression_report, copy(logistic_regression_report)])
 
 
 def test_comparison_report_init_with_report_names(binary_classification_model):
@@ -147,7 +148,7 @@ def test_comparison_report_init_with_report_names(binary_classification_model):
         y_test=y_test,
     )
 
-    comp = ComparisonReport({"r1": estimator_report, "r2": estimator_report})
+    comp = ComparisonReport({"r1": estimator_report, "r2": copy(estimator_report)})
 
     pd.testing.assert_index_equal(
         comp.metrics.accuracy().columns,
@@ -167,11 +168,11 @@ def test_comparison_report_init_without_report_names(binary_classification_model
         y_test=y_test,
     )
 
-    comp = ComparisonReport([estimator_report, estimator_report])
+    comp = ComparisonReport([estimator_report, copy(estimator_report)])
 
     pd.testing.assert_index_equal(
         comp.metrics.accuracy().columns,
-        pd.Index(["LogisticRegression", "LogisticRegression"], name="Estimator"),
+        pd.Index(["LogisticRegression_1", "LogisticRegression_2"], name="Estimator"),
     )
 
 
@@ -186,7 +187,7 @@ def test_comparison_report_non_string_report_names(binary_classification_model):
         y_test=y_test,
     )
 
-    report = ComparisonReport({0: estimator_report, "1": estimator_report})
+    report = ComparisonReport({0: estimator_report, "1": copy(estimator_report)})
     assert report.report_names_ == ["0", "1"]
 
 
@@ -200,7 +201,7 @@ def test_comparison_report_help(capsys, binary_classification_model):
         y_test=y_test,
     )
 
-    ComparisonReport([estimator_report, estimator_report]).help()
+    ComparisonReport([estimator_report, copy(estimator_report)]).help()
 
     captured = capsys.readouterr()
     assert "Tools to compare estimators" in captured.out
@@ -221,7 +222,7 @@ def test_comparison_report_repr(binary_classification_model):
         y_test=y_test,
     )
 
-    repr_str = repr(ComparisonReport([estimator_report, estimator_report]))
+    repr_str = repr(ComparisonReport([estimator_report, copy(estimator_report)]))
 
     assert "ComparisonReport" in repr_str
 
@@ -237,7 +238,9 @@ def test_comparison_report_pickle(tmp_path, binary_classification_model):
     )
 
     with BytesIO() as stream:
-        joblib.dump(ComparisonReport([estimator_report, estimator_report]), stream)
+        joblib.dump(
+            ComparisonReport([estimator_report, copy(estimator_report)]), stream
+        )
 
 
 def test_comparison_report_metrics_help(capsys, binary_classification_model):
@@ -249,7 +252,7 @@ def test_comparison_report_metrics_help(capsys, binary_classification_model):
         X_test=X_test,
         y_test=y_test,
     )
-    report = ComparisonReport([estimator_report, estimator_report])
+    report = ComparisonReport([estimator_report, copy(estimator_report)])
 
     report.metrics.help()
     captured = capsys.readouterr()
@@ -265,7 +268,7 @@ def test_comparison_report_metrics_repr(binary_classification_model):
         X_test=X_test,
         y_test=y_test,
     )
-    report = ComparisonReport([estimator_report, estimator_report])
+    report = ComparisonReport([estimator_report, copy(estimator_report)])
 
     repr_str = repr(report.metrics)
     assert "skore.ComparisonReport.metrics" in repr_str
@@ -281,7 +284,7 @@ def test_comparison_report_metrics_repr(binary_classification_model):
             pd.DataFrame(
                 [[1.0, 1.0]],
                 columns=pd.Index(
-                    ["LogisticRegression", "LogisticRegression"],
+                    ["LogisticRegression_1", "LogisticRegression_2"],
                     name="Estimator",
                 ),
                 index=pd.Index(["Accuracy"], dtype="object", name="Metric"),
@@ -292,7 +295,7 @@ def test_comparison_report_metrics_repr(binary_classification_model):
             pd.DataFrame(
                 [[1.0, 1.0], [1.0, 1.0]],
                 columns=pd.Index(
-                    ["LogisticRegression", "LogisticRegression"],
+                    ["LogisticRegression_1", "LogisticRegression_2"],
                     name="Estimator",
                 ),
                 index=pd.MultiIndex.from_tuples(
@@ -306,7 +309,7 @@ def test_comparison_report_metrics_repr(binary_classification_model):
             pd.DataFrame(
                 [[1.0, 1.0], [1.0, 1.0]],
                 columns=pd.Index(
-                    ["LogisticRegression", "LogisticRegression"],
+                    ["LogisticRegression_1", "LogisticRegression_2"],
                     name="Estimator",
                 ),
                 index=pd.MultiIndex.from_tuples(
@@ -320,7 +323,7 @@ def test_comparison_report_metrics_repr(binary_classification_model):
             pd.DataFrame(
                 [[0.026684, 0.026684]],
                 columns=pd.Index(
-                    ["LogisticRegression", "LogisticRegression"],
+                    ["LogisticRegression_1", "LogisticRegression_2"],
                     name="Estimator",
                 ),
                 index=pd.Index(["Brier score"], dtype="object", name="Metric"),
@@ -331,7 +334,7 @@ def test_comparison_report_metrics_repr(binary_classification_model):
             pd.DataFrame(
                 [[1.0, 1.0]],
                 columns=pd.Index(
-                    ["LogisticRegression", "LogisticRegression"],
+                    ["LogisticRegression_1", "LogisticRegression_2"],
                     name="Estimator",
                 ),
                 index=pd.Index(["ROC AUC"], dtype="object", name="Metric"),
@@ -342,7 +345,7 @@ def test_comparison_report_metrics_repr(binary_classification_model):
             pd.DataFrame(
                 [[0.113233, 0.113233]],
                 columns=pd.Index(
-                    ["LogisticRegression", "LogisticRegression"],
+                    ["LogisticRegression_1", "LogisticRegression_2"],
                     name="Estimator",
                 ),
                 index=pd.Index(["Log loss"], dtype="object", name="Metric"),
@@ -363,7 +366,7 @@ def test_comparison_report_metrics_binary_classification(
         y_test=y_test,
     )
 
-    comp = ComparisonReport([estimator_report, estimator_report])
+    comp = ComparisonReport([estimator_report, copy(estimator_report)])
 
     # ensure metric is valid
     if data_source == "X_y":
@@ -393,7 +396,7 @@ def test_comparison_report_metrics_binary_classification(
             pd.DataFrame(
                 [[0.27699, 0.27699]],
                 columns=pd.Index(
-                    ["LinearRegression", "LinearRegression"],
+                    ["LinearRegression_1", "LinearRegression_2"],
                     name="Estimator",
                 ),
                 index=pd.Index(["RMSE"], dtype="object", name="Metric"),
@@ -404,7 +407,7 @@ def test_comparison_report_metrics_binary_classification(
             pd.DataFrame(
                 [[0.680319, 0.680319]],
                 columns=pd.Index(
-                    ["LinearRegression", "LinearRegression"],
+                    ["LinearRegression_1", "LinearRegression_2"],
                     name="Estimator",
                 ),
                 index=pd.Index(["R²"], dtype="object", name="Metric"),
@@ -425,7 +428,7 @@ def test_comparison_report_metrics_linear_regression(
         y_test=y_test,
     )
 
-    comp = ComparisonReport([estimator_report, estimator_report])
+    comp = ComparisonReport([estimator_report, copy(estimator_report)])
 
     # ensure metric is valid
     if data_source == "X_y":
@@ -457,7 +460,7 @@ def test_comparison_report_report_metrics_X_y(binary_classification_model):
         y_test=y_test,
     )
 
-    comp = ComparisonReport([estimator_report, estimator_report])
+    comp = ComparisonReport([estimator_report, copy(estimator_report)])
 
     result = comp.metrics.report_metrics(
         data_source="X_y",
@@ -480,7 +483,7 @@ def test_comparison_report_report_metrics_X_y(binary_classification_model):
         names=["Metric", "Label / Average"],
     )
     expected_columns = pd.Index(
-        ["LogisticRegression", "LogisticRegression"],
+        ["LogisticRegression_1", "LogisticRegression_2"],
         name="Estimator",
     )
 
@@ -504,12 +507,12 @@ def test_comparison_report_custom_metric_X_y(binary_classification_model):
         y_test=y_test,
     )
 
-    comp = ComparisonReport([estimator_report, estimator_report])
+    comp = ComparisonReport([estimator_report, copy(estimator_report)])
 
     expected = pd.DataFrame(
         [[0.0, 0.0]],
         columns=pd.Index(
-            ["LogisticRegression", "LogisticRegression"], name="Estimator"
+            ["LogisticRegression_1", "LogisticRegression_2"], name="Estimator"
         ),
         index=pd.Index(["MAE"], name="Metric"),
     )
@@ -580,7 +583,7 @@ def test_estimator_report_report_metrics_indicator_favorability(
         y_test=y_test,
     )
 
-    comp = ComparisonReport([estimator_report, estimator_report])
+    comp = ComparisonReport([estimator_report, copy(estimator_report)])
     result = comp.metrics.report_metrics(indicator_favorability=True)
     assert "Favorability" in result.columns
     indicator = result["Favorability"]
@@ -588,6 +591,25 @@ def test_estimator_report_report_metrics_indicator_favorability(
     assert indicator["Recall"].tolist() == ["(↗︎)", "(↗︎)"]
     assert indicator["ROC AUC"].tolist() == ["(↗︎)"]
     assert indicator["Brier score"].tolist() == ["(↘︎)"]
+
+
+def test_comparison_report_aggregate(binary_classification_model):
+    """Passing `aggregate` should have no effect, as this argument is only relevant
+    when comparing `CrossValidationReport`s."""
+    estimator, X_train, X_test, y_train, y_test = binary_classification_model
+    estimator_report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+    report = ComparisonReport([estimator_report, copy(estimator_report)])
+    assert_allclose(
+        report.metrics.report_metrics(aggregate="mean"),
+        report.metrics.report_metrics(),
+    )
 
 
 @pytest.mark.parametrize("plot_data_source", ["test", "X_y"])
@@ -677,7 +699,7 @@ def test_comparison_report_plots(
         y_test=y_test,
     )
 
-    comp = ComparisonReport([estimator_report, estimator_report])
+    comp = ComparisonReport([estimator_report, copy(estimator_report)])
 
     if plot_data_source == "X_y":
         arguments = {"data_source": plot_data_source, "X": X_test, "y": y_test}
@@ -704,7 +726,7 @@ def test_comparison_report_plots(
         elif isinstance(value, list):
             assert_allclose(display_attribute_value, value, atol=1e-2)
         else:
-            raise NotImplementedError
+            raise NotImplementedError()
 
     # Ensure plot is callable
     display.plot()
@@ -721,7 +743,7 @@ def test_random_state(regression_model):
         y_test=y_test,
     )
 
-    report = ComparisonReport([estimator_report, estimator_report])
+    report = ComparisonReport([estimator_report, copy(estimator_report)])
 
     report.metrics.prediction_error()
     # skore should store the y_pred of the internal estimators, but not the plot
@@ -746,16 +768,16 @@ def test_comparison_report_get_predictions(
         y_test=y_test,
     )
 
-    report = ComparisonReport([estimator_report, estimator_report])
+    report = ComparisonReport([estimator_report, copy(estimator_report)])
     predictions = report.get_predictions(
         data_source=data_source, response_method=response_method, pos_label=pos_label
     )
     assert len(predictions) == 2
     for split_idx, split_predictions in enumerate(predictions):
         if data_source == "train":
-            expected_shape = report.estimator_reports_[split_idx].y_train.shape
+            expected_shape = report.reports_[split_idx].y_train.shape
         else:
-            expected_shape = report.estimator_reports_[split_idx].y_test.shape
+            expected_shape = report.reports_[split_idx].y_test.shape
         assert split_predictions.shape == expected_shape
 
 
@@ -770,7 +792,7 @@ def test_comparison_report_get_predictions_error(binary_classification_model):
         y_test=y_test,
     )
 
-    report = ComparisonReport([estimator_report, estimator_report])
+    report = ComparisonReport([estimator_report, copy(estimator_report)])
 
     with pytest.raises(ValueError, match="Invalid data source"):
         report.get_predictions(data_source="invalid", response_method="predict")
@@ -787,7 +809,7 @@ def test_comparison_report_timings(binary_classification_model):
         y_test=y_test,
     )
 
-    report = ComparisonReport([estimator_report, estimator_report])
+    report = ComparisonReport([estimator_report, copy(estimator_report)])
     timings = report.metrics.timings()
     assert isinstance(timings, pd.DataFrame)
     assert timings.index.tolist() == ["Fit time"]
