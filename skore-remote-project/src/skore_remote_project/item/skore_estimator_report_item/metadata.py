@@ -10,7 +10,6 @@ def metadata(function):
 
 
 class Metadata:
-
     def __init__(self, report):
         self.report = report
 
@@ -43,7 +42,6 @@ class Metadata:
 
     @metadata
     def metrics(self):
-
         #
         # Value:
         # - ignore list[value] (multi-output)
@@ -65,13 +63,14 @@ class Metadata:
                     "position": position,
                 }
 
-        def fit_time():
+        def timing(name, data_source, position, /):
             with suppress(KeyError):
                 return {
-                    "name": "fit_time",
-                    "value": self.report.metrics.timings()["fit_time"],
+                    "name": name,
+                    "value": self.report.metrics.timings()[name],
+                    "data_source": data_source,
                     "greater_is_better": False,
-                    "position": None,
+                    "position": position,
                 }
 
         return list(
@@ -82,25 +81,30 @@ class Metadata:
                     scalar("accuracy", "test", True, None),
                     scalar("brier_score", "train", False, None),
                     scalar("brier_score", "test", False, None),
-                    scalar("log_loss", "train", False, None),
-                    scalar("log_loss", "test", False, None),
+                    scalar("log_loss", "train", False, 4),
+                    scalar("log_loss", "test", False, 4),
                     scalar("precision", "train", True, None),
                     scalar("precision", "test", True, None),
                     scalar("r2", "train", True, None),
                     scalar("r2", "test", True, None),
                     scalar("recall", "train", True, None),
                     scalar("recall", "test", True, None),
-                    scalar("rmse", "train", False, None),
-                    scalar("rmse", "test", False, None),
-                    scalar("roc_auc", "train", True, None),
-                    scalar("roc_auc", "test", True, None),
-                    fit_time(),
+                    scalar("rmse", "train", False, 3),
+                    scalar("rmse", "test", False, 3),
+                    scalar("roc_auc", "train", True, 3),
+                    scalar("roc_auc", "test", True, 3),
+                    timing("fit_time", None, 1),
+                    timing("predict_time_test", "test", 2),
+                    timing("predict_time_train", "train", 2),
                 ),
             )
         )
 
     def __iter__(self):
         for key, method in getmembers(self):
-            if ismethod(method) and hasattr(method, "metadata"):
-                if (value := method()) is not None:
-                    yield (key, value)
+            if (
+                ismethod(method)
+                and hasattr(method, "metadata")
+                and ((value := method()) is not None)
+            ):
+                yield (key, value)
