@@ -77,10 +77,18 @@ rf_report.help()
 
 # %%
 # We can evaluate our model using the :meth:`~skore.EstimatorReport.metrics` accessor.
-# In particular, we can get the report metrics that is computed for us:
+# In particular, we can get the report metrics that is computed for us (including the
+# fit and prediction times):
 
 # %%
 rf_report.metrics.report_metrics(pos_label=1)
+
+# %%
+# For inspection, we can also retrieve the predictions, on the train set for example
+# (here we display only the first 10 predictions for conciseness purposes):
+
+# %%
+rf_report.get_predictions(data_source="train", response_method="predict")[0:10]
 
 # %%
 # We can also plot the ROC curve that is generated for us:
@@ -128,7 +136,7 @@ cv_report = CrossValidationReport(rf, X, y, cv_splitter=5)
 cv_report.help()
 
 # %%
-# We display the mean and standard deviation of for each metric:
+# We display the mean and standard deviation for each metric:
 
 # %%
 cv_report.metrics.report_metrics(pos_label=1)
@@ -234,8 +242,8 @@ X_employee.head(2)
 # %%
 import skore
 
-_, _, _, _ = skore.train_test_split(
-    X_employee, y_employee, random_state=0, shuffle=False
+_ = skore.train_test_split(
+    X=X_employee, y=y_employee, random_state=0, shuffle=False, as_dict=True
 )
 
 # %%
