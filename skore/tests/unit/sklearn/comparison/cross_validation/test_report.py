@@ -10,8 +10,14 @@ from skore import ComparisonReport, CrossValidationReport
 
 
 @pytest.fixture
-def cv_report_classification():
+def classification_data():
     X, y = make_classification(class_sep=0.1, random_state=42)
+    return X, y
+
+
+@pytest.fixture
+def cv_report_classification(classification_data):
+    X, y = classification_data
     cv_report = CrossValidationReport(DummyClassifier(), X, y)
     return cv_report
 
