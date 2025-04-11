@@ -245,3 +245,10 @@ def test_custom_metric():
     result = getattr(report.metrics, scoring)()
     assert_index_equal(result.index, expected_index)
     assert_index_equal(result.columns, expected_columns)
+
+
+def test_metrics_X_y():
+    report, *_ = case_accuracy()
+    X, y = make_classification(class_sep=0.1, random_state=42)
+    with pytest.raises(NotImplementedError):
+        report.metrics.accuracy(data_source="X_y", X=X, y=y)
