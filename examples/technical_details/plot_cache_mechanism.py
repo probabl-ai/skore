@@ -219,9 +219,6 @@ print(f"Time taken: {end - start:.2f} seconds")
 # ^^^^^^^^^^^^^^^^^^^^
 #
 # The cache also speeds up plots. Let's create a ROC curve:
-
-import matplotlib.pyplot as plt
-
 start = time.time()
 display = report.metrics.roc(pos_label="allowed")
 display.plot()
