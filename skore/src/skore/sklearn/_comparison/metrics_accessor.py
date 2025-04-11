@@ -252,71 +252,22 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
             return df
 
-        def reshape_results(df):
-            """Put data in the correct format.
-
-            - Index is "Metric", optionally "Label / Average", "Split"
-            - Columns are "Estimator"
-
-            Examples
-            --------
-            >>> # xdoctest: +SKIP
-            >>> df
-                                                    Split #0  Split #1  Split #2
-            Estimator Metric       Label / Average
-            m1        Precision    0                1.000000  1.000000  1.000000
-                                   1                1.000000  1.000000  1.000000
-                      ROC AUC                       1.000000  1.000000  1.000000
-            m2        Precision    0                1.000000  1.000000       NaN
-                                   1                1.000000  0.941176       NaN
-                      ROC AUC                       1.000000  0.996324       NaN
-            >>> reshape_results(df)
-            Estimator                                   m1        m2
-            Metric      Label / Average Split
-            Precision   0               Split #0  1.000000  1.000000
-                                        Split #1  1.000000  1.000000
-                                        Split #2  1.000000       NaN
-                        1               Split #0  1.000000  1.000000
-                                        Split #1  1.000000  0.941176
-                                        Split #2  1.000000       NaN
-            ROC AUC                     Split #0  1.000000  1.000000
-                                        Split #1  1.000000  0.996324
-                                        Split #2  1.000000       NaN
-            """
-            splits = df.columns
-
+        def melt_df(df):
             df_reset = df.reset_index()
 
-            metric_order = df_reset["Metric"].unique()
-
-            # Melt the Split columns into rows
             if "Label / Average" in df_reset.columns:
-                id_vars = ["Estimator", "Metric", "Label / Average"]
+                id_vars = ["Metric", "Label / Average", "Estimator"]
             else:
-                id_vars = ["Estimator", "Metric"]
-            melted_df = pd.melt(
+                id_vars = ["Metric", "Estimator"]
+
+            melted = pd.melt(
                 df_reset,
                 id_vars=id_vars,
-                value_vars=splits,
                 var_name="Split",
                 value_name="Value",
             )
 
-            # Now pivot to have models as columns
-            if "Label / Average" in melted_df.columns:
-                index = ["Metric", "Label / Average", "Split"]
-            else:
-                index = ["Metric", "Split"]
-            result_df = pd.pivot_table(
-                melted_df,
-                index=index,
-                columns="Estimator",
-                values="Value",
-            )
-
-            result_df = result_df.reindex(metric_order, level="Metric")
-
-            return result_df
+            return melted
 
         results = individual_results.copy()
 
@@ -330,20 +281,78 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         else:
             favorability = None
 
-        df_model_name_in_index = pd.concat(
-            [
-                add_model_name_to_index(df, estimator_name)
-                for df, estimator_name in zip(results, estimator_names)
-            ]
-        )
+        dfs_model_name_in_index = [
+            add_model_name_to_index(df, estimator_name)
+            for df, estimator_name in zip(results, estimator_names)
+        ]
+
+        dfs_melted = [melt_df(df) for df in dfs_model_name_in_index]
+
+        df = pd.concat(dfs_melted, axis=0)
 
         if aggregate:
             if isinstance(aggregate, str):
                 aggregate = [aggregate]
 
-            df = df_model_name_in_index.aggregate(func=aggregate, axis=1)
+            if "Label / Average" in df.columns:
+                by = ["Metric", "Label / Average", "Estimator"]
+            else:
+                by = ["Metric", "Estimator"]
+
+            df = df.groupby(by=by, sort=False)["Value"].agg(func=aggregate)
+
+            df = df.reset_index()
+
+            metric_order = df["Metric"].unique()
+
+            df["metric_order_index"] = df["Metric"].apply(
+                lambda x: list(metric_order).index(x)
+            )
+
+            if "Label / Average" in df.columns:
+                by = ["metric_order_index", "Label / Average", "Estimator"]
+            else:
+                by = ["metric_order_index", "Estimator"]
+
+            df = (
+                df.sort_values(by=by)
+                .drop("metric_order_index", axis=1)
+                .reset_index(drop=True)
+            )
+
+            if "Label / Average" in df.columns:
+                new_index = ["Metric", "Label / Average", "Estimator"]
+            else:
+                new_index = ["Metric", "Estimator"]
+
+            df = df.set_index(new_index)
         else:
-            df = reshape_results(df_model_name_in_index)
+            # Make sure the Split column goes [0, 1, 2, 0, 1, 2]
+            # Rather than [0, 0, 1, 1, 2, 2]
+
+            metric_order = df["Metric"].unique()
+
+            df["metric_order_index"] = df["Metric"].apply(
+                lambda x: list(metric_order).index(x)
+            )
+
+            if "Label / Average" in df.columns:
+                by = ["metric_order_index", "Label / Average", "Estimator", "Split"]
+            else:
+                by = ["metric_order_index", "Estimator", "Split"]
+
+            df = (
+                df.sort_values(by=by)
+                .drop("metric_order_index", axis=1)
+                .reset_index(drop=True)
+            )
+
+            new_index = []
+            for col in df.columns:
+                if col == "Value":
+                    break
+                new_index.append(col)
+            df = df.set_index(new_index)
 
         if favorability is not None:
             df["Favorability"] = favorability
