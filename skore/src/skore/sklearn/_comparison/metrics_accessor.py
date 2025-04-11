@@ -178,11 +178,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
     @staticmethod
     def _combine_estimator_results(
-        results: list[pd.DataFrame],
+        individual_results: list[pd.DataFrame],
         estimator_names: list[str],
         indicator_favorability: bool,
     ) -> pd.DataFrame:
-        results = pd.concat(results, axis=1)
+        results = pd.concat(individual_results, axis=1)
 
         # Pop the favorability column if it exists, to:
         # - not use it in the aggregate operation
@@ -201,7 +201,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
     @staticmethod
     def _combine_cross_validation_results(
-        results: list[pd.DataFrame],
+        individual_results: list[pd.DataFrame],
         estimator_names: list[str],
         indicator_favorability: bool,
         aggregate: Optional[Aggregate],
@@ -318,7 +318,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
             return result_df
 
-        results = results.copy()
+        results = individual_results.copy()
 
         # Pop the favorability column if it exists, to:
         # - not use it in the aggregate operation
