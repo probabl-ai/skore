@@ -4,7 +4,6 @@ import joblib
 import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike
-from rich.progress import Progress
 from sklearn.metrics import make_scorer
 from sklearn.metrics._scorer import _BaseScorer as SKLearnScorer
 from sklearn.utils.metaestimators import available_if
@@ -47,9 +46,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
     def __init__(self, parent: ComparisonReport) -> None:
         super().__init__(parent)
-
-        self._progress_info: Optional[dict[str, Any]] = None
-        self._parent_progress: Optional[Progress] = None
 
     def report_metrics(
         self,
@@ -198,9 +194,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
         cache_key = tuple(cache_key_parts)
 
-        assert self._progress_info is not None, "Progress info not set"
-        progress = self._progress_info["current_progress"]
-        main_task = self._progress_info["current_task"]
+        assert self._parent._progress_info is not None, "Progress info not set"
+        progress = self._parent._progress_info["current_progress"]
+        main_task = self._parent._progress_info["current_task"]
 
         total_estimators = len(self._parent.estimator_reports_)
         progress.update(main_task, total=total_estimators)
@@ -1272,9 +1268,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             cache_key_parts.append(data_source)
             cache_key = tuple(cache_key_parts)
 
-        assert self._progress_info is not None, "Progress info not set"
-        progress = self._progress_info["current_progress"]
-        main_task = self._progress_info["current_task"]
+        assert self._parent._progress_info is not None, "Progress info not set"
+        progress = self._parent._progress_info["current_progress"]
+        main_task = self._parent._progress_info["current_task"]
         total_estimators = len(self._parent.estimator_reports_)
         progress.update(main_task, total=total_estimators)
 
