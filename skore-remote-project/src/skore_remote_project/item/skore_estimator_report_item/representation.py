@@ -28,13 +28,13 @@ class Representation:
             display.plot(ax)
 
             item = MatplotlibFigureItem.factory(figure)
-            item_representation = item.__representation__
 
             return {
                 "key": name.split(".")[-1],
                 "category": category,
                 "attributes": kwargs,
-                **item_representation,
+                **item.__representation__,
+                **item.__parameters__,
             }
 
     def pd(self, name, category, **kwargs):
@@ -49,24 +49,25 @@ class Representation:
             }
             dataframe = function(**function_kwargs)
             item = PandasDataFrameItem.factory(dataframe)
-            item_representation = item.__representation__
 
             return {
                 "key": name.split(".")[-1],
                 "category": category,
                 "attributes": kwargs,
-                **item_representation,
+                **item.__representation__,
+                **item.__parameters__,
             }
 
     def estimator_html_repr(self):
         e = estimator_html_repr(self.report.estimator_)
         item = MediaItem.factory(e, media_type="text/html")
-        item_representation = item.__representation__
 
         return {
             "key": "estimator_html_repr",
             "category": "model",
-            **item_representation,
+            "attributes": {},
+            **item.__representation__,
+            **item.__parameters__,
         }
 
     def __iter__(self):
