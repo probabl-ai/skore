@@ -152,3 +152,9 @@ def test_init_with_report_names(classification_data):
         comp.metrics.report_metrics(aggregate=None).columns,
         pd.Index(["r1", "r2"], name="Estimator"),
     )
+
+
+def test_report_metrics_X_y(report, classification_data):
+    X, y = classification_data
+    with pytest.raises(NotImplementedError):
+        report.metrics.report_metrics(data_source="X_y", X=X, y=y)
