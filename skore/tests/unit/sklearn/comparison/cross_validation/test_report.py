@@ -114,3 +114,19 @@ def test_metrics_help(capsys, report):
     report.metrics.help()
     captured = capsys.readouterr()
     assert "Available metrics methods" in captured.out
+
+
+@pytest.mark.parametrize("data_source", ["train", "test"])
+def test_get_predictions(report, classification_data, data_source):
+    predictions = report.get_predictions(
+        data_source=data_source, response_method="predict"
+    )
+
+    assert len(predictions) == len(report.reports_)
+    for i, cv_report in enumerate(report.reports_):
+        assert len(predictions[i]) == cv_report._cv_splitter.n_splits
+
+
+def test_get_predictions_X_y(report, classification_data):
+    with pytest.raises(NotImplementedError):
+        report.get_predictions(data_source="X_y", response_method="predict")
