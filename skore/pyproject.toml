@@ -58,6 +58,7 @@ sphinx = [
   "plotly>=5,<6",
   "polars",
   "pydata-sphinx-theme",
+  "scikit-learn<1.7",
   "seaborn",
   "sentence-transformers<4",  # core dumped on `>=4,<4.0.2`
   "skrub",
@@ -67,6 +68,7 @@ sphinx = [
   "sphinx-tabs",
   "sphinx<8.2.0",
   "sphinx_autosummary_accessors",
+  "transformers<4.51",  # core dumped on `>=4.51,<4.51.2`
 ]
 dev = [
   "nbformat",
