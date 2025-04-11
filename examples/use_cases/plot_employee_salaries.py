@@ -147,8 +147,10 @@ report.metrics.report_metrics()
 # Linear model
 # =========
 #
-# Now that we have established a baseline, we shall proceed to define a rather more complex predictive model that uses
-# a linear model as a base estimator.
+# Now that we have established a first model that serves as a baseline,
+# we shall proceed to define a quite complex linear model
+# (a pipeline with a complex feature engineering that uses
+# a linear model as the base estimator).
 
 # %%
 # Modelling
