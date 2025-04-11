@@ -259,7 +259,7 @@ report.metrics.report_metrics(indicator_favorability=True)
 # ====================
 #
 # At this point, we may not have been cautious and could have already overwritten the
-# report and model from our initial (simple model) attempt.
+# report and model from our initial (tree-based model) attempt.
 # Fortunately, since we saved the reports in our skore project, we can easily recover
 # them.
 # So, let us retrieve those reports.
