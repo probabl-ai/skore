@@ -85,6 +85,17 @@ def test_aggregate_sequence_of_one_element(report):
     )
 
 
+def test_aggregate_is_used_in_cache(report):
+    """`aggregate` should be used when computing the cache key.
+
+    In other words, if you call `report_metrics` twice with different values of
+    `aggregate`, you should get a different result.
+    """
+    call1 = report.metrics.report_metrics(aggregate="mean")
+    call2 = report.metrics.report_metrics(aggregate=("mean", "std"))
+    assert list(call1.columns) != list(call2.columns)
+
+
 def test_accuracy(report):
     result = report.metrics.report_metrics(
         scoring=["accuracy"],
