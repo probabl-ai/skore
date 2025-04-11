@@ -121,7 +121,7 @@ model
 # Evaluation
 # ^^^^^^^^^^
 #
-# Let us compute the cross-validation report for this model using :class:`skore.CrossValidationReport`
+# Let us compute the cross-validation report for this model using :class:`skore.CrossValidationReport`:
 from skore import CrossValidationReport
 
 report = CrossValidationReport(estimator=model, X=df, y=y, cv_splitter=5, n_jobs=4)
@@ -135,7 +135,7 @@ report.cache_predictions(n_jobs=4)
 # %%
 #
 # We store the report in our skore project.
-my_project.put("HGBDT model report", report)
+my_project.put("HGBT model report", report)
 
 # %%
 #
@@ -262,7 +262,7 @@ report.metrics.report_metrics(indicator_favorability=True)
 # them.
 # So, let us retrieve those reports.
 
-hgbdt_model_report = my_project.get("HGBDT model report")
+hgbt_model_report = my_project.get("HGBT model report")
 linear_model_report = my_project.get("Linear model report")
 
 # %%
@@ -273,7 +273,7 @@ import pandas as pd
 
 results = pd.concat(
     [
-        hgbdt_model_report.metrics.report_metrics(),
+        hgbt_model_report.metrics.report_metrics(),
         linear_model_report.metrics.report_metrics(),
     ],
     axis=1,
@@ -294,7 +294,7 @@ scoring_kwargs = {"response_method": "predict"}
 scoring_names = ["R2", "RMSE", "MAE"]
 results = pd.concat(
     [
-        hgbdt_model_report.metrics.report_metrics(
+        hgbt_model_report.metrics.report_metrics(
             scoring=scoring,
             scoring_kwargs=scoring_kwargs,
             scoring_names=scoring_names,
