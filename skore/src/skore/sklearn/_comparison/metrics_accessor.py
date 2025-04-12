@@ -283,14 +283,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     {"model1": estimator_report_1, "model2": estimator_report_2}
         ... )
         >>> report.metrics.timings()
-                    model1    model2
-        Fit time       ...       ...
+                        model1    model2
+        Fit time (s)       ...       ...
         >>> report.cache_predictions(response_methods=["predict"])
         >>> report.metrics.timings()
-                            model1    model2
-        Fit time               ...       ...
-        Predict time test      ...       ...
-        Predict time train     ...       ...
+                                model1    model2
+        Fit time (s)               ...       ...
+        Predict time test (s)      ...       ...
+        Predict time train (s)     ...       ...
         """
         timings: pd.DataFrame = pd.concat(
             [
@@ -301,6 +301,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             keys=self._parent.report_names_,
         )
         timings.index = timings.index.str.replace("_", " ").str.capitalize()
+        timings.index = timings.index.str.replace(r"(Fit time|Predict time.*)$", r"\1 (s)", regex=True)
+
         return timings
 
     @available_if(
