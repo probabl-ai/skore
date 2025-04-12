@@ -282,14 +282,14 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         >>> from skore import CrossValidationReport
         >>> report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=2)
         >>> report.metrics.timings()
-                      mean       std
-        Fit time       ...       ...
+                          mean       std
+        Fit time (s)       ...       ...
         >>> report.cache_predictions(response_methods=["predict"])
         >>> report.metrics.timings()
-                                mean       std
-        Fit time                 ...       ...
-        Predict time test        ...       ...
-        Predict time train       ...       ...
+                                    mean       std
+        Fit time (s)                 ...       ...
+        Predict time test (s)        ...       ...
+        Predict time train (s)       ...       ...
         """
         timings: pd.DataFrame = pd.concat(
             [
@@ -304,6 +304,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
                 aggregate = [aggregate]
             timings = timings.aggregate(func=aggregate, axis=1)
         timings.index = timings.index.str.replace("_", " ").str.capitalize()
+        timings.index = timings.index.str.replace(r"(Fit time|Predict time.*)$", r"\1 (s)", regex=True)
+
         return timings
 
     @available_if(_check_estimator_report_has_method("metrics", "accuracy"))
