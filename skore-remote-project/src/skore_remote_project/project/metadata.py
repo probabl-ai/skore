@@ -7,29 +7,15 @@ from ..client.client import AuthenticatedClient
 class Metadata(pd.DataFrame):
     _metadata = ["project"]
 
-    def __init__(self, project, /):
-        self.project = project
-
-        with AuthenticatedClient(raises=True) as client:
-            response = client.get(
-                "/".join(
-                    (
-                        "projects",
-                        self.project.tenant,
-                        self.project.name,
-                        "experiments",
-                        "estimator-reports",
-                    )
-                )
-            )
-
+    @staticmethod
+    def factory(project, /):
         def dto(summary):
             return dict(
                 (
                     ("run_id", summary["run_id"]),
                     ("ml_task", summary["ml_task"]),
-                    ("estimator_class_name", summary["estimator_class_name"]),
-                    ("dataset_fingerprint", summary["estimator_class_name"]),
+                    ("learner", summary["estimator_class_name"]),
+                    ("dataset", summary["dataset_fingerprint"]),
                     ("date", summary["created_at"]),
                     *(
                         (
@@ -51,33 +37,45 @@ class Metadata(pd.DataFrame):
                 )
             )
 
-        summaries = response.json()
-        indexes = [summary.pop("id") for summary in summaries]
+        with AuthenticatedClient(raises=True) as client:
+            response = client.get(
+                "/".join(
+                    (
+                        "projects",
+                        project.tenant,
+                        project.name,
+                        "experiments",
+                        "estimator-reports",
+                    )
+                )
+            )
 
-        super().__init__(
+        summaries = response.json()
+        summaries = pd.DataFrame(
             data=pd.DataFrame(
                 map(dto, summaries),
                 index=pd.MultiIndex.from_arrays(
                     [
                         pd.RangeIndex(len(summaries)),
-                        pd.Index(indexes, name="id", dtype=str),
+                        pd.Index(
+                            (summary.pop("id") for summary in summaries),
+                            name="id",
+                            dtype=str,
+                        ),
                     ]
                 ),
             ),
             copy=False,
         )
 
+        metadata = Metadata(summaries)
+        metadata.project = project
+
+        return metadata
+
     @property
     def _constructor(self):
-        return pd.DataFrame
-
-        # def _constructor_with_fallback(cls, *args, **kwargs):
-        #     metadata = cls(*args, *kwargs)
-        #     # Metadata.__init__(metadata, *args, **kwargs)
-
-        #     return metadata
-
-        # return _constructor_with_fallback
+        return Metadata
 
     def reports(self):
         if not hasattr(self, "project") or "id" not in self.index.names:
