@@ -232,7 +232,9 @@ from skrub.datasets import fetch_employee_salaries
 
 dataset_employee = fetch_employee_salaries()
 X_employee, y_employee = dataset_employee.X, dataset_employee.y
-X_employee["date_first_hired"] = pd.to_datetime(X_employee["date_first_hired"])
+X_employee["date_first_hired"] = pd.to_datetime(
+    X_employee["date_first_hired"], format="%m/%d/%Y"
+)
 X_employee.head(2)
 
 # %%
