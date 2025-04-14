@@ -285,8 +285,8 @@ plt.tight_layout()
 
 # %%
 # .. note::
-#   More generally, :meth:`skore.EstimatorReport.feature_importance` can help you
-#   inspect the coefficients of all linear models.
+#   More generally, :meth:`skore.EstimatorReport.feature_importance.coefficients` can
+#   help you inspect the coefficients of all linear models.
 #   We consider a linear model as defined in
 #   `scikit-learn's user guide
 #   <https://scikit-learn.org/stable/modules/linear_model.html>`_.
