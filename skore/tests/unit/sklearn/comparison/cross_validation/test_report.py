@@ -18,7 +18,9 @@ def classification_data():
 @pytest.fixture
 def cv_report_classification(classification_data):
     X, y = classification_data
-    cv_report = CrossValidationReport(DummyClassifier(), X, y)
+    cv_report = CrossValidationReport(
+        DummyClassifier(strategy="uniform", random_state=0), X, y
+    )
     return cv_report
 
 
@@ -106,6 +108,20 @@ def test_pickle(tmp_path, report):
     """Check that we can pickle a comparison report."""
     with BytesIO() as stream:
         joblib.dump(report, stream)
+
+
+def test_cross_validation_report_cleaned_up(report):
+    """
+    When a CrossValidationReport is passed to a ComparisonReport, and computations are
+    done on the ComparisonReport, the CrossValidationReport should remain pickle-able.
+
+    Non-regression test for bug found in:
+    https://github.com/probabl-ai/skore/pull/1512
+    """
+    report.metrics.report_metrics()
+
+    with BytesIO() as stream:
+        joblib.dump(report.reports_[0], stream)
 
 
 def test_metrics_help(capsys, report):
