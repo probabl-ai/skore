@@ -981,7 +981,7 @@ def plot_permutation_train_test(est_report):
     ax.set_title(
         f"Permutation feature importance of {est_report.estimator_name_} (Train vs Test)"
     )
-    ax.set_xlabel("r2")
+    ax.set_xlabel("$R^2$")
     ax.set_yticks([x + 0.2 for x in range(len(est_report.X_train.columns))])
     ax.set_yticklabels(est_report.X_train.columns)
 

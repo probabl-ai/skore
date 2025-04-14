@@ -2,6 +2,14 @@ from typing import Any, Callable
 
 from sklearn.pipeline import Pipeline
 
+
+def _check_all_checks(checks: list[Callable]) -> Callable:
+    def check(accessor: Any) -> bool:
+        return all(check(accessor) for check in checks)
+
+    return check
+
+
 ########################################################################################
 # Accessor related to `EstimatorReport`
 ########################################################################################
