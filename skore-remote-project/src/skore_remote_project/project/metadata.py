@@ -18,21 +18,9 @@ class Metadata(pd.DataFrame):
                     ("dataset", summary["dataset_fingerprint"]),
                     ("date", summary["created_at"]),
                     *(
-                        (
-                            (
-                                "_".join(
-                                    filter(
-                                        None,
-                                        (
-                                            metric["name"],
-                                            metric["data_source"],
-                                        ),
-                                    )
-                                )
-                            ),
-                            metric["value"],
-                        )
+                        (metric["name"], metric["value"])
                         for metric in summary["metrics"]
+                        if metric["data_source"] in (None, "test")
                     ),
                 )
             )
