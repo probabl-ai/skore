@@ -21,7 +21,11 @@ from skore.sklearn._plot import (
     RocCurveDisplay,
 )
 from skore.sklearn.types import PositiveLabel, SKLearnScorer
-from skore.utils._accessor import _check_estimator_has_method, _check_supported_ml_task
+from skore.utils._accessor import (
+    _check_all_checks,
+    _check_estimator_has_method,
+    _check_supported_ml_task,
+)
 from skore.utils._index import flatten_multi_index
 
 DataSource = Literal["test", "train", "X_y"]
@@ -976,9 +980,13 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         )
 
     @available_if(
-        _check_supported_ml_task(supported_ml_tasks=["binary-classification"])
+        _check_all_checks(
+            checks=[
+                _check_supported_ml_task(supported_ml_tasks=["binary-classification"]),
+                _check_estimator_has_method(method_name="predict_proba"),
+            ]
+        )
     )
-    @available_if(_check_estimator_has_method(method_name="predict_proba"))
     def _brier_score(
         self,
         *,
