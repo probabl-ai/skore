@@ -243,6 +243,30 @@ def test_comparison_report_pickle(tmp_path, binary_classification_model):
         )
 
 
+def test_estimator_report_cleaned_up(binary_classification_model):
+    """
+    When an EstimatorReport is passed to a ComparisonReport, and computations are
+    done on the ComparisonReport, the EstimatorReport should remain pickle-able.
+
+    Non-regression test for bug found in:
+    https://github.com/probabl-ai/skore/pull/1512
+    """
+    estimator, X_train, X_test, y_train, y_test = binary_classification_model
+    estimator_report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+    comp = ComparisonReport([estimator_report, copy(estimator_report)])
+    comp.metrics.report_metrics()
+
+    with BytesIO() as stream:
+        joblib.dump(estimator_report, stream)
+
+
 def test_comparison_report_metrics_help(capsys, binary_classification_model):
     """Check that the help method writes to the console."""
     estimator, _, X_test, _, y_test = binary_classification_model
