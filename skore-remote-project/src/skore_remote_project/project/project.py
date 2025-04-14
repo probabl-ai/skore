@@ -6,6 +6,7 @@ from typing import Any, Literal, Optional, Union
 
 from .. import item as item_module
 from ..client.client import AuthenticatedClient
+from .metadata import Metadata
 
 
 class Project:
@@ -28,6 +29,9 @@ class Project:
             run = request.json()
 
             return run["id"]
+
+    def metadata(self):
+        return Metadata(self)
 
     def put(
         self,
