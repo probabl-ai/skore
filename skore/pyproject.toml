@@ -159,5 +159,5 @@ ignore_missing_imports = true
 exclude = ["src/skore/externals/.*", "ci/*", "hatch/*", "tests/*"]
 
 [[tool.mypy.overrides]]
-module = ["diskcache.*", "sklearn.*"]
+module = ["diskcache.*", "sklearn.*", "plotly.*", "ipywidgets.*"]
 ignore_missing_imports = true

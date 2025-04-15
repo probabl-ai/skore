@@ -1,4 +1,7 @@
+from typing import Any, Optional, Union, cast
+
 import numpy as np
+import pandas as pd
 import plotly.graph_objects as go
 from IPython.display import clear_output, display
 from ipywidgets import widgets
@@ -8,30 +11,28 @@ class ModelExplorerWidget:
     """
     Widget for interactive parallel coordinate plots of ML experiment metadata.
 
-    This class handles the creation and management of interactive widgets
-    and the parallel coordinate plot for exploring ML experiment data.
+    This class creates and manages interactive widgets and parallel coordinate plots
+    for visually exploring machine learning experiment results. It allows users to
+    filter and compare experiments across different metrics, learners, and datasets.
 
     Parameters
     ----------
     dataframe : pd.DataFrame
-        The dataframe containing the experiment metadata.
+        The dataframe containing the experiment metadata with columns for metrics,
+        learners, datasets, and ML task types.
     seed : int, default=0
-        Seed for the jittering categorical columns.
+        Random seed for jittering categorical columns to improve visualization.
+
+    Attributes
+    ----------
+    current_fig : go.FigureWidget or None
+        The currently displayed plotly figure.
+    current_selection : dict
+        Dictionary containing the current user selection criteria.
     """
 
-    _plot_width = 800
-    _dimension_to_column = {
-        "Learner": "learner",
-        "RMSE": "rmse",
-        "median Absolute Error": "median_absolute_error",
-        "mean Average Precision": "mean_average_precision",
-        "macro ROC AUC": "macro_roc_auc",
-        "Log Loss": "log_loss",
-        "Fit Time": "fit_time",
-        "Predict Time": "predict_time",
-    }
-
-    _metrics = {
+    _plot_width: int = 800
+    _metrics: dict[str, dict[str, Union[str, bool]]] = {
         "fit_time": {
             "name": "Fit Time",
             "greater_is_better": False,
@@ -75,21 +76,23 @@ class ModelExplorerWidget:
             "show": True,
         },
     }
+    _dimension_to_column: dict[str, str] = {
+        cast(str, v["name"]): k for k, v in _metrics.items()
+    }
 
-    def __init__(self, dataframe, seed=0):
-        self.df = dataframe
+    def __init__(self, dataframe: pd.DataFrame, seed: int = 0) -> None:
+        self.dataframe = dataframe
         self.seed = seed
 
-        self.current_fig = None
-        self.current_dimensions = None
-        self.current_selection = {}
+        self.current_fig: Optional[go.FigureWidget] = None
+        self.current_selection: dict[str, Any] = {}
 
-        self._clf_datasets = self.df.query("ml_task == 'classification'")[
-            "dataset"
-        ].unique()
-        self._reg_datasets = self.df.query("ml_task == 'regression'")[
-            "dataset"
-        ].unique()
+        self._clf_datasets: np.ndarray = self.dataframe.query(
+            "ml_task == 'classification'"
+        )["dataset"].unique()
+        self._reg_datasets: np.ndarray = self.dataframe.query(
+            "ml_task == 'regression'"
+        )["dataset"].unique()
 
         self._task_dropdown = widgets.Dropdown(
             options=[
@@ -109,15 +112,18 @@ class ModelExplorerWidget:
             layout=widgets.Layout(width="250px"),
         )
 
-        self._metric_checkboxes = {"classification": {}, "regression": {}}
+        self._metric_checkboxes: dict[str, dict[str, widgets.Checkbox]] = {
+            "classification": {},
+            "regression": {},
+        }
         for metric in self._metrics:
             default_value = self._metrics[metric]["show"]
-            metric_type = self._metrics[metric]["type"]
+            metric_type = cast(str, self._metrics[metric]["type"])
             if metric_type in self._metric_checkboxes:
                 self._metric_checkboxes[metric_type][metric] = widgets.Checkbox(
                     indent=False,
                     value=default_value,
-                    description=self._metrics[metric]["name"],
+                    description=cast(str, self._metrics[metric]["name"]),
                     disabled=False,
                     layout=widgets.Layout(width="auto", margin="0px 10px 0px 0px"),
                 )
@@ -126,7 +132,7 @@ class ModelExplorerWidget:
                     self._metric_checkboxes[metric_type][metric] = widgets.Checkbox(
                         indent=False,
                         value=default_value,
-                        description=self._metrics[metric]["name"],
+                        description=cast(str, self._metrics[metric]["name"]),
                         disabled=False,
                         layout=widgets.Layout(width="auto", margin="0px 10px 0px 0px"),
                     )
@@ -141,10 +147,10 @@ class ModelExplorerWidget:
             for metric in self._metrics
             if self._metrics[metric]["type"] in ("regression", "time")
         ]
-        self._color_metric_dropdown = {
+        self._color_metric_dropdown: dict[str, widgets.Dropdown] = {
             "classification": widgets.Dropdown(
                 options=[
-                    self._metrics[metric]["name"]
+                    cast(str, self._metrics[metric]["name"])
                     for metric in metrics_for_classification
                 ],
                 value="Log Loss",
@@ -154,7 +160,8 @@ class ModelExplorerWidget:
             ),
             "regression": widgets.Dropdown(
                 options=[
-                    self._metrics[metric]["name"] for metric in metrics_for_regression
+                    cast(str, self._metrics[metric]["name"])
+                    for metric in metrics_for_regression
                 ],
                 value="RMSE",
                 description="Color by:",
@@ -304,30 +311,13 @@ class ModelExplorerWidget:
         )
 
         self._update_task_widgets()
-        self.layout = widgets.VBox(
+        self._layout = widgets.VBox(
             [controls, self.output],
             layout=widgets.Layout(width=f"{self._plot_width}px", spacing="0px"),
         )
 
-    def _on_task_change(self, change):
-        """Handle task dropdown change event."""
-        task = change["new"]
-
-        if task == "classification":
-            self._dataset_dropdown.options = self._clf_datasets
-            if len(self._clf_datasets):
-                self._dataset_dropdown.value = self._clf_datasets[0]
-        else:
-            self._dataset_dropdown.options = self._reg_datasets
-            if len(self._reg_datasets):
-                self._dataset_dropdown.value = self._reg_datasets[0]
-
-        self._update_task_widgets()
-        self._update_plot()
-        self.update_selection()
-
-    def _update_task_widgets(self):
-        """Update widget visibility based on selected task."""
+    def _update_task_widgets(self) -> None:
+        """Update widget visibility based on the currently selected task."""
         task = self._task_dropdown.value
 
         if task == "classification":
@@ -343,11 +333,55 @@ class ModelExplorerWidget:
             self.regression_metrics_box.layout.display = ""
             self._color_metric_dropdown["regression"].layout.display = ""
 
+    def _on_task_change(self, change: dict[str, Any]) -> None:
+        """Handle task dropdown change events.
+
+        Updates the dataset dropdown options based on the selected task
+        and refreshes the widget visibility and plot.
+
+        Parameters
+        ----------
+        change : dict[str, Any]
+            dictionary containing information about the widget change,
+            including the new value under the 'new' key.
+        """
+        task = change["new"]
+
+        if task == "classification":
+            self._dataset_dropdown.options = self._clf_datasets
+            if len(self._clf_datasets):
+                self._dataset_dropdown.value = self._clf_datasets[0]
+        else:
+            self._dataset_dropdown.options = self._reg_datasets
+            if len(self._reg_datasets):
+                self._dataset_dropdown.value = self._reg_datasets[0]
+
+        self._update_task_widgets()
+        self._update_plot()
+        self.update_selection()
+
     @staticmethod
-    def _add_jitter_to_categorical(seed, categorical_series, amount=0.01):
-        """Add jitter to categorical values to improve visualization."""
+    def _add_jitter_to_categorical(
+        seed: int, categorical_series: pd.Series, amount: float = 0.01
+    ) -> np.ndarray:
+        """Add jitter to categorical values to improve visualization in parallel plots.
+
+        Parameters
+        ----------
+        seed : int
+            Random seed for reproducibility.
+        categorical_series : pd.Series
+            Categorical series to jitter.
+        amount : float, default=0.01
+            Amount of jitter to add.
+
+        Returns
+        -------
+        np.ndarray
+            Array of encoded categorical values with jitter applied.
+        """
         rng = np.random.default_rng(seed)
-        encoded_categories = categorical_series.cat.codes
+        encoded_categories = categorical_series.cat.codes.to_numpy()
         jitter = rng.uniform(-amount, amount, size=len(encoded_categories))
         for sign, cat in zip([1, -1], [0, len(encoded_categories) - 1]):
             jitter[encoded_categories == cat] = (
@@ -360,8 +394,18 @@ class ModelExplorerWidget:
 
         return encoded_categories + jitter
 
-    def _update_plot(self, change=None):
-        """Update the parallel coordinates plot based on the selected options."""
+    def _update_plot(self, change: Optional[dict[str, Any]] = None) -> None:
+        """Update the parallel coordinates plot based on the selected options.
+
+        Creates a new plotly figure with dimensions for the selected metrics
+        and displays it in the output area.
+
+        Parameters
+        ----------
+        change : dict, default=None
+            dictionary containing information about a widget change event.
+            Not used directly but required for widget callback compatibility.
+        """
         with self.output:
             clear_output(wait=True)
 
@@ -374,7 +418,7 @@ class ModelExplorerWidget:
                 display(widgets.HTML("No dataset available for selected task."))
                 return
 
-            df_dataset = self.df.query(
+            df_dataset = self.dataframe.query(
                 "dataset == @self._dataset_dropdown.value"
             ).copy()
             for col in df_dataset.select_dtypes(include=["category"]).columns:
@@ -404,15 +448,15 @@ class ModelExplorerWidget:
             for col in selected_metrics:  # use the order defined in the constructor
                 dimensions.append(
                     dict(
-                        label=self._metrics[col]["name"],
+                        label=cast(str, self._metrics[col]["name"]),
                         values=df_dataset[col].fillna(0),
                     )
                 )
 
             colorscale = (
-                "Viridis_r"
-                if self._metrics[color_metric]["greater_is_better"]
-                else "Viridis"
+                "Viridis"
+                if cast(bool, self._metrics[color_metric]["greater_is_better"])
+                else "Viridis_r"
             )
             fig = go.FigureWidget(
                 data=go.Parcoords(
@@ -420,7 +464,9 @@ class ModelExplorerWidget:
                         color=df_dataset[color_metric].fillna(0),
                         colorscale=colorscale,
                         showscale=True,
-                        colorbar=dict(title=self._metrics[color_metric]["name"]),
+                        colorbar=dict(
+                            title=cast(str, self._metrics[color_metric]["name"])
+                        ),
                     ),
                     dimensions=dimensions,
                     labelangle=-30,
@@ -434,47 +480,50 @@ class ModelExplorerWidget:
                 margin=dict(l=200, r=150, t=120, b=30),
             )
 
-            fig.data[0].on_selection(self.update_selection)
+            fig.data[0].on_selection(self.update_selection)  # callback
 
             self.current_fig = fig
-            self.current_dimensions = dimensions
-
             display(fig)
 
-    def update_selection(self, trace=None, points=None, selector=None):
-        """Callback for when the selection on the parallel coordinates plot changes.
+    def update_selection(
+        self, trace=None, points=None, selector=None
+    ) -> "ModelExplorerWidget":
+        """Update the current_selection attribute with the current filter state.
 
         Parameters
         ----------
-        trace : go.parcoords.Trace, optional
-            The trace that changed.
-        points : list of int, optional
-            The points that changed.
-        selector : dict, optional
-            The selector that changed.
+        trace : trace, default=None
+            The trace that triggered the selection change.
+        points : list, default=None
+            The points affected by the selection change.
+        selector : dict, default=None
+            The selector that triggered the selection change.
 
         Returns
         -------
-        self
+        ModelExplorerWidget
+            Self for method chaining.
         """
-
         selection_data = {
             "ml_task": self._task_dropdown.value,
             "dataset": self._dataset_dropdown.value,
         }
-        selection_data.update(
-            {
-                self._dimension_to_column[dim.label]: dim.constraintrange
-                for dim in self.current_fig.data[0].dimensions
-                if hasattr(dim, "constraintrange") and dim.constraintrange
-            }
-        )
+
+        if self.current_fig is not None:
+            selection_data.update(
+                {
+                    self._dimension_to_column[dim.label]: dim.constraintrange
+                    for dim in self.current_fig.data[0].dimensions
+                    if hasattr(dim, "constraintrange") and dim.constraintrange
+                }
+            )
+
         self.current_selection = selection_data
 
         return self
 
-    def display(self):
-        """Display the widgets and initialize the plot."""
-        display(self.layout)
+    def display(self) -> None:
+        """Display the widget interface and initialize the plot."""
+        display(self._layout)
         self._update_plot()
         self.update_selection()
