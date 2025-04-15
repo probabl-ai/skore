@@ -11,10 +11,10 @@ DIMENSION_TO_COLUMN = {
     "Encoder": "encoder",
     "ML Task": "ml_task",
     "RMSE": "rmse",
-    "macro ROC AUC": "macro_roc_auc",
+    "macro ROC AUC": "roc_auc",
     "Log Loss": "log_loss",
     "Fit Time": "fit_time",
-    "Predict Time": "predict_time",
+    "Predict Time": "predict_time_test",
 }
 
 
