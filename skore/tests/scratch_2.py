@@ -22,9 +22,6 @@ class MetaDataFrame(pd.DataFrame):
     """
 
     _metadata = [
-        "_dimension_to_column",
-        "_column_to_dimension",
-        "_invert_colormap",
         "_plot_widget",
     ]
 
@@ -33,35 +30,7 @@ class MetaDataFrame(pd.DataFrame):
         Initialize a new MetaDataFrame instance.
         """
         super().__init__(*args, **kwargs)
-
-        # Define mapping between display names and column names
-        self._dimension_to_column = {
-            "Dataset": "dataset",
-            "Learner": "learner",
-            "Scaler": "scaler",
-            "Encoder": "encoder",
-            "ML Task": "ml_task",
-            "RMSE": "rmse",
-            "median Absolute Error": "median_absolute_error",
-            "mean Average Precision": "mean_average_precision",
-            "macro ROC AUC": "macro_roc_auc",
-            "Log Loss": "log_loss",
-            "Fit Time": "fit_time",
-            "Predict Time": "predict_time",
-        }
-        self._column_to_dimension = {v: k for k, v in self._dimension_to_column.items()}
-
-        # Define metrics where lower values are better (for inverted colormap)
-        self._invert_colormap = [
-            "RMSE",
-            "Log Loss",
-            "Fit Time",
-            "Predict Time",
-            "median Absolute Error",
-        ]
-
-        # self["learner"] = pd.Categorical(self["learner"], ordered=True)
-        self["learner"] = self["learner"].astype("category")
+        self["learner"] = pd.Categorical(self["learner"], ordered=True)
 
     @property
     def _constructor(self):
@@ -77,14 +46,8 @@ class MetaDataFrame(pd.DataFrame):
         recent changes to the data.
         """
         # Recreate the plot widget with the current dataframe state
-        self._plot_widget = ModelExplorerWidget(
-            dataframe=self,
-            dimension_to_column=self._dimension_to_column,
-            column_to_dimension=self._column_to_dimension,
-            invert_colormap=self._invert_colormap,
-        )
+        self._plot_widget = ModelExplorerWidget(dataframe=self)
 
-        # Display the updated widget
         self._plot_widget.display()
         return ""
 
@@ -111,33 +74,21 @@ class MetaDataFrame(pd.DataFrame):
         if not hasattr(self, "_plot_widget"):
             return ""
 
-        # First update the selection to ensure we have the latest state
         self._plot_widget.update_selection()
 
-        # Get current task from dropdown
-        task = self._plot_widget.task_dropdown.value
-
-        # Build the query string based on current selections and task filter
+        selection = self._plot_widget.current_selection.copy()
         query_parts = []
 
-        # Always add task filter
+        task = selection.pop("ml_task")
         query_parts.append(f"ml_task == '{task}'")
 
-        # If we have a dataset selected, add that as a filter
-        if (
-            hasattr(self._plot_widget.dataset_dropdown, "value")
-            and self._plot_widget.dataset_dropdown.value
-        ):
-            dataset_name = self._plot_widget.dataset_dropdown.value
-            query_parts.append(f"dataset == '{dataset_name}'")
+        dataset = selection.pop("dataset")
+        query_parts.append(f"dataset == '{dataset}'")
 
-        # Add selection constraints if any
-        for dim_name, range_values in self._plot_widget.current_selection.items():
-            # Handle Learner dimension
-            if dim_name == "Learner":
-                # Find which learner values fall within the selected range
-                learner_values = self["learner"].unique()
-                learner_codes = pd.Categorical(learner_values).codes
+        for column_name, range_values in selection.items():
+            if column_name == "learner":
+                learner_values = self["learner"].cat.categories
+                learner_codes = self["learner"].cat.codes
 
                 selected_learners = []
                 min_val, max_val = range_values
@@ -153,21 +104,12 @@ class MetaDataFrame(pd.DataFrame):
                         [f"'{value}'" for value in selected_learners]
                     )
                     query_parts.append(f"learner.isin([{values_str}])")
-
-            # Handle numerical dimensions
-            elif dim_name in self._column_to_dimension.values():
-                # Find the column name that corresponds to this dimension label
-                col_name = None
-                for col, label in self._column_to_dimension.items():
-                    if label == dim_name:
-                        col_name = col
-                        break
-
-                if col_name:
-                    min_val, max_val = range_values
-                    query_parts.append(
-                        f"({col_name} >= {min_val:.6f} and {col_name} <= {max_val:.6f})"
-                    )
+            else:
+                min_val, max_val = range_values
+                query_parts.append(
+                    f"({column_name} >= {min_val:.6f} and "
+                    f"{column_name} <= {max_val:.6f})"
+                )
 
         # Join all query parts with logical AND
         if query_parts:
@@ -201,21 +143,7 @@ class MetaDataFrame(pd.DataFrame):
 
         if filter:
             query_string = self.query_string_selection()
-            if query_string:
-                return df.query(query_string)
-
-            # If no query string but we have a selected dataset and task, filter based
-            # on those
-            task = self._plot_widget.task_dropdown.value
-            if (
-                hasattr(self._plot_widget.dataset_dropdown, "value")
-                and self._plot_widget.dataset_dropdown.value
-            ):
-                dataset_name = self._plot_widget.dataset_dropdown.value
-                return df[(df["ml_task"] == task) & (df["dataset"] == dataset_name)]
-
-            # Otherwise, just filter based on task
-            return df[df["ml_task"] == task]
+            return df.query(query_string)
 
         return df
 
