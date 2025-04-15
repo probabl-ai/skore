@@ -30,14 +30,51 @@ class ModelExplorerWidget:
         "Fit Time": "fit_time",
         "Predict Time": "predict_time",
     }
-    _column_to_dimension = {v: k for k, v in _dimension_to_column.items()}
-    _invert_colormap = [
-        "RMSE",
-        "Log Loss",
-        "Fit Time",
-        "Predict Time",
-        "median Absolute Error",
-    ]
+
+    _metrics = {
+        "fit_time": {
+            "name": "Fit Time",
+            "greater_is_better": False,
+            "type": "time",
+            "show": False,
+        },
+        "predict_time": {
+            "name": "Predict Time",
+            "greater_is_better": False,
+            "type": "time",
+            "show": False,
+        },
+        "rmse": {
+            "name": "RMSE",
+            "greater_is_better": False,
+            "type": "regression",
+            "show": True,
+        },
+        "median_absolute_error": {
+            "name": "Median Absolute Error",
+            "greater_is_better": False,
+            "type": "regression",
+            "show": True,
+        },
+        "log_loss": {
+            "name": "Log Loss",
+            "greater_is_better": False,
+            "type": "classification",
+            "show": True,
+        },
+        "mean_average_precision": {
+            "name": "Mean Average Precision",
+            "greater_is_better": True,
+            "type": "classification",
+            "show": True,
+        },
+        "macro_roc_auc": {
+            "name": "Macro ROC AUC",
+            "greater_is_better": True,
+            "type": "classification",
+            "show": True,
+        },
+    }
 
     def __init__(self, dataframe, seed=0):
         self.df = dataframe
@@ -46,10 +83,6 @@ class ModelExplorerWidget:
         self.current_fig = None
         self.current_dimensions = None
         self.current_selection = {}
-
-        classification_metrics = ["mean Average Precision", "macro ROC AUC", "Log Loss"]
-        regression_metrics = ["median Absolute Error", "RMSE"]
-        time_metrics = ["Fit Time", "Predict Time"]
 
         self._clf_datasets = self.df.query("ml_task == 'classification'")[
             "dataset"
@@ -77,34 +110,52 @@ class ModelExplorerWidget:
         )
 
         self._metric_checkboxes = {"classification": {}, "regression": {}}
-        for metric in time_metrics + classification_metrics:
-            default_value = metric not in time_metrics
-            self._metric_checkboxes["classification"][metric] = widgets.Checkbox(
-                indent=False,
-                value=default_value,
-                description=metric,
-                disabled=False,
-                layout=widgets.Layout(width="auto", margin="0px 10px 0px 0px"),
-            )
-        for metric in time_metrics + regression_metrics:
-            default_value = metric not in time_metrics
-            self._metric_checkboxes["regression"][metric] = widgets.Checkbox(
-                indent=False,
-                value=default_value,
-                description=metric,
-                disabled=False,
-                layout=widgets.Layout(width="auto", margin="0px 10px 0px 0px"),
-            )
+        for metric in self._metrics:
+            default_value = self._metrics[metric]["show"]
+            metric_type = self._metrics[metric]["type"]
+            if metric_type in self._metric_checkboxes:
+                self._metric_checkboxes[metric_type][metric] = widgets.Checkbox(
+                    indent=False,
+                    value=default_value,
+                    description=self._metrics[metric]["name"],
+                    disabled=False,
+                    layout=widgets.Layout(width="auto", margin="0px 10px 0px 0px"),
+                )
+            else:
+                for metric_type in self._metric_checkboxes:
+                    self._metric_checkboxes[metric_type][metric] = widgets.Checkbox(
+                        indent=False,
+                        value=default_value,
+                        description=self._metrics[metric]["name"],
+                        disabled=False,
+                        layout=widgets.Layout(width="auto", margin="0px 10px 0px 0px"),
+                    )
+
+        metrics_for_classification = [
+            metric
+            for metric in self._metrics
+            if self._metrics[metric]["type"] in ("classification", "time")
+        ]
+        metrics_for_regression = [
+            metric
+            for metric in self._metrics
+            if self._metrics[metric]["type"] in ("regression", "time")
+        ]
         self._color_metric_dropdown = {
             "classification": widgets.Dropdown(
-                options=time_metrics + classification_metrics,
+                options=[
+                    self._metrics[metric]["name"]
+                    for metric in metrics_for_classification
+                ],
                 value="Log Loss",
                 description="Color by:",
                 disabled=False,
                 layout=widgets.Layout(width="200px"),
             ),
             "regression": widgets.Dropdown(
-                options=time_metrics + regression_metrics,
+                options=[
+                    self._metrics[metric]["name"] for metric in metrics_for_regression
+                ],
                 value="RMSE",
                 description="Color by:",
                 disabled=False,
@@ -114,13 +165,13 @@ class ModelExplorerWidget:
         self.classification_metrics_box = widgets.HBox(
             [
                 self._metric_checkboxes["classification"][metric]
-                for metric in time_metrics + classification_metrics
+                for metric in metrics_for_classification
             ]
         )
         self.regression_metrics_box = widgets.HBox(
             [
                 self._metric_checkboxes["regression"][metric]
-                for metric in time_metrics + regression_metrics
+                for metric in metrics_for_regression
             ]
         )
 
@@ -145,8 +196,8 @@ class ModelExplorerWidget:
                     value="Computation Metrics: ",
                     layout=widgets.Layout(padding="5px 0px"),
                 ),
-                self._metric_checkboxes["classification"]["Fit Time"],
-                self._metric_checkboxes["classification"]["Predict Time"],
+                self._metric_checkboxes["classification"]["fit_time"],
+                self._metric_checkboxes["classification"]["predict_time"],
             ],
             layout=widgets.Layout(
                 width=f"{self._plot_width}px",
@@ -160,9 +211,9 @@ class ModelExplorerWidget:
                     value="Statistical Metrics: ",
                     layout=widgets.Layout(padding="5px 0px"),
                 ),
-                self._metric_checkboxes["classification"]["mean Average Precision"],
-                self._metric_checkboxes["classification"]["macro ROC AUC"],
-                self._metric_checkboxes["classification"]["Log Loss"],
+                self._metric_checkboxes["classification"]["mean_average_precision"],
+                self._metric_checkboxes["classification"]["macro_roc_auc"],
+                self._metric_checkboxes["classification"]["log_loss"],
             ],
             layout=widgets.Layout(
                 width=f"{self._plot_width}px",
@@ -185,8 +236,8 @@ class ModelExplorerWidget:
                     value="Computation Metrics: ",
                     layout=widgets.Layout(padding="5px 0px"),
                 ),
-                self._metric_checkboxes["regression"]["Fit Time"],
-                self._metric_checkboxes["regression"]["Predict Time"],
+                self._metric_checkboxes["regression"]["fit_time"],
+                self._metric_checkboxes["regression"]["predict_time"],
             ],
             layout=widgets.Layout(
                 width=f"{self._plot_width}px",
@@ -200,8 +251,8 @@ class ModelExplorerWidget:
                     value="Statistical Metrics: ",
                     layout=widgets.Layout(padding="5px 0px"),
                 ),
-                self._metric_checkboxes["regression"]["median Absolute Error"],
-                self._metric_checkboxes["regression"]["RMSE"],
+                self._metric_checkboxes["regression"]["median_absolute_error"],
+                self._metric_checkboxes["regression"]["rmse"],
             ],
             layout=widgets.Layout(
                 width=f"{self._plot_width}px",
@@ -334,12 +385,9 @@ class ModelExplorerWidget:
                 for metric in self._metric_checkboxes[task]
                 if self._metric_checkboxes[task][metric].value
             ]
-            color_metric = self._color_metric_dropdown[task].value
-
-            selected_columns = [
-                self._dimension_to_column[metric] for metric in selected_metrics
+            color_metric = self._dimension_to_column[
+                self._color_metric_dropdown[task].value
             ]
-            color_column = self._dimension_to_column[color_metric]
 
             dimensions = []
             dimensions.append(
@@ -353,24 +401,26 @@ class ModelExplorerWidget:
                 )
             )
 
-            for col in selected_columns:  # use the order defined in the constructor
+            for col in selected_metrics:  # use the order defined in the constructor
                 dimensions.append(
                     dict(
-                        label=self._column_to_dimension[col],
+                        label=self._metrics[col]["name"],
                         values=df_dataset[col].fillna(0),
                     )
                 )
 
             colorscale = (
-                "Viridis_r" if color_metric in self._invert_colormap else "Viridis"
+                "Viridis_r"
+                if self._metrics[color_metric]["greater_is_better"]
+                else "Viridis"
             )
             fig = go.FigureWidget(
                 data=go.Parcoords(
                     line=dict(
-                        color=df_dataset[color_column].fillna(0),
+                        color=df_dataset[color_metric].fillna(0),
                         colorscale=colorscale,
                         showscale=True,
-                        colorbar=dict(title=color_metric),
+                        colorbar=dict(title=self._metrics[color_metric]["name"]),
                     ),
                     dimensions=dimensions,
                     labelangle=-30,
