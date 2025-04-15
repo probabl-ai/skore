@@ -573,6 +573,36 @@ plot_map(X_train_plot, "squared_error")
 plot_map(X_test_plot, "squared_error")
 
 # %%
+# We observe that we have a large prediction errors for districts near the sea and big cities:
+
+# %%
+threshold_train = X_train_plot["squared_error"].quantile(0.98)
+plot_map(X_train_plot.query(f"squared_error > {threshold_train}"), "squared_error")
+
+# %%
+threshold_test = X_test_plot["squared_error"].quantile(0.95)
+plot_map(X_test_plot.query(f"squared_error > {threshold_test}"), "squared_error")
+
+# %%
+# Most of our very bad predictions underpredict the true value:
+
+# %%
+X_train_plot.insert(X_train_plot.shape[1], "y_train_pred", y_train_pred)
+X_train_plot.insert(X_train_plot.shape[1], "y_train", y_train)
+X_test_plot.insert(X_test_plot.shape[1], "y_test_pred", y_test_pred)
+X_test_plot.insert(X_test_plot.shape[1], "y_test", y_test)
+
+# %%
+from sklearn.metrics import PredictionErrorDisplay
+
+X_train_plot_error = X_train_plot.query(f"squared_error > {threshold_train}")
+display = PredictionErrorDisplay(
+    y_true=X_train_plot_error["y_train"], y_pred=X_train_plot_error["y_train_pred"]
+)
+display.plot()
+plt.show()
+
+# %%
 # Compromising on complexity
 # --------------------------
 
