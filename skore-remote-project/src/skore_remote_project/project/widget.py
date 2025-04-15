@@ -46,8 +46,8 @@ class ModelExplorerWidget:
         self.current_dimensions = None
         self.current_selection = {}
 
-        classification_metrics = ["mean Average Precision", "macro ROC AUC", "Log Loss"]
-        regression_metrics = ["median Absolute Error", "RMSE"]
+        classification_metrics = ["macro ROC AUC", "Log Loss"]
+        regression_metrics = ["RMSE"]
         time_metrics = ["Fit Time", "Predict Time"]
 
         self._clf_datasets = self.df.query("ml_task.str.contains('classification')")[
@@ -441,7 +441,6 @@ class ModelExplorerWidget:
         clf_statistical_row = widgets.GridBox(
             [
                 stat_metrics_label_clf,
-                self.metric_checkboxes["classification"]["mean Average Precision"],
                 self.metric_checkboxes["classification"]["macro ROC AUC"],
                 self.metric_checkboxes["classification"]["Log Loss"],
             ],
@@ -482,7 +481,6 @@ class ModelExplorerWidget:
         reg_statistical_row = widgets.GridBox(
             [
                 stat_metrics_label_reg,
-                self.metric_checkboxes["regression"]["median Absolute Error"],
                 self.metric_checkboxes["regression"]["RMSE"],
             ],
             layout=widgets.Layout(

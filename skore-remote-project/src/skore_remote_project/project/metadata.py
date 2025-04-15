@@ -11,8 +11,6 @@ DIMENSION_TO_COLUMN = {
     "Encoder": "encoder",
     "ML Task": "ml_task",
     "RMSE": "rmse",
-    "median Absolute Error": "median_absolute_error",
-    "mean Average Precision": "mean_average_precision",
     "macro ROC AUC": "macro_roc_auc",
     "Log Loss": "log_loss",
     "Fit Time": "fit_time",
