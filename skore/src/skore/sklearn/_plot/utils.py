@@ -234,7 +234,7 @@ class _ClassifierCurveDisplayMixin:
         *,
         ml_task: str,
         pos_label: Optional[PositiveLabel] = None,
-    ) -> Union[int, float, bool, str, None]:
+    ) -> Union[PositiveLabel, None]:
         for y_true_i, y_pred_i in zip(y_true, y_pred):
             check_consistent_length(y_true_i, y_pred_i)
 
