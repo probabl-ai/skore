@@ -234,15 +234,14 @@ class ModelExplorerWidget:
             dimensions = []
 
             # 1. Add learner with jitter
-            filtered_df["learner_jittered"] = self._add_jitter(filtered_df["learner"])
+            learner_categories = filtered_df["learner"].cat.remove_unused_categories()
+            filtered_df["learner_jittered"] = self._add_jitter(learner_categories)
             dimensions.append(
                 dict(
                     label="Learner",
                     values=filtered_df["learner_jittered"],
-                    ticktext=filtered_df["learner"].unique().tolist(),
-                    tickvals=self._add_jitter(
-                        filtered_df["learner"].unique(), amount=0
-                    ),
+                    ticktext=learner_categories.cat.categories.tolist(),
+                    tickvals=np.arange(len(learner_categories.cat.categories)),
                 )
             )
 

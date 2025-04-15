@@ -60,6 +60,8 @@ class MetaDataFrame(pd.DataFrame):
             "median Absolute Error",
         ]
 
+        self["learner"] = pd.Categorical(self["learner"], ordered=True)
+
     @property
     def _constructor(self):
         """Return the constructor for this class."""
