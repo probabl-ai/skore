@@ -50,10 +50,10 @@ class ModelExplorerWidget:
         regression_metrics = ["median Absolute Error", "RMSE"]
         time_metrics = ["Fit Time", "Predict Time"]
 
-        self._clf_datasets = self.df.query("ml_task == 'classification'")[
+        self._clf_datasets = self.df.query("ml_task.str.contains('classification')")[
             "dataset"
         ].unique()
-        self._reg_datasets = self.df.query("ml_task == 'regression'")[
+        self._reg_datasets = self.df.query("ml_task.str.contains('regression')")[
             "dataset"
         ].unique()
 
