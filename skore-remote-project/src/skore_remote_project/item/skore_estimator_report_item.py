@@ -29,7 +29,7 @@ class Metadata:
 
     @metadata
     def estimator_class_name(self):
-        return self.report.estimator_.__class__.__name__
+        return self.report.estimator_name_
 
     @metadata
     def estimator_hyper_params(self):
