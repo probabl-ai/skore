@@ -31,6 +31,8 @@ class ModelExplorerWidget:
         Seed for the jittering categorical columns.
     """
 
+    _plot_width = 800
+
     def __init__(
         self,
         dataframe,
@@ -79,7 +81,7 @@ class ModelExplorerWidget:
         )
 
         self.metric_checkboxes = {"classification": {}, "regression": {}}
-        for metric in classification_metrics + time_metrics:
+        for metric in time_metrics + classification_metrics:
             default_value = metric not in time_metrics
             self.metric_checkboxes["classification"][metric] = widgets.Checkbox(
                 indent=False,
@@ -88,7 +90,7 @@ class ModelExplorerWidget:
                 disabled=False,
                 layout=widgets.Layout(width="auto", margin="0px 10px 0px 0px"),
             )
-        for metric in regression_metrics + time_metrics:
+        for metric in time_metrics + regression_metrics:
             default_value = metric not in time_metrics
             self.metric_checkboxes["regression"][metric] = widgets.Checkbox(
                 indent=False,
@@ -99,14 +101,14 @@ class ModelExplorerWidget:
             )
         self.color_metric_dropdown = {
             "classification": widgets.Dropdown(
-                options=classification_metrics + time_metrics,
+                options=time_metrics + classification_metrics,
                 value="Log Loss",
                 description="Color by:",
                 disabled=False,
                 layout=widgets.Layout(width="200px"),
             ),
             "regression": widgets.Dropdown(
-                options=regression_metrics + time_metrics,
+                options=time_metrics + regression_metrics,
                 value="RMSE",
                 description="Color by:",
                 disabled=False,
@@ -116,13 +118,13 @@ class ModelExplorerWidget:
         self.classification_metrics_box = widgets.HBox(
             [
                 self.metric_checkboxes["classification"][metric]
-                for metric in classification_metrics + time_metrics
+                for metric in time_metrics + classification_metrics
             ]
         )
         self.regression_metrics_box = widgets.HBox(
             [
                 self.metric_checkboxes["regression"][metric]
-                for metric in regression_metrics + time_metrics
+                for metric in time_metrics + regression_metrics
             ]
         )
 
@@ -171,18 +173,21 @@ class ModelExplorerWidget:
             self.regression_metrics_box.layout.display = ""
             self.color_metric_dropdown["regression"].layout.display = ""
 
-    def _add_jitter(self, values, amount=0.01):
+    def _add_jitter_to_categorical(self, categorical_series, amount=0.01):
         """Add jitter to categorical values to improve visualization."""
         rng = np.random.default_rng(self.seed)
-        categories = pd.Categorical(values).codes
-        jitter = rng.uniform(-amount, amount, size=len(categories))
-        for sign, cat in zip([1, -1], [0, len(categories) - 1]):
-            jitter[categories == cat] = np.abs(
-                jitter[categories == cat], out=jitter[categories == cat]
-            ) * sign
+        encoded_categories = categorical_series.cat.codes
+        jitter = rng.uniform(-amount, amount, size=len(encoded_categories))
+        for sign, cat in zip([1, -1], [0, len(encoded_categories) - 1]):
+            jitter[encoded_categories == cat] = (
+                np.abs(
+                    jitter[encoded_categories == cat],
+                    out=jitter[encoded_categories == cat],
+                )
+                * sign
+            )
 
-
-        return categories + jitter
+        return encoded_categories + jitter
 
     def _update_plot(self, change=None):
         """Update the parallel coordinates plot based on the selected options."""
@@ -198,90 +203,49 @@ class ModelExplorerWidget:
                 display(widgets.HTML("No dataset available for selected task."))
                 return
 
-            dataset_name = self.dataset_dropdown.value
+            df_dataset = self.df.query("dataset == @self.dataset_dropdown.value").copy()
+            for col in df_dataset.select_dtypes(include=["category"]).columns:
+                df_dataset[col] = df_dataset[col].cat.remove_unused_categories()
 
-            # Filter data for the selected dataset
-            filtered_df = self.df[self.df["dataset"] == dataset_name].copy()
+            selected_metrics = [
+                metric
+                for metric in self.metric_checkboxes[task]
+                if self.metric_checkboxes[task][metric].value
+            ]
+            color_metric = self.color_metric_dropdown[task].value
 
-            if filtered_df.empty:
-                display(widgets.HTML(f"No data available for dataset: {dataset_name}"))
-                return
-
-            # Get selected metrics and color metric based on task
-            if task == "classification":
-                selected_metrics = [
-                    metric
-                    for metric in self.metric_checkboxes[task]
-                    if self.metric_checkboxes[task][metric].value
-                ]
-                color_metric = self.color_metric_dropdown[task].value
-            else:
-                selected_metrics = [
-                    metric
-                    for metric in self.metric_checkboxes[task]
-                    if self.metric_checkboxes[task][metric].value
-                ]
-                color_metric = self.color_metric_dropdown[task].value
-
-            # Convert display names to column names
-            selected_columns = [self.dimension_to_column[m] for m in selected_metrics]
+            selected_columns = [
+                self.dimension_to_column[metric] for metric in selected_metrics
+            ]
             color_column = self.dimension_to_column[color_metric]
 
-            # Create dimensions list in the required order:
-            # 1. Learner
-            # 2. Fit/Predict time metrics
-            # 3. Statistical metrics
             dimensions = []
-
-            # 1. Add learner with jitter
-            learner_categories = filtered_df["learner"].cat.remove_unused_categories()
-            filtered_df["learner_jittered"] = self._add_jitter(learner_categories)
             dimensions.append(
                 dict(
                     label="Learner",
-                    values=filtered_df["learner_jittered"],
-                    ticktext=learner_categories.cat.categories.tolist(),
-                    tickvals=np.arange(len(learner_categories.cat.categories)),
+                    values=self._add_jitter_to_categorical(df_dataset["learner"]),
+                    ticktext=df_dataset["learner"].cat.categories,
+                    tickvals=np.arange(len(df_dataset["learner"].cat.categories)),
                 )
             )
 
-            # Categorize metrics
-            time_metrics = ["fit_time", "predict_time"]
-            statistical_metrics = [
-                col for col in selected_columns if col not in time_metrics
-            ]
-
-            # 2. Add time metrics
-            for col in time_metrics:
-                if col in selected_columns and not pd.isna(filtered_df[col]).all():
-                    dimensions.append(
-                        dict(
-                            label=self.column_to_dimension[col],
-                            values=filtered_df[col].fillna(0).tolist(),
-                        )
+            for col in selected_columns:  # use the order defined in the constructor
+                dimensions.append(
+                    dict(
+                        label=self.column_to_dimension[col],
+                        values=df_dataset[col].fillna(0),
                     )
+                )
 
-            # 3. Add statistical metrics
-            for col in statistical_metrics:
-                if not pd.isna(filtered_df[col]).all():  # Only add if not all NaN
-                    dimensions.append(
-                        dict(
-                            label=self.column_to_dimension[col],
-                            values=filtered_df[col].fillna(0).tolist(),
-                        )
-                    )
-
-            # Create colorscale (invert for metrics where lower is better)
-            colorscale = (
-                "Viridis_r" if color_metric in self.invert_colormap else "Viridis"
-            )
-
-            # Create the figure
             fig = go.Figure(
                 data=go.Parcoords(
                     line=dict(
-                        color=filtered_df[color_column].fillna(0).tolist(),
-                        colorscale=colorscale,
+                        color=df_dataset[color_column].fillna(0),
+                        colorscale=(
+                            "Viridis_r"
+                            if color_metric in self.invert_colormap
+                            else "Viridis"
+                        ),
                         showscale=True,
                         colorbar=dict(title=color_metric),
                     ),
@@ -290,19 +254,13 @@ class ModelExplorerWidget:
                 )
             )
 
-            # Set consistent width and layout
-            plot_width = 800  # Width in pixels
-
             fig.update_layout(
                 font=dict(size=16),
-                height=500,  # Increased height to accommodate staggered labels
-                width=plot_width,  # Set fixed width
-                margin=dict(
-                    l=200, r=150, t=120, b=30
-                ),  # Increased top margin for labels
+                height=500,
+                width=self._plot_width,
+                margin=dict(l=200, r=150, t=120, b=30),
             )
 
-            # Convert to FigureWidget for interactivity and callbacks
             f_widget = FigureWidget(fig)
 
             # Setup callback for selection changes

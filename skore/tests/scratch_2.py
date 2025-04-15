@@ -60,7 +60,8 @@ class MetaDataFrame(pd.DataFrame):
             "median Absolute Error",
         ]
 
-        self["learner"] = pd.Categorical(self["learner"], ordered=True)
+        # self["learner"] = pd.Categorical(self["learner"], ordered=True)
+        self["learner"] = self["learner"].astype("category")
 
     @property
     def _constructor(self):
