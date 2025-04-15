@@ -16,6 +16,7 @@ from skore.externals._pandas_accessors import DirNamesMixin
 from skore.sklearn._base import _BaseAccessor, _get_cached_response_values
 from skore.sklearn._estimator.report import EstimatorReport
 from skore.sklearn._plot import (
+    ConfusionMatrixDisplay,
     PrecisionRecallCurveDisplay,
     PredictionErrorDisplay,
     RocCurveDisplay,
@@ -50,6 +51,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         "rmse": {"name": "RMSE", "icon": "(↘︎)"},
         "custom_metric": {"name": "Custom metric", "icon": ""},
         "report_metrics": {"name": "Report metrics", "icon": ""},
+        "confusion_matrix": {"name": "Confusion Matrix", "icon": ""},
     }
 
     def __init__(self, parent: EstimatorReport) -> None:
@@ -1962,3 +1964,114 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             ),
         )
         return display
+
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["binary-classification", "multiclass-classification"]
+        )
+    )
+    def confusion_matrix(
+        self,
+        *,
+        data_source: DataSource = "test",
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
+        sample_weight: Optional[ArrayLike] = None,
+        display_labels: Optional[list] = None,
+        include_values: bool = True,
+        normalize: Optional[Literal["true", "pred", "all"]] = None,
+        values_format: Optional[str] = None,
+        ax: Optional[Any] = None,
+        colorbar: bool = True,
+    ) -> ConfusionMatrixDisplay:
+        """Plot the confusion matrix.
+
+        The confusion matrix shows the counts of correct and incorrect classifications
+        for each class.
+
+        Parameters
+        ----------
+        data_source : {"test", "train", "X_y"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the report.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the report.
+
+        sample_weight : array-like of shape (n_samples,), default=None
+            Sample weights.
+
+        display_labels : list of str, default=None
+            Display labels for plot. If None, display labels are set from 0 to
+            ``n_classes - 1``.
+
+        include_values : bool, default=True
+            Includes values in confusion matrix.
+
+        normalize : {'true', 'pred', 'all'}, default=None
+            Normalizes confusion matrix over the true (rows), predicted (columns)
+            conditions or all the population. If None, confusion matrix will not be
+            normalized.
+
+        values_format : str, default=None
+            Format specification for values in confusion matrix. If None, the format
+            specification is 'd' or '.2g' whichever is shorter.
+
+        ax : matplotlib axes, default=None
+            Axes object to plot on. If None, a new figure and axes is created.
+
+        colorbar : bool, default=True
+            Whether or not to add a colorbar to the plot.
+
+        Returns
+        -------
+        display : :class:`~skore.sklearn._plot.ConfusionMatrixDisplay`
+            The confusion matrix display.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import EstimatorReport
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     *load_breast_cancer(return_X_y=True), random_state=0
+        ... )
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> report = EstimatorReport(
+        ...     classifier,
+        ...     X_train=X_train,
+        ...     y_train=y_train,
+        ...     X_test=X_test,
+        ...     y_test=y_test,
+        ... )
+        >>> report.metrics.confusion_matrix()
+        """
+        X, y, _ = self._get_X_y_and_data_source_hash(data_source=data_source, X=X, y=y)
+
+        y_pred = self._parent.get_predictions(
+            data_source=data_source,
+            response_method="predict",
+            X=X,
+            pos_label=None,
+        )
+
+        return ConfusionMatrixDisplay.from_predictions(
+            y_true=y,
+            y_pred=y_pred,
+            sample_weight=sample_weight,
+            display_labels=display_labels,
+            include_values=include_values,
+            normalize=normalize,
+            values_format=values_format,
+            ax=ax,
+            colorbar=colorbar,
+        )
