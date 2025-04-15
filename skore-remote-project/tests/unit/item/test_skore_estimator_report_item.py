@@ -1,7 +1,6 @@
 from io import BytesIO
-from json import dumps
-
-from joblib import dump, hash
+import json
+import joblib
 from numpy.testing import assert_array_equal
 from pytest import fixture, raises
 from sklearn.datasets import make_regression
@@ -31,7 +30,7 @@ def report():
 @fixture
 def report_b64_str(report):
     with BytesIO() as stream:
-        dump(report, stream)
+        joblib.dump(report, stream)
 
         pickle_bytes = stream.getvalue()
         pickle_b64_str = bytes_to_b64_str(pickle_bytes)
@@ -65,9 +64,9 @@ class TestSkoreEstimatorReportItem:
         }
 
         # Ensure parameters are JSONable
-        dumps(item_parameters)
+        json.dumps(item_parameters)
 
-    def test_metadata(self, report, report_b64_str):
+    def test_metadata(self, monkeypatch, report, report_b64_str):
         metadata = {
             "estimator_class_name": "LinearRegression",
             "estimator_hyper_params": {
@@ -76,34 +75,57 @@ class TestSkoreEstimatorReportItem:
                 "n_jobs": None,
                 "positive": False,
             },
-            "dataset_fingerprint": hash(
-                (report.X_train, report.y_train, report.X_test, report.y_test)
-            ),
+            "dataset_fingerprint": joblib.hash(report.y_test),
             "ml_task": "regression",
             "metrics": [
                 {
                     "name": "r2",
-                    "value": 0.6688617330074285,
-                    "data_source": "test",
-                    "greater_is_better": None,
+                    "value": float(hash("r2-train")),
+                    "data_source": "train",
+                    "greater_is_better": True,
+                    "position": None,
                 },
                 {
                     "name": "r2",
-                    "value": 1.0,
-                    "data_source": "train",
-                    "greater_is_better": None,
-                },
-                {
-                    "name": "rmse",
-                    "value": 73.92385036768957,
+                    "value": float(hash("r2-test")),
                     "data_source": "test",
-                    "greater_is_better": None,
+                    "greater_is_better": True,
+                    "position": None,
                 },
                 {
                     "name": "rmse",
-                    "value": 2.091309874874337e-13,
+                    "value": float(hash("rmse-train")),
                     "data_source": "train",
-                    "greater_is_better": None,
+                    "greater_is_better": False,
+                    "position": 3,
+                },
+                {
+                    "name": "rmse",
+                    "value": float(hash("rmse-test")),
+                    "data_source": "test",
+                    "greater_is_better": False,
+                    "position": 3,
+                },
+                {
+                    "name": "fit_time",
+                    "value": float(hash("fit_time")),
+                    "data_source": None,
+                    "greater_is_better": False,
+                    "position": 1,
+                },
+                {
+                    "name": "predict_time_test",
+                    "value": float(hash("predict_time_test")),
+                    "data_source": "test",
+                    "greater_is_better": False,
+                    "position": 2,
+                },
+                {
+                    "name": "predict_time_train",
+                    "value": float(hash("predict_time_train")),
+                    "data_source": "train",
+                    "greater_is_better": False,
+                    "position": 2,
                 },
             ],
         }
@@ -111,12 +133,29 @@ class TestSkoreEstimatorReportItem:
         item1 = SkoreEstimatorReportItem.factory(report)
         item2 = SkoreEstimatorReportItem(report_b64_str)
 
+        monkeypatch.setattr(
+            "skore.sklearn._estimator.metrics_accessor._MetricsAccessor.r2",
+            lambda self, data_source: hash(f"r2-{data_source}"),
+        )
+        monkeypatch.setattr(
+            "skore.sklearn._estimator.metrics_accessor._MetricsAccessor.rmse",
+            lambda self, data_source: hash(f"rmse-{data_source}"),
+        )
+        monkeypatch.setattr(
+            "skore.sklearn._estimator.metrics_accessor._MetricsAccessor.timings",
+            lambda self: {
+                "fit_time": hash("fit_time"),
+                "predict_time_test": hash("predict_time_test"),
+                "predict_time_train": hash("predict_time_train"),
+            },
+        )
+
         assert item1.__metadata__ == metadata
         assert item2.__metadata__ == metadata
 
         # Ensure metadata is JSONable
-        dumps(item1.__metadata__)
-        dumps(item2.__metadata__)
+        json.dumps(item1.__metadata__)
+        json.dumps(item2.__metadata__)
 
     def test_raw(self, report, report_b64_str):
         item1 = SkoreEstimatorReportItem.factory(report)
@@ -138,53 +177,76 @@ class TestSkoreEstimatorReportItem:
             "related_items": [
                 {
                     "key": "prediction_error",
-                    "data_source": "test",
-                    "parameters": {
-                        "class": "MatplotlibFigureItem",
-                        "parameters": {
-                            "figure_b64_str": bytes_to_b64_str(b"<raw-figure>"),
-                        },
-                    },
+                    "category": "performance",
+                    "attributes": {"data_source": "train"},
+                    "parameters": {"class": "MatplotlibFigureItem", "parameters": None},
                     "representation": {
                         "media_type": "image/svg+xml;base64",
-                        "value": bytes_to_b64_str(b"<svg-figure>"),
+                        "value": None,
                     },
                 },
                 {
                     "key": "prediction_error",
-                    "data_source": "train",
-                    "parameters": {
-                        "class": "MatplotlibFigureItem",
-                        "parameters": {
-                            "figure_b64_str": bytes_to_b64_str(b"<raw-figure>"),
-                        },
-                    },
+                    "category": "performance",
+                    "attributes": {"data_source": "test"},
+                    "parameters": {"class": "MatplotlibFigureItem", "parameters": None},
                     "representation": {
                         "media_type": "image/svg+xml;base64",
-                        "value": bytes_to_b64_str(b"<svg-figure>"),
+                        "value": None,
                     },
+                },
+                {
+                    "key": "permutation",
+                    "category": "feature_importance",
+                    "attributes": {"data_source": "train", "method": "permutation"},
+                    "parameters": {"class": "PandasDataFrameItem", "parameters": None},
+                    "representation": {
+                        "media_type": "application/vnd.dataframe",
+                        "value": None,
+                    },
+                },
+                {
+                    "key": "permutation",
+                    "category": "feature_importance",
+                    "attributes": {"data_source": "test", "method": "permutation"},
+                    "parameters": {"class": "PandasDataFrameItem", "parameters": None},
+                    "representation": {
+                        "media_type": "application/vnd.dataframe",
+                        "value": None,
+                    },
+                },
+                {
+                    "key": "coefficients",
+                    "category": "feature_importance",
+                    "attributes": {"method": "coefficients"},
+                    "parameters": {"class": "PandasDataFrameItem", "parameters": None},
+                    "representation": {
+                        "media_type": "application/vnd.dataframe",
+                        "value": None,
+                    },
+                },
+                {
+                    "key": "estimator_html_repr",
+                    "category": "model",
+                    "attributes": {},
+                    "parameters": {"class": "MediaItem", "parameters": None},
+                    "representation": {"media_type": "text/html", "value": None},
                 },
             ]
         }
 
-        def savefig(self, stream, *args, **kwargs):
-            stream.write(b"<svg-figure>")
-
-        monkeypatch.setattr("matplotlib.figure.Figure.savefig", savefig)
-
-        def dump(_, stream):
-            stream.write(b"<raw-figure>")
-
-        monkeypatch.setattr(
-            "skore_remote_project.item.matplotlib_figure_item.dump", dump
-        )
-
         item1 = SkoreEstimatorReportItem.factory(report)
         item2 = SkoreEstimatorReportItem(report_b64_str)
 
-        assert item1.__representation__ == representation
-        assert item2.__representation__ == representation
+        def clean(representation):
+            for item in representation["related_items"]:
+                item["parameters"]["parameters"] = None
+                item["representation"]["value"] = None
+            return representation
+
+        assert clean(item1.__representation__) == representation
+        assert clean(item2.__representation__) == representation
 
         # Ensure representation is JSONable
-        dumps(item1.__representation__)
-        dumps(item2.__representation__)
+        json.dumps(item1.__representation__)
+        json.dumps(item2.__representation__)

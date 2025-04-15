@@ -1,12 +1,16 @@
-"""Collection of function dedicated to communicate with skore-hub."""
-
-import os
+from functools import partial
+from os import environ
 from typing import Optional
 from urllib.parse import urljoin
 
 import httpx
 
-URI = os.environ.get("SKORE_HUB_URI", "https://skh.k.probabl.dev")
+
+URI = environ.get("SKORE_HUB_URI", "https://skh.k.probabl.dev")
+Client = partial(
+    httpx.Client,
+    event_hooks={"response": [httpx.Response.raise_for_status]},
+)
 
 
 def get_oauth_device_login(success_uri: Optional[str] = None):
@@ -32,20 +36,16 @@ def get_oauth_device_login(success_uri: Optional[str] = None):
         - user_code: str
             The user code that needs to be entered on the authorization page
     """
+    url = urljoin(URI, "identity/oauth/device/login")
     params = {"success_uri": success_uri} if success_uri is not None else {}
 
-    with httpx.Client() as client:
-        response = client.get(
-            urljoin(URI, "identity/oauth/device/login"), params=params
-        )
-
-        response.raise_for_status()
-        data = response.json()
+    with Client() as client:
+        response = client.get(url, params=params).json()
 
         return (
-            data.get("authorization_url"),
-            data.get("device_code"),
-            data.get("user_code"),
+            response["authorization_url"],
+            response["device_code"],
+            response["user_code"],
         )
 
 
@@ -61,16 +61,10 @@ def post_oauth_device_callback(state: str, user_code: str):
     user_code: str
         The code entered by the user.
     """
-    with httpx.Client() as client:
-        response = client.post(
-            urljoin(URI, "identity/oauth/device/callback"),
-            data={
-                "state": state,
-                "user_code": user_code,
-            },
-        )
+    url = urljoin(URI, "identity/oauth/device/callback")
 
-        response.raise_for_status()
+    with Client() as client:
+        client.post(url, data={"state": state, "user_code": user_code})
 
 
 def get_oauth_device_token(device_code: str):
@@ -95,21 +89,16 @@ def get_oauth_device_token(device_code: str):
         - expires_at : str
             The expiration datetime as ISO 8601 str of the access token
     """
-    with httpx.Client() as client:
-        response = client.get(
-            urljoin(URI, "identity/oauth/device/token"),
-            params={
-                "device_code": device_code,
-            },
-        )
+    url = urljoin(URI, "identity/oauth/device/token")
 
-        response.raise_for_status()
-        tokens = response.json().get("token")
+    with Client() as client:
+        response = client.get(url, params={"device_code": device_code}).json()
+        tokens = response["token"]
 
         return (
-            tokens.get("access_token"),
-            tokens.get("refresh_token"),
-            tokens.get("expires_at"),
+            tokens["access_token"],
+            tokens["refresh_token"],
+            tokens["expires_at"],
         )
 
 
@@ -135,17 +124,13 @@ def post_oauth_refresh_token(refresh_token: str):
         - expires_at : str
             The expiration datetime as ISO 8601 str of the access token
     """
-    with httpx.Client() as client:
-        response = client.post(
-            urljoin(URI, "identity/oauth/token/refresh"),
-            json={"refresh_token": refresh_token},
-        )
+    url = urljoin(URI, "identity/oauth/token/refresh")
 
-        response.raise_for_status()
-        tokens = response.json()
+    with Client() as client:
+        response = client.post(url, json={"refresh_token": refresh_token}).json()
 
         return (
-            tokens.get("access_token"),
-            tokens.get("refresh_token"),
-            tokens.get("expires_at"),
+            response["access_token"],
+            response["refresh_token"],
+            response["expires_at"],
         )

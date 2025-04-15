@@ -71,10 +71,10 @@ class Metadata:
                 }
 
         def timing(name, data_source, position, /):
-            with suppress(KeyError):
+            with suppress(KeyError, TypeError):
                 return {
                     "name": name,
-                    "value": self.report.metrics.timings()[name],
+                    "value": float(self.report.metrics.timings()[name]),
                     "data_source": data_source,
                     "greater_is_better": False,
                     "position": position,

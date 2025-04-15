@@ -77,15 +77,10 @@ def test_post_oauth_refresh_token(respx_mock):
     route = respx_mock.post(urljoin(URI, "identity/oauth/token/refresh")).mock(
         Response(
             200,
-            json={
-                "token": {
-                    "access_token": "A",
-                    "refresh_token": "B",
-                    "expires_at": "C",
-                }
-            },
+            json={"access_token": "A", "refresh_token": "B", "expires_at": "C"},
         )
     )
+
     access_token, refresh_token, expires_at = api.post_oauth_refresh_token("token")
 
     assert route.calls.last.request.read() == b'{"refresh_token":"token"}'

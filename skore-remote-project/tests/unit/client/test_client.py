@@ -47,11 +47,9 @@ class TestAuthenticatedClient:
             Response(
                 200,
                 json={
-                    "token": {
-                        "access_token": "D",
-                        "refresh_token": "E",
-                        "expires_at": DATETIME_MAX.isoformat(),
-                    }
+                    "access_token": "D",
+                    "refresh_token": "E",
+                    "expires_at": DATETIME_MAX.isoformat(),
                 },
             )
         )

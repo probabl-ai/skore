@@ -151,16 +151,15 @@ def test_login_with_refresh(tmp_path, respx_mock):
         Response(
             200,
             json={
-                "token": {
-                    "access_token": "D",
-                    "refresh_token": "E",
-                    "expires_at": second.isoformat(),
-                }
+                "access_token": "D",
+                "refresh_token": "E",
+                "expires_at": second.isoformat(),
             },
         )
     )
 
     token = login(auto_otp=True)
+
     assert token.access == "D"
     assert token.refreshment == "E"
     assert token.expires_at == second
