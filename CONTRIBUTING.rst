@@ -158,3 +158,15 @@ Contributing to the README
 
 The `README.md` file can be modified and is part of the documentation (although it is not included in the online documentation).
 This file is used to be presented on `PyPI <https://pypi.org/project/skore/#description>`_.
+
+Signing Commits
+---------------
+
+All commits must be signed with GPG to verify your identity. Here’s how to set it up:
+
+- Generate a GPG key (if you don’t have one): ``gpg --full-generate-key``
+- Tell Git to use it: ``git config --global user.signingkey YOUR_KEY_ID`` and ``git config --global commit.gpgsign true``
+- Make a signed commit: ``git commit -S -m "Your message"``
+- Add the GPG key to GitHub: Copy it using ``gpg --armor --export YOUR_KEY_ID`` and add it in Settings > SSH and GPG keys
+
+Signed commits show as "Verified" on GitHub. See `GitHub’s guide <https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits>`_ for details.
