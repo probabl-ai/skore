@@ -496,7 +496,7 @@ clustering_labels = kmeans.labels_
 
 # adding the cluster labels to our dataframe
 X_train_plot = X_train.copy()
-X_train_plot.insert(0, "clustering_labels", clustering_labels)
+X_train_plot.insert(X_train.shape[1], "clustering_labels", clustering_labels)
 
 # plotting the map
 plot_map(X_train_plot, "clustering_labels")
@@ -527,25 +527,26 @@ X_train_plot.insert(0, "squared_error", squared_error_train)
 X_test_plot = X_test.copy()
 X_test_plot.insert(0, "squared_error", squared_error_test)
 
-# concatenating
-X_train_plot.insert(0, "split", "train")
-X_test_plot.insert(0, "split", "test")
-X_plot = pd.concat([X_train_plot, X_test_plot])
+# adding the true values and the predictions
+X_y_train_plot = X_train_plot.copy()
+X_y_train_plot.insert(X_y_train_plot.shape[1], "y_true", y_train)
+X_y_train_plot.insert(X_y_train_plot.shape[1], "y_pred", y_train_pred)
+X_y_test_plot = X_test_plot.copy()
+X_y_test_plot.insert(X_y_test_plot.shape[1], "y_true", y_test)
+X_y_test_plot.insert(X_y_test_plot.shape[1], "y_pred", y_test_pred)
 
-# %%
-X_plot.sample(10)
+# concatenating
+X_y_train_plot.insert(0, "split", "train")
+X_y_test_plot.insert(0, "split", "test")
+X_y_plot = pd.concat([X_y_train_plot, X_y_test_plot])
+X_y_plot.sample(10)
 
 # %%
 # Visualizing the distributions:
 
 # %%
-sns.histplot(data=X_train_plot, x="squared_error", bins=30)
-plt.title("Train set")
-plt.show()
-
-# %%
-sns.histplot(data=X_test_plot, x="squared_error", bins=30)
-plt.title("Test set")
+sns.histplot(data=X_y_plot, x="squared_error", hue="split", bins=30)
+plt.title("Train and test sets")
 plt.show()
 
 # %%
@@ -554,53 +555,44 @@ plt.show()
 # %%
 from skrub import column_associations
 
-column_associations(X_train_plot).query("left_column_name == 'squared_error'")
-
-# %%
-column_associations(X_test_plot).query("left_column_name == 'squared_error'")
+column_associations(X_y_plot).query("left_column_name == 'squared_error'")
 
 # %%
 # We observe that the ``AveOccup`` leads a large squared error: our model is not able to deal well with that feature.
 
 # %%
-fig = px.scatter(X_plot, x="AveOccup", y="squared_error", color="split")
+fig = px.scatter(X_y_plot, x="AveOccup", y="squared_error", color="split")
 fig
-
-# %%
-plot_map(X_train_plot, "squared_error")
-
-# %%
-plot_map(X_test_plot, "squared_error")
 
 # %%
 # We observe that we have a large prediction errors for districts near the sea and big cities:
 
 # %%
-threshold_train = X_train_plot["squared_error"].quantile(0.98)
-plot_map(X_train_plot.query(f"squared_error > {threshold_train}"), "squared_error")
-
-# %%
-threshold_test = X_test_plot["squared_error"].quantile(0.95)
-plot_map(X_test_plot.query(f"squared_error > {threshold_test}"), "squared_error")
+threshold = X_y_plot["squared_error"].quantile(0.95)  # out of the train and test sets
+plot_map(X_y_plot.query(f"squared_error > {threshold}"), "split")
 
 # %%
 # Most of our very bad predictions underpredict the true value:
 
 # %%
-X_train_plot.insert(X_train_plot.shape[1], "y_train_pred", y_train_pred)
-X_train_plot.insert(X_train_plot.shape[1], "y_train", y_train)
-X_test_plot.insert(X_test_plot.shape[1], "y_test_pred", y_test_pred)
-X_test_plot.insert(X_test_plot.shape[1], "y_test", y_test)
 
-# %%
-from sklearn.metrics import PredictionErrorDisplay
-
-X_train_plot_error = X_train_plot.query(f"squared_error > {threshold_train}")
-display = PredictionErrorDisplay(
-    y_true=X_train_plot_error["y_train"], y_pred=X_train_plot_error["y_train_pred"]
+# Create the scatter plot
+fig = px.scatter(
+    X_y_plot.query(f"squared_error > {threshold}"),
+    x="y_pred",
+    y="y_true",
+    color="split",
 )
-display.plot()
-plt.show()
+# Add the diagonal line
+fig.add_shape(
+    type="line",
+    x0=X_y_plot["y_pred"].min(),
+    y0=X_y_plot["y_pred"].min(),
+    x1=X_y_plot["y_pred"].max(),
+    y1=X_y_plot["y_pred"].max(),
+    line=dict(color="black", width=2),
+)
+fig
 
 # %%
 # Compromising on complexity
