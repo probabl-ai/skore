@@ -43,6 +43,7 @@ class ModelExplorerWidget:
         self.dimension_to_column = dimension_to_column
         self.column_to_dimension = column_to_dimension
         self.invert_colormap = invert_colormap
+        self.seed = seed
 
         self.current_fig = None
         self.current_dimensions = None
@@ -172,7 +173,7 @@ class ModelExplorerWidget:
 
     def _add_jitter(self, values, amount=0.01):
         """Add jitter to categorical values to improve visualization."""
-        rng = np.random.default_rng(0)
+        rng = np.random.default_rng(self.seed)
         categories = pd.Categorical(values).codes
         jitter = rng.uniform(-amount, amount, size=len(categories))
         for sign, cat in zip([1, -1], [0, len(categories) - 1]):
