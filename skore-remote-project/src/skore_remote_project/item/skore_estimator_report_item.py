@@ -41,14 +41,7 @@ class Metadata:
 
     @metadata
     def dataset_fingerprint(self):
-        return hash(
-            (
-                self.report.X_train,
-                self.report.y_train,
-                self.report.X_test,
-                self.report.y_test,
-            )
-        )
+        return hash(self.report.y_test)
 
     @metadata
     def ml_task(self):
