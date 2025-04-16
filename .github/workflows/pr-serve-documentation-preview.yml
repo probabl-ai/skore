@@ -1,4 +1,4 @@
-name: serve documentation preview in PR
+name: pr-serve-documentation-preview
 
 on:
   workflow_run:
@@ -12,7 +12,7 @@ concurrency:
 permissions: {}
 
 jobs:
-  serve-documentation-preview:
+  pr-serve-documentation-preview:
     if: ${{ github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     permissions:
