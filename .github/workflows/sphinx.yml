@@ -141,18 +141,6 @@ jobs:
           SOURCE: html/
           DESTINATION: ${{ needs.sphinx-version.outputs.SPHINX_VERSION }}/
 
-      - name: Purge CDN cache
-        shell: bash
-        run: |
-          curl --fail-with-body \
-          -X POST \
-          --url "https://api.bunny.net/purge?url=https%3A%2F%2F${DOMAIN}%2F${VERSION}%2F%2A&async=false" \
-          --header "AccessKey: ${ACCESS_KEY}"
-        env:
-          ACCESS_KEY: ${{ secrets.BUNNY_API_KEY }}
-          DOMAIN: ${{ vars.DOCUMENTATION_DOMAIN }}
-          VERSION: ${{ needs.sphinx-version.outputs.SPHINX_VERSION }}
-
   sphinx-deploy-root-files:
     if: ${{ github.event_name == 'release' }}
     runs-on: ubuntu-latest
@@ -221,8 +209,22 @@ jobs:
           ACTION: copy
           SOURCE: artifacts/
           DESTINATION:
-      - name: Purge CDN cache
-        shell: bash
+
+  sphinx-purge-cdn-cache:
+    runs-on: ubuntu-latest
+    #
+    # Using `if: ${{ (! cancelled()) && contains(needs.*.result, 'success') }}` at
+    # __job level__ doesn't work as expected. It always returns true if one of the needs
+    # , or unfortunately one of their **transitive** needs, satistfies the condition.
+    #
+    # https://github.com/actions/runner/issues/1540
+    #
+    if: ${{ (! cancelled()) && ((needs.sphinx-deploy-html.result == 'success') || (needs.sphinx-deploy-root-files == 'success')) }}
+    needs:
+      - sphinx-deploy-html
+      - sphinx-deploy-root-files
+    steps:
+      - shell: bash
         run: |
           curl --fail-with-body \
           -X POST \
@@ -231,7 +233,6 @@ jobs:
         env:
           PULLZONE: ${{ vars.BUNNY_PULLZONE }}
           ACCESS_KEY: ${{ secrets.BUNNY_API_KEY }}
-          DOMAIN: ${{ vars.DOCUMENTATION_DOMAIN }}
 
   sphinx-clean-artifacts:
     runs-on: ubuntu-latest
