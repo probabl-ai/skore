@@ -17,7 +17,7 @@
   <h3>the scikit-learn sidekick</h3>
 
 Elevate ML Development with Built-in Recommended Practices \
-[Documentation](https://skore.probabl.ai) — [Community](https://discord.probabl.ai) — [YouTube](https://youtube.com/playlist?list=PLSIzlWDI17bTpixfFkooxLpbz4DNQcam3)
+[Documentation](https://docs.skore.probabl.ai) — [Community](https://discord.probabl.ai) — [YouTube](https://youtube.com/playlist?list=PLSIzlWDI17bTpixfFkooxLpbz4DNQcam3)
 
 </div>
 
@@ -114,7 +114,7 @@ You can find information on the latest version [here](https://anaconda.org/conda
     df_get
     ```
 
-Learn more in our [documentation](https://skore.probabl.ai).
+Learn more in our [documentation](https://docs.skore.probabl.ai).
 
 
 ## Contributing
