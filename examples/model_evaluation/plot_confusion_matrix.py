@@ -38,7 +38,9 @@ clf.fit(X_train, y_train)
 # %%
 from skore import EstimatorReport
 
-report = EstimatorReport(clf, X_test=X_test, y_test=y_test)
+report = EstimatorReport(
+    clf, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+)
 
 # %%
 # Exploring available metrics
