@@ -162,8 +162,6 @@ This file is used to be presented on `PyPI <https://pypi.org/project/skore/#desc
 Signing Commits
 ---------------
 
-## Signing Commits
-
 We recommend signing your commits to verify authorship. GitHub supports commit signing using **GPG**, **SSH**, or **S/MIME**. Signed commits are marked as "Verified" on GitHub, providing confidence in the origin of your changes.
 
 For setup instructions and more details, please refer to [GitHub’s guide on signing commits](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits).
