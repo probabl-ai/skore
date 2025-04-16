@@ -69,6 +69,9 @@ sphinx = [
   "sphinx<8.2.0",
   "sphinx_autosummary_accessors",
   "transformers<4.51",  # core dumped on `>=4.51,<4.51.2`
+  "keras_hub",
+  "tensorflow",
+  "tensorflow_datasets",
 ]
 dev = [
   "nbformat",
