@@ -287,8 +287,8 @@ def test_cross_validation_report_flat_index(binary_classification_data):
         "recall_1",
         "roc_auc",
         "brier_score",
-        "fit_time",
-        "predict_time",
+        "fit_time_s",
+        "predict_time_s",
     ]
     assert result.columns.tolist() == [
         "randomforestclassifier_mean",
@@ -970,21 +970,67 @@ def test_cross_validation_timings(
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
     timings = report.metrics.timings(aggregate=aggregate)
     assert isinstance(timings, pd.DataFrame)
+
     assert timings.index.tolist() == ["Fit time"]
     assert timings.columns.tolist() == expected_columns
+
+    repr_str = repr(timings)
+    assert "Fit time (s)" in repr_str
 
     report.metrics.report_metrics(data_source="train")
     timings = report.metrics.timings(aggregate=aggregate)
     assert isinstance(timings, pd.DataFrame)
+
     assert timings.index.tolist() == ["Fit time", "Predict time train"]
     assert timings.columns.tolist() == expected_columns
+
+    repr_str = repr(timings)
+    assert "Fit time (s)" in repr_str
+    assert "Predict time train (s)" in repr_str
 
     report.metrics.report_metrics(data_source="test")
     timings = report.metrics.timings(aggregate=aggregate)
     assert isinstance(timings, pd.DataFrame)
+
     assert timings.index.tolist() == [
         "Fit time",
         "Predict time train",
         "Predict time test",
     ]
     assert timings.columns.tolist() == expected_columns
+
+    repr_str = repr(timings)
+    assert "Fit time (s)" in repr_str
+    assert "Predict time train (s)" in repr_str
+    assert "Predict time test (s)" in repr_str
+
+
+def test_cross_validation_timings_flat_index(binary_classification_data):
+    """Check the behaviour of the `timings` method with flat_index=True."""
+    estimator, X, y = binary_classification_data
+    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
+
+    report.metrics.report_metrics(data_source="train")
+    report.metrics.report_metrics(data_source="test")
+
+    timings = report.metrics.timings(flat_index=True)
+    assert isinstance(timings, pd.DataFrame)
+
+    assert timings.index.tolist() == [
+        "Fit time_s",
+        "Predict time train_s",
+        "Predict time test_s",
+    ]
+
+    repr_str = repr(timings)
+    assert "Fit time_s" in repr_str
+    assert "Predict time train_s" in repr_str
+    assert "Predict time test_s" in repr_str
+    assert "Fit time (s)" not in repr_str
+
+    results = report.metrics.report_metrics(flat_index=True)
+
+    time_indices = [idx for idx in results.index if "time" in idx]
+    for idx in time_indices:
+        assert idx.endswith("_s")
+        assert "(s)" not in idx

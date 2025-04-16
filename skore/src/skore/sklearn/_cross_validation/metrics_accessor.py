@@ -154,6 +154,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
                 results.columns = flatten_multi_index(results.columns)
             if isinstance(results.index, pd.MultiIndex):
                 results.index = flatten_multi_index(results.index)
+            if isinstance(results.index, pd.Index):
+                results.index = results.index.str.replace(r"\(s\)", "_s", regex=True)
         return results
 
     @progress_decorator(description="Compute metric for each split")
@@ -256,6 +258,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
     def timings(
         self,
         aggregate: Optional[Aggregate] = ("mean", "std"),
+        flat_index: bool = False,
     ) -> pd.DataFrame:
         """Get all measured processing times related to the estimator.
 
@@ -267,6 +270,11 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         ----------
         aggregate : {"mean", "std"} or list of such str, default=None
             Function to aggregate the timings across the cross-validation splits.
+
+        flat_index : bool, default=False
+            Whether to return a DataFrame with a flat index using _s suffix for time
+            units instead of (s). This is useful for programmatic access to the
+            DataFrame.
 
         Returns
         -------
@@ -290,6 +298,12 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         Fit time (s)                 ...       ...
         Predict time test (s)        ...       ...
         Predict time train (s)       ...       ...
+        >>> # With flat_index for programmatic access
+        >>> report.metrics.timings(flat_index=True)
+                                    mean       std
+        Fit time_s                   ...       ...
+        Predict time test_s          ...       ...
+        Predict time train_s         ...       ...
         """
         timings: pd.DataFrame = pd.concat(
             [
@@ -304,9 +318,39 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
                 aggregate = [aggregate]
             timings = timings.aggregate(func=aggregate, axis=1)
         timings.index = timings.index.str.replace("_", " ").str.capitalize()
-        timings.index = timings.index.str.replace(r"(Fit time|Predict time.*)$", r"\1 (s)", regex=True)
 
-        return timings
+        class TimingsDataFrame(pd.DataFrame):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self._index_without_units = self.index.copy()
+
+            def _repr_html_(self):
+                df_display = self.copy()
+                df_display.index = df_display.index.str.replace(
+                    r"(Fit time|Predict time.*)$", r"\1 (s)", regex=True
+                )
+                return df_display._repr_html_()
+
+            def __repr__(self):
+                df_display = self.copy()
+                df_display.index = df_display.index.str.replace(
+                    r"(Fit time|Predict time.*)$", r"\1 (s)", regex=True
+                )
+                return df_display.__repr__()
+
+        result = TimingsDataFrame(timings)
+
+        if flat_index:
+            flat_result = result.copy()
+            flat_result.index = pd.Index(
+                [
+                    f"{idx}_s" if "time" in idx.lower() else idx
+                    for idx in flat_result.index
+                ]
+            )
+            return flat_result
+
+        return result
 
     @available_if(_check_estimator_report_has_method("metrics", "accuracy"))
     def accuracy(
