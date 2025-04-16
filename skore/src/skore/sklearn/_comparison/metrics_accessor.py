@@ -105,6 +105,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         flat_index : bool, default=False
             Whether to flatten the `MultiIndex` columns. Flat index will always be lower
             case, do not include spaces and remove the hash symbol to ease indexing.
+            Unit suffixes like (s) will be replaced with _s for programmatic access.
 
         Returns
         -------
@@ -163,6 +164,8 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 results.columns = flatten_multi_index(results.columns)
             if isinstance(results.index, pd.MultiIndex):
                 results.index = flatten_multi_index(results.index)
+            if isinstance(results.index, pd.Index):
+                results.index = results.index.str.replace(r"\(s\)", "_s", regex=True)
         return results
 
     @progress_decorator(description="Compute metric for each split")
@@ -243,12 +246,19 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             self._parent._cache[cache_key] = results
         return results
 
-    def timings(self) -> pd.DataFrame:
+    def timings(self, flat_index: bool = False) -> pd.DataFrame:
         """Get all measured processing times related to the different estimators.
 
         The index of the returned dataframe is the name of the processing time. When
         the estimators were not used to predict, no timings regarding the prediction
         will be present.
+
+        Parameters
+        ----------
+        flat_index : bool, default=False
+            Whether to return a DataFrame with a flat index using _s suffix for time
+            units instead of (s). This is useful for programmatic access to the
+            DataFrame.
 
         Returns
         -------
@@ -291,6 +301,12 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Fit time (s)               ...       ...
         Predict time test (s)      ...       ...
         Predict time train (s)     ...       ...
+        >>> # With flat_index for programmatic access
+        >>> report.metrics.timings(flat_index=True)
+                                model1    model2
+        Fit time_s                 ...       ...
+        Predict time test_s        ...       ...
+        Predict time train_s       ...       ...
         """
         timings: pd.DataFrame = pd.concat(
             [
@@ -301,7 +317,15 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             keys=self._parent.report_names_,
         )
         timings.index = timings.index.str.replace("_", " ").str.capitalize()
-        timings.index = timings.index.str.replace(r"(Fit time|Predict time.*)$", r"\1 (s)", regex=True)
+
+        if flat_index:
+            timings.index = pd.Index(
+                [f"{idx}_s" if "time" in idx.lower() else idx for idx in timings.index]
+            )
+        else:
+            timings.index = timings.index.str.replace(
+                r"(Fit time|Predict time.*)$", r"\1 (s)", regex=True
+            )
 
         return timings
 
