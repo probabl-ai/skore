@@ -539,10 +539,10 @@ def add_y_true_pred(model_report, split):
         data_source=split, response_method="predict"
     )
 
-    # computing the squarred error at the sample level
+    # computing the squared error at the sample level
     squared_error_split = (y_split_true - y_split_pred) ** 2
 
-    # adding the squarred error to our dataframes
+    # adding the squared error to our dataframes
     X_split.insert(X_split.shape[1], "squared_error", squared_error_split)
 
     # adding the true values and the predictions
