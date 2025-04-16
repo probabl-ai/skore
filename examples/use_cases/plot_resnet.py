@@ -7,6 +7,12 @@ Deep learning with skore: Resnet on ImageNet
 
 This example shows how to apply skore for deep learning, with Resnet on ImageNet.
 This is a multi-class classification task.
+
+TODO: add the following to ``skore/pyproject.toml`` in ``sphinx``:
+
+- "keras_hub"
+- "tensorflow"
+- "tensorflow_datasets"
 """
 
 # %%
