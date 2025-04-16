@@ -99,35 +99,6 @@ class Metadata(pd.DataFrame):
                 for id in ids
             ]
 
-    def to_frame(self, filter: bool = True) -> pd.DataFrame:
-        """Convert this MetaDataFrame to a regular pandas DataFrame.
-
-        This method creates a standard pandas DataFrame containing the same
-        data as this MetaDataFrame, without the enhanced visualization
-        capabilities.
-
-        Parameters
-        ----------
-        filter : bool, default=True
-            If True, the DataFrame will be filtered according to the current
-            selection in the parallel coordinates plot.
-
-        Returns
-        -------
-        pandas.DataFrame
-            A standard pandas DataFrame containing the same data.
-        """
-        df = pd.DataFrame(self)
-
-        if not hasattr(self, "_plot_widget"):
-            return df
-
-        if filter:
-            query_string = self.query_string_selection()
-            return df.query(query_string)
-
-        return df
-
     def _repr_html_(self):
         """Display the interactive plot and controls."""
         self._plot_widget = ModelExplorerWidget(dataframe=self)
