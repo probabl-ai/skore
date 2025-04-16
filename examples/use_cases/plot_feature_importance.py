@@ -506,51 +506,65 @@ plot_map(X_train_plot, "clustering_labels")
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 # %%
-# Computing the prediction error at the sample level, named ``squared_error``, on the train and test sets:
+# We compute the prediction squared error at the sample level, named ``squared_error``,
+# on the train and test sets:
+
 
 # %%
+def add_y_true_pred(model_report, split):
+    """
+    Concatenating the design matrix (`X`) with the actual targets (`y`)
+        and predicted ones (`y_pred`) from a fitted skore estimator report,
+        either on train or test set.
+    """
 
-# retrieving the predictions
-y_train_pred = engineered_ridge_report.get_predictions(
-    data_source="train", response_method="predict"
-)
-y_test_pred = engineered_ridge_report.get_predictions(
-    data_source="test", response_method="predict"
-)
+    if split == "train":
+        y_split_true = model_report.y_train
+        X_split = model_report.X_train.copy()
+    elif split == "test":
+        y_split_true = model_report.y_test
+        X_split = model_report.X_test.copy()
+    else:
+        assert False, "split must be either `train`, or `test`"
 
-# computing the squarred error at the sample level
-squared_error_train = (y_train - y_train_pred) ** 2
-squared_error_test = (y_test - y_test_pred) ** 2
+    # adding a `split` feature
+    X_split.insert(0, "split", split)
 
-# adding the squarred error to our dataframes
-X_train_plot.insert(0, "squared_error", squared_error_train)
-X_test_plot = X_test.copy()
-X_test_plot.insert(0, "squared_error", squared_error_test)
+    # retrieving the predictions
+    y_split_pred = model_report.get_predictions(
+        data_source=split, response_method="predict"
+    )
 
-# adding the true values and the predictions
-X_y_train_plot = X_train_plot.copy()
-X_y_train_plot.insert(X_y_train_plot.shape[1], "y_true", y_train)
-X_y_train_plot.insert(X_y_train_plot.shape[1], "y_pred", y_train_pred)
-X_y_test_plot = X_test_plot.copy()
-X_y_test_plot.insert(X_y_test_plot.shape[1], "y_true", y_test)
-X_y_test_plot.insert(X_y_test_plot.shape[1], "y_pred", y_test_pred)
+    # computing the squarred error at the sample level
+    squared_error_split = (y_split_true - y_split_pred) ** 2
 
-# concatenating
-X_y_train_plot.insert(0, "split", "train")
-X_y_test_plot.insert(0, "split", "test")
+    # adding the squarred error to our dataframes
+    X_split.insert(X_split.shape[1], "squared_error", squared_error_split)
+
+    # adding the true values and the predictions
+    X_y_split = X_split.copy()
+    X_y_split.insert(X_y_split.shape[1], "y_true", y_split_true)
+    X_y_split.insert(X_y_split.shape[1], "y_pred", y_split_pred)
+    return X_y_split
+
+
+# %%
+X_y_train_plot = add_y_true_pred(engineered_ridge_report, "train")
+X_y_test_plot = add_y_true_pred(engineered_ridge_report, "test")
 X_y_plot = pd.concat([X_y_train_plot, X_y_test_plot])
 X_y_plot.sample(10)
 
 # %%
-# Visualizing the distributions:
+# We visualize the distributions of the prediction errors on both train and test sets:
 
 # %%
-sns.histplot(data=X_y_plot, x="squared_error", hue="split", bins=30)
+sns.histplot(data=X_y_plot, x="squared_error", hue="split", bins=30, alpha=0.5)
 plt.title("Train and test sets")
 plt.show()
 
 # %%
-# Let us look into the associations between the ``squared_error`` and the other features:
+# Now, in order to assess which features might drive the prediction error, let us look
+# into the associations between the ``squared_error`` and the other features:
 
 # %%
 from skrub import column_associations
@@ -558,14 +572,16 @@ from skrub import column_associations
 column_associations(X_y_plot).query("left_column_name == 'squared_error'")
 
 # %%
-# We observe that the ``AveOccup`` leads a large squared error: our model is not able to deal well with that feature.
+# We observe that the ``AveOccup`` featyre leads to large prediction errors: our model
+# is not able to deal well with that feature:
 
 # %%
 fig = px.scatter(X_y_plot, x="AveOccup", y="squared_error", color="split")
 fig
 
 # %%
-# We observe that we have a large prediction errors for districts near the sea and big cities:
+# We observe that we have large prediction errors for districts near the coast and big
+# cities:
 
 # %%
 threshold = X_y_plot["squared_error"].quantile(0.95)  # out of the train and test sets
