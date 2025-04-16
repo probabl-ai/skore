@@ -506,6 +506,10 @@ plot_map(X_train_plot, "clustering_labels")
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 # %%
+# After feature importance, we now try to understand why our model predicts badly some
+# samples, in order to iterate on our estimator pipeline and improve it.
+
+# %%
 # We compute the prediction squared error at the sample level, named ``squared_error``,
 # on the train and test sets:
 
@@ -515,7 +519,7 @@ def add_y_true_pred(model_report, split):
     """
     Concatenating the design matrix (`X`) with the actual targets (`y`)
         and predicted ones (`y_pred`) from a fitted skore estimator report,
-        either on train or test set.
+        either on  the train or the test set.
     """
 
     if split == "train":
@@ -572,12 +576,16 @@ from skrub import column_associations
 column_associations(X_y_plot).query("left_column_name == 'squared_error'")
 
 # %%
-# We observe that the ``AveOccup`` featyre leads to large prediction errors: our model
+# We observe that the ``AveOccup`` feature leads to large prediction errors: our model
 # is not able to deal well with that feature:
 
 # %%
 fig = px.scatter(X_y_plot, x="AveOccup", y="squared_error", color="split")
 fig
+
+# %%
+# Hence, it might be worth it to dive deep into the ``AveOccup`` feature, for
+# example its outliers.
 
 # %%
 # We observe that we have large prediction errors for districts near the coast and big
@@ -588,7 +596,11 @@ threshold = X_y_plot["squared_error"].quantile(0.95)  # out of the train and tes
 plot_map(X_y_plot.query(f"squared_error > {threshold}"), "split")
 
 # %%
-# Most of our very bad predictions underpredict the true value:
+# Hence, it could make sense to engineer two new features: the distance to the coast
+# and the distance to big cities.
+#
+# Most of our very bad predictions underpredict the true value (``y_true`` is more often
+# larger than ``y_pred``):
 
 # %%
 
