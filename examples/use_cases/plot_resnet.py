@@ -14,22 +14,23 @@ This is a multi-class classification task.
 # parallelism and backend conflicts in Keras/TensorFlow workflows:
 
 # %%
-import os
+IS_EXECUTE = False
 
-os.environ["POLARS_ALLOW_FORKING_THREAD"] = "1"
-os.environ["TOKENIZERS_PARALLELISM"] = "false"
-os.environ["KERAS_BACKEND"] = "torch"
+# %%
+if IS_EXECUTE:
+    import os
+
+    os.environ["POLARS_ALLOW_FORKING_THREAD"] = "1"
+    os.environ["TOKENIZERS_PARALLELISM"] = "false"
+    os.environ["KERAS_BACKEND"] = "torch"
 
 # %%
 # Let us load a pretrained ResNet-50 model with ImageNet weights:
 
 # %%
-IS_EXECUTE = False
-
-# %%
-import keras_hub
-
 if IS_EXECUTE:
+    import keras_hub
+
     classifier = keras_hub.models.ImageClassifier.from_preset(
         "resnet_50_imagenet",
         activation="softmax",
@@ -40,10 +41,10 @@ if IS_EXECUTE:
     classifier.summary()
 
 # %%
-import tensorflow as tf
-import tensorflow_datasets as tfds
-
 if IS_EXECUTE:
+    import tensorflow as tf
+    import tensorflow_datasets as tfds
+
     dataset, info = tfds.load(
         "imagenet_v2", with_info=True, split="test", as_supervised=True
     )
@@ -60,9 +61,9 @@ if IS_EXECUTE:
     labels = tf.stack(labels)
 
 # %%
-from skore import EstimatorReport
-
 if IS_EXECUTE:
+    from skore import EstimatorReport
+
     reporter = EstimatorReport(classifier, fit=False)
 
 # %%
@@ -70,10 +71,10 @@ if IS_EXECUTE:
     reporter.help()
 
 # %%
-import numpy as np
-from sklearn.metrics import top_k_accuracy_score
-
 if IS_EXECUTE:
+    import numpy as np
+    from sklearn.metrics import top_k_accuracy_score
+
     reporter.metrics.custom_metric(
         metric_function=top_k_accuracy_score,
         response_method="predict",
@@ -86,22 +87,17 @@ if IS_EXECUTE:
     )
 
 # %%
-from sklearn.metrics import make_scorer
-
-
-def top_1_accuracy(y_true, y_pred, labels):
-    return top_k_accuracy_score(y_true, y_pred, k=1, labels=labels)
-
-
 if IS_EXECUTE:
+    from sklearn.metrics import make_scorer
+
+    def top_1_accuracy(y_true, y_pred, labels):
+        return top_k_accuracy_score(y_true, y_pred, k=1, labels=labels)
+
     top_1_accuracy_scorer = make_scorer(top_1_accuracy, labels=np.arange(1_000))
 
+    def top_5_accuracy(y_true, y_pred, labels):
+        return top_k_accuracy_score(y_true, y_pred, k=5, labels=labels)
 
-def top_5_accuracy(y_true, y_pred, labels):
-    return top_k_accuracy_score(y_true, y_pred, k=5, labels=labels)
-
-
-if IS_EXECUTE:
     top_5_accuracy_scorer = make_scorer(top_5_accuracy, labels=np.arange(1_000))
 
 # %%
@@ -116,11 +112,11 @@ if IS_EXECUTE:
 
 
 # %%
-def top_10_accuracy(y_true, y_pred, labels):
-    return top_k_accuracy_score(y_true, y_pred, k=10, labels=labels)
-
-
 if IS_EXECUTE:
+
+    def top_10_accuracy(y_true, y_pred, labels):
+        return top_k_accuracy_score(y_true, y_pred, k=10, labels=labels)
+
     top_10_accuracy_scorer = make_scorer(top_10_accuracy, labels=np.arange(1_000))
 
 # %%
