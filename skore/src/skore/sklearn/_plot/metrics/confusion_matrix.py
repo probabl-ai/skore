@@ -97,7 +97,7 @@ class ConfusionMatrixDisplay(Display):
         """
         if self.normalize not in (None, "true", "pred", "all"):
             raise ValueError(
-                f"normalize must be one of {{None, 'true', 'pred', 'all'}}, "
+                "normalize must be one of None, 'true', 'pred', 'all'; "
                 f"got {self.normalize!r}"
             )
         plt.rcParams.update(DEFAULT_STYLE)
@@ -110,14 +110,15 @@ class ConfusionMatrixDisplay(Display):
         cm = self.confusion_matrix
         n_classes = cm.shape[0]
 
-        if self.normalize:
-            with np.errstate(all="ignore"):
-                if self.normalize == "true":
-                    cm = cm / cm.sum(axis=1, keepdims=True)
-                elif self.normalize == "pred":
-                    cm = cm / cm.sum(axis=0, keepdims=True)
-                else:
-                    cm = cm / cm.sum()
+        with np.errstate(all="ignore"):
+            if self.normalize == "true":
+                cm = cm / cm.sum(axis=1, keepdims=True)
+            elif self.normalize == "pred":
+                cm = cm / cm.sum(axis=0, keepdims=True)
+            elif self.normalize == "all":
+                cm = cm / cm.sum()
+            else:  # None
+                pass
 
         self.confusion_matrix = cm
 
