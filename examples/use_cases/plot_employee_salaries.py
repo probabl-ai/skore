@@ -124,7 +124,8 @@ model
 # Let us compute the cross-validation report for this model using :class:`skore.CrossValidationReport`:
 from skore import CrossValidationReport
 
-report = CrossValidationReport(estimator=model, X=df, y=y, cv_splitter=5, n_jobs=4)
+# Example code where the list might be populated
+report = CrossValidationReport(estimator=model, X=df, y=y, cv_splitter=42)
 report.help()
 
 # %%
