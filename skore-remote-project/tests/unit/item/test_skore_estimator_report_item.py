@@ -1,5 +1,6 @@
-from io import BytesIO
 import json
+from io import BytesIO
+
 import joblib
 from numpy.testing import assert_array_equal
 from pytest import fixture, raises
@@ -179,7 +180,7 @@ class TestSkoreEstimatorReportItem:
                     "key": "prediction_error",
                     "category": "performance",
                     "attributes": {"data_source": "train"},
-                    "parameters": {"class": "MatplotlibFigureItem", "parameters": None},
+                    "parameters": {},
                     "representation": {
                         "media_type": "image/svg+xml;base64",
                         "value": None,
@@ -189,7 +190,7 @@ class TestSkoreEstimatorReportItem:
                     "key": "prediction_error",
                     "category": "performance",
                     "attributes": {"data_source": "test"},
-                    "parameters": {"class": "MatplotlibFigureItem", "parameters": None},
+                    "parameters": {},
                     "representation": {
                         "media_type": "image/svg+xml;base64",
                         "value": None,
@@ -199,7 +200,7 @@ class TestSkoreEstimatorReportItem:
                     "key": "permutation",
                     "category": "feature_importance",
                     "attributes": {"data_source": "train", "method": "permutation"},
-                    "parameters": {"class": "PandasDataFrameItem", "parameters": None},
+                    "parameters": {},
                     "representation": {
                         "media_type": "application/vnd.dataframe",
                         "value": None,
@@ -209,7 +210,7 @@ class TestSkoreEstimatorReportItem:
                     "key": "permutation",
                     "category": "feature_importance",
                     "attributes": {"data_source": "test", "method": "permutation"},
-                    "parameters": {"class": "PandasDataFrameItem", "parameters": None},
+                    "parameters": {},
                     "representation": {
                         "media_type": "application/vnd.dataframe",
                         "value": None,
@@ -219,7 +220,7 @@ class TestSkoreEstimatorReportItem:
                     "key": "coefficients",
                     "category": "feature_importance",
                     "attributes": {"method": "coefficients"},
-                    "parameters": {"class": "PandasDataFrameItem", "parameters": None},
+                    "parameters": {},
                     "representation": {
                         "media_type": "application/vnd.dataframe",
                         "value": None,
@@ -229,7 +230,7 @@ class TestSkoreEstimatorReportItem:
                     "key": "estimator_html_repr",
                     "category": "model",
                     "attributes": {},
-                    "parameters": {"class": "MediaItem", "parameters": None},
+                    "parameters": {},
                     "representation": {"media_type": "text/html", "value": None},
                 },
             ]
@@ -240,7 +241,6 @@ class TestSkoreEstimatorReportItem:
 
         def clean(representation):
             for item in representation["related_items"]:
-                item["parameters"]["parameters"] = None
                 item["representation"]["value"] = None
             return representation
 

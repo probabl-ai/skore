@@ -5,7 +5,6 @@ from urllib.parse import urljoin
 
 import httpx
 
-
 URI = environ.get("SKORE_HUB_URI", "https://skh.k.probabl.dev")
 Client = partial(
     httpx.Client,
