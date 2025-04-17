@@ -1,64 +1,100 @@
+from typing import Any, Optional, Union, cast
+
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 from IPython.display import clear_output, display
 from ipywidgets import widgets
-from plotly.graph_objects import FigureWidget
 
 
 class ModelExplorerWidget:
     """
     Widget for interactive parallel coordinate plots of ML experiment metadata.
 
-    This class handles the creation and management of interactive widgets
-    and the parallel coordinate plot for exploring ML experiment data.
+    This class creates and manages interactive widgets and parallel coordinate plots
+    for visually exploring machine learning experiment results. It allows users to
+    filter and compare experiments across different metrics, learners, and datasets.
 
     Parameters
     ----------
     dataframe : pd.DataFrame
-        The dataframe containing the experiment metadata.
-    dimension_to_column : dict
-        Mapping from display names to dataframe column names.
-    column_to_dimension : dict
-        Mapping from dataframe column names to display names.
-    invert_colormap : list
-        List of metrics where lower values are better (for inverting colormap).
-    clf_datasets : list
-        List of classification dataset names.
-    reg_datasets : list
-        List of regression dataset names.
+        The dataframe containing the experiment metadata with columns for metrics,
+        learners, datasets, and ML task types.
+    seed : int, default=0
+        Random seed for jittering categorical columns to improve visualization.
+
+    Attributes
+    ----------
+    current_fig : go.FigureWidget or None
+        The currently displayed plotly figure.
+    current_selection : dict
+        Dictionary containing the current user selection criteria.
     """
 
-    def __init__(
-        self,
-        dataframe,
-        dimension_to_column,
-        column_to_dimension,
-        invert_colormap,
-    ):
-        self.df = dataframe
-        self.dimension_to_column = dimension_to_column
-        self.column_to_dimension = column_to_dimension
-        self.invert_colormap = invert_colormap
+    _plot_width: int = 800
+    _metrics: dict[str, dict[str, Union[str, bool]]] = {
+        "fit_time": {
+            "name": "Fit Time",
+            "greater_is_better": False,
+            "type": "time",
+            "show": False,
+        },
+        "predict_time": {
+            "name": "Predict Time",
+            "greater_is_better": False,
+            "type": "time",
+            "show": False,
+        },
+        "rmse": {
+            "name": "RMSE",
+            "greater_is_better": False,
+            "type": "regression",
+            "show": True,
+        },
+        "median_absolute_error": {
+            "name": "Median Absolute Error",
+            "greater_is_better": False,
+            "type": "regression",
+            "show": True,
+        },
+        "log_loss": {
+            "name": "Log Loss",
+            "greater_is_better": False,
+            "type": "classification",
+            "show": True,
+        },
+        "mean_average_precision": {
+            "name": "Mean Average Precision",
+            "greater_is_better": True,
+            "type": "classification",
+            "show": True,
+        },
+        "macro_roc_auc": {
+            "name": "Macro ROC AUC",
+            "greater_is_better": True,
+            "type": "classification",
+            "show": True,
+        },
+    }
+    _dimension_to_column: dict[str, str] = {
+        cast(str, v["name"]): k for k, v in _metrics.items()
+    }
 
-        # Initialize attributes
-        self.current_fig = None
-        self.current_dimensions = None
-        self.current_selection = {}
+    def __init__(self, dataframe: pd.DataFrame, seed: int = 0) -> None:
+        self.dataframe = dataframe
+        self.seed = seed
 
-        classification_metrics = ["macro ROC AUC", "Log Loss"]
-        regression_metrics = ["RMSE"]
-        time_metrics = ["Fit Time", "Predict Time"]
+        self.current_fig: Optional[go.FigureWidget] = None
+        self.current_selection: dict[str, Any] = {}
 
-        self._clf_datasets = self.df.query("ml_task.str.contains('classification')")[
-            "dataset"
-        ].unique()
-        self._reg_datasets = self.df.query("ml_task.str.contains('regression')")[
-            "dataset"
-        ].unique()
+        self._clf_datasets: np.ndarray = self.dataframe.query(
+            "ml_task == 'classification'"
+        )["dataset"].unique()
+        self._reg_datasets: np.ndarray = self.dataframe.query(
+            "ml_task == 'regression'"
+        )["dataset"].unique()
 
-        # Initialize widgets
-        self.task_dropdown = widgets.Dropdown(
+        self._task_dropdown = widgets.Dropdown(
             options=[
                 ("Classification", "classification"),
                 ("Regression", "regression"),
@@ -69,454 +105,190 @@ class ModelExplorerWidget:
             layout=widgets.Layout(width="200px"),
         )
 
-        # Create dataset dropdown that will update based on task
-        self.dataset_dropdown = widgets.Dropdown(
+        self._dataset_dropdown = widgets.Dropdown(
             options=self._clf_datasets,
             description="Dataset:",
             disabled=False,
             layout=widgets.Layout(width="250px"),
         )
 
-        # Initialize metric checkboxes as dictionaries
-        self.metric_checkboxes = {"classification": {}, "regression": {}}
+        self._metric_checkboxes: dict[str, dict[str, widgets.Checkbox]] = {
+            "classification": {},
+            "regression": {},
+        }
+        for metric in self._metrics:
+            default_value = self._metrics[metric]["show"]
+            metric_type = cast(str, self._metrics[metric]["type"])
+            if metric_type in self._metric_checkboxes:
+                self._metric_checkboxes[metric_type][metric] = widgets.Checkbox(
+                    indent=False,
+                    value=default_value,
+                    description=cast(str, self._metrics[metric]["name"]),
+                    disabled=False,
+                    layout=widgets.Layout(width="auto", margin="0px 10px 0px 0px"),
+                )
+            else:
+                for metric_type in self._metric_checkboxes:
+                    self._metric_checkboxes[metric_type][metric] = widgets.Checkbox(
+                        indent=False,
+                        value=default_value,
+                        description=cast(str, self._metrics[metric]["name"]),
+                        disabled=False,
+                        layout=widgets.Layout(width="auto", margin="0px 10px 0px 0px"),
+                    )
 
-        # Create classification metric checkboxes
-        for metric in classification_metrics + time_metrics:
-            default_value = metric not in time_metrics
-            self.metric_checkboxes["classification"][metric] = widgets.Checkbox(
-                indent=False,
-                value=default_value,
-                description=metric,
-                disabled=False,
-                layout=widgets.Layout(width="auto", margin="0px 10px 0px 0px"),
-            )
-
-        # Create regression metric checkboxes
-        for metric in regression_metrics + time_metrics:
-            default_value = metric not in time_metrics
-            self.metric_checkboxes["regression"][metric] = widgets.Checkbox(
-                indent=False,
-                value=default_value,
-                description=metric,
-                disabled=False,
-                layout=widgets.Layout(width="auto", margin="0px 10px 0px 0px"),
-            )
-
-        # Create color metric dropdowns
-        self.color_metric_dropdown = {
+        metrics_for_classification = [
+            metric
+            for metric in self._metrics
+            if self._metrics[metric]["type"] in ("classification", "time")
+        ]
+        metrics_for_regression = [
+            metric
+            for metric in self._metrics
+            if self._metrics[metric]["type"] in ("regression", "time")
+        ]
+        self._color_metric_dropdown: dict[str, widgets.Dropdown] = {
             "classification": widgets.Dropdown(
-                options=classification_metrics + time_metrics,
-                value="Log Loss",  # Default for classification
+                options=[
+                    cast(str, self._metrics[metric]["name"])
+                    for metric in metrics_for_classification
+                ],
+                value="Log Loss",
                 description="Color by:",
                 disabled=False,
                 layout=widgets.Layout(width="200px"),
             ),
             "regression": widgets.Dropdown(
-                options=regression_metrics + time_metrics,
-                value="RMSE",  # Default for regression
+                options=[
+                    cast(str, self._metrics[metric]["name"])
+                    for metric in metrics_for_regression
+                ],
+                value="RMSE",
                 description="Color by:",
                 disabled=False,
                 layout=widgets.Layout(width="200px"),
             ),
         }
-
-        # Create containers for metric checkboxes
         self.classification_metrics_box = widgets.HBox(
             [
-                self.metric_checkboxes["classification"][m]
-                for m in classification_metrics + time_metrics
+                self._metric_checkboxes["classification"][metric]
+                for metric in metrics_for_classification
             ]
         )
-
         self.regression_metrics_box = widgets.HBox(
             [
-                self.metric_checkboxes["regression"][m]
-                for m in regression_metrics + time_metrics
+                self._metric_checkboxes["regression"][metric]
+                for metric in metrics_for_regression
             ]
         )
 
-        # Set up callbacks
-        self._setup_callbacks()
-
-        # Output area for the plot
-        self.output = widgets.Output()
-
-    def _setup_callbacks(self):
-        """Set up widget callbacks."""
-        # Task dropdown callback
-        self.task_dropdown.observe(self._on_task_change, names="value")
-
-        # Dataset dropdown callback
-        self.dataset_dropdown.observe(self._update_plot, names="value")
-
-        # Metric checkbox callbacks
-        for task in ["classification", "regression"]:
-            for metric in self.metric_checkboxes[task]:
-                self.metric_checkboxes[task][metric].observe(
-                    self._update_plot, names="value"
-                )
-            # Color metric dropdown callback
-            self.color_metric_dropdown[task].observe(self._update_plot, names="value")
-
-    def _on_task_change(self, change):
-        """Handle task dropdown change event."""
-        task = change["new"]
-
-        # Update dataset dropdown options based on task
-        if task == "classification":
-            self.dataset_dropdown.options = self._clf_datasets
-            if len(self._clf_datasets):
-                self.dataset_dropdown.value = self._clf_datasets[0]
-        else:
-            self.dataset_dropdown.options = self._reg_datasets
-            if len(self._reg_datasets):
-                self.dataset_dropdown.value = self._reg_datasets[0]
-
-        # Update UI visibility
-        self._update_task_widgets()
-
-        # Update the plot
-        self._update_plot()
-
-    def _update_task_widgets(self):
-        """Update widget visibility based on selected task."""
-        task = self.task_dropdown.value
-
-        if task == "classification":
-            self.classification_metrics_box.layout.display = ""
-            self.color_metric_dropdown["classification"].layout.display = ""
-
-            self.regression_metrics_box.layout.display = "none"
-            self.color_metric_dropdown["regression"].layout.display = "none"
-        else:
-            self.classification_metrics_box.layout.display = "none"
-            self.color_metric_dropdown["classification"].layout.display = "none"
-
-            self.regression_metrics_box.layout.display = ""
-            self.color_metric_dropdown["regression"].layout.display = ""
-
-    def _add_jitter(self, values, amount=0.05):
-        """
-        Add jitter to categorical values to improve visualization.
-
-        Applies asymmetric jitter for edge values to ensure selection works properly:
-        - Lowest category gets only positive jitter
-        - Highest category gets only negative jitter
-        - Middle categories get balanced jitter
-        """
-        # Convert to categorical codes (0, 1, 2, etc.)
-        categories = pd.Categorical(values).codes
-
-        # Get unique category codes
-        unique_codes = np.unique(categories)
-        min_code = unique_codes.min()
-        max_code = unique_codes.max()
-
-        # Initialize jitter array
-        jitter = np.zeros_like(categories, dtype=float)
-
-        # Apply appropriate jitter based on position
-        for code in unique_codes:
-            mask = categories == code
-
-            if code == min_code:  # Bottom category
-                # Apply only positive jitter
-                jitter[mask] = np.random.uniform(0, amount, size=mask.sum())
-            elif code == max_code:  # Top category
-                # Apply only negative jitter
-                jitter[mask] = np.random.uniform(-amount, 0, size=mask.sum())
-            else:  # Middle categories
-                # Apply balanced jitter
-                jitter[mask] = np.random.uniform(-amount, amount, size=mask.sum())
-
-        return categories + jitter
-
-    def _update_plot(self, change=None):
-        """Update the parallel coordinates plot based on the selected options."""
-        with self.output:
-            clear_output(wait=True)
-
-            task = self.task_dropdown.value
-
-            if (
-                not hasattr(self.dataset_dropdown, "value")
-                or not self.dataset_dropdown.value
-            ):
-                display(widgets.HTML("No dataset available for selected task."))
-                return
-
-            dataset_name = self.dataset_dropdown.value
-
-            # Filter data for the selected dataset
-            filtered_df = self.df[self.df["dataset"] == dataset_name].copy()
-
-            if filtered_df.empty:
-                display(widgets.HTML(f"No data available for dataset: {dataset_name}"))
-                return
-
-            # Get selected metrics and color metric based on task
-            if task == "classification":
-                selected_metrics = [
-                    metric
-                    for metric in self.metric_checkboxes[task]
-                    if self.metric_checkboxes[task][metric].value
-                ]
-                color_metric = self.color_metric_dropdown[task].value
-            else:
-                selected_metrics = [
-                    metric
-                    for metric in self.metric_checkboxes[task]
-                    if self.metric_checkboxes[task][metric].value
-                ]
-                color_metric = self.color_metric_dropdown[task].value
-
-            # Convert display names to column names
-            selected_columns = [self.dimension_to_column[m] for m in selected_metrics]
-            color_column = self.dimension_to_column[color_metric]
-
-            # Create dimensions list in the required order:
-            # 1. Learner
-            # 2. Fit/Predict time metrics
-            # 3. Statistical metrics
-            dimensions = []
-
-            # 1. Add learner with jitter
-            filtered_df["learner_jittered"] = self._add_jitter(filtered_df["learner"])
-            dimensions.append(
-                dict(
-                    label="Learner",
-                    values=filtered_df["learner_jittered"],
-                    ticktext=filtered_df["learner"].unique().tolist(),
-                    tickvals=self._add_jitter(
-                        filtered_df["learner"].unique(), amount=0
-                    ),
-                )
-            )
-
-            # Categorize metrics
-            time_metrics = ["fit_time", "predict_time"]
-            statistical_metrics = [
-                col for col in selected_columns if col not in time_metrics
-            ]
-
-            # 2. Add time metrics
-            for col in time_metrics:
-                if col in selected_columns and not pd.isna(filtered_df[col]).all():
-                    dimensions.append(
-                        dict(
-                            label=self.column_to_dimension[col],
-                            values=filtered_df[col].fillna(0).tolist(),
-                        )
-                    )
-
-            # 3. Add statistical metrics
-            for col in statistical_metrics:
-                if not pd.isna(filtered_df[col]).all():  # Only add if not all NaN
-                    dimensions.append(
-                        dict(
-                            label=self.column_to_dimension[col],
-                            values=filtered_df[col].fillna(0).tolist(),
-                        )
-                    )
-
-            # Create colorscale (invert for metrics where lower is better)
-            colorscale = (
-                "Viridis_r" if color_metric in self.invert_colormap else "Viridis"
-            )
-
-            # Create the figure
-            fig = go.Figure(
-                data=go.Parcoords(
-                    line=dict(
-                        color=filtered_df[color_column].fillna(0).tolist(),
-                        colorscale=colorscale,
-                        showscale=True,
-                        colorbar=dict(title=color_metric),
-                    ),
-                    dimensions=dimensions,
-                    labelangle=-30,
-                )
-            )
-
-            # Set consistent width and layout
-            plot_width = 800  # Width in pixels
-
-            fig.update_layout(
-                font=dict(size=16),
-                height=500,  # Increased height to accommodate staggered labels
-                width=plot_width,  # Set fixed width
-                margin=dict(
-                    l=200, r=150, t=120, b=30
-                ),  # Increased top margin for labels
-            )
-
-            # Convert to FigureWidget for interactivity and callbacks
-            f_widget = FigureWidget(fig)
-
-            # Setup callback for selection changes
-            def selection_change_callback(trace, points, selector):
-                self.update_selection()
-
-            # Add callback to detect selection changes
-            f_widget.data[0].on_selection(selection_change_callback)
-
-            # Store current figure and dimensions
-            self.current_fig = f_widget
-            self.current_dimensions = dimensions
-
-            display(f_widget)
-
-    def update_selection(self):
-        """
-        Update the selection based on the current state of the plot.
-        """
-        if not self.current_fig or not hasattr(self.current_fig.data[0], "dimensions"):
-            return self
-
-        # Extract the constraint ranges from the plot data
-        selection_data = {}
-        for i, dim in enumerate(self.current_fig.data[0].dimensions):
-            if hasattr(dim, "constraintrange") and dim.constraintrange:
-                dim_name = dim.label
-                selection_data[dim_name] = dim.constraintrange
-
-        # Store the selection data
-        self.current_selection = selection_data
-        return self
-
-    def create_layout(self):
-        """Create and return the widget layout."""
-        # Set consistent width for controls and plot
-        controls_width = "800px"
-
-        # Create controls layout with specific spacing using GridBox
         controls_header = widgets.GridBox(
             [
-                self.task_dropdown,
-                self.dataset_dropdown,
-                self.color_metric_dropdown["classification"],
-                self.color_metric_dropdown["regression"],
+                self._task_dropdown,
+                self._dataset_dropdown,
+                self._color_metric_dropdown["classification"],
+                self._color_metric_dropdown["regression"],
             ],
             layout=widgets.Layout(
-                width=controls_width,
+                width=f"{self._plot_width}px",
                 grid_template_columns="repeat(4, auto)",
                 grid_gap="5px",
                 align_items="center",
             ),
         )
 
-        # Labels for the different metric types
-        comp_metrics_label_clf = widgets.Label(
-            value="Computation Metrics: ", layout=widgets.Layout(padding="5px 0px")
-        )
-
-        stat_metrics_label_clf = widgets.Label(
-            value="Statistical Metrics: ", layout=widgets.Layout(padding="5px 0px")
-        )
-
-        comp_metrics_label_reg = widgets.Label(
-            value="Computation Metrics: ", layout=widgets.Layout(padding="5px 0px")
-        )
-
-        stat_metrics_label_reg = widgets.Label(
-            value="Statistical Metrics: ", layout=widgets.Layout(padding="5px 0px")
-        )
-
-        # Classification metrics - Using GridBox for better alignment
-        # First row: Computation metrics
         clf_computation_row = widgets.GridBox(
             [
-                comp_metrics_label_clf,
-                self.metric_checkboxes["classification"]["Fit Time"],
-                self.metric_checkboxes["classification"]["Predict Time"],
+                widgets.Label(
+                    value="Computation Metrics: ",
+                    layout=widgets.Layout(padding="5px 0px"),
+                ),
+                self._metric_checkboxes["classification"]["fit_time"],
+                self._metric_checkboxes["classification"]["predict_time"],
             ],
             layout=widgets.Layout(
-                width=controls_width,
+                width=f"{self._plot_width}px",
                 grid_template_columns="200px auto auto",
                 align_items="center",
             ),
         )
-
-        # Second row: Statistical metrics
         clf_statistical_row = widgets.GridBox(
             [
-                stat_metrics_label_clf,
-                self.metric_checkboxes["classification"]["macro ROC AUC"],
-                self.metric_checkboxes["classification"]["Log Loss"],
+                widgets.Label(
+                    value="Statistical Metrics: ",
+                    layout=widgets.Layout(padding="5px 0px"),
+                ),
+                self._metric_checkboxes["classification"]["mean_average_precision"],
+                self._metric_checkboxes["classification"]["macro_roc_auc"],
+                self._metric_checkboxes["classification"]["log_loss"],
             ],
             layout=widgets.Layout(
-                width=controls_width,
+                width=f"{self._plot_width}px",
                 grid_template_columns="200px auto auto auto",
                 align_items="center",
             ),
         )
-
-        # Combined classification metrics container
         self.classification_metrics_box = widgets.GridBox(
             [clf_computation_row, clf_statistical_row],
             layout=widgets.Layout(
-                width=controls_width,
+                width=f"{self._plot_width}px",
                 grid_template_rows="auto auto",
                 grid_gap="5px",
                 align_items="center",
             ),
         )
-
-        # Regression metrics - Using GridBox for better alignment
-        # First row: Computation metrics
         reg_computation_row = widgets.GridBox(
             [
-                comp_metrics_label_reg,
-                self.metric_checkboxes["regression"]["Fit Time"],
-                self.metric_checkboxes["regression"]["Predict Time"],
+                widgets.Label(
+                    value="Computation Metrics: ",
+                    layout=widgets.Layout(padding="5px 0px"),
+                ),
+                self._metric_checkboxes["regression"]["fit_time"],
+                self._metric_checkboxes["regression"]["predict_time"],
             ],
             layout=widgets.Layout(
-                width=controls_width,
+                width=f"{self._plot_width}px",
                 grid_template_columns="200px auto auto",
                 align_items="center",
             ),
         )
-
-        # Second row: Statistical metrics
         reg_statistical_row = widgets.GridBox(
             [
-                stat_metrics_label_reg,
-                self.metric_checkboxes["regression"]["RMSE"],
+                widgets.Label(
+                    value="Statistical Metrics: ",
+                    layout=widgets.Layout(padding="5px 0px"),
+                ),
+                self._metric_checkboxes["regression"]["median_absolute_error"],
+                self._metric_checkboxes["regression"]["rmse"],
             ],
             layout=widgets.Layout(
-                width=controls_width,
+                width=f"{self._plot_width}px",
                 grid_template_columns="200px auto auto",
                 align_items="center",
             ),
         )
-
-        # Combined regression metrics container
         self.regression_metrics_box = widgets.GridBox(
             [reg_computation_row, reg_statistical_row],
             layout=widgets.Layout(
-                width=controls_width,
+                width=f"{self._plot_width}px",
                 grid_template_rows="auto auto",
                 grid_gap="5px",
                 align_items="center",
             ),
         )
-
-        # Create a container for the metrics
         controls_metrics = widgets.GridBox(
             [self.classification_metrics_box, self.regression_metrics_box],
             layout=widgets.Layout(
-                width=controls_width,
+                width=f"{self._plot_width}px",
                 grid_template_rows="auto auto",
                 grid_gap="10px",
                 align_items="center",
             ),
         )
-
-        # Apply consistent width to entire controls container
         controls = widgets.GridBox(
             [controls_header, controls_metrics],
             layout=widgets.Layout(
-                width=controls_width,
+                width=f"{self._plot_width}px",
                 grid_template_rows="auto auto",
                 grid_gap="10px",
                 align_items="center",
@@ -524,29 +296,234 @@ class ModelExplorerWidget:
             ),
         )
 
-        # Apply consistent width to output container and reduce its top margin
-        self.output.layout.width = controls_width
-        self.output.layout.margin = "0px"
+        # callbacks
+        self._task_dropdown.observe(self._on_task_change, names="value")
+        self._dataset_dropdown.observe(self._update_plot, names="value")
+        for task in self._metric_checkboxes:
+            for metric in self._metric_checkboxes[task]:
+                self._metric_checkboxes[task][metric].observe(
+                    self._update_plot, names="value"
+                )
+            self._color_metric_dropdown[task].observe(self._update_plot, names="value")
 
-        # Initialize widget visibility
-        self._update_task_widgets()
-
-        # Create a compact main container with minimal spacing
-        return widgets.VBox(
-            [controls, self.output],
-            layout=widgets.Layout(
-                width=controls_width,
-                spacing="0px",
-            ),
+        self.output = widgets.Output(
+            layout=widgets.Layout(width=f"{self._plot_width}px", margin="0px")
         )
 
-    def display(self):
-        """Display the widgets and initialize the plot."""
-        # Create the layout
-        layout = self.create_layout()
+        self._update_task_widgets()
+        self._layout = widgets.VBox(
+            [controls, self.output],
+            layout=widgets.Layout(width=f"{self._plot_width}px", spacing="0px"),
+        )
 
-        # Display the layout
-        display(layout)
+    def _update_task_widgets(self) -> None:
+        """Update widget visibility based on the currently selected task."""
+        task = self._task_dropdown.value
 
-        # Initialize the plot
+        if task == "classification":
+            self.classification_metrics_box.layout.display = ""
+            self._color_metric_dropdown["classification"].layout.display = ""
+
+            self.regression_metrics_box.layout.display = "none"
+            self._color_metric_dropdown["regression"].layout.display = "none"
+        else:
+            self.classification_metrics_box.layout.display = "none"
+            self._color_metric_dropdown["classification"].layout.display = "none"
+
+            self.regression_metrics_box.layout.display = ""
+            self._color_metric_dropdown["regression"].layout.display = ""
+
+    def _on_task_change(self, change: dict[str, Any]) -> None:
+        """Handle task dropdown change events.
+
+        Updates the dataset dropdown options based on the selected task
+        and refreshes the widget visibility and plot.
+
+        Parameters
+        ----------
+        change : dict[str, Any]
+            dictionary containing information about the widget change,
+            including the new value under the 'new' key.
+        """
+        task = change["new"]
+
+        if task == "classification":
+            self._dataset_dropdown.options = self._clf_datasets
+            if len(self._clf_datasets):
+                self._dataset_dropdown.value = self._clf_datasets[0]
+        else:
+            self._dataset_dropdown.options = self._reg_datasets
+            if len(self._reg_datasets):
+                self._dataset_dropdown.value = self._reg_datasets[0]
+
+        self._update_task_widgets()
         self._update_plot()
+        self.update_selection()
+
+    @staticmethod
+    def _add_jitter_to_categorical(
+        seed: int, categorical_series: pd.Series, amount: float = 0.01
+    ) -> np.ndarray:
+        """Add jitter to categorical values to improve visualization in parallel plots.
+
+        Parameters
+        ----------
+        seed : int
+            Random seed for reproducibility.
+        categorical_series : pd.Series
+            Categorical series to jitter.
+        amount : float, default=0.01
+            Amount of jitter to add.
+
+        Returns
+        -------
+        np.ndarray
+            Array of encoded categorical values with jitter applied.
+        """
+        rng = np.random.default_rng(seed)
+        encoded_categories = categorical_series.cat.codes.to_numpy()
+        jitter = rng.uniform(-amount, amount, size=len(encoded_categories))
+        for sign, cat in zip([1, -1], [0, len(encoded_categories) - 1]):
+            jitter[encoded_categories == cat] = (
+                np.abs(
+                    jitter[encoded_categories == cat],
+                    out=jitter[encoded_categories == cat],
+                )
+                * sign
+            )
+
+        return encoded_categories + jitter
+
+    def _update_plot(self, change: Optional[dict[str, Any]] = None) -> None:
+        """Update the parallel coordinates plot based on the selected options.
+
+        Creates a new plotly figure with dimensions for the selected metrics
+        and displays it in the output area.
+
+        Parameters
+        ----------
+        change : dict, default=None
+            dictionary containing information about a widget change event.
+            Not used directly but required for widget callback compatibility.
+        """
+        with self.output:
+            clear_output(wait=True)
+
+            task = self._task_dropdown.value
+
+            if (
+                not hasattr(self._dataset_dropdown, "value")
+                or not self._dataset_dropdown.value
+            ):
+                display(widgets.HTML("No dataset available for selected task."))
+                return
+
+            df_dataset = self.dataframe.query(
+                "dataset == @self._dataset_dropdown.value"
+            ).copy()
+            for col in df_dataset.select_dtypes(include=["category"]).columns:
+                df_dataset[col] = df_dataset[col].cat.remove_unused_categories()
+
+            selected_metrics = [
+                metric
+                for metric in self._metric_checkboxes[task]
+                if self._metric_checkboxes[task][metric].value
+            ]
+            color_metric = self._dimension_to_column[
+                self._color_metric_dropdown[task].value
+            ]
+
+            dimensions = []
+            dimensions.append(
+                dict(
+                    label="Learner",
+                    values=self._add_jitter_to_categorical(
+                        self.seed, df_dataset["learner"]
+                    ),
+                    ticktext=df_dataset["learner"].cat.categories,
+                    tickvals=np.arange(len(df_dataset["learner"].cat.categories)),
+                )
+            )
+
+            for col in selected_metrics:  # use the order defined in the constructor
+                dimensions.append(
+                    dict(
+                        label=cast(str, self._metrics[col]["name"]),
+                        values=df_dataset[col].fillna(0),
+                    )
+                )
+
+            colorscale = (
+                "Viridis"
+                if cast(bool, self._metrics[color_metric]["greater_is_better"])
+                else "Viridis_r"
+            )
+            fig = go.FigureWidget(
+                data=go.Parcoords(
+                    line=dict(
+                        color=df_dataset[color_metric].fillna(0),
+                        colorscale=colorscale,
+                        showscale=True,
+                        colorbar=dict(
+                            title=cast(str, self._metrics[color_metric]["name"])
+                        ),
+                    ),
+                    dimensions=dimensions,
+                    labelangle=-30,
+                )
+            )
+
+            fig.update_layout(
+                font=dict(size=16),
+                height=500,
+                width=self._plot_width,
+                margin=dict(l=200, r=150, t=120, b=30),
+            )
+
+            fig.data[0].on_selection(self.update_selection)  # callback
+
+            self.current_fig = fig
+            display(fig)
+
+    def update_selection(
+        self, trace=None, points=None, selector=None
+    ) -> "ModelExplorerWidget":
+        """Update the current_selection attribute with the current filter state.
+
+        Parameters
+        ----------
+        trace : trace, default=None
+            The trace that triggered the selection change.
+        points : list, default=None
+            The points affected by the selection change.
+        selector : dict, default=None
+            The selector that triggered the selection change.
+
+        Returns
+        -------
+        ModelExplorerWidget
+            Self for method chaining.
+        """
+        selection_data = {
+            "ml_task": self._task_dropdown.value,
+            "dataset": self._dataset_dropdown.value,
+        }
+
+        if self.current_fig is not None:
+            selection_data.update(
+                {
+                    self._dimension_to_column[dim.label]: dim.constraintrange
+                    for dim in self.current_fig.data[0].dimensions
+                    if hasattr(dim, "constraintrange") and dim.constraintrange
+                }
+            )
+
+        self.current_selection = selection_data
+
+        return self
+
+    def display(self) -> None:
+        """Display the widget interface and initialize the plot."""
+        display(self._layout)
+        self._update_plot()
+        self.update_selection()
