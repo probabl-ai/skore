@@ -13,6 +13,7 @@ class Metadata(pd.DataFrame):
         def dto(summary):
             return dict(
                 (
+                    ("id", summary["id"]),
                     ("run_id", summary["run_id"]),
                     ("ml_task", summary["ml_task"]),
                     ("learner", summary["estimator_class_name"]),
@@ -26,6 +27,7 @@ class Metadata(pd.DataFrame):
                 )
             )
 
+        # Retrieve HUB's metadata
         with AuthenticatedClient(raises=True) as client:
             response = client.get(
                 "/".join(
@@ -40,24 +42,22 @@ class Metadata(pd.DataFrame):
             )
 
         summaries = response.json()
-        summaries = pd.DataFrame(
-            data=pd.DataFrame(
-                map(dto, summaries),
-                index=pd.MultiIndex.from_arrays(
-                    [
-                        pd.RangeIndex(len(summaries)),
-                        pd.Index(
-                            (summary.pop("id") for summary in summaries),
-                            name="id",
-                            dtype=str,
-                        ),
-                    ]
-                ),
-            ),
-            copy=False,
+
+        if not summaries:
+            raise Exception
+
+        # Process the HUB's metadata to be usable by the widget
+        summaries = pd.DataFrame(map(dto, summaries), copy=False)
+        summaries["learner"] = pd.Categorical(summaries["learner"])
+        summaries.index = pd.MultiIndex.from_arrays(
+            [
+                pd.RangeIndex(len(summaries)),
+                pd.Index(summaries.pop("id"), name="id", dtype=str),
+            ]
         )
 
-        metadata = Metadata(summaries)
+        # Cast standard dataframe to Metadata for lazy reports selection.
+        metadata = Metadata(summaries, copy=False)
         metadata.project = project
 
         return metadata

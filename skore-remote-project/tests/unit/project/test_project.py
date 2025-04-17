@@ -39,6 +39,9 @@ class TestProject:
 
         assert Project("<tenant>", "<name>").run_id == "<id>"
 
+    def test_metadata(self):
+        raise NotImplementedError
+
     def test_put_exception(self):
         with raises(TypeError, match="Key must be a string"):
             Project("<tenant>", "<name>").put(None, "<value>")
