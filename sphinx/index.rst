@@ -53,6 +53,17 @@ Skore is just at the beginning of its journey, but we’re shipping fast! Freque
 
 
 .. currentmodule:: skore
+.. rubric:: API Reference Table
+
+.. autosummary::
+   :toctree: reference/generated
+   :caption: Available Functions and Classes
+   :recursive:
+
+   skore.train_test_split
+   skore.EstimatorReport
+   skore.CrossValidationReport
+   skore.ComparisonReport
 
 .. toctree::
    :maxdepth: 1

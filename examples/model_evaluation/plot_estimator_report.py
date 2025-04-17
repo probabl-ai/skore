@@ -302,6 +302,19 @@ report.metrics.report_metrics(
     scoring_kwargs={"amount": amount, "response_method": "predict"},
 )
 
+# Example fix code
+scoring = [make_scorer(fbeta_score, beta=2)]
+
+# Create the EstimatorReport with the custom scoring
+baseline_est = EstimatorReport(
+    baseline,
+    X_train=X_train,
+    y_train=y_train,
+    X_test=X_test,
+    y_test=y_test,
+    scoring=scoring
+)
+
 # %%
 #
 # It could happen that we are interested in providing several custom metrics which
