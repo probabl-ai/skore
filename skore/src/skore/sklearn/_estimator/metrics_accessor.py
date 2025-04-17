@@ -1985,7 +1985,6 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         normalize: Optional[Literal["true", "pred", "all"]] = None,
         values_format: Optional[str] = None,
         ax: Optional[Any] = None,
-        colorbar: bool = True,
     ) -> ConfusionMatrixDisplay:
         """Plot the confusion matrix.
 
@@ -2031,9 +2030,6 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         ax : matplotlib axes, default=None
             Axes object to plot on. If None, a new figure and axes is created.
 
-        colorbar : bool, default=True
-            Whether or not to add a colorbar to the plot.
-
         Returns
         -------
         display : :class:`~skore.sklearn._plot.ConfusionMatrixDisplay`
@@ -2076,5 +2072,4 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             normalize=normalize,
             values_format=values_format,
             ax=ax,
-            colorbar=colorbar,
         )
