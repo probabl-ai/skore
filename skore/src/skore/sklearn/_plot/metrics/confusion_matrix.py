@@ -45,7 +45,6 @@ class ConfusionMatrixDisplay(Display):
             None
         Array of matplotlib text elements containing the values in the
         confusion matrix.
-
     """
 
     @StyleDisplayMixin.style_plot
@@ -57,14 +56,12 @@ class ConfusionMatrixDisplay(Display):
         include_values=True,
         normalize=None,
         values_format=None,
-        ax=None,
     ):
         self.confusion_matrix = confusion_matrix
         self.display_labels = display_labels
         self.include_values = include_values
         self.normalize = normalize
         self.values_format = values_format
-        self.ax = ax
         self.figure_ = None
         self.ax_ = None
         self.text_ = None
@@ -200,6 +197,7 @@ class ConfusionMatrixDisplay(Display):
 
         ax : matplotlib axes, default=None
             Axes object to plot on. If None, a new figure and axes is created.
+            This parameter is passed to the plot method, instead of the constructor.
 
         Returns
         -------
@@ -219,8 +217,12 @@ class ConfusionMatrixDisplay(Display):
             include_values=include_values,
             normalize=normalize,
             values_format=values_format,
-            ax=ax,
         )
+
+        # If ax param is provided, plot with the provided axes
+        if ax is not None:
+            disp.plot(ax=ax)
+
         return disp
 
     def table(self):
