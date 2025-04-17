@@ -96,6 +96,9 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             same parameter name with different values), you can use scikit-learn scorers
             as provided by :func:`sklearn.metrics.make_scorer`.
 
+            Any scikit-learn scoring metric string is also supported (e.g., "neg_mean_squared_error",
+            "neg_log_loss", etc.).
+
         scoring_names : list of str, default=None
             Used to overwrite the default scoring names in the report. It should be of
             the same length as the `scoring` parameter.
@@ -143,6 +146,12 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         Recall                 0.93...         (↗︎)
         ROC AUC                0.99...         (↗︎)
         Brier score            0.03...         (↘︎)
+
+        >>> # Using scikit-learn metrics
+        >>> report.metrics.report_metrics(scoring=["neg_log_loss"])
+                    LogisticRegression
+        Metric
+        Log Loss             -0.10...
         """
         if data_source == "X_y":
             # optimization of the hash computation to avoid recomputing it
@@ -223,27 +232,104 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                 favorability_indicator.append(metric_favorability)
             elif isinstance(metric, str) or callable(metric):
                 if isinstance(metric, str):
-                    err_msg = (
-                        f"Invalid metric: {metric!r}. Please use a valid metric"
-                        " from the list of supported metrics: "
-                        f"{list(self._SCORE_OR_LOSS_INFO.keys())}"
+                    # Allow all scikit-learn metrics by checking for prefix patterns
+                    is_sklearn_metric = metric.startswith(
+                        (
+                            "neg_",
+                            "accuracy",
+                            "adjusted_",
+                            "average_",
+                            "balanced_",
+                            "brier_",
+                            "completeness_",
+                            "explained_",
+                            "f1_",
+                            "fowlkes_",
+                            "homogeneity_",
+                            "jaccard_",
+                            "matthews_",
+                            "max_error",
+                            "mean_",
+                            "median_",
+                            "mutual_",
+                            "normalized_",
+                            "precision_",
+                            "r2_",
+                            "rand_",
+                            "recall_",
+                            "roc_auc_",
+                            "top_k_",
+                        )
                     )
+
+                    # Handle built-in metrics (with underscore prefix)
                     if (
                         metric.startswith("_")
-                        and metric[1:] not in self._SCORE_OR_LOSS_INFO
+                        and metric[1:] in self._SCORE_OR_LOSS_INFO
                     ):
-                        raise ValueError(err_msg)
-                    if not metric.startswith("_"):
-                        if metric not in self._SCORE_OR_LOSS_INFO:
-                            raise ValueError(err_msg)
-                        metric = f"_{metric}"
-                    metric_fn = getattr(self, metric)
-                    metrics_kwargs = {"data_source_hash": data_source_hash}
-                    if metric_name is None:
-                        metric_name = f"{self._SCORE_OR_LOSS_INFO[metric[1:]]['name']}"
-                    metric_favorability = self._SCORE_OR_LOSS_INFO[metric[1:]]["icon"]
+                        metric_fn = getattr(self, metric)
+                        metrics_kwargs = {"data_source_hash": data_source_hash}
+                        if metric_name is None:
+                            metric_name = (
+                                f"{self._SCORE_OR_LOSS_INFO[metric[1:]]['name']}"
+                            )
+                        metric_favorability = self._SCORE_OR_LOSS_INFO[metric[1:]][
+                            "icon"
+                        ]
+
+                    # Handle built-in metrics (without underscore prefix)
+                    elif metric in self._SCORE_OR_LOSS_INFO:
+                        metric_fn = getattr(self, f"_{metric}")
+                        metrics_kwargs = {"data_source_hash": data_source_hash}
+                        if metric_name is None:
+                            metric_name = f"{self._SCORE_OR_LOSS_INFO[metric]['name']}"
+                        metric_favorability = self._SCORE_OR_LOSS_INFO[metric]["icon"]
+
+                    # Handle scikit-learn metrics
+                    elif is_sklearn_metric:
+                        from sklearn.metrics import get_scorer
+
+                        try:
+                            # Try to get a pre-defined sklearn scorer
+                            scorer = get_scorer(metric)
+                            metric_function = scorer._score_func
+                            response_method = scorer._response_method
+
+                            # Create a friendlier display name
+                            display_name = metric
+                            if metric.startswith("neg_"):
+                                display_name = metric[4:].replace("_", " ")
+
+                            # For display purposes, convert neg_* metrics to their positive counterpart name
+                            if metric_name is None:
+                                metric_name = display_name.title()
+
+                            metric_fn = partial(
+                                self._custom_metric,
+                                metric_function=metric_function,
+                                response_method=response_method,
+                            )
+                            metrics_kwargs = {**scorer._kwargs}
+                            metrics_kwargs["data_source_hash"] = data_source_hash
+                            metric_favorability = (
+                                "↘︎" if metric.startswith("neg_") else "↗︎"
+                            )
+                        except ValueError:
+                            raise ValueError(
+                                f"Invalid metric: {metric!r}. Please use a valid metric from the "
+                                f"list of supported metrics: {list(self._SCORE_OR_LOSS_INFO.keys())} "
+                                "or a valid scikit-learn scoring string."
+                            )
+                    else:
+                        raise ValueError(
+                            f"Invalid metric: {metric!r}. Please use a valid metric from the "
+                            f"list of supported metrics: {list(self._SCORE_OR_LOSS_INFO.keys())} "
+                            "or a valid scikit-learn scoring string."
+                        )
+
                     favorability_indicator.append(metric_favorability)
                 else:
+                    # Handle callable metrics
                     metric_fn = partial(self._custom_metric, metric_function=metric)
                     if scoring_kwargs is None:
                         metrics_kwargs = {}
@@ -261,6 +347,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                         metric_name = metric.__name__
                     metric_favorability = ""
                     favorability_indicator.append(metric_favorability)
+
                 metrics_params = inspect.signature(metric_fn).parameters
                 if scoring_kwargs is not None:
                     for param in metrics_params:
