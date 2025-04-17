@@ -7,6 +7,7 @@ from typing import Any, Optional
 
 from .. import item as item_module
 from ..client.client import AuthenticatedClient
+from .metadata import Metadata
 
 
 class Project:
@@ -85,6 +86,9 @@ class Project:
             run = request.json()
 
             return run["id"]
+
+    def metadata(self):
+        return Metadata.factory(self)
 
     def put(
         self,
