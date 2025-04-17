@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.metrics import confusion_matrix as sklearn_confusion_matrix
 
 from skore.sklearn._plot.base import Display
-from skore.sklearn._plot.style import DEFAULT_STYLE
+from skore.sklearn._plot.style import StyleDisplayMixin
 
 
 class ConfusionMatrixDisplay(Display):
@@ -21,9 +21,6 @@ class ConfusionMatrixDisplay(Display):
     include_values : bool, default=True
         Includes values in confusion matrix.
 
-    cmap : str or matplotlib Colormap, default='viridis'
-        Colormap used for confusion matrix. If None, 'viridis' is used.
-
     normalize : {'true', 'pred', 'all'}, default=None
         Normalizes confusion matrix over the true (rows), predicted (columns)
         conditions or all the population. If None, confusion matrix will not be
@@ -35,9 +32,6 @@ class ConfusionMatrixDisplay(Display):
 
     ax : matplotlib axes, default=None
         Axes object to plot on. If None, a new figure and axes is created.
-
-    colorbar : bool, default=True
-        Whether or not to add a colorbar to the plot.
 
     Attributes
     ----------
@@ -54,37 +48,40 @@ class ConfusionMatrixDisplay(Display):
 
     """
 
+    @StyleDisplayMixin.style_plot
     def __init__(
         self,
         confusion_matrix,
         *,
         display_labels=None,
         include_values=True,
-        cmap="viridis",
         normalize=None,
         values_format=None,
         ax=None,
-        colorbar=True,
     ):
         self.confusion_matrix = confusion_matrix
         self.display_labels = display_labels
         self.include_values = include_values
-        self.cmap = cmap
         self.normalize = normalize
         self.values_format = values_format
         self.ax = ax
-        self.colorbar = colorbar
         self.figure_ = None
         self.ax_ = None
         self.text_ = None
 
-    def plot(self, ax=None, **kwargs):
+    def plot(self, ax=None, *, cmap="viridis", colorbar=True, **kwargs):
         """Plot the confusion matrix.
 
         Parameters
         ----------
         ax : matplotlib axes, default=None
             Axes object to plot on. If None, a new figure and axes is created.
+
+        cmap : str or matplotlib Colormap, default='viridis'
+            Colormap used for confusion matrix.
+
+        colorbar : bool, default=True
+            Whether or not to add a colorbar to the plot.
 
         **kwargs : dict
             Additional keyword arguments to be passed to matplotlib's
@@ -100,7 +97,6 @@ class ConfusionMatrixDisplay(Display):
                 "normalize must be one of None, 'true', 'pred', 'all'; "
                 f"got {self.normalize!r}"
             )
-        plt.rcParams.update(DEFAULT_STYLE)
 
         if ax is None:
             fig, ax = plt.subplots()
@@ -122,8 +118,8 @@ class ConfusionMatrixDisplay(Display):
 
         self.confusion_matrix = cm
 
-        im = ax.imshow(cm, interpolation="nearest", cmap=self.cmap, **kwargs)
-        if self.colorbar:
+        im = ax.imshow(cm, interpolation="nearest", cmap=cmap, **kwargs)
+        if colorbar:
             fig.colorbar(im, ax=ax)
 
         if self.display_labels is None:
@@ -172,7 +168,6 @@ class ConfusionMatrixDisplay(Display):
         normalize=None,
         values_format=None,
         ax=None,
-        colorbar=True,
     ):
         """Create a confusion matrix display from predictions.
 
@@ -206,9 +201,6 @@ class ConfusionMatrixDisplay(Display):
         ax : matplotlib axes, default=None
             Axes object to plot on. If None, a new figure and axes is created.
 
-        colorbar : bool, default=True
-            Whether or not to add a colorbar to the plot.
-
         Returns
         -------
         display : :class:`~sklearn.metrics.ConfusionMatrixDisplay`
@@ -228,7 +220,6 @@ class ConfusionMatrixDisplay(Display):
             normalize=normalize,
             values_format=values_format,
             ax=ax,
-            colorbar=colorbar,
         )
         return disp
 

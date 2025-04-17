@@ -84,17 +84,18 @@ cm_table
 
 # %%
 # Using custom display labels
-report.metrics.confusion_matrix(
-    display_labels=["Setosa", "Versicolor", "Virginica"], cmap="Blues"
+cm_display = report.metrics.confusion_matrix(
+    display_labels=["Setosa", "Versicolor", "Virginica"]
 )
+cm_display.plot(cmap="Blues")
 
 # %%
 # Normalizing by predicted label (columns)
-report.metrics.confusion_matrix(
+cm_display = report.metrics.confusion_matrix(
     display_labels=["Setosa", "Versicolor", "Virginica"],
     normalize="pred",
-    cmap="Greens",
 )
+cm_display.plot(cmap="Greens")
 
 # %%
 # This example demonstrates how the confusion matrix can provide valuable insights
