@@ -143,12 +143,14 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         Recall                 0.93...         (↗︎)
         ROC AUC                0.99...         (↗︎)
         Brier score            0.03...         (↘︎)
+
+        >>> # Using scikit-learn metrics
+        >>> report.metrics.report_metrics(scoring=["neg_log_loss"], indicator_favorability=True)
+                    LogisticRegression Favorability
+        Metric
+        Negative Log Loss      -0.10...        (↘︎)
         """
         if data_source == "X_y":
-            # optimization of the hash computation to avoid recomputing it
-            # FIXME: we are still recomputing the hash for all the metrics that we
-            # support in the report because we don't call `_compute_metric_scores`
-            # here. We should fix it.
             X, y, data_source_hash = self._get_X_y_and_data_source_hash(
                 data_source=data_source, X=X, y=y
             )
@@ -157,7 +159,6 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
 
         scoring_was_none = scoring is None
         if scoring is None:
-            # Equivalent to _get_scorers_to_add
             if self._parent._ml_task == "binary-classification":
                 scoring = ["_precision", "_recall", "_roc_auc"]
                 if hasattr(self._parent._estimator, "predict_proba"):
@@ -172,7 +173,6 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
 
         if scoring_names is not None and len(scoring_names) != len(scoring):
             if scoring_was_none:
-                # we raise a better error message since we decide the default scores
                 raise ValueError(
                     "The `scoring_names` parameter should be of the same length as "
                     "the `scoring` parameter. In your case, `scoring` was set to None "
@@ -191,10 +191,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         scores = []
         favorability_indicator = []
         for metric_name, metric in zip(scoring_names, scoring):
-            # NOTE: we have to check specifically for `_BaseScorer` first because this
-            # is also a callable but it has a special private API that we can leverage
             if isinstance(metric, _BaseScorer):
-                # scorers have the advantage to have scoped defined kwargs
                 metric_function: Callable = metric._score_func
                 response_method: Union[str, list[str]] = metric._response_method
                 metric_fn = partial(
@@ -202,7 +199,6 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                     metric_function=metric_function,
                     response_method=response_method,
                 )
-                # forward the additional parameters specific to the scorer
                 metrics_kwargs = {**metric._kwargs}
                 metrics_kwargs["data_source_hash"] = data_source_hash
                 metrics_params = inspect.signature(metric._score_func).parameters
@@ -223,33 +219,77 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                 favorability_indicator.append(metric_favorability)
             elif isinstance(metric, str) or callable(metric):
                 if isinstance(metric, str):
-                    err_msg = (
-                        f"Invalid metric: {metric!r}. Please use a valid metric"
-                        " from the list of supported metrics: "
-                        f"{list(self._SCORE_OR_LOSS_INFO.keys())}"
-                    )
+                    # Handle built-in metrics (with underscore prefix)
                     if (
                         metric.startswith("_")
-                        and metric[1:] not in self._SCORE_OR_LOSS_INFO
+                        and metric[1:] in self._SCORE_OR_LOSS_INFO
                     ):
-                        raise ValueError(err_msg)
-                    if not metric.startswith("_"):
-                        if metric not in self._SCORE_OR_LOSS_INFO:
-                            raise ValueError(err_msg)
-                        metric = f"_{metric}"
-                    metric_fn = getattr(self, metric)
-                    metrics_kwargs = {"data_source_hash": data_source_hash}
-                    if metric_name is None:
-                        metric_name = f"{self._SCORE_OR_LOSS_INFO[metric[1:]]['name']}"
-                    metric_favorability = self._SCORE_OR_LOSS_INFO[metric[1:]]["icon"]
+                        metric_fn = getattr(self, metric)
+                        metrics_kwargs = {"data_source_hash": data_source_hash}
+                        if metric_name is None:
+                            metric_name = (
+                                f"{self._SCORE_OR_LOSS_INFO[metric[1:]]['name']}"
+                            )
+                        metric_favorability = self._SCORE_OR_LOSS_INFO[metric[1:]][
+                            "icon"
+                        ]
+
+                    # Handle built-in metrics (without underscore prefix)
+                    elif metric in self._SCORE_OR_LOSS_INFO:
+                        metric_fn = getattr(self, f"_{metric}")
+                        metrics_kwargs = {"data_source_hash": data_source_hash}
+                        if metric_name is None:
+                            metric_name = f"{self._SCORE_OR_LOSS_INFO[metric]['name']}"
+                        metric_favorability = self._SCORE_OR_LOSS_INFO[metric]["icon"]
+
+                    # Handle scikit-learn metrics by trying get_scorer
+                    else:
+                        from sklearn.metrics import get_scorer
+
+                        try:
+                            scorer = get_scorer(metric)
+                            metric_function = scorer._score_func
+                            response_method = scorer._response_method
+
+                            display_name = metric
+                            if metric.startswith("neg_"):
+                                display_name = metric[4:].replace("_", " ")
+                                metric_fn = partial(
+                                    self._custom_metric,
+                                    metric_function=metric_function,
+                                    response_method=response_method,
+                                )
+                                metrics_kwargs = {**scorer._kwargs}
+                                metrics_kwargs["data_source_hash"] = data_source_hash
+                                metric_favorability = "↘︎"
+                                favorability_indicator.append(metric_favorability)
+
+                            if metric_name is None:
+                                metric_name = display_name.title()
+
+                            metric_fn = partial(
+                                self._custom_metric,
+                                metric_function=metric_function,
+                                response_method=response_method,
+                            )
+                            metrics_kwargs = {**scorer._kwargs}
+                            metrics_kwargs["data_source_hash"] = data_source_hash
+                            metric_favorability = (
+                                "↘︎" if metric.startswith("neg_") else "↗︎"
+                            )
+                        except ValueError:
+                            raise ValueError(
+                                f"Invalid metric: {metric!r}. Please use a valid metric from the "
+                                f"list of supported metrics: {list(self._SCORE_OR_LOSS_INFO.keys())} "
+                                "or a valid scikit-learn scoring string."
+                            )
                     favorability_indicator.append(metric_favorability)
                 else:
+                    # Handle callable metrics
                     metric_fn = partial(self._custom_metric, metric_function=metric)
                     if scoring_kwargs is None:
                         metrics_kwargs = {}
                     else:
-                        # check if we should pass any parameters specific to the metric
-                        # callable
                         metric_callable_params = inspect.signature(metric).parameters
                         metrics_kwargs = {
                             param: scoring_kwargs[param]
@@ -261,6 +301,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                         metric_name = metric.__name__
                     metric_favorability = ""
                     favorability_indicator.append(metric_favorability)
+
                 metrics_params = inspect.signature(metric_fn).parameters
                 if scoring_kwargs is not None:
                     for param in metrics_params:

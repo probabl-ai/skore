@@ -1341,3 +1341,40 @@ def test_estimator_report_average_return_float(binary_classification_data):
     for metric_name in ("precision", "recall", "roc_auc"):
         result = getattr(report.metrics, metric_name)(average="macro")
         assert isinstance(result, float)
+
+
+def test_estimator_report_metric_with_neg_metrics():
+    """Check that scikit-learn metrics with 'neg_' prefix are handled correctly.
+
+    Non-regression test for:
+    https://github.com/probabl-ai/skore/issues/1519
+    """
+    from sklearn.datasets import load_breast_cancer
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.metrics import get_scorer
+    from sklearn.model_selection import train_test_split
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        *load_breast_cancer(return_X_y=True), random_state=0
+    )
+    classifier = LogisticRegression(max_iter=10_000)
+    classifier.fit(X_train, y_train)
+
+    report = EstimatorReport(
+        classifier,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+    # Use scikit-learn's get_scorer to handle neg_log_loss
+    neg_log_loss_scorer = get_scorer("neg_log_loss")
+
+    result = report.metrics.report_metrics(scoring=[neg_log_loss_scorer])
+
+    # Check that the metric name is displayed properly (as 'log_loss')
+    assert "log_loss" in result.index
+
+    # Check that the value matches the absolute value of neg_log_loss
+    assert result.loc["log_loss", classifier.__class__.__name__] > 0
