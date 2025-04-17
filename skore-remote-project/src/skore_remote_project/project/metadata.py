@@ -103,6 +103,7 @@ class Metadata(pd.DataFrame):
         """Display the interactive plot and controls."""
         self._plot_widget = ModelExplorerWidget(dataframe=self)
         self._plot_widget.display()
+        return ""
 
     def query_string_selection(self) -> str:
         """Generate a pandas query string based on user selections in the plot.
