@@ -1,4 +1,3 @@
-import copy
 import re
 from io import BytesIO
 
@@ -22,6 +21,18 @@ def cv_report_classification(classification_data):
         DummyClassifier(strategy="uniform", random_state=0), X, y
     )
     return cv_report
+
+
+@pytest.fixture
+def cv_reports(classification_data):
+    X, y = classification_data
+    cv_report_1 = CrossValidationReport(
+        DummyClassifier(strategy="uniform", random_state=0), X, y
+    )
+    cv_report_2 = CrossValidationReport(
+        DummyClassifier(strategy="uniform", random_state=1), X, y
+    )
+    return cv_report_1, cv_report_2
 
 
 @pytest.fixture
@@ -61,21 +72,18 @@ def test_init_non_distinct_reports(cv_report_classification):
         ComparisonReport([cv_report_classification, cv_report_classification])
 
 
-def test_non_string_report_names(cv_report_classification):
+def test_non_string_report_names(cv_reports):
     """If the estimators are passed as a dict with non-string keys,
     then the estimator names are the dict keys converted to strings."""
-
-    report = ComparisonReport(
-        {0: cv_report_classification, "1": copy.copy(cv_report_classification)}
-    )
+    cv_report_1, cv_report_2 = cv_reports
+    report = ComparisonReport({0: cv_report_1, "1": cv_report_2})
     assert report.report_names_ == ["0", "1"]
 
 
 @pytest.fixture
-def report(cv_report_classification):
-    return ComparisonReport(
-        [cv_report_classification, copy.copy(cv_report_classification)]
-    )
+def report(cv_reports):
+    cv_report_1, cv_report_2 = cv_reports
+    return ComparisonReport([cv_report_1, cv_report_2])
 
 
 def test_help(capsys, report):
