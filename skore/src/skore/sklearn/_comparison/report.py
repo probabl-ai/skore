@@ -175,6 +175,23 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         list[str],
         ReportType,
     ]:
+        """Validate that reports are in the right format for comparison.
+
+        Parameters
+        ----------
+        reports : list of reports or dict
+            The reports to be validated.
+
+        Returns
+        -------
+        list of EstimatorReport or list of CrossValidationReport
+            The validated reports.
+        list of str
+            The report names, either taken from dict keys or computed from the estimator
+            class names.
+        {"EstimatorReport", "CrossValidationReport"}
+            The inferred type of the reports that will be compared.
+        """
         if not isinstance(reports, Iterable):
             raise TypeError(f"Expected reports to be an iterable; got {type(reports)}")
 
