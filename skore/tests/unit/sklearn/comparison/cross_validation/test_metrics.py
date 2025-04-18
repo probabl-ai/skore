@@ -247,6 +247,32 @@ def test_custom_metric():
     assert_index_equal(result.columns, expected_columns)
 
 
+@pytest.mark.parametrize(
+    "case",
+    [
+        case_timings_no_predictions,
+        case_timings_with_predictions,
+        case_accuracy,
+        case_precision,
+        case_recall,
+        case_brier_score,
+        case_roc_auc,
+        case_log_loss,
+        case_r2,
+        case_rmse,
+    ],
+)
+def test_metrics_aggregate(case):
+    """`aggregate` argument should be taken into account."""
+    report, scoring, expected_index, _ = case()
+
+    expected_columns = pd.Index(["mean"])
+
+    result = getattr(report.metrics, scoring)(aggregate=["mean"])
+    assert_index_equal(result.index, expected_index)
+    assert_index_equal(result.columns, expected_columns)
+
+
 def test_metrics_X_y():
     report, *_ = case_accuracy()
     X, y = make_classification(class_sep=0.1, random_state=42)
