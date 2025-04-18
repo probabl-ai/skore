@@ -21,7 +21,10 @@ if TYPE_CHECKING:
 
 
 class ComparisonReport(_BaseReport, DirNamesMixin):
-    """Report for comparison of instances of :class:`skore.EstimatorReport`.
+    """Report for comparing reports.
+
+    This object can be used to compare several :class:`skore.EstimatorReport`s, or
+    several :class:`~skore.CrossValidationReport`s.
 
     .. caution:: Reports passed to `ComparisonReport` are not copied. If you pass
        a report to `ComparisonReport`, and then modify the report outside later, it
@@ -31,13 +34,9 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     Parameters
     ----------
-    reports : list of :class:`~skore.EstimatorReport` instances or dict
-        Estimator reports to compare.
-
-        * If `reports` is a list, the class name of each estimator is used.
-        * If `reports` is a dict, it is expected to have estimator names as keys
-          and :class:`~skore.EstimatorReport` instances as values.
-          If the keys are not strings, they will be converted to strings.
+    reports : list of reports or dict
+        Reports to compare. If a dict, keys will be used to label the estimators;
+        if a list, the labels are computed from the estimator class names.
 
     n_jobs : int, default=None
         Number of jobs to run in parallel. Training the estimators and computing
@@ -49,11 +48,14 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     Attributes
     ----------
-    reports_ : list of :class:`~skore.EstimatorReport`
-        The compared estimator reports.
+    reports_ : list of :class:`~skore.EstimatorReport` or list of
+               :class:`~skore.CrossValidationReport`
+        The compared reports.
 
     report_names_ : list of str
-        The names of the compared estimator reports.
+        The names of the compared estimators. If the names are not customized (i.e. the
+        class names are used), a de-duplication process is used to make sure that the
+        names are distinct.
 
     See Also
     --------
@@ -88,9 +90,13 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     ...     y_test=y_test
     ... )
     >>> report = ComparisonReport([estimator_report_1, estimator_report_2])
+    >>> report.report_names_
+    ['LogisticRegression_1', 'LogisticRegression_2']
     >>> report = ComparisonReport(
     ...     {"model1": estimator_report_1, "model2": estimator_report_2}
     ... )
+    >>> report.report_names_
+    ['model1', 'model2']
 
     >>> from sklearn.datasets import make_classification
     >>> from sklearn.linear_model import LogisticRegression
