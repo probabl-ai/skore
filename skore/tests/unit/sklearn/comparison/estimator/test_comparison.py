@@ -114,18 +114,22 @@ def test_comparison_report_init_different_ml_usecases(
     binary_classification_model, regression_model
 ):
     """Raise an error if the passed estimators do not have the same ML usecase."""
-    linear_regression_estimator, _, X_test, _, y_test = regression_model
+    linear_regression_estimator, X_train, X_test, y_train, y_test = regression_model
     linear_regression_report = EstimatorReport(
         linear_regression_estimator,
-        fit=False,
+        X_train=X_train,
+        y_train=y_train,
         X_test=X_test,
         y_test=y_test,
     )
 
-    logistic_regression_estimator, _, X_test, _, y_test = binary_classification_model
+    logistic_regression_estimator, X_train, X_test, y_train, y_test = (
+        binary_classification_model
+    )
     logistic_regression_report = EstimatorReport(
         logistic_regression_estimator,
-        fit=False,
+        X_train=X_train,
+        y_train=y_train,
         X_test=X_test,
         y_test=y_test,
     )
@@ -133,7 +137,7 @@ def test_comparison_report_init_different_ml_usecases(
     with pytest.raises(
         ValueError, match="Expected all estimators to have the same ML usecase"
     ):
-        ComparisonReport([linear_regression_report, copy(logistic_regression_report)])
+        ComparisonReport([linear_regression_report, logistic_regression_report])
 
 
 def test_comparison_report_init_with_report_names(binary_classification_model):
@@ -192,8 +196,8 @@ def test_comparison_report_non_string_report_names(binary_classification_model):
     assert report.report_names_ == ["0", "1"]
 
 
-def test_comparison_report_help(capsys, binary_classification_model):
-    """Check the help menu works."""
+@pytest.fixture
+def report(binary_classification_model):
     estimator, X_train, X_test, y_train, y_test = binary_classification_model
     estimator_report = EstimatorReport(
         estimator,
@@ -203,7 +207,12 @@ def test_comparison_report_help(capsys, binary_classification_model):
         y_test=y_test,
     )
 
-    ComparisonReport([estimator_report, copy(estimator_report)]).help()
+    return ComparisonReport([estimator_report, copy(estimator_report)])
+
+
+def test_comparison_report_help(capsys, report):
+    """Check the help menu works."""
+    report.help()
 
     captured = capsys.readouterr()
     assert "Tools to compare estimators" in captured.out
@@ -214,34 +223,15 @@ def test_comparison_report_help(capsys, binary_classification_model):
     )
 
 
-def test_comparison_report_repr(binary_classification_model):
+def test_comparison_report_repr(report):
     """Check the `__repr__` works."""
-    estimator, X_train, X_test, y_train, y_test = binary_classification_model
-    estimator_report = EstimatorReport(
-        estimator,
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-
-    repr_str = repr(ComparisonReport([estimator_report, copy(estimator_report)]))
+    repr_str = repr(report)
 
     assert "ComparisonReport" in repr_str
 
 
-def test_comparison_report_pickle(tmp_path, binary_classification_model):
+def test_comparison_report_pickle(tmp_path, report):
     """Check that we can pickle a comparison report."""
-    estimator, X_train, X_test, y_train, y_test = binary_classification_model
-    estimator_report = EstimatorReport(
-        estimator,
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-
-    report = ComparisonReport([estimator_report, copy(estimator_report)])
     with BytesIO() as stream:
         joblib.dump(report, stream)
         joblib.load(stream)
@@ -271,35 +261,15 @@ def test_estimator_report_cleaned_up(binary_classification_model):
         joblib.dump(estimator_report, stream)
 
 
-def test_comparison_report_metrics_help(capsys, binary_classification_model):
+def test_comparison_report_metrics_help(capsys, report):
     """Check that the help method writes to the console."""
-    estimator, X_train, X_test, y_train, y_test = binary_classification_model
-    estimator_report = EstimatorReport(
-        estimator,
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-    report = ComparisonReport([estimator_report, copy(estimator_report)])
-
     report.metrics.help()
     captured = capsys.readouterr()
     assert "Available metrics methods" in captured.out
 
 
-def test_comparison_report_metrics_repr(binary_classification_model):
+def test_comparison_report_metrics_repr(report):
     """Check the repr method."""
-    estimator, X_train, X_test, y_train, y_test = binary_classification_model
-    estimator_report = EstimatorReport(
-        estimator,
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-    report = ComparisonReport([estimator_report, copy(estimator_report)])
-
     repr_str = repr(report.metrics)
     assert "skore.ComparisonReport.metrics" in repr_str
     assert "help()" in repr_str
@@ -384,36 +354,27 @@ def test_comparison_report_metrics_repr(binary_classification_model):
     ],
 )
 def test_comparison_report_metrics_binary_classification(
-    metric_name, expected, data_source, binary_classification_model
+    metric_name, expected, data_source, binary_classification_model, report
 ):
     """Check the metrics work."""
-    estimator, X_train, X_test, y_train, y_test = binary_classification_model
-    estimator_report = EstimatorReport(
-        estimator,
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-
-    comp = ComparisonReport([estimator_report, copy(estimator_report)])
+    _, X_train, X_test, _, y_test = binary_classification_model
 
     # ensure metric is valid
     if data_source == "X_y":
-        result = getattr(comp.metrics, metric_name)(
+        result = getattr(report.metrics, metric_name)(
             data_source=data_source, X=X_test, y=y_test
         )
     else:
-        result = getattr(comp.metrics, metric_name)(data_source=data_source)
+        result = getattr(report.metrics, metric_name)(data_source=data_source)
     pd.testing.assert_frame_equal(result, expected)
 
     # ensure metric is valid even from the cache
     if data_source == "X_y":
-        result = getattr(comp.metrics, metric_name)(
+        result = getattr(report.metrics, metric_name)(
             data_source=data_source, X=X_test, y=y_test
         )
     else:
-        result = getattr(comp.metrics, metric_name)(data_source=data_source)
+        result = getattr(report.metrics, metric_name)(data_source=data_source)
     pd.testing.assert_frame_equal(result, expected)
 
 
@@ -479,20 +440,11 @@ def test_comparison_report_metrics_linear_regression(
     pd.testing.assert_frame_equal(result, expected)
 
 
-def test_comparison_report_report_metrics_X_y(binary_classification_model):
+def test_comparison_report_report_metrics_X_y(binary_classification_model, report):
     """Check that `report_metrics` works with an "X_y" data source."""
-    estimator, X_train, X_test, y_train, y_test = binary_classification_model
-    estimator_report = EstimatorReport(
-        estimator,
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
+    _, X_train, _, y_train, _ = binary_classification_model
 
-    comp = ComparisonReport([estimator_report, copy(estimator_report)])
-
-    result = comp.metrics.report_metrics(
+    result = report.metrics.report_metrics(
         data_source="X_y",
         X=X_train[:10],
         y=y_train[:10],
@@ -520,24 +472,15 @@ def test_comparison_report_report_metrics_X_y(binary_classification_model):
     pd.testing.assert_index_equal(result.index, expected_index)
     pd.testing.assert_index_equal(result.columns, expected_columns)
 
-    assert len(comp._cache) == 1
-    cached_result = list(comp._cache.values())[0]
+    assert len(report._cache) == 1
+    cached_result = list(report._cache.values())[0]
     pd.testing.assert_index_equal(cached_result.index, expected_index)
     pd.testing.assert_index_equal(cached_result.columns, expected_columns)
 
 
-def test_comparison_report_custom_metric_X_y(binary_classification_model):
+def test_comparison_report_custom_metric_X_y(binary_classification_model, report):
     """Check that `custom_metric` works with an "X_y" data source."""
-    estimator, X_train, X_test, y_train, y_test = binary_classification_model
-    estimator_report = EstimatorReport(
-        estimator,
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-
-    comp = ComparisonReport([estimator_report, copy(estimator_report)])
+    _, _, X_test, _, y_test = binary_classification_model
 
     expected = pd.DataFrame(
         [[0.0, 0.0]],
@@ -548,7 +491,7 @@ def test_comparison_report_custom_metric_X_y(binary_classification_model):
     )
 
     # ensure metric is valid
-    result = comp.metrics.custom_metric(
+    result = report.metrics.custom_metric(
         metric_function=mean_absolute_error,
         response_method="predict",
         metric_name="MAE",
@@ -559,7 +502,7 @@ def test_comparison_report_custom_metric_X_y(binary_classification_model):
     pd.testing.assert_frame_equal(result, expected)
 
     # ensure metric is valid even from the cache
-    result = comp.metrics.custom_metric(
+    result = report.metrics.custom_metric(
         metric_function=mean_absolute_error,
         response_method="predict",
         metric_name="MAE",
@@ -600,21 +543,9 @@ def test_cross_validation_report_flat_index(binary_classification_model):
     assert result.columns.tolist() == ["report_1", "report_2"]
 
 
-def test_estimator_report_report_metrics_indicator_favorability(
-    binary_classification_model,
-):
+def test_estimator_report_report_metrics_indicator_favorability(report):
     """Check that the behaviour of `indicator_favorability` is correct."""
-    estimator, X_train, X_test, y_train, y_test = binary_classification_model
-    estimator_report = EstimatorReport(
-        estimator,
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-
-    comp = ComparisonReport([estimator_report, copy(estimator_report)])
-    result = comp.metrics.report_metrics(indicator_favorability=True)
+    result = report.metrics.report_metrics(indicator_favorability=True)
     assert "Favorability" in result.columns
     indicator = result["Favorability"]
     assert indicator["Precision"].tolist() == ["(↗︎)", "(↗︎)"]
@@ -623,19 +554,9 @@ def test_estimator_report_report_metrics_indicator_favorability(
     assert indicator["Brier score"].tolist() == ["(↘︎)"]
 
 
-def test_comparison_report_aggregate(binary_classification_model):
+def test_comparison_report_aggregate(report):
     """Passing `aggregate` should have no effect, as this argument is only relevant
     when comparing `CrossValidationReport`s."""
-    estimator, X_train, X_test, y_train, y_test = binary_classification_model
-    estimator_report = EstimatorReport(
-        estimator,
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-
-    report = ComparisonReport([estimator_report, copy(estimator_report)])
     assert_allclose(
         report.metrics.report_metrics(aggregate="mean"),
         report.metrics.report_metrics(),
@@ -786,19 +707,9 @@ def test_random_state(regression_model):
 )
 @pytest.mark.parametrize("pos_label", [None, 0, 1])
 def test_comparison_report_get_predictions(
-    binary_classification_model, data_source, response_method, pos_label
+    binary_classification_model, report, data_source, response_method, pos_label
 ):
     """Check the behaviour of the `get_predictions` method."""
-    estimator, X_train, X_test, y_train, y_test = binary_classification_model
-    estimator_report = EstimatorReport(
-        estimator,
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-
-    report = ComparisonReport([estimator_report, copy(estimator_report)])
     predictions = report.get_predictions(
         data_source=data_source, response_method=response_method, pos_label=pos_label
     )
@@ -811,35 +722,14 @@ def test_comparison_report_get_predictions(
         assert split_predictions.shape == expected_shape
 
 
-def test_comparison_report_get_predictions_error(binary_classification_model):
+def test_comparison_report_get_predictions_error(report):
     """Check that we raise an error when the data source is invalid."""
-    estimator, X_train, X_test, y_train, y_test = binary_classification_model
-    estimator_report = EstimatorReport(
-        estimator,
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-
-    report = ComparisonReport([estimator_report, copy(estimator_report)])
-
     with pytest.raises(ValueError, match="Invalid data source"):
         report.get_predictions(data_source="invalid", response_method="predict")
 
 
-def test_comparison_report_timings(binary_classification_model):
+def test_comparison_report_timings(report):
     """Check the general behaviour of the `timings` method."""
-    estimator, X_train, X_test, y_train, y_test = binary_classification_model
-    estimator_report = EstimatorReport(
-        estimator,
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-
-    report = ComparisonReport([estimator_report, copy(estimator_report)])
     timings = report.metrics.timings()
     assert isinstance(timings, pd.DataFrame)
     assert timings.index.tolist() == ["Fit time"]
