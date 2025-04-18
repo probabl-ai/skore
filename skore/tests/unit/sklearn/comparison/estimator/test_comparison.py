@@ -197,8 +197,8 @@ def test_comparison_report_non_string_report_names(binary_classification_model):
 
 
 @pytest.fixture
-def report(binary_classification_model):
-    estimator, X_train, X_test, y_train, y_test = binary_classification_model
+def report_regression(regression_model):
+    estimator, X_train, X_test, y_train, y_test = regression_model
     estimator_report = EstimatorReport(
         estimator,
         X_train=X_train,
@@ -647,21 +647,15 @@ def test_comparison_report_plots(
     plot_attributes,
     binary_classification_model,
     regression_model,
+    report_classification,
+    report_regression,
 ):
-    estimator, X_train, X_test, y_train, y_test = (
-        binary_classification_model
-        if plot_ml_task == "binary_classification"
-        else regression_model
-    )
-    estimator_report = EstimatorReport(
-        estimator,
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-
-    comp = ComparisonReport([estimator_report, copy(estimator_report)])
+    if plot_ml_task == "binary_classification":
+        estimator, _, X_test, _, y_test = binary_classification_model
+        comp = report_classification
+    else:
+        estimator, _, X_test, _, y_test = regression_model
+        comp = report_regression
 
     if plot_data_source == "X_y":
         arguments = {"data_source": plot_data_source, "X": X_test, "y": y_test}
@@ -694,22 +688,11 @@ def test_comparison_report_plots(
     display.plot()
 
 
-def test_random_state(regression_model):
+def test_random_state(report_regression):
     """If random_state is None (the default) the call should not be cached."""
-    estimator, X_train, X_test, y_train, y_test = regression_model
-    estimator_report = EstimatorReport(
-        estimator,
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-
-    report = ComparisonReport([estimator_report, copy(estimator_report)])
-
-    report.metrics.prediction_error()
+    report_regression.metrics.prediction_error()
     # skore should store the y_pred of the internal estimators, but not the plot
-    assert report._cache == {}
+    assert report_regression._cache == {}
 
 
 @pytest.mark.parametrize("data_source", ["train", "test"])
