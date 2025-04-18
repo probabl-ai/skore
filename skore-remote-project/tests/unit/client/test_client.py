@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from urllib.parse import urljoin
 
 import pytest
-from httpx import Response
+from httpx import Response, HTTPStatusError
 from skore_remote_project.client.api import URI
 from skore_remote_project.client.client import AuthenticatedClient, AuthenticationError
 
@@ -60,3 +60,14 @@ class TestAuthenticatedClient:
             assert client.token.access == "D"
             assert client.token.refreshment == "E"
             assert client.token.expires_at == DATETIME_MAX
+
+    @pytest.mark.respx(assert_all_called=True)
+    def test_request_raises(self, tmp_path, respx_mock):
+        (tmp_path / "skore.token").write_text(
+            f'["A", "B", "{DATETIME_MAX.isoformat()}"]'
+        )
+
+        respx_mock.get(urljoin(URI, "foo")).mock(Response(404))
+
+        with pytest.raises(HTTPStatusError), AuthenticatedClient(raises=True) as client:
+            client.get("foo")

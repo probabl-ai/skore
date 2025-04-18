@@ -13,18 +13,6 @@ def nowstr(now):
     return now.isoformat()
 
 
-@fixture
-def MockDatetime(now):
-    class MockDatetime:
-        def __init__(self, *args, **kwargs): ...
-
-        @staticmethod
-        def now(*args, **kwargs):
-            return now
-
-    return MockDatetime
-
-
 @fixture(autouse=True)
 def monkeypatch_tmpdir(monkeypatch, tmp_path):
     """A pytest fixture that temporarily changes the system's temporary directory.
