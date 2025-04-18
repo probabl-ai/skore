@@ -112,7 +112,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     _reports_type: ReportType
 
     @staticmethod
-    def _deduplicate_report_names(report_names_: list[str]) -> list[str]:
+    def _deduplicate_report_names(report_names: list[str]) -> list[str]:
         """De-duplicate report names that appear several times.
 
         Leave the other report names alone.
