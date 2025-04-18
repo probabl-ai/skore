@@ -207,7 +207,7 @@ def test_cross_validation_report_cache_predictions(
         assert estimator_report._cache == {}
 
 
-@pytest.mark.parametrize("data_source", ["train", "test"])
+@pytest.mark.parametrize("data_source", ["train", "test", "X_y"])
 @pytest.mark.parametrize(
     "response_method", ["predict", "predict_proba", "decision_function"]
 )
@@ -227,8 +227,10 @@ def test_cross_validation_report_get_predictions(
     for split_idx, split_predictions in enumerate(predictions):
         if data_source == "train":
             expected_shape = report.estimator_reports_[split_idx].y_train.shape
-        else:
+        elif data_source == "test":
             expected_shape = report.estimator_reports_[split_idx].y_test.shape
+        else:  # data_source == "X_y"
+            expected_shape = (X.shape[0],)
         assert split_predictions.shape == expected_shape
 
 
