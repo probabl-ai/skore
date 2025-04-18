@@ -117,6 +117,16 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
         Leave the other report names alone.
 
+        Parameters
+        ----------
+        report_names : list of str
+            The list of report names to be checked.
+
+        Returns
+        -------
+        list of str
+            The de-duplicated list of report names.
+
         Examples
         --------
         >>> ComparisonReport._deduplicate_report_names(['a', 'b'])
