@@ -1,8 +1,15 @@
+from __future__ import annotations
+
+import typing
 import pandas as pd
 
 from .. import item as item_module
 from ..client.client import AuthenticatedClient
 from .widget import ModelExplorerWidget
+
+
+if typing.TYPE_CHECKING:
+    from typing import Union
 
 
 class Metadata(pd.DataFrame):
@@ -41,9 +48,7 @@ class Metadata(pd.DataFrame):
                 )
             )
 
-        summaries = response.json()
-
-        if not summaries:
+        if not (summaries := response.json()):
             raise Exception
 
         # Process the HUB's metadata to be usable by the widget
@@ -66,7 +71,7 @@ class Metadata(pd.DataFrame):
     def _constructor(self):
         return Metadata
 
-    def reports(self):
+    def reports(self, *, filter=True):
         if not hasattr(self, "project") or "id" not in self.index.names:
             raise Exception
 
@@ -77,6 +82,9 @@ class Metadata(pd.DataFrame):
             item_parameters = report["raw"]["parameters"]
             item = item_class(**item_parameters)
             return item.__raw__
+
+        if filter and (querystr := self.query_string_selection()):
+            self = self.query(querystr)
 
         ids = list(self.index.get_level_values("id"))
 
@@ -101,11 +109,12 @@ class Metadata(pd.DataFrame):
 
     def _repr_html_(self):
         """Display the interactive plot and controls."""
-        self._plot_widget = ModelExplorerWidget(dataframe=self)
+        if not hasattr(self, "_plot_widget"):
+            self._plot_widget = ModelExplorerWidget(dataframe=self)
         self._plot_widget.display()
         return ""
 
-    def query_string_selection(self) -> str:
+    def query_string_selection(self) -> Union[str, None]:
         """Generate a pandas query string based on user selections in the plot.
 
         This method translates the visual selections made on the parallel
@@ -124,6 +133,9 @@ class Metadata(pd.DataFrame):
         >>> query_string = df.query_string_selection()
         >>> df_filtered = df.query(query_string)
         """
+        if not hasattr(self, "_plot_widget"):
+            return None
+
         selection = self._plot_widget.current_selection.copy()
         query_parts = []
 
@@ -159,8 +171,4 @@ class Metadata(pd.DataFrame):
                     f"{column_name} <= {max_val:.6f})"
                 )
 
-        # Join all query parts with logical AND
-        if query_parts:
-            return " and ".join(query_parts)
-        else:
-            return ""
+        return " and ".join(query_parts)

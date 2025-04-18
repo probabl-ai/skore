@@ -162,7 +162,63 @@ class TestMetadata:
         assert metadata2.project == project
 
     @mark.respx(assert_all_called=True)
-    def test_reports(self, now, respx_mock, regression):
+    def test_reports_with_filter(
+        self, monkeypatch, now, respx_mock, regression, binary_classification
+    ):
+        project = Namespace(tenant="<tenant>", name="<name>")
+        item = SkoreEstimatorReportItem.factory(regression)
+        url = "projects/<tenant>/<name>/experiments/estimator-reports"
+
+        respx_mock.get(url).mock(
+            Response(
+                200,
+                json=[
+                    dict(
+                        (
+                            *SkoreEstimatorReportItemMetadata(regression),
+                            ("id", 0),
+                            ("run_id", 0),
+                            ("created_at", now.isoformat()),
+                        ),
+                    ),
+                    dict(
+                        (
+                            *SkoreEstimatorReportItemMetadata(binary_classification),
+                            ("id", 1),
+                            ("run_id", 1),
+                            ("created_at", (now + timedelta(1)).isoformat()),
+                        ),
+                    ),
+                ],
+            )
+        )
+
+        url = "projects/<tenant>/<name>/experiments/estimator-reports/0"
+
+        respx_mock.get(url).mock(
+            Response(
+                200,
+                json={"raw": item.__parameters__["parameters"]},
+            )
+        )
+
+        monkeypatch.setattr(
+            "skore_remote_project.project.metadata.Metadata.query_string_selection",
+            lambda self: "ml_task == 'regression'",
+        )
+
+        metadata = Metadata.factory(project)
+        reports = metadata.reports()
+
+        assert len(metadata) == 2
+        assert isinstance(reports, list)
+        assert len(reports) == 1
+        assert type(reports[0]) is type(regression)
+        assert reports[0].estimator_name_ == regression.estimator_name_
+        assert reports[0].ml_task == regression.ml_task
+
+    @mark.respx(assert_all_called=True)
+    def test_reports_without_filter(self, now, respx_mock, regression):
         project = Namespace(tenant="<tenant>", name="<name>")
         item = SkoreEstimatorReportItem.factory(regression)
         url = "projects/<tenant>/<name>/experiments/estimator-reports"
@@ -193,13 +249,11 @@ class TestMetadata:
         )
 
         metadata = Metadata.factory(project)
-        reports = metadata.reports()
+        reports = metadata.reports(filter=False)
 
+        assert len(metadata) == 1
         assert isinstance(reports, list)
         assert len(reports) == 1
-
-        report = reports[0]
-
-        assert type(report) is type(regression)
-        assert report.estimator_name_ == regression.estimator_name_
-        assert report.ml_task == regression.ml_task
+        assert type(reports[0]) is type(regression)
+        assert reports[0].estimator_name_ == regression.estimator_name_
+        assert reports[0].ml_task == regression.ml_task
