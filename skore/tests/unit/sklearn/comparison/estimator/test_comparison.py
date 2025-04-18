@@ -179,10 +179,11 @@ def test_comparison_report_init_without_report_names(binary_classification_model
 def test_comparison_report_non_string_report_names(binary_classification_model):
     """If the estimators are passed as a dict with non-string keys,
     then the estimator names are the dict keys converted to strings."""
-    estimator, _, X_test, _, y_test = binary_classification_model
+    estimator, X_train, X_test, y_train, y_test = binary_classification_model
     estimator_report = EstimatorReport(
         estimator,
-        fit=False,
+        X_train=X_train,
+        y_train=y_train,
         X_test=X_test,
         y_test=y_test,
     )
@@ -193,10 +194,11 @@ def test_comparison_report_non_string_report_names(binary_classification_model):
 
 def test_comparison_report_help(capsys, binary_classification_model):
     """Check the help menu works."""
-    estimator, _, X_test, _, y_test = binary_classification_model
+    estimator, X_train, X_test, y_train, y_test = binary_classification_model
     estimator_report = EstimatorReport(
         estimator,
-        fit=False,
+        X_train=X_train,
+        y_train=y_train,
         X_test=X_test,
         y_test=y_test,
     )
@@ -214,10 +216,11 @@ def test_comparison_report_help(capsys, binary_classification_model):
 
 def test_comparison_report_repr(binary_classification_model):
     """Check the `__repr__` works."""
-    estimator, _, X_test, _, y_test = binary_classification_model
+    estimator, X_train, X_test, y_train, y_test = binary_classification_model
     estimator_report = EstimatorReport(
         estimator,
-        fit=False,
+        X_train=X_train,
+        y_train=y_train,
         X_test=X_test,
         y_test=y_test,
     )
@@ -229,10 +232,11 @@ def test_comparison_report_repr(binary_classification_model):
 
 def test_comparison_report_pickle(tmp_path, binary_classification_model):
     """Check that we can pickle a comparison report."""
-    estimator, _, X_test, _, y_test = binary_classification_model
+    estimator, X_train, X_test, y_train, y_test = binary_classification_model
     estimator_report = EstimatorReport(
         estimator,
-        fit=False,
+        X_train=X_train,
+        y_train=y_train,
         X_test=X_test,
         y_test=y_test,
     )
@@ -269,10 +273,11 @@ def test_estimator_report_cleaned_up(binary_classification_model):
 
 def test_comparison_report_metrics_help(capsys, binary_classification_model):
     """Check that the help method writes to the console."""
-    estimator, _, X_test, _, y_test = binary_classification_model
+    estimator, X_train, X_test, y_train, y_test = binary_classification_model
     estimator_report = EstimatorReport(
         estimator,
-        fit=False,
+        X_train=X_train,
+        y_train=y_train,
         X_test=X_test,
         y_test=y_test,
     )
@@ -285,10 +290,11 @@ def test_comparison_report_metrics_help(capsys, binary_classification_model):
 
 def test_comparison_report_metrics_repr(binary_classification_model):
     """Check the repr method."""
-    estimator, _, X_test, _, y_test = binary_classification_model
+    estimator, X_train, X_test, y_train, y_test = binary_classification_model
     estimator_report = EstimatorReport(
         estimator,
-        fit=False,
+        X_train=X_train,
+        y_train=y_train,
         X_test=X_test,
         y_test=y_test,
     )
