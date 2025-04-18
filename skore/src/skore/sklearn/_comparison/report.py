@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import time
+from collections import Counter
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, Literal, Optional, Union, cast
 
@@ -148,17 +149,18 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         >>> ComparisonReport._deduplicate_report_names(['a'])
         ['a']
         """
-        result = report_names.copy()
-        for report_name in report_names:
-            indexes_of_report_names = [
-                index for index, name in enumerate(report_names) if name == report_name
-            ]
-            if len(indexes_of_report_names) == 1:
-                # report name appears only once
-                continue
-            for n, index in enumerate(indexes_of_report_names, start=1):
-                result[index] = f"{report_name}_{n}"
-        return result
+        counts = Counter(report_names)
+        if len(report_names) == len(counts):
+            return report_names
+
+        names = report_names.copy()
+        seen: Counter = Counter()
+        for i in range(len(names)):
+            name = names[i]
+            seen[name] += 1
+            if counts[name] > 1:
+                names[i] = f"{name}_{seen[name]}"
+        return names
 
     @staticmethod
     def _validate_reports(
