@@ -92,14 +92,20 @@ def test_prediction_error_display_regression(pyplot, regression_data, subsample)
     assert display.ax_.get_aspect() not in ("equal", 1.0)
 
 
+@pytest.mark.parametrize("data_source", ["train", "test", "X_y"])
 def test_prediction_error_cross_validation_display_regression(
-    pyplot, regression_data_no_split
+    pyplot, regression_data_no_split, data_source
 ):
     """Check the attributes and default plotting behaviour of the prediction error plot
     with cross-validation data."""
     (estimator, X, y), cv = regression_data_no_split, 3
+    if data_source == "X_y":
+        prediction_error_kwargs = {"data_source": data_source, "X": X, "y": y}
+    else:
+        prediction_error_kwargs = {"data_source": data_source}
+
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
-    display = report.metrics.prediction_error()
+    display = report.metrics.prediction_error(**prediction_error_kwargs)
     assert isinstance(display, PredictionErrorDisplay)
 
     # check the structure of the attributes
@@ -107,7 +113,7 @@ def test_prediction_error_cross_validation_display_regression(
     assert isinstance(display.y_pred, list)
     assert isinstance(display.residuals, list)
     assert len(display.y_true) == len(display.y_pred) == len(display.residuals) == cv
-    assert display.data_source == "test"
+    assert display.data_source == data_source
     assert isinstance(display.range_y_true, RangeData)
     assert isinstance(display.range_y_pred, RangeData)
     assert isinstance(display.range_residuals, RangeData)
@@ -130,7 +136,11 @@ def test_prediction_error_cross_validation_display_regression(
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == "LinearRegression on $\\bf{test}$ set"
+    data_source_title = "external" if data_source == "X_y" else data_source
+    assert (
+        legend.get_title().get_text()
+        == f"LinearRegression on $\\bf{{{data_source_title}}}$ set"
+    )
     assert len(legend.get_texts()) == 4
 
     assert display.ax_.get_xlabel() == "Predicted values"

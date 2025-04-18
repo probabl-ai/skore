@@ -350,7 +350,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
         if data_source in ("train", "test"):
             title = f"{estimator_name} on $\\bf{{{data_source}}}$ set"
         else:
-            title = f"{estimator_name} on $\\bf{{external}}$ data"
+            title = f"{estimator_name} on $\\bf{{external}}$ set"
         ax.legend(bbox_to_anchor=(1.02, 1), title=title)
 
         return scatter
