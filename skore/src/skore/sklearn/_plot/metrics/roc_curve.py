@@ -385,8 +385,7 @@ class RocCurveDisplay(
                     )
                     if split_idx == 0:
                         line_kwargs_validated["label"] = (
-                            f"{str(class_).title()} - Estimator of "
-                            f"fold #{split_idx + 1} "
+                            f"{str(class_).title()} "
                             f"(AUC = {roc_auc_mean:0.2f} +/- "
                             f"{roc_auc_std:0.2f})"
                         )
@@ -399,7 +398,7 @@ class RocCurveDisplay(
         if data_source in ("train", "test"):
             title = f"{estimator_name} on $\\bf{{{data_source}}}$ set"
         else:
-            title = f"{estimator_name} on $\\bf{{external}}$ data"
+            title = f"{estimator_name} on $\\bf{{external}}$ set"
         ax.legend(bbox_to_anchor=(1.02, 1), title=title)
 
         return ax, lines, info_pos_label

@@ -87,15 +87,21 @@ def test_precision_recall_curve_display_binary_classification(
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
 
 
+@pytest.mark.parametrize("data_source", ["train", "test", "X_y"])
 def test_precision_recall_curve_cross_validation_display_binary_classification(
-    pyplot, binary_classification_data_no_split
+    pyplot, binary_classification_data_no_split, data_source
 ):
     """Check the attributes and default plotting behaviour of the
     precision-recall curve plot with binary data.
     """
     (estimator, X, y), cv = binary_classification_data_no_split, 3
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
-    display = report.metrics.precision_recall()
+    if data_source == "X_y":
+        precision_recall_kwargs = {"data_source": data_source, "X": X, "y": y}
+    else:
+        precision_recall_kwargs = {"data_source": data_source}
+
+    display = report.metrics.precision_recall(**precision_recall_kwargs)
     assert isinstance(display, PrecisionRecallCurveDisplay)
 
     # check the structure of the attributes
@@ -126,7 +132,11 @@ def test_precision_recall_curve_cross_validation_display_binary_classification(
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == "LogisticRegression on $\\bf{test}$ set"
+    data_source_title = "external" if data_source == "X_y" else data_source
+    assert (
+        legend.get_title().get_text()
+        == f"LogisticRegression on $\\bf{{{data_source_title}}}$ set"
+    )
     assert len(legend.get_texts()) == 3
 
     assert display.ax_.get_xlabel() == "Recall\n(Positive label: 1)"
@@ -201,15 +211,21 @@ def test_precision_recall_curve_display_multiclass_classification(
     assert display.ax_.get_xlim() == display.ax_.get_ylim() == (-0.01, 1.01)
 
 
+@pytest.mark.parametrize("data_source", ["train", "test", "X_y"])
 def test_precision_recall_curve_cross_validation_display_multiclass_classification(
-    pyplot, multiclass_classification_data_no_split
+    pyplot, multiclass_classification_data_no_split, data_source
 ):
     """Check the attributes and default plotting behaviour of the precision-recall
     curve plot with multiclass data.
     """
     (estimator, X, y), cv = multiclass_classification_data_no_split, 3
     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=cv)
-    display = report.metrics.precision_recall()
+    if data_source == "X_y":
+        precision_recall_kwargs = {"data_source": data_source, "X": X, "y": y}
+    else:
+        precision_recall_kwargs = {"data_source": data_source}
+
+    display = report.metrics.precision_recall(**precision_recall_kwargs)
     assert isinstance(display, PrecisionRecallCurveDisplay)
 
     # check the structure of the attributes
@@ -229,19 +245,23 @@ def test_precision_recall_curve_cross_validation_display_multiclass_classificati
     default_colors = sample_mpl_colormap(pyplot.cm.tab10, 10)
     for class_label, expected_color in zip(class_labels, default_colors):
         for split_idx in range(cv):
-            roc_curve_mpl = display.lines_[class_label * cv + split_idx]
-            assert isinstance(roc_curve_mpl, mpl.lines.Line2D)
+            precision_recall_curve_mpl = display.lines_[class_label * cv + split_idx]
+            assert isinstance(precision_recall_curve_mpl, mpl.lines.Line2D)
             if split_idx == 0:
-                assert roc_curve_mpl.get_label() == (
-                    f"{str(class_label).title()} - "
-                    f"AP = {np.mean(display.average_precision[class_label]):0.2f}"
-                    f" +/- {np.std(display.average_precision[class_label]):0.2f}"
+                assert precision_recall_curve_mpl.get_label() == (
+                    f"{str(class_label).title()} "
+                    f"(AP = {np.mean(display.average_precision[class_label]):0.2f}"
+                    f" +/- {np.std(display.average_precision[class_label]):0.2f})"
                 )
-            assert roc_curve_mpl.get_color() == expected_color
+            assert precision_recall_curve_mpl.get_color() == expected_color
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == "LogisticRegression on $\\bf{test}$ set"
+    data_source_title = "external" if data_source == "X_y" else data_source
+    assert (
+        legend.get_title().get_text()
+        == f"LogisticRegression on $\\bf{{{data_source_title}}}$ set"
+    )
     assert len(legend.get_texts()) == 3
 
     assert display.ax_.get_xlabel() == "Recall"
