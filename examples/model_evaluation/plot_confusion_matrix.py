@@ -73,8 +73,8 @@ report.metrics.confusion_matrix(normalize="true")
 
 # %%
 cm_display = report.metrics.confusion_matrix()
-cm_table = cm_display.table()
-cm_table
+cm_frame = cm_display.frame()
+cm_frame
 
 # %%
 # Using different display options

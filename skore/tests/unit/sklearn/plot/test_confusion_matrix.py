@@ -65,9 +65,9 @@ def test_confusion_matrix_display_binary_classification(
     assert display.ax_.get_xlabel() == "Predicted label"
     assert display.ax_.get_ylabel() == "True label"
 
-    table = display.table()
-    assert isinstance(table, pd.DataFrame)
-    assert table.shape == (2, 2)
+    frame = display.frame()
+    assert isinstance(frame, pd.DataFrame)
+    assert frame.shape == (2, 2)
 
 
 def test_confusion_matrix_display_multiclass_classification(
@@ -89,9 +89,9 @@ def test_confusion_matrix_display_multiclass_classification(
     assert display.confusion_matrix.shape == (n_classes, n_classes)
     assert len(display.display_labels) == n_classes
 
-    table = display.table()
-    assert isinstance(table, pd.DataFrame)
-    assert table.shape == (n_classes, n_classes)
+    frame = display.frame()
+    assert isinstance(frame, pd.DataFrame)
+    assert frame.shape == (n_classes, n_classes)
 
 
 def test_confusion_matrix_display_normalization(
@@ -136,9 +136,9 @@ def test_confusion_matrix_display_custom_labels(
     display = report.metrics.confusion_matrix(display_labels=custom_labels)
 
     assert display.display_labels == custom_labels
-    table = display.table()
-    assert list(table.index) == custom_labels
-    assert list(table.columns) == custom_labels
+    frame = display.frame()
+    assert list(frame.index) == custom_labels
+    assert list(frame.columns) == custom_labels
 
 
 def test_confusion_matrix_display_data_source(
