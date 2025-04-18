@@ -310,7 +310,7 @@ def test_roc_curve_display_cross_validation_binary_classification(
     for split_idx, line in enumerate(display.lines_):
         assert isinstance(line, mpl.lines.Line2D)
         assert line.get_label() == (
-            f"Test set - fold #{split_idx + 1} "
+            f"Estimator of fold #{split_idx + 1} "
             f"(AUC = {display.roc_auc[pos_label][split_idx]:0.2f})"
         )
         assert mpl.colors.to_rgba(line.get_color()) == expected_colors[split_idx]
@@ -321,7 +321,7 @@ def test_roc_curve_display_cross_validation_binary_classification(
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == estimator.__class__.__name__
+    assert legend.get_title().get_text() == "LogisticRegression on $\\bf{test}$ set"
     assert len(legend.get_texts()) == cv
 
     assert display.ax_.get_xlabel() == "False Positive Rate\n(Positive label: 1)"
@@ -362,7 +362,7 @@ def test_roc_curve_display_cross_validation_multiclass_classification(
             assert isinstance(roc_curve_mpl, mpl.lines.Line2D)
             if split_idx == 0:
                 assert roc_curve_mpl.get_label() == (
-                    f"{str(class_label).title()} - test set "
+                    f"{str(class_label).title()} - Estimator of fold #{split_idx + 1} "
                     f"(AUC = {np.mean(display.roc_auc[class_label]):0.2f}"
                     f" +/- {np.std(display.roc_auc[class_label]):0.2f})"
                 )
@@ -374,7 +374,7 @@ def test_roc_curve_display_cross_validation_multiclass_classification(
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == estimator.__class__.__name__
+    assert legend.get_title().get_text() == "LogisticRegression on $\\bf{test}$ set"
     assert len(legend.get_texts()) == cv
 
     assert display.ax_.get_xlabel() == "False Positive Rate"

@@ -83,7 +83,7 @@ def test_prediction_error_display_regression(pyplot, regression_data, subsample)
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == estimator.__class__.__name__
+    assert legend.get_title().get_text() == "LinearRegression"
     assert len(legend.get_texts()) == 2
 
     assert display.ax_.get_xlabel() == "Predicted values"
@@ -130,7 +130,7 @@ def test_prediction_error_cross_validation_display_regression(
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == estimator.__class__.__name__
+    assert legend.get_title().get_text() == "LinearRegression on $\\bf{test}$ set"
     assert len(legend.get_texts()) == 4
 
     assert display.ax_.get_xlabel() == "Predicted values"
@@ -258,7 +258,7 @@ def test_prediction_error_cross_validation_display_regression_kind(
 
     assert isinstance(display.ax_, mpl.axes.Axes)
     legend = display.ax_.get_legend()
-    assert legend.get_title().get_text() == estimator.__class__.__name__
+    assert legend.get_title().get_text() == "LinearRegression on $\\bf{test}$ set"
     assert len(legend.get_texts()) == 4
 
     assert display.ax_.get_xlabel() == "Predicted values"

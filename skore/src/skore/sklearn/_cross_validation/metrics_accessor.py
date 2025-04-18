@@ -1080,20 +1080,31 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
     def _get_display(
         self,
         *,
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
         data_source: DataSource,
         response_method: str,
-        display_class: Any,
+        display_class: type[
+            Union[RocCurveDisplay, PrecisionRecallCurveDisplay, PredictionErrorDisplay]
+        ],
         display_kwargs: dict[str, Any],
     ) -> Union[RocCurveDisplay, PrecisionRecallCurveDisplay, PredictionErrorDisplay]:
         """Get the display from the cache or compute it.
 
         Parameters
         ----------
-        data_source : {"test", "train"}, default="test"
+        X : array-like of shape (n_samples, n_features)
+            The data.
+
+        y : array-like of shape (n_samples,)
+            The target.
+
+        data_source : {"test", "train", "X_y"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
 
         response_method : str
             The response method.
@@ -1109,13 +1120,23 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         display : display_class
             The display.
         """
+        if data_source == "X_y":
+            X, y, data_source_hash = self._get_X_y_and_data_source_hash(
+                data_source=data_source, X=X, y=y
+            )
+            assert y is not None, "y must be provided"
+        else:
+            data_source_hash = None
+
         if "seed" in display_kwargs and display_kwargs["seed"] is None:
             cache_key = None
         else:
-            # Create a list of cache key components and then convert to tuple
             cache_key_parts: list[Any] = [self._parent._hash, display_class.__name__]
             cache_key_parts.extend(display_kwargs.values())
-            cache_key_parts.append(data_source)
+            if data_source_hash is not None:
+                cache_key_parts.append(data_source_hash)
+            else:
+                cache_key_parts.append(data_source)
             cache_key = tuple(cache_key_parts)
 
         assert self._parent._progress_info is not None, "Progress info not set"
@@ -1129,9 +1150,12 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         else:
             y_true, y_pred = [], []
             for report in self._parent.estimator_reports_:
-                X, y, _ = report.metrics._get_X_y_and_data_source_hash(
-                    data_source=data_source
-                )
+                if data_source != "X_y":
+                    # only retrieve data stored in the reports when we don't want to
+                    # use an external common X and y
+                    X, y, _ = report.metrics._get_X_y_and_data_source_hash(
+                        data_source=data_source
+                    )
                 y_true.append(y)
                 y_pred.append(
                     _get_cached_response_values(
@@ -1141,7 +1165,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
                         X=X,
                         response_method=response_method,
                         data_source=data_source,
-                        data_source_hash=None,
+                        data_source_hash=data_source_hash,
                         pos_label=display_kwargs.get("pos_label"),
                     )
                 )
@@ -1172,6 +1196,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
         pos_label: Optional[PositiveLabel] = None,
     ) -> RocCurveDisplay:
         """Plot the ROC curve.
@@ -1183,6 +1209,15 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
+                X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the report.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the report.
 
         pos_label : int, float, bool or str, default=None
             The positive class.
@@ -1209,6 +1244,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             RocCurveDisplay,
             self._get_display(
                 data_source=data_source,
+                X=X,
+                y=y,
                 response_method=response_method,
                 display_class=RocCurveDisplay,
                 display_kwargs=display_kwargs,
@@ -1221,6 +1258,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
         pos_label: Optional[PositiveLabel] = None,
     ) -> PrecisionRecallCurveDisplay:
         """Plot the precision-recall curve.
@@ -1232,6 +1271,15 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the report.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the report.
 
         pos_label : int, float, bool or str, default=None
             The positive class.
@@ -1258,6 +1306,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             PrecisionRecallCurveDisplay,
             self._get_display(
                 data_source=data_source,
+                X=X,
+                y=y,
                 response_method=response_method,
                 display_class=PrecisionRecallCurveDisplay,
                 display_kwargs=display_kwargs,
@@ -1270,6 +1320,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
+        X: Optional[ArrayLike] = None,
+        y: Optional[ArrayLike] = None,
         subsample: Union[float, int, None] = 1_000,
         seed: Optional[int] = None,
     ) -> PredictionErrorDisplay:
@@ -1279,17 +1331,25 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train"}, default="test"
+        data_source : {"test", "train", "X_y"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
+        X : array-like of shape (n_samples, n_features), default=None
+            New data on which to compute the metric. By default, we use the validation
+            set provided when creating the report.
+
+        y : array-like of shape (n_samples,), default=None
+            New target on which to compute the metric. By default, we use the target
+            provided when creating the report.
 
         subsample : float, int or None, default=1_000
             Sampling the samples to be shown on the scatter plot. If `float`,
             it should be between 0 and 1 and represents the proportion of the
             original dataset. If `int`, it represents the number of samples
-            display on the scatter plot. If `None`, no subsampling will be
             applied. by default, 1,000 samples or less will be displayed.
 
         seed : int, default=None
@@ -1319,6 +1379,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             PredictionErrorDisplay,
             self._get_display(
                 data_source=data_source,
+                X=X,
+                y=y,
                 response_method="predict",
                 display_class=PredictionErrorDisplay,
                 display_kwargs=display_kwargs,
