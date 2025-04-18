@@ -1,16 +1,26 @@
+"""Hatchling hooks used to dynamically update the metadata of the package."""
+
 from pathlib import Path
 
 from hatchling.metadata.plugin.interface import MetadataHookInterface
 
 
 def readlines(filepath):
+    """Yied the content of ``filepath`` line by line."""
     with open(filepath) as file:
         yield from file
 
 
 class MetadataHook(MetadataHookInterface):
+    """Hatchling hooks used to dynamically update the metadata of the package."""
+
     def update(self, metadata):
         """
+        Update the metadata of the package, after it has been loaded.
+
+        Update ``LICENSE`` and ``README`` from root files, shared in the GH repository.
+        Update ``VERSION`` from environment variables filled by the GH release pipeline.
+
         Notes
         -----
         Example of configuration:
