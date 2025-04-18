@@ -1,3 +1,4 @@
+import copy
 from typing import Any, Callable, Literal, Optional, Union, cast
 
 import joblib
@@ -16,11 +17,13 @@ from skore.sklearn._plot.metrics import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
-from skore.sklearn.types import PositiveLabel
+from skore.sklearn.types import Aggregate, PositiveLabel
 from skore.utils._accessor import _check_supported_ml_task
 from skore.utils._fixes import _validate_joblib_parallel_params
 from skore.utils._index import flatten_multi_index
 from skore.utils._progress_bar import progress_decorator
+
+from ._plot.roc_curve import CompCVRocCurveDisplay
 
 DataSource = Literal["test", "train", "X_y"]
 
@@ -59,6 +62,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         pos_label: Optional[PositiveLabel] = None,
         indicator_favorability: bool = False,
         flat_index: bool = False,
+        aggregate: Optional[Aggregate] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Report a set of metrics for the estimators.
 
@@ -106,6 +110,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             Whether to flatten the `MultiIndex` columns. Flat index will always be lower
             case, do not include spaces and remove the hash symbol to ease indexing.
 
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
+            Ignored when comparison is between EstimatorReports.
+
         Returns
         -------
         pd.DataFrame
@@ -142,10 +151,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     scoring=["precision", "recall"],
         ...     pos_label=1,
         ... )
-        Estimator       LogisticRegression  LogisticRegression
+        Estimator       LogisticRegression_1  LogisticRegression_2
         Metric
-        Precision                  0.96...             0.96...
-        Recall                     0.97...             0.97...
+        Precision                    0.96...               0.96...
+        Recall                       0.97...               0.97...
         """
         results = self._compute_metric_scores(
             report_metric_name="report_metrics",
@@ -157,13 +166,174 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             scoring_kwargs=scoring_kwargs,
             scoring_names=scoring_names,
             indicator_favorability=indicator_favorability,
+            aggregate=aggregate,
         )
-        if flat_index:
-            if isinstance(results.columns, pd.MultiIndex):
-                results.columns = flatten_multi_index(results.columns)
-            if isinstance(results.index, pd.MultiIndex):
-                results.index = flatten_multi_index(results.index)
+        if flat_index and isinstance(results.index, pd.MultiIndex):
+            results.index = flatten_multi_index(results.index)
         return results
+
+    @staticmethod
+    def _combine_estimator_results(
+        individual_results: list[pd.DataFrame],
+        estimator_names: list[str],
+        indicator_favorability: bool,
+    ) -> pd.DataFrame:
+        results = pd.concat(individual_results, axis=1)
+
+        # Pop the favorability column if it exists, to:
+        # - not use it in the aggregate operation
+        # - later to only report a single column and not by split columns
+        if indicator_favorability:
+            favorability = results.pop("Favorability").iloc[:, 0]
+        else:
+            favorability = None
+
+        results.columns = pd.Index(estimator_names, name="Estimator")
+
+        if favorability is not None:
+            results["Favorability"] = favorability
+
+        return results
+
+    @staticmethod
+    def _combine_cross_validation_results(
+        individual_results: list[pd.DataFrame],
+        estimator_names: list[str],
+        indicator_favorability: bool,
+        aggregate: Optional[Aggregate],
+    ) -> pd.DataFrame:
+        """Combine a list of dataframes.
+
+        Parameters
+        ----------
+        results : pd.DataFrame
+            The dataframes to combine.
+            They are assumed to originate from a `CrossValidationReport.metrics`
+            computation. In particular, there are several assumptions made:
+
+            - every dataframe has the form:
+                - index: Index "Metric", or MultiIndex ["Metric", "Label / Average"]
+                - columns: MultiIndex with levels ["Estimator", "Splits"] (can be
+                  unnamed)
+            - all dataframes have the same metrics
+
+            The dataframes are not required to have the same number of columns (splits).
+
+        estimator_names : list of str of len (len(results))
+            The name to give the estimator for each dataframe.
+
+        indicator_favorability : bool
+            Whether to keep the Favorability column.
+
+        aggregate : Aggregate
+            How to aggregate the resulting dataframe.
+        """
+
+        def add_model_name_to_index(df: pd.DataFrame, model_name: str) -> pd.DataFrame:
+            """Move the model name from the column index to the table index."""
+            df = copy.copy(df)
+
+            # Put the model name as a column
+            df["Estimator"] = model_name
+
+            # Put the model name into the index
+            if "Label / Average" in df.index.names:
+                new_index = ["Metric", "Label / Average", "Estimator"]
+            else:
+                new_index = ["Metric", "Estimator"]
+            df = df.reset_index().set_index(new_index)
+
+            # Then drop the model from the columns
+            df.columns = df.columns.droplevel(0)
+
+            return df
+
+        def melt_df(df):
+            df_reset = df.reset_index()
+
+            if "Label / Average" in df_reset.columns:
+                id_vars = ["Metric", "Label / Average", "Estimator"]
+            else:
+                id_vars = ["Metric", "Estimator"]
+
+            melted = pd.melt(
+                df_reset,
+                id_vars=id_vars,
+                var_name="Split",
+                value_name="Value",
+            )
+
+            return melted
+
+        results = individual_results.copy()
+
+        # Pop the favorability column if it exists, to:
+        # - not use it in the aggregate operation
+        # - later to only report a single column and not by split columns
+        if indicator_favorability:
+            favorability = results[0]["Favorability"]
+            for result in results:
+                result.pop("Favorability")
+        else:
+            favorability = None
+
+        dfs_model_name_in_index = [
+            add_model_name_to_index(df, estimator_name)
+            for df, estimator_name in zip(results, estimator_names)
+        ]
+
+        dfs_melted = [melt_df(df) for df in dfs_model_name_in_index]
+
+        df = pd.concat(dfs_melted, axis=0)
+
+        if aggregate:
+            if isinstance(aggregate, str):
+                aggregate = [aggregate]
+
+            if "Label / Average" in df.columns:
+                index = ["Metric", "Label / Average"]
+            else:
+                index = ["Metric"]
+
+            df = df.pivot_table(
+                index=index,
+                columns="Estimator",
+                values="Value",
+                aggfunc=aggregate,
+                sort=False,
+            )
+        else:
+            # Make sure the Split column goes [0, 1, 2, 0, 1, 2]
+            # Rather than [0, 0, 1, 1, 2, 2]
+
+            metric_order = df["Metric"].unique()
+
+            df["metric_order_index"] = df["Metric"].apply(
+                lambda x: list(metric_order).index(x)
+            )
+
+            if "Label / Average" in df.columns:
+                by = ["metric_order_index", "Label / Average", "Estimator", "Split"]
+            else:
+                by = ["metric_order_index", "Estimator", "Split"]
+
+            df = (
+                df.sort_values(by=by)
+                .drop("metric_order_index", axis=1)
+                .reset_index(drop=True)
+            )
+
+            new_index = []
+            for col in df.columns:
+                if col == "Value":
+                    break
+                new_index.append(col)
+            df = df.set_index(new_index)
+
+        if favorability is not None:
+            df["Favorability"] = favorability
+
+        return df
 
     @progress_decorator(description="Compute metric for each split")
     def _compute_metric_scores(
@@ -173,6 +343,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source: DataSource = "test",
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
+        aggregate: Optional[Aggregate] = ("mean", "std"),
         **metric_kwargs: Any,
     ):
         # build the cache key components to finally create a tuple that will be used
@@ -182,6 +353,12 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             report_metric_name,
             data_source,
         ]
+
+        if self._parent._reports_type == "CrossValidationReport":
+            if aggregate is None:
+                cache_key_parts.append(aggregate)
+            else:
+                cache_key_parts.extend(tuple(aggregate))
 
         # we need to enforce the order of the parameter for a specific metric
         # to make sure that we hit the cache in a consistent way
@@ -198,8 +375,14 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         progress = self._parent._progress_info["current_progress"]
         main_task = self._parent._progress_info["current_task"]
 
-        total_estimators = len(self._parent.estimator_reports_)
+        total_estimators = len(self._parent.reports_)
         progress.update(main_task, total=total_estimators)
+
+        if self._parent._reports_type == "CrossValidationReport":
+            # Ensure that there is only one Progress instance.
+            # EstimatorReports don't have `_parent_progress`
+            for report in self._parent.reports_:
+                report._parent_progress = progress
 
         if cache_key in self._parent._cache:
             results = self._parent._cache[cache_key]
@@ -211,44 +394,69 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                     require="sharedmem",
                 )
             )
-            generator = parallel(
-                joblib.delayed(getattr(report.metrics, report_metric_name))(
+            if self._parent._reports_type == "EstimatorReport":
+                kwargs = dict(
                     data_source=data_source,
                     X=X,
                     y=y,
                     **metric_kwargs,
                 )
-                for report in self._parent.estimator_reports_
+            else:  # "CrossValidationReport"
+                if data_source == "X_y":
+                    raise NotImplementedError()
+
+                kwargs = dict(
+                    data_source=data_source,
+                    aggregate=None,
+                    **metric_kwargs,
+                )
+
+            generator = parallel(
+                joblib.delayed(getattr(report.metrics, report_metric_name))(**kwargs)
+                for report in self._parent.reports_
             )
-            results = []
+            individual_results = []
             for result in generator:
-                results.append(result)
+                individual_results.append(result)
                 progress.update(main_task, advance=1, refresh=True)
 
-            results = pd.concat(results, axis=1)
-
-            # Pop the favorability column if it exists, to:
-            # - not use it in the aggregate operation
-            # - later to only report a single column and not by split columns
-            if metric_kwargs.get("indicator_favorability", False):
-                favorability = results.pop("Favorability").iloc[:, 0]
-            else:
-                favorability = None
-
-            results.columns = pd.Index(self._parent.report_names_, name="Estimator")
-
-            if favorability is not None:
-                results["Favorability"] = favorability
+            if self._parent._reports_type == "EstimatorReport":
+                results = _MetricsAccessor._combine_estimator_results(
+                    individual_results,
+                    estimator_names=self._parent.report_names_,
+                    indicator_favorability=metric_kwargs.get(
+                        "indicator_favorability", False
+                    ),
+                )
+            else:  # "CrossValidationReport"
+                results = _MetricsAccessor._combine_cross_validation_results(
+                    individual_results,
+                    estimator_names=self._parent.report_names_,
+                    indicator_favorability=metric_kwargs.get(
+                        "indicator_favorability", False
+                    ),
+                    aggregate=aggregate,
+                )
 
             self._parent._cache[cache_key] = results
         return results
 
-    def timings(self) -> pd.DataFrame:
+    def timings(
+        self,
+        aggregate: Optional[Aggregate] = ("mean", "std"),
+    ) -> pd.DataFrame:
         """Get all measured processing times related to the different estimators.
 
         The index of the returned dataframe is the name of the processing time. When
         the estimators were not used to predict, no timings regarding the prediction
         will be present.
+
+        Parameters
+        ----------
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
+            Ignored when comparison is between EstimatorReports.
 
         Returns
         -------
@@ -292,16 +500,38 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         Predict time test      ...       ...
         Predict time train     ...       ...
         """
-        timings: pd.DataFrame = pd.concat(
-            [
-                pd.Series(report.metrics.timings())
-                for report in self._parent.estimator_reports_
-            ],
-            axis=1,
-            keys=self._parent.report_names_,
-        )
-        timings.index = timings.index.str.replace("_", " ").str.capitalize()
-        return timings
+        if self._parent._reports_type == "EstimatorReport":
+            timings: pd.DataFrame = pd.concat(
+                [
+                    pd.Series(report.metrics.timings())
+                    for report in self._parent.reports_
+                ],
+                axis=1,
+                keys=self._parent.report_names_,
+            )
+            timings.index = timings.index.str.replace("_", " ").str.capitalize()
+            return timings
+
+        else:  # "CrossValidationReport"
+            results = [
+                report.metrics.timings(aggregate=None)
+                for report in self._parent.reports_
+            ]
+
+            # Put dataframes in the right shape
+            for i, result in enumerate(results):
+                result.index.name = "Metric"
+                result.columns = pd.MultiIndex.from_product(
+                    [[self._parent.report_names_[i]], result.columns]
+                )
+
+            timings = self._combine_cross_validation_results(
+                results,
+                self._parent.report_names_,
+                indicator_favorability=False,
+                aggregate=aggregate,
+            )
+            return timings
 
     @available_if(
         _check_supported_ml_task(
@@ -314,6 +544,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source: DataSource = "test",
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
+        aggregate: Optional[Aggregate] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the accuracy score.
 
@@ -333,6 +564,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         y : array-like of shape (n_samples,), default=None
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
+
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
+            Ignored when comparison is between EstimatorReports.
 
         Returns
         -------
@@ -367,15 +603,16 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     [estimator_report_1, estimator_report_2]
         ... )
         >>> comparison_report.metrics.accuracy()
-        Estimator      LogisticRegression  LogisticRegression
+        Estimator      LogisticRegression_1  LogisticRegression_2
         Metric
-        Accuracy                  0.96...             0.96...
+        Accuracy                    0.96...               0.96...
         """
         return self.report_metrics(
             scoring=["accuracy"],
             data_source=data_source,
             X=X,
             y=y,
+            aggregate=aggregate,
         )
 
     @available_if(
@@ -393,6 +630,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             Literal["binary", "macro", "micro", "weighted", "samples"]
         ] = None,
         pos_label: Optional[PositiveLabel] = None,
+        aggregate: Optional[Aggregate] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the precision score.
 
@@ -441,6 +679,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         pos_label : int, float, bool or str, default=None
             The positive class.
 
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
+            Ignored when comparison is between EstimatorReports.
+
         Returns
         -------
         pd.DataFrame
@@ -474,10 +717,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     [estimator_report_1, estimator_report_2]
         ... )
         >>> comparison_report.metrics.precision()
-        Estimator                    LogisticRegression  LogisticRegression
+        Estimator                    LogisticRegression_1  LogisticRegression_2
         Metric      Label / Average
-        Precision                 0             0.96...             0.96...
-                                  1             0.96...             0.96...
+        Precision                 0               0.96...               0.96...
+                                  1               0.96...               0.96...
         """
         return self.report_metrics(
             scoring=["precision"],
@@ -486,6 +729,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             y=y,
             pos_label=pos_label,
             scoring_kwargs={"average": average},
+            aggregate=aggregate,
         )
 
     @available_if(
@@ -503,6 +747,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             Literal["binary", "macro", "micro", "weighted", "samples"]
         ] = None,
         pos_label: Optional[PositiveLabel] = None,
+        aggregate: Optional[Aggregate] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the recall score.
 
@@ -552,6 +797,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         pos_label : int, float, bool or str, default=None
             The positive class.
 
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
+            Ignored when comparison is between EstimatorReports.
+
         Returns
         -------
         pd.DataFrame
@@ -585,10 +835,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     [estimator_report_1, estimator_report_2]
         ... )
         >>> comparison_report.metrics.recall()
-        Estimator                    LogisticRegression  LogisticRegression
+        Estimator                    LogisticRegression_1  LogisticRegression_2
         Metric      Label / Average
-        Recall                    0            0.944...            0.944...
-                                  1            0.977...            0.977...
+        Recall                    0              0.944...              0.944...
+                                  1              0.977...              0.977...
         """
         return self.report_metrics(
             scoring=["recall"],
@@ -597,6 +847,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             y=y,
             pos_label=pos_label,
             scoring_kwargs={"average": average},
+            aggregate=aggregate,
         )
 
     @available_if(
@@ -608,6 +859,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source: DataSource = "test",
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
+        aggregate: Optional[Aggregate] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the Brier score.
 
@@ -627,6 +879,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         y : array-like of shape (n_samples,), default=None
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
+
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
+            Ignored when comparison is between EstimatorReports.
 
         Returns
         -------
@@ -661,15 +918,16 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     [estimator_report_1, estimator_report_2]
         ... )
         >>> comparison_report.metrics.brier_score()
-        Estimator         LogisticRegression  LogisticRegression
+        Estimator         LogisticRegression_1  LogisticRegression_2
         Metric
-        Brier score                  0.025...            0.025...
+        Brier score                   0.025...              0.025...
         """
         return self.report_metrics(
             scoring=["brier_score"],
             data_source=data_source,
             X=X,
             y=y,
+            aggregate=aggregate,
         )
 
     @available_if(
@@ -687,6 +945,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             Literal["auto", "macro", "micro", "weighted", "samples"]
         ] = None,
         multi_class: Literal["raise", "ovr", "ovo"] = "ovr",
+        aggregate: Optional[Aggregate] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the ROC AUC score.
 
@@ -741,6 +1000,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
               pairwise combinations of classes. Insensitive to class imbalance when
               `average == "macro"`.
 
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
+            Ignored when comparison is between EstimatorReports.
+
         Returns
         -------
         pd.DataFrame
@@ -774,9 +1038,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     [estimator_report_1, estimator_report_2]
         ... )
         >>> comparison_report.metrics.roc_auc()
-        Estimator      LogisticRegression  LogisticRegression
+        Estimator      LogisticRegression_1  LogisticRegression_2
         Metric
-        ROC AUC                   0.99...             0.99...
+        ROC AUC                     0.99...               0.99...
         """
         return self.report_metrics(
             scoring=["roc_auc"],
@@ -784,6 +1048,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             X=X,
             y=y,
             scoring_kwargs={"average": average, "multi_class": multi_class},
+            aggregate=aggregate,
         )
 
     @available_if(
@@ -797,6 +1062,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source: DataSource = "test",
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
+        aggregate: Optional[Aggregate] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the log loss.
 
@@ -816,6 +1082,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         y : array-like of shape (n_samples,), default=None
             New target on which to compute the metric. By default, we use the target
             provided when creating the report.
+
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
+            Ignored when comparison is between EstimatorReports.
 
         Returns
         -------
@@ -850,15 +1121,16 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     [estimator_report_1, estimator_report_2]
         ... )
         >>> comparison_report.metrics.log_loss()
-        Estimator      LogisticRegression  LogisticRegression
+        Estimator      LogisticRegression_1  LogisticRegression_2
         Metric
-        Log loss                 0.082...            0.082...
+        Log loss                   0.082...              0.082...
         """
         return self.report_metrics(
             scoring=["log_loss"],
             data_source=data_source,
             X=X,
             y=y,
+            aggregate=aggregate,
         )
 
     @available_if(
@@ -873,6 +1145,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
         multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
+        aggregate: Optional[Aggregate] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the R² score.
 
@@ -902,6 +1175,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             - "uniform_average": Errors of all outputs are averaged with uniform weight.
 
             By default, no averaging is done.
+
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
+            Ignored when comparison is between EstimatorReports.
 
         Returns
         -------
@@ -936,9 +1214,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     [estimator_report_1, estimator_report_2]
         ... )
         >>> comparison_report.metrics.r2()
-        Estimator     Ridge    Ridge
+        Estimator     Ridge_1    Ridge_2
         Metric
-        R²          0.43...  0.43...
+        R²            0.43...    0.43...
         """
         return self.report_metrics(
             scoring=["r2"],
@@ -946,6 +1224,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             X=X,
             y=y,
             scoring_kwargs={"multioutput": multioutput},
+            aggregate=aggregate,
         )
 
     @available_if(
@@ -960,6 +1239,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
         multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
+        aggregate: Optional[Aggregate] = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the root mean squared error.
 
@@ -989,6 +1269,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             - "uniform_average": Errors of all outputs are averaged with uniform weight.
 
             By default, no averaging is done.
+
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
+            Ignored when comparison is between EstimatorReports.
 
         Returns
         -------
@@ -1023,9 +1308,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     [estimator_report_1, estimator_report_2]
         ... )
         >>> comparison_report.metrics.rmse()
-        Estimator       Ridge       Ridge
+        Estimator       Ridge_1       Ridge_2
         Metric
-        RMSE        55.726...   55.726...
+        RMSE          55.726...     55.726...
         """
         return self.report_metrics(
             scoring=["rmse"],
@@ -1033,6 +1318,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             X=X,
             y=y,
             scoring_kwargs={"multioutput": multioutput},
+            aggregate=aggregate,
         )
 
     def custom_metric(
@@ -1044,6 +1330,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         data_source: DataSource = "test",
         X: Optional[ArrayLike] = None,
         y: Optional[ArrayLike] = None,
+        aggregate: Optional[Aggregate] = ("mean", "std"),
         **kwargs: Any,
     ) -> pd.DataFrame:
         """Compute a custom metric.
@@ -1090,6 +1377,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         **kwargs : dict
             Any additional keyword arguments to be passed to the metric function.
 
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
+            Ignored when comparison is between EstimatorReports.
+
         Returns
         -------
         pd.DataFrame
@@ -1128,9 +1420,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         ...     response_method="predict",
         ...     metric_name="MAE",
         ... )
-        Estimator      Ridge      Ridge
+        Estimator      Ridge_1      Ridge_2
         Metric
-        MAE         45.91...   45.91...
+        MAE           45.91...     45.91...
         """
         # create a scorer with `greater_is_better=True` to not alter the output of
         # `metric_function`
@@ -1146,6 +1438,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             X=X,
             y=y,
             scoring_names=[metric_name] if metric_name is not None else None,
+            aggregate=aggregate,
         )
 
     ####################################################################################
@@ -1258,6 +1551,9 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         display : display_class
             The display.
         """
+        if self._parent._reports_type == "CrossValidationReport":
+            raise NotImplementedError()
+
         if "seed" in display_kwargs and display_kwargs["seed"] is None:
             cache_key = None
         else:
@@ -1271,7 +1567,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         assert self._parent._progress_info is not None, "Progress info not set"
         progress = self._parent._progress_info["current_progress"]
         main_task = self._parent._progress_info["current_task"]
-        total_estimators = len(self._parent.estimator_reports_)
+        total_estimators = len(self._parent.reports_)
         progress.update(main_task, total=total_estimators)
 
         if cache_key in self._parent._cache:
@@ -1279,7 +1575,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         else:
             y_true, y_pred = [], []
 
-            for report in self._parent.estimator_reports_:
+            for report in self._parent.reports_:
                 report_X, report_y, _ = report.metrics._get_X_y_and_data_source_hash(
                     data_source=data_source,
                     X=X,
@@ -1305,9 +1601,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 y_true=y_true,
                 y_pred=y_pred,
                 report_type="comparison-estimator",
-                estimators=[
-                    report.estimator_ for report in self._parent.estimator_reports_
-                ],
+                estimators=[report.estimator_ for report in self._parent.reports_],
                 estimator_names=self._parent.report_names_,
                 ml_task=self._parent._ml_task,
                 data_source=data_source,
@@ -1393,6 +1687,28 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         """
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
+
+        if self._parent._reports_type == "CrossValidationReport":
+            cv_displays = [
+                cv_report.metrics.roc(
+                    data_source=data_source,
+                    # X=X,
+                    # y=y,
+                    pos_label=pos_label,
+                )
+                for cv_report in self._parent.reports_
+            ]
+
+            return CompCVRocCurveDisplay(
+                fpr=[d.fpr for d in cv_displays],
+                tpr=[d.tpr for d in cv_displays],
+                roc_auc=[d.roc_auc for d in cv_displays],
+                estimator_names=self._parent.report_names_,
+                pos_label=cv_displays[0].pos_label,
+                data_source=data_source,
+                ml_task=self._parent._ml_task,
+            )
+
         display = cast(
             RocCurveDisplay,
             self._get_display(
