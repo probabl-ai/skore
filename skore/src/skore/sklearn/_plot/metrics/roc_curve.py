@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from collections import defaultdict
 from collections.abc import Sequence
 from typing import Any, Literal, Optional, Union, cast
@@ -642,6 +644,8 @@ class RocCurveDisplay(
                 estimator_names=self.estimator_names,
                 roc_curve_kwargs=roc_curve_kwargs,
             )
+        elif self.report_type == "comparison-cross-validation":
+            self.ax_, self.lines_ = ...
         else:
             raise ValueError(
                 f"`report_type` should be one of 'estimator', 'cross-validation', "
@@ -691,7 +695,7 @@ class RocCurveDisplay(
         data_source: Literal["train", "test", "X_y"],
         pos_label: Union[int, float, bool, str, None],
         drop_intermediate: bool = True,
-    ) -> "RocCurveDisplay":
+    ) -> RocCurveDisplay:
         """Private method to create a RocCurveDisplay from predictions.
 
         Parameters
