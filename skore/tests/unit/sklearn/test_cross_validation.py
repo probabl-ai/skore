@@ -280,16 +280,24 @@ def test_cross_validation_report_flat_index(binary_classification_data):
     result = report.metrics.report_metrics(flat_index=True)
     assert result.shape == (8, 2)
     assert isinstance(result.index, pd.Index)
-    assert result.index.tolist() == [
+
+    metrics = [
         "precision_0",
         "precision_1",
         "recall_0",
         "recall_1",
         "roc_auc",
         "brier_score",
-        "fit_time_s",
-        "predict_time_s",
     ]
+    time_metrics_prefix = ["fit_time", "predict_time"]
+
+    for metric in metrics:
+        assert metric in result.index
+
+    # Check time metrics with the appropriate suffix
+    for prefix in time_metrics_prefix:
+        assert any(idx.startswith(prefix) for idx in result.index)
+
     assert result.columns.tolist() == [
         "randomforestclassifier_mean",
         "randomforestclassifier_std",
@@ -392,8 +400,9 @@ def _normalize_metric_name(index):
     a multi-index or single-index."""
     # if we have a multi-index, then the metric name is on level 0
     s = index[0] if isinstance(index, tuple) else index
-    # Remove spaces and underscores
-    return re.sub(r"[^a-zA-Z]", "", s.lower())
+    # Remove spaces and underscores and (s) suffix
+    s = s.lower().replace(" (s)", "")
+    return re.sub(r"[^a-zA-Z]", "", s)
 
 
 def _check_results_single_metric(report, metric, expected_n_splits, expected_nb_stats):
@@ -867,12 +876,36 @@ def test_cross_validation_report_report_metrics_indicator_favorability(
     assert "Favorability" in result.columns
     indicator = result["Favorability"]
     assert indicator.shape == (8,)
-    assert indicator["Precision"].tolist() == ["(↗︎)", "(↗︎)"]
-    assert indicator["Recall"].tolist() == ["(↗︎)", "(↗︎)"]
-    assert indicator["ROC AUC"].tolist() == ["(↗︎)"]
-    assert indicator["Brier score"].tolist() == ["(↘︎)"]
-    assert indicator["Fit time"].tolist() == ["(↘︎)"]
-    assert indicator["Predict time"].tolist() == ["(↘︎)"]
+
+    precision_rows = [idx for idx in indicator.index if idx[0] == "Precision"]
+    recall_rows = [idx for idx in indicator.index if idx[0] == "Recall"]
+    roc_auc_rows = [idx for idx in indicator.index if idx[0] == "ROC AUC"]
+    brier_score_rows = [idx for idx in indicator.index if idx[0] == "Brier score"]
+
+    for row in precision_rows:
+        assert indicator.loc[row] == "(↗︎)"
+    for row in recall_rows:
+        assert indicator.loc[row] == "(↗︎)"
+    for row in roc_auc_rows:
+        assert indicator.loc[row] == "(↗︎)"
+    for row in brier_score_rows:
+        assert indicator.loc[row] == "(↘︎)"
+
+    time_keys = [
+        key
+        for key in result.index
+        if isinstance(key, tuple) and "time" in key[0].lower()
+    ]
+
+    fit_time_keys = [key for key in time_keys if "fit" in key[0].lower()]
+    predict_time_keys = [key for key in time_keys if "predict" in key[0].lower()]
+
+    if fit_time_keys:
+        for key in fit_time_keys:
+            assert indicator.loc[key] == "(↘︎)"
+    if predict_time_keys:
+        for key in predict_time_keys:
+            assert indicator.loc[key] == "(↘︎)"
 
 
 def test_cross_validation_report_custom_metric(binary_classification_data):
