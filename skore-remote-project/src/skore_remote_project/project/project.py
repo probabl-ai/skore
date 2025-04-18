@@ -88,7 +88,7 @@ class Project:
             return run["id"]
 
     def metadata(self):
-        return Metadata.factory(self)
+        return self.run_id and Metadata.factory(self)
 
     def put(
         self,
