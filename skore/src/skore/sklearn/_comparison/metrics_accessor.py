@@ -296,37 +296,17 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 aggregate = [aggregate]
 
             if "Label / Average" in df.columns:
-                by = ["Metric", "Label / Average", "Estimator"]
+                index = ["Metric", "Label / Average"]
             else:
-                by = ["Metric", "Estimator"]
+                index = ["Metric"]
 
-            df = df.groupby(by=by, sort=False)["Value"].agg(func=aggregate)
-
-            df = df.reset_index()
-
-            metric_order = df["Metric"].unique()
-
-            df["metric_order_index"] = df["Metric"].apply(
-                lambda x: list(metric_order).index(x)
+            df = df.pivot_table(
+                index=index,
+                columns="Estimator",
+                values="Value",
+                aggfunc=aggregate,
+                sort=False,
             )
-
-            if "Label / Average" in df.columns:
-                by = ["metric_order_index", "Label / Average", "Estimator"]
-            else:
-                by = ["metric_order_index", "Estimator"]
-
-            df = (
-                df.sort_values(by=by)
-                .drop("metric_order_index", axis=1)
-                .reset_index(drop=True)
-            )
-
-            if "Label / Average" in df.columns:
-                new_index = ["Metric", "Label / Average", "Estimator"]
-            else:
-                new_index = ["Metric", "Estimator"]
-
-            df = df.set_index(new_index)
         else:
             # Make sure the Split column goes [0, 1, 2, 0, 1, 2]
             # Rather than [0, 0, 1, 1, 2, 2]
