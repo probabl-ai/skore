@@ -1685,9 +1685,6 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         )
         assert y is not None, "y must be provided"
 
-        # build the cache key components to finally create a tuple that will be used
-        # to check if the metric has already been computed
-
         if "seed" in display_kwargs and display_kwargs["seed"] is None:
             cache_key = None
         else:
