@@ -210,6 +210,17 @@ def report(binary_classification_model):
     return ComparisonReport([estimator_report, copy(estimator_report)])
 
 
+@pytest.fixture
+def report_classification(estimator_reports):
+    estimator_report_1, estimator_report_2 = estimator_reports
+    return ComparisonReport([estimator_report_1, estimator_report_2])
+
+
+@pytest.fixture
+def report(report_classification):
+    return report_classification
+
+
 def test_comparison_report_help(capsys, report):
     """Check the help menu works."""
     report.help()
