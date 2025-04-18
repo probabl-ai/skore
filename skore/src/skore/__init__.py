@@ -9,7 +9,6 @@ from rich.theme import Theme
 
 from skore._config import config_context, get_config, set_config
 from skore.externals._sklearn_compat import parse_version
-from skore.project import Project
 from skore.sklearn import (
     ComparisonReport,
     CrossValidationReport,
@@ -28,7 +27,6 @@ __all__ = [
     "EstimatorReport",
     "PrecisionRecallCurveDisplay",
     "PredictionErrorDisplay",
-    "Project",
     "RocCurveDisplay",
     "show_versions",
     "train_test_split",

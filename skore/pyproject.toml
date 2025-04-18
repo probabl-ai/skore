@@ -45,7 +45,6 @@ test = [
   "pytest-order",
   "pytest-randomly",
   "pytest-xdist",
-  "ruff",
   "scikit-learn<1.7",
   "skrub",
   "xdoctest",
@@ -82,6 +81,9 @@ Download = "https://pypi.org/project/skore/#files"
 Issues = "https://github.com/probabl-ai/skore/issues"
 "Release notes" = "https://github.com/probabl-ai/skore/releases"
 
+[project.entry-points."skore.plugins.project"]
+local = "skore.project.project:Project"
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
@@ -104,12 +106,6 @@ addopts = [
   "--import-mode=importlib",
   "--no-header",
   "--verbosity=2",
-  # We ignore unwanted directories rather than including wanted ones, because
-  # otherwise it becomes impossible to test only one file (the argument gets
-  # appended to the defaults)
-  "--ignore=doc",
-  "--ignore=examples",
-  "--ignore=notebooks",
   "--dist=loadscope",
 ]
 
@@ -125,7 +121,6 @@ show_missing = true
 
 [tool.ruff]
 src = ["skore"]
-exclude = ["doc"]
 
 [tool.ruff.lint]
 select = [
