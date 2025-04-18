@@ -132,10 +132,10 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         >>> ComparisonReport._deduplicate_report_names(['a'])
         ['a']
         """
-        result = report_names_.copy()
-        for report_name in report_names_:
+        result = report_names.copy()
+        for report_name in report_names:
             indexes_of_report_names = [
-                index for index, name in enumerate(report_names_) if name == report_name
+                index for index, name in enumerate(report_names) if name == report_name
             ]
             if len(indexes_of_report_names) == 1:
                 # report name appears only once
