@@ -108,6 +108,7 @@ def test_pickle(tmp_path, report):
     """Check that we can pickle a comparison report."""
     with BytesIO() as stream:
         joblib.dump(report, stream)
+        joblib.load(stream)
 
 
 def test_cross_validation_report_cleaned_up(report):

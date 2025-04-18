@@ -237,10 +237,10 @@ def test_comparison_report_pickle(tmp_path, binary_classification_model):
         y_test=y_test,
     )
 
+    report = ComparisonReport([estimator_report, copy(estimator_report)])
     with BytesIO() as stream:
-        joblib.dump(
-            ComparisonReport([estimator_report, copy(estimator_report)]), stream
-        )
+        joblib.dump(report, stream)
+        joblib.load(stream)
 
 
 def test_estimator_report_cleaned_up(binary_classification_model):
