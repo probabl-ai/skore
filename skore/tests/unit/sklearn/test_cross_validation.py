@@ -220,9 +220,19 @@ def test_cross_validation_report_get_predictions(
     estimator = LogisticRegression()
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
 
-    predictions = report.get_predictions(
-        data_source=data_source, response_method=response_method, pos_label=pos_label
-    )
+    if data_source == "X_y":
+        predictions = report.get_predictions(
+            data_source=data_source,
+            response_method=response_method,
+            X=X,
+            pos_label=pos_label,
+        )
+    else:
+        predictions = report.get_predictions(
+            data_source=data_source,
+            response_method=response_method,
+            pos_label=pos_label,
+        )
     assert len(predictions) == 2
     for split_idx, split_predictions in enumerate(predictions):
         if data_source == "train":
@@ -242,6 +252,9 @@ def test_cross_validation_report_get_predictions_error():
 
     with pytest.raises(ValueError, match="Invalid data source"):
         report.get_predictions(data_source="invalid", response_method="predict")
+
+    with pytest.raises(ValueError, match="The `X` parameter is required"):
+        report.get_predictions(data_source="X_y", response_method="predict")
 
 
 def test_cross_validation_report_pickle(tmp_path, binary_classification_data):
