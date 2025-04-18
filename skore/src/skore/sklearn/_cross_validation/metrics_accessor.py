@@ -310,7 +310,11 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         class TimingsDataFrame(pd.DataFrame):
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, **kwargs)
-                self._index_without_units = self.index.copy()
+
+            @property
+            def index_without_units(self):
+                """Return the index without units. Used for internal functions."""
+                return self.index.copy()
 
             def _repr_html_(self):
                 df_display = self.copy()
