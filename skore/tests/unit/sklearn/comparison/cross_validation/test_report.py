@@ -34,7 +34,7 @@ def cv_report_regression():
 def test_init_wrong_parameters(cv_report_classification):
     """If the input is not valid, raise."""
 
-    with pytest.raises(TypeError, match="Expected reports to be an iterable"):
+    with pytest.raises(TypeError, match="Expected reports to be a list or dict"):
         ComparisonReport(cv_report_classification)
 
     with pytest.raises(ValueError, match="Expected at least 2 reports to compare"):

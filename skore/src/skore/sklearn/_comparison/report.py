@@ -193,7 +193,9 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             The inferred type of the reports that will be compared.
         """
         if not isinstance(reports, Iterable):
-            raise TypeError(f"Expected reports to be an iterable; got {type(reports)}")
+            raise TypeError(
+                f"Expected reports to be a list or dict; got {type(reports)}"
+            )
 
         if len(reports) < 2:
             raise ValueError("Expected at least 2 reports to compare")
