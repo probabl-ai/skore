@@ -1,5 +1,4 @@
 import re
-from copy import copy
 from io import BytesIO
 
 import joblib
@@ -64,9 +63,10 @@ def test_comparison_report_without_testing_data(binary_classification_model):
     initialization works, but computing metrics can fail.
     """
     estimator, X_train, _, y_train, _ = binary_classification_model
-    estimator_report = EstimatorReport(estimator, X_train=X_train, y_train=y_train)
+    estimator_report_1 = EstimatorReport(estimator, X_train=X_train, y_train=y_train)
+    estimator_report_2 = EstimatorReport(estimator, X_train=X_train, y_train=y_train)
 
-    report = ComparisonReport([estimator_report, copy(estimator_report)])
+    report = ComparisonReport([estimator_report_1, estimator_report_2])
 
     with pytest.raises(ValueError, match="No test data"):
         report.metrics.report_metrics(data_source="test")
@@ -192,7 +192,14 @@ def test_comparison_report_non_string_report_names(estimator_reports):
 @pytest.fixture
 def report_regression(regression_model):
     estimator, X_train, X_test, y_train, y_test = regression_model
-    estimator_report = EstimatorReport(
+    estimator_report_1 = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    estimator_report_2 = EstimatorReport(
         estimator,
         X_train=X_train,
         y_train=y_train,
@@ -200,7 +207,7 @@ def report_regression(regression_model):
         y_test=y_test,
     )
 
-    return ComparisonReport([estimator_report, copy(estimator_report)])
+    return ComparisonReport([estimator_report_1, estimator_report_2])
 
 
 @pytest.fixture
@@ -407,7 +414,14 @@ def test_comparison_report_metrics_linear_regression(
 ):
     """Check the metrics work."""
     estimator, X_train, X_test, y_train, y_test = regression_model
-    estimator_report = EstimatorReport(
+    estimator_report_1 = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    estimator_report_2 = EstimatorReport(
         estimator,
         X_train=X_train,
         y_train=y_train,
@@ -415,7 +429,7 @@ def test_comparison_report_metrics_linear_regression(
         y_test=y_test,
     )
 
-    comp = ComparisonReport([estimator_report, copy(estimator_report)])
+    comp = ComparisonReport([estimator_report_1, estimator_report_2])
 
     # ensure metric is valid
     if data_source == "X_y":
@@ -686,7 +700,7 @@ def test_random_state(report_regression):
 )
 @pytest.mark.parametrize("pos_label", [None, 0, 1])
 def test_comparison_report_get_predictions(
-    binary_classification_model, report, data_source, response_method, pos_label
+    report, data_source, response_method, pos_label
 ):
     """Check the behaviour of the `get_predictions` method."""
     predictions = report.get_predictions(
