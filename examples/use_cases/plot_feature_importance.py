@@ -570,7 +570,10 @@ print(
 # features are the following:
 
 # %%
-selectk_features = selectk_ridge_report.estimator_[:-1].get_feature_names_out()
+selectk_features = [
+    name.replace("kmeans__", "geospatial__").replace("remainder__", "")
+    for name in selectk_ridge_report.estimator_[:-1].get_feature_names_out()
+]
 print(selectk_features)
 
 # %%
