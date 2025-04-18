@@ -110,8 +110,31 @@ def test_comparison_report_different_test_data(binary_classification_model):
         )
 
 
+@pytest.fixture
+def estimator_reports(binary_classification_model):
+    logistic_regression_estimator, X_train, X_test, y_train, y_test = (
+        binary_classification_model
+    )
+    estimator_report_1 = EstimatorReport(
+        logistic_regression_estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    estimator_report_2 = EstimatorReport(
+        logistic_regression_estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+    return estimator_report_1, estimator_report_2
+
+
 def test_comparison_report_init_different_ml_usecases(
-    binary_classification_model, regression_model
+    estimator_reports, regression_model
 ):
     """Raise an error if the passed estimators do not have the same ML usecase."""
     linear_regression_estimator, X_train, X_test, y_train, y_test = regression_model
@@ -123,16 +146,7 @@ def test_comparison_report_init_different_ml_usecases(
         y_test=y_test,
     )
 
-    logistic_regression_estimator, X_train, X_test, y_train, y_test = (
-        binary_classification_model
-    )
-    logistic_regression_report = EstimatorReport(
-        logistic_regression_estimator,
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
+    logistic_regression_report, _ = estimator_reports
 
     with pytest.raises(
         ValueError, match="Expected all estimators to have the same ML usecase"
@@ -140,59 +154,38 @@ def test_comparison_report_init_different_ml_usecases(
         ComparisonReport([linear_regression_report, logistic_regression_report])
 
 
-def test_comparison_report_init_with_report_names(binary_classification_model):
+def test_comparison_report_init_with_report_names(estimator_reports):
     """If the estimators are passed as a dict,
     then the estimator names are the dict keys."""
-    estimator, X_train, X_test, y_train, y_test = binary_classification_model
-    estimator_report = EstimatorReport(
-        estimator,
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
+    estimator_report_1, estimator_report_2 = estimator_reports
 
-    comp = ComparisonReport({"r1": estimator_report, "r2": copy(estimator_report)})
+    report = ComparisonReport({"r1": estimator_report_1, "r2": estimator_report_2})
 
     pd.testing.assert_index_equal(
-        comp.metrics.accuracy().columns,
+        report.metrics.accuracy().columns,
         pd.Index(["r1", "r2"], name="Estimator"),
     )
 
 
-def test_comparison_report_init_without_report_names(binary_classification_model):
+def test_comparison_report_init_without_report_names(estimator_reports):
     """If the estimators are passed as a list,
     then the estimator names are the estimator class names."""
-    estimator, X_train, X_test, y_train, y_test = binary_classification_model
-    estimator_report = EstimatorReport(
-        estimator,
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
+    estimator_report_1, estimator_report_2 = estimator_reports
 
-    comp = ComparisonReport([estimator_report, copy(estimator_report)])
+    report = ComparisonReport([estimator_report_1, estimator_report_2])
 
     pd.testing.assert_index_equal(
-        comp.metrics.accuracy().columns,
+        report.metrics.accuracy().columns,
         pd.Index(["LogisticRegression_1", "LogisticRegression_2"], name="Estimator"),
     )
 
 
-def test_comparison_report_non_string_report_names(binary_classification_model):
+def test_comparison_report_non_string_report_names(estimator_reports):
     """If the estimators are passed as a dict with non-string keys,
     then the estimator names are the dict keys converted to strings."""
-    estimator, X_train, X_test, y_train, y_test = binary_classification_model
-    estimator_report = EstimatorReport(
-        estimator,
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
+    estimator_report_1, estimator_report_2 = estimator_reports
 
-    report = ComparisonReport({0: estimator_report, "1": copy(estimator_report)})
+    report = ComparisonReport({0: estimator_report_1, "1": estimator_report_2})
     assert report.report_names_ == ["0", "1"]
 
 
@@ -248,7 +241,7 @@ def test_comparison_report_pickle(tmp_path, report):
         joblib.load(stream)
 
 
-def test_estimator_report_cleaned_up(binary_classification_model):
+def test_estimator_report_cleaned_up(estimator_reports):
     """
     When an EstimatorReport is passed to a ComparisonReport, and computations are
     done on the ComparisonReport, the EstimatorReport should remain pickle-able.
@@ -256,20 +249,12 @@ def test_estimator_report_cleaned_up(binary_classification_model):
     Non-regression test for bug found in:
     https://github.com/probabl-ai/skore/pull/1512
     """
-    estimator, X_train, X_test, y_train, y_test = binary_classification_model
-    estimator_report = EstimatorReport(
-        estimator,
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-
-    comp = ComparisonReport([estimator_report, copy(estimator_report)])
-    comp.metrics.report_metrics()
+    estimator_report_1, estimator_report_2 = estimator_reports
+    report = ComparisonReport([estimator_report_1, estimator_report_2])
+    report.metrics.report_metrics()
 
     with BytesIO() as stream:
-        joblib.dump(estimator_report, stream)
+        joblib.dump(estimator_report_1, stream)
 
 
 def test_comparison_report_metrics_help(capsys, report):
