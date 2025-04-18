@@ -212,6 +212,8 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             reports_list = cast(list[EstimatorReport], reports_list)
             reports_type = "EstimatorReport"
 
+            # FIXME: We should only check y_test since it is all we need to tell us
+            # whether we have a distinct ML task at hand.
             test_dataset_hashes = {
                 joblib.hash((report.X_test, report.y_test))
                 for report in reports_list
