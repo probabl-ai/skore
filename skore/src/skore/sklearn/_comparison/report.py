@@ -198,7 +198,9 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             )
 
         if len(reports) < 2:
-            raise ValueError("Expected at least 2 reports to compare")
+            raise ValueError(
+                f"Expected at least 2 reports to compare; got {len(reports)}"
+            )
 
         report_names = (
             list(map(str, reports.keys())) if isinstance(reports, dict) else None
