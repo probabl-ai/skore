@@ -30,9 +30,6 @@ class ConfusionMatrixDisplay(Display):
         Format specification for values in confusion matrix. If None, the format
         specification is 'd' or '.2g' whichever is shorter.
 
-    ax : matplotlib axes, default=None
-        Axes object to plot on. If None, a new figure and axes is created.
-
     Attributes
     ----------
     figure_ : matplotlib Figure
@@ -225,13 +222,13 @@ class ConfusionMatrixDisplay(Display):
 
         return disp
 
-    def table(self):
-        """Return the confusion matrix as a table.
+    def frame(self):
+        """Return the confusion matrix as a dataframe.
 
         Returns
         -------
-        table : pandas.DataFrame
-            The confusion matrix as a table.
+        frame : pandas.DataFrame
+            The confusion matrix as a dataframe.
         """
         import pandas as pd
 
