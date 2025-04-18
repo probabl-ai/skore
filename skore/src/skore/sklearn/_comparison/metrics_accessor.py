@@ -111,6 +111,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
+            Ignored when comparison is between EstimatorReports.
 
         Returns
         -------
@@ -480,6 +481,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
+            Ignored when comparison is between EstimatorReports.
 
         Returns
         -------
@@ -602,6 +604,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
+            Ignored when comparison is between EstimatorReports.
 
         Returns
         -------
@@ -715,6 +718,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
+            Ignored when comparison is between EstimatorReports.
 
         Returns
         -------
@@ -832,6 +836,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
+            Ignored when comparison is between EstimatorReports.
 
         Returns
         -------
@@ -914,6 +919,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
+            Ignored when comparison is between EstimatorReports.
 
         Returns
         -------
@@ -1033,6 +1039,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
+            Ignored when comparison is between EstimatorReports.
 
         Returns
         -------
@@ -1115,6 +1122,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
+            Ignored when comparison is between EstimatorReports.
 
         Returns
         -------
@@ -1207,6 +1215,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
+            Ignored when comparison is between EstimatorReports.
 
         Returns
         -------
@@ -1300,6 +1309,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
+            Ignored when comparison is between EstimatorReports.
 
         Returns
         -------
@@ -1406,6 +1416,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
+            Ignored when comparison is between EstimatorReports.
 
         Returns
         -------
