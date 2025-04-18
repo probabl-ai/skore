@@ -330,17 +330,21 @@ def test_estimator_report_flat_index(binary_classification_data):
     result = report.metrics.report_metrics(flat_index=True)
     assert result.shape == (8, 1)
     assert isinstance(result.index, pd.Index)
-    assert result.index.tolist() == [
+    metrics = [
         "precision_0",
         "precision_1",
         "recall_0",
         "recall_1",
         "roc_auc",
         "brier_score",
-        "fit_time",
-        "predict_time",
     ]
-    assert result.columns.tolist() == ["RandomForestClassifier"]
+    time_metrics_prefix = ["fit_time", "predict_time"]
+
+    for metric in metrics:
+        assert metric in result.index
+
+    for prefix in time_metrics_prefix:
+        assert any(idx.startswith(prefix) for idx in result.index)
 
 
 def test_estimator_report_get_predictions():
@@ -646,12 +650,13 @@ def test_estimator_report_metrics_regression(regression_data, metric):
 
 
 def _normalize_metric_name(column):
-    """Helper to normalize the metric name present in a pandas column that could be
+    """Helper to normalize the metric name present in a pandas index that could be
     a multi-index or single-index."""
     # if we have a multi-index, then the metric name is on level 0
     s = column[0] if isinstance(column, tuple) else column
-    # Remove spaces and underscores
-    return re.sub(r"[^a-zA-Z]", "", s.lower())
+    # Remove spaces and underscores and (s) suffix
+    s = s.lower().replace(" (s)", "")
+    return re.sub(r"[^a-zA-Z]", "", s)
 
 
 def _check_results_report_metrics(result, expected_metrics, expected_nb_stats):

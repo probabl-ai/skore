@@ -139,6 +139,8 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
                 results.columns = flatten_multi_index(results.columns)
             if isinstance(results.index, pd.MultiIndex):
                 results.index = flatten_multi_index(results.index)
+            if isinstance(results.index, pd.Index):
+                results.index = results.index.str.replace(r"\(s\)", "_s", regex=True)
         return results
 
     @progress_decorator(description="Compute metric for each split")
@@ -256,14 +258,14 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         >>> from skore import CrossValidationReport
         >>> report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=2)
         >>> report.metrics.timings()
-                      mean       std
-        Fit time       ...       ...
+                          mean       std
+        Fit time (s)       ...       ...
         >>> report.cache_predictions(response_methods=["predict"])
         >>> report.metrics.timings()
-                                mean       std
-        Fit time                 ...       ...
-        Predict time test        ...       ...
-        Predict time train       ...       ...
+                                    mean       std
+        Fit time (s)                 ...       ...
+        Predict time test (s)        ...       ...
+        Predict time train (s)       ...       ...
         """
         timings: pd.DataFrame = pd.concat(
             [
@@ -278,7 +280,32 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
                 aggregate = [aggregate]
             timings = timings.aggregate(func=aggregate, axis=1)
         timings.index = timings.index.str.replace("_", " ").str.capitalize()
-        return timings
+
+        class TimingsDataFrame(pd.DataFrame):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+
+            @property
+            def index_without_units(self):
+                """Return the index without units. Used for internal functions."""
+                return self.index.copy()
+
+            def _repr_html_(self):
+                df_display = self.copy()
+                df_display.index = df_display.index.str.replace(
+                    r"(Fit time|Predict time.*)$", r"\1 (s)", regex=True
+                )
+                return df_display._repr_html_()
+
+            def __repr__(self):
+                df_display = self.copy()
+                df_display.index = df_display.index.str.replace(
+                    r"(Fit time|Predict time.*)$", r"\1 (s)", regex=True
+                )
+                return df_display.__repr__()
+
+        result = TimingsDataFrame(timings)
+        return result
 
     @available_if(_check_estimator_report_has_method("metrics", "accuracy"))
     def accuracy(
