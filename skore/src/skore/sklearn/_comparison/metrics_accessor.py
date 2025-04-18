@@ -627,6 +627,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             data_source=data_source,
             X=X,
             y=y,
+            aggregate=aggregate,
         )
 
     @available_if(
@@ -742,6 +743,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             y=y,
             pos_label=pos_label,
             scoring_kwargs={"average": average},
+            aggregate=aggregate,
         )
 
     @available_if(
@@ -858,6 +860,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             y=y,
             pos_label=pos_label,
             scoring_kwargs={"average": average},
+            aggregate=aggregate,
         )
 
     @available_if(
@@ -936,6 +939,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             data_source=data_source,
             X=X,
             y=y,
+            aggregate=aggregate,
         )
 
     @available_if(
@@ -1055,6 +1059,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             X=X,
             y=y,
             scoring_kwargs={"average": average, "multi_class": multi_class},
+            aggregate=aggregate,
         )
 
     @available_if(
@@ -1135,6 +1140,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             data_source=data_source,
             X=X,
             y=y,
+            aggregate=aggregate,
         )
 
     @available_if(
@@ -1227,6 +1233,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             X=X,
             y=y,
             scoring_kwargs={"multioutput": multioutput},
+            aggregate=aggregate,
         )
 
     @available_if(
@@ -1319,6 +1326,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             X=X,
             y=y,
             scoring_kwargs={"multioutput": multioutput},
+            aggregate=aggregate,
         )
 
     def custom_metric(
@@ -1437,6 +1445,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             X=X,
             y=y,
             scoring_names=[metric_name] if metric_name is not None else None,
+            aggregate=aggregate,
         )
 
     ####################################################################################
