@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from urllib.parse import urljoin
 
 import pytest
-from httpx import Response, HTTPStatusError
+from httpx import HTTPStatusError, Response
 from skore_remote_project.client.api import URI
 from skore_remote_project.client.client import AuthenticatedClient, AuthenticationError
 

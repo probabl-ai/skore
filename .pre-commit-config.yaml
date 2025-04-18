@@ -25,13 +25,13 @@ repos:
     rev: v0.9.10
     hooks:
       - id: ruff
-        files: ^(skore/(src|tests))|(skore-remote-project/(src|tests))|(examples)/
+        files: ^((skore|skore-remote-project)/(hatch|src|tests))|(examples)/
         args: [--fix]
       - id: ruff-format
-        files: ^(skore/(src|tests))|(skore-remote-project/(src|tests))|(examples)/
+        files: ^((skore|skore-remote-project)/(hatch|src|tests))|(examples)/
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.15.0
     hooks:
       - id: mypy
-        files: ^(skore/src)|(skore-remote-project/src)/
+        files: ^(skore|skore-remote-project)/src/

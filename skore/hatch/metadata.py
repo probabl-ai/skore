@@ -22,7 +22,6 @@ class MetadataHook(MetadataHookInterface):
                 'readme': {'file': '../README.md'},
             }
         """
-
         # Retrieve LICENCE from root files
         license_filepath = self.config["license"]["file"]
         license = Path(self.root, license_filepath).read_text(encoding="utf-8")
