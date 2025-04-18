@@ -67,8 +67,19 @@ def test_flat_index_different_split_numbers(report):
 def test_aggregate_different_split_numbers(report):
     result = report.metrics.report_metrics()
 
-    assert_index_equal(result.columns, pd.Index(["mean", "std"]))
-    assert len(result) == 16
+    assert_index_equal(
+        result.columns,
+        pd.MultiIndex.from_tuples(
+            [
+                ("mean", "DummyClassifier_1"),
+                ("mean", "DummyClassifier_2"),
+                ("std", "DummyClassifier_1"),
+                ("std", "DummyClassifier_2"),
+            ],
+            names=[None, "Estimator"],
+        ),
+    )
+    assert len(result) == 8
 
 
 def test_aggregate_sequence_of_one_element(report):
@@ -118,29 +129,40 @@ def test_accuracy(report):
 def test_favorability(report):
     result = report.metrics.report_metrics(indicator_favorability=True)
 
-    assert_index_equal(result.columns, pd.Index(["mean", "std", "Favorability"]))
-    assert len(result) == 16
+    assert_index_equal(
+        result.columns,
+        pd.MultiIndex.from_tuples(
+            [
+                ("mean", "DummyClassifier_1"),
+                ("mean", "DummyClassifier_2"),
+                ("std", "DummyClassifier_1"),
+                ("std", "DummyClassifier_2"),
+                ("Favorability", ""),
+            ],
+            names=[None, "Estimator"],
+        ),
+    )
+    assert len(result) == 8
 
 
 def test_regression(report_regression):
     result = report_regression.metrics.report_metrics()
 
-    assert_index_equal(result.columns, pd.Index(["mean", "std"]))
     assert_index_equal(
-        result.index,
+        result.columns,
         pd.MultiIndex.from_tuples(
             [
-                ("R²", "DummyRegressor_1"),
-                ("R²", "DummyRegressor_2"),
-                ("RMSE", "DummyRegressor_1"),
-                ("RMSE", "DummyRegressor_2"),
-                ("Fit time", "DummyRegressor_1"),
-                ("Fit time", "DummyRegressor_2"),
-                ("Predict time", "DummyRegressor_1"),
-                ("Predict time", "DummyRegressor_2"),
+                ("mean", "DummyRegressor_1"),
+                ("mean", "DummyRegressor_2"),
+                ("std", "DummyRegressor_1"),
+                ("std", "DummyRegressor_2"),
             ],
-            names=["Metric", "Estimator"],
+            names=[None, "Estimator"],
         ),
+    )
+    assert_index_equal(
+        result.index,
+        pd.Index(["R²", "RMSE", "Fit time", "Predict time"], name="Metric"),
     )
 
 

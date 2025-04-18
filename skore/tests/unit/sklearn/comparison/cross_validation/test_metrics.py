@@ -8,7 +8,15 @@ from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.metrics import accuracy_score
 from skore import ComparisonReport, CrossValidationReport
 
-expected_columns = pd.Index(["mean", "std"])
+expected_columns = pd.MultiIndex.from_tuples(
+    [
+        ("mean", "DummyClassifier_1"),
+        ("mean", "DummyClassifier_2"),
+        ("std", "DummyClassifier_1"),
+        ("std", "DummyClassifier_2"),
+    ],
+    names=[None, "Estimator"],
+)
 
 
 def comparison_report_classification():
@@ -42,13 +50,7 @@ def comparison_report_regression():
 
 
 def case_timings_no_predictions():
-    expected_index = pd.MultiIndex.from_tuples(
-        [
-            ("Fit time", "DummyClassifier_1"),
-            ("Fit time", "DummyClassifier_2"),
-        ],
-        names=["Metric", "Estimator"],
-    )
+    expected_index = pd.Index(["Fit time"], name="Metric")
     return (
         comparison_report_classification(),
         "timings",
@@ -58,16 +60,8 @@ def case_timings_no_predictions():
 
 
 def case_timings_with_predictions():
-    expected_index = pd.MultiIndex.from_tuples(
-        [
-            ("Fit time", "DummyClassifier_1"),
-            ("Fit time", "DummyClassifier_2"),
-            ("Predict time test", "DummyClassifier_1"),
-            ("Predict time test", "DummyClassifier_2"),
-            ("Predict time train", "DummyClassifier_1"),
-            ("Predict time train", "DummyClassifier_2"),
-        ],
-        names=["Metric", "Estimator"],
+    expected_index = pd.Index(
+        ["Fit time", "Predict time test", "Predict time train"], name="Metric"
     )
 
     report = comparison_report_classification()
@@ -81,13 +75,7 @@ def case_timings_with_predictions():
 
 
 def case_accuracy():
-    expected_index = pd.MultiIndex.from_tuples(
-        [
-            ("Accuracy", "DummyClassifier_1"),
-            ("Accuracy", "DummyClassifier_2"),
-        ],
-        names=["Metric", "Estimator"],
-    )
+    expected_index = pd.Index(["Accuracy"], name="Metric")
     return (
         comparison_report_classification(),
         "accuracy",
@@ -98,13 +86,7 @@ def case_accuracy():
 
 def case_precision():
     expected_index = pd.MultiIndex.from_tuples(
-        [
-            ("Precision", 0, "DummyClassifier_1"),
-            ("Precision", 0, "DummyClassifier_2"),
-            ("Precision", 1, "DummyClassifier_1"),
-            ("Precision", 1, "DummyClassifier_2"),
-        ],
-        names=["Metric", "Label / Average", "Estimator"],
+        [("Precision", 0), ("Precision", 1)], names=["Metric", "Label / Average"]
     )
     return (
         comparison_report_classification(),
@@ -116,13 +98,7 @@ def case_precision():
 
 def case_recall():
     expected_index = pd.MultiIndex.from_tuples(
-        [
-            ("Recall", 0, "DummyClassifier_1"),
-            ("Recall", 0, "DummyClassifier_2"),
-            ("Recall", 1, "DummyClassifier_1"),
-            ("Recall", 1, "DummyClassifier_2"),
-        ],
-        names=["Metric", "Label / Average", "Estimator"],
+        [("Recall", 0), ("Recall", 1)], names=["Metric", "Label / Average"]
     )
     return (
         comparison_report_classification(),
@@ -133,13 +109,7 @@ def case_recall():
 
 
 def case_brier_score():
-    expected_index = pd.MultiIndex.from_tuples(
-        [
-            ("Brier score", "DummyClassifier_1"),
-            ("Brier score", "DummyClassifier_2"),
-        ],
-        names=["Metric", "Estimator"],
-    )
+    expected_index = pd.Index(["Brier score"], name="Metric")
     return (
         comparison_report_classification(),
         "brier_score",
@@ -149,13 +119,7 @@ def case_brier_score():
 
 
 def case_roc_auc():
-    expected_index = pd.MultiIndex.from_tuples(
-        [
-            ("ROC AUC", "DummyClassifier_1"),
-            ("ROC AUC", "DummyClassifier_2"),
-        ],
-        names=["Metric", "Estimator"],
-    )
+    expected_index = pd.Index(["ROC AUC"], name="Metric")
     return (
         comparison_report_classification(),
         "roc_auc",
@@ -165,13 +129,7 @@ def case_roc_auc():
 
 
 def case_log_loss():
-    expected_index = pd.MultiIndex.from_tuples(
-        [
-            ("Log loss", "DummyClassifier_1"),
-            ("Log loss", "DummyClassifier_2"),
-        ],
-        names=["Metric", "Estimator"],
-    )
+    expected_index = pd.Index(["Log loss"], name="Metric")
     return (
         comparison_report_classification(),
         "log_loss",
@@ -181,12 +139,15 @@ def case_log_loss():
 
 
 def case_r2():
-    expected_index = pd.MultiIndex.from_tuples(
+    expected_index = pd.Index(["R²"], name="Metric")
+    expected_columns = pd.MultiIndex.from_tuples(
         [
-            ("R²", "DummyRegressor_1"),
-            ("R²", "DummyRegressor_2"),
+            ("mean", "DummyRegressor_1"),
+            ("mean", "DummyRegressor_2"),
+            ("std", "DummyRegressor_1"),
+            ("std", "DummyRegressor_2"),
         ],
-        names=["Metric", "Estimator"],
+        names=[None, "Estimator"],
     )
     return (
         comparison_report_regression(),
@@ -197,12 +158,15 @@ def case_r2():
 
 
 def case_rmse():
-    expected_index = pd.MultiIndex.from_tuples(
+    expected_index = pd.Index(["RMSE"], name="Metric")
+    expected_columns = pd.MultiIndex.from_tuples(
         [
-            ("RMSE", "DummyRegressor_1"),
-            ("RMSE", "DummyRegressor_2"),
+            ("mean", "DummyRegressor_1"),
+            ("mean", "DummyRegressor_2"),
+            ("std", "DummyRegressor_1"),
+            ("std", "DummyRegressor_2"),
         ],
-        names=["Metric", "Estimator"],
+        names=[None, "Estimator"],
     )
     return (
         comparison_report_regression(),
@@ -266,7 +230,10 @@ def test_metrics_aggregate(case):
     """`aggregate` argument should be taken into account."""
     report, scoring, expected_index, _ = case()
 
-    expected_columns = pd.Index(["mean"])
+    model = "DummyRegressor" if scoring in ("r2", "rmse") else "DummyClassifier"
+    expected_columns = pd.MultiIndex.from_tuples(
+        [("mean", f"{model}_1"), ("mean", f"{model}_2")], names=[None, "Estimator"]
+    )
 
     result = getattr(report.metrics, scoring)(aggregate=["mean"])
     assert_index_equal(result.index, expected_index)
