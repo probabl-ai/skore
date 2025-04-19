@@ -366,6 +366,8 @@ class ModelExplorerWidget:
     ) -> np.ndarray:
         """Add jitter to categorical values to improve visualization in parallel plots.
 
+        Jitter is not applied when there is a single category.
+
         Parameters
         ----------
         seed : int
@@ -380,6 +382,9 @@ class ModelExplorerWidget:
         np.ndarray
             Array of encoded categorical values with jitter applied.
         """
+        if categorical_series.cat.categories.size == 1:
+            return categorical_series.cat.codes.to_numpy()
+
         rng = np.random.default_rng(seed)
         encoded_categories = categorical_series.cat.codes.to_numpy()
         jitter = rng.uniform(-amount, amount, size=len(encoded_categories))
@@ -477,7 +482,8 @@ class ModelExplorerWidget:
                 font=dict(size=16),
                 height=500,
                 width=self._plot_width,
-                margin=dict(l=200, r=150, t=120, b=30),
+                margin=dict(l=150, r=150, t=120, b=30),
+                autosize=False,
             )
 
             fig.data[0].on_selection(self.update_selection)  # callback
