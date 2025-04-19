@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import typing
+
 import pandas as pd
 
 from .. import item as item_module
 from ..client.client import AuthenticatedClient
 from .widget import ModelExplorerWidget
-
 
 if typing.TYPE_CHECKING:
     from typing import Union
@@ -109,8 +109,7 @@ class Metadata(pd.DataFrame):
 
     def _repr_html_(self):
         """Display the interactive plot and controls."""
-        if not hasattr(self, "_plot_widget"):
-            self._plot_widget = ModelExplorerWidget(dataframe=self)
+        self._plot_widget = ModelExplorerWidget(dataframe=self)
         self._plot_widget.display()
         return ""
 
@@ -136,11 +135,12 @@ class Metadata(pd.DataFrame):
         if not hasattr(self, "_plot_widget"):
             return None
 
+        self._plot_widget.update_selection()
         selection = self._plot_widget.current_selection.copy()
         query_parts = []
 
         task = selection.pop("ml_task")
-        query_parts.append(f"ml_task == '{task}'")
+        query_parts.append(f"ml_task.str.contains('{task}')")
 
         dataset = selection.pop("dataset")
         query_parts.append(f"dataset == '{dataset}'")
