@@ -158,7 +158,7 @@ class Project:
         note: Optional[str] = None,
         display_as: Optional[Literal["HTML", "MARKDOWN", "SVG"]] = None,
     ) -> None:
-        """:no-index:
+        """:noindex:
         
         Add a key-value pair to the Project.
 
@@ -205,9 +205,10 @@ class Project:
         version: Optional[Union[Literal[-1, "all"], int]] = -1,
         metadata: bool = False,
     ) -> Any:
-        """:no-index:
-        
+        """
         Get the value associated to ``key`` from the Project.
+        
+        ..:no-index:
 
         Parameters
         ----------
