@@ -161,7 +161,9 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         self._ml_task = self.estimator_reports_[0]._ml_task
 
     def clear_cache(self) -> None:
-        """Clear the cache.
+        """:no-index:
+        
+        Clear the cache.
 
         Examples
         --------
@@ -205,7 +207,9 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         ] = "auto",
         n_jobs: Optional[int] = None,
     ) -> None:
-        """Cache the predictions for sub-estimators reports.
+        """:no-index:
+        
+        Cache the predictions for sub-estimators reports.
 
         Parameters
         ----------
@@ -273,7 +277,9 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         response_method: Literal["predict", "predict_proba", "decision_function"],
         pos_label: Optional[Any] = None,
     ) -> ArrayLike:
-        """Get estimator's predictions.
+        """:no-index:
+        
+        Get estimator's predictions.
 
         This method has the advantage to reload from the cache if the predictions
         were already computed in a previous call.

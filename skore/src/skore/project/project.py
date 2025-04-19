@@ -158,7 +158,9 @@ class Project:
         note: Optional[str] = None,
         display_as: Optional[Literal["HTML", "MARKDOWN", "SVG"]] = None,
     ) -> None:
-        """Add a key-value pair to the Project.
+        """:no-index:
+        
+        Add a key-value pair to the Project.
 
         If an item with the same key already exists, its value is replaced by the new
         one.
@@ -203,7 +205,9 @@ class Project:
         version: Optional[Union[Literal[-1, "all"], int]] = -1,
         metadata: bool = False,
     ) -> Any:
-        """Get the value associated to ``key`` from the Project.
+        """:no-index:
+        
+        Get the value associated to ``key`` from the Project.
 
         Parameters
         ----------

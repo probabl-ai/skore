@@ -171,7 +171,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     # For the validation set, we allow it and we invalidate the cache.
 
     def clear_cache(self) -> None:
-        """Clear the cache.
+        """:no-index:
+        
+        Clear the cache.
 
         Note that the cache might not be empty after this method is run as some
         values need to be kept, such as the fit time.
@@ -206,7 +208,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         response_methods: Union[Literal["auto"], list[str]] = "auto",
         n_jobs: Optional[int] = None,
     ) -> None:
-        """Cache estimator's predictions.
+        """:no-index:
+        
+        Cache estimator's predictions.
 
         Parameters
         ----------
@@ -296,7 +300,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         X: Optional[ArrayLike] = None,
         pos_label: Optional[Any] = None,
     ) -> ArrayLike:
-        """Get estimator's predictions.
+        """:no-index:
+        
+        Get estimator's predictions.
 
         This method has the advantage to reload from the cache if the predictions
         were already computed in a previous call.

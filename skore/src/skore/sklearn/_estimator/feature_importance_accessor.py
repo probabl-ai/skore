@@ -143,7 +143,9 @@ def _check_scoring(scoring: Any) -> Union[Scoring, None]:
 
 
 class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
-    """Accessor for feature importance related operations.
+    """:no-index:
+        
+    Accessor for feature importance related operations.
 
     You can access this accessor using the `feature_importance` attribute.
     """
