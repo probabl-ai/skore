@@ -579,10 +579,26 @@ def rename_features(feature_names):
         for name in feature_names
     ]
 # %%
-selectk_features = [
-    name.replace("kmeans__", "geospatial__").replace("remainder__", "")
-    for name in selectk_ridge_report.estimator_[:-1].get_feature_names_out()
-]
+
+def rename_features(feature_names):
+    """
+    Rename feature names by replacing 'kmeans__' with 'geospatial__'
+    and removing 'remainder__' prefixes.
+
+    Args:
+        feature_names (list of str): List of feature names to rename.
+
+    Returns:
+        list of str: Renamed feature names.
+    """
+    return [
+        name.replace("kmeans__", "geospatial__").replace("remainder__", "")
+        for name in feature_names
+    ]
+# %%
+selectk_features = rename_features(
+    selectk_ridge_report.estimator_[:-1].get_feature_names_out()
+)
 print(selectk_features)
 
 # %%
