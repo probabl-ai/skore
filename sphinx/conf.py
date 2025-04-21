@@ -87,7 +87,7 @@ sphinx_gallery_conf = {
         # The module you locally document uses None
         "skore": None,
     },
-    "backreferences_dir": "reference/api",
+    "backreferences_dir": None, # changed to None to avoid creating backreferences
     "doc_module": "skore",
     # "reset_modules": (reset_mpl, "seaborn"),
     "image_scrapers": [matplotlib_skore_scraper],
