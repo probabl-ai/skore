@@ -226,9 +226,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         return estimator_reports
 
     def clear_cache(self) -> None:
-        """:no-index:
-        
-        Clear the cache.
+        """Clear the cache.
 
         Examples
         --------
@@ -253,9 +251,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         response_methods: str = "auto",
         n_jobs: Optional[int] = None,
     ) -> None:
-        """:no-index:
-        
-        Cache the predictions for sub-estimators reports.
+        """Cache the predictions for sub-estimators reports.
 
         Parameters
         ----------
@@ -306,9 +302,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         response_method: Literal["predict", "predict_proba", "decision_function"],
         pos_label: Optional[Any] = None,
     ) -> ArrayLike:
-        """:no-index:
-        
-        Get estimator's predictions.
+        """Get estimator's predictions.
 
         This method has the advantage to reload from the cache if the predictions
         were already computed in a previous call.
