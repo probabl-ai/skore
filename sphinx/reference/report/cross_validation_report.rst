@@ -15,6 +15,8 @@ functionalities of the report are exposed through accessors.
 
 .. rubric:: Methods
 
+.. removed manually specifying methods to avoid duplicates.
+
 .. rubric:: Metrics
 
 .. autosummary::
@@ -28,3 +30,5 @@ Metrics
 
 The `metrics` accessor helps you to evaluate the statistical performance of your
 estimator across cross-validation folds.
+
+.. removed manually specifying methods to avoid duplicates.

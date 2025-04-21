@@ -10,4 +10,5 @@ These functions and classes are meant for managing a Project.
     :template: base.rst
 
     Project
-.. Only documented class. Removed manually specifying methods to avoid duplicates.
+
+.. removed manually specifying methods to avoid duplicates.

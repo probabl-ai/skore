@@ -25,3 +25,4 @@ The `metrics` accessor helps you to evaluate the statistical performance of the
 compared estimators. In addition, we provide a sub-accessor `plot`, to
 get the common performance metric representations.
 
+.. removed manually specifying methods to avoid duplicates.
