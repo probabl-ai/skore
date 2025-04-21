@@ -92,9 +92,7 @@ class _HelpMixin(ABC):
         )
 
     def help(self) -> None:
-        """:no-index:
-        
-        Display available methods using rich."""
+        """Display available methods using rich."""
         from skore import console  # avoid circular import
 
         console.print(self._create_help_panel())
