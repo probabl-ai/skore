@@ -26,9 +26,7 @@ DataSource = Literal["test", "train"]
 
 
 class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
-    """:no-index:
-        
-    Accessor for metrics-related operations.
+    """Accessor for metrics-related operations.
 
     You can access this accessor using the `metrics` attribute.
     """
