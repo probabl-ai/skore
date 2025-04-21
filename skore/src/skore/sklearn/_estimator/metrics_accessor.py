@@ -32,9 +32,7 @@ DataSource = Literal["test", "train", "X_y"]
 
 
 class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
-    """:no-index:
-        
-    Accessor for metrics-related operations.
+    """Accessor for metrics-related operations.
 
     You can access this accessor using the `metrics` attribute.
     """
