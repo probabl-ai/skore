@@ -10,5 +10,4 @@ These functions and classes are meant for managing a Project.
     :template: base.rst
 
     Project
-    Project.put
-    Project.get
+.. Only documented class. Removed manually specifying methods to avoid duplicates.
