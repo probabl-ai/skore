@@ -10,15 +10,6 @@ The class :class:`ComparisonReport` provides a report allowing to compare :class
     :template: base.rst
 
     ComparisonReport
-    ComparisonReport.cache_predictions
-    ComparisonReport.clear_cache
-.. autosummary::
-    :toctree: ../api/
-    :nosignatures:
-    :template: autosummary/accessor_method.rst
-
-    ComparisonReport.help
-    ComparisonReport.get_predictions
 
 .. autosummary::
     :toctree: ../api/
@@ -34,20 +25,3 @@ The `metrics` accessor helps you to evaluate the statistical performance of the
 compared estimators. In addition, we provide a sub-accessor `plot`, to
 get the common performance metric representations.
 
-.. autosummary::
-    :toctree: ../api/
-    :nosignatures:
-    :template: autosummary/accessor_method.rst
-
-    ComparisonReport.metrics.help
-    ComparisonReport.metrics.report_metrics
-    ComparisonReport.metrics.custom_metric
-    ComparisonReport.metrics.accuracy
-    ComparisonReport.metrics.brier_score
-    ComparisonReport.metrics.log_loss
-    ComparisonReport.metrics.precision
-    ComparisonReport.metrics.r2
-    ComparisonReport.metrics.recall
-    ComparisonReport.metrics.rmse
-    ComparisonReport.metrics.roc_auc
-    ComparisonReport.metrics.timings
