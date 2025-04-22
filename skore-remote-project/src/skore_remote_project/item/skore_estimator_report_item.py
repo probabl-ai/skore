@@ -6,7 +6,7 @@ from operator import attrgetter
 from typing import TYPE_CHECKING
 
 from joblib import hash as joblib_hash
-from matplotlib.pyplot import subplots
+from matplotlib.pyplot import close, subplots
 from sklearn.utils import estimator_html_repr
 
 from .item import ItemTypeError, lazy_is_instance
@@ -185,6 +185,7 @@ class Representations:
             display = function(**function_kwargs)
             figure, ax = subplots()
             display.plot(ax)
+            close(figure)
 
             item = MatplotlibFigureItem.factory(figure)
 
