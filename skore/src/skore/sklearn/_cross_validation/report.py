@@ -222,6 +222,11 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                     border_style="cyan",
                 )
             )
+            if len(estimator_reports) == 0:
+                raise RuntimeError(
+                    "Cross-validation failed: no estimators were successfully fitted. "
+                    "Please check your data, estimator, or cross-validation setup."
+                ) from None
 
         return estimator_reports
 

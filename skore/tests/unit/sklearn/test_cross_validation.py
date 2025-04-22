@@ -955,3 +955,21 @@ def test_cross_validation_timings(
         "Predict time test",
     ]
     assert timings.columns.tolist() == expected_columns
+
+
+class BrokenEstimator(BaseEstimator, ClassifierMixin):
+    def fit(self, X, y):
+        raise ValueError("Intentional failure for testing")
+
+    def predict(self, X):
+        return [0] * len(X)
+
+
+def test_cross_validation_report_with_zero_estimators():
+    X, y = make_classification(n_samples=100, n_features=10, random_state=42)
+
+    with pytest.raises(
+        RuntimeError,
+        match="Cross-validation failed: no estimators were successfully fitted",
+    ):
+        CrossValidationReport(BrokenEstimator(), X, y)
