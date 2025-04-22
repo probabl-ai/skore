@@ -1,3 +1,5 @@
+"""Package that provides APIs to communicate between ``skore`` and ``skore hub``."""
+
 from rich.console import Console
 from rich.theme import Theme
 

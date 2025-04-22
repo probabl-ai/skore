@@ -1,3 +1,10 @@
+"""
+Module definition of the ``Item`` classes.
+
+``Item`` is an internal concept that is used as a DTO (Data Transfer Object) to exchange
+python objects between ``skore`` and ``skore hub``.
+"""
+
 from __future__ import annotations
 
 from contextlib import suppress
@@ -22,6 +29,7 @@ from .skrub_table_report_item import SkrubTableReportItem
 
 
 def object_to_item(object: Any, /) -> Item:
+    """Serialize any python object into an ``Item``."""
     for cls in (
         # Lexicographically sorted, the order of execution doesn't matter
         AltairChartItem,

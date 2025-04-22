@@ -1,28 +1,51 @@
+"""
+PandasSeriesItem.
+
+This module defines the ``PandasSeriesItem`` class used to serialize instances of
+``pandas.Series``, using the ``JSON`` format.
+"""
+
 from __future__ import annotations
 
 from functools import cached_property
 from typing import TYPE_CHECKING, Literal
 
-from .item import Item, ItemTypeError
+from .item import Item, ItemTypeError, lazy_is_instance
 
 if TYPE_CHECKING:
     import pandas
 
 
 class PandasSeriesItem(Item):
+    """Serialize instances of ``pandas.Series``, using the ``JSON`` format."""
+
     ORIENT: Literal["split"] = "split"
 
     def __init__(self, index_json_str: str, series_json_str: str):
+        """
+        Initialize a ``PandasSeriesItem``.
+
+        Parameters
+        ----------
+        index_json_str : str
+            The index of the ``pandas.Series`` serialized in a str in the ``JSON``
+            format.
+        series_json_str : str
+            The ``pandas.Series`` serialized in a str in the ``JSON`` format, without
+            its index.
+        """
         self.index_json_str = index_json_str
         self.series_json_str = series_json_str
 
     @cached_property
     def __raw__(self) -> pandas.Series:
         """
-        The pandas Series from the persistence.
+        Get the value from the ``PandasSeriesItem``.
 
-        Its content can differ from the original series because it has been serialized
-        using pandas' `to_json` function and not pickled, in order to be
+        Notes
+        -----
+        Its content can slightly differ from the original because it has been serialized
+        using ``pandas.to_json`` function and not pickled, in order to be
         environment-independent.
         """
         import io
@@ -47,6 +70,7 @@ class PandasSeriesItem(Item):
 
     @property
     def __representation__(self) -> dict:
+        """Get the representation of the ``PandasSeriesItem`` instance."""
         return {
             "representation": {
                 "media_type": "application/json",
@@ -55,24 +79,33 @@ class PandasSeriesItem(Item):
         }
 
     @classmethod
-    def factory(cls, series: pandas.Series, /, **kwargs) -> PandasSeriesItem:
+    def factory(cls, value: pandas.Series, /) -> PandasSeriesItem:
         """
-        Create a new PandasSeriesItem instance from a pandas Series.
+        Create a new ``PandasSeriesItem`` from an instance of ``pandas.Series``.
+
+        It uses the ``JSON`` format.
 
         Parameters
         ----------
-        series : pd.Series
-            The pandas Series to store.
+        value : ``pandas.Series``
+            The value to serialize.
 
         Returns
         -------
         PandasSeriesItem
-            A new PandasSeriesItem instance.
-        """
-        import pandas
+            A new ``PandasSeriesItem`` instance.
 
-        if not isinstance(series, pandas.Series):
-            raise ItemTypeError(f"Type '{series.__class__}' is not supported.")
+        Raises
+        ------
+        ItemTypeError
+            If ``value`` is not an instance of ``pandas.Series``.
+
+        Notes
+        -----
+        The series must be JSON serializable.
+        """
+        if not lazy_is_instance(value, "pandas.core.series.Series"):
+            raise ItemTypeError(f"Type '{value.__class__}' is not supported.")
 
         # One native method is available to serialize series with multi-index,
         # while keeping the index names:
@@ -87,14 +120,13 @@ class PandasSeriesItem(Item):
         #
         # None of those methods being compatible, we store indexes separately.
 
-        index = series.index.to_frame(index=False)
-        series_without_index = series.reset_index(drop=True)
+        index = value.index.to_frame(index=False)
+        series_without_index = value.reset_index(drop=True)
 
         instance = cls(
             index.to_json(orient=PandasSeriesItem.ORIENT),
             series_without_index.to_json(orient=PandasSeriesItem.ORIENT),
-            **kwargs,
         )
-        instance.__raw__ = series
+        instance.__raw__ = value
 
         return instance

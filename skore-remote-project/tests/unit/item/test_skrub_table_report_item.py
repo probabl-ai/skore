@@ -1,9 +1,11 @@
-from json import dumps
+from io import BytesIO
+from json import dumps as json_dumps
 
+import pytest
+from joblib import dump as joblib_dump
 from pandas import DataFrame
-from pytest import raises
 from skore_remote_project.item import PickleItem, SkrubTableReportItem
-from skore_remote_project.item.item import ItemTypeError
+from skore_remote_project.item.item import ItemTypeError, bytes_to_b64_str
 from skrub import TableReport
 
 
@@ -25,12 +27,25 @@ class TestSkrubTableReportItem:
         assert isinstance(item, PickleItem)
 
     def test_factory_exception(self):
-        with raises(ItemTypeError):
+        with pytest.raises(ItemTypeError):
             SkrubTableReportItem.factory(None)
 
-    def test_representation(self, monkeypatch):
-        monkeypatch.setattr("secrets.token_hex", lambda: "azertyuiop")
+    @pytest.fixture
+    def reproducible(self, monkeypatch):
+        import matplotlib
 
+        monkeypatch.setenv("SOURCE_DATE_EPOCH", "0")
+        monkeypatch.setattr("secrets.token_hex", lambda: "<token>")
+
+        try:
+            matplotlib.rcParams["svg.hashsalt"] = "<hashsalt>"
+            matplotlib.rcParams["svg.id"] = "<id>"
+            yield
+        finally:
+            matplotlib.rcdefaults()
+
+    @pytest.mark.usefixtures("reproducible")
+    def test_representation(self, monkeypatch, now):
         report = TableReport(
             DataFrame(
                 {
@@ -41,14 +56,25 @@ class TestSkrubTableReportItem:
             )
         )
 
-        item = SkrubTableReportItem.factory(report)
+        with BytesIO() as stream:
+            joblib_dump(report, stream)
 
-        assert item.__representation__ == {
+            pickle_bytes = stream.getvalue()
+            pickle_b64_str = bytes_to_b64_str(pickle_bytes)
+
+        representation = {
             "representation": {
                 "media_type": "text/html",
                 "value": report.html_snippet(),
             }
         }
 
+        item1 = SkrubTableReportItem.factory(report)
+        item2 = SkrubTableReportItem(pickle_b64_str)
+
+        assert item1.__representation__ == representation
+        assert item2.__representation__ == representation
+
         # Ensure representation is JSONable
-        dumps(item.__representation__)
+        json_dumps(item1.__representation__)
+        json_dumps(item2.__representation__)

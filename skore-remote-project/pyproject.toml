@@ -69,9 +69,9 @@ parallel = true
 omit = ["src/*", "tests/*"]
 show_missing = true
 exclude_also = [
-    'raise NotImplementedError',
-    'if __name__ == .__main__.:',
-    'if TYPE_CHECKING:',
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
 ]
 
 [tool.ruff]

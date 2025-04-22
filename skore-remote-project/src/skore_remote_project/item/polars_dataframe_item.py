@@ -1,25 +1,44 @@
+"""
+PolarsDataFrameItem.
+
+This module defines the ``PolarsDataFrameItem`` class used to serialize instances of
+``polars.DataFrame``, using the ``JSON`` format.
+"""
+
 from __future__ import annotations
 
 from functools import cached_property
 from typing import TYPE_CHECKING
 
-from .item import Item, ItemTypeError
+from .item import Item, ItemTypeError, lazy_is_instance
 
 if TYPE_CHECKING:
     import polars
 
 
 class PolarsDataFrameItem(Item):
+    """Serialize instances of ``polars.DataFrame``, using the ``JSON`` format."""
+
     def __init__(self, dataframe_json_str: str):
+        """
+        Initialize a ``PolarsDataFrameItem``.
+
+        Parameters
+        ----------
+        dataframe_json_str : str
+            The ``polars.DataFrame`` serialized in a str in the ``JSON`` format.
+        """
         self.dataframe_json_str = dataframe_json_str
 
     @cached_property
     def __raw__(self) -> polars.DataFrame:
         """
-        The polars DataFrame from the persistence.
+        Get the value from the ``PolarsDataFrameItem``.
 
-        Its content can differ from the original dataframe because it has been
-        serialized using polars' `to_json` function and not pickled, in order to be
+        Notes
+        -----
+        Its content can slightly differ from the original because it has been serialized
+        using ``polars.to_json`` function and not pickled, in order to be
         environment-independent.
         """
         import io
@@ -31,6 +50,7 @@ class PolarsDataFrameItem(Item):
 
     @property
     def __representation__(self) -> dict:
+        """Get the representation of the ``PolarsDataFrameItem`` instance."""
         return {
             "representation": {
                 "media_type": "application/vnd.dataframe",
@@ -39,13 +59,35 @@ class PolarsDataFrameItem(Item):
         }
 
     @classmethod
-    def factory(cls, dataframe: polars.DataFrame, /) -> PolarsDataFrameItem:
-        import polars
+    def factory(cls, value: polars.DataFrame, /) -> PolarsDataFrameItem:
+        """
+        Create a new ``PolarsDataFrameItem`` from an instance of ``polars.DataFrame``.
 
-        if not isinstance(dataframe, polars.DataFrame):
-            raise ItemTypeError(f"Type '{dataframe.__class__}' is not supported.")
+        It uses the ``JSON`` format.
 
-        instance = cls(dataframe.write_json())
-        instance.__raw__ = dataframe
+        Parameters
+        ----------
+        value : ``polars.DataFrame``
+            The value to serialize.
+
+        Returns
+        -------
+        PolarsDataFrameItem
+            A new ``PolarsDataFrameItem`` instance.
+
+        Raises
+        ------
+        ItemTypeError
+            If ``value`` is not an instance of ``polars.DataFrame``.
+
+        Notes
+        -----
+        The dataframe must be JSON serializable.
+        """
+        if not lazy_is_instance(value, "polars.dataframe.frame.DataFrame"):
+            raise ItemTypeError(f"Type '{value.__class__}' is not supported.")
+
+        instance = cls(value.write_json())
+        instance.__raw__ = value
 
         return instance

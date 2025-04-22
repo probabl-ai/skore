@@ -1,7 +1,8 @@
-"""PickleItem.
+"""
+PickleItem.
 
-This module defines the PickleItem class, which is used to persist objects that cannot
-be otherwise.
+This module defines the ``PickleItem`` class used to serialize objects that cannot be
+otherwise, using binary protocols.
 """
 
 from __future__ import annotations
@@ -19,18 +20,22 @@ T = TypeVar("T", bound="PickleItem")
 
 
 class PickleItem(Item):
-    """
-    An item used to persist objects that cannot be otherwise, using binary protocols.
-
-    It encapsulates the object with its pickle representaton, its creation and update
-    timestamps.
-    """
+    """Serialize objects that cannot be otherwise, using binary protocols."""
 
     def __init__(self, pickle_b64_str: str):
+        """
+        Initialize a ``PickleItem``.
+
+        Parameters
+        ----------
+        pickle_b64_str : str
+            The raw bytes of the pickled object encoded in a base64 str.
+        """
         self.pickle_b64_str = pickle_b64_str
 
     @cached_property
     def __raw__(self) -> Any:
+        """Get the deserialized python object from the ``PickleItem`` instance."""
         pickle_bytes = b64_str_to_bytes(self.pickle_b64_str)
 
         with BytesIO(pickle_bytes) as stream:
@@ -38,6 +43,7 @@ class PickleItem(Item):
 
     @property
     def __representation__(self) -> dict:
+        """Get the representation of the ``PickleItem`` instance."""
         return {
             "representation": {
                 "media_type": "text/markdown",
@@ -46,19 +52,19 @@ class PickleItem(Item):
         }
 
     @classmethod
-    def factory(cls: type[T], value: Any) -> T:
+    def factory(cls: type[T], value: Any, /) -> T:
         """
-        Create a new PickleItem from ``object``.
+        Create a new ``PickleItem`` from ``value`` using binary protocols.
 
         Parameters
         ----------
         value: Any
-            The value to store.
+            The value to serialize.
 
         Returns
         -------
         PickleItem
-            A new PickleItem instance.
+            A new ``PickleItem`` instance.
         """
         with BytesIO() as stream:
             dump(value, stream)

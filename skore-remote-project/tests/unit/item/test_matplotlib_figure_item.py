@@ -1,16 +1,11 @@
 from io import BytesIO
-from json import dumps
+from json import dumps as json_dumps
 
-from joblib import dump, load
+import pytest
+from joblib import dump as joblib_dump
 from matplotlib.pyplot import subplots
-from matplotlib.testing.compare import compare_images
-from pytest import raises
-from skore_remote_project.item import MatplotlibFigureItem
-from skore_remote_project.item.item import (
-    ItemTypeError,
-    b64_str_to_bytes,
-    bytes_to_b64_str,
-)
+from skore_remote_project.item import MatplotlibFigureItem, PickleItem
+from skore_remote_project.item.item import ItemTypeError, bytes_to_b64_str
 
 
 class TestMatplotlibFigureItem:
@@ -20,62 +15,55 @@ class TestMatplotlibFigureItem:
 
         item = MatplotlibFigureItem.factory(figure)
 
-        # matplotlib being not consistent (`xlink:href` are different between two calls)
-        # we can't compare figure bytes directly
-
-        figure.savefig(tmp_path / "figure.png")
-        with BytesIO(b64_str_to_bytes(item.figure_b64_str)) as stream:
-            load(stream).savefig(tmp_path / "item.png")
-
-        assert compare_images(tmp_path / "figure.png", tmp_path / "item.png", 0) is None
+        assert isinstance(item, MatplotlibFigureItem)
+        assert isinstance(item, PickleItem)
 
     def test_factory_exception(self):
-        with raises(ItemTypeError):
+        with pytest.raises(ItemTypeError):
             MatplotlibFigureItem.factory(None)
 
-    def test_parameters(self, tmp_path):
-        figure, ax = subplots()
-        ax.plot([1, 2, 3, 4], [1, 4, 2, 3])
+    @pytest.fixture
+    def reproducible(self, monkeypatch):
+        import matplotlib
 
-        item = MatplotlibFigureItem.factory(figure)
-        item_parameters = item.__parameters__["parameters"]["parameters"]
+        monkeypatch.setenv("SOURCE_DATE_EPOCH", "0")
 
-        # matplotlib being not consistent (`xlink:href` are different between two calls)
-        # we can't compare figure bytes directly
+        try:
+            matplotlib.rcParams["svg.hashsalt"] = "<hashsalt>"
+            matplotlib.rcParams["svg.id"] = "<id>"
+            yield
+        finally:
+            matplotlib.rcdefaults()
 
-        figure.savefig(tmp_path / "figure.png")
-        with BytesIO(b64_str_to_bytes(item_parameters["figure_b64_str"])) as stream:
-            load(stream).savefig(tmp_path / "item.png")
-
-        assert compare_images(tmp_path / "figure.png", tmp_path / "item.png", 0) is None
-        assert list(item_parameters.keys()) == ["figure_b64_str"]
-
-        # Ensure parameters are JSONable
-        dumps(item_parameters)
-
-    def test_raw(self, tmp_path):
+    @pytest.mark.usefixtures("reproducible")
+    def test_representation(self, tmp_path):
         figure, ax = subplots()
         ax.plot([1, 2, 3, 4], [1, 4, 2, 3])
 
         with BytesIO() as stream:
-            dump(figure, stream)
+            joblib_dump(figure, stream)
 
-            figure_bytes = stream.getvalue()
-            figure_b64_str = bytes_to_b64_str(figure_bytes)
+            pickle_bytes = stream.getvalue()
+            pickle_b64_str = bytes_to_b64_str(pickle_bytes)
+
+        with BytesIO() as stream:
+            figure.savefig(stream, format="svg", bbox_inches="tight")
+
+            svg_bytes = stream.getvalue()
+            svg_b64_str = bytes_to_b64_str(svg_bytes)
+            representation = {
+                "representation": {
+                    "media_type": "image/svg+xml;base64",
+                    "value": svg_b64_str,
+                }
+            }
 
         item1 = MatplotlibFigureItem.factory(figure)
-        item2 = MatplotlibFigureItem(figure_b64_str)
+        item2 = MatplotlibFigureItem(pickle_b64_str)
 
-        # matplotlib being not consistent (`xlink:href` are different between two calls)
-        # we can't compare figure bytes directly
+        assert item1.__representation__ == representation
+        assert item2.__representation__ == representation
 
-        figure.savefig(tmp_path / "figure.png")
-        item1.__raw__.savefig(tmp_path / "item1.png")
-        item2.__raw__.savefig(tmp_path / "item2.png")
-
-        assert (
-            compare_images(tmp_path / "figure.png", tmp_path / "item1.png", 0) is None
-        )
-        assert (
-            compare_images(tmp_path / "figure.png", tmp_path / "item2.png", 0) is None
-        )
+        # Ensure representation is JSONable
+        json_dumps(item1.__representation__)
+        json_dumps(item2.__representation__)

@@ -1,28 +1,51 @@
+"""
+PandasDataFrameItem.
+
+This module defines the ``PandasDataFrameItem`` class used to serialize instances of
+``pandas.DataFrame``, using the ``JSON`` format.
+"""
+
 from __future__ import annotations
 
 from functools import cached_property
 from typing import TYPE_CHECKING, Literal
 
-from .item import Item, ItemTypeError
+from .item import Item, ItemTypeError, lazy_is_instance
 
 if TYPE_CHECKING:
     import pandas
 
 
 class PandasDataFrameItem(Item):
+    """Serialize instances of ``pandas.DataFrame``, using the ``JSON`` format."""
+
     ORIENT: Literal["split"] = "split"
 
     def __init__(self, index_json_str: str, dataframe_json_str: str):
+        """
+        Initialize a ``PandasDataFrameItem``.
+
+        Parameters
+        ----------
+        index_json_str : str
+            The index of the ``pandas.DataFrame`` serialized in a str in the ``JSON``
+            format.
+        dataframe_json_str : str
+            The ``pandas.DataFrame`` serialized in a str in the ``JSON`` format, without
+            its index.
+        """
         self.index_json_str = index_json_str
         self.dataframe_json_str = dataframe_json_str
 
     @cached_property
     def __raw__(self) -> pandas.DataFrame:
         """
-        The pandas DataFrame from the persistence.
+        Get the value from the ``PandasDataFrameItem``.
 
-        Its content can differ from the original dataframe because it has been
-        serialized using pandas' `to_json` function and not pickled, in order to be
+        Notes
+        -----
+        Its content can slightly differ from the original because it has been serialized
+        using ``pandas.to_json`` function and not pickled, in order to be
         environment-independent.
         """
         import io
@@ -42,6 +65,7 @@ class PandasDataFrameItem(Item):
 
     @property
     def __representation__(self) -> dict:
+        """Get the representation of the ``PandasDataFrameItem`` instance."""
         return {
             "representation": {
                 "media_type": "application/vnd.dataframe",
@@ -50,28 +74,33 @@ class PandasDataFrameItem(Item):
         }
 
     @classmethod
-    def factory(cls, dataframe: pandas.DataFrame, /) -> PandasDataFrameItem:
+    def factory(cls, value: pandas.DataFrame, /) -> PandasDataFrameItem:
         """
-        Create a new PandasDataFrameItem instance from a pandas DataFrame.
+        Create a new ``PandasDataFrameItem`` from an instance of ``pandas.DataFrame``.
+
+        It uses the ``JSON`` format.
 
         Parameters
         ----------
-        dataframe : pd.DataFrame
-            The pandas DataFrame to store.
+        value : ``pandas.DataFrame``
+            The value to serialize.
 
         Returns
         -------
         PandasDataFrameItem
-            A new PandasDataFrameItem instance.
+            A new ``PandasDataFrameItem`` instance.
+
+        Raises
+        ------
+        ItemTypeError
+            If ``value`` is not an instance of ``pandas.DataFrame``.
 
         Notes
         -----
         The dataframe must be JSON serializable.
         """
-        import pandas
-
-        if not isinstance(dataframe, pandas.DataFrame):
-            raise ItemTypeError(f"Type '{dataframe.__class__}' is not supported.")
+        if not lazy_is_instance(value, "pandas.core.frame.DataFrame"):
+            raise ItemTypeError(f"Type '{value.__class__}' is not supported.")
 
         # Two native methods are available to serialize dataframe with multi-index,
         # while keeping the index names:
@@ -95,13 +124,13 @@ class PandasDataFrameItem(Item):
         #
         # None of those methods being compatible, we decide to store indexes separately.
 
-        index = dataframe.index.to_frame(index=False)
-        dataframe_without_index = dataframe.reset_index(drop=True)
+        index = value.index.to_frame(index=False)
+        dataframe_without_index = value.reset_index(drop=True)
 
         instance = cls(
             index.to_json(orient=PandasDataFrameItem.ORIENT),
             dataframe_without_index.to_json(orient=PandasDataFrameItem.ORIENT),
         )
-        instance.__raw__ = dataframe
+        instance.__raw__ = value
 
         return instance

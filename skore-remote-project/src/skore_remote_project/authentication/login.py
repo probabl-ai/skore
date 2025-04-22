@@ -1,4 +1,4 @@
-"""Login to the skore-HUB."""
+"""Login to ``skore hub``."""
 
 from __future__ import annotations
 

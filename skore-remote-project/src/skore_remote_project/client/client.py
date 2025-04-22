@@ -1,4 +1,4 @@
-"""Override httpx client to pass our bearer token."""
+"""Client exchanging with ``skore hub``."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ class AuthenticationError(Exception):
 
 
 class AuthenticatedClient(Client):
-    """Override httpx client to pass our bearer token."""
+    """Client exchanging with ``skore hub``."""
 
     ERROR_TYPES = {
         1: "Informational response",

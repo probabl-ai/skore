@@ -1,3 +1,5 @@
+"""Token used for ``skore hub`` authentication."""
+
 from __future__ import annotations
 
 import functools

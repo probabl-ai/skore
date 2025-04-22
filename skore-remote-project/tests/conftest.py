@@ -15,11 +15,15 @@ def nowstr(now):
 
 @fixture(autouse=True)
 def monkeypatch_tmpdir(monkeypatch, tmp_path):
-    """A pytest fixture that temporarily changes the system's temporary directory.
+    """
+    A pytest fixture that temporarily changes the system's temporary directory.
 
-    This fixture modifies the TMPDIR environment variable to point to a temporary
-    path provided by pytest's tmp_path fixture. It also handles the cached nature
-    of tempfile.gettempdir() by reloading the tempfile module.
+    It modifies the ``TMPDIR`` environment variable to point to a temporary path managed
+    by pytest's ``tmp_path`` fixture. Thus, it will be automatically deleted after use
+    and will not impact the user's environment.
+
+    It also forces the reload of the ``tempfile`` module to change the cached return of
+    ``tempfile.gettempdir()``.
     """
     import tempfile
     from importlib import reload

@@ -1,3 +1,5 @@
+"""API used to exchange with ``skore hub``."""
+
 from functools import partial
 from os import environ
 from typing import Optional

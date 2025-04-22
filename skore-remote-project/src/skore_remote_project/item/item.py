@@ -1,3 +1,5 @@
+"""Abstract base class for all items in the ``skore`` remote project."""
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -7,30 +9,50 @@ from typing import Any
 
 
 def lazy_is_instance(value: Any, cls_fullname: str) -> bool:
-    """Return True if value is an instance of `cls_fullname`."""
+    """Return True if value is an instance of ``cls_fullname``."""
     return cls_fullname in {
         f"{cls.__module__}.{cls.__name__}" for cls in value.__class__.__mro__
     }
 
 
 def bytes_to_b64_str(literal: bytes) -> str:
-    """Encode the bytes-like object `literal` in a Base64 str."""
+    """Encode the bytes-like object ``literal`` in a Base64 str."""
     return b64encode(literal).decode("utf-8")
 
 
 def b64_str_to_bytes(literal: str) -> bytes:
-    """Decode the Base64 str object `literal` in a bytes."""
+    """Decode the Base64 str object ``literal`` in a bytes."""
     return b64decode(literal.encode("utf-8"))
 
 
 class ItemTypeError(Exception):
-    """"""
+    """
+    Item type exception.
+
+    Exception raised when an attempt is made to convert an object to an ``Item`` with an
+    unsupported type.
+    """
 
 
 class Item(ABC):
+    """
+    Abstract base class for all items in the ``skore`` remote project.
+
+    This class provides a common interface for all items, including the serialization of
+    the parameters needed to recreate the instance from the remote project.
+
+    ``Item`` is an internal concept that is used as a DTO (Data Transfer Object) to
+    exchange python objects between ``skore`` and ``skore hub``.
+    """
+
     @property
     def __parameters__(self) -> dict[str, dict[str, Any]]:
-        """"""
+        """
+        Get the parameters of the ``Item`` instance.
+
+        These parameters must be sufficient to recreate the instance.
+        They are persisted in the ``skore`` remote project and retrieved as needed.
+        """
         cls = self.__class__
         cls_name = cls.__name__
         cls_parameters = inspect_signature(cls).parameters
@@ -44,19 +66,20 @@ class Item(ABC):
 
     @property
     def __metadata__(self) -> dict[str, Any]:
+        """Get the metadata of the ``Item`` instance."""
         return dict()
 
     @property
     @abstractmethod
     def __raw__(self) -> Any:
-        """"""
+        """Get the raw python object from the ``Item`` instance."""
 
     @property
     @abstractmethod
     def __representation__(self) -> dict[str, Any]:
-        """"""
+        """Get the representation of the ``Item`` instance."""
 
     @classmethod
     @abstractmethod
     def factory(cls, *args, **kwargs) -> Item:
-        """"""
+        """Create and return a new instance of ``Item``."""

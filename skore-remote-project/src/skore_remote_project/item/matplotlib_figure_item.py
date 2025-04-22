@@ -1,24 +1,18 @@
-"""MatplotlibFigureItem.
+"""
+MatplotlibFigureItem.
 
-This module defines the MatplotlibFigureItem class, used to persist Matplotlib figures.
+This module defines the ``MatplotlibFigureItem`` class used to serialize instances of
+``matplotlib.Figure``, using binary protocols.
 """
 
 from __future__ import annotations
 
 from contextlib import contextmanager
-from functools import cached_property
 from io import BytesIO
 from typing import TYPE_CHECKING
 
-from joblib import dump, load
-
-from .item import (
-    Item,
-    ItemTypeError,
-    b64_str_to_bytes,
-    bytes_to_b64_str,
-    lazy_is_instance,
-)
+from .item import ItemTypeError, bytes_to_b64_str, lazy_is_instance
+from .pickle_item import PickleItem
 
 if TYPE_CHECKING:
     from matplotlib.figure import Figure
@@ -26,7 +20,12 @@ if TYPE_CHECKING:
 
 @contextmanager
 def mpl_backend(backend="agg"):
-    """Context manager for switching matplotlib backend."""
+    """
+    Context-manager for switching matplotlib backend.
+
+    Context-manager for switching matplotlib backend, to avoid popping windows in a
+    background thread.
+    """
     import matplotlib
 
     original_backend = matplotlib.get_backend()
@@ -38,22 +37,13 @@ def mpl_backend(backend="agg"):
         matplotlib.use(original_backend)
 
 
-class MatplotlibFigureItem(Item):
-    """A class used to persist a Matplotlib figure."""
-
-    def __init__(self, figure_b64_str: str):
-        self.figure_b64_str = figure_b64_str
-
-    @cached_property
-    def __raw__(self) -> Figure:
-        figure_bytes = b64_str_to_bytes(self.figure_b64_str)
-
-        with BytesIO(figure_bytes) as stream, mpl_backend(backend="agg"):
-            return load(stream)
+class MatplotlibFigureItem(PickleItem):
+    """Serialize instances of ``matplotlib.Figure``, using binary protocols."""
 
     @property
     def __representation__(self) -> dict:
-        with BytesIO() as stream:
+        """Get the representation of the ``MatplotlibFigureItem`` instance."""
+        with mpl_backend(backend="agg"), BytesIO() as stream:
             self.__raw__.savefig(stream, format="svg", bbox_inches="tight")
 
             figure_bytes = stream.getvalue()
@@ -67,30 +57,28 @@ class MatplotlibFigureItem(Item):
         }
 
     @classmethod
-    def factory(cls, figure: Figure, /, **kwargs) -> MatplotlibFigureItem:
+    def factory(cls, value: Figure, /, **kwargs) -> MatplotlibFigureItem:
         """
-        Create a new MatplotlibFigureItem instance from a Matplotlib figure.
+        Create a new ``MatplotlibFigureItem`` from an instance of ``matplotlib.Figure``.
+
+        It uses binary protocols.
 
         Parameters
         ----------
-        figure : matplotlib.figure.Figure
-            The Matplotlib figure to store.
+        value : ``matplotlib.Figure``
+            The value to serialize.
 
         Returns
         -------
         MatplotlibFigureItem
-            A new MatplotlibFigureItem instance.
+            A new ``MatplotlibFigureItem`` instance.
+
+        Raises
+        ------
+        ItemTypeError
+            If ``value`` is not an instance of ``matplotlib.Figure``.
         """
-        if not lazy_is_instance(figure, "matplotlib.figure.Figure"):
-            raise ItemTypeError(f"Type '{figure.__class__}' is not supported.")
+        if not lazy_is_instance(value, "matplotlib.figure.Figure"):
+            raise ItemTypeError(f"Type '{value.__class__}' is not supported.")
 
-        with BytesIO() as stream:
-            dump(figure, stream)
-
-            figure_bytes = stream.getvalue()
-            figure_b64_str = bytes_to_b64_str(figure_bytes)
-
-        instance = cls(figure_b64_str, **kwargs)
-        instance.__raw__ = figure
-
-        return instance
+        return super().factory(value)

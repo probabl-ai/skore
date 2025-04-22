@@ -1,3 +1,10 @@
+"""
+SkoreEstimatorReportItem.
+
+This module defines the ``SkoreEstimatorReportItem`` class used to serialize instances
+of ``skore.EstimatorReport``, using binary protocols.
+"""
+
 from __future__ import annotations
 
 from contextlib import suppress
@@ -21,17 +28,17 @@ if TYPE_CHECKING:
 
     from skore import EstimatorReport
 
-    class MetadataFunction:
+    class MetadataFunction:  # noqa: D101
         metadata: Any
 
-    class Metric(TypedDict):
+    class Metric(TypedDict):  # noqa: D101
         name: str
         value: float
         data_source: Optional[str]
         greater_is_better: Optional[bool]
         position: Optional[int]
 
-    class Representation(TypedDict):
+    class Representation(TypedDict):  # noqa: D101
         key: str
         category: Literal["performance", "feature_importance", "model"]
         attributes: dict
@@ -45,15 +52,32 @@ def metadata_function(function: Any) -> MetadataFunction:
 
     Notes
     -----
-    Marked functions as ``medatata`` are dynamically retrieved and called at runtime
-    to compute a snapshot of all the available metadata of a reports.
+    Marked functions as ``medatata`` are dynamically retrieved and called at runtime to
+    compute a snapshot of all the available metadata of a report.
     """
     function.metadata = ...
     return function
 
 
 class Metadata:
+    """
+    Compute report's metadata to exchange with ``skore hub``.
+
+    Notes
+    -----
+    To add a new metadata to compute, you have to add a new method decorated as
+    ``metadata``. Its name is used as identifier.
+    """
+
     def __init__(self, report: EstimatorReport):
+        """
+        Initialize a ``Metadata``.
+
+        Parameters
+        ----------
+        report : ``skore.EstimatorReport``
+            The report from which computing the metadata.
+        """
         self.report = report
 
     @metadata_function
@@ -87,13 +111,15 @@ class Metadata:
 
         Notes
         -----
+        Unavailable metrics are automatically filtered out.
+
         All metrics whose value is not a scalar are currently ignored:
         - ignore ``list[float]`` for multi-output ML task,
         - ignore ``dict[str: float]`` for multi-classes ML task.
 
         The position field is used to drive the HUB's parallel coordinates plot:
-        - int [0, inf[ to be displayed at the position,
-        - None not to be displayed.
+        - int [0, inf[, to be displayed at the position,
+        - None, not to be displayed.
         """
 
         def metric(
@@ -159,6 +185,13 @@ class Metadata:
         )
 
     def __iter__(self) -> Generator[tuple[str, Any]]:
+        """
+        Dynamically generate metadata by calling all ``metadata`` methods.
+
+        Notes
+        -----
+        Null metadata are automatically filtered out.
+        """
         for key, method in getmembers(self):
             if (
                 ismethod(method)
@@ -169,10 +202,21 @@ class Metadata:
 
 
 class Representations:
+    """Compute report's representation to exchange with ``skore hub``."""
+
     def __init__(self, report):
+        """
+        Initialize a ``Metadata``.
+
+        Parameters
+        ----------
+        report : ``skore.EstimatorReport``
+            The report from which computing the metadata.
+        """
         self.report = report
 
     def mpl(self, name, category, **kwargs) -> Union[Representation, None]:
+        """Return sub-representation made of ``matplotlib`` figures."""
         try:
             function = attrgetter(name)(self.report)
         except AttributeError:
@@ -198,6 +242,7 @@ class Representations:
             }
 
     def pd(self, name, category, **kwargs) -> Union[Representation, None]:
+        """Return sub-representation made of ``pandas`` dataframes."""
         try:
             function = attrgetter(name)(self.report)
         except AttributeError:
@@ -219,6 +264,7 @@ class Representations:
             }
 
     def estimator_html_repr(self) -> Representation:
+        """Return ``sklearn`` HTML representation of the report's estimator."""
         e = estimator_html_repr(self.report.estimator_)
         item = MediaItem.factory(e, media_type="text/html")
 
@@ -231,51 +277,90 @@ class Representations:
         }
 
     def __iter__(self) -> Generator[Representation]:
-        # fmt: off
+        """
+        Dynamically generate representation, with report's parameters combinations.
+
+        Notes
+        -----
+        Null representations are automatically filtered out.
+        """
         yield from filter(
             None,
             (
-                self.mpl("metrics.precision_recall", "performance", data_source="train"),  # noqa: E501
-                self.mpl("metrics.precision_recall", "performance", data_source="test"),  # noqa: E501
-                self.mpl("metrics.prediction_error", "performance", data_source="train"),  # noqa: E501
-                self.mpl("metrics.prediction_error", "performance", data_source="test"),  # noqa: E501
-                self.mpl("metrics.roc", "performance", data_source="train"),  # noqa: E501
-                self.mpl("metrics.roc", "performance", data_source="test"),  # noqa: E501
-                self.pd("feature_importance.permutation", "feature_importance", data_source="train", method="permutation"),  # noqa: E501
-                self.pd("feature_importance.permutation", "feature_importance", data_source="test", method="permutation"),  # noqa: E501
-                self.pd("feature_importance.mean_decrease_impurity", "feature_importance", method="mean_decrease_impurity"),  # noqa: E501
-                self.pd("feature_importance.coefficients", "feature_importance", method="coefficients"),  # noqa: E501
-                self.estimator_html_repr(),  # noqa: E501
+                self.mpl(
+                    "metrics.precision_recall", "performance", data_source="train"
+                ),
+                self.mpl("metrics.precision_recall", "performance", data_source="test"),
+                self.mpl(
+                    "metrics.prediction_error", "performance", data_source="train"
+                ),
+                self.mpl("metrics.prediction_error", "performance", data_source="test"),
+                self.mpl("metrics.roc", "performance", data_source="train"),
+                self.mpl("metrics.roc", "performance", data_source="test"),
+                self.pd(
+                    "feature_importance.permutation",
+                    "feature_importance",
+                    data_source="train",
+                    method="permutation",
+                ),
+                self.pd(
+                    "feature_importance.permutation",
+                    "feature_importance",
+                    data_source="test",
+                    method="permutation",
+                ),
+                self.pd(
+                    "feature_importance.mean_decrease_impurity",
+                    "feature_importance",
+                    method="mean_decrease_impurity",
+                ),
+                self.pd(
+                    "feature_importance.coefficients",
+                    "feature_importance",
+                    method="coefficients",
+                ),
+                self.estimator_html_repr(),
             ),
         )
-        # fmt: off
 
 
 class SkoreEstimatorReportItem(PickleItem):
+    """Serialize instances of ``skore.EstimatorReport``, using binary protocols."""
+
     @property
     def __metadata__(self) -> dict[str, Any]:
+        """Get the metadata of the ``SkoreEstimatorReportItem`` instance."""
         return dict(Metadata(self.__raw__))
 
     @property
     def __representation__(self) -> dict[str, list[Representation]]:
+        """Get the representation of the ``SkoreEstimatorReportItem`` instance."""
         return {"related_items": list(Representations(self.__raw__))}
 
     @classmethod
-    def factory(cls, report: EstimatorReport, /) -> SkoreEstimatorReportItem:
+    def factory(cls, value: EstimatorReport, /) -> SkoreEstimatorReportItem:
         """
-        Create a new SkoreEstimatorReportItem from a skore ``EstimatorReport``.
+        Create a new ``SkoreEstimatorReportItem``.
+
+        Create a new ``SkoreEstimatorReportItem`` from an instance of
+        ``skore.EstimatorReport``.
 
         Parameters
         ----------
-        report : EstimatorReport
-            The report to store.
+        value : ``skore.EstimatorReport``
+            The value to serialize.
 
         Returns
         -------
         SkoreEstimatorReportItem
-            A new SkoreEstimatorReportItem instance.
-        """
-        if lazy_is_instance(report, "skore.sklearn._estimator.report.EstimatorReport"):
-            return super().factory(report)
+            A new ``SkoreEstimatorReportItem`` instance.
 
-        raise ItemTypeError(f"Type '{report.__class__}' is not supported.")
+        Raises
+        ------
+        ItemTypeError
+            If ``value`` is not an instance of ``skore.EstimatorReport``.
+        """
+        if lazy_is_instance(value, "skore.sklearn._estimator.report.EstimatorReport"):
+            return super().factory(value)
+
+        raise ItemTypeError(f"Type '{value.__class__}' is not supported.")

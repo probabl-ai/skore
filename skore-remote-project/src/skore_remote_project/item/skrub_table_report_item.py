@@ -1,4 +1,9 @@
-"""SkrubTableReportItem."""
+"""
+SkrubTableReportItem.
+
+This module defines the ``SkrubTableReportItem`` class used to serialize instances of
+``skrub.TableReport``, using binary protocols.
+"""
 
 from __future__ import annotations
 
@@ -12,8 +17,11 @@ if TYPE_CHECKING:
 
 
 class SkrubTableReportItem(PickleItem):
+    """Serialize instances of ``skrub.TableReport``, using binary protocols."""
+
     @property
     def __representation__(self) -> dict:
+        """Get the representation of the ``SkrubTableReportItem`` instance."""
         return {
             "representation": {
                 "media_type": "text/html",
@@ -22,21 +30,28 @@ class SkrubTableReportItem(PickleItem):
         }
 
     @classmethod
-    def factory(cls, report: TableReport, /) -> SkrubTableReportItem:
+    def factory(cls, value: TableReport, /) -> SkrubTableReportItem:
         """
-        Create a new SkrubTableReportItem from a skrub ``TableReport``.
+        Create a new ``SkrubTableReportItem`` from an instance of ``skrub.TableReport``.
+
+        It uses binary protocols.
 
         Parameters
         ----------
-        report : TableReport
-            The report to store.
+        value : ``skrub.TableReport``
+            The value to serialize.
 
         Returns
         -------
         SkrubTableReportItem
-            A new SkrubTableReportItem instance.
-        """
-        if not lazy_is_instance(report, "skrub._reporting._table_report.TableReport"):
-            raise ItemTypeError(f"Type '{report.__class__}' is not supported.")
+            A new ``SkrubTableReportItem`` instance.
 
-        return super().factory(report)
+        Raises
+        ------
+        ItemTypeError
+            If ``value`` is not an instance of ``skrub.TableReport``.
+        """
+        if not lazy_is_instance(value, "skrub._reporting._table_report.TableReport"):
+            raise ItemTypeError(f"Type '{value.__class__}' is not supported.")
+
+        return super().factory(value)
