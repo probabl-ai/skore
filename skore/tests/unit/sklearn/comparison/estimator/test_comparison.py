@@ -360,7 +360,7 @@ def test_comparison_report_metrics_binary_classification(
     metric_name, expected, data_source, binary_classification_model, report
 ):
     """Check the metrics work."""
-    _, X_train, X_test, _, y_test = binary_classification_model
+    _, _, X_test, _, y_test = binary_classification_model
 
     # ensure metric is valid
     if data_source == "X_y":
@@ -650,10 +650,10 @@ def test_comparison_report_plots(
     report_regression,
 ):
     if plot_ml_task == "binary_classification":
-        estimator, _, X_test, _, y_test = binary_classification_model
+        _, _, X_test, _, y_test = binary_classification_model
         comp = report_classification
     else:
-        estimator, _, X_test, _, y_test = regression_model
+        _, _, X_test, _, y_test = regression_model
         comp = report_regression
 
     if plot_data_source == "X_y":
