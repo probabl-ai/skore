@@ -191,10 +191,8 @@ def _combine_cross_validation_results(
         """Move the model name from the column index to the table index."""
         df = copy.copy(df)
 
-        # Put the model name as a column
         df["Estimator"] = model_name
 
-        # Put the model name into the index
         if "Label / Average" in df.index.names:
             new_index = ["Metric", "Label / Average", "Estimator"]
         else:
