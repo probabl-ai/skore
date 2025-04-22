@@ -20,6 +20,10 @@ def make_classifier():
 
 @pytest.fixture
 def report(classification_data):
+    """ComparisonReport of CrossValidationReports for classification estimators.
+
+    Note that the two CrossValidationReports do not have the same number of CV splits.
+    """
     X, y = classification_data
 
     report = ComparisonReport(
@@ -34,6 +38,7 @@ def report(classification_data):
 
 @pytest.fixture
 def report_regression():
+    """ComparisonReport of CrossValidationReports for regression estimators."""
     X, y = make_regression(random_state=42)
 
     report = ComparisonReport(
@@ -46,7 +51,8 @@ def report_regression():
     return report
 
 
-def test_different_split_numbers(report):
+def test_aggregate_none(report):
+    """`report_metrics` works as intended with `aggregate=None`."""
     result = report.metrics.report_metrics(aggregate=None)
 
     assert_index_equal(result.columns, pd.Index(["Value"]))
@@ -54,7 +60,10 @@ def test_different_split_numbers(report):
     assert len(result) == 64
 
 
-def test_flat_index_different_split_numbers(report):
+def test_aggregate_none_flat_index(report):
+    """
+    `report_metrics` works as intended with `aggregate=None` and `flat_index=True`.
+    """
     result = report.metrics.report_metrics(
         aggregate=None,
         flat_index=True,
@@ -64,7 +73,8 @@ def test_flat_index_different_split_numbers(report):
     assert len(result) == 64
 
 
-def test_aggregate_different_split_numbers(report):
+def test_default(report):
+    """`report_metrics` works as intended with its default attributes."""
     result = report.metrics.report_metrics()
 
     assert_index_equal(
@@ -80,6 +90,31 @@ def test_aggregate_different_split_numbers(report):
         ),
     )
     assert len(result) == 8
+
+
+def test_default_regression(report_regression):
+    """
+    `report_metrics` works as intended with its default attributes for regression
+    models.
+    """
+    result = report_regression.metrics.report_metrics()
+
+    assert_index_equal(
+        result.columns,
+        pd.MultiIndex.from_tuples(
+            [
+                ("mean", "DummyRegressor_1"),
+                ("mean", "DummyRegressor_2"),
+                ("std", "DummyRegressor_1"),
+                ("std", "DummyRegressor_2"),
+            ],
+            names=[None, "Estimator"],
+        ),
+    )
+    assert_index_equal(
+        result.index,
+        pd.Index(["R²", "RMSE", "Fit time", "Predict time"], name="Metric"),
+    )
 
 
 def test_aggregate_sequence_of_one_element(report):
@@ -101,7 +136,8 @@ def test_aggregate_is_used_in_cache(report):
     assert list(call1.columns) != list(call2.columns)
 
 
-def test_accuracy(report):
+def test_scoring(report):
+    """`report_metrics` works as intended with the `scoring` parameter."""
     result = report.metrics.report_metrics(
         scoring=["accuracy"],
         aggregate=None,
@@ -127,6 +163,7 @@ def test_accuracy(report):
 
 
 def test_favorability(report):
+    """`report_metrics` works as intended with `indicator_favorability=True`."""
     result = report.metrics.report_metrics(indicator_favorability=True)
 
     assert_index_equal(
@@ -145,28 +182,8 @@ def test_favorability(report):
     assert len(result) == 8
 
 
-def test_regression(report_regression):
-    result = report_regression.metrics.report_metrics()
-
-    assert_index_equal(
-        result.columns,
-        pd.MultiIndex.from_tuples(
-            [
-                ("mean", "DummyRegressor_1"),
-                ("mean", "DummyRegressor_2"),
-                ("std", "DummyRegressor_1"),
-                ("std", "DummyRegressor_2"),
-            ],
-            names=[None, "Estimator"],
-        ),
-    )
-    assert_index_equal(
-        result.index,
-        pd.Index(["R²", "RMSE", "Fit time", "Predict time"], name="Metric"),
-    )
-
-
 def test_cache(report):
+    """`report_metrics` results are cached."""
     result = report.metrics.report_metrics()
     cached_result = report.metrics.report_metrics()
 
@@ -174,8 +191,9 @@ def test_cache(report):
 
 
 def test_init_with_report_names(classification_data):
-    """If the estimators are passed as a dict,
-    then the estimator names are the dict keys."""
+    """
+    If the estimators are passed as a dict, then the estimator names are the dict keys.
+    """
 
     X, y = classification_data
     cv_report1 = CrossValidationReport(make_classifier(), X, y)
@@ -193,7 +211,8 @@ def test_init_with_report_names(classification_data):
     )
 
 
-def test_report_metrics_X_y(report, classification_data):
+def test_X_y(report, classification_data):
+    """`report_metrics` works as intended with `data_source="X_y"`."""
     X, y = classification_data
     with pytest.raises(NotImplementedError):
         report.metrics.report_metrics(data_source="X_y", X=X, y=y)
