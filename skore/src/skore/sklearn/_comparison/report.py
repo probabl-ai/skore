@@ -340,9 +340,9 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         if n_jobs is None:
             n_jobs = self.n_jobs
 
-        assert (
-            self._progress_info is not None
-        ), "The rich Progress class was not initialized."
+        assert self._progress_info is not None, (
+            "The rich Progress class was not initialized."
+        )
         progress = self._progress_info["current_progress"]
         main_task = self._progress_info["current_task"]
 
