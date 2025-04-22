@@ -1,6 +1,7 @@
 import warnings
 from datetime import datetime
 
+import numpy as np
 import pandas
 import polars
 import pytest
@@ -221,3 +222,77 @@ def test_train_test_split_check_dict_no_X_no_y():
     output = train_test_split(z=z, random_state=0, as_dict=True)
     keys = output.keys()
     assert list(keys) == ["z_train", "z_test"]
+
+
+def test_train_test_split_as_dict_with_all_keyword_args():
+    """Ensure result is a dict with correct keys when as_dict=True
+    and all arrays are keyword args."""
+    X = np.arange(10).reshape(10, 1)
+    y = np.arange(10)
+    weights = np.ones(10)
+
+    result = train_test_split(
+        X=X,
+        y=y,
+        sample_weights=weights,
+        test_size=0.2,
+        as_dict=True,
+        random_state=0,
+    )
+
+    assert set(result.keys()) == {
+        "X_train",
+        "X_test",
+        "y_train",
+        "y_test",
+        "sample_weights_train",
+        "sample_weights_test",
+    }
+    assert result["X_train"].shape[0] == 8
+    assert result["X_test"].shape[0] == 2
+
+
+def test_train_test_split_as_dict_raises_if_positional_args():
+    """Raise error if as_dict=True and inputs are not keyword arguments."""
+    X = np.arange(10).reshape(10, 1)
+    y = np.arange(10)
+
+    with pytest.raises(
+        ValueError,
+        match="When as_dict=True, arrays must be passed as keyword arguments",
+    ):
+        train_test_split(X, y, test_size=0.2, as_dict=True)
+
+
+def test_train_test_split_as_dict_with_multiple_named_inputs():
+    """Ensure train_test_split works with multiple inputs when using as_dict=True."""
+    X = np.arange(10).reshape(10, 1)
+    y = np.arange(10)
+    z = np.arange(10, 20)
+
+    result = train_test_split(
+        X=X,
+        y=y,
+        z=z,
+        test_size=0.5,
+        as_dict=True,
+        random_state=42,
+    )
+
+    expected_keys = {"X_train", "X_test", "y_train", "y_test", "z_train", "z_test"}
+
+    assert all(key in result for key in expected_keys)
+    assert result["z_train"].shape[0] == 5
+    assert result["z_test"].shape[0] == 5
+
+
+def test_train_test_split_as_dict_with_mixed_input_types():
+    """Ensure train_test_split handles a mix of array-like types with as_dict=True."""
+    X = [[i] for i in range(10)]
+    y = np.arange(10)
+
+    result = train_test_split(X=X, y=y, test_size=0.3, as_dict=True, random_state=1)
+
+    assert set(result.keys()) == {"X_train", "X_test", "y_train", "y_test"}
+    assert len(result["X_train"]) == 7
+    assert len(result["X_test"]) == 3
