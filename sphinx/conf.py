@@ -52,9 +52,15 @@ templates_path = ["_templates"]
 autodoc_typehints = "none"
 
 autodoc_default_options = {
-    'exclude-members': '_MetricsAccessor,_FeatureImportanceAccessor' # exclude 
+    'exclude-members': [
+        '_MetricsAccessor',
+        '_FeatureImportanceAccessor',
+        '_ComparisonReport',
+        '_CrossValidationReport',
+        '_EstimatorReport'
+    ],
+    # 'ignore-module-all': True  # Prevents __all__ from affecting what's documented
 }
-
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output

@@ -186,6 +186,8 @@ tramp
 sphinx/build/
 sphinx/auto_examples/
 sphinx/reference/api/
+# exclude generated files
+# sphinx/reference/backrefs/
 sphinx/sg_execution_times.rst
 examples/plot_*.png
 
