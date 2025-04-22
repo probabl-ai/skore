@@ -161,7 +161,6 @@ class ConfusionMatrixDisplay(Display):
         include_values=True,
         normalize=None,
         values_format=None,
-        ax=None,
     ):
         """Create a confusion matrix display from predictions.
 
@@ -192,10 +191,6 @@ class ConfusionMatrixDisplay(Display):
             Format specification for values in confusion matrix. If None, the format
             specification is 'd' or '.2g' whichever is shorter.
 
-        ax : matplotlib axes, default=None
-            Axes object to plot on. If None, a new figure and axes is created.
-            This parameter is passed to the plot method, instead of the constructor.
-
         Returns
         -------
         display : :class:`~sklearn.metrics.ConfusionMatrixDisplay`
@@ -215,10 +210,6 @@ class ConfusionMatrixDisplay(Display):
             normalize=normalize,
             values_format=values_format,
         )
-
-        # If ax param is provided, plot with the provided axes
-        if ax is not None:
-            disp.plot(ax=ax)
 
         return disp
 
