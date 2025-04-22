@@ -397,6 +397,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         *,
         data_source: Literal["train", "test", "X_y"],
         response_method: Literal["predict", "predict_proba", "decision_function"],
+        X: Optional[ArrayLike] = None,
         pos_label: Optional[Any] = None,
     ) -> ArrayLike:
         """Get estimator's predictions.
@@ -415,6 +416,10 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
         response_method : {"predict", "predict_proba", "decision_function"}
             The response method to use.
+
+        X : array-like of shape (n_samples, n_features), optional
+            When `data_source` is "X_y", the input features on which to compute the
+            response method.
 
         pos_label : int, float, bool or str, default=None
             The positive class when it comes to binary classification. When
@@ -469,6 +474,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             report.get_predictions(
                 data_source=data_source,
                 response_method=response_method,
+                X=X,
                 pos_label=pos_label,
             )
             for report in self.reports_
