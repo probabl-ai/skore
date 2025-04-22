@@ -49,6 +49,11 @@ default_role = "literal"
 autosummary_generate = True  # generate stubs for all classes
 templates_path = ["_templates"]
 
+# Warning control
+suppress_warnings = [
+    'config.cache'  # silence config warnings
+]
+
 autodoc_typehints = "none"
 
 autodoc_default_options = {
