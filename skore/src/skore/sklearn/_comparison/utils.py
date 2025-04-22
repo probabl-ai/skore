@@ -206,7 +206,8 @@ def _combine_cross_validation_results(
 
         return df
 
-    def melt_df(df):
+    def melt(df):
+        """Move split number from columns to index."""
         df_reset = df.reset_index()
 
         if "Label / Average" in df_reset.columns:
@@ -240,7 +241,7 @@ def _combine_cross_validation_results(
         for df, estimator_name in zip(results, estimator_names)
     ]
 
-    dfs_melted = [melt_df(df) for df in dfs_model_name_in_index]
+    dfs_melted = [melt(df) for df in dfs_model_name_in_index]
 
     df = pd.concat(dfs_melted, axis=0)
 
