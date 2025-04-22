@@ -162,7 +162,7 @@ This file is used to be presented on `PyPI <https://pypi.org/project/skore/#desc
 Signing Commits
 ---------------
 
-You have to sign your commits before submitting a pull-request.
+You have to sign your commits before submitting a pull request.
 For a pull request to be accepted, all the commits inside of it must be signed.
 
 GitHub supports commit signing using **GPG**, **SSH**, or **S/MIME**. Signed commits are marked as "Verified" on GitHub, providing confidence in the origin of your changes.
