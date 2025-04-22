@@ -224,7 +224,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
 
             The dataframes are not required to have the same number of columns (splits).
 
-        estimator_names : list of str of len (len(results))
+        estimator_names : list of str of length `len(results)`
             The name to give the estimator for each dataframe.
 
         indicator_favorability : bool
