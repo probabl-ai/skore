@@ -24,7 +24,52 @@ def _combine_estimator_results(
 
     indicator_favorability : bool
         Whether to keep the Favorability column.
+
+    Examples
+    --------
+    >>> from skore.sklearn._comparison.utils import _combine_estimator_results
+    >>> import pandas as pd
+    >>> individual_results = [
+    ...     pd.DataFrame.from_dict(
+    ...         {
+    ...             "index": ["Brier score"],
+    ...             "columns": ["LogisticRegression"],
+    ...             "data": [[0.026]],
+    ...             "index_names": ["Metric"],
+    ...             "column_names": [None],
+    ...         },
+    ...         orient="tight",
+    ...     ),
+    ...     pd.DataFrame.from_dict(
+    ...         {
+    ...             "index": ["Brier score"],
+    ...             "columns": ["LogisticRegression"],
+    ...             "data": [[0.026]],
+    ...             "index_names": ["Metric"],
+    ...             "column_names": [None],
+    ...         },
+    ...         orient="tight",
+    ...     ),
+    ... ]
+    >>> estimator_names = ['LogisticRegression_1', 'LogisticRegression_2']
+    >>> _combine_estimator_results(
+    ...     individual_results,
+    ...     estimator_names,
+    ...     indicator_favorability=False,
+    ... )
+    Estimator    LogisticRegression_1  LogisticRegression_2
+    Metric
+    Brier score                   ...                   ...
     """
+    pd.DataFrame.from_dict(
+        {
+            "index": ["Brier score"],
+            "columns": ["LogisticRegression"],
+            "data": [[0.026683863888246822]],
+            "index_names": ["Metric"],
+            "column_names": [None],
+        }
+    )
     results = pd.concat(individual_results, axis=1)
 
     # Pop the favorability column if it exists, to:
@@ -74,6 +119,72 @@ def _combine_cross_validation_results(
 
     aggregate : Aggregate
         How to aggregate the resulting dataframe.
+
+    Examples
+    --------
+    >>> from skore.sklearn._comparison.utils import _combine_cross_validation_results
+    >>> import pandas as pd
+    >>> pd.set_option('display.max_columns', None)
+    >>> pd.set_option('display.width', 1000)
+    >>> individual_results = [
+    ...     pd.DataFrame.from_dict(
+    ...         {
+    ...             "index": ["Accuracy"],
+    ...             "columns": [
+    ...                 ("DummyClassifier", "Split #0"),
+    ...                 ("DummyClassifier", "Split #1"),
+    ...                 ("DummyClassifier", "Split #2"),
+    ...                 ("DummyClassifier", "Split #3"),
+    ...                 ("DummyClassifier", "Split #4"),
+    ...             ],
+    ...             "data": [[0.45, 0.45, 0.35, 0.35, 0.55]],
+    ...             "index_names": ["Metric"],
+    ...             "column_names": [None, None],
+    ...         },
+    ...         orient="tight",
+    ...     ),
+    ...     pd.DataFrame.from_dict(
+    ...         {
+    ...             "index": ["Accuracy"],
+    ...             "columns": [
+    ...                 ("DummyClassifier", "Split #0"),
+    ...                 ("DummyClassifier", "Split #1"),
+    ...                 ("DummyClassifier", "Split #2"),
+    ...             ],
+    ...             "data": [[0.53, 0.42, 0.52]],
+    ...             "index_names": ["Metric"],
+    ...             "column_names": [None, None],
+    ...         },
+    ...         orient="tight",
+    ...     ),
+    ... ]
+    >>> estimator_names = ["DummyClassifier_1", "DummyClassifier_2"]
+    >>> _combine_cross_validation_results(
+    ...     individual_results,
+    ...     estimator_names,
+    ...     indicator_favorability=False,
+    ...     aggregate=None,
+    ... )
+                                            Value
+    Metric   Estimator         Split
+    Accuracy DummyClassifier_1 Split #0       ...
+                               Split #1       ...
+                               Split #2       ...
+                               Split #3       ...
+                               Split #4       ...
+             DummyClassifier_2 Split #0       ...
+                               Split #1       ...
+                               Split #2       ...
+    >>> _combine_cross_validation_results(
+    ...     individual_results,
+    ...     estimator_names,
+    ...     indicator_favorability=False,
+    ...     aggregate=["mean", "std"],
+    ... )
+                           mean                                 std
+    Estimator DummyClassifier_1 DummyClassifier_2 DummyClassifier_1 DummyClassifier_2
+    Metric
+    Accuracy                ...               ...               ...               ...
     """
 
     def add_model_name_to_index(df: pd.DataFrame, model_name: str) -> pd.DataFrame:
