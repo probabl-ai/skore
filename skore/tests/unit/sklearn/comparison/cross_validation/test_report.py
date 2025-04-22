@@ -73,11 +73,10 @@ def test_init_non_distinct_reports(cv_report_classification):
 
 
 def test_non_string_report_names(cv_reports):
-    """If the estimators are passed as a dict with non-string keys,
-    then the estimator names are the dict keys converted to strings."""
+    """If the estimators are passed as a dict, then keys must be strings."""
     cv_report_1, cv_report_2 = cv_reports
-    report = ComparisonReport({0: cv_report_1, "1": cv_report_2})
-    assert report.report_names_ == ["0", "1"]
+    with pytest.raises(TypeError, match="Expected all report names to be strings"):
+        ComparisonReport({0: cv_report_1, "1": cv_report_2})
 
 
 @pytest.fixture

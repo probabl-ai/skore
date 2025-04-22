@@ -158,10 +158,17 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                 f"Expected at least 2 reports to compare; got {len(reports)}"
             )
 
-        report_names = (
-            list(map(str, reports.keys())) if isinstance(reports, dict) else None
-        )
-        reports_list = list(reports.values()) if isinstance(reports, dict) else reports
+        if isinstance(reports, list):
+            report_names = None
+            reports_list = reports
+        else:  # dict
+            report_names = list(reports.keys())
+            for key in report_names:
+                if not isinstance(key, str):
+                    raise TypeError(
+                        f"Expected all report names to be strings; got {type(key)}"
+                    )
+            reports_list = list(reports.values())
 
         reports_type: ReportType
         if all(isinstance(report, EstimatorReport) for report in reports_list):
