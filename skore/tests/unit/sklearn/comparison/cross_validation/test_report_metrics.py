@@ -6,6 +6,7 @@ from pandas.testing import assert_frame_equal, assert_index_equal
 from sklearn.datasets import make_classification, make_regression
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from skore import ComparisonReport, CrossValidationReport
+from skore.utils._testing import check_cache_changed, check_cache_unchanged
 
 
 @pytest.fixture
@@ -184,8 +185,12 @@ def test_favorability(report):
 
 def test_cache(report):
     """`report_metrics` results are cached."""
-    result = report.metrics.report_metrics()
-    cached_result = report.metrics.report_metrics()
+
+    with check_cache_changed(report._cache):
+        result = report.metrics.report_metrics()
+
+    with check_cache_unchanged(report._cache):
+        cached_result = report.metrics.report_metrics()
 
     assert_frame_equal(result, cached_result)
 
