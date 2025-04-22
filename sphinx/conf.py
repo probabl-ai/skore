@@ -104,10 +104,18 @@ sphinx_gallery_conf = {
     # "reset_modules": (reset_mpl, "seaborn"),
     "image_scrapers": [matplotlib_skore_scraper],
     "abort_on_example_error": True,
-    'exclude_implicit_doc': { # exclude implicit docstrings from the gallery
+    # 'exclude_implicit_doc': { # exclude implicit docstrings from the gallery
+    #     '_MetricsAccessor',
+    #     '_FeatureImportanceAccessor'
+    # }
+
+    'exclude_implicit_doc': {
         '_MetricsAccessor',
-        '_FeatureImportanceAccessor'
-    }
+        '_FeatureImportanceAccessor',
+        '_ComparisonReport',
+        '_CrossValidationReport',
+        '_EstimatorReport'
+    },
 }
 
 # intersphinx configuration
