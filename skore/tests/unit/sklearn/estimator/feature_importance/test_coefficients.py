@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 import sklearn.linear_model
-from sklearn.base import is_classifier, is_regressor
+from sklearn.base import is_classifier, is_clusterer, is_outlier_detector, is_regressor
 from sklearn.datasets import make_classification, make_regression
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.pipeline import Pipeline, make_pipeline
@@ -119,13 +119,13 @@ def test_estimator_report_coefficients_pandas_dataframe(estimator):
     [
         pytest.param(sklearn.svm.NuSVC(kernel="linear"), id="NuSVC"),
         pytest.param(sklearn.svm.NuSVR(kernel="linear"), id="NuSVR"),
-        # pytest.param(sklearn.svm.OneClassSVM(), id="OneClassSVM"),
+        pytest.param(sklearn.svm.OneClassSVM(kernel="linear"), id="OneClassSVM"),
         pytest.param(sklearn.svm.SVC(kernel="linear"), id="SVC"),
         pytest.param(sklearn.svm.SVR(kernel="linear"), id="SVR"),
         pytest.param(sklearn.svm.LinearSVC(), id="LinearSVC"),
         pytest.param(sklearn.svm.LinearSVR(), id="LinearSVR"),
-        # pytest.param(sklearn.cross_decomposition.CCA(), id="CCA"),
-        # pytest.param(sklearn.cross_decomposition.PLSCanonical(), id="PLSCanonical"),
+        pytest.param(sklearn.cross_decomposition.CCA(), id="CCA"),
+        pytest.param(sklearn.cross_decomposition.PLSCanonical(), id="PLSCanonical"),
         pytest.param(sklearn.cross_decomposition.PLSRegression(), id="PLSRegression"),
         pytest.param(
             sklearn.discriminant_analysis.LinearDiscriminantAnalysis(),
@@ -136,12 +136,11 @@ def test_estimator_report_coefficients_pandas_dataframe(estimator):
         #     id="TransformedTargetRegressor",
         # ),
         pytest.param(sklearn.linear_model.ElasticNet(), id="ElasticNet"),
-        pytest.param(sklearn.linear_model.Lasso(), id="Lasso"),
         pytest.param(sklearn.linear_model.ARDRegression(), id="ARDRegression"),
         pytest.param(sklearn.linear_model.BayesianRidge(), id="BayesianRidge"),
         pytest.param(sklearn.linear_model.ElasticNet(), id="ElasticNet"),
         pytest.param(sklearn.linear_model.ElasticNetCV(), id="ElasticNetCV"),
-        # pytest.param(sklearn.linear_model.GammaRegressor(), id="GammaRegressor"),
+        pytest.param(sklearn.linear_model.GammaRegressor(), id="GammaRegressor"),
         pytest.param(sklearn.linear_model.HuberRegressor(), id="HuberRegressor"),
         pytest.param(sklearn.linear_model.Lars(), id="Lars"),
         pytest.param(sklearn.linear_model.LarsCV(), id="LarsCV"),
@@ -157,14 +156,14 @@ def test_estimator_report_coefficients_pandas_dataframe(estimator):
         pytest.param(
             sklearn.linear_model.LogisticRegressionCV(), id="LogisticRegressionCV"
         ),
-        # pytest.param(
-        #     sklearn.linear_model.MultiTaskElasticNet(), id="MultiTaskElasticNet"
-        # ),
-        # pytest.param(
-        #     sklearn.linear_model.MultiTaskElasticNetCV(), id="MultiTaskElasticNetCV"
-        # ),
-        # pytest.param(sklearn.linear_model.MultiTaskLasso(), id="MultiTaskLasso"),
-        # pytest.param(sklearn.linear_model.MultiTaskLassoCV(), id="MultiTaskLassoCV"),
+        pytest.param(
+            sklearn.linear_model.MultiTaskElasticNet(), id="MultiTaskElasticNet"
+        ),
+        pytest.param(
+            sklearn.linear_model.MultiTaskElasticNetCV(), id="MultiTaskElasticNetCV"
+        ),
+        pytest.param(sklearn.linear_model.MultiTaskLasso(), id="MultiTaskLasso"),
+        pytest.param(sklearn.linear_model.MultiTaskLassoCV(), id="MultiTaskLassoCV"),
         pytest.param(
             sklearn.linear_model.OrthogonalMatchingPursuit(),
             id="OrthogonalMatchingPursuit",
@@ -182,7 +181,7 @@ def test_estimator_report_coefficients_pandas_dataframe(estimator):
             id="PassiveAggressiveRegressor",
         ),
         pytest.param(sklearn.linear_model.Perceptron(), id="Perceptron"),
-        # pytest.param(sklearn.linear_model.PoissonRegressor(), id="PoissonRegressor"),
+        pytest.param(sklearn.linear_model.PoissonRegressor(), id="PoissonRegressor"),
         pytest.param(sklearn.linear_model.QuantileRegressor(), id="QuantileRegressor"),
         pytest.param(sklearn.linear_model.Ridge(), id="Ridge"),
         pytest.param(sklearn.linear_model.RidgeClassifier(), id="RidgeClassifier"),
@@ -196,31 +195,78 @@ def test_estimator_report_coefficients_pandas_dataframe(estimator):
     ],
 )
 def test_all_sklearn_estimators(
-    request, estimator, regression_data, classification_data
+    request,
+    estimator,
+    regression_data,
+    positive_regression_data,
+    multi_regression_data,
+    classification_data,
+    outlier_data,
+    clustering_data,
 ):
     """Check that `coefficients` is supported for every sklearn estimator."""
+    multi = False
     if is_classifier(estimator):
         X, y = classification_data
     elif is_regressor(estimator):
-        X, y = regression_data
+        if isinstance(
+            estimator,
+            (
+                sklearn.linear_model.GammaRegressor,
+                sklearn.linear_model.PoissonRegressor,
+            ),
+        ):
+            X, y = positive_regression_data
+        elif isinstance(
+            estimator,
+            (
+                sklearn.linear_model.MultiTaskElasticNet,
+                sklearn.linear_model.MultiTaskElasticNetCV,
+                sklearn.linear_model.MultiTaskLasso,
+                sklearn.linear_model.MultiTaskLassoCV,
+                sklearn.cross_decomposition.CCA,
+                sklearn.cross_decomposition.PLSCanonical,
+            ),
+        ):
+            X, y = multi_regression_data
+            multi = True
+        else:
+            X, y = regression_data
+    elif is_outlier_detector(estimator):
+        X, y = outlier_data
+    elif is_clusterer(estimator):
+        X, y = clustering_data
     else:
-        raise Exception("Estimator is neither a classifier nor a regressor")
+        raise Exception(
+            """Estimator not in ['classifier', 'regressor',
+             'clusterer', 'outlier_detector']"""
+        )
 
     estimator.fit(X, y)
 
     report = EstimatorReport(estimator)
     result = report.feature_importance.coefficients()
 
-    assert result.shape == (6, 1)
-    assert result.index.tolist() == [
-        "Intercept",
-        "Feature #0",
-        "Feature #1",
-        "Feature #2",
-        "Feature #3",
-        "Feature #4",
-    ]
-    assert result.columns.tolist() == ["Coefficient"]
+    if result.shape in [(6, 1), (6, 2)]:
+        assert result.index.tolist() == [
+            "Intercept",
+            "Feature #0",
+            "Feature #1",
+            "Feature #2",
+            "Feature #3",
+            "Feature #4",
+        ]
+    elif result.shape == (3, 1):
+        assert result.index.tolist() == [
+            "Intercept",
+            "Feature #0",
+            "Feature #1",
+        ]
+
+    if multi:
+        assert result.columns.tolist() == [f"Target #{i}" for i in range(2)]
+    else:
+        assert result.columns.tolist() == ["Coefficient"]
 
 
 def test_pipeline_with_transformer(regression_data):
