@@ -35,7 +35,7 @@ def _combine_cross_validation_results(
     indicator_favorability: bool,
     aggregate: Optional[Aggregate],
 ) -> pd.DataFrame:
-    """Combine a list of dataframes.
+    """Combine a list of dataframes provided by `CrossValidationReport`s.
 
     Parameters
     ----------
