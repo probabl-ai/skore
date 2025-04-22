@@ -119,50 +119,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     _reports_type: ReportType
 
     @staticmethod
-    def _deduplicate_report_names(report_names: list[str]) -> list[str]:
-        """De-duplicate report names that appear several times.
-
-        Leave the other report names alone.
-
-        Parameters
-        ----------
-        report_names : list of str
-            The list of report names to be checked.
-
-        Returns
-        -------
-        list of str
-            The de-duplicated list of report names.
-
-        Examples
-        --------
-        >>> ComparisonReport._deduplicate_report_names(['a', 'b'])
-        ['a', 'b']
-        >>> ComparisonReport._deduplicate_report_names(['a', 'a'])
-        ['a_1', 'a_2']
-        >>> ComparisonReport._deduplicate_report_names(['a', 'b', 'a'])
-        ['a_1', 'b', 'a_2']
-        >>> ComparisonReport._deduplicate_report_names(['a', 'b', 'a', 'b'])
-        ['a_1', 'b_1', 'a_2', 'b_2']
-        >>> ComparisonReport._deduplicate_report_names([])
-        []
-        >>> ComparisonReport._deduplicate_report_names(['a'])
-        ['a']
-        """
-        counts = Counter(report_names)
-        if len(report_names) == len(counts):
-            return report_names
-
-        names = report_names.copy()
-        seen: Counter = Counter()
-        for i in range(len(names)):
-            name = names[i]
-            seen[name] += 1
-            if counts[name] > 1:
-                names[i] = f"{name}_{seen[name]}"
-        return names
-
-    @staticmethod
     def _validate_reports(
         reports: Union[
             list[EstimatorReport],
@@ -243,7 +199,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             )
 
         if report_names is None:
-            deduped_report_names = ComparisonReport._deduplicate_report_names(
+            deduped_report_names = _deduplicate_report_names(
                 [report.estimator_name_ for report in reports_list]
             )
         else:
@@ -377,9 +333,9 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         if n_jobs is None:
             n_jobs = self.n_jobs
 
-        assert self._progress_info is not None, (
-            "The rich Progress class was not initialized."
-        )
+        assert (
+            self._progress_info is not None
+        ), "The rich Progress class was not initialized."
         progress = self._progress_info["current_progress"]
         main_task = self._progress_info["current_task"]
 
@@ -495,3 +451,47 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     def __repr__(self) -> str:
         """Return a string representation."""
         return f"{self.__class__.__name__}(...)"
+
+
+def _deduplicate_report_names(report_names: list[str]) -> list[str]:
+    """De-duplicate report names that appear several times.
+
+    Leave the other report names alone.
+
+    Parameters
+    ----------
+    report_names : list of str
+        The list of report names to be checked.
+
+    Returns
+    -------
+    list of str
+        The de-duplicated list of report names.
+
+    Examples
+    --------
+    >>> _deduplicate_report_names(['a', 'b'])
+    ['a', 'b']
+    >>> _deduplicate_report_names(['a', 'a'])
+    ['a_1', 'a_2']
+    >>> _deduplicate_report_names(['a', 'b', 'a'])
+    ['a_1', 'b', 'a_2']
+    >>> _deduplicate_report_names(['a', 'b', 'a', 'b'])
+    ['a_1', 'b_1', 'a_2', 'b_2']
+    >>> _deduplicate_report_names([])
+    []
+    >>> _deduplicate_report_names(['a'])
+    ['a']
+    """
+    counts = Counter(report_names)
+    if len(report_names) == len(counts):
+        return report_names
+
+    names = report_names.copy()
+    seen: Counter = Counter()
+    for i in range(len(names)):
+        name = names[i]
+        seen[name] += 1
+        if counts[name] > 1:
+            names[i] = f"{name}_{seen[name]}"
+    return names
