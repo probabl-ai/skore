@@ -98,7 +98,8 @@ sphinx_gallery_conf = {
         # The module you locally document uses None
         "skore": None,
     },
-    "backreferences_dir": "reference/backrefs", # changed from reference/api to avoid conflicts with the API reference
+    # "backreferences_dir": "reference/backrefs", # changed from reference/api to avoid conflicts with the API reference
+    "backreferences_dir": "reference/api",
     "doc_module": "skore",
     # "reset_modules": (reset_mpl, "seaborn"),
     "image_scrapers": [matplotlib_skore_scraper],
