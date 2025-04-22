@@ -11,6 +11,20 @@ def _combine_estimator_results(
     estimator_names: list[str],
     indicator_favorability: bool,
 ) -> pd.DataFrame:
+    """Combine a list of dataframes provided by `EstimatorReport`s.
+
+    Parameters
+    ----------
+    results : pd.DataFrame
+        The dataframes to combine.
+        They are assumed to originate from a `EstimatorReport.metrics` computation.
+
+    estimator_names : list of str of len (len(results))
+        The name to give the estimator for each dataframe.
+
+    indicator_favorability : bool
+        Whether to keep the Favorability column.
+    """
     results = pd.concat(individual_results, axis=1)
 
     # Pop the favorability column if it exists, to:
