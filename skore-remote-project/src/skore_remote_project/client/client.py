@@ -41,7 +41,9 @@ class AuthenticatedClient(Client):
         """Execute request with access token, and refresh the token if needed."""
         # Check if token is well initialized
         if not self.token.valid:
-            raise AuthenticationError("You are not logged in.")
+            raise AuthenticationError(
+                "You are not logged in. Please run `skore-hub-login`"
+            )
 
         # Check if token must be refreshed
         if self.token.expires_at <= datetime.now(timezone.utc):

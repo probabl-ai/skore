@@ -16,7 +16,10 @@ class TestAuthenticatedClient:
     def test_request_with_invalid_token_raises(self, respx_mock):
         foo_route = respx_mock.get("foo").mock(Response(200))
 
-        with pytest.raises(AuthenticationError), AuthenticatedClient() as client:
+        with (
+            pytest.raises(AuthenticationError, match="not logged in"),
+            AuthenticatedClient() as client,
+        ):
             client.get("foo")
 
         assert not foo_route.called
