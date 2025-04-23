@@ -529,7 +529,7 @@ def add_y_true_pred(model_report, split):
         y_split_true = model_report.y_test
         X_split = model_report.X_test.copy()
     else:
-        assert False, "split must be either `train`, or `test`"
+        raise ValueError("split must be either `train`, or `test`")
 
     # adding a `split` feature
     X_split.insert(0, "split", split)
