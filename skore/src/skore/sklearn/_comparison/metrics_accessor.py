@@ -237,21 +237,15 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                     require="sharedmem",
                 )
             )
-            if self._parent._reports_type == "EstimatorReport":
-                kwargs = dict(
-                    data_source=data_source,
-                    X=X,
-                    y=y,
-                    **metric_kwargs,
-                )
-            else:  # "CrossValidationReport"
-                kwargs = dict(
-                    data_source=data_source,
-                    X=X,
-                    y=y,
-                    aggregate=None,
-                    **metric_kwargs,
-                )
+
+            kwargs = dict(
+                data_source=data_source,
+                X=X,
+                y=y,
+                **metric_kwargs,
+            )
+            if self._parent._reports_type == "CrossValidationReport":
+                kwargs["aggregate"] = None
 
             generator = parallel(
                 joblib.delayed(getattr(report.metrics, report_metric_name))(**kwargs)
