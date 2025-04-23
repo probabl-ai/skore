@@ -56,9 +56,9 @@ suppress_warnings = [
 
 autodoc_typehints = "none"
 
-autodoc_default_options = {
-    'exclude-members': '_MetricsAccessor,_FeatureImportanceAccessor,_ComparisonReport,_CrossValidationReport,_EstimatorReport'
-}
+# autodoc_default_options = {
+#     'exclude-members': '_MetricsAccessor,_FeatureImportanceAccessor,_ComparisonReport,_CrossValidationReport,_EstimatorReport'
+# }
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
