@@ -188,9 +188,12 @@ def _combine_cross_validation_results(
     """
 
     def df_with_name(df: pd.DataFrame, estimator_name: str) -> pd.DataFrame:
-        """Move the estimator name from the column index to the table index."""
-        df = copy.copy(df)
+        """Move the estimator name from the column index to the table index.
 
+        Notes
+        -----
+        This mutates the input DataFrame.
+        """
         df["Estimator"] = estimator_name
 
         if "Label / Average" in df.index.names:
