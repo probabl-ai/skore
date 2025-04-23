@@ -194,7 +194,7 @@ def test_confusion_matrix_values_format(
     )
 
 
-def test_confusion_matrix_display_class_error(
+def test_confusion_matrix_display_single_label(
     pyplot,
     binary_classification_data,
 ):
@@ -207,6 +207,6 @@ def test_confusion_matrix_display_class_error(
         y_test=y_test,
     )
 
-    with pytest.raises(ValueError):
-        display = report.metrics.confusion_matrix(display_labels=["Only One Label"])
-        display.plot()
+    display = report.metrics.confusion_matrix(display_labels=["Only One Label"])
+    assert isinstance(display, ConfusionMatrixDisplay)
+    assert display.display_labels == ["Only One Label"]
