@@ -26,8 +26,9 @@ def classification_data():
 
 @pytest.fixture
 def outlier_data():
-    X = np.random.RandomState(42).normal(0, 1, (300, 2))
-    X[-10:] = np.random.RandomState(42).uniform(-10, 10, (10, 2))  # outliers
+    rng = np.random.default_rng(42)
+    X = rng.normal(0, 1, (300, 2))
+    X[-10:] = rng.uniform(-10, 10, (10, 2))  # outliers
     return X, np.zeros(len(X))  # y as dummy zeros
 
 
