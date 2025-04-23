@@ -12,9 +12,6 @@ report are accessible through accessors.
    :template: base.rst
 
    EstimatorReport
-
-.. rubric:: Methods
-
 .. removed manually specifying methods to avoid duplicates.
 
 .. rubric:: Metrics
@@ -22,6 +19,7 @@ report are accessible through accessors.
 .. autosummary::
    :toctree: ../api/
    :template: autosummary/accessor.rst
+   :noindex:
 
    EstimatorReport.metrics
 
@@ -30,6 +28,7 @@ report are accessible through accessors.
 .. autosummary::
    :toctree: ../api/
    :template: autosummary/accessor.rst
+   :noindex:
 
    EstimatorReport.feature_importance
 
