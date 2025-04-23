@@ -1,12 +1,13 @@
 import pandas as pd
 import pytest
 import sklearn.linear_model
-from sklearn.base import is_classifier, is_clusterer, is_outlier_detector, is_regressor
+from sklearn.base import is_classifier, is_outlier_detector, is_regressor
 from sklearn.datasets import make_classification, make_regression
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import StandardScaler
 from skore import EstimatorReport
+from skore.externals._sklearn_compat import is_clusterer
 
 
 @pytest.mark.parametrize(
