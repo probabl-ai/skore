@@ -506,7 +506,7 @@ plot_map(X_train_plot, "clustering_labels")
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 # %%
-# After feature importance, we now try to understand why our model predicts badly some
+# After feature importance, we now try to understand why our model performs badly on some
 # samples, in order to iterate on our estimator pipeline and improve it.
 
 # %%
