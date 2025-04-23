@@ -208,12 +208,20 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         except AttributeError as msg:
             if "object has no attribute 'intercept_'" in str(
                 msg
-            ):  # for SGDOneClassSVM()
+            ):  # e.g. SGDOneClassSVM()
                 intercept = None
             else:
                 raise
 
-        coef = np.atleast_2d(estimator.coef_)
+        try:
+            coef = np.atleast_2d(estimator.coef_)
+        except AttributeError as msg:
+            if "object has no attribute 'coef_'" in str(
+                msg
+            ):  # e.g. TransformedTargetRegressor()
+                coef = np.atleast_2d(estimator.regressor_.coef_)
+            else:
+                raise
 
         if intercept is None:
             data = coef.T

@@ -132,10 +132,10 @@ def test_estimator_report_coefficients_pandas_dataframe(estimator):
             sklearn.discriminant_analysis.LinearDiscriminantAnalysis(),
             id="LinearDiscriminantAnalysis",
         ),
-        # pytest.param(
-        #     sklearn.compose.TransformedTargetRegressor(),
-        #     id="TransformedTargetRegressor",
-        # ),
+        pytest.param(
+            sklearn.compose.TransformedTargetRegressor(),
+            id="TransformedTargetRegressor",
+        ),
         pytest.param(sklearn.linear_model.ElasticNet(), id="ElasticNet"),
         pytest.param(sklearn.linear_model.ARDRegression(), id="ARDRegression"),
         pytest.param(sklearn.linear_model.BayesianRidge(), id="BayesianRidge"),

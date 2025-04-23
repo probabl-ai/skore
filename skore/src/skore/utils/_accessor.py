@@ -59,6 +59,14 @@ def _check_has_coef() -> Callable:
         )
         if hasattr(estimator, "coef_"):
             return True
+        try:  # e.g. TransformedTargetRegressor()
+            if hasattr(estimator.regressor_, "coef_"):
+                return True
+        except AttributeError as msg:
+            if "object has no attribute 'regressor_'" in str(msg):
+                pass
+            else:
+                raise
         raise AttributeError(
             f"Estimator {parent_estimator} is not a supported estimator by "
             "the function called."
