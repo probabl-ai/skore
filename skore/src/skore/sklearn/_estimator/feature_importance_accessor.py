@@ -203,10 +203,24 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             if isinstance(parent_estimator, Pipeline)
             else parent_estimator
         )
-        intercept = np.atleast_2d(estimator.intercept_)
+        try:
+            intercept = np.atleast_2d(estimator.intercept_)
+        except AttributeError as msg:
+            if "object has no attribute 'intercept_'" in str(
+                msg
+            ):  # for SGDOneClassSVM()
+                intercept = None
+            else:
+                raise
+
         coef = np.atleast_2d(estimator.coef_)
 
-        data = np.concatenate([intercept, coef.T])
+        if intercept is None:
+            data = coef.T
+            index = list(feature_names)
+        else:
+            data = np.concatenate([intercept, coef.T])
+            index = ["Intercept"] + list(feature_names)
 
         if data.shape[1] == 1:
             columns = ["Coefficient"]
@@ -217,7 +231,7 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         df = pd.DataFrame(
             data=data,
-            index=["Intercept"] + list(feature_names),
+            index=index,
             columns=columns,
         )
 

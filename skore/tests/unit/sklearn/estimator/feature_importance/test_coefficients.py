@@ -189,7 +189,7 @@ def test_estimator_report_coefficients_pandas_dataframe(estimator):
         pytest.param(sklearn.linear_model.RidgeClassifierCV(), id="RidgeClassifierCV"),
         pytest.param(sklearn.linear_model.RidgeCV(), id="RidgeCV"),
         pytest.param(sklearn.linear_model.SGDClassifier(), id="SGDClassifier"),
-        # pytest.param(sklearn.linear_model.SGDOneClassSVM(), id="SGDOneClassSVM"),
+        pytest.param(sklearn.linear_model.SGDOneClassSVM(), id="SGDOneClassSVM"),
         pytest.param(sklearn.linear_model.SGDRegressor(), id="SGDRegressor"),
         pytest.param(sklearn.linear_model.TheilSenRegressor(), id="TheilSenRegressor"),
         pytest.param(sklearn.linear_model.TweedieRegressor(), id="TweedieRegressor"),
@@ -260,6 +260,11 @@ def test_all_sklearn_estimators(
     elif result.shape == (3, 1):
         assert result.index.tolist() == [
             "Intercept",
+            "Feature #0",
+            "Feature #1",
+        ]
+    elif result.shape == (2, 1):  # SGDOneClassSVM()
+        assert result.index.tolist() == [
             "Feature #0",
             "Feature #1",
         ]
