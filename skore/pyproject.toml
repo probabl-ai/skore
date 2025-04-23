@@ -46,7 +46,6 @@ test = [
   "pytest-order",
   "pytest-randomly",
   "pytest-xdist",
-  "ruff",
   "scikit-learn<1.7",
   "skrub",
   "xdoctest",
@@ -106,12 +105,6 @@ addopts = [
   "--import-mode=importlib",
   "--no-header",
   "--verbosity=2",
-  # We ignore unwanted directories rather than including wanted ones, because
-  # otherwise it becomes impossible to test only one file (the argument gets
-  # appended to the defaults)
-  "--ignore=doc",
-  "--ignore=examples",
-  "--ignore=notebooks",
   "--dist=loadscope",
 ]
 
@@ -127,7 +120,6 @@ show_missing = true
 
 [tool.ruff]
 src = ["skore"]
-exclude = ["doc"]
 
 [tool.ruff.lint]
 select = [
