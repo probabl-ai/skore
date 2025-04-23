@@ -7,23 +7,13 @@ The class :class:`CrossValidationReport` performs cross-validation and provides 
 to inspect and evaluate a scikit-learn estimator in an interactive way. The
 functionalities of the report are exposed through accessors.
 
-.. autosummary::
-   :toctree: ../api/
-   :template: base.rst
-
-   CrossValidationReport
-
-.. rubric:: Methods
-
-.. removed manually specifying methods to avoid duplicates.
-
-.. rubric:: Metrics
-
-.. autosummary::
-   :toctree: ../api/
-   :template: autosummary/accessor.rst
-
-   CrossValidationReport.metrics
+.. autoclass:: CrossValidationReport
+   :members:
+   :exclude-members: metrics
+   
+   .. rubric:: Metrics
+   .. autoattribute:: metrics
+      :noindex:
 
 Metrics
 -------
