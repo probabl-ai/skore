@@ -279,12 +279,7 @@ def _combine_cross_validation_results(
             .reset_index(drop=True)
         )
 
-        new_index = []
-        for col in df.columns:
-            if col == "Value":
-                break
-            new_index.append(col)
-        df = df.set_index(new_index)
+        df = df.set_index(list(df.columns.drop("Value")))
 
     if favorability is not None:
         df["Favorability"] = favorability
