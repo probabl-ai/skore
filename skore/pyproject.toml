@@ -38,14 +38,14 @@ test = [
   "altair>=5,<6",
   "pillow",
   "plotly>=5,<6",
-  "polars",
+  "polars; platform_machine != 'x86_64'",
+  "polars-lts-cpu; platform_machine == 'x86_64'",
   "pre-commit",
   "pytest",
   "pytest-cov",
   "pytest-order",
   "pytest-randomly",
   "pytest-xdist",
-  "ruff",
   "scikit-learn<1.7",
   "skrub",
   "xdoctest",
@@ -56,7 +56,8 @@ sphinx = [
   "kaleido",
   "numpydoc",
   "plotly>=5,<6",
-  "polars",
+  "polars; platform_machine != 'x86_64'",
+  "polars-lts-cpu; platform_machine == 'x86_64'",
   "pydata-sphinx-theme",
   "scikit-learn<1.7",
   "seaborn",
@@ -104,12 +105,6 @@ addopts = [
   "--import-mode=importlib",
   "--no-header",
   "--verbosity=2",
-  # We ignore unwanted directories rather than including wanted ones, because
-  # otherwise it becomes impossible to test only one file (the argument gets
-  # appended to the defaults)
-  "--ignore=doc",
-  "--ignore=examples",
-  "--ignore=notebooks",
   "--dist=loadscope",
 ]
 
@@ -125,7 +120,6 @@ show_missing = true
 
 [tool.ruff]
 src = ["skore"]
-exclude = ["doc"]
 
 [tool.ruff.lint]
 select = [
