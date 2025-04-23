@@ -7,30 +7,22 @@ The class :class:`EstimatorReport` provides a report allowing to inspect and
 evaluate a scikit-learn estimator in an interactive way. The functionalities of the
 report are accessible through accessors.
 
-.. autosummary::
-   :toctree: ../api/
-   :template: base.rst
+.. autoclass:: EstimatorReport
+   :members:
+   :exclude-members: metrics, feature_importance
 
-   EstimatorReport
 .. removed manually specifying methods to avoid duplicates.
 
-.. rubric:: Metrics
+   .. rubric:: Metrics
 
-.. autosummary::
-   :toctree: ../api/
-   :template: autosummary/accessor.rst
-   :no-index:
+   .. autoattribute:: metrics
+      :noindex:
 
-   EstimatorReport.metrics
+   .. rubric:: Feature importance
 
-.. rubric:: Feature importance
+   .. autoattribute:: feature_importance
+      :noindex:
 
-.. autosummary::
-   :toctree: ../api/
-   :template: autosummary/accessor.rst
-   :no-index:
-
-   EstimatorReport.feature_importance
 
 Metrics
 -------
