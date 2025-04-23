@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike, NDArray
 from sklearn import metrics
+from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.metrics._scorer import _BaseScorer
 from sklearn.utils.metaestimators import available_if
 
@@ -69,6 +70,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         pos_label: Optional[PositiveLabel] = _DEFAULT,
         indicator_favorability: bool = False,
         flat_index: bool = False,
+        add_dummy_model: bool = False,
     ) -> pd.DataFrame:
         """Report a set of metrics for our estimator.
 
@@ -124,6 +126,11 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             Whether to flatten the multi-index columns. Flat index will always be lower
             case, do not include spaces and remove the hash symbol to ease indexing.
 
+        add_dummy_model : bool, default=False
+            Whether to add a dummy model's metrics to the report. The dummy model
+            is determined by the task, e.g. DummyRegressor for regression,
+            DummyClassifier for classification, etc.
+
         Returns
         -------
         pd.DataFrame
@@ -171,6 +178,21 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             )
         else:
             data_source_hash = None
+
+        # add dummy model baseline
+        self._dummy_model = None
+        if add_dummy_model:
+            if self._parent._ml_task == "binary-classification":
+                self._dummy_model = DummyClassifier(strategy="prior")
+            elif self._parent._ml_task == "multiclass-classification":
+                pass
+                # maybe raise error ?
+                # raise ValueError(
+                #     f"'add_dummy_model' argument can't be {add_dummy_model} "
+                #     "while the task is mutliclass-classification"
+                #     )
+            else:
+                self._dummy_model = DummyRegressor(strategy="mean")
 
         scoring_was_none = scoring is None
         if scoring is None:
@@ -261,6 +283,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                 metric_favorability = "(↗︎)" if metric._sign == 1 else "(↘︎)"
                 favorability_indicator.append(metric_favorability)
             elif isinstance(metric, str) or callable(metric):
+                # ALEX: the default case
                 if isinstance(metric, str):
                     # Handle built-in metrics (with underscore prefix)
                     if (
@@ -316,71 +339,42 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                     f"Invalid type of metric: {type(metric)} for {metric!r}"
                 )
 
-            score = metric_fn(data_source=data_source, X=X, y=y, **metrics_kwargs)
-
-            index: Union[pd.Index, pd.MultiIndex, list[str], None]
-            score_array: NDArray
-            if self._parent._ml_task == "binary-classification":
-                if isinstance(score, dict):
-                    classes = list(score.keys())
-                    index = pd.MultiIndex.from_arrays(
-                        [[metric_name] * len(classes), classes],
-                        names=["Metric", "Label / Average"],
-                    )
-                    score_array = np.hstack([score[c] for c in classes]).reshape(-1, 1)
-                elif "average" in metrics_kwargs:
-                    if metrics_kwargs["average"] == "binary":
-                        index = pd.MultiIndex.from_arrays(
-                            [[metric_name], [pos_label]],
-                            names=["Metric", "Label / Average"],
-                        )
-                    elif metrics_kwargs["average"] is not None:
-                        index = pd.MultiIndex.from_arrays(
-                            [[metric_name], [metrics_kwargs["average"]]],
-                            names=["Metric", "Label / Average"],
-                        )
-                    else:
-                        index = pd.Index([metric_name], name="Metric")
-                    score_array = np.array(score).reshape(-1, 1)
-                else:
-                    index = pd.Index([metric_name], name="Metric")
-                    score_array = np.array(score).reshape(-1, 1)
-            elif self._parent._ml_task == "multiclass-classification":
-                if isinstance(score, dict):
-                    classes = list(score.keys())
-                    index = pd.MultiIndex.from_arrays(
-                        [[metric_name] * len(classes), classes],
-                        names=["Metric", "Label / Average"],
-                    )
-                    score_array = np.hstack([score[c] for c in classes]).reshape(-1, 1)
-                elif (
-                    "average" in metrics_kwargs
-                    and metrics_kwargs["average"] is not None
-                ):
-                    index = pd.MultiIndex.from_arrays(
-                        [[metric_name], [metrics_kwargs["average"]]],
-                        names=["Metric", "Label / Average"],
-                    )
-                    score_array = np.array(score).reshape(-1, 1)
-                else:
-                    index = pd.Index([metric_name], name="Metric")
-                    score_array = np.array(score).reshape(-1, 1)
-            elif self._parent._ml_task in ("regression", "multioutput-regression"):
-                if isinstance(score, list):
-                    index = pd.MultiIndex.from_arrays(
-                        [[metric_name] * len(score), list(range(len(score)))],
-                        names=["Metric", "Output"],
-                    )
-                    score_array = np.array(score).reshape(-1, 1)
-                else:
-                    index = pd.Index([metric_name], name="Metric")
-                    score_array = np.array(score).reshape(-1, 1)
-            else:  # unknown task - try our best
-                index = None if isinstance(score, Iterable) else [metric_name]
-
-            score_df = pd.DataFrame(
-                score_array, index=index, columns=[self._parent.estimator_name_]
+            # ALEX: When the scoring is finally determined we calculate the score
+            computed_scores = metric_fn(
+                data_source=data_source, X=X, y=y, **metrics_kwargs
             )
+            # ALEX: This is for the _fit and _predict_time calculations which
+            # are currently not computed for dummy models
+            if isinstance(computed_scores, float):
+                computed_scores = [computed_scores, None]
+
+            score_dfs = []
+            for i, score in enumerate(computed_scores):
+                if score is not None:
+                    score_array, index = self._build_partial_report(
+                        score=score,
+                        metric_name=metric_name,
+                        metrics_kwargs=metrics_kwargs,
+                        pos_label=pos_label,
+                    )
+                    if hasattr(self._parent, "estimator_name_") and i != 1:
+                        col_name = self._parent.estimator_name_
+                    elif i == 1:
+                        # the second score in the list is always
+                        # from the dummy classifier
+                        col_name = "Dummy Baseline"
+
+                    score_df = pd.DataFrame(
+                        score_array, index=index, columns=[col_name]
+                    )
+
+                    score_dfs.append(score_df)
+
+            if len(score_dfs) == 1:
+                score_df = score_dfs[0]
+            else:
+                score_df = pd.concat(score_dfs, axis=1)
+
             if indicator_favorability:
                 score_df["Favorability"] = metric_favorability
 
@@ -420,6 +414,95 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                 )
         return results
 
+    def _build_partial_report(
+        self,
+        score,
+        metric_name: str,
+        metrics_kwargs: dict,
+        pos_label: Optional[PositiveLabel] = None,
+    ) -> tuple[NDArray, Union[pd.Index, pd.MultiIndex, list[str], None]]:
+        """Build the small chunks of the report per metric given the score.
+
+        flat_index : bool, default=False
+            Whether to flatten the multi-index columns. Flat index will always be lower
+            case, do not include spaces and remove the hash symbol to ease indexing.
+
+        Parameters
+        ----------
+            score : _type_
+                _description_
+
+            metric_name : str
+                The name of the metric that is going to be shown in the report.
+
+            metrics_kwargs : dict
+                _description_
+
+            pos_label : Optional[PositiveLabel], default=None
+                The positive class.
+
+        Returns
+        -------
+            tuple[NDArray, Union[pd.Index, pd.MultiIndex, list[str], None]]
+                _description_
+        """
+        if self._parent._ml_task == "binary-classification":
+            if isinstance(score, dict):
+                classes = list(score.keys())
+                index = pd.MultiIndex.from_arrays(
+                    [[metric_name] * len(classes), classes],
+                    names=["Metric", "Label / Average"],
+                )
+                score_array = np.hstack([score[c] for c in classes]).reshape(-1, 1)
+            elif "average" in metrics_kwargs:
+                if metrics_kwargs["average"] == "binary":
+                    index = pd.MultiIndex.from_arrays(
+                        [[metric_name], [pos_label]],
+                        names=["Metric", "Label / Average"],
+                    )
+                elif metrics_kwargs["average"] is not None:
+                    index = pd.MultiIndex.from_arrays(
+                        [[metric_name], [metrics_kwargs["average"]]],
+                        names=["Metric", "Label / Average"],
+                    )
+                else:
+                    index = pd.Index([metric_name], name="Metric")
+                score_array = np.array(score).reshape(-1, 1)
+            else:
+                index = pd.Index([metric_name], name="Metric")
+                score_array = np.array(score).reshape(-1, 1)
+        elif self._parent._ml_task == "multiclass-classification":
+            if isinstance(score, dict):
+                classes = list(score.keys())
+                index = pd.MultiIndex.from_arrays(
+                    [[metric_name] * len(classes), classes],
+                    names=["Metric", "Label / Average"],
+                )
+                score_array = np.hstack([score[c] for c in classes]).reshape(-1, 1)
+            elif "average" in metrics_kwargs and metrics_kwargs["average"] is not None:
+                index = pd.MultiIndex.from_arrays(
+                    [[metric_name], [metrics_kwargs["average"]]],
+                    names=["Metric", "Label / Average"],
+                )
+                score_array = np.array(score).reshape(-1, 1)
+            else:
+                index = pd.Index([metric_name], name="Metric")
+                score_array = np.array(score).reshape(-1, 1)
+        elif self._parent._ml_task in ("regression", "multioutput-regression"):
+            if isinstance(score, list):
+                index = pd.MultiIndex.from_arrays(
+                    [[metric_name] * len(score), list(range(len(score)))],
+                    names=["Metric", "Output"],
+                )
+                score_array = np.array(score).reshape(-1, 1)
+            else:
+                index = pd.Index([metric_name], name="Metric")
+                score_array = np.array(score).reshape(-1, 1)
+        else:  # unknown task - try our best
+            index = None if isinstance(score, Iterable) else [metric_name]
+
+        return score_array, index
+
     def _compute_metric_scores(
         self,
         metric_fn: Callable,
@@ -431,7 +514,10 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         data_source_hash: Optional[int] = None,
         pos_label: Optional[PositiveLabel] = None,
         **metric_kwargs: Any,
-    ) -> Union[float, dict[PositiveLabel, float], list]:
+    ) -> tuple[
+        Union[float, dict[PositiveLabel, float], list],
+        Union[float, dict[PositiveLabel, float], list, None],
+    ]:
         if data_source_hash is None:
             X, y_true, data_source_hash = self._get_X_y_and_data_source_hash(
                 data_source=data_source, X=X, y=y_true
@@ -489,20 +575,43 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
 
             score = metric_fn(y_true, y_pred, **kwargs)
 
-            if isinstance(score, np.ndarray):
-                score = score.tolist()
-            elif hasattr(score, "item"):
-                score = score.item()
+            # get metric scores for dummy model if it exists
+            if self._dummy_model is not None:
+                y_pred_dummy = _get_cached_response_values(
+                    cache=self._parent._cache,
+                    estimator_hash=-1,  # int value is expected
+                    estimator=self._dummy_model.fit(X, y_true),
+                    X=X,
+                    response_method=response_method,
+                    pos_label=pos_label,
+                    data_source=data_source,
+                    data_source_hash=data_source_hash,
+                )
+                score_dummy = metric_fn(y_true, y_pred_dummy, **kwargs)
+            else:
+                score_dummy = None
 
-            self._parent._cache[cache_key] = score
+            scores = [score, score_dummy]
 
-        if isinstance(score, list):
-            if "classification" in self._parent._ml_task:
-                return dict(zip(self._parent._estimator.classes_.tolist(), score))
+            for i in range(len(scores)):
+                if isinstance(scores[i], np.ndarray):
+                    scores[i] = scores[i].tolist()
+                elif hasattr(scores[i], "item"):
+                    scores[i] = scores[i].item()
 
-            if len(score) == 1:
-                return score[0]
-        return score
+            self._parent._cache[cache_key] = scores[0]
+
+        for i in range(len(scores)):
+            if isinstance(scores[i], list):
+                if "classification" in self._parent._ml_task:
+                    scores[i] = dict(
+                        zip(self._parent._estimator.classes_.tolist(), scores[i])
+                    )
+
+                if len(scores[i]) == 1:
+                    scores[i] = scores[i][0]
+
+        return tuple(scores)
 
     def _fit_time(self, cast: bool = True, **kwargs) -> Union[float, None]:
         """Get time to fit the estimator.
