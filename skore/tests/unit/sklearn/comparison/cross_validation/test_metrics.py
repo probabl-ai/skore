@@ -241,10 +241,11 @@ def test_metrics_aggregate(case):
 
 
 def test_metrics_X_y():
-    report, *_ = case_accuracy()
+    report, _, expected_index, expected_columns = case_accuracy()
     X, y = make_classification(class_sep=0.1, random_state=42)
-    with pytest.raises(NotImplementedError):
-        report.metrics.accuracy(data_source="X_y", X=X, y=y)
+    result = report.metrics.accuracy(data_source="X_y", X=X, y=y)
+    assert_index_equal(result.index, expected_index)
+    assert_index_equal(result.columns, expected_columns)
 
 
 ### Test plots

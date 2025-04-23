@@ -214,5 +214,18 @@ def test_init_with_report_names(classification_data):
 def test_X_y(report, classification_data):
     """`report_metrics` works as intended with `data_source="X_y"`."""
     X, y = classification_data
-    with pytest.raises(NotImplementedError):
-        report.metrics.report_metrics(data_source="X_y", X=X, y=y)
+    result = report.metrics.report_metrics(data_source="X_y", X=X, y=y)
+
+    assert_index_equal(
+        result.columns,
+        pd.MultiIndex.from_tuples(
+            [
+                ("mean", "DummyClassifier_1"),
+                ("mean", "DummyClassifier_2"),
+                ("std", "DummyClassifier_1"),
+                ("std", "DummyClassifier_2"),
+            ],
+            names=[None, "Estimator"],
+        ),
+    )
+    assert len(result) == 8

@@ -245,11 +245,10 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                     **metric_kwargs,
                 )
             else:  # "CrossValidationReport"
-                if data_source == "X_y":
-                    raise NotImplementedError()
-
                 kwargs = dict(
                     data_source=data_source,
+                    X=X,
+                    y=y,
                     aggregate=None,
                     **metric_kwargs,
                 )
