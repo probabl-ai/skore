@@ -517,9 +517,9 @@ plot_map(X_train_plot, "clustering_labels")
 # %%
 def add_y_true_pred(model_report, split):
     """
-    Concatenating the design matrix (`X`) with the actual targets (`y`)
-        and predicted ones (`y_pred`) from a fitted skore estimator report,
-        either on  the train or the test set.
+    Concatenate the design matrix (`X`) with the actual targets (`y`)
+    and predicted ones (`y_pred`) from a fitted skore EstimatorReport,
+    either on the train or the test set.
     """
 
     if split == "train":
