@@ -273,11 +273,10 @@ def _combine_cross_validation_results(
         6  Precision                1  DummyClassifier_2  Split #0   0.52
         7  Precision                1  DummyClassifier_2  Split #1   0.42
         """
-        metric_order = df["Metric"].unique()
-
-        df["metric_order_index"] = df["Metric"].apply(
-            lambda x: list(metric_order).index(x)
+        df["Metric"] = df["Metric"].astype(
+            pd.CategoricalDtype(df["Metric"].unique(), ordered=True)
         )
+        df["metric_order_index"] = df["Metric"].cat.codes
 
         if "Label / Average" in df.columns:
             by = ["metric_order_index", "Label / Average", "Estimator", "Split"]
@@ -289,6 +288,8 @@ def _combine_cross_validation_results(
             .drop("metric_order_index", axis=1)
             .reset_index(drop=True)
         )
+
+        df["Metric"] = df["Metric"].astype(str)
 
         return df
 
