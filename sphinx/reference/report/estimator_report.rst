@@ -19,7 +19,7 @@ report are accessible through accessors.
 .. autosummary::
    :toctree: ../api/
    :template: autosummary/accessor.rst
-   :noindex:
+   :no-index:
 
    EstimatorReport.metrics
 
@@ -28,7 +28,7 @@ report are accessible through accessors.
 .. autosummary::
    :toctree: ../api/
    :template: autosummary/accessor.rst
-   :noindex:
+   :no-index:
 
    EstimatorReport.feature_importance
 
