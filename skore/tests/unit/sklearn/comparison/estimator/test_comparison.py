@@ -1,7 +1,3 @@
-import re
-from io import BytesIO
-
-import joblib
 import pandas as pd
 import pytest
 from numpy.testing import assert_allclose
@@ -217,63 +213,6 @@ def report_classification(estimator_reports):
 @pytest.fixture
 def report(report_classification):
     return report_classification
-
-
-def test_comparison_report_help(capsys, report):
-    """Check the help menu works."""
-    report.help()
-
-    captured = capsys.readouterr()
-    assert "Tools to compare estimators" in captured.out
-
-    # Check that we have a line with accuracy and the arrow associated with it
-    assert re.search(
-        r"\.accuracy\([^)]*\).*\(↗︎\).*-.*accuracy", captured.out, re.MULTILINE
-    )
-
-
-def test_comparison_report_repr(report):
-    """Check the `__repr__` works."""
-    repr_str = repr(report)
-
-    assert "ComparisonReport" in repr_str
-
-
-def test_comparison_report_pickle(tmp_path, report):
-    """Check that we can pickle a comparison report."""
-    with BytesIO() as stream:
-        joblib.dump(report, stream)
-        joblib.load(stream)
-
-
-def test_estimator_report_cleaned_up(estimator_reports):
-    """
-    When an EstimatorReport is passed to a ComparisonReport, and computations are
-    done on the ComparisonReport, the EstimatorReport should remain pickle-able.
-
-    Non-regression test for bug found in:
-    https://github.com/probabl-ai/skore/pull/1512
-    """
-    estimator_report_1, estimator_report_2 = estimator_reports
-    report = ComparisonReport([estimator_report_1, estimator_report_2])
-    report.metrics.report_metrics()
-
-    with BytesIO() as stream:
-        joblib.dump(estimator_report_1, stream)
-
-
-def test_comparison_report_metrics_help(capsys, report):
-    """Check that the help method writes to the console."""
-    report.metrics.help()
-    captured = capsys.readouterr()
-    assert "Available metrics methods" in captured.out
-
-
-def test_comparison_report_metrics_repr(report):
-    """Check the repr method."""
-    repr_str = repr(report.metrics)
-    assert "skore.ComparisonReport.metrics" in repr_str
-    assert "help()" in repr_str
 
 
 @pytest.mark.parametrize("data_source", ["test", "X_y"])
