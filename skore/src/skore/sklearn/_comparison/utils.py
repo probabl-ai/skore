@@ -187,7 +187,7 @@ def _combine_cross_validation_results(
     Accuracy                ...               ...               ...               ...
     """
 
-    def add_model_name_to_index(df: pd.DataFrame, estimator_name: str) -> pd.DataFrame:
+    def df_with_name(df: pd.DataFrame, estimator_name: str) -> pd.DataFrame:
         """Move the estimator name from the column index to the table index."""
         df = copy.copy(df)
 
@@ -235,7 +235,7 @@ def _combine_cross_validation_results(
         favorability = None
 
     dfs_model_name_in_index = [
-        add_model_name_to_index(df, estimator_name)
+        df_with_name(df, estimator_name)
         for df, estimator_name in zip(results, estimator_names)
     ]
 
