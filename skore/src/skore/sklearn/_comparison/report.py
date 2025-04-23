@@ -169,7 +169,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                         f"Expected all report names to be strings; got {type(key)}"
                     )
             reports_list = cast(
-                list[EstimatorReport] | list[CrossValidationReport],
+                Union[list[EstimatorReport], list[CrossValidationReport]],
                 list(reports.values()),
             )
 
