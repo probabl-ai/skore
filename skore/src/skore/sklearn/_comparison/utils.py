@@ -234,14 +234,13 @@ def _combine_cross_validation_results(
     else:
         favorability = None
 
-    dfs_model_name_in_index = [
-        df_with_name(df, estimator_name)
-        for df, estimator_name in zip(results, estimator_names)
-    ]
-
-    dfs_melted = [melt(df) for df in dfs_model_name_in_index]
-
-    df = pd.concat(dfs_melted, axis=0)
+    df = pd.concat(
+        [
+            melt(df_with_name(df, estimator_name))
+            for df, estimator_name in zip(results, estimator_names)
+        ],
+        axis=0,
+    )
 
     if aggregate:
         if isinstance(aggregate, str):
