@@ -168,7 +168,10 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                     raise TypeError(
                         f"Expected all report names to be strings; got {type(key)}"
                     )
-            reports_list = list(reports.values())
+            reports_list = cast(
+                list[EstimatorReport] | list[CrossValidationReport],
+                list(reports.values()),
+            )
 
         reports_type: ReportType
         if all(isinstance(report, EstimatorReport) for report in reports_list):
