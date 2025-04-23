@@ -187,11 +187,11 @@ def _combine_cross_validation_results(
     Accuracy                ...               ...               ...               ...
     """
 
-    def add_model_name_to_index(df: pd.DataFrame, model_name: str) -> pd.DataFrame:
-        """Move the model name from the column index to the table index."""
+    def add_model_name_to_index(df: pd.DataFrame, estimator_name: str) -> pd.DataFrame:
+        """Move the estimator name from the column index to the table index."""
         df = copy.copy(df)
 
-        df["Estimator"] = model_name
+        df["Estimator"] = estimator_name
 
         if "Label / Average" in df.index.names:
             new_index = ["Metric", "Label / Average", "Estimator"]
@@ -199,7 +199,7 @@ def _combine_cross_validation_results(
             new_index = ["Metric", "Estimator"]
         df = df.reset_index().set_index(new_index)
 
-        # Then drop the model from the columns
+        # Then drop the `estimator_name` from the columns index
         df.columns = df.columns.droplevel(0)
 
         return df
