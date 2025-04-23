@@ -225,6 +225,73 @@ def _combine_cross_validation_results(
 
         return melted
 
+    def sort_by_split(df: pd.DataFrame) -> pd.DataFrame:
+        """Sort dataframe, preserving the order of metrics.
+
+        Ensures that the Split column goes [0, 1, 2, 0, 1, 2] rather than
+        [0, 0, 1, 1, 2, 2].
+
+        Notes
+        -----
+        Mutates the input dataframe.
+
+        Examples
+        --------
+        >>> df = pd.DataFrame.from_dict(
+        ...     {
+        ...         "index": range(8),
+        ...         "columns": [
+        ...             "Metric",
+        ...             "Label / Average",
+        ...             "Estimator",
+        ...             "Split",
+        ...             "Value",
+        ...         ],
+        ...         "data": [
+        ...             ["Precision", 0, "DummyClassifier_1", "Split #0", 0.44],
+        ...             ["Precision", 1, "DummyClassifier_1", "Split #0", 0.45],
+        ...             ["Precision", 0, "DummyClassifier_1", "Split #1", 0.44],
+        ...             ["Precision", 1, "DummyClassifier_1", "Split #1", 0.45],
+        ...             ["Precision", 0, "DummyClassifier_2", "Split #0", 0.53],
+        ...             ["Precision", 1, "DummyClassifier_2", "Split #0", 0.52],
+        ...             ["Precision", 0, "DummyClassifier_2", "Split #1", 0.42],
+        ...             ["Precision", 1, "DummyClassifier_2", "Split #1", 0.42],
+        ...         ],
+        ...         "index_names": [None],
+        ...         "column_names": [None],
+        ...     },
+        ...     orient="tight",
+        ... )
+        >>> sort_by_split(df)
+              Metric  Label / Average          Estimator     Split  Value
+        0  Precision                0  DummyClassifier_1  Split #0   0.44
+        1  Precision                0  DummyClassifier_1  Split #1   0.44
+        2  Precision                0  DummyClassifier_2  Split #0   0.53
+        3  Precision                0  DummyClassifier_2  Split #1   0.42
+        4  Precision                1  DummyClassifier_1  Split #0   0.45
+        5  Precision                1  DummyClassifier_1  Split #1   0.45
+        6  Precision                1  DummyClassifier_2  Split #0   0.52
+        7  Precision                1  DummyClassifier_2  Split #1   0.42
+        """
+        metric_order = df["Metric"].unique()
+
+        df["metric_order_index"] = df["Metric"].apply(
+            lambda x: list(metric_order).index(x)
+        )
+
+        if "Label / Average" in df.columns:
+            by = ["metric_order_index", "Label / Average", "Estimator", "Split"]
+        else:
+            by = ["metric_order_index", "Estimator", "Split"]
+
+        df = (
+            df.sort_values(by=by)
+            .drop("metric_order_index", axis=1)
+            .reset_index(drop=True)
+        )
+
+        return df
+
     results = individual_results.copy()
 
     # Pop the favorability column if it exists, to:
@@ -262,26 +329,7 @@ def _combine_cross_validation_results(
             sort=False,
         )
     else:
-        # Make sure the Split column goes [0, 1, 2, 0, 1, 2]
-        # Rather than [0, 0, 1, 1, 2, 2]
-
-        metric_order = df["Metric"].unique()
-
-        df["metric_order_index"] = df["Metric"].apply(
-            lambda x: list(metric_order).index(x)
-        )
-
-        if "Label / Average" in df.columns:
-            by = ["metric_order_index", "Label / Average", "Estimator", "Split"]
-        else:
-            by = ["metric_order_index", "Estimator", "Split"]
-
-        df = (
-            df.sort_values(by=by)
-            .drop("metric_order_index", axis=1)
-            .reset_index(drop=True)
-        )
-
+        df = sort_by_split(df)
         df = df.set_index(list(df.columns.drop("Value")))
 
     if favorability is not None:
