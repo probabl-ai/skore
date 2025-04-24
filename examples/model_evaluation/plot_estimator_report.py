@@ -403,15 +403,7 @@ cm_display.plot(cmap="Blues")
 plt.show()
 
 # %%
-# We can also normalize by predicted labels (columns):
-cm_display = report.metrics.confusion_matrix(normalize="pred")
-cm_display.plot(cmap="Greens")
-
-# %%
-# Or we can normalize by the total number of samples:
-cm_display = report.metrics.confusion_matrix(normalize="all")
-cm_display.plot(cmap="Reds")
-
+# More plotting options are available, check out the API on the confusion matrix for more information.
 # %%
 # We can customize the display labels:
 cm_display = report.metrics.confusion_matrix(display_labels=["Disallowed", "Allowed"])
