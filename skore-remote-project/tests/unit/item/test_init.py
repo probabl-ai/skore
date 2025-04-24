@@ -32,12 +32,10 @@ from skore_remote_project.item import (
     "object, item_cls",
     (
         (altair.Chart().mark_point(), AltairChartItem),
-        ("value", JSONableItem),
         (plt.subplots()[0], MatplotlibFigureItem),
         (numpy.array([0, 1, 2]), NumpyArrayItem),
         (pandas.DataFrame([{"key": "value"}]), PandasDataFrameItem),
         (pandas.Series([0, 1, 2]), PandasSeriesItem),
-        (int, PickleItem),
         (PIL.Image.new("RGB", (100, 100), color="red"), PillowImageItem),
         (
             plotly.graph_objects.Figure(
@@ -66,10 +64,9 @@ from skore_remote_project.item import (
             ),
             SkrubTableReportItem,
         ),
+        ("value", JSONableItem),
+        (int, PickleItem),
     ),
 )
 def test_object_to_item(object, item_cls):
     assert isinstance(object_to_item(object), item_cls)
-
-
-def test_object_to_item_media_item(): ...
