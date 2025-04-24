@@ -383,6 +383,45 @@ print(f"Time taken to compute the ROC curve: {end - start:.2f} seconds")
 # As expected, since we need to recompute the predictions, it takes more time.
 
 # %%
+# Visualizing confusion matrix
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#
+# Another useful visualization for classification tasks is the confusion matrix,
+# which shows the counts of correct and incorrect predictions for each class.
+# Let's see how one can use the confusion matrix display functionality:
+
+# %%
+# Basic confusion matrix
+cm_display = report.metrics.confusion_matrix()
+cm_display.plot()
+
+# %%
+# We can normalize the confusion matrix to get percentages instead of raw counts.
+# Here we normalize by true labels (rows):
+cm_display = report.metrics.confusion_matrix(normalize="true")
+cm_display.plot(cmap="Blues")
+
+# %%
+# We can also normalize by predicted labels (columns):
+cm_display = report.metrics.confusion_matrix(normalize="pred")
+cm_display.plot(cmap="Greens")
+
+# %%
+# Or we can normalize by the total number of samples:
+cm_display = report.metrics.confusion_matrix(normalize="all")
+cm_display.plot(cmap="Reds")
+
+# %%
+# We can customize the display labels:
+cm_display = report.metrics.confusion_matrix(display_labels=["Disallowed", "Allowed"])
+cm_display.plot()
+
+# %%
+# The confusion matrix can also be exported as a pandas DataFrame for further analysis:
+cm_frame = cm_display.frame()
+cm_frame
+
+# %%
 # .. seealso::
 #
 #   For using the :class:`~skore.EstimatorReport` to inspect your models,
