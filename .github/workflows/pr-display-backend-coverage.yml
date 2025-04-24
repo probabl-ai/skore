@@ -1,4 +1,4 @@
-name: display backend coverage in PR
+name: pr-display-backend-coverage
 
 on:
   workflow_run:
@@ -12,7 +12,7 @@ concurrency:
 permissions: {}
 
 jobs:
-  display-backend-coverage:
+  pr-display-backend-coverage:
     if: ${{ github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     permissions:

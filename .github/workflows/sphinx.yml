@@ -48,21 +48,9 @@ name: sphinx
 
 on:
   pull_request:
-    paths:
-      - '.github/actions/sphinx/**'
-      - '.github/workflows/sphinx.yml'
-      - 'examples/**'
-      - 'sphinx/**'
-      - 'skore/**'
   push:
     branches:
       - main
-    paths:
-      - '.github/actions/sphinx/**'
-      - '.github/workflows/sphinx.yml'
-      - 'examples/**'
-      - 'sphinx/**'
-      - 'skore/**'
   release:
     types: [released]
   merge_group:
@@ -72,9 +60,35 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions: {}
+
 jobs:
+  sphinx-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      changes: ${{ steps.filter.outputs.sphinx }}
+    permissions:
+      pull-requests: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Define if at least one file has changed
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        id: filter
+        with:
+          filters: |
+            sphinx:
+              - '.github/actions/sphinx/**'
+              - '.github/workflows/sphinx.yml'
+              - 'examples/**'
+              - 'sphinx/**'
+              - 'skore/**'
+
   sphinx-version:
     runs-on: ubuntu-latest
+    needs: [sphinx-changes]
+    if: ${{ (contains(fromJSON('["push", "release"]'), github.event_name)) || (needs.sphinx-changes.outputs.changes == 'true') }}
     outputs:
       SPHINX_VERSION: ${{ steps.sphinx-version.outputs.SPHINX_VERSION }}
       SPHINX_RELEASE: ${{ steps.sphinx-version.outputs.SPHINX_RELEASE }}
@@ -99,12 +113,15 @@ jobs:
 
   sphinx-build:
     runs-on: ubuntu-latest
-    needs: sphinx-version
+    needs: [sphinx-version]
+    if: ${{ (contains(fromJSON('["push", "release"]'), github.event_name)) || (needs.sphinx-changes.outputs.changes == 'true') }}
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           lfs: 'true'
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55 # v5.5.0
         with:
           python-version: '3.12'
           cache: 'pip'
@@ -114,21 +131,25 @@ jobs:
           SPHINX_VERSION: ${{ needs.sphinx-version.outputs.SPHINX_VERSION }}
           SPHINX_RELEASE: ${{ needs.sphinx-version.outputs.SPHINX_RELEASE }}
           SPHINX_DOMAIN: ${{ vars.DOCUMENTATION_DOMAIN }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: sphinx-html-artifact
           path: sphinx/build/html/
 
   sphinx-deploy-html:
-    if: ${{ (github.event_name == 'release') || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
+    if: ${{ (contains(fromJSON('["push", "release"]'), github.event_name)) }}
     runs-on: ubuntu-latest
     needs: [sphinx-version, sphinx-build]
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          sparse-checkout: .github
 
       - name: Download HTML artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e # v4.2.1
         with:
           name: sphinx-html-artifact
           path: html/
@@ -145,8 +166,12 @@ jobs:
     if: ${{ github.event_name == 'release' }}
     runs-on: ubuntu-latest
     needs: [sphinx-version, sphinx-build, sphinx-deploy-html]
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          sparse-checkout: .github
       - shell: python
         run: |
             import os
@@ -239,6 +264,21 @@ jobs:
     if: ${{ always() && (github.event_name != 'pull_request') }}
     needs: [sphinx-version, sphinx-build, sphinx-deploy-html, sphinx-deploy-root-files]
     steps:
-      - uses: geekyeggo/delete-artifact@v5
+      - uses: geekyeggo/delete-artifact@f275313e70c08f6120db482d7a6b98377786765b # v5.1.0
         with:
           name: sphinx-html-artifact
+
+  sphinx:
+    needs:
+      - sphinx-changes
+      - sphinx-version
+      - sphinx-build
+      - sphinx-deploy-html
+      - sphinx-deploy-root-files
+      - sphinx-clean-artifacts
+    if: ${{ always() }}
+    runs-on: Ubuntu-latest
+    steps:
+      - shell: bash
+        run: |
+          [[  ${{ contains(needs.*.result, 'failure') }} = false ]]
