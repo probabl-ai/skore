@@ -59,7 +59,7 @@ Install dependencies and setup pre-commit with:
 Choosing an issue
 -----------------
 
-If you are starting to contribute to open-source, you can start by an [issue tagged `good first issue`](https://github.com/probabl-ai/skore/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22good%20first%20issue%22).
+If you are starting to contribute to open-source, you can start by an `issue tagged "good first issue" <https://github.com/probabl-ai/skore/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22good%20first%20issue%22>`_.
 
 The implementation of some issues are not very detailed. You can either propose a solution, or choose only the issues with a Status "Ready".
 
@@ -162,6 +162,8 @@ This file is used to be presented on `PyPI <https://pypi.org/project/skore/#desc
 Signing Commits
 ---------------
 
-We recommend signing your commits to verify authorship. GitHub supports commit signing using **GPG**, **SSH**, or **S/MIME**. Signed commits are marked as "Verified" on GitHub, providing confidence in the origin of your changes.
+You have to sign your commits before submitting a pull request.
+For a pull request to be accepted, all the commits inside of it must be signed.
 
-For setup instructions and more details, please refer to [GitHub’s guide on signing commits](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits).
+GitHub supports commit signing using **GPG**, **SSH**, or **S/MIME**. Signed commits are marked as "Verified" on GitHub, providing confidence in the origin of your changes.
+For setup instructions and more details, please refer to `GitHub’s guide on signing commits <https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits>`_.
