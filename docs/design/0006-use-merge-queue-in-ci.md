@@ -58,8 +58,8 @@ https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collab
 
 To avoid specifying every required job individually, we have to implement "all-green"
 jobs that centralize the results of entire workflows, success or fail. Only these jobs
-will be marked as required. Thus, they must combine the results of backend linting,
-backend testing, PR title linting, documentation building etc.
+will be marked as required. For example, the only required job of the `backend` workflow
+would be a combination of the results of linting and testing.
 
 Additionally, the CI setup we had before managing forks, with a master "ci-all-green"
 workflow, will not work with merge queues: the chain `workflow -> workflow_call ->
