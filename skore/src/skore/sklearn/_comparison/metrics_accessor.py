@@ -105,7 +105,6 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         flat_index : bool, default=False
             Whether to flatten the `MultiIndex` columns. Flat index will always be lower
             case, do not include spaces and remove the hash symbol to ease indexing.
-            Unit suffixes like (s) will be replaced with _s for programmatic access.
 
         Returns
         -------
@@ -303,10 +302,18 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
             axis=1,
             keys=self._parent.report_names_,
         )
+
         timings.index = timings.index.str.replace("_", " ").str.capitalize()
-        timings.index = timings.index.str.replace(
-            r"(Fit time|Predict time.*)$", r"\1 (s)", regex=True
-        )
+
+        # Add (s) to time measurements
+        new_index = []
+        for idx in timings.index:
+            if "time" in idx.lower():
+                new_index.append(f"{idx} (s)")
+            else:
+                new_index.append(idx)
+
+        timings.index = pd.Index(new_index)
 
         return timings
 

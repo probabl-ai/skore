@@ -792,24 +792,94 @@ def test_comparison_report_timings(binary_classification_model):
     report = ComparisonReport([estimator_report, estimator_report])
     timings = report.metrics.timings()
     assert isinstance(timings, pd.DataFrame)
-    # The actual index doesn't contain "(s)" but the __repr__ does
-    actual_index = [idx.replace(" (s)", "") for idx in timings.index.tolist()]
-    assert "Fit time" in actual_index
+    assert "Fit time (s)" in timings.index
     assert timings.columns.tolist() == report.report_names_
 
     report.metrics.report_metrics(data_source="train")
     timings = report.metrics.timings()
     assert isinstance(timings, pd.DataFrame)
-    actual_index = [idx.replace(" (s)", "") for idx in timings.index.tolist()]
-    assert "Fit time" in actual_index
-    assert "Predict time train" in actual_index
+    assert "Fit time (s)" in timings.index
+    assert "Predict time train (s)" in timings.index
     assert timings.columns.tolist() == report.report_names_
 
     report.metrics.report_metrics(data_source="test")
     timings = report.metrics.timings()
     assert isinstance(timings, pd.DataFrame)
-    actual_index = [idx.replace(" (s)", "") for idx in timings.index.tolist()]
-    assert "Fit time" in actual_index
-    assert "Predict time train" in actual_index
-    assert "Predict time test" in actual_index
+    assert "Fit time (s)" in timings.index
+    assert "Predict time train (s)" in timings.index
+    assert "Predict time test (s)" in timings.index
     assert timings.columns.tolist() == report.report_names_
+
+
+def test_comparison_report_timings_flat_index(binary_classification_model):
+    """Check that time measurements have _s suffix with flat_index=True."""
+    estimator, X_train, X_test, y_train, y_test = binary_classification_model
+    estimator_report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+    report = ComparisonReport([estimator_report, estimator_report])
+
+    report.metrics.report_metrics(data_source="train")
+    report.metrics.report_metrics(data_source="test")
+
+    # Get metrics with flat_index=True
+    results = report.metrics.report_metrics(flat_index=True)
+
+    # Check that time measurements have _s suffix
+    time_indices = [idx for idx in results.index if "time" in idx]
+    assert len(time_indices) > 0
+    for idx in time_indices:
+        assert idx.endswith("_s")
+        assert "(s)" not in idx
+
+
+def test_comparison_report_report_metrics_X_y_multi_index(binary_classification_model):
+    """Check that report_metrics with X_y data source returns MultiIndex."""
+    estimator, X_train, X_test, y_train, y_test = binary_classification_model
+    estimator_report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+    comp = ComparisonReport([estimator_report, estimator_report])
+
+    result = comp.metrics.report_metrics(
+        data_source="X_y",
+        X=X_train[:10],
+        y=y_train[:10],
+    )
+    assert "Favorability" not in result.columns
+
+    expected_index = pd.MultiIndex.from_tuples(
+        [
+            ("Precision", 0),
+            ("Precision", 1),
+            ("Recall", 0),
+            ("Recall", 1),
+            ("ROC AUC", ""),
+            ("Brier score", ""),
+            ("Fit time (s)", ""),
+            ("Predict time (s)", ""),
+        ],
+        names=["Metric", "Label / Average"],
+    )
+    expected_columns = pd.Index(
+        ["LogisticRegression", "LogisticRegression"],
+        name="Estimator",
+    )
+
+    pd.testing.assert_index_equal(result.index, expected_index)
+    pd.testing.assert_index_equal(result.columns, expected_columns)
+
+    assert len(comp._cache) == 1
+    cached_result = list(comp._cache.values())[0]
+    pd.testing.assert_index_equal(cached_result.index, expected_index)
+    pd.testing.assert_index_equal(cached_result.columns, expected_columns)
