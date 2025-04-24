@@ -401,6 +401,7 @@ plt.show()
 # Here we normalize by true labels (rows):
 cm_display = report.metrics.confusion_matrix(normalize="true")
 cm_display.plot(cmap="Blues")
+plt.show()
 
 # %%
 # We can also normalize by predicted labels (columns):
