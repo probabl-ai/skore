@@ -388,7 +388,6 @@ print(f"Time taken to compute the ROC curve: {end - start:.2f} seconds")
 #
 # Another useful visualization for classification tasks is the confusion matrix,
 # which shows the counts of correct and incorrect predictions for each class.
-# Let's see how one can use the confusion matrix display functionality:
 
 # %%
 # Basic confusion matrix
