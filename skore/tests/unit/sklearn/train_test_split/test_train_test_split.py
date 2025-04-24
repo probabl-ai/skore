@@ -263,6 +263,7 @@ def test_train_test_split_as_dict_with_all_keyword_args():
 
 
 def test_empty_input():
+    """Tests that passing empty lists for X and y raises a ValueError."""
     X = []
     y = []
     with pytest.raises(ValueError):
