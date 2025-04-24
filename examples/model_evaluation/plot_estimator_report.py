@@ -410,7 +410,7 @@ cm_display = report.metrics.confusion_matrix(display_labels=["Disallowed", "Allo
 cm_display.plot()
 
 # %%
-# The confusion matrix can also be exported as a pandas DataFrame for further analysis:
+# Finally, the confusion matrix can also be exported as a pandas DataFrame for further analysis:
 cm_frame = cm_display.frame()
 cm_frame
 
