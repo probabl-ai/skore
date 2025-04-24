@@ -107,14 +107,15 @@ y
 # Modelling
 # ^^^^^^^^^
 
-from skrub import TableVectorizer, TextEncoder
+from skrub import TableVectorizer, GapEncoder
 from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.pipeline import make_pipeline
 
 model = make_pipeline(
-    TableVectorizer(high_cardinality=TextEncoder()),
+    TableVectorizer(high_cardinality=GapEncoder(n_components=100)),
     HistGradientBoostingRegressor(),
 )
+
 model
 
 # %%
