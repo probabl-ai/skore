@@ -14,6 +14,15 @@ merging`. It ensures that pull requests have been tested with the latest code.
 Even if it is a good practice, it begins to have an impact on maintainers velocity. It
 implies updating each pull request after any modification to the `main` branch.
 
+For example, suppose that there are several PRs that are done and ready to merge. With
+the current system, it is not possible to simply go through the PRs and merge them; one
+needs to, for each PR:
+- Put a lock on the PR merges (`main` should not move until the PR is merged),
+- Update the PR with `main`,
+- Wait for CI to pass (~10 min today),
+- Merge,
+- Release the lock.
+
 ## Decision Outcome
 
 We decide to add a merge queue to the `main` branch.
@@ -37,8 +46,8 @@ https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-
 
 ### Consequences
 
-We have to made some changes to prepare the setup of the GH merge queue, for which we
-need to specify the jobs required to succeed (and not global workflows unfortunately).
+We have to make some changes to prepare the setup of the GH merge queue, for which we
+need to specify the jobs required to succeed (as opposed to specifying global workflow).
 
 For a job to be required, its workflow must be executed and not skipped. Currently, we
 skip entire workflow via path filtering to avoid unnecessary calculations, which is
