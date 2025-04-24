@@ -90,7 +90,8 @@ sphinx_gallery_conf = {
     "backreferences_dir": "reference/api",
     "doc_module": "skore",
     # "reset_modules": (reset_mpl, "seaborn"),
-    "image_scrapers": [matplotlib_skore_scraper],
+    # "image_scrapers": ['matplotlib'], # use in-built scraper
+    "image_scrapers": [matplotlib_skore_scraper()], # alternative option using custom class
     "abort_on_example_error": True,
 }
 
