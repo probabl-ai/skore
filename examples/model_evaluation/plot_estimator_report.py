@@ -394,6 +394,7 @@ print(f"Time taken to compute the ROC curve: {end - start:.2f} seconds")
 # Basic confusion matrix
 cm_display = report.metrics.confusion_matrix()
 cm_display.plot()
+plt.show()
 
 # %%
 # We can normalize the confusion matrix to get percentages instead of raw counts.
