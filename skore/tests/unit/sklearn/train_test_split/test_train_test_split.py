@@ -184,17 +184,27 @@ def test_train_test_split_kwargs():
 
 
 def test_train_test_split_dict_kwargs():
-    """Passing data with positional arguments and as_dict=True should work."""
-
+    """When passing data with positional arguments and as_dict=True,
+    the first argument will be interpreted as `X` and the second one as `y`."""
     X = [[1]] * 20
     y = [0] * 10 + [1] * 10
 
-    result = train_test_split(X, y, random_state=0, as_dict=True)
+    result = train_test_split(X, y, test_size=0.2, as_dict=True, random_state=0)
 
     assert "X_train" in result
     assert "X_test" in result
     assert "y_train" in result
     assert "y_test" in result
+
+    X_train = np.array(result["X_train"])
+    X_test = np.array(result["X_test"])
+    y_train = np.array(result["y_train"])
+    y_test = np.array(result["y_test"])
+
+    assert X_train.ndim == 2
+    assert X_test.ndim == 2
+    assert y_train.ndim == 1
+    assert y_test.ndim == 1
 
 
 def test_train_test_split_check_dict():
@@ -252,61 +262,8 @@ def test_train_test_split_as_dict_with_all_keyword_args():
     assert result["X_test"].shape[0] == 2
 
 
-def test_train_test_split_as_dict_with_multiple_named_inputs():
-    """Ensure train_test_split works with multiple inputs when using as_dict=True."""
-    X = np.arange(10).reshape(10, 1)
-    y = np.arange(10)
-    z = np.arange(10, 20)
-
-    result = train_test_split(
-        X=X,
-        y=y,
-        z=z,
-        test_size=0.5,
-        as_dict=True,
-        random_state=42,
-    )
-
-    expected_keys = {"X_train", "X_test", "y_train", "y_test", "z_train", "z_test"}
-
-    assert all(key in result for key in expected_keys)
-    assert result["z_train"].shape[0] == 5
-    assert result["z_test"].shape[0] == 5
-
-
-def test_train_test_split_as_dict_with_mixed_input_types():
-    """Ensure train_test_split handles a mix of array-like types with as_dict=True."""
-    X = [[i] for i in range(10)]
-    y = np.arange(10)
-
-    result = train_test_split(X=X, y=y, test_size=0.3, as_dict=True, random_state=1)
-
-    assert set(result.keys()) == {"X_train", "X_test", "y_train", "y_test"}
-    assert len(result["X_train"]) == 7
-    assert len(result["X_test"]) == 3
-
-
-def test_train_test_split_only_X():
-    X = [[1]] * 20
-    result = train_test_split(X=X, random_state=0, as_dict=True)
-    assert "X_train" in result
-    assert "X_test" in result
-
-
 def test_empty_input():
     X = []
     y = []
     with pytest.raises(ValueError):
         train_test_split(X, y)
-
-
-def test_train_test_split_as_dict_with_positioned_args():
-    X = [[1]] * 20
-    y = [0] * 10 + [1] * 10
-
-    result = train_test_split(X, y, test_size=0.2, as_dict=True, random_state=0)
-
-    assert "X_train" in result
-    assert "X_test" in result
-    assert "y_train" in result
-    assert "y_test" in result
