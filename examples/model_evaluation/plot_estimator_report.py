@@ -390,7 +390,7 @@ print(f"Time taken to compute the ROC curve: {end - start:.2f} seconds")
 # which shows the counts of correct and incorrect predictions for each class.
 
 # %%
-# Basic confusion matrix
+# Let's first start with a basic confusion matrix:
 cm_display = report.metrics.confusion_matrix()
 cm_display.plot()
 plt.show()
