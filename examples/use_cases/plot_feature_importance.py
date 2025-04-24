@@ -175,7 +175,7 @@ fig
 
 # %%
 # Splitting the data
-# -----------------
+# ------------------
 
 # %%
 # Just before diving into our first model, let us split our data into a train and a
