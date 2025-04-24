@@ -178,8 +178,8 @@ class Metadata:
                     metric("roc_auc", "train", True, 3),
                     metric("roc_auc", "test", True, 3),
                     timing("fit_time", None, 1),
-                    timing("predict_time_test", "test", 2),
                     timing("predict_time_train", "train", 2),
+                    timing("predict_time_test", "test", 2),
                 ),
             )
         )
