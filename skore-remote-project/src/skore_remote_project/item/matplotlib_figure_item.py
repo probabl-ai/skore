@@ -57,7 +57,7 @@ class MatplotlibFigureItem(PickleItem):
         }
 
     @classmethod
-    def factory(cls, value: Figure, /, **kwargs) -> MatplotlibFigureItem:
+    def factory(cls, value: Figure, /) -> MatplotlibFigureItem:
         """
         Create a new ``MatplotlibFigureItem`` from an instance of ``matplotlib.Figure``.
 
