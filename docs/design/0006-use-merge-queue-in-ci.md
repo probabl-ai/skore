@@ -61,8 +61,9 @@ jobs that centralize the results of entire workflows, success or fail. Only thes
 will be marked as required. Thus, they must combine the results of backend linting,
 backend testing, PR title linting, documentation building etc.
 
-Please note that a previous experience (before forks) with a master "ci-all-green" can't
-be reproduced: the chain `workflow -> workflow_call -> workflow_run` is not triggered.
+Additionally, the CI setup we had before managing forks, with a master "ci-all-green"
+workflow, will not work with merge queues: the chain `workflow -> workflow_call ->
+workflow_run` is not triggered.
 
 ## More Information
 
