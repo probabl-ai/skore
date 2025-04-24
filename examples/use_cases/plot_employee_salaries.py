@@ -44,6 +44,7 @@ my_project = skore.Project("my_project")
 # We use a skrub dataset that is non-trivial.
 from skrub.datasets import fetch_employee_salaries
 
+
 datasets = fetch_employee_salaries()
 df, y = datasets.X, datasets.y
 
@@ -107,12 +108,12 @@ y
 # Modelling
 # ^^^^^^^^^
 
-from skrub import TableVectorizer, TextEncoder
+from skrub import TableVectorizer, GapEncoder
 from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.pipeline import make_pipeline
 
 model = make_pipeline(
-    TableVectorizer(high_cardinality=TextEncoder()),
+    TableVectorizer(high_cardinality=GapEncoder(n_components=100)),
     HistGradientBoostingRegressor(),
 )
 model
