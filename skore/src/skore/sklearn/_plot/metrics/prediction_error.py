@@ -316,7 +316,6 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
             len(y_true) if len(y_true) > 10 else 10,
         )
 
-        scatter_label = f"{data_source.title()} set"
         for split_idx in range(len(y_true)):
             data_points_kwargs_fold = {
                 "color": colors_markers[split_idx],
@@ -327,7 +326,7 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
                 data_points_kwargs_fold, samples_kwargs[split_idx]
             )
 
-            label = scatter_label + f" - split #{split_idx + 1}"
+            label = f"Estimator of fold #{split_idx + 1}"
 
             if kind == "actual_vs_predicted":
                 scatter.append(
@@ -348,7 +347,11 @@ class PredictionErrorDisplay(StyleDisplayMixin, HelpDisplayMixin):
                     )
                 )
 
-        ax.legend(bbox_to_anchor=(1.02, 1), title=estimator_name)
+        if data_source in ("train", "test"):
+            title = f"{estimator_name} on $\\bf{{{data_source}}}$ set"
+        else:
+            title = f"{estimator_name} on $\\bf{{external}}$ set"
+        ax.legend(bbox_to_anchor=(1.02, 1), title=title)
 
         return scatter
 

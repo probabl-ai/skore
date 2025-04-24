@@ -92,7 +92,7 @@ y
 
 # %%
 # Tree-based model
-# ===============
+# ================
 
 # %%
 # Let's start by creating a tree-based model using some out-of-the-box tools.
@@ -146,7 +146,7 @@ report.metrics.report_metrics()
 
 # %%
 # Linear model
-# =========
+# ============
 #
 # Now that we have established a first model that serves as a baseline,
 # we shall proceed to define a quite complex linear model

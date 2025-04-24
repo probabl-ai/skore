@@ -25,14 +25,6 @@ practices and avoid common methodological pitfalls in scikit-learn.
 Key features
 """"""""""""
 
--  **Diagnose**: catch methodological errors before they impact your models.
-
-   -  :func:`skore.train_test_split` supercharged with methodological guidance:
-      the API is the same as scikit-learn's, but skore displays warnings when
-      applicable.
-      For example, it warns you against shuffling time series data or when you have
-      class imbalance.
-
 -  **Evaluate**: automated insightful reports.
 
    -  :class:`skore.EstimatorReport`: feed your scikit-learn compatible estimator and
@@ -45,6 +37,14 @@ Key features
       of your cross-validation.
 
    -  :class:`skore.ComparisonReport`: benchmark your skore estimator reports.
+
+-  **Diagnose**: catch methodological errors before they impact your models.
+
+   -  :func:`skore.train_test_split` supercharged with methodological guidance:
+      the API is the same as scikit-learn's, but skore displays warnings when
+      applicable.
+      For example, it warns you against shuffling time series data or when you have
+      class imbalance.
 
 What's next?
 """"""""""""
