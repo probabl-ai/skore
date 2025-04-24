@@ -140,29 +140,22 @@ def train_test_split(
 
     if X is not None:
         new_arrays.append(X)
-        keys.append("X")
+        keys += ["X"]
+
     if y is not None:
         new_arrays.append(y)
-        keys.append("y")
+        keys += ["y"]
 
-    if as_dict:
-        if X is None and y is None:
-            if not keyword_arrays:
-                raise ValueError(
-                    "When as_dict=True, arrays must be passed as keyword arguments"
-                )
-
+    if as_dict and X is None and y is None:
+        if keyword_arrays:
             new_arrays = list(keyword_arrays.values())
+        else:
+            X, y = (arrays[0], arrays[1]) if len(arrays) >= 2 else (arrays[0], None)
+            new_arrays = [X, y]
+            keys = ["X", "y"]
 
-        if X is not None:
-            new_arrays.append(X)
-            keys.append("X")
-        if y is not None:
-            new_arrays.append(y)
-            keys.append("y")
-
-        keys += list(keyword_arrays.keys())
-        new_arrays += list(keyword_arrays.values())
+    keys += list(keyword_arrays.keys())
+    new_arrays += list(keyword_arrays.values())
 
     if not new_arrays:
         raise ValueError("At least one array must be provided")
@@ -177,22 +170,25 @@ def train_test_split(
         stratify=stratify,
     )
 
-    if X is None and len(arrays) >= 1:
-        X = arrays[0]
+    if X is None:
+        if arrays:
+            X = arrays[0] if len(arrays) == 1 else arrays[-2]
+        elif keyword_arrays and "X" in keyword_arrays:
+            X = keyword_arrays["X"]
 
     if y is None and len(arrays) >= 2:
         y = arrays[-1]
 
     if y is not None:
         y_labels = np.unique(y)
-        y_test = output[3] if as_dict else output[-1]
+        y_test = (
+            output[3] if keyword_arrays else output[-1]
+        )  # when more kwargs are given
     else:
         y_labels = None
         y_test = None
 
-    # Determine the ML task based on y
     ml_task = _find_ml_task(y)
-
     kwargs = dict(
         arrays=new_arrays,
         test_size=test_size,
