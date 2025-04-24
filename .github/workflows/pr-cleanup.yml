@@ -1,4 +1,4 @@
-name: cleanup PR
+name: pr-cleanup
 
 on:
   pull_request_target:
@@ -11,7 +11,7 @@ defaults:
     shell: "bash"
 
 jobs:
-  clean-artifacts:
+  pr-clean-artifacts:
     if: always()
     runs-on: ubuntu-latest
     permissions:
@@ -55,7 +55,7 @@ jobs:
           HEAD_REPOSITORY_ID: ${{ github.event.pull_request.head.repo.id }}
           HEAD_BRANCH: ${{ github.head_ref }}
 
-  clean-documentation-preview:
+  pr-clean-documentation-preview:
     if: always()
     runs-on: ubuntu-latest
     steps:
