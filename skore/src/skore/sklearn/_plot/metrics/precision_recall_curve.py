@@ -351,7 +351,7 @@ class PrecisionRecallCurveDisplay(
                     line_kwargs, pr_curve_kwargs[split_idx]
                 )
                 line_kwargs_validated["label"] = (
-                    f"{data_source.title()} set - fold #{split_idx + 1} "
+                    f"Estimator of fold #{split_idx + 1} "
                     f"(AP = {average_precision_split:0.2f})"
                 )
 
@@ -389,8 +389,8 @@ class PrecisionRecallCurveDisplay(
                     )
                     if split_idx == 0:
                         line_kwargs_validated["label"] = (
-                            f"{str(class_).title()} - {data_source} set"
-                            f" (AP = {average_precision_mean:0.2f} +/- "
+                            f"{str(class_).title()} "
+                            f"(AP = {average_precision_mean:0.2f} +/- "
                             f"{average_precision_std:0.2f})"
                         )
                     else:
@@ -401,7 +401,11 @@ class PrecisionRecallCurveDisplay(
                     )
                     lines.append(line)
 
-        ax.legend(bbox_to_anchor=(1.02, 1), title=estimator_name)
+        if data_source in ("train", "test"):
+            title = f"{estimator_name} on $\\bf{{{data_source}}}$ set"
+        else:
+            title = f"{estimator_name} on $\\bf{{external}}$ set"
+        ax.legend(bbox_to_anchor=(1.02, 1), title=title)
 
         return ax, lines, info_pos_label
 
