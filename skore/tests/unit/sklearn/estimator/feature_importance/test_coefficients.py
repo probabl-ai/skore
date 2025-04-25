@@ -7,7 +7,7 @@ from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import StandardScaler
 from skore import EstimatorReport
-from skore.externals._sklearn_compat import get_tags, is_clusterer
+from skore.externals._sklearn_compat import get_tags
 
 
 @pytest.mark.parametrize(
@@ -120,13 +120,10 @@ def test_estimator_report_coefficients_pandas_dataframe(estimator):
     [
         pytest.param(sklearn.svm.NuSVC(kernel="linear"), id="NuSVC"),
         pytest.param(sklearn.svm.NuSVR(kernel="linear"), id="NuSVR"),
-        pytest.param(sklearn.svm.OneClassSVM(kernel="linear"), id="OneClassSVM"),
         pytest.param(sklearn.svm.SVC(kernel="linear"), id="SVC"),
         pytest.param(sklearn.svm.SVR(kernel="linear"), id="SVR"),
         pytest.param(sklearn.svm.LinearSVC(), id="LinearSVC"),
         pytest.param(sklearn.svm.LinearSVR(), id="LinearSVR"),
-        pytest.param(sklearn.cross_decomposition.CCA(), id="CCA"),
-        pytest.param(sklearn.cross_decomposition.PLSCanonical(), id="PLSCanonical"),
         pytest.param(sklearn.cross_decomposition.PLSRegression(), id="PLSRegression"),
         pytest.param(
             sklearn.discriminant_analysis.LinearDiscriminantAnalysis(),
@@ -158,14 +155,6 @@ def test_estimator_report_coefficients_pandas_dataframe(estimator):
             sklearn.linear_model.LogisticRegressionCV(), id="LogisticRegressionCV"
         ),
         pytest.param(
-            sklearn.linear_model.MultiTaskElasticNet(), id="MultiTaskElasticNet"
-        ),
-        pytest.param(
-            sklearn.linear_model.MultiTaskElasticNetCV(), id="MultiTaskElasticNetCV"
-        ),
-        pytest.param(sklearn.linear_model.MultiTaskLasso(), id="MultiTaskLasso"),
-        pytest.param(sklearn.linear_model.MultiTaskLassoCV(), id="MultiTaskLassoCV"),
-        pytest.param(
             sklearn.linear_model.OrthogonalMatchingPursuit(),
             id="OrthogonalMatchingPursuit",
         ),
@@ -189,10 +178,24 @@ def test_estimator_report_coefficients_pandas_dataframe(estimator):
         pytest.param(sklearn.linear_model.RidgeClassifierCV(), id="RidgeClassifierCV"),
         pytest.param(sklearn.linear_model.RidgeCV(), id="RidgeCV"),
         pytest.param(sklearn.linear_model.SGDClassifier(), id="SGDClassifier"),
-        pytest.param(sklearn.linear_model.SGDOneClassSVM(), id="SGDOneClassSVM"),
         pytest.param(sklearn.linear_model.SGDRegressor(), id="SGDRegressor"),
         pytest.param(sklearn.linear_model.TheilSenRegressor(), id="TheilSenRegressor"),
         pytest.param(sklearn.linear_model.TweedieRegressor(), id="TweedieRegressor"),
+        # multi-task
+        pytest.param(
+            sklearn.linear_model.MultiTaskElasticNet(), id="MultiTaskElasticNet"
+        ),
+        pytest.param(
+            sklearn.linear_model.MultiTaskElasticNetCV(), id="MultiTaskElasticNetCV"
+        ),
+        pytest.param(sklearn.linear_model.MultiTaskLasso(), id="MultiTaskLasso"),
+        pytest.param(sklearn.linear_model.MultiTaskLassoCV(), id="MultiTaskLassoCV"),
+        # cross_decomposition
+        pytest.param(sklearn.cross_decomposition.CCA(), id="CCA"),
+        pytest.param(sklearn.cross_decomposition.PLSCanonical(), id="PLSCanonical"),
+        # outlier detectors
+        pytest.param(sklearn.linear_model.SGDOneClassSVM(), id="SGDOneClassSVM"),
+        pytest.param(sklearn.svm.OneClassSVM(kernel="linear"), id="OneClassSVM"),
     ],
 )
 def test_all_sklearn_estimators(
@@ -203,7 +206,6 @@ def test_all_sklearn_estimators(
     multi_regression_data,
     classification_data,
     outlier_data,
-    clustering_data,
 ):
     """Check that `coefficients` is supported for every sklearn estimator."""
     multi = False
@@ -229,12 +231,9 @@ def test_all_sklearn_estimators(
             X, y = regression_data
     elif is_outlier_detector(estimator):
         X, y = outlier_data
-    elif is_clusterer(estimator):
-        X, y = clustering_data
     else:
         raise Exception(
-            """Estimator not in ['classifier', 'regressor',
-             'clusterer', 'outlier_detector']"""
+            "Estimator not in ['classifier', 'regressor', 'outlier_detector']"
         )
 
     estimator.fit(X, y)

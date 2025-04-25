@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from sklearn.datasets import make_blobs, make_classification, make_regression
+from sklearn.datasets import make_classification, make_regression
 
 
 @pytest.fixture
@@ -30,8 +30,3 @@ def outlier_data():
     X = rng.normal(0, 1, (300, 2))
     X[-10:] = rng.uniform(-10, 10, (10, 2))  # outliers
     return X, np.zeros(len(X))  # y as dummy zeros
-
-
-@pytest.fixture
-def clustering_data():
-    return make_blobs(centers=3, n_features=2, random_state=42)
