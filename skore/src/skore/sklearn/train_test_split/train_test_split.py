@@ -132,6 +132,13 @@ def train_test_split(
     {'X_train': ..., 'X_test': ...,
      'y_train': ..., 'y_test': ...,
      'sample_weights_train': ..., 'sample_weights_test': ...}
+
+    >>> # When using positional arguments and as_dict=True
+    >>> # the first argument is assumed to be X, the second y
+    >>>  train_test_split(
+    ...     [[1], [2], [3], [4]], [0, 1, 0, 1], as_dict=True, random_state=0
+    ... )
+    {'X_train': ..., 'X_test': ..., 'y_train': ..., 'y_test': ...}
     """
     import sklearn.model_selection
 

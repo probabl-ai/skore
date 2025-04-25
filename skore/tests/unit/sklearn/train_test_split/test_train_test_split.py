@@ -1,7 +1,7 @@
 import warnings
 from datetime import datetime
 
-import numpy as np
+import numpy
 import pandas
 import polars
 import pytest
@@ -196,15 +196,10 @@ def test_train_test_split_dict_kwargs():
     assert "y_train" in result
     assert "y_test" in result
 
-    X_train = np.array(result["X_train"])
-    X_test = np.array(result["X_test"])
-    y_train = np.array(result["y_train"])
-    y_test = np.array(result["y_test"])
-
-    assert X_train.ndim == 2
-    assert X_test.ndim == 2
-    assert y_train.ndim == 1
-    assert y_test.ndim == 1
+    assert numpy.ndim(result.get("X_train")) == 2
+    assert numpy.ndim(result.get("X_test")) == 2
+    assert numpy.ndim(result.get("y_train")) == 1
+    assert numpy.ndim(result.get("y_test")) == 1
 
 
 def test_train_test_split_check_dict():
@@ -232,34 +227,6 @@ def test_train_test_split_check_dict_no_X_no_y():
     output = train_test_split(z=z, random_state=0, as_dict=True)
     keys = output.keys()
     assert list(keys) == ["z_train", "z_test"]
-
-
-def test_train_test_split_as_dict_with_all_keyword_args():
-    """Ensure result is a dict with correct keys when as_dict=True
-    and all arrays are keyword args."""
-    X = np.arange(10).reshape(10, 1)
-    y = np.arange(10)
-    weights = np.ones(10)
-
-    result = train_test_split(
-        X=X,
-        y=y,
-        sample_weights=weights,
-        test_size=0.2,
-        as_dict=True,
-        random_state=0,
-    )
-
-    assert set(result.keys()) == {
-        "X_train",
-        "X_test",
-        "y_train",
-        "y_test",
-        "sample_weights_train",
-        "sample_weights_test",
-    }
-    assert result["X_train"].shape[0] == 8
-    assert result["X_test"].shape[0] == 2
 
 
 def test_empty_input():
