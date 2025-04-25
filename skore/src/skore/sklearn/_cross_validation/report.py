@@ -298,8 +298,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     def get_predictions(
         self,
         *,
-        data_source: Literal["train", "test"],
+        data_source: Literal["train", "test", "X_y"],
         response_method: Literal["predict", "predict_proba", "decision_function"],
+        X: Optional[ArrayLike] = None,
         pos_label: Optional[Any] = None,
     ) -> ArrayLike:
         """Get estimator's predictions.
@@ -309,14 +310,20 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train"}, default="test"
+        data_source : {"test", "train", "X_y"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+            - "X_y" : use the train set provided when creating the report and the target
+              variable.
 
         response_method : {"predict", "predict_proba", "decision_function"}
             The response method to use.
+
+        X : array-like of shape (n_samples, n_features), optional
+            When `data_source` is "X_y", the input features on which to compute the
+            response method.
 
         pos_label : int, float, bool or str, default=None
             The positive class when it comes to binary classification. When
@@ -349,15 +356,16 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         >>> print([split_predictions.shape for split_predictions in predictions])
         [(50,), (50,)]
         """
-        if data_source not in ("train", "test"):
+        if data_source not in ("train", "test", "X_y"):
             raise ValueError(
                 f"Invalid data source: {data_source}. Valid data sources are "
-                "'train' and 'test'."
+                "'train', 'test' and 'X_y'."
             )
         return [
             report.get_predictions(
                 data_source=data_source,
                 response_method=response_method,
+                X=X,
                 pos_label=pos_label,
             )
             for report in self.estimator_reports_

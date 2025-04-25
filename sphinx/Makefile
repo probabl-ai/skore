@@ -3,7 +3,7 @@
 
 # Ensures SPHINX_DOMAIN is not an empty string
 ifeq ($(SPHINX_DOMAIN),)
-	SPHINX_DOMAIN := skore.probabl.ai
+	SPHINX_DOMAIN := docs.skore.probabl.ai
 endif
 
 export SPHINX_VERSION ?= dev

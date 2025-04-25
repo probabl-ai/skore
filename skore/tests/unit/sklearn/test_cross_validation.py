@@ -207,7 +207,7 @@ def test_cross_validation_report_cache_predictions(
         assert estimator_report._cache == {}
 
 
-@pytest.mark.parametrize("data_source", ["train", "test"])
+@pytest.mark.parametrize("data_source", ["train", "test", "X_y"])
 @pytest.mark.parametrize(
     "response_method", ["predict", "predict_proba", "decision_function"]
 )
@@ -220,15 +220,27 @@ def test_cross_validation_report_get_predictions(
     estimator = LogisticRegression()
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
 
-    predictions = report.get_predictions(
-        data_source=data_source, response_method=response_method, pos_label=pos_label
-    )
+    if data_source == "X_y":
+        predictions = report.get_predictions(
+            data_source=data_source,
+            response_method=response_method,
+            X=X,
+            pos_label=pos_label,
+        )
+    else:
+        predictions = report.get_predictions(
+            data_source=data_source,
+            response_method=response_method,
+            pos_label=pos_label,
+        )
     assert len(predictions) == 2
     for split_idx, split_predictions in enumerate(predictions):
         if data_source == "train":
             expected_shape = report.estimator_reports_[split_idx].y_train.shape
-        else:
+        elif data_source == "test":
             expected_shape = report.estimator_reports_[split_idx].y_test.shape
+        else:  # data_source == "X_y"
+            expected_shape = (X.shape[0],)
         assert split_predictions.shape == expected_shape
 
 
@@ -240,6 +252,9 @@ def test_cross_validation_report_get_predictions_error():
 
     with pytest.raises(ValueError, match="Invalid data source"):
         report.get_predictions(data_source="invalid", response_method="predict")
+
+    with pytest.raises(ValueError, match="The `X` parameter is required"):
+        report.get_predictions(data_source="X_y", response_method="predict")
 
 
 def test_cross_validation_report_pickle(tmp_path, binary_classification_data):
@@ -279,6 +294,24 @@ def test_cross_validation_report_flat_index(binary_classification_data):
         "randomforestclassifier_mean",
         "randomforestclassifier_std",
     ]
+
+
+def test_cross_validation_report_metrics_data_source_external(
+    binary_classification_data,
+):
+    """Check that the `data_source` parameter works when using external data."""
+    estimator, X, y = binary_classification_data
+    cv_splitter = 2
+    report = CrossValidationReport(estimator, X, y, cv_splitter=cv_splitter)
+    result = report.metrics.report_metrics(data_source="X_y", X=X, y=y, aggregate=None)
+    for split_idx in range(cv_splitter):
+        # check that it is equivalent to call the individual estimator report
+        report_result = report.estimator_reports_[split_idx].metrics.report_metrics(
+            data_source="X_y", X=X, y=y
+        )
+        np.testing.assert_allclose(
+            report_result.iloc[:, 0].to_numpy(), result.iloc[:, split_idx].to_numpy()
+        )
 
 
 ########################################################################################

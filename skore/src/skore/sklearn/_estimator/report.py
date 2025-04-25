@@ -355,6 +355,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         elif data_source == "train":
             X_ = self._X_train
         elif data_source == "X_y":
+            if X is None:
+                raise ValueError(
+                    "The `X` parameter is required when `data_source` is 'X_y'."
+                )
             X_ = X
         else:
             raise ValueError(f"Invalid data source: {data_source}")
@@ -368,6 +372,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             pos_label=pos_label,
             data_source=data_source,
         )
+
+    @property
+    def ml_task(self) -> str:
+        return self._ml_task
 
     @property
     def estimator_(self) -> BaseEstimator:

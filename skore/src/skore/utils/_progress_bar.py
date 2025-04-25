@@ -39,6 +39,10 @@ def progress_decorator(
         def wrapper(*args: Any, **kwargs: Any) -> T:
             self_obj: Any = args[0]
 
+            if hasattr(self_obj, "_parent"):
+                # self_obj is an accessor
+                self_obj = self_obj._parent
+
             desc = description(self_obj) if callable(description) else description
 
             if getattr(self_obj, "_parent_progress", None) is not None:

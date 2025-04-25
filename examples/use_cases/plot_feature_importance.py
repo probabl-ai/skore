@@ -175,7 +175,7 @@ fig
 
 # %%
 # Splitting the data
-# -----------------
+# ------------------
 
 # %%
 # Just before diving into our first model, let us split our data into a train and a
@@ -285,10 +285,10 @@ plt.tight_layout()
 
 # %%
 # .. note::
-#   More generally, :meth:`skore.EstimatorReport.feature_importance` can help you
-#   inspect the coefficients of all linear models.
+#   More generally, :meth:`skore.EstimatorReport.feature_importance.coefficients` can
+#   help you inspect the coefficients of all linear models.
 #   We consider a linear model as defined in
-#   `scikit-learn's user guide
+#   `scikit-learn's documentation
 #   <https://scikit-learn.org/stable/modules/linear_model.html>`_.
 #   In short, we consider a "linear model" as a scikit-learn compatible estimator that
 #   holds a ``coef_`` attribute (after being fitted).
@@ -910,7 +910,7 @@ def plot_permutation_train_test(est_report):
     ax.set_title(
         f"Permutation feature importance of {est_report.estimator_name_} (Train vs Test)"
     )
-    ax.set_xlabel("r2")
+    ax.set_xlabel("$R^2$")
     ax.set_yticks([x + 0.2 for x in range(len(est_report.X_train.columns))])
     ax.set_yticklabels(est_report.X_train.columns)
 

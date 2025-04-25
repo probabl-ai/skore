@@ -17,7 +17,7 @@
   <h3>the scikit-learn sidekick</h3>
 
 Elevate ML Development with Built-in Recommended Practices \
-[Documentation](https://skore.probabl.ai) — [Community](https://discord.probabl.ai) — [YouTube](https://youtube.com/playlist?list=PLSIzlWDI17bTpixfFkooxLpbz4DNQcam3)
+[Documentation](https://docs.skore.probabl.ai) — [Community](https://discord.probabl.ai) — [YouTube](https://youtube.com/playlist?list=PLSIzlWDI17bTpixfFkooxLpbz4DNQcam3)
 
 </div>
 
@@ -29,12 +29,12 @@ skore is a Python open-source library designed to help data scientists apply rec
 
 ## Key features
 
-- **Diagnose**: catch methodological errors before they impact your models.
-  - `train_test_split` supercharged with methodological guidance: the API is the same as scikit-learn's, but skore displays warnings when applicable. For example, it warns you against shuffling time series data or when you have class imbalance.
 - **Evaluate**: automated insightful reports.
   - `EstimatorReport`: feed your scikit-learn compatible estimator and dataset, and it generates recommended metrics, feature importance, and plots to help you evaluate and inspect your estimator. All these are computed and generated for you in 1 line of code. Under the hood, we use efficient caching to make the computations blazing fast.
   - `CrossValidationReport`: get a skore estimator report for each fold of your cross-validation.
   - `ComparisonReport`: benchmark your skore estimator reports.
+- **Diagnose**: catch methodological errors before they impact your models.
+  - `train_test_split` supercharged with methodological guidance: the API is the same as scikit-learn's, but skore displays warnings when applicable. For example, it warns you against shuffling time series data or when you have class imbalance.
 
 ## What's next?
 
@@ -114,7 +114,7 @@ You can find information on the latest version [here](https://anaconda.org/conda
     df_get
     ```
 
-Learn more in our [documentation](https://skore.probabl.ai).
+Learn more in our [documentation](https://docs.skore.probabl.ai).
 
 
 ## Contributing
