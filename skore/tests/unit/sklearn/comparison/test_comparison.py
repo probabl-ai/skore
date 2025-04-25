@@ -508,8 +508,8 @@ def test_comparison_report_report_metrics_X_y(binary_classification_model):
             "recall_1",
             "roc_auc",
             "brier_score",
-            "fit_time__s",
-            "predict_time__s",
+            "fit_time_s",
+            "predict_time_s",
         ]
     )
 
@@ -583,21 +583,22 @@ def test_cross_validation_report_flat_index(binary_classification_model):
     result = report.metrics.report_metrics(flat_index=True)
     assert result.shape == (8, 2)
     assert isinstance(result.index, pd.Index)
-    metrics = [
+    assert result.index.tolist() == [
         "precision_0",
         "precision_1",
         "recall_0",
         "recall_1",
         "roc_auc",
         "brier_score",
+        "fit_time_s",
+        "predict_time_s",
     ]
-    time_metrics_prefix = ["fit_time", "predict_time"]
 
-    for metric in metrics:
-        assert metric in result.index
+    # for metric in metrics:
+    #     assert metric in result.index
 
-    for prefix in time_metrics_prefix:
-        assert any(idx.startswith(prefix) for idx in result.index)
+    # for prefix in time_metrics_prefix:
+    #     assert any(idx.startswith(prefix) for idx in result.index)
 
 
 def test_estimator_report_report_metrics_indicator_favorability(
@@ -861,9 +862,6 @@ def test_comparison_report_timings_flat_index(binary_classification_model):
     # Get metrics with flat_index=True
     results = report.metrics.report_metrics(flat_index=True)
 
-    # Check that time measurements have _s suffix
-    time_indices = [idx for idx in results.index if "time" in idx]
-    assert len(time_indices) > 0
-    for idx in time_indices:
-        assert idx.endswith("_s")
-        assert "(s)" not in idx
+    # Check that expected time measurements are in index with _s suffix
+    assert "fit_time_s" in results.index
+    assert "predict_time_s" in results.index

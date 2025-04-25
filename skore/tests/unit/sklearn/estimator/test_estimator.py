@@ -330,21 +330,22 @@ def test_estimator_report_flat_index(binary_classification_data):
     result = report.metrics.report_metrics(flat_index=True)
     assert result.shape == (8, 1)
     assert isinstance(result.index, pd.Index)
-    metrics = [
+    assert result.index.tolist() == [
         "precision_0",
         "precision_1",
         "recall_0",
         "recall_1",
         "roc_auc",
         "brier_score",
+        "fit_time_s",
+        "predict_time_s",
     ]
-    time_metrics_prefix = ["fit_time", "predict_time"]
 
-    for metric in metrics:
-        assert metric in result.index
+    # for metric in metrics:
+    #     assert metric in result.index
 
-    for prefix in time_metrics_prefix:
-        assert any(idx.startswith(prefix) for idx in result.index)
+    # for prefix in time_metrics_prefix:
+    #     assert any(idx.startswith(prefix) for idx in result.index)
 
 
 def test_estimator_report_get_predictions():
