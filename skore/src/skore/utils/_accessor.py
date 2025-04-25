@@ -63,9 +63,7 @@ def _check_has_coef() -> Callable:
             if hasattr(estimator.regressor_, "coef_"):
                 return True
         except AttributeError as msg:
-            if "object has no attribute 'regressor_'" in str(msg):
-                pass
-            else:
+            if "object has no attribute 'regressor_'" not in str(msg):
                 raise
         raise AttributeError(
             f"Estimator {parent_estimator} is not a supported estimator by "
