@@ -55,7 +55,6 @@ Install dependencies and setup pre-commit with:
 
     make install-skore
 
-
 Choosing an issue
 -----------------
 
