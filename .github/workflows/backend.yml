@@ -91,7 +91,7 @@ jobs:
             (echo "${changes}" | grep -qE "skore/pyproject.toml") &&
             (echo "${changes}" | (! grep -qE "skore/ci/requirements/.*/test-requirements.txt"))
           then
-              curl -LsSf https://astral.sh/uv/install.sh | sh
+              curl -LsSf https://astral.sh/uv/0.6.16/install.sh | sh
               bash skore/ci/pip-compile.sh
 
               if (git diff --name-only | grep -qE "skore/ci/requirements/.*/test-requirements.txt"); then
