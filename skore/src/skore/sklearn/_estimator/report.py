@@ -310,7 +310,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
 
-        response_method : {"predict", "predict_proba", "decision_function"}, default:"predict"
+        response_method : {"predict", "predict_proba", "decision_function"}, default="predict"
             The response method to use.
 
         X : array-like of shape (n_samples, n_features), optional
@@ -344,9 +344,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         >>> estimator = LogisticRegression().fit(X_train, y_train)
         >>> from skore import EstimatorReport
         >>> report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-        >>> predictions = report.get_predictions(
-        ...     data_source="test"
-        ... )
+        >>> predictions = report.get_predictions(data_source="test")
         >>> predictions.shape
         (25,)
         """
