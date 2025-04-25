@@ -1010,7 +1010,7 @@ def test_cross_validation_timings(
     repr_str = repr(timings)
     assert "Fit time (s)" in repr_str
 
-    report.metrics.report_metrics(data_source="train")
+    report.get_predictions(data_source="train", response_method="predict")
     timings = report.metrics.timings(aggregate=aggregate)
     assert isinstance(timings, pd.DataFrame)
 
@@ -1021,7 +1021,7 @@ def test_cross_validation_timings(
     assert "Fit time (s)" in repr_str
     assert "Predict time train (s)" in repr_str
 
-    report.metrics.report_metrics(data_source="test")
+    report.get_predictions(data_source="test", response_method="predict")
     timings = report.metrics.timings(aggregate=aggregate)
     assert isinstance(timings, pd.DataFrame)
 
@@ -1043,8 +1043,8 @@ def test_cross_validation_timings_flat_index(binary_classification_data):
     estimator, X, y = binary_classification_data
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
 
-    report.metrics.report_metrics(data_source="train")
-    report.metrics.report_metrics(data_source="test")
+    report.get_predictions(data_source="train", response_method="predict")
+    report.get_predictions(data_source="test", response_method="predict")
 
     timings = report.metrics.timings()
     assert isinstance(timings, pd.DataFrame)
