@@ -322,6 +322,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
         response_method : {"predict", "predict_proba", "decision_function"},
         default : "predict"
+
             The response method to use.
 
         X : array-like of shape (n_samples, n_features), optional

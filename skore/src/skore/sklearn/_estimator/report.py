@@ -295,6 +295,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         response_method: Literal[
             "predict", "predict_proba", "decision_function"
         ] = "predict",
+
         X: Optional[ArrayLike] = None,
         pos_label: Optional[Any] = None,
     ) -> ArrayLike:
@@ -314,6 +315,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
         response_method : {"predict", "predict_proba", "decision_function"},
         default:"predict"
+
             The response method to use.
 
         X : array-like of shape (n_samples, n_features), optional
