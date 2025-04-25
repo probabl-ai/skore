@@ -1,4 +1,4 @@
-name: lint title in PR
+name: pr-lint-title
 
 on:
   pull_request:
@@ -8,7 +8,7 @@ permissions:
   pull-requests: read
 
 jobs:
-  lint-title:
+  pr-lint-title:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/setup-node@v4
