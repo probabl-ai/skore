@@ -49,12 +49,29 @@ Quick start
 
 You'll need ``python >=3.9, <3.13``.
 
-Install dependencies and setup pre-commit with:
+Setting up your development environment
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+We strongly recommend using a virtual environment to isolate your development dependencies:
+
+.. code-block:: bash
+
+    # Create a virtual environment
+    python -m venv venv
+    
+    # Activate the virtual environment
+    # On Windows:
+    venv\Scripts\activate
+    # On macOS/Linux:
+    source venv/bin/activate
+
+Once your virtual environment is activated, install the development dependencies:
 
 .. code-block:: bash
 
     make install-skore
 
+This will set up pre-commit hooks and install all required dependencies for development.
 
 Choosing an issue
 -----------------
@@ -74,16 +91,30 @@ We use the `conventional commits <https://www.conventionalcommits.org/en/v1.0.0/
 
 Skore is a company-driven project. We might provide extensive help to bring PRs to be merged to meet internal deadlines. In such cases, we will warn you in the PR.
 
-
 Tests
 -----
 
-To run the tests locally, you may run
+Unit Testing Requirements
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+All contributions must include appropriate unit tests using ``pytest``. Tests are required for:
+
+- Any new features
+- Bug fixes
+- New use cases
+- Modifications to existing functionality
+
+Before submitting your PR, ensure that:
+
+1. You've written comprehensive tests covering your changes
+2. All tests execute successfully on your local machine
+3. Your code maintains or improves the current test coverage
+
+To run the tests locally:
 
 .. code-block:: bash
 
     make test
-
 
 Linting
 -------
@@ -94,6 +125,16 @@ We use the linter ruff to make sure that the code is formatted correctly.
 
     make lint
 
+Pre-commit Hooks
+^^^^^^^^^^^^^^^
+
+We use pre-commit hooks to ensure code quality before changes are committed. These hooks were installed during setup, but you can manually run them with:
+
+.. code-block:: bash
+
+    pre-commit run --all-files
+
+Always run pre-commit checks before creating a pull request to ensure your code meets our standards.
 
 Documentation
 =============
@@ -141,7 +182,6 @@ When writing documentation, whether it be online, docstrings or help messages in
 #. In the CLI, positional arguments are written in snake case (``snake_case``), keyword arguments in kebab case (``kebab-case``)
 #. When there is a default argument, it should be shown in the help message, typically with ``(default: <default value>)`` at the end of the message
 
-
 Contributing to the examples
 ----------------------------
 
@@ -150,8 +190,24 @@ The examples are stored in the `examples` folder:
 - They are classified in subcategories.
 - They should be written in a python script (`.py`), with cells marked by `# %%`, to separate code cells and markdown cells, as they will be rendered as notebooks (`.ipynb`).
 - The file should start with a docstring giving the example title.
-- No example should require to have large files stored in this repository. For example, no dataset should be stored, it should be downloaded in the script.
+- No example should require to have large files stored in this repository. For example, no dataset should be downloaded in the script.
 - When built (using `make html` for example), these examples will automatically be converted into rst files in the `sphinx/auto_examples` subfolder. This subfolder is listed in the gitignore and cannot be pushed.
+
+Guidelines for creating effective examples:
+
+1. **Types of examples**:
+   - **Doctests**: Use these in API documentation for demonstrating simple usage patterns.
+   - **User guide examples**: Create comprehensive examples that demonstrate functionality in real-world contexts.
+
+2. **Small features**: For minor features (like a confusion matrix plot), don't create standalone examples. Instead, incorporate these into existing relevant documentation where they make sense contextually.
+
+3. **Example content**: Focus on demonstrating the core concept rather than exhaustively listing all possible arguments. Show the global idea of how to use the feature effectively.
+
+4. **Dataset selection**:
+   - Use meaningful, realistic datasets (not synthetic data with artificially high scores)
+   - Ensure examples execute efficiently (under a few minutes)
+   - Prefer built-in or easily downloadable datasets
+   - If downloading data, include clear code for this process
 
 Contributing to the README
 --------------------------
@@ -162,8 +218,28 @@ This file is used to be presented on `PyPI <https://pypi.org/project/skore/#desc
 Signing Commits
 ---------------
 
-You have to sign your commits before submitting a pull request.
+You must sign your commits before submitting a pull request.
 For a pull request to be accepted, all the commits inside of it must be signed.
 
-GitHub supports commit signing using **GPG**, **SSH**, or **S/MIME**. Signed commits are marked as "Verified" on GitHub, providing confidence in the origin of your changes.
-For setup instructions and more details, please refer to `GitHub’s guide on signing commits <https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits>`_.
+To sign your commits:
+
+.. code-block:: bash
+
+    git commit -S -m "Your commit message"
+
+If you haven't set up commit signing yet, GitHub supports signing using **GPG**, **SSH**, or **S/MIME**. Signed commits are marked as "Verified" on GitHub, providing confidence in the origin of your changes.
+For setup instructions and more details, please refer to `GitHub's guide on signing commits <https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits>`_.
+
+Pull Request Checklist
+=====================
+
+Before submitting your pull request, ensure you have:
+
+1. Created or updated unit tests for your changes
+2. Run all tests locally and verified they pass
+3. Updated documentation if necessary
+4. Run pre-commit hooks on your code
+5. Signed all your commits
+6. Followed our coding standards and commit message format
+
+This checklist helps maintain code quality and ensures a smooth review process.
