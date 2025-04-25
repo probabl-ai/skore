@@ -292,8 +292,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         response_method : {"predict", "predict_proba", "decision_function"},
         default : "predict"
 
-
-
         pos_label : int, float, bool or str, default=None
             The positive class when it comes to binary classification. When
             `response_method="predict_proba"`, it will select the column corresponding
