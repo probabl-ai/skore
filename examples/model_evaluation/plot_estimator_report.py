@@ -404,10 +404,10 @@ plt.show()
 
 # %%
 # More plotting options are available, check out the API on the confusion matrix for more information.
-# %%
 # We can customize the display labels:
 cm_display = report.metrics.confusion_matrix(display_labels=["Disallowed", "Allowed"])
 cm_display.plot()
+plt.show()
 
 # %%
 # Finally, the confusion matrix can also be exported as a pandas DataFrame for further analysis:

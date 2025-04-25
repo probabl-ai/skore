@@ -210,3 +210,6 @@ def test_confusion_matrix_display_single_label(
     display = report.metrics.confusion_matrix(display_labels=["Only One Label"])
     assert isinstance(display, ConfusionMatrixDisplay)
     assert display.display_labels == ["Only One Label"]
+
+    with pytest.raises(ValueError):
+        display.plot()
