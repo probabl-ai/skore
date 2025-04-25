@@ -1001,8 +1001,6 @@ class BrokenEstimator(ClassifierMixin, BaseEstimator):
 def test_cross_validation_report_with_zero_estimators():
     X, y = make_classification(n_samples=100, n_features=10, random_state=42)
 
-    with pytest.raises(
-        RuntimeError,
-        match="Cross-validation failed: no estimators were successfully fitted",
-    ):
+    err_msg = "Cross-validation failed: no estimators were successfully fitted"
+    with pytest.raises(RuntimeError, match=err_msg):
         CrossValidationReport(BrokenEstimator(), X, y)
