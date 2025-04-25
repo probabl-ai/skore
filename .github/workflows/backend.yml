@@ -79,13 +79,21 @@ jobs:
         run: |
           set -eu
 
-          changes=$(git diff --name-only HEAD^1 HEAD)
+          # Check if `pyproject.toml` has changed in this pull-request
+          # ├── False
+          # │   └── Exit 0
+          # └── True
+          #     └── Check if lockfiles have changed in this pull-request
+          #         ├── True
+          #         │   └── Exit 0
+          #         └── False
+          #             └── Recompile lockfiles and check if they have to change
+          #                 ├── False
+          #                 │   └── Exit 0
+          #                 └── True
+          #                     └── Exit 1
 
-          # check if `pyproject.toml` has changed
-          # if so, check if requirements are unchanged
-          # if so, recompile requirements and check for modifications
-          # if so, exit on error
-          # otherwise, exit on success
+          changes=$(git diff --name-only HEAD^1 HEAD)
 
           if
             (echo "${changes}" | grep -qE "skore/pyproject.toml") &&
