@@ -1004,7 +1004,7 @@ def test_cross_validation_timings(
     timings = report.metrics.timings(aggregate=aggregate)
     assert isinstance(timings, pd.DataFrame)
 
-    assert timings.index.tolist() == ["Fit time"]
+    assert timings.index.tolist() == ["Fit time (s)"]
     assert timings.columns.tolist() == expected_columns
 
     repr_str = repr(timings)
@@ -1014,7 +1014,7 @@ def test_cross_validation_timings(
     timings = report.metrics.timings(aggregate=aggregate)
     assert isinstance(timings, pd.DataFrame)
 
-    assert timings.index.tolist() == ["Fit time", "Predict time train"]
+    assert timings.index.tolist() == ["Fit time (s)", "Predict time train (s)"]
     assert timings.columns.tolist() == expected_columns
 
     repr_str = repr(timings)
@@ -1026,9 +1026,9 @@ def test_cross_validation_timings(
     assert isinstance(timings, pd.DataFrame)
 
     assert timings.index.tolist() == [
-        "Fit time",
-        "Predict time train",
-        "Predict time test",
+        "Fit time (s)",
+        "Predict time train (s)",
+        "Predict time test (s)",
     ]
     assert timings.columns.tolist() == expected_columns
 
@@ -1050,9 +1050,9 @@ def test_cross_validation_timings_flat_index(binary_classification_data):
     assert isinstance(timings, pd.DataFrame)
 
     actual_index = timings.index.tolist()
-    assert "Fit time" in actual_index
-    assert "Predict time train" in actual_index
-    assert "Predict time test" in actual_index
+    assert "Fit time (s)" in actual_index
+    assert "Predict time train (s)" in actual_index
+    assert "Predict time test (s)" in actual_index
 
     repr_str = repr(timings)
     assert "Fit time (s)" in repr_str

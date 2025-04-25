@@ -307,31 +307,17 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
             timings = timings.aggregate(func=aggregate, axis=1)
         timings.index = timings.index.str.replace("_", " ").str.capitalize()
 
-        class TimingsDataFrame(pd.DataFrame):
-            def __init__(self, *args, **kwargs):
-                super().__init__(*args, **kwargs)
+        # Add (s) to time measurements
+        new_index = []
+        for idx in timings.index:
+            if "time" in idx.lower():
+                new_index.append(f"{idx} (s)")
+            else:
+                new_index.append(idx)
 
-            @property
-            def index_without_units(self):
-                """Return the index without units. Used for internal functions."""
-                return self.index.copy()
+        timings.index = pd.Index(new_index)
 
-            def _repr_html_(self):
-                df_display = self.copy()
-                df_display.index = df_display.index.str.replace(
-                    r"(Fit time|Predict time.*)$", r"\1 (s)", regex=True
-                )
-                return df_display._repr_html_()
-
-            def __repr__(self):
-                df_display = self.copy()
-                df_display.index = df_display.index.str.replace(
-                    r"(Fit time|Predict time.*)$", r"\1 (s)", regex=True
-                )
-                return df_display.__repr__()
-
-        result = TimingsDataFrame(timings)
-        return result
+        return timings
 
     @available_if(_check_estimator_report_has_method("metrics", "accuracy"))
     def accuracy(
