@@ -150,7 +150,7 @@ convention = "numpy"
 
 [tool.mypy]
 ignore_missing_imports = true
-exclude = ["src/skore/externals/.*", "ci/*", "hatch/*", "tests/*"]
+exclude = ["src/skore/externals/.*", "hatch/*", "tests/*"]
 
 [[tool.mypy.overrides]]
 module = ["diskcache.*", "sklearn.*"]

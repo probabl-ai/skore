@@ -191,8 +191,7 @@ examples/plot_*.png
 
 # Include excluded directories from github-actions
 !/.github/**/build/
-!/skore/ci/**/.python-version
-!/skore-remote-project/ci/**/.python-version
+!/ci/**/.python-version
 
 # Exclude hatch artifacts
 skore/LICENSE
