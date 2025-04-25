@@ -270,7 +270,9 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         self,
         *,
         data_source: Literal["train", "test", "X_y"],
-        response_method: Literal["predict", "predict_proba", "decision_function"] = "predict",
+        response_method: Literal[
+            "predict", "predict_proba", "decision_function"
+        ] = "predict",
         pos_label: Optional[Any] = None,
     ) -> ArrayLike:
         """Get estimator's predictions.
@@ -287,7 +289,8 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             - "train" : use the train set provided when creating the report.
             - "X_y" : use the provided `X` and `y` to compute the metric.
 
-        response_method : {"predict", "predict_proba", "decision_function"}, default="predict"
+        response_method : {"predict", "predict_proba", "decision_function"},
+        default="predict"
             The response method to use.
 
         pos_label : int, float, bool or str, default=None
