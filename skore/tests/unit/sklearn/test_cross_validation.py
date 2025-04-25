@@ -990,7 +990,7 @@ def test_cross_validation_timings(
     assert timings.columns.tolist() == expected_columns
 
 
-class BrokenEstimator(BaseEstimator, ClassifierMixin):
+class BrokenEstimator(ClassifierMixin, BaseEstimator):
     def fit(self, X, y):
         raise ValueError("Intentional failure for testing")
 

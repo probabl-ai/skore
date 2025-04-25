@@ -213,6 +213,11 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                     "might not contain all the expected results. "
                     f"Traceback: \n{e}"
                 )
+            if len(estimator_reports) == 0:
+                raise RuntimeError(
+                    "Cross-validation failed: no estimators were successfully fitted. "
+                    "Please check your data, estimator, or cross-validation setup."
+                ) from e
 
             console.print(
                 Panel(
@@ -222,12 +227,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                     border_style="cyan",
                 )
             )
-            if len(estimator_reports) == 0:
-                raise RuntimeError(
-                    "Cross-validation failed: no estimators were successfully fitted. "
-                    "Please check your data, estimator, or cross-validation setup."
-                ) from None
-
         return estimator_reports
 
     def clear_cache(self) -> None:
