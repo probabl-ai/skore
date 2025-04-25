@@ -77,14 +77,27 @@ jobs:
 
       - name: Check lockfiles are not obsolete
         run: |
+          set -eu
+
           changes=$(git diff --name-only HEAD^1 HEAD)
 
+          # check if `pyproject.toml` has changed
+          # if so, check if requirements are unchanged
+          # if so, recompile requirements and check for modifications
+          # if so, exit on error
+          # otherwise, exit on success
+
           if
-            (echo "${changes}" | grep -qE 'skore/(test-)?requirements.in') &&
+            (echo "${changes}" | grep -qE "skore/pyproject.toml") &&
             (echo "${changes}" | (! grep -qE "skore/ci/requirements/.*/test-requirements.txt"))
           then
-            echo '::error title=backend-lockfiles:: Lockfiles obsolete, please execute `$ cd skore/ci; bash pip-compile.sh`'
-            exit 1
+              curl -LsSf https://astral.sh/uv/install.sh | sh
+              bash skore/ci/pip-compile.sh
+
+              if (git diff --name-only | grep -qE "skore/ci/requirements/.*/test-requirements.txt"); then
+                  echo '::error title=backend-lockfiles::Lockfiles obsolete, please execute `$ bash skore/ci/pip-compile.sh`'
+                  exit 1
+             fi
           fi
 
   backend-test:
