@@ -349,9 +349,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         >>> estimator = LogisticRegression().fit(X_train, y_train)
         >>> from skore import EstimatorReport
         >>> report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-        >>> predictions = report.get_predictions(
-        ...     data_source="test"
-        ... )
+        >>> predictions = report.get_predictions(data_source="test")
         >>> predictions.shape
         (25,)
         """

@@ -292,7 +292,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         response_method : {"predict", "predict_proba", "decision_function"},
         default : "predict"
 
-            The response method to use.
+
 
         pos_label : int, float, bool or str, default=None
             The positive class when it comes to binary classification. When
@@ -337,9 +337,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         ... )
         >>> report = ComparisonReport([estimator_report_1, estimator_report_2])
         >>> report.cache_predictions()
-        >>> predictions = report.get_predictions(
-        ...     data_source="test"
-        ... )
+        >>> predictions = report.get_predictions(data_source="test")
         >>> print([split_predictions.shape for split_predictions in predictions])
         [(25,), (25,)]
         """

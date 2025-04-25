@@ -354,9 +354,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         >>> estimator = LogisticRegression()
         >>> from skore import CrossValidationReport
         >>> report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=2)
-        >>> predictions = report.get_predictions(
-        ...     data_source="test"
-        ... )
+        >>> predictions = report.get_predictions(data_source="test")
         >>> print([split_predictions.shape for split_predictions in predictions])
         [(50,), (50,)]
         """
