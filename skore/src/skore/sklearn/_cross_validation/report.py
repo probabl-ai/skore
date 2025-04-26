@@ -299,7 +299,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         self,
         *,
         data_source: Literal["train", "test", "X_y"],
-        response_method: Literal["predict", "predict_proba", "decision_function"] = "predict",
+        response_method: Literal[
+            "predict", "predict_proba", "decision_function"
+        ] = "predict",
         X: Optional[ArrayLike] = None,
         pos_label: Optional[Any] = None,
     ) -> ArrayLike:
@@ -318,7 +320,8 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             - "X_y" : use the train set provided when creating the report and the target
               variable.
 
-        response_method : {"predict", "predict_proba", "decision_function"}, default="predict"
+        response_method : {"predict", "predict_proba", "decision_function"},
+        default="predict"
             The response method to use.
 
         X : array-like of shape (n_samples, n_features), optional
