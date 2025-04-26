@@ -134,7 +134,6 @@ We use pre-commit hooks to ensure code quality before changes are committed. The
 
     pre-commit run --all-files
 
-Always run pre-commit checks before creating a pull request to ensure your code meets our standards.
 
 Documentation
 =============
