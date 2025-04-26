@@ -579,23 +579,6 @@ def rename_features(feature_names):
         for name in feature_names
     ]
 # %%
-
-def rename_features(feature_names):
-    """
-    Rename feature names by replacing 'kmeans__' with 'geospatial__'
-    and removing 'remainder__' prefixes.
-
-    Args:
-        feature_names (list of str): List of feature names to rename.
-
-    Returns:
-        list of str: Renamed feature names.
-    """
-    return [
-        name.replace("kmeans__", "geospatial__").replace("remainder__", "")
-        for name in feature_names
-    ]
-# %%
 selectk_features = rename_features(
     selectk_ridge_report.estimator_[:-1].get_feature_names_out()
 )
@@ -611,6 +594,15 @@ print(selectk_features)
 # And here is the feature importance based on our model (sorted by absolute values):
 
 # %%
+(selectk_ridge_report.feature_importance.coefficients()
+ .rename(index=lambda x: rename_features([x])[0])
+ .sort_values(by="Coefficient", key=abs, ascending=True)
+ .tail(15)
+ .plot.barh(
+     title="Model weights",
+     xlabel="Coefficient",
+     ylabel="Feature",
+ ))
 (selectk_ridge_report.feature_importance.coefficients()
  .rename(index=lambda x: rename_features([x])[0])
  .sort_values(by="Coefficient", key=abs, ascending=True)
@@ -771,6 +763,13 @@ plt.tight_layout()
      xlabel="MDI",
      ylabel="Feature",
  ))
+(tree_report.feature_importance.mean_decrease_impurity()
+ .rename(index=lambda x: rename_features([x])[0])
+ .plot.barh(
+     title=f"Feature importance of {tree_report.estimator_name_}",
+     xlabel="MDI",
+     ylabel="Feature",
+ ))
 plt.tight_layout()
 
 # %%
@@ -829,6 +828,13 @@ print(f"Number of trees in the forest: {n_estimators}")
 # Let us look into the MDI of our random forest:
 
 # %%
+(rf_report.feature_importance.mean_decrease_impurity()
+ .rename(index=lambda x: rename_features([x])[0])
+ .plot.barh(
+     title=f"Feature importance of {rf_report.estimator_name_}",
+     xlabel="MDI",
+     ylabel="Feature",
+ ))
 (rf_report.feature_importance.mean_decrease_impurity()
  .rename(index=lambda x: rename_features([x])[0])
  .plot.barh(
@@ -946,6 +952,7 @@ def plot_permutation_train_test(est_report):
     )
     ax.set_xlabel("$R^2$")
     ax.set_yticks([x + 0.2 for x in range(len(est_report.X_train.columns))])
+    ax.set_yticklabels(rename_features(est_report.X_train.columns))
     ax.set_yticklabels(rename_features(est_report.X_train.columns))
 
     plt.tight_layout()
