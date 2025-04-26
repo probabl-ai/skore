@@ -774,7 +774,7 @@ def test_comparison_report_get_predictions_error(binary_classification_model):
     report = ComparisonReport([estimator_report, estimator_report])
 
     with pytest.raises(ValueError, match="Invalid data source"):
-        report.get_predictions(data_source="invalid", response_method="predict")
+        report.get_predictions(data_source="invalid")
 
 
 def test_comparison_report_timings(binary_classification_model):
