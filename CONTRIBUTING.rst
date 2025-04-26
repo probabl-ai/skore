@@ -52,20 +52,25 @@ You'll need ``python >=3.9, <3.13``.
 Setting up your development environment
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-We strongly recommend using a virtual environment to isolate your development dependencies:
+Fork the repository on GitHub, then clone your fork locally:
 
 .. code-block:: bash
 
-    # Create a virtual environment
-    python -m venv venv
+    # Clone your fork of the repo
+    git clone https://github.com/YOUR_USERNAME/skore.git
     
-    # Activate the virtual environment
-    # On Windows:
-    venv\Scripts\activate
-    # On macOS/Linux:
-    source venv/bin/activate
+    # Navigate to the newly cloned directory
+    cd skore
+    
+    # Add the original repository as a remote
+    git remote add upstream https://github.com/probabl-ai/skore.git
+    
+    # Create a new branch for your issue
+    git checkout -b issue-NAME_OF_ISSUE
 
-Once your virtual environment is activated, install the development dependencies:
+We strongly recommend using a virtual environment to isolate your development dependencies.
+
+Once your environment is set up, install the development dependencies:
 
 .. code-block:: bash
 
@@ -97,12 +102,7 @@ Tests
 Unit Testing Requirements
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-All contributions must include appropriate unit tests using ``pytest``. Tests are required for:
-
-- Any new features
-- Bug fixes
-- New use cases
-- Modifications to existing functionality
+All contributions must include appropriate unit tests using ``pytest``. Tests are required for any executable code - this includes all new features, bug fixes, new use cases, and modifications to existing functionality. The only exception is documentation-only changes.
 
 Before submitting your PR, ensure that:
 
@@ -134,7 +134,6 @@ We use pre-commit hooks to ensure code quality before changes are committed. The
 
     pre-commit run --all-files
 
-Always run pre-commit checks before creating a pull request to ensure your code meets our standards.
 
 Documentation
 =============
@@ -190,7 +189,7 @@ The examples are stored in the `examples` folder:
 - They are classified in subcategories.
 - They should be written in a python script (`.py`), with cells marked by `# %%`, to separate code cells and markdown cells, as they will be rendered as notebooks (`.ipynb`).
 - The file should start with a docstring giving the example title.
-- No example should require to have large files stored in this repository. For example, no dataset should be downloaded in the script.
+- No example should require to have large files stored in this repository. For example, no dataset should be stored, it should be downloaded in the script.
 - When built (using `make html` for example), these examples will automatically be converted into rst files in the `sphinx/auto_examples` subfolder. This subfolder is listed in the gitignore and cannot be pushed.
 
 Guidelines for creating effective examples:
