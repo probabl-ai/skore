@@ -341,11 +341,7 @@ def test_estimator_report_flat_index(binary_classification_data):
         "predict_time_s",
     ]
 
-    # for metric in metrics:
-    #     assert metric in result.index
-
-    # for prefix in time_metrics_prefix:
-    #     assert any(idx.startswith(prefix) for idx in result.index)
+    assert result.columns.tolist() == ["RandomForestClassifier"]
 
 
 def test_estimator_report_get_predictions():

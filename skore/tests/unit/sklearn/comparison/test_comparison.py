@@ -459,58 +459,29 @@ def test_comparison_report_report_metrics_X_y(binary_classification_model):
 
     comp = ComparisonReport([estimator_report, estimator_report])
 
-    # Test with flat_index=True
-    result_flat = comp.metrics.report_metrics(
-        data_source="X_y",
-        X=X_train[:10],
-        y=y_train[:10],
-        flat_index=True,
-    )
-    assert "Favorability" not in result_flat.columns
-
-    metrics = [
-        "precision_0",
-        "precision_1",
-        "recall_0",
-        "recall_1",
-        "roc_auc",
-        "brier_score",
-    ]
-    time_metrics_prefix = ["fit_time", "predict_time"]
-
-    for metric in metrics:
-        assert metric in result_flat.index
-
-    for prefix in time_metrics_prefix:
-        assert any(idx.startswith(prefix) for idx in result_flat.index)
-
-    # Check the columns
-    expected_columns = pd.Index(
-        ["LogisticRegression", "LogisticRegression"],
-        name="Estimator",
-    )
-    pd.testing.assert_index_equal(result_flat.columns, expected_columns)
-
-    # Test with default MultiIndex (flat_index=False)
     result = comp.metrics.report_metrics(
         data_source="X_y",
         X=X_train[:10],
         y=y_train[:10],
-        flat_index=False,
     )
     assert "Favorability" not in result.columns
 
-    expected_index = pd.Index(
+    expected_index = pd.MultiIndex.from_tuples(
         [
-            "precision_0",
-            "precision_1",
-            "recall_0",
-            "recall_1",
-            "roc_auc",
-            "brier_score",
-            "fit_time_s",
-            "predict_time_s",
-        ]
+            ("Precision", 0),
+            ("Precision", 1),
+            ("Recall", 0),
+            ("Recall", 1),
+            ("ROC AUC", ""),
+            ("Brier score", ""),
+            ("Fit time (s)", ""),
+            ("Predict time (s)", ""),
+        ],
+        names=["Metric", "Label / Average"],
+    )
+    expected_columns = pd.Index(
+        ["LogisticRegression", "LogisticRegression"],
+        name="Estimator",
     )
 
     pd.testing.assert_index_equal(result.index, expected_index)
@@ -594,11 +565,7 @@ def test_cross_validation_report_flat_index(binary_classification_model):
         "predict_time_s",
     ]
 
-    # for metric in metrics:
-    #     assert metric in result.index
-
-    # for prefix in time_metrics_prefix:
-    #     assert any(idx.startswith(prefix) for idx in result.index)
+    assert result.columns.tolist() == ["report_1", "report_2"]
 
 
 def test_estimator_report_report_metrics_indicator_favorability(
