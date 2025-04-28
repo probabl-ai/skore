@@ -2,29 +2,17 @@
 name = "skore-remote-project"
 dynamic = ["license", "readme", "version"]
 requires-python = ">=3.9, <3.13"
-dependencies = [
-  "httpx",
-  "joblib",
-  "rich",
-  "skops",
-]
+maintainers = [{ name = "skore developers", email = "skore@signal.probabl.ai" }]
+dependencies = []
 
 [project.optional-dependencies]
 test = [
-  "altair>=5,<6",
-  "pillow",
-  "plotly>=5,<6",
-  "polars",
   "pre-commit",
   "pytest",
   "pytest-cov",
   "pytest-order",
   "pytest-randomly",
   "pytest-xdist",
-  "respx",
-  "scikit-learn",
-  "skore",
-  "skrub",
   "xdoctest",
 ]
 
@@ -89,4 +77,4 @@ convention = "numpy"
 
 [tool.mypy]
 ignore_missing_imports = true
-exclude = ["ci/*", "hatch/*", "tests/*"]
+exclude = ["hatch/*", "tests/*"]
