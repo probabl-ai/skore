@@ -3,6 +3,8 @@ name: pr-lint-title
 on:
   pull_request:
     types: [opened, reopened, edited, synchronize]
+  merge_group:
+    types: [checks_requested]
 
 permissions:
   pull-requests: read
@@ -10,6 +12,7 @@ permissions:
 jobs:
   pr-lint-title:
     runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' }}
     steps:
       - uses: actions/setup-node@v4
         with:
