@@ -100,7 +100,7 @@ class Metadata:
     @metadata_function
     def ml_task(self) -> str:
         """Return the type of ML task covered by the report."""
-        return self.report.ml_task
+        return self.report._ml_task
 
     @metadata_function
     def metrics(self) -> list[Metric]:
