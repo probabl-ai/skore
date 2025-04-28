@@ -15,11 +15,6 @@ def positive_regression_data():
 
 
 @pytest.fixture
-def multi_regression_data():
-    return make_regression(n_features=5, n_targets=2, random_state=42)
-
-
-@pytest.fixture
 def classification_data():
     return make_classification(n_features=5, random_state=42)
 

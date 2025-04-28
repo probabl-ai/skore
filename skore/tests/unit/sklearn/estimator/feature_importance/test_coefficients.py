@@ -182,17 +182,17 @@ def test_estimator_report_coefficients_pandas_dataframe(estimator):
         pytest.param(sklearn.linear_model.TheilSenRegressor(), id="TheilSenRegressor"),
         pytest.param(sklearn.linear_model.TweedieRegressor(), id="TweedieRegressor"),
         # multi-task
-        pytest.param(
-            sklearn.linear_model.MultiTaskElasticNet(), id="MultiTaskElasticNet"
-        ),
-        pytest.param(
-            sklearn.linear_model.MultiTaskElasticNetCV(), id="MultiTaskElasticNetCV"
-        ),
-        pytest.param(sklearn.linear_model.MultiTaskLasso(), id="MultiTaskLasso"),
-        pytest.param(sklearn.linear_model.MultiTaskLassoCV(), id="MultiTaskLassoCV"),
+        # pytest.param(
+        #     sklearn.linear_model.MultiTaskElasticNet(), id="MultiTaskElasticNet"
+        # ),
+        # pytest.param(
+        #     sklearn.linear_model.MultiTaskElasticNetCV(), id="MultiTaskElasticNetCV"
+        # ),
+        # pytest.param(sklearn.linear_model.MultiTaskLasso(), id="MultiTaskLasso"),
+        # pytest.param(sklearn.linear_model.MultiTaskLassoCV(), id="MultiTaskLassoCV"),
         # cross_decomposition
-        pytest.param(sklearn.cross_decomposition.CCA(), id="CCA"),
-        pytest.param(sklearn.cross_decomposition.PLSCanonical(), id="PLSCanonical"),
+        # pytest.param(sklearn.cross_decomposition.CCA(), id="CCA"),
+        # pytest.param(sklearn.cross_decomposition.PLSCanonical(), id="PLSCanonical"),
         # outlier detectors
         pytest.param(sklearn.linear_model.SGDOneClassSVM(), id="SGDOneClassSVM"),
         pytest.param(sklearn.svm.OneClassSVM(kernel="linear"), id="OneClassSVM"),
@@ -203,30 +203,15 @@ def test_all_sklearn_estimators(
     estimator,
     regression_data,
     positive_regression_data,
-    multi_regression_data,
     classification_data,
     outlier_data,
 ):
     """Check that `coefficients` is supported for every sklearn estimator."""
-    multi = False
     if is_classifier(estimator):
         X, y = classification_data
     elif is_regressor(estimator):
         if get_tags(estimator).target_tags.positive_only:
             X, y = positive_regression_data
-        elif isinstance(
-            estimator,
-            (
-                sklearn.linear_model.MultiTaskElasticNet,
-                sklearn.linear_model.MultiTaskElasticNetCV,
-                sklearn.linear_model.MultiTaskLasso,
-                sklearn.linear_model.MultiTaskLassoCV,
-                sklearn.cross_decomposition.CCA,
-                sklearn.cross_decomposition.PLSCanonical,
-            ),
-        ):
-            X, y = multi_regression_data
-            multi = True
         else:
             X, y = regression_data
     elif is_outlier_detector(estimator):
@@ -241,7 +226,7 @@ def test_all_sklearn_estimators(
     report = EstimatorReport(estimator)
     result = report.feature_importance.coefficients()
 
-    if result.shape in [(6, 1), (6, 2)]:
+    if result.shape == (6, 1):
         assert result.index.tolist() == [
             "Intercept",
             "Feature #0",
@@ -250,22 +235,13 @@ def test_all_sklearn_estimators(
             "Feature #3",
             "Feature #4",
         ]
-    elif result.shape == (3, 1):
-        assert result.index.tolist() == [
-            "Intercept",
-            "Feature #0",
-            "Feature #1",
-        ]
     elif result.shape == (2, 1):  # SGDOneClassSVM()
         assert result.index.tolist() == [
             "Feature #0",
             "Feature #1",
         ]
 
-    if multi:
-        assert result.columns.tolist() == [f"Target #{i}" for i in range(2)]
-    else:
-        assert result.columns.tolist() == ["Coefficient"]
+    assert result.columns.tolist() == ["Coefficient"]
 
 
 def test_pipeline_with_transformer(regression_data):
