@@ -30,20 +30,6 @@ class TestSkrubTableReportItem:
         with pytest.raises(ItemTypeError):
             SkrubTableReportItem.factory(None)
 
-    @pytest.fixture
-    def reproducible(self, monkeypatch):
-        import matplotlib
-
-        monkeypatch.setenv("SOURCE_DATE_EPOCH", "0")
-        monkeypatch.setattr("secrets.token_hex", lambda: "<token>")
-
-        try:
-            matplotlib.rcParams["svg.hashsalt"] = "<hashsalt>"
-            matplotlib.rcParams["svg.id"] = "<id>"
-            yield
-        finally:
-            matplotlib.rcdefaults()
-
     @pytest.mark.usefixtures("reproducible")
     def test_representation(self, monkeypatch, now):
         report = TableReport(

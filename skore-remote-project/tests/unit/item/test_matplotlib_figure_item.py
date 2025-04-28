@@ -22,19 +22,6 @@ class TestMatplotlibFigureItem:
         with pytest.raises(ItemTypeError):
             MatplotlibFigureItem.factory(None)
 
-    @pytest.fixture
-    def reproducible(self, monkeypatch):
-        import matplotlib
-
-        monkeypatch.setenv("SOURCE_DATE_EPOCH", "0")
-
-        try:
-            matplotlib.rcParams["svg.hashsalt"] = "<hashsalt>"
-            matplotlib.rcParams["svg.id"] = "<id>"
-            yield
-        finally:
-            matplotlib.rcdefaults()
-
     @pytest.mark.usefixtures("reproducible")
     def test_representation(self, tmp_path):
         figure, ax = subplots()
