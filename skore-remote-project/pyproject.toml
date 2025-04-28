@@ -3,16 +3,33 @@ name = "skore-remote-project"
 dynamic = ["license", "readme", "version"]
 requires-python = ">=3.9, <3.13"
 maintainers = [{ name = "skore developers", email = "skore@signal.probabl.ai" }]
-dependencies = []
+dependencies = [
+  "httpx",
+  "joblib",
+  "matplotlib",
+  "rich",
+  "scikit-learn",
+  "skops",
+]
 
 [project.optional-dependencies]
 test = [
+  "altair",
+  "numpy",
+  "pillow",
+  "plotly",
+  "polars",
   "pre-commit",
+  "pyarrow",  # needed for polars.to_pandas()
   "pytest",
   "pytest-cov",
   "pytest-order",
   "pytest-randomly",
   "pytest-xdist",
+  "respx",
+  "scikit-learn<1.7",
+  "skore",
+  "skrub",
   "xdoctest",
 ]
 

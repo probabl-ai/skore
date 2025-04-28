@@ -12,10 +12,6 @@ from inspect import getmembers, ismethod, signature
 from operator import attrgetter
 from typing import TYPE_CHECKING
 
-from joblib import hash as joblib_hash
-from matplotlib.pyplot import close, subplots
-from sklearn.utils import estimator_html_repr
-
 from .item import ItemTypeError, lazy_is_instance
 from .matplotlib_figure_item import MatplotlibFigureItem
 from .media_item import MediaItem
@@ -97,7 +93,9 @@ class Metadata:
     @metadata_function
     def dataset_fingerprint(self) -> str:
         """Return the hash of the targets in the test-set."""
-        return joblib_hash(self.report.y_test)
+        import joblib
+
+        return joblib.hash(self.report.y_test)
 
     @metadata_function
     def ml_task(self) -> str:
@@ -217,6 +215,8 @@ class Representations:
 
     def mpl(self, name, category, **kwargs) -> Union[Representation, None]:
         """Return sub-representation made of ``matplotlib`` figures."""
+        from matplotlib.pyplot import close
+
         try:
             function = attrgetter(name)(self.report)
         except AttributeError:
@@ -227,11 +227,10 @@ class Representations:
                 k: v for k, v in kwargs.items() if k in function_parameters
             }
             display = function(**function_kwargs)
-            figure, ax = subplots()
-            display.plot(ax)
-            close(figure)
+            display.plot()
+            close(display.figure_)
 
-            item = MatplotlibFigureItem.factory(figure)
+            item = MatplotlibFigureItem.factory(display.figure_)
 
             return {
                 "key": name.split(".")[-1],
@@ -265,8 +264,12 @@ class Representations:
 
     def estimator_html_repr(self) -> Representation:
         """Return ``sklearn`` HTML representation of the report's estimator."""
-        e = estimator_html_repr(self.report.estimator_)
-        item = MediaItem.factory(e, media_type="text/html")
+        import sklearn.utils
+
+        item = MediaItem.factory(
+            sklearn.utils.estimator_html_repr(self.report.estimator_),
+            media_type="text/html",
+        )
 
         return {
             "key": "estimator_html_repr",
