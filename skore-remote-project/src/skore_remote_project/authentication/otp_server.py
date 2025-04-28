@@ -7,10 +7,7 @@ from threading import Thread
 from typing import Callable
 from urllib.parse import parse_qs, urlparse
 
-SUCCESS_PAGE = b"""
-<script>window.close();</script>
-<p>You can now close this page.</p>
-"""
+SUCCESS_PAGE = b"<p>You can now close this page.</p>"
 
 
 def _get_handler(callback):
