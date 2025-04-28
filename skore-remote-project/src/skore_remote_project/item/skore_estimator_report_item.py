@@ -44,12 +44,14 @@ if TYPE_CHECKING:
 
 def metadata_function(function: Any) -> MetadataFunction:
     """
-    Decorate function that has to be marked as ``metadata``.
+    Decorate function that has to be annotated as ``metadata``.
+
+    Annotated functions as ``medatata`` are dynamically retrieved and called at runtime
+    to compute a snapshot of all the available metadata of a report.
 
     Notes
     -----
-    Marked functions as ``medatata`` are dynamically retrieved and called at runtime to
-    compute a snapshot of all the available metadata of a report.
+    This decorator uses the `function attributes <https://peps.python.org/pep-0232/>`_.
     """
     function.metadata = ...
     return function
