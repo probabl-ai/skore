@@ -54,15 +54,15 @@ def login(timeout=600, auto_otp=True, port=0):
     if is_valid:
         return token
     if auto_otp:
-        access, refreshment, expires_at = None, None, None
+        access_token, refresh_token, expires_at = None, None, None
 
         def callback(state):
-            nonlocal access
-            nonlocal refreshment
+            nonlocal access_token
+            nonlocal refresh_token
             nonlocal expires_at
 
             api.post_oauth_device_callback(state=state, user_code=user_code)
-            access, refreshment, expires_at = api.get_oauth_device_token(
+            access_token, refresh_token, expires_at = api.get_oauth_device_token(
                 device_code=device_code
             )
 
@@ -78,7 +78,7 @@ def login(timeout=600, auto_otp=True, port=0):
 
             start = datetime.now()
 
-            while access is None or refreshment is None or expires_at is None:
+            while access_token is None or refresh_token is None or expires_at is None:
                 if (datetime.now() - start).total_seconds() > timeout:
                     raise AuthenticationError("Timeout") from None
 
@@ -86,7 +86,11 @@ def login(timeout=600, auto_otp=True, port=0):
         finally:
             server.stop()
 
-        return Token(access=access, refreshment=refreshment, expires_at=expires_at)
+        return Token(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            expires_at=expires_at,
+        )
 
     else:
         # Request a new authorization URL

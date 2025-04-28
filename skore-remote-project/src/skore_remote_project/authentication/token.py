@@ -17,21 +17,33 @@ class Token:
 
     def __init__(
         self,
-        access: Optional[str] = None,
-        refreshment: Optional[str] = None,
+        access_token: Optional[str] = None,
+        refresh_token: Optional[str] = None,
         expires_at: Optional[str] = None,
     ):
-        if access is not None and refreshment is not None and expires_at is not None:
-            self.access = access
-            self.refreshment = refreshment
+        if (
+            access_token is not None
+            and refresh_token is not None
+            and expires_at is not None
+        ):
+            self.access_token = access_token
+            self.refresh_token = refresh_token
             self.expires_at = expires_at
 
             # Save the tokens to the disk to prevent user to login more than once, as
             # long as the token is valid or can be refreshed.
-            self.filepath.write_text(json.dumps((access, refreshment, expires_at)))
+            self.filepath.write_text(
+                json.dumps(
+                    (
+                        access_token,
+                        refresh_token,
+                        expires_at,
+                    )
+                )
+            )
         else:
             try:
-                self.access, self.refreshment, self.expires_at = json.loads(
+                self.access_token, self.refresh_token, self.expires_at = json.loads(
                     self.filepath.read_text()
                 )
             except FileNotFoundError:
@@ -58,8 +70,8 @@ class Token:
 
     def refresh(self):
         """Call the API to get a fresh access token."""
-        self.__init__(*post_oauth_refresh_token(self.refreshment))
+        self.__init__(*post_oauth_refresh_token(self.refresh_token))
 
     def __repr__(self):
         """Repr implementation."""
-        return f"Token('{self.access:.10}[...]')"
+        return f"Token('{self.access_token:.10}[...]')"

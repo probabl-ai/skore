@@ -35,8 +35,8 @@ class TestAuthenticatedClient:
         with AuthenticatedClient() as client:
             client.get("foo")
 
-            assert client.token.access == "A"
-            assert client.token.refreshment == "B"
+            assert client.token.access_token == "A"
+            assert client.token.refresh_token == "B"
             assert client.token.expires_at == DATETIME_MAX
 
     @pytest.mark.respx(assert_all_called=True)
@@ -60,8 +60,8 @@ class TestAuthenticatedClient:
         with AuthenticatedClient() as client:
             client.get("foo")
 
-            assert client.token.access == "D"
-            assert client.token.refreshment == "E"
+            assert client.token.access_token == "D"
+            assert client.token.refresh_token == "E"
             assert client.token.expires_at == DATETIME_MAX
 
     @pytest.mark.respx(assert_all_called=True)

@@ -47,8 +47,8 @@ def test_manual_login(monkeypatch, respx_mock, now, nowstr):
     token = login(auto_otp=False)
 
     assert webbrowser_open.url == "url"
-    assert token.access == "A"
-    assert token.refreshment == "B"
+    assert token.access_token == "A"
+    assert token.refresh_token == "B"
     assert token.expires_at == now
 
 
@@ -117,8 +117,8 @@ def test_auto_otp_login(monkeypatch, respx_mock, now, nowstr):
     token = login(auto_otp=True, port=65535)
 
     assert webbrowser_open.url == "url"
-    assert token.access == "A"
-    assert token.refreshment == "B"
+    assert token.access_token == "A"
+    assert token.refresh_token == "B"
     assert token.expires_at == now
 
 
@@ -160,8 +160,8 @@ def test_login_with_refresh(tmp_path, respx_mock):
 
     token = login(auto_otp=True)
 
-    assert token.access == "D"
-    assert token.refreshment == "E"
+    assert token.access_token == "D"
+    assert token.refresh_token == "E"
     assert token.expires_at == second
 
 
@@ -202,6 +202,6 @@ def test_login_with_existing_token(now, tmp_path):
 
     token = login(auto_otp=True)
 
-    assert token.access == "A"
-    assert token.refreshment == "B"
+    assert token.access_token == "A"
+    assert token.refresh_token == "B"
     assert token.expires_at == tomorrow

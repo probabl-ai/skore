@@ -13,8 +13,8 @@ class TestToken:
         token = Token("A", "B", nowstr)
 
         assert token.valid
-        assert token.access == "A"
-        assert token.refreshment == "B"
+        assert token.access_token == "A"
+        assert token.refresh_token == "B"
         assert token.expires_at == now
         assert json.loads((tmp_path / "skore.token").read_text()) == ["A", "B", nowstr]
 
@@ -23,16 +23,16 @@ class TestToken:
         token = Token()
 
         assert token.valid
-        assert token.access == "A"
-        assert token.refreshment == "B"
+        assert token.access_token == "A"
+        assert token.refresh_token == "B"
         assert token.expires_at == now
 
     def test_init_without_parameters_without_file(self):
         token = Token()
 
         assert not token.valid
-        assert not hasattr(token, "access")
-        assert not hasattr(token, "refreshment")
+        assert not hasattr(token, "access_token")
+        assert not hasattr(token, "refresh_token")
         assert not hasattr(token, "expires_at")
 
     @pytest.mark.respx
@@ -47,8 +47,8 @@ class TestToken:
         token = Token("A", "B", datetime(2000, 1, 1).isoformat())
         token.refresh()
 
-        assert token.access == "D"
-        assert token.refreshment == "E"
+        assert token.access_token == "D"
+        assert token.refresh_token == "E"
         assert token.expires_at == now
         assert json.loads((tmp_path / "skore.token").read_text()) == ["D", "E", nowstr]
 

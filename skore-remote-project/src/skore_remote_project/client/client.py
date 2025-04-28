@@ -51,7 +51,7 @@ class AuthenticatedClient(Client):
 
         # Overload headers with authorization token
         headers = kwargs.pop("headers", None) or {}
-        headers["Authorization"] = f"Bearer {self.token.access}"
+        headers["Authorization"] = f"Bearer {self.token.access_token}"
         response = super().request(
             method,
             urljoin(URI, str(url)),
