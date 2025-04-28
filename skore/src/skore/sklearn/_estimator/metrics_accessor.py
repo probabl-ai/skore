@@ -38,8 +38,8 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
     """
 
     _SCORE_OR_LOSS_INFO: dict[str, dict[str, str]] = {
-        "fit_time": {"name": "Fit time", "icon": "(↘︎)"},
-        "predict_time": {"name": "Predict time", "icon": "(↘︎)"},
+        "fit_time": {"name": "Fit time (s)", "icon": "(↘︎)"},
+        "predict_time": {"name": "Predict time (s)", "icon": "(↘︎)"},
         "accuracy": {"name": "Accuracy", "icon": "(↗︎)"},
         "precision": {"name": "Precision", "icon": "(↗︎)"},
         "recall": {"name": "Recall", "icon": "(↗︎)"},
@@ -371,6 +371,10 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                 results.columns = flatten_multi_index(results.columns)
             if isinstance(results.index, pd.MultiIndex):
                 results.index = flatten_multi_index(results.index)
+            if isinstance(results.index, pd.Index):
+                results.index = results.index.str.replace(
+                    r"\((.*)\)$", r"\1", regex=True
+                )
         return results
 
     def _compute_metric_scores(

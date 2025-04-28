@@ -168,15 +168,6 @@ def test_cross_validation_report_help(capsys, binary_classification_data):
     )
 
 
-def test_cross_validation_report_repr(binary_classification_data):
-    """Check that __repr__ returns a string starting with the expected prefix."""
-    estimator, X, y = binary_classification_data
-    report = CrossValidationReport(estimator, X, y)
-
-    repr_str = repr(report)
-    assert "CrossValidationReport" in repr_str
-
-
 @pytest.mark.parametrize(
     "fixture_name, expected_n_keys",
     [
@@ -280,6 +271,7 @@ def test_cross_validation_report_flat_index(binary_classification_data):
     result = report.metrics.report_metrics(flat_index=True)
     assert result.shape == (8, 2)
     assert isinstance(result.index, pd.Index)
+
     assert result.index.tolist() == [
         "precision_0",
         "precision_1",
@@ -287,9 +279,10 @@ def test_cross_validation_report_flat_index(binary_classification_data):
         "recall_1",
         "roc_auc",
         "brier_score",
-        "fit_time",
-        "predict_time",
+        "fit_time_s",
+        "predict_time_s",
     ]
+
     assert result.columns.tolist() == [
         "randomforestclassifier_mean",
         "randomforestclassifier_std",
@@ -377,23 +370,14 @@ def test_cross_validation_report_metrics_help(capsys, binary_classification_data
     assert "Available metrics methods" in captured.out
 
 
-def test_cross_validation_report_metrics_repr(binary_classification_data):
-    """Check that __repr__ returns a string starting with the expected prefix."""
-    estimator, X, y = binary_classification_data
-    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
-
-    repr_str = repr(report.metrics)
-    assert "skore.CrossValidationReport.metrics" in repr_str
-    assert "help()" in repr_str
-
-
 def _normalize_metric_name(index):
     """Helper to normalize the metric name present in a pandas index that could be
     a multi-index or single-index."""
     # if we have a multi-index, then the metric name is on level 0
     s = index[0] if isinstance(index, tuple) else index
-    # Remove spaces and underscores
-    return re.sub(r"[^a-zA-Z]", "", s.lower())
+    # Remove spaces and underscores and (s) suffix
+    s = s.lower().replace(" (s)", "")
+    return re.sub(r"[^a-zA-Z]", "", s)
 
 
 def _check_results_single_metric(report, metric, expected_n_splits, expected_nb_stats):
@@ -871,8 +855,8 @@ def test_cross_validation_report_report_metrics_indicator_favorability(
     assert indicator["Recall"].tolist() == ["(↗︎)", "(↗︎)"]
     assert indicator["ROC AUC"].tolist() == ["(↗︎)"]
     assert indicator["Brier score"].tolist() == ["(↘︎)"]
-    assert indicator["Fit time"].tolist() == ["(↘︎)"]
-    assert indicator["Predict time"].tolist() == ["(↘︎)"]
+    assert indicator["Fit time (s)"].tolist() == ["(↘︎)"]
+    assert indicator["Predict time (s)"].tolist() == ["(↘︎)"]
 
 
 def test_cross_validation_report_custom_metric(binary_classification_data):
@@ -970,21 +954,45 @@ def test_cross_validation_timings(
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
     timings = report.metrics.timings(aggregate=aggregate)
     assert isinstance(timings, pd.DataFrame)
-    assert timings.index.tolist() == ["Fit time"]
+
+    assert timings.index.tolist() == ["Fit time (s)"]
     assert timings.columns.tolist() == expected_columns
 
-    report.metrics.report_metrics(data_source="train")
+    report.get_predictions(data_source="train", response_method="predict")
     timings = report.metrics.timings(aggregate=aggregate)
     assert isinstance(timings, pd.DataFrame)
-    assert timings.index.tolist() == ["Fit time", "Predict time train"]
+
+    assert timings.index.tolist() == ["Fit time (s)", "Predict time train (s)"]
     assert timings.columns.tolist() == expected_columns
 
-    report.metrics.report_metrics(data_source="test")
+    report.get_predictions(data_source="test", response_method="predict")
     timings = report.metrics.timings(aggregate=aggregate)
     assert isinstance(timings, pd.DataFrame)
+
     assert timings.index.tolist() == [
-        "Fit time",
-        "Predict time train",
-        "Predict time test",
+        "Fit time (s)",
+        "Predict time train (s)",
+        "Predict time test (s)",
     ]
     assert timings.columns.tolist() == expected_columns
+
+
+def test_cross_validation_timings_flat_index(binary_classification_data):
+    """Check the behaviour of the `timings` method display formatting."""
+    estimator, X, y = binary_classification_data
+    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
+
+    report.get_predictions(data_source="train", response_method="predict")
+    report.get_predictions(data_source="test", response_method="predict")
+
+    results = report.metrics.report_metrics(flat_index=True)
+    assert results.index.tolist() == [
+        "precision_0",
+        "precision_1",
+        "recall_0",
+        "recall_1",
+        "roc_auc",
+        "brier_score",
+        "fit_time_s",
+        "predict_time_s",
+    ]

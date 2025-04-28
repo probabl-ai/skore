@@ -154,6 +154,10 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
                 results.columns = flatten_multi_index(results.columns)
             if isinstance(results.index, pd.MultiIndex):
                 results.index = flatten_multi_index(results.index)
+            if isinstance(results.index, pd.Index):
+                results.index = results.index.str.replace(
+                    r"\((.*)\)$", r"\1", regex=True
+                )
         return results
 
     @progress_decorator(description="Compute metric for each split")
@@ -282,14 +286,14 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         >>> from skore import CrossValidationReport
         >>> report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=2)
         >>> report.metrics.timings()
-                      mean       std
-        Fit time       ...       ...
+                          mean       std
+        Fit time (s)       ...       ...
         >>> report.cache_predictions(response_methods=["predict"])
         >>> report.metrics.timings()
-                                mean       std
-        Fit time                 ...       ...
-        Predict time test        ...       ...
-        Predict time train       ...       ...
+                                    mean       std
+        Fit time (s)                 ...       ...
+        Predict time test (s)        ...       ...
+        Predict time train (s)       ...       ...
         """
         timings: pd.DataFrame = pd.concat(
             [
@@ -304,6 +308,17 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
                 aggregate = [aggregate]
             timings = timings.aggregate(func=aggregate, axis=1)
         timings.index = timings.index.str.replace("_", " ").str.capitalize()
+
+        # Add (s) to time measurements
+        new_index = []
+        for idx in timings.index:
+            if "time" in idx.lower():
+                new_index.append(f"{idx} (s)")
+            else:
+                new_index.append(idx)
+
+        timings.index = pd.Index(new_index)
+
         return timings
 
     @available_if(_check_estimator_report_has_method("metrics", "accuracy"))
