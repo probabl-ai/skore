@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 import sklearn.linear_model
-from sklearn.base import is_classifier, is_outlier_detector, is_regressor
+from sklearn.base import is_classifier, is_regressor
 from sklearn.datasets import make_classification, make_regression
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.pipeline import Pipeline, make_pipeline
@@ -181,7 +181,10 @@ def test_estimator_report_coefficients_pandas_dataframe(estimator):
         pytest.param(sklearn.linear_model.SGDRegressor(), id="SGDRegressor"),
         pytest.param(sklearn.linear_model.TheilSenRegressor(), id="TheilSenRegressor"),
         pytest.param(sklearn.linear_model.TweedieRegressor(), id="TweedieRegressor"),
-        # multi-task
+        # The following models would be tested in the future when the `EstimatorReport`
+        # will have metrics specific to these models:
+        #
+        # 1. multi-task
         # pytest.param(
         #     sklearn.linear_model.MultiTaskElasticNet(), id="MultiTaskElasticNet"
         # ),
@@ -190,12 +193,12 @@ def test_estimator_report_coefficients_pandas_dataframe(estimator):
         # ),
         # pytest.param(sklearn.linear_model.MultiTaskLasso(), id="MultiTaskLasso"),
         # pytest.param(sklearn.linear_model.MultiTaskLassoCV(), id="MultiTaskLassoCV"),
-        # cross_decomposition
+        # 2. cross_decomposition
         # pytest.param(sklearn.cross_decomposition.CCA(), id="CCA"),
         # pytest.param(sklearn.cross_decomposition.PLSCanonical(), id="PLSCanonical"),
-        # outlier detectors
-        pytest.param(sklearn.linear_model.SGDOneClassSVM(), id="SGDOneClassSVM"),
-        pytest.param(sklearn.svm.OneClassSVM(kernel="linear"), id="OneClassSVM"),
+        # 3. outlier detectors
+        # pytest.param(sklearn.linear_model.SGDOneClassSVM(), id="SGDOneClassSVM"),
+        # pytest.param(sklearn.svm.OneClassSVM(kernel="linear"), id="OneClassSVM"),
     ],
 )
 def test_all_sklearn_estimators(
@@ -204,7 +207,6 @@ def test_all_sklearn_estimators(
     regression_data,
     positive_regression_data,
     classification_data,
-    outlier_data,
 ):
     """Check that `coefficients` is supported for every sklearn estimator."""
     if is_classifier(estimator):
@@ -214,32 +216,27 @@ def test_all_sklearn_estimators(
             X, y = positive_regression_data
         else:
             X, y = regression_data
-    elif is_outlier_detector(estimator):
-        X, y = outlier_data
     else:
-        raise Exception(
-            "Estimator not in ['classifier', 'regressor', 'outlier_detector']"
-        )
+        raise Exception("Estimator not in ['classifier', 'regressor']")
 
     estimator.fit(X, y)
 
     report = EstimatorReport(estimator)
     result = report.feature_importance.coefficients()
 
-    if result.shape == (6, 1):
-        assert result.index.tolist() == [
-            "Intercept",
-            "Feature #0",
-            "Feature #1",
-            "Feature #2",
-            "Feature #3",
-            "Feature #4",
-        ]
-    elif result.shape == (2, 1):  # SGDOneClassSVM()
-        assert result.index.tolist() == [
-            "Feature #0",
-            "Feature #1",
-        ]
+    rows = [
+        "Intercept",
+        "Feature #0",
+        "Feature #1",
+        "Feature #2",
+        "Feature #3",
+        "Feature #4",
+    ]
+    if result.shape == (5, 1):  # for TransformedTargetRegressor()
+        assert rows[1:] == result.index.tolist()
+    else:
+        assert result.shape == (6, 1)
+        assert rows == result.index.tolist()
 
     assert result.columns.tolist() == ["Coefficient"]
 

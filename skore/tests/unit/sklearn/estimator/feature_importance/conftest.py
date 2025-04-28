@@ -17,11 +17,3 @@ def positive_regression_data():
 @pytest.fixture
 def classification_data():
     return make_classification(n_features=5, random_state=42)
-
-
-@pytest.fixture
-def outlier_data():
-    rng = np.random.default_rng(42)
-    X = rng.normal(0, 1, (300, 2))
-    X[-10:] = rng.uniform(-10, 10, (10, 2))  # outliers
-    return X, np.zeros(len(X))  # y as dummy zeros
