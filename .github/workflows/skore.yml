@@ -61,8 +61,8 @@ jobs:
       - name: Lint
         working-directory: skore/
         run: |
-          pre-commit run --all-files ruff
-          pre-commit run --all-files mypy
+          git ls-files | xargs pre-commit run ruff --files
+          git ls-files | xargs pre-commit run mypy --files
 
   skore-lockfiles:
     runs-on: "ubuntu-latest"
