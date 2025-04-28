@@ -372,7 +372,9 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             if isinstance(results.index, pd.MultiIndex):
                 results.index = flatten_multi_index(results.index)
             if isinstance(results.index, pd.Index):
-                results.index = results.index.str.replace(r"_?\(s\)$", "_s", regex=True)
+                results.index = results.index.str.replace(
+                    r"\((.*)\)$", r"\1", regex=True
+                )
         return results
 
     def _compute_metric_scores(

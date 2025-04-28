@@ -985,16 +985,14 @@ def test_cross_validation_timings_flat_index(binary_classification_data):
     report.get_predictions(data_source="train", response_method="predict")
     report.get_predictions(data_source="test", response_method="predict")
 
-    timings = report.metrics.timings()
-    assert isinstance(timings, pd.DataFrame)
-
-    actual_index = timings.index.tolist()
-    assert "Fit time (s)" in actual_index
-    assert "Predict time train (s)" in actual_index
-    assert "Predict time test (s)" in actual_index
-
     results = report.metrics.report_metrics(flat_index=True)
-    time_indices = [idx for idx in results.index if "time" in idx]
-    for idx in time_indices:
-        assert idx.endswith("_s")
-        assert "(s)" not in idx
+    assert results.index.tolist() == [
+        "precision_0",
+        "precision_1",
+        "recall_0",
+        "recall_1",
+        "roc_auc",
+        "brier_score",
+        "fit_time_s",
+        "predict_time_s",
+    ]
