@@ -23,8 +23,10 @@ def mpl_backend(backend="agg"):
     """
     Context-manager for switching matplotlib backend.
 
-    Context-manager for switching matplotlib backend, to avoid popping windows in a
-    background thread.
+    Notes
+    -----
+    The ``agg`` backend is headless. No system-window pops in a background thread.
+    It is particularly useful on OSX.
     """
     import matplotlib
 
@@ -43,7 +45,7 @@ class MatplotlibFigureItem(PickleItem):
     @property
     def __representation__(self) -> dict:
         """Get the representation of the ``MatplotlibFigureItem`` instance."""
-        with mpl_backend(backend="agg"), BytesIO() as stream:
+        with mpl_backend(), BytesIO() as stream:
             self.__raw__.savefig(stream, format="svg", bbox_inches="tight")
 
             figure_bytes = stream.getvalue()
