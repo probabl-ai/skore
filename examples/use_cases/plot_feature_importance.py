@@ -562,7 +562,7 @@ X_y_plot.sample(10)
 # We visualize the distributions of the prediction errors on both train and test sets:
 
 # %%
-sns.histplot(data=X_y_plot, x="squared_error", hue="split", bins=30, alpha=0.5)
+sns.histplot(data=X_y_plot, x="squared_error", hue="split", bins=30)
 plt.title("Train and test sets")
 plt.show()
 
@@ -573,7 +573,9 @@ plt.show()
 # %%
 from skrub import column_associations
 
-column_associations(X_y_plot).query("left_column_name == 'squared_error'")
+column_associations(X_y_plot).query(
+    "left_column_name == 'squared_error' or right_column_name == 'squared_error'"
+)
 
 # %%
 # We observe that the ``AveOccup`` feature leads to large prediction errors: our model
