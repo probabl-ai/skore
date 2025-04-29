@@ -5,9 +5,9 @@ on:
     workflows: [skore, skore-remote-project]
     types: [completed]
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event.workflow_run.name }}
-  cancel-in-progress: true
+# concurrency:
+#   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event.workflow_run.name }}
+#   cancel-in-progress: true
 
 permissions: {}
 
@@ -20,27 +20,28 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          sparse-checkout: .github
+      - run: echo ${{ github.event.workflow_run.name }}
+      # - name: Checkout code
+      #   uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      #   with:
+      #     sparse-checkout: .github
 
-      - name: Acquire PR context
-        id: acquire-pr-context
-        uses: ./.github/actions/workflow-run/context
+      # - name: Acquire PR context
+      #   id: acquire-pr-context
+      #   uses: ./.github/actions/workflow-run/context
 
-      - name: Download coverage reports
-        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e # v4.2.1
-        with:
-          name: ${{ github.event.workflow_run.name }}-coverage
-          path: coverage/
-          github-token: ${{ github.token }}
-          run-id: ${{ github.event.workflow_run.id }}
+      # - name: Download coverage reports
+      #   uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e # v4.2.1
+      #   with:
+      #     name: ${{ github.event.workflow_run.name }}-coverage
+      #     path: coverage/
+      #     github-token: ${{ github.token }}
+      #     run-id: ${{ github.event.workflow_run.id }}
 
-      - name: Display coverage reports
-        uses: MishaKav/pytest-coverage-comment@81882822c5b22af01f91bd3eacb1cefb6ad73dc2 # v1.1.53
-        with:
-          issue-number: ${{ steps.acquire-pr-context.outputs.pr-number }}
-          pytest-coverage-path: coverage/coverage.txt
-          junitxml-path: coverage/coverage.xml
-          title: Coverage Report for `${{ github.event.workflow_run.name }}`
+      # - name: Display coverage reports
+      #   uses: MishaKav/pytest-coverage-comment@81882822c5b22af01f91bd3eacb1cefb6ad73dc2 # v1.1.53
+      #   with:
+      #     issue-number: ${{ steps.acquire-pr-context.outputs.pr-number }}
+      #     pytest-coverage-path: coverage/coverage.txt
+      #     junitxml-path: coverage/coverage.xml
+      #     title: Coverage Report for `${{ github.event.workflow_run.name }}`
