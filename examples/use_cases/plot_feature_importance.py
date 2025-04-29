@@ -496,10 +496,127 @@ clustering_labels = kmeans.labels_
 
 # adding the cluster labels to our dataframe
 X_train_plot = X_train.copy()
-X_train_plot.insert(0, "clustering_labels", clustering_labels)
+X_train_plot.insert(X_train.shape[1], "clustering_labels", clustering_labels)
 
 # plotting the map
 plot_map(X_train_plot, "clustering_labels")
+
+# %%
+# Inspecting the prediction error at the sample level
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+# %%
+# After feature importance, we now try to understand why our model performs badly on some
+# samples, in order to iterate on our estimator pipeline and improve it.
+
+# %%
+# We compute the prediction squared error at the sample level, named ``squared_error``,
+# on the train and test sets:
+
+
+# %%
+def add_y_true_pred(model_report, split):
+    """
+    Concatenate the design matrix (`X`) with the actual targets (`y`)
+    and predicted ones (`y_pred`) from a fitted skore EstimatorReport,
+    either on the train or the test set.
+    """
+
+    if split == "train":
+        y_split_true = model_report.y_train
+        X_split = model_report.X_train.copy()
+    elif split == "test":
+        y_split_true = model_report.y_test
+        X_split = model_report.X_test.copy()
+    else:
+        raise ValueError("split must be either `train`, or `test`")
+
+    # adding a `split` feature
+    X_split.insert(0, "split", split)
+
+    # retrieving the predictions
+    y_split_pred = model_report.get_predictions(
+        data_source=split, response_method="predict"
+    )
+
+    # computing the squared error at the sample level
+    squared_error_split = (y_split_true - y_split_pred) ** 2
+
+    # adding the squared error to our dataframes
+    X_split.insert(X_split.shape[1], "squared_error", squared_error_split)
+
+    # adding the true values and the predictions
+    X_y_split = X_split.copy()
+    X_y_split.insert(X_y_split.shape[1], "y_true", y_split_true)
+    X_y_split.insert(X_y_split.shape[1], "y_pred", y_split_pred)
+    return X_y_split
+
+
+# %%
+X_y_train_plot = add_y_true_pred(engineered_ridge_report, "train")
+X_y_test_plot = add_y_true_pred(engineered_ridge_report, "test")
+X_y_plot = pd.concat([X_y_train_plot, X_y_test_plot])
+X_y_plot.sample(10)
+
+# %%
+# We visualize the distributions of the prediction errors on both train and test sets:
+
+# %%
+sns.histplot(data=X_y_plot, x="squared_error", hue="split", bins=30)
+plt.title("Train and test sets")
+plt.show()
+
+# %%
+# Now, in order to assess which features might drive the prediction error, let us look
+# into the associations between the ``squared_error`` and the other features:
+
+# %%
+from skrub import column_associations
+
+column_associations(X_y_plot).query(
+    "left_column_name == 'squared_error' or right_column_name == 'squared_error'"
+)
+
+# %%
+# We observe that the ``AveOccup`` feature leads to large prediction errors: our model
+# is not able to deal well with that feature.
+# Hence, it might be worth it to dive deep into the ``AveOccup`` feature, for
+# example its outliers.
+
+# %%
+# We observe that we have large prediction errors for districts near the coast and big
+# cities:
+
+# %%
+threshold = X_y_plot["squared_error"].quantile(0.95)  # out of the train and test sets
+plot_map(X_y_plot.query(f"squared_error > {threshold}"), "split")
+
+# %%
+# Hence, it could make sense to engineer two new features: the distance to the coast
+# and the distance to big cities.
+#
+# Most of our very bad predictions underpredict the true value (``y_true`` is more often
+# larger than ``y_pred``):
+
+# %%
+
+# Create the scatter plot
+fig = px.scatter(
+    X_y_plot.query(f"squared_error > {threshold}"),
+    x="y_pred",
+    y="y_true",
+    color="split",
+)
+# Add the diagonal line
+fig.add_shape(
+    type="line",
+    x0=X_y_plot["y_pred"].min(),
+    y0=X_y_plot["y_pred"].min(),
+    x1=X_y_plot["y_pred"].max(),
+    y1=X_y_plot["y_pred"].max(),
+    line=dict(color="black", width=2),
+)
+fig
 
 # %%
 # Compromising on complexity
