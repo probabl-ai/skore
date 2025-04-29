@@ -513,9 +513,8 @@ plot_map(X_train_plot, "clustering_labels")
 # number of features.
 
 # %%
-from sklearn.feature_selection import SelectKBest, VarianceThreshold
-from sklearn.linear_model import RidgeCV
 from sklearn.feature_selection import SelectKBest, VarianceThreshold, f_regression
+from sklearn.linear_model import RidgeCV
 
 preprocessor = make_column_transformer(
     (KMeans(n_clusters=10, random_state=0), geo_columns),
@@ -525,8 +524,8 @@ selectkbest_ridge = make_pipeline(
     preprocessor,
     SplineTransformer(sparse_output=True),
     PolynomialFeatures(degree=2, interaction_only=True, include_bias=False),
-    VarianceThreshold(1e-8), 
-    SelectKBest(score_func=lambda X, y: f_regression(X, y, center=False), k=150), 
+    VarianceThreshold(1e-8),
+    SelectKBest(score_func=lambda X, y: f_regression(X, y, center=False), k=150),
     RidgeCV(np.logspace(-5, 5, num=100)),
 )
 
