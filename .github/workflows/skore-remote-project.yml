@@ -206,7 +206,7 @@ jobs:
         working-directory: skore-remote-project/
         run: |
           mkdir coverage
-          python -m pytest -n auto src/ tests/ --junitxml=coverage/coverage.xml --cov-config=pyproject.toml --cov | tee coverage/coverage.txt
+          python -m pytest -n auto src/ tests/ --junitxml=coverage/pytest.xml --cov-config=pyproject.toml --cov-report xml:coverage/pytest-coverage.xml --cov
 
       - name: Upload coverage reports
         if: ${{ matrix.coverage && (github.event_name == 'pull_request') }}
