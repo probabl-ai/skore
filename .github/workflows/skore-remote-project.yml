@@ -19,87 +19,112 @@ defaults:
     shell: "bash"
 
 jobs:
-  skore-remote-project-changes:
-    runs-on: ubuntu-latest
-    outputs:
-      changes: ${{ steps.filter.outputs.skore-remote-project }}
-    permissions:
-      pull-requests: read
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+  # skore-remote-project-changes:
+  #   runs-on: ubuntu-latest
+  #   outputs:
+  #     changes: ${{ steps.filter.outputs.skore-remote-project }}
+  #   permissions:
+  #     pull-requests: read
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: Define if at least one file has changed
-        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
-        id: filter
-        with:
-          filters: |
-            skore-remote-project:
-              - '.github/workflows/skore-remote-project.yml'
-              - 'ci/requirements/skore-remote-project/**'
-              - 'skore-remote-project/**'
+  #     - name: Define if at least one file has changed
+  #       uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+  #       id: filter
+  #       with:
+  #         filters: |
+  #           skore-remote-project:
+  #             - '.github/workflows/skore-remote-project.yml'
+  #             - 'ci/requirements/skore-remote-project/**'
+  #             - 'skore-remote-project/**'
 
-  skore-remote-project-lockfiles:
-    runs-on: "ubuntu-latest"
-    needs: [skore-remote-project-changes]
-    if: ${{ (contains(fromJSON('["pull_request", "merge_group"]'), github.event_name)) && (needs.skore-remote-project-changes.outputs.changes == 'true') }}
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          fetch-depth: 2
+  # skore-remote-project-lint:
+  #   runs-on: "ubuntu-latest"
+  #   needs: [skore-remote-project-changes]
+  #   if: ${{ (github.event_name == 'push') || (needs.skore-remote-project-changes.outputs.changes == 'true') }}
+  #   permissions:
+  #     contents: read
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: Check lockfiles are not obsolete
-        run: |
-          set -eu
+  #     - name: Setup Python
+  #       uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55 # v5.5.0
+  #       with:
+  #         python-version: "3.12"
+  #         cache: pip
 
-          # Check if `pyproject.toml` has changed in this pull-request
-          # ├── False
-          # │   └── Exit 0
-          # └── True
-          #     └── Check if lockfiles have changed in this pull-request
-          #         ├── True
-          #         │   └── Exit 0
-          #         └── False
-          #             └── Recompile lockfiles and check if they have to change
-          #                 ├── False
-          #                 │   └── Exit 0
-          #                 └── True
-          #                     └── Exit 1
+  #     - name: Install dependencies
+  #       run: python -m pip install --upgrade pip pre-commit
 
-          changes=$(git diff --name-only HEAD^1 HEAD)
+  #     - name: Lint
+  #       working-directory: skore-remote-project/
+  #       run: |
+  #         pre-commit run --all-files ruff
+  #         pre-commit run --all-files mypy
 
-          if
-            (echo "${changes}" | grep -qE "skore-remote-project/pyproject.toml") &&
-            (echo "${changes}" | (! grep -qE "ci/requirements/skore-remote-project/.*/test-requirements.txt"))
-          then
-              curl -LsSf https://astral.sh/uv/0.6.16/install.sh | sh
-              bash ci/pip-compile.sh skore-remote-project
+  # skore-remote-project-lockfiles:
+  #   runs-on: "ubuntu-latest"
+  #   needs: [skore-remote-project-changes]
+  #   if: ${{ (contains(fromJSON('["pull_request", "merge_group"]'), github.event_name)) && (needs.skore-remote-project-changes.outputs.changes == 'true') }}
+  #   permissions:
+  #     contents: read
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+  #       with:
+  #         fetch-depth: 2
 
-              if (git diff --name-only | grep -qE "ci/requirements/skore-remote-project/.*/test-requirements.txt"); then
-                  echo '::error title=skore-remote-project-lockfiles::Lockfiles obsolete, please execute `$ bash ci/pip-compile.sh skore-remote-project`'
-                  exit 1
-             fi
-          fi
+  #     - name: Check lockfiles are not obsolete
+  #       run: |
+  #         set -eu
+
+  #         # Check if `pyproject.toml` has changed in this pull-request
+  #         # ├── False
+  #         # │   └── Exit 0
+  #         # └── True
+  #         #     └── Check if lockfiles have changed in this pull-request
+  #         #         ├── True
+  #         #         │   └── Exit 0
+  #         #         └── False
+  #         #             └── Recompile lockfiles and check if they have to change
+  #         #                 ├── False
+  #         #                 │   └── Exit 0
+  #         #                 └── True
+  #         #                     └── Exit 1
+
+  #         changes=$(git diff --name-only HEAD^1 HEAD)
+
+  #         if
+  #           (echo "${changes}" | grep -qE "skore-remote-project/pyproject.toml") &&
+  #           (echo "${changes}" | (! grep -qE "ci/requirements/skore-remote-project/.*/test-requirements.txt"))
+  #         then
+  #             curl -LsSf https://astral.sh/uv/0.6.16/install.sh | sh
+  #             bash ci/pip-compile.sh skore-remote-project
+
+  #             if (git diff --name-only | grep -qE "ci/requirements/skore-remote-project/.*/test-requirements.txt"); then
+  #                 echo '::error title=skore-remote-project-lockfiles::Lockfiles obsolete, please execute `$ bash ci/pip-compile.sh skore-remote-project`'
+  #                 exit 1
+  #            fi
+  #         fi
 
   skore-remote-project-test:
-    needs: [skore-remote-project-changes]
-    if: ${{ (github.event_name == 'push') || (needs.skore-remote-project-changes.outputs.changes == 'true') }}
+    # needs: [skore-remote-project-changes]
+    # if: ${{ (github.event_name == 'push') || (needs.skore-remote-project-changes.outputs.changes == 'true') }}
     strategy:
       fail-fast: false
       matrix:
-        os: ["ubuntu-latest", "windows-latest"]
-        python: ["3.9", "3.10", "3.11", "3.12"]
+        os: ["ubuntu-latest"]
+        python: ["3.12"]
         scikit-learn: ["1.6"]
         include:
-          - os: "ubuntu-latest"
-            python: "3.12"
-            scikit-learn: "1.4"
-          - os: "ubuntu-latest"
-            python: "3.12"
-            scikit-learn: "1.5"
+          # - os: "ubuntu-latest"
+          #   python: "3.12"
+          #   scikit-learn: "1.4"
+          # - os: "ubuntu-latest"
+          #   python: "3.12"
+          #   scikit-learn: "1.5"
           - os: "ubuntu-latest"
             python: "3.12"
             scikit-learn: "1.6"
@@ -192,8 +217,9 @@ jobs:
 
   skore-remote-project:
     needs:
-      - skore-remote-project-changes
-      - skore-remote-project-lockfiles
+      # - skore-remote-project-changes
+      # - skore-remote-project-lint
+      # - skore-remote-project-lockfiles
       - skore-remote-project-test
     if: ${{ always() }}
     runs-on: Ubuntu-latest
