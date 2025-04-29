@@ -2,7 +2,7 @@ name: pr-display-code-coverage
 
 on:
   workflow_run:
-    workflows: [skore-remote-project]
+    workflows: [skore, skore-remote-project]
     types: [completed]
 
 # concurrency:
@@ -44,3 +44,4 @@ jobs:
           pytest-coverage-path: coverage/coverage.txt
           junitxml-path: coverage/coverage.xml
           title: Coverage Report for ${{ github.event.workflow_run.name }}
+          create-new-comment: true
