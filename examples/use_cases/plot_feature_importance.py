@@ -579,13 +579,7 @@ column_associations(X_y_plot).query(
 
 # %%
 # We observe that the ``AveOccup`` feature leads to large prediction errors: our model
-# is not able to deal well with that feature:
-
-# %%
-fig = px.scatter(X_y_plot, x="AveOccup", y="squared_error", color="split")
-fig
-
-# %%
+# is not able to deal well with that feature.
 # Hence, it might be worth it to dive deep into the ``AveOccup`` feature, for
 # example its outliers.
 
