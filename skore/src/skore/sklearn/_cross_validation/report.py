@@ -298,7 +298,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     def get_predictions(
         self,
         *,
-        data_source: Literal["train", "test"],
+        data_source: Literal["train", "test", "X_y"],
         response_method: Literal["predict", "predict_proba", "decision_function"],
         X: Optional[ArrayLike] = None,
         pos_label: Optional[Any] = None,
@@ -315,6 +315,8 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+            - "X_y" : use the train set provided when creating the report and the target
+              variable.
 
         response_method : {"predict", "predict_proba", "decision_function"}
             The response method to use.
@@ -354,7 +356,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         >>> print([split_predictions.shape for split_predictions in predictions])
         [(50,), (50,)]
         """
-        if data_source not in ("train", "test"):
+        if data_source not in ("train", "test", "X_y"):
             raise ValueError(
                 f"Invalid data source: {data_source}. Valid data sources are "
                 "'train', 'test' and 'X_y'."
