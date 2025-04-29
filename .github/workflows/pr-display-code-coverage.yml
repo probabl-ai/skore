@@ -44,4 +44,4 @@ jobs:
           pytest-coverage-path: coverage/coverage.txt
           junitxml-path: coverage/coverage.xml
           title: Coverage Report for ${{ github.event.workflow_run.name }}
-          create-new-comment: true
+          unique-id-for-comment: ${{ github.event.workflow_run.name }}
