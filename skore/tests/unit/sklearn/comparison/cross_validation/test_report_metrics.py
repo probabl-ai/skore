@@ -114,7 +114,7 @@ def test_default_regression(report_regression):
     )
     assert_index_equal(
         result.index,
-        pd.Index(["R²", "RMSE", "Fit time", "Predict time"], name="Metric"),
+        pd.Index(["R²", "RMSE", "Fit time (s)", "Predict time (s)"], name="Metric"),
     )
 
 

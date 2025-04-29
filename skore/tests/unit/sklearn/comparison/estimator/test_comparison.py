@@ -406,8 +406,8 @@ def test_comparison_report_report_metrics_X_y(binary_classification_model, repor
             ("Recall", 1),
             ("ROC AUC", ""),
             ("Brier score", ""),
-            ("Fit time", ""),
-            ("Predict time", ""),
+            ("Fit time (s)", ""),
+            ("Predict time (s)", ""),
         ],
         names=["Metric", "Label / Average"],
     )
@@ -484,8 +484,8 @@ def test_cross_validation_report_flat_index(binary_classification_model):
         "recall_1",
         "roc_auc",
         "brier_score",
-        "fit_time",
-        "predict_time",
+        "fit_time_s",
+        "predict_time_s",
     ]
     assert result.columns.tolist() == ["report_1", "report_2"]
 
@@ -662,21 +662,34 @@ def test_comparison_report_timings(report):
     """Check the general behaviour of the `timings` method."""
     timings = report.metrics.timings()
     assert isinstance(timings, pd.DataFrame)
-    assert timings.index.tolist() == ["Fit time"]
+    assert timings.index.tolist() == ["Fit time (s)"]
     assert timings.columns.tolist() == report.report_names_
 
-    report.metrics.report_metrics(data_source="train")
+    report.get_predictions(data_source="train", response_method="predict")
     timings = report.metrics.timings()
     assert isinstance(timings, pd.DataFrame)
-    assert timings.index.tolist() == ["Fit time", "Predict time train"]
+    assert timings.index.tolist() == ["Fit time (s)", "Predict time train (s)"]
     assert timings.columns.tolist() == report.report_names_
 
-    report.metrics.report_metrics(data_source="test")
+    report.get_predictions(data_source="test", response_method="predict")
     timings = report.metrics.timings()
     assert isinstance(timings, pd.DataFrame)
     assert timings.index.tolist() == [
-        "Fit time",
-        "Predict time train",
-        "Predict time test",
+        "Fit time (s)",
+        "Predict time train (s)",
+        "Predict time test (s)",
     ]
     assert timings.columns.tolist() == report.report_names_
+
+
+def test_comparison_report_timings_flat_index(report):
+    """Check that time measurements have _s suffix with flat_index=True."""
+    report.get_predictions(data_source="train", response_method="predict")
+    report.get_predictions(data_source="test", response_method="predict")
+
+    # Get metrics with flat_index=True
+    results = report.metrics.report_metrics(flat_index=True)
+
+    # Check that expected time measurements are in index with _s suffix
+    assert "fit_time_s" in results.index
+    assert "predict_time_s" in results.index

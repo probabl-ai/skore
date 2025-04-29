@@ -50,7 +50,7 @@ def comparison_report_regression():
 
 
 def case_timings_no_predictions():
-    expected_index = pd.Index(["Fit time"], name="Metric")
+    expected_index = pd.Index(["Fit time (s)"], name="Metric")
     return (
         comparison_report_classification(),
         "timings",
@@ -61,7 +61,8 @@ def case_timings_no_predictions():
 
 def case_timings_with_predictions():
     expected_index = pd.Index(
-        ["Fit time", "Predict time test", "Predict time train"], name="Metric"
+        ["Fit time (s)", "Predict time test (s)", "Predict time train (s)"],
+        name="Metric",
     )
 
     report = comparison_report_classification()

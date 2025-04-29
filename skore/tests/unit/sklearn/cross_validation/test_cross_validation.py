@@ -287,8 +287,8 @@ def test_cross_validation_report_flat_index(binary_classification_data):
         "recall_1",
         "roc_auc",
         "brier_score",
-        "fit_time",
-        "predict_time",
+        "fit_time_s",
+        "predict_time_s",
     ]
     assert result.columns.tolist() == [
         "randomforestclassifier_mean",
@@ -557,8 +557,8 @@ def test_cross_validation_report_report_metrics_binary(
         "recall",
         "roc_auc",
         "brier_score",
-        "fit_time",
-        "predict_time",
+        "fit_time_s",
+        "predict_time_s",
     )
     # depending on `pos_label`, we report a stats for each class or not for
     # precision and recall
@@ -582,8 +582,8 @@ def test_cross_validation_report_report_metrics_binary(
         "recall",
         "roc_auc",
         "brier_score",
-        "fit_time",
-        "predict_time",
+        "fit_time_s",
+        "predict_time_s",
     )
     # depending on `pos_label`, we report a stats for each class or not for
     # precision and recall
@@ -602,8 +602,8 @@ def test_cross_validation_report_report_metrics_binary(
         "precision",
         "recall",
         "roc_auc",
-        "fit_time",
-        "predict_time",
+        "fit_time_s",
+        "predict_time_s",
     )
     # depending on `pos_label`, we report a stats for each class or not for
     # precision and recall
@@ -630,8 +630,8 @@ def test_cross_validation_report_report_metrics_multiclass(
         "recall",
         "roc_auc",
         "log_loss",
-        "fit_time",
-        "predict_time",
+        "fit_time_s",
+        "predict_time_s",
     )
     # since we are not averaging by default, we report 3 statistics for
     # precision, recall and roc_auc
@@ -646,7 +646,7 @@ def test_cross_validation_report_report_metrics_multiclass(
 
     estimator, X, y = multiclass_classification_data_svc
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
-    expected_metrics = ("precision", "recall", "fit_time", "predict_time")
+    expected_metrics = ("precision", "recall", "fit_time_s", "predict_time_s")
     # since we are not averaging by default, we report 3 statistics for
     # precision and recall
     expected_nb_stats = 3 * 2 + 2
@@ -663,7 +663,7 @@ def test_cross_validation_report_report_metrics_regression(regression_data):
     """Check the behaviour of the `report_metrics` method with regression."""
     estimator, X, y = regression_data
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
-    expected_metrics = ("r2", "rmse", "fit_time", "predict_time")
+    expected_metrics = ("r2", "rmse", "fit_time_s", "predict_time_s")
     _check_results_report_metric(
         report,
         params={},
@@ -871,8 +871,8 @@ def test_cross_validation_report_report_metrics_indicator_favorability(
     assert indicator["Recall"].tolist() == ["(↗︎)", "(↗︎)"]
     assert indicator["ROC AUC"].tolist() == ["(↗︎)"]
     assert indicator["Brier score"].tolist() == ["(↘︎)"]
-    assert indicator["Fit time"].tolist() == ["(↘︎)"]
-    assert indicator["Predict time"].tolist() == ["(↘︎)"]
+    assert indicator["Fit time (s)"].tolist() == ["(↘︎)"]
+    assert indicator["Predict time (s)"].tolist() == ["(↘︎)"]
 
 
 def test_cross_validation_report_custom_metric(binary_classification_data):
@@ -970,21 +970,42 @@ def test_cross_validation_timings(
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
     timings = report.metrics.timings(aggregate=aggregate)
     assert isinstance(timings, pd.DataFrame)
-    assert timings.index.tolist() == ["Fit time"]
+    assert timings.index.tolist() == ["Fit time (s)"]
     assert timings.columns.tolist() == expected_columns
 
-    report.metrics.report_metrics(data_source="train")
+    report.get_predictions(data_source="train", response_method="predict")
     timings = report.metrics.timings(aggregate=aggregate)
     assert isinstance(timings, pd.DataFrame)
-    assert timings.index.tolist() == ["Fit time", "Predict time train"]
+    assert timings.index.tolist() == ["Fit time (s)", "Predict time train (s)"]
     assert timings.columns.tolist() == expected_columns
 
-    report.metrics.report_metrics(data_source="test")
+    report.get_predictions(data_source="test", response_method="predict")
     timings = report.metrics.timings(aggregate=aggregate)
     assert isinstance(timings, pd.DataFrame)
     assert timings.index.tolist() == [
-        "Fit time",
-        "Predict time train",
-        "Predict time test",
+        "Fit time (s)",
+        "Predict time train (s)",
+        "Predict time test (s)",
     ]
     assert timings.columns.tolist() == expected_columns
+
+
+def test_cross_validation_timings_flat_index(binary_classification_data):
+    """Check the behaviour of the `timings` method display formatting."""
+    estimator, X, y = binary_classification_data
+    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
+
+    report.get_predictions(data_source="train", response_method="predict")
+    report.get_predictions(data_source="test", response_method="predict")
+
+    results = report.metrics.report_metrics(flat_index=True)
+    assert results.index.tolist() == [
+        "precision_0",
+        "precision_1",
+        "recall_0",
+        "recall_1",
+        "roc_auc",
+        "brier_score",
+        "fit_time_s",
+        "predict_time_s",
+    ]
