@@ -41,6 +41,7 @@ jobs:
         uses: MishaKav/pytest-coverage-comment@81882822c5b22af01f91bd3eacb1cefb6ad73dc2 # v1.1.53
         with:
           issue-number: ${{ steps.acquire-pr-context.outputs.pr-number }}
-          pytest-coverage-path: coverage/coverage.txt
-          junitxml-path: coverage/coverage.xml
-          title: Coverage Report for `${{ github.event.workflow_run.name }}`
+          pytest-xml-coverage-path: coverage/pytest-coverage.xml
+          junitxml-path: coverage/pytest.xml
+          title: Coverage Report for `${{ github.event.workflow_run.name }}/`
+          unique-id-for-comment: ${{ github.event.workflow_run.name }}
