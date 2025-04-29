@@ -172,7 +172,7 @@ rpds-py==0.24.0
     # via
     #   jsonschema
     #   referencing
-scikit-learn==1.4.2
+scikit-learn==1.6.1
     # via
     #   --override skore-remote-project/overrides.txt
     #   skore-remote-project (skore-remote-project/pyproject.toml)

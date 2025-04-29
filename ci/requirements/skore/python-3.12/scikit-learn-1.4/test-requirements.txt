@@ -145,7 +145,7 @@ rpds-py==0.22.3
     # via
     #   jsonschema
     #   referencing
-scikit-learn==1.4.2
+scikit-learn==1.6.1
     # via
     #   --override skore/overrides.txt
     #   skore (skore/pyproject.toml)
