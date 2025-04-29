@@ -153,7 +153,7 @@ fig
 
 # %%
 def plot_map(df, color_feature):
-    fig = px.scatter_mapbox(
+    fig = px.scatter_map(
         df, lat="Latitude", lon="Longitude", color=color_feature, zoom=5, height=600
     )
     fig.update_layout(
@@ -630,7 +630,7 @@ fig
 # number of features.
 
 # %%
-from sklearn.feature_selection import SelectKBest, VarianceThreshold
+from sklearn.feature_selection import SelectKBest, VarianceThreshold, f_regression
 from sklearn.linear_model import RidgeCV
 
 preprocessor = make_column_transformer(
@@ -641,8 +641,8 @@ selectkbest_ridge = make_pipeline(
     preprocessor,
     SplineTransformer(sparse_output=True),
     PolynomialFeatures(degree=2, interaction_only=True, include_bias=False),
-    VarianceThreshold(),
-    SelectKBest(k=150),
+    VarianceThreshold(1e-8),
+    SelectKBest(score_func=lambda X, y: f_regression(X, y, center=False), k=150),
     RidgeCV(np.logspace(-5, 5, num=100)),
 )
 
