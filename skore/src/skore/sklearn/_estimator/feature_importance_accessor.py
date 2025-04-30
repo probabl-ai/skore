@@ -206,8 +206,12 @@ class _FeatureImportanceAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         try:
             intercept = np.atleast_2d(estimator.intercept_)
         except AttributeError:
+            # TransformedTargetRegressor() does not expose `intercept_`
+            intercept = np.atleast_2d(estimator.regressor_.intercept_)
+            # Uncomment when SGDOneClassSVM is fully supported by EstimatorReport
+            # except AttributeError:
             # SGDOneClassSVM does not expose `intercept_`
-            intercept = None
+            # intercept = None
 
         try:
             coef = np.atleast_2d(estimator.coef_)

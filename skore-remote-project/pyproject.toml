@@ -13,12 +13,13 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+polars = ["polars"]
+polars-lts-cpu = ["polars-lts-cpu"]
 test = [
   "altair",
   "numpy",
   "pillow",
   "plotly",
-  "polars",
   "pre-commit",
   "pyarrow",  # needed for polars.to_pandas()
   "pytest",
