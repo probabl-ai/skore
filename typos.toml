@@ -1,0 +1,16 @@
+[default]
+extend-ignore-re = [
+  # Line ignore with trailing `# spellchecker:disable-line`
+  "(?Rm)^.*(#|//)\\s*spellchecker:disable-line$",
+  # Line block with `# spellchecker:<on|off>`
+  "(?s)(#|//)\\s*spellchecker:off.*?\\n\\s*(#|//)\\s*spellchecker:on",
+]
+
+[default.extend-words]
+# acronym for "False Positive Rate"
+fpr = "fpr"
+
+# For "words" made up of other words
+# https://github.com/crate-ci/typos/blob/master/docs/design.md#identifiers-and-words
+[default.extend-identifiers]
+allow_nd = "allow_nd"

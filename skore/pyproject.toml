@@ -1,0 +1,157 @@
+[project]
+name = "skore"
+description = "the scikit-learn sidekick"
+dynamic = ["license", "readme", "version"]
+requires-python = ">=3.9, <3.13"
+maintainers = [{ name = "skore developers", email = "skore@signal.probabl.ai" }]
+classifiers = [
+  "Intended Audience :: Science/Research",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python",
+  "Topic :: Software Development",
+  "Topic :: Scientific/Engineering",
+  "Development Status :: 3 - Alpha",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: POSIX",
+  "Operating System :: Unix",
+  "Operating System :: MacOS",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+  "diskcache",
+  "joblib",
+  "matplotlib",
+  "numpy",
+  "pandas",
+  "rich",
+  "scikit-learn",
+  "skops",
+]
+
+[project.optional-dependencies]
+test = [
+  "altair>=5,<6",
+  "pillow",
+  "plotly>=5,<6",
+  "polars; platform_machine != 'x86_64'",
+  "polars-lts-cpu; platform_machine == 'x86_64'",
+  "pre-commit",
+  "pytest",
+  "pytest-cov",
+  "pytest-order",
+  "pytest-randomly",
+  "pytest-xdist",
+  "scikit-learn<1.7",
+  "skrub",
+  "xdoctest",
+]
+sphinx = [
+  "IPython",
+  "altair",
+  "kaleido",
+  "numpydoc",
+  "plotly>=5,<6",
+  "polars; platform_machine != 'x86_64'",
+  "polars-lts-cpu; platform_machine == 'x86_64'",
+  "pydata-sphinx-theme",
+  "scikit-learn<1.7",
+  "seaborn",
+  "sentence-transformers<4",  # core dumped on `>=4,<4.0.2`
+  "skrub",
+  "sphinx-copybutton",
+  "sphinx-design",
+  "sphinx-gallery",
+  "sphinx-tabs",
+  "sphinx<8.2.0",
+  "sphinx_autosummary_accessors",
+  "transformers<4.51",  # core dumped on `>=4.51,<4.51.2`
+]
+dev = [
+  "nbformat",
+  "ipykernel",
+]
+
+[project.urls]
+Homepage = "https://probabl.ai"
+Repository = "https://github.com/probabl-ai/skore"
+Download = "https://pypi.org/project/skore/#files"
+Issues = "https://github.com/probabl-ai/skore/issues"
+"Release notes" = "https://github.com/probabl-ai/skore/releases"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata.hooks.custom]
+path = "hatch/metadata.py"
+version-default = "0.0.0+unknown"
+license = { "file" = "../LICENSE" }
+readme = { "file" = "../README.md" }
+
+[tool.hatch.build.targets.sdist]
+only-include = ["src/", "hatch/"]
+
+[tool.hatch.build.targets.wheel]
+package = ["src/skore/"]
+
+[tool.pytest.ini_options]
+addopts = [
+  "--xdoctest",
+  "--import-mode=importlib",
+  "--no-header",
+  "--verbosity=2",
+  "--dist=loadscope",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["skore"]
+concurrency = ["thread", "multiprocessing"]
+parallel = true
+
+[tool.coverage.report]
+omit = ["*/externals/*", "src/*", "tests/*"]
+show_missing = true
+
+[tool.ruff]
+src = ["skore"]
+
+[tool.ruff.lint]
+select = [
+  # pycodestyle
+  "E",
+  # Pyflakes
+  "F",
+  # pyupgrade
+  "UP",
+  # flake8-bugbear
+  "B",
+  # flake8-simplify
+  "SIM",
+  # flake8-print
+  "T",
+  # isort
+  "I",
+  # pydocstyle
+  "D",
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.lint.per-file-ignores]
+"src/*" = ["UP007"]
+"tests/*" = ["D"]
+
+[tool.mypy]
+ignore_missing_imports = true
+exclude = ["src/skore/externals/.*", "hatch/*", "tests/*"]
+
+[[tool.mypy.overrides]]
+module = ["diskcache.*", "sklearn.*"]
+ignore_missing_imports = true

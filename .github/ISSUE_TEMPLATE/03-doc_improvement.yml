@@ -1,0 +1,29 @@
+name: Documentation improvement
+description: Create a report to help us improve the documentation. Alternatively you can just open a pull request with the suggested change.
+labels: ['documentation', 'needs-triage']
+
+body:
+- type: textarea
+  attributes:
+    label: Which part of the documentation needs improvement?
+    description: >
+      Provide a link to the documentation page and section, if possible.
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Describe the problem found in the documentation
+    description: >
+      Tell us about the confusion introduced in the documentation.
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Suggested improvement
+    description: >
+      Tell us how we could improve the documentation in this regard.
+- type: textarea
+  attributes:
+    label: Additional context
+    description: >
+      Add any other context about the documentation improvement here.

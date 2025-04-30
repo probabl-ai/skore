@@ -1,0 +1,23 @@
+version: 2
+updates:
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    commit-message:
+      prefix: "chore(dependencies): GITHUB-ACTIONS"
+
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(dependencies): PIP"
+    groups:
+      test-dependencies:
+        patterns:
+          - "*"
+
+    # It uses `ci/requirements/**/.python-version` to specify the python version used to
+    # update `ci/requirements/**/test-requirements.txt`

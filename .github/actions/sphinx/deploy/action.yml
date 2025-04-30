@@ -1,0 +1,37 @@
+name: Deploy sphinx documentation
+
+inputs:
+  CONFIGURATION:
+    required: true
+  ACTION:
+    required: false
+    default: sync
+    type: choice
+    options:
+      - copy
+      - sync
+  PROVIDER:
+    required: false
+    default: scaleway
+  BUCKET:
+    required: true
+  SOURCE:
+    required: true
+  DESTINATION:
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y rclone
+    - shell: bash
+      run: echo "${{ inputs.CONFIGURATION }}" > rclone.configuration
+    - shell: bash
+      run: |
+        rclone --config rclone.configuration \
+               ${{ inputs.ACTION }} \
+               ${{ inputs.SOURCE }} \
+               ${{ inputs.PROVIDER }}:${{ inputs.BUCKET }}/${{ inputs.DESTINATION }}
