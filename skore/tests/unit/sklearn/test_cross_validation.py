@@ -242,10 +242,10 @@ def test_cross_validation_report_get_predictions_error():
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
 
     with pytest.raises(ValueError, match="Invalid data source"):
-        report.get_predictions(data_source="invalid", response_method="predict")
+        report.get_predictions(data_source="invalid")
 
     with pytest.raises(ValueError, match="The `X` parameter is required"):
-        report.get_predictions(data_source="X_y", response_method="predict")
+        report.get_predictions(data_source="X_y")
 
 
 def test_cross_validation_report_pickle(tmp_path, binary_classification_data):
