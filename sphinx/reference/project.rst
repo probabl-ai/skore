@@ -5,10 +5,20 @@ Managing a project
 
 These functions and classes are meant for managing a Project.
 
-.. autosummary::
-    :toctree: api/
-    :template: base.rst
+Main class
+----------
 
-    Project
-    Project.put
-    Project.get
+.. autosummary::
+   :toctree: ../api/
+   :template: base.rst
+   :nosignatures:
+
+Methods
+-------
+
+.. rubric:: Methods
+
+.. autoclass:: Project
+   :members: put, get
+   :noindex:
+   
