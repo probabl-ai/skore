@@ -1,4 +1,16 @@
+from datetime import datetime, timezone
+
 from pytest import fixture
+
+
+@fixture
+def now():
+    return datetime.now(tz=timezone.utc)
+
+
+@fixture
+def nowstr(now):
+    return now.isoformat()
 
 
 @fixture(autouse=True)
@@ -48,15 +60,3 @@ def setup(monkeypatch, tmp_path):
             yield
         finally:
             matplotlib.rcParams = matplotlib_rcparams
-
-
-@fixture
-def now():
-    import datetime
-
-    return datetime.datetime.now(tz=datetime.timezone.utc)
-
-
-@fixture
-def nowstr(now):
-    return now.isoformat()
