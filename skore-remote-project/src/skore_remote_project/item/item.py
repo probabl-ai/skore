@@ -4,8 +4,33 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from base64 import b64decode, b64encode
+from contextlib import contextmanager
 from inspect import signature as inspect_signature
 from typing import Any
+
+
+@contextmanager
+def switch_mpl_backend():
+    """
+    Context-manager for switching ``matplotlib.backend`` to ``agg``.
+
+    Notes
+    -----
+    The ``agg`` backend is a non-interactive backend that can only write to files.
+    It is used in ``skore-remote-project`` to generate artifacts where we don't need an
+    X display.
+
+    https://matplotlib.org/stable/users/explain/figure/backends.html#selecting-a-backend
+    """
+    import matplotlib
+
+    original_backend = matplotlib.get_backend()
+
+    try:
+        matplotlib.use("agg")
+        yield
+    finally:
+        matplotlib.use(original_backend)
 
 
 def lazy_is_instance(value: Any, cls_fullname: str) -> bool:

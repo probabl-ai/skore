@@ -22,7 +22,6 @@ class TestMatplotlibFigureItem:
         with pytest.raises(ItemTypeError):
             MatplotlibFigureItem.factory(None)
 
-    @pytest.mark.usefixtures("reproducible")
     def test_representation(self, tmp_path):
         figure, ax = subplots()
         ax.plot([1, 2, 3, 4], [1, 4, 2, 3])
