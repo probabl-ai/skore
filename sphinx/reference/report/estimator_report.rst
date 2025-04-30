@@ -7,38 +7,23 @@ The class :class:`EstimatorReport` provides a report allowing to inspect and
 evaluate a scikit-learn estimator in an interactive way. The functionalities of the
 report are accessible through accessors.
 
+Main class
+----------
+
 .. autosummary::
    :toctree: ../api/
+   :nosignatures:
    :template: base.rst
 
-   EstimatorReport
+Methods
+-------
 
 .. rubric:: Methods
 
-.. autosummary::
-   :toctree: ../api/
-   :template: autosummary/accessor_method.rst
-
-   EstimatorReport.help
-   EstimatorReport.cache_predictions
-   EstimatorReport.clear_cache
-   EstimatorReport.get_predictions
-
-.. rubric:: Metrics
-
-.. autosummary::
-   :toctree: ../api/
-   :template: autosummary/accessor.rst
-
-   EstimatorReport.metrics
-
-.. rubric:: Feature importance
-
-.. autosummary::
-   :toctree: ../api/
-   :template: autosummary/accessor.rst
-
-   EstimatorReport.feature_importance
+.. autoclass:: EstimatorReport
+   :members: help, cache_predictions, clear_cache, get_predictions
+   :exclude-members: metrics, feature_importance
+   :noindex:
 
 Metrics
 -------
@@ -46,10 +31,12 @@ Metrics
 The `metrics` accessor helps you to evaluate the statistical performance of your
 estimator.
 
+.. rubric:: Metrics
+
 .. autosummary::
-    :toctree: ../api/
-    :nosignatures:
-    :template: autosummary/accessor_method.rst
+   :toctree: ../api/
+   :nosignatures:
+   :template: autosummary/accessor_method.rst
 
     EstimatorReport.metrics.help
     EstimatorReport.metrics.report_metrics
@@ -73,10 +60,12 @@ Feature importance
 The `feature_importance` accessor helps you to evaluate the importance of the features
 used to train your estimator.
 
+.. rubric:: Feature importance
+
 .. autosummary::
-    :toctree: ../api/
-    :nosignatures:
-    :template: autosummary/accessor_method.rst
+   :toctree: ../api/
+   :nosignatures:
+   :template: autosummary/accessor_method.rst
 
     EstimatorReport.feature_importance.help
     EstimatorReport.feature_importance.coefficients
