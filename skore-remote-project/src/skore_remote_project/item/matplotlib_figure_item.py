@@ -7,36 +7,14 @@ This module defines the ``MatplotlibFigureItem`` class used to serialize instanc
 
 from __future__ import annotations
 
-from contextlib import contextmanager
 from io import BytesIO
 from typing import TYPE_CHECKING
 
-from .item import ItemTypeError, bytes_to_b64_str, lazy_is_instance
+from .item import ItemTypeError, bytes_to_b64_str, lazy_is_instance, switch_mpl_backend
 from .pickle_item import PickleItem
 
 if TYPE_CHECKING:
     from matplotlib.figure import Figure
-
-
-@contextmanager
-def mpl_backend(backend="agg"):
-    """
-    Context-manager for switching matplotlib backend.
-
-    Notes
-    -----
-    The ``agg`` backend is headless. No system-window pops in a background thread.
-    It is particularly useful on OSX.
-    """
-    import matplotlib
-
-    original_backend = matplotlib.get_backend()
-
-    try:
-        matplotlib.use(backend)
-        yield
-    finally:
-        matplotlib.use(original_backend)
 
 
 class MatplotlibFigureItem(PickleItem):
@@ -45,7 +23,7 @@ class MatplotlibFigureItem(PickleItem):
     @property
     def __representation__(self) -> dict:
         """Get the representation of the ``MatplotlibFigureItem`` instance."""
-        with mpl_backend(), BytesIO() as stream:
+        with switch_mpl_backend(), BytesIO() as stream:
             self.__raw__.savefig(stream, format="svg", bbox_inches="tight")
 
             figure_bytes = stream.getvalue()
