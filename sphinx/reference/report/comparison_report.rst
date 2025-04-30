@@ -5,40 +5,35 @@ Report for a comparison of :class:`EstimatorReport`
 
 The class :class:`ComparisonReport` provides a report allowing to compare :class:`EstimatorReport` instances in an interactive way. The functionalities of the report are accessible through accessors.
 
-.. autosummary::
-    :toctree: ../api/
-    :template: base.rst
-
-    ComparisonReport
-    ComparisonReport.cache_predictions
-    ComparisonReport.clear_cache
+Main class
+----------
 
 .. autosummary::
-    :toctree: ../api/
-    :nosignatures:
-    :template: autosummary/accessor_method.rst
+   :toctree: ../api/
+   :nosignatures:
+   :template: base.rst
 
-    ComparisonReport.help
-    ComparisonReport.get_predictions
+Methods
+-------
 
-.. autosummary::
-    :toctree: ../api/
-    :nosignatures:
-    :template: autosummary/accessor.rst
+.. rubric:: Methods
 
-    ComparisonReport.metrics
+.. autoclass:: ComparisonReport
+   :members: help, cache_predictions, clear_cache, get_predictions
+   :exclude-members: metrics
+   :noindex:
 
 Metrics
 -------
 
-The `metrics` accessor helps you to evaluate the statistical performance of the
-compared estimators. In addition, we provide a sub-accessor `plot`, to
-get the common performance metric representations.
+The `metrics` accessor helps you to evaluate the statistical performance of the compared estimators. In addition, we provide a sub-accessor `plot`, to get the common performance metric representations.
+
+.. rubric:: Metrics
 
 .. autosummary::
-    :toctree: ../api/
-    :nosignatures:
-    :template: autosummary/accessor_method.rst
+   :toctree: ../api/
+   :nosignatures:
+   :template: autosummary/accessor_method.rst
 
     ComparisonReport.metrics.help
     ComparisonReport.metrics.report_metrics
