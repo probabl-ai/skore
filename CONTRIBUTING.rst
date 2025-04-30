@@ -52,20 +52,25 @@ You'll need ``python >=3.9, <3.13``.
 Setting up your development environment
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-We strongly recommend using a virtual environment to isolate your development dependencies:
+Fork the repository on GitHub, then clone your fork locally:
 
 .. code-block:: bash
 
-    # Create a virtual environment
-    python -m venv venv
+    # Clone your fork of the repo
+    git clone https://github.com/YOUR_USERNAME/skore.git
     
-    # Activate the virtual environment
-    # On Windows:
-    venv\Scripts\activate
-    # On macOS/Linux:
-    source venv/bin/activate
+    # Navigate to the newly cloned directory
+    cd skore
+    
+    # Add the original repository as a remote
+    git remote add upstream https://github.com/probabl-ai/skore.git
+    
+    # Create a new branch for your issue
+    git checkout -b issue-NAME_OF_ISSUE
 
-Once your virtual environment is activated, install the development dependencies:
+We strongly recommend using a virtual environment to isolate your development dependencies.
+
+Once your environment is set up, install the development dependencies:
 
 .. code-block:: bash
 
@@ -97,12 +102,7 @@ Tests
 Unit Testing Requirements
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-All contributions must include appropriate unit tests using ``pytest``. Tests are required for:
-
-- Any new features
-- Bug fixes
-- New use cases
-- Modifications to existing functionality
+All contributions must include appropriate unit tests using ``pytest``. Tests are required for any executable code - this includes all new features, bug fixes, new use cases, and modifications to existing functionality. The only exception is documentation-only changes.
 
 Before submitting your PR, ensure that:
 
