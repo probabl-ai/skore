@@ -3,40 +3,32 @@ Report for a cross-validation of an estimator
 
 .. currentmodule:: skore
 
-The class :class:`CrossValidationReport` performs cross-validation and provides a report
-to inspect and evaluate a scikit-learn estimator in an interactive way. The
-functionalities of the report are exposed through accessors.
+The class :class:`CrossValidationReport` performs cross-validation and provides a report to inspect and evaluate a scikit-learn estimator in an interactive way. The functionalities of the report are exposed through accessors.
+
+Main class
+----------
 
 .. autosummary::
    :toctree: ../api/
+   :nosignatures:
    :template: base.rst
 
-   CrossValidationReport
+Methods
+-------
 
 .. rubric:: Methods
 
-.. autosummary::
-   :toctree: ../api/
-   :template: autosummary/accessor_method.rst
-
-   CrossValidationReport.help
-   CrossValidationReport.cache_predictions
-   CrossValidationReport.clear_cache
-   CrossValidationReport.get_predictions
-
-.. rubric:: Metrics
-
-.. autosummary::
-   :toctree: ../api/
-   :template: autosummary/accessor.rst
-
-   CrossValidationReport.metrics
+.. autoclass:: CrossValidationReport
+   :members: help, cache_predictions, clear_cache, get_predictions
+   :exclude-members: metrics
+   :noindex:
 
 Metrics
 -------
 
-The `metrics` accessor helps you to evaluate the statistical performance of your
-estimator across cross-validation folds.
+The `metrics` accessor helps you to evaluate the statistical performance of your estimator across cross-validation folds.
+
+.. rubric:: Metrics
 
 .. autosummary::
     :toctree: ../api/
