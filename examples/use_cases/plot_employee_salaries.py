@@ -269,7 +269,7 @@ linear_model_report = my_project.get("Linear model report")
 
 # %%
 # Now that we retrieved the reports, we can make some further comparison using the
-# :meth:`skore.ComparisonReport`:
+# :class:`skore.ComparisonReport`:
 
 # %%
 from skore import ComparisonReport
@@ -298,10 +298,7 @@ comparator.metrics.report_metrics(
 )
 
 # %%
-# .. note::
-#   We could have also used the :class:`skore.ComparisonReport` to compare estimator
-#   reports.
-#   This is done in :ref:`example_feature_importance`.
+comparator.metrics.prediction_error().plot(kind="actual_vs_predicted")
 
 # %%
 #
