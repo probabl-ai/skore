@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from .item import ItemTypeError, lazy_is_instance
+from .item import ItemTypeError, lazy_is_instance, switch_mpl_backend
 from .pickle_item import PickleItem
 
 if TYPE_CHECKING:
@@ -22,12 +22,13 @@ class SkrubTableReportItem(PickleItem):
     @property
     def __representation__(self) -> dict:
         """Get the representation of the ``SkrubTableReportItem`` instance."""
-        return {
-            "representation": {
-                "media_type": "text/html",
-                "value": self.__raw__.html_snippet(),
+        with switch_mpl_backend():
+            return {
+                "representation": {
+                    "media_type": "text/html",
+                    "value": self.__raw__.html_snippet(),
+                }
             }
-        }
 
     @classmethod
     def factory(cls, value: TableReport, /) -> SkrubTableReportItem:

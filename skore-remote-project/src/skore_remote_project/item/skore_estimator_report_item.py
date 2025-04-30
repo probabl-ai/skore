@@ -12,7 +12,7 @@ from inspect import getmembers, ismethod, signature
 from operator import attrgetter
 from typing import TYPE_CHECKING
 
-from .item import ItemTypeError, lazy_is_instance
+from .item import ItemTypeError, lazy_is_instance, switch_mpl_backend
 from .matplotlib_figure_item import MatplotlibFigureItem
 from .media_item import MediaItem
 from .pandas_dataframe_item import PandasDataFrameItem
@@ -217,8 +217,6 @@ class Representations:
 
     def mpl(self, name, category, **kwargs) -> Union[Representation, None]:
         """Return sub-representation made of ``matplotlib`` figures."""
-        from matplotlib.pyplot import close
-
         try:
             function = attrgetter(name)(self.report)
         except AttributeError:
@@ -228,9 +226,11 @@ class Representations:
             function_kwargs = {
                 k: v for k, v in kwargs.items() if k in function_parameters
             }
+
             display = function(**function_kwargs)
-            display.plot()
-            close(display.figure_)
+
+            with switch_mpl_backend():
+                display.plot()
 
             item = MatplotlibFigureItem.factory(display.figure_)
 

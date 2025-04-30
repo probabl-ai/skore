@@ -30,7 +30,6 @@ class TestSkrubTableReportItem:
         with pytest.raises(ItemTypeError):
             SkrubTableReportItem.factory(None)
 
-    @pytest.mark.usefixtures("reproducible")
     def test_representation(self, monkeypatch, now):
         report = TableReport(
             DataFrame(
