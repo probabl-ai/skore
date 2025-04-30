@@ -1,12 +1,15 @@
 """In-memory storage."""
 
 from collections.abc import Iterator
+from functools import partial
 from pathlib import Path
 from typing import Any
 
 from diskcache import Cache
 
 from .abstract_storage import AbstractStorage
+
+Cache = partial(Cache, size_limit=float("inf"), cull_limit=0, eviction=None)
 
 
 class DirectoryDoesNotExist(Exception):
