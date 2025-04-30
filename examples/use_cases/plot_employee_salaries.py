@@ -268,27 +268,25 @@ hgbt_model_report = my_project.get("HGBT model report")
 linear_model_report = my_project.get("Linear model report")
 
 # %%
-#
-# Now that we retrieved the reports, we can make some further comparison and build upon
-# some usual pandas operations to concatenate the results.
-import pandas as pd
-
-results = pd.concat(
-    [
-        hgbt_model_report.metrics.report_metrics(),
-        linear_model_report.metrics.report_metrics(),
-    ],
-    axis=1,
-)
-results
+# Now that we retrieved the reports, we can make some further comparison using the
+# :meth:`skore.ComparisonReport`:
 
 # %%
-#
+from skore import ComparisonReport
+
+comparator = ComparisonReport([hgbt_model_report, linear_model_report])
+comparator.metrics.report_metrics(indicator_favorability=True)
+
+# %%
 # In addition, if we forgot to compute a specific metric
 # (e.g. :func:`~sklearn.metrics.mean_absolute_error`),
 # we can easily add it to the report, without re-training the model and even
 # without re-computing the predictions since they are cached internally in the report.
 # This allows us to save some potentially huge computation time.
+
+# %%
+import pandas as pd
+
 from sklearn.metrics import mean_absolute_error
 
 scoring = ["r2", "rmse", mean_absolute_error]
