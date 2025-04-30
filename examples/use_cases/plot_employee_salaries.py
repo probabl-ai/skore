@@ -112,7 +112,7 @@ from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.pipeline import make_pipeline
 
 model = make_pipeline(
-    TableVectorizer(high_cardinality=TextEncoder()),
+    TableVectorizer(high_cardinality=TextEncoder(store_weights_in_pickle=True)),
     HistGradientBoostingRegressor(),
 )
 model
@@ -121,7 +121,8 @@ model
 # Evaluation
 # ^^^^^^^^^^
 #
-# Let us compute the cross-validation report for this model using :class:`skore.CrossValidationReport`:
+# Let us compute the cross-validation report for this model using
+# :class:`skore.CrossValidationReport`:
 from skore import CrossValidationReport
 
 report = CrossValidationReport(estimator=model, X=df, y=y, cv_splitter=5, n_jobs=4)
