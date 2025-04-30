@@ -21,4 +21,3 @@ Methods
 .. autoclass:: Project
    :members: put, get
    :noindex:
-   
