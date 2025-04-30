@@ -81,7 +81,7 @@ rf_report.help()
 # fit and prediction times):
 
 # %%
-rf_report.metrics.report_metrics(pos_label=1)
+rf_report.metrics.report_metrics(pos_label=1, indicator_favorability=True)
 
 # %%
 # For inspection, we can also retrieve the predictions, on the train set for example
@@ -205,7 +205,7 @@ comparator.help()
 # Let us display the result of our benchmark:
 
 # %%
-comparator.metrics.report_metrics(pos_label=1)
+comparator.metrics.report_metrics(pos_label=1, indicator_favorability=True)
 
 # %%
 # Thus, we easily have the result of our benchmark for several recommended metrics.
