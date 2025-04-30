@@ -298,10 +298,6 @@ comparator.metrics.report_metrics(
 )
 
 # %%
-comparator.metrics.prediction_error().plot(kind="actual_vs_predicted")
-
-# %%
-#
 # Finally, we can even get the individual :class:`~skore.EstimatorReport` for each fold
 # from the cross-validation to make further analysis.
 # Here, we plot the actual vs predicted values for each fold.
