@@ -285,29 +285,17 @@ comparator.metrics.report_metrics(indicator_favorability=True)
 # This allows us to save some potentially huge computation time.
 
 # %%
-import pandas as pd
-
 from sklearn.metrics import mean_absolute_error
 
 scoring = ["r2", "rmse", mean_absolute_error]
 scoring_kwargs = {"response_method": "predict"}
-scoring_names = ["R2", "RMSE", "MAE"]
-results = pd.concat(
-    [
-        hgbt_model_report.metrics.report_metrics(
-            scoring=scoring,
-            scoring_kwargs=scoring_kwargs,
-            scoring_names=scoring_names,
-        ),
-        linear_model_report.metrics.report_metrics(
-            scoring=scoring,
-            scoring_kwargs=scoring_kwargs,
-            scoring_names=scoring_names,
-        ),
-    ],
-    axis=1,
+scoring_names = ["R²", "RMSE", "MAE"]
+
+comparator.metrics.report_metrics(
+    scoring=scoring,
+    scoring_kwargs=scoring_kwargs,
+    scoring_names=scoring_names,
 )
-results
 
 # %%
 # .. note::
