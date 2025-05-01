@@ -38,7 +38,7 @@ jobs:
           run-id: ${{ github.event.workflow_run.id }}
 
       - name: Display coverage reports
-        uses: MishaKav/pytest-coverage-comment@81882822c5b22af01f91bd3eacb1cefb6ad73dc2 # v1.1.53
+        uses: MishaKav/pytest-coverage-comment@13d3c18e21895566c746187c9ea74736372e5e91 # v1.1.54
         with:
           issue-number: ${{ steps.acquire-pr-context.outputs.pr-number }}
           pytest-xml-coverage-path: coverage/pytest-coverage.xml
