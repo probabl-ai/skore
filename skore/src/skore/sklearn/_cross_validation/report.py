@@ -287,8 +287,16 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         total_estimators = len(self.estimator_reports_)
         progress.update(main_task, total=total_estimators)
 
-        for estimator_report in self.estimator_reports_:
-            # Pass the progress manager to child tasks
+        from skore import console  # avoid circular import
+
+        console.print("Caching predictions for each fold...")
+
+        for i, estimator_report in enumerate(self.estimator_reports_):
+            progress.update(
+                main_task,
+                description=f"Caching predictions for fold #{i + 1}/{total_estimators}",
+            )
+
             estimator_report._parent_progress = progress
             estimator_report.cache_predictions(
                 response_methods=response_methods, n_jobs=n_jobs
