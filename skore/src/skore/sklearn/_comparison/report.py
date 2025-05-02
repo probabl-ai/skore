@@ -160,6 +160,11 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         self._cache: dict[tuple[Any, ...], Any] = {}
         self._ml_task = self.estimator_reports_[0]._ml_task
 
+    @property
+    def reports_(self) -> dict[str, EstimatorReport]:
+        """Dictionary of estimator reports, keyed by estimator name."""
+        return dict(zip(self.report_names_, self.estimator_reports_))
+
     def clear_cache(self) -> None:
         """Clear the cache.
 
