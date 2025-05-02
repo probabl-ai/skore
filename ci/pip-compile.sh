@@ -2,15 +2,25 @@
 #
 # This script compiles all the `test-requirements.txt` files, based on combinations of
 # `python` and `scikit-learn` versions. These combinations mirror those defined in the
-# GitHub `backend` workflow.
+# GitHub workflows.
 #
 # You can pass any `uv pip compile` parameter:
 #
-#     $ bash pip-compile.sh --upgrade
+#     $ bash pip-compile.sh <skore|skore-remote-project> --upgrade
 #
 
 CWD=$(realpath $(dirname $0))
 TMPDIR=$(mktemp -d)
+PACKAGE=$1
+
+case "${PACKAGE}" in
+    "skore"|"skore-remote-project") ;;
+    *)
+        >&2 echo "Error: Unknown package: '${PACKAGE}'"
+        >&2 echo "Usage: bash pip-compile.sh <skore|skore-remote-project> [option...]"
+        exit 1
+        ;;
+esac
 
 # Make sure that `TMPDIR` is removed on exit, whatever the signal
 trap 'rm -rf ${TMPDIR}' 0
@@ -29,7 +39,7 @@ set -eu
 
 (
     # Copy everything necessary to compile requirements in `TMPDIR`
-    mkdir "${TMPDIR}/skore"; cp "${CWD}/../pyproject.toml" "${TMPDIR}/skore"
+    mkdir "${TMPDIR}/${PACKAGE}"; cp "${CWD}/../${PACKAGE}/pyproject.toml" "${TMPDIR}/${PACKAGE}"
 
     # Move to `TMPDIR` to avoid absolute paths in requirements file
     cd "${TMPDIR}"
@@ -41,26 +51,30 @@ set -eu
 
         python="${combination[0]}"
         scikit_learn="${combination[1]}"
-        filepath="${CWD}/requirements/python-${python}/scikit-learn-${scikit_learn}/test-requirements.txt"
+        filepath="${CWD}/requirements/${PACKAGE}/python-${python}/scikit-learn-${scikit_learn}/test-requirements.txt"
 
-        echo "Generating requirements: python==${python} | scikit-learn==${scikit_learn} (${counter}/${#COMBINATIONS[@]})"
+        echo "Generating ${PACKAGE} requirements: python==${python} | scikit-learn==${scikit_learn} (${counter}/${#COMBINATIONS[@]})"
 
         # Force the `scikit-learn` version by creating file overriding requirements
-        echo "scikit-learn==${scikit_learn}.*" > skore/overrides.txt
+        echo "scikit-learn==${scikit_learn}.*" > "${PACKAGE}/overrides.txt"
 
         # Create the requirements file tree
         mkdir -p $(dirname "${filepath}")
+
+        # Create the `.python-version` file used by `Dependabot`
+        echo "${python}" > "${CWD}/requirements/${PACKAGE}/python-${python}/.python-version"
 
         # Create the requirements file
         uv pip compile \
            --quiet \
            --no-strip-extras \
            --no-header \
+           --extra=polars \
            --extra=test \
-           --override skore/overrides.txt \
+           --override "${PACKAGE}/overrides.txt" \
            --python-version "${python}" \
            --output-file "${filepath}" \
-           skore/pyproject.toml \
+           "${PACKAGE}/pyproject.toml" \
            "${@:2}"
 
         let counter++
