@@ -259,9 +259,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             data_sources += [("train", self._X_train)]
 
         parallel = Parallel(
-            **_validate_joblib_parallel_params(
-                n_jobs=n_jobs, return_as="generator", require="sharedmem"
-            )
+            **_validate_joblib_parallel_params(n_jobs=n_jobs, return_as="generator")
         )
         generator = parallel(
             delayed(_get_cached_response_values)(
@@ -285,7 +283,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         task = self._progress_info["current_task"]
         total_iterations = len(response_methods) * len(pos_labels) * len(data_sources)
         progress.update(task, total=total_iterations)
-        for _ in generator:
+        for results in generator:
+            for key, value, is_cached in results:
+                if not is_cached:
+                    self._cache[key] = value
             progress.update(task, advance=1, refresh=True)
 
     def get_predictions(

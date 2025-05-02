@@ -211,9 +211,7 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
         else:
             parallel = Parallel(
                 **_validate_joblib_parallel_params(
-                    n_jobs=self._parent.n_jobs,
-                    return_as="generator",
-                    require="sharedmem",
+                    n_jobs=self._parent.n_jobs, return_as="generator"
                 )
             )
             generator = parallel(
@@ -1172,18 +1170,21 @@ class _MetricsAccessor(_BaseAccessor["CrossValidationReport"], DirNamesMixin):
                         data_source=data_source
                     )
                 y_true.append(y)
-                y_pred.append(
-                    _get_cached_response_values(
-                        cache=report._cache,
-                        estimator_hash=report._hash,
-                        estimator=report._estimator,
-                        X=X,
-                        response_method=response_method,
-                        data_source=data_source,
-                        data_source_hash=data_source_hash,
-                        pos_label=display_kwargs.get("pos_label"),
-                    )
+                results = _get_cached_response_values(
+                    cache=report._cache,
+                    estimator_hash=report._hash,
+                    estimator=report._estimator,
+                    X=X,
+                    response_method=response_method,
+                    data_source=data_source,
+                    data_source_hash=data_source_hash,
+                    pos_label=display_kwargs.get("pos_label"),
                 )
+                for key, value, is_cached in results:
+                    if not is_cached:
+                        report._cache[key] = value
+                    if key[-1] != "predict_time":
+                        y_pred.append(value)
                 progress.update(main_task, advance=1, refresh=True)
 
             display = display_class._compute_data_for_display(

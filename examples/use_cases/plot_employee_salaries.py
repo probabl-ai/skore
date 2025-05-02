@@ -112,7 +112,7 @@ from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.pipeline import make_pipeline
 
 model = make_pipeline(
-    TableVectorizer(high_cardinality=TextEncoder(store_weights_in_pickle=True)),
+    TableVectorizer(high_cardinality=TextEncoder()),
     HistGradientBoostingRegressor(),
 )
 model

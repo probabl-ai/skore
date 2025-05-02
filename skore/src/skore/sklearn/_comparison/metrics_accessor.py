@@ -232,9 +232,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         else:
             parallel = joblib.Parallel(
                 **_validate_joblib_parallel_params(
-                    n_jobs=self._parent.n_jobs,
-                    return_as="generator",
-                    require="sharedmem",
+                    n_jobs=self._parent.n_jobs, return_as="generator"
                 )
             )
 
@@ -1430,18 +1428,21 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 )
 
                 y_true.append(report_y)
-                y_pred.append(
-                    _get_cached_response_values(
-                        cache=report._cache,
-                        estimator_hash=report._hash,
-                        estimator=report._estimator,
-                        X=report_X,
-                        response_method=response_method,
-                        data_source=data_source,
-                        data_source_hash=None,
-                        pos_label=display_kwargs.get("pos_label"),
-                    )
+                results = _get_cached_response_values(
+                    cache=report._cache,
+                    estimator_hash=report._hash,
+                    estimator=report._estimator,
+                    X=report_X,
+                    response_method=response_method,
+                    data_source=data_source,
+                    data_source_hash=None,
+                    pos_label=display_kwargs.get("pos_label"),
                 )
+                for key, value, is_cached in results:
+                    if not is_cached:
+                        report._cache[key] = value
+                    if key[-1] != "predict_time":
+                        y_pred.append(value)
                 progress.update(main_task, advance=1, refresh=True)
 
             display = display_class._compute_data_for_display(

@@ -430,7 +430,7 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
             if "pos_label" in metric_params:
                 kwargs.update(pos_label=pos_label)
 
-            y_pred = _get_cached_response_values(
+            results = _get_cached_response_values(
                 cache=self._parent._cache,
                 estimator_hash=self._parent._hash,
                 estimator=self._parent.estimator_,
@@ -440,6 +440,11 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
                 data_source=data_source,
                 data_source_hash=data_source_hash,
             )
+            for key_tuple, value, is_cached in results:
+                if not is_cached:
+                    self._parent._cache[key_tuple] = value
+                if key_tuple[-1] != "predict_time":
+                    y_pred = value
 
             score = metric_fn(y_true, y_pred, **kwargs)
 
@@ -1705,16 +1710,21 @@ class _MetricsAccessor(_BaseAccessor["EstimatorReport"], DirNamesMixin):
         if cache_key in self._parent._cache:
             display = self._parent._cache[cache_key]
         else:
-            y_pred = _get_cached_response_values(
+            results = _get_cached_response_values(
                 cache=self._parent._cache,
                 estimator_hash=self._parent._hash,
                 estimator=self._parent.estimator_,
                 X=X,
                 response_method=response_method,
+                pos_label=display_kwargs.get("pos_label"),
                 data_source=data_source,
                 data_source_hash=data_source_hash,
-                pos_label=display_kwargs.get("pos_label"),
             )
+            for key, value, is_cached in results:
+                if not is_cached:
+                    self._parent._cache[cast(tuple[Any, ...], key)] = value
+                if cast(tuple[Any, ...], key)[-1] != "predict_time":
+                    y_pred = value
 
             display = display_class._compute_data_for_display(
                 y_true=[y],
