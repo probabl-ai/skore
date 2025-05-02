@@ -364,7 +364,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         else:
             raise ValueError(f"Invalid data source: {data_source}")
 
-        return _get_cached_response_values(
+        results = _get_cached_response_values(
             cache=self._cache,
             estimator_hash=self._hash,
             estimator=self._estimator,
@@ -373,6 +373,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             pos_label=pos_label,
             data_source=data_source,
         )
+        for key, value, is_cached in results:
+            if not is_cached:
+                self._cache[key] = value
+        return results[0][1]  # return the predictions only
 
     @property
     def ml_task(self) -> str:
