@@ -287,9 +287,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         total_estimators = len(self.estimator_reports_)
         progress.update(main_task, total=total_estimators)
 
-        from skore import console  # avoid circular import
-
-        console.print("Caching predictions for each fold...")
+        progress.console.print("Processing predictions for each fold...")
 
         for i, estimator_report in enumerate(self.estimator_reports_):
             progress.update(
