@@ -168,6 +168,15 @@ def test_cross_validation_report_help(capsys, binary_classification_data):
     )
 
 
+def test_cross_validation_report_repr(binary_classification_data):
+    """Check that __repr__ returns a string starting with the expected prefix."""
+    estimator, X, y = binary_classification_data
+    report = CrossValidationReport(estimator, X, y)
+
+    repr_str = repr(report)
+    assert "CrossValidationReport" in repr_str
+
+
 @pytest.mark.parametrize(
     "fixture_name, expected_n_keys",
     [
@@ -271,7 +280,6 @@ def test_cross_validation_report_flat_index(binary_classification_data):
     result = report.metrics.report_metrics(flat_index=True)
     assert result.shape == (8, 2)
     assert isinstance(result.index, pd.Index)
-
     assert result.index.tolist() == [
         "precision_0",
         "precision_1",
@@ -282,7 +290,6 @@ def test_cross_validation_report_flat_index(binary_classification_data):
         "fit_time_s",
         "predict_time_s",
     ]
-
     assert result.columns.tolist() == [
         "randomforestclassifier_mean",
         "randomforestclassifier_std",
@@ -370,14 +377,23 @@ def test_cross_validation_report_metrics_help(capsys, binary_classification_data
     assert "Available metrics methods" in captured.out
 
 
+def test_cross_validation_report_metrics_repr(binary_classification_data):
+    """Check that __repr__ returns a string starting with the expected prefix."""
+    estimator, X, y = binary_classification_data
+    report = CrossValidationReport(estimator, X, y, cv_splitter=2)
+
+    repr_str = repr(report.metrics)
+    assert "skore.CrossValidationReport.metrics" in repr_str
+    assert "help()" in repr_str
+
+
 def _normalize_metric_name(index):
     """Helper to normalize the metric name present in a pandas index that could be
     a multi-index or single-index."""
     # if we have a multi-index, then the metric name is on level 0
     s = index[0] if isinstance(index, tuple) else index
-    # Remove spaces and underscores and (s) suffix
-    s = s.lower().replace(" (s)", "")
-    return re.sub(r"[^a-zA-Z]", "", s)
+    # Remove spaces and underscores
+    return re.sub(r"[^a-zA-Z]", "", s.lower())
 
 
 def _check_results_single_metric(report, metric, expected_n_splits, expected_nb_stats):
@@ -541,8 +557,8 @@ def test_cross_validation_report_report_metrics_binary(
         "recall",
         "roc_auc",
         "brier_score",
-        "fit_time",
-        "predict_time",
+        "fit_time_s",
+        "predict_time_s",
     )
     # depending on `pos_label`, we report a stats for each class or not for
     # precision and recall
@@ -566,8 +582,8 @@ def test_cross_validation_report_report_metrics_binary(
         "recall",
         "roc_auc",
         "brier_score",
-        "fit_time",
-        "predict_time",
+        "fit_time_s",
+        "predict_time_s",
     )
     # depending on `pos_label`, we report a stats for each class or not for
     # precision and recall
@@ -586,8 +602,8 @@ def test_cross_validation_report_report_metrics_binary(
         "precision",
         "recall",
         "roc_auc",
-        "fit_time",
-        "predict_time",
+        "fit_time_s",
+        "predict_time_s",
     )
     # depending on `pos_label`, we report a stats for each class or not for
     # precision and recall
@@ -614,8 +630,8 @@ def test_cross_validation_report_report_metrics_multiclass(
         "recall",
         "roc_auc",
         "log_loss",
-        "fit_time",
-        "predict_time",
+        "fit_time_s",
+        "predict_time_s",
     )
     # since we are not averaging by default, we report 3 statistics for
     # precision, recall and roc_auc
@@ -630,7 +646,7 @@ def test_cross_validation_report_report_metrics_multiclass(
 
     estimator, X, y = multiclass_classification_data_svc
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
-    expected_metrics = ("precision", "recall", "fit_time", "predict_time")
+    expected_metrics = ("precision", "recall", "fit_time_s", "predict_time_s")
     # since we are not averaging by default, we report 3 statistics for
     # precision and recall
     expected_nb_stats = 3 * 2 + 2
@@ -647,7 +663,7 @@ def test_cross_validation_report_report_metrics_regression(regression_data):
     """Check the behaviour of the `report_metrics` method with regression."""
     estimator, X, y = regression_data
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
-    expected_metrics = ("r2", "rmse", "fit_time", "predict_time")
+    expected_metrics = ("r2", "rmse", "fit_time_s", "predict_time_s")
     _check_results_report_metric(
         report,
         params={},
@@ -954,21 +970,18 @@ def test_cross_validation_timings(
     report = CrossValidationReport(estimator, X, y, cv_splitter=2)
     timings = report.metrics.timings(aggregate=aggregate)
     assert isinstance(timings, pd.DataFrame)
-
     assert timings.index.tolist() == ["Fit time (s)"]
     assert timings.columns.tolist() == expected_columns
 
     report.get_predictions(data_source="train", response_method="predict")
     timings = report.metrics.timings(aggregate=aggregate)
     assert isinstance(timings, pd.DataFrame)
-
     assert timings.index.tolist() == ["Fit time (s)", "Predict time train (s)"]
     assert timings.columns.tolist() == expected_columns
 
     report.get_predictions(data_source="test", response_method="predict")
     timings = report.metrics.timings(aggregate=aggregate)
     assert isinstance(timings, pd.DataFrame)
-
     assert timings.index.tolist() == [
         "Fit time (s)",
         "Predict time train (s)",

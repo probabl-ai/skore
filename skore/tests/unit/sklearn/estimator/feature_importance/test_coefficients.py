@@ -224,7 +224,8 @@ def test_all_sklearn_estimators(
     report = EstimatorReport(estimator)
     result = report.feature_importance.coefficients()
 
-    rows = [
+    assert result.shape == (6, 1)
+    assert result.index.tolist() == [
         "Intercept",
         "Feature #0",
         "Feature #1",
@@ -232,11 +233,6 @@ def test_all_sklearn_estimators(
         "Feature #3",
         "Feature #4",
     ]
-    if result.shape == (5, 1):  # for TransformedTargetRegressor()
-        assert rows[1:] == result.index.tolist()
-    else:
-        assert result.shape == (6, 1)
-        assert rows == result.index.tolist()
 
     assert result.columns.tolist() == ["Coefficient"]
 
