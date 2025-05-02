@@ -221,11 +221,11 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
         total_estimators = len(self._parent.reports_)
         progress.update(main_task, total=total_estimators)
 
-        if self._parent._reports_type == "CrossValidationReport":
-            # Ensure that there is only one Progress instance.
-            # EstimatorReports don't have `_parent_progress`
-            for report in self._parent.reports_:
+        reports_to_cleanup = []
+        for report in self._parent.reports_:
+            if hasattr(report, "_parent_progress"):
                 report._parent_progress = progress
+                reports_to_cleanup.append(report)
 
         if cache_key in self._parent._cache:
             results = self._parent._cache[cache_key]
@@ -275,6 +275,7 @@ class _MetricsAccessor(_BaseAccessor, DirNamesMixin):
                 )
 
             self._parent._cache[cache_key] = results
+
         return results
 
     def timings(
