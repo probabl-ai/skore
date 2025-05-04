@@ -6,6 +6,7 @@ from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, Literal, Optional, Union, cast
 
 import joblib
+import matplotlib.pyplot as plt
 import numpy as np
 from numpy.typing import ArrayLike
 
@@ -445,6 +446,85 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             )
             for report in self.reports_
         ]
+
+    def plot_perf_against_time(
+        self,
+        perf_metric: str,
+        data_source: Literal["test", "train", "X_y"] = "test",
+        time_metric: Literal["fit", "predict"] = "predict",
+    ):
+        """
+        Plot a given performance metric against a time metric.
+
+        Parameters
+        ----------
+        perf_metric : str
+
+        data_source : {"test", "train", "X_y"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+            - "X_y" : use the provided `X` and `y` to compute the metric.
+
+        perf_metric : str
+
+        time_metric: {"fit", "predict"}, default = "predict"
+            The time metric to use in the plot.
+
+
+        Returns
+        -------
+        A matplotlib plot.
+
+        """
+        # Border cases to handle:
+        # - what if a metrics in not computed on all the estimators?
+        # - what if a metrics need pos_label?
+        # - what if time_metric = "fit", and data_source != "train"?
+
+        # Question
+        # - should this become an accessor method, e.g. `plots`,
+        #      the equivalent to `metrics`?
+        # - how to deal with perf metric? should it be consistent with
+        #     the metric name or the column name in metrics report?
+
+        # TODO
+        # - add example
+        # - add test
+        # - add kwargs
+
+        if time_metric == "fit":
+            x_label = "Fit time"
+        elif time_metric == "predict":
+            x_label = "Predict time"
+
+        scatter_data = self.metrics.report_metrics().T.reset_index()
+        scatter_data.plot(
+            kind="scatter",
+            x=x_label,
+            y="Brier score",
+            title="Performance vs Time (s)",
+        )
+
+        # Add labels to the points with a small offset
+        text = scatter_data["Estimator"]
+        x = scatter_data[x_label]
+        y = scatter_data["Brier score"]
+        for label, x_coord, y_coord in zip(text, x, y):
+            plt.annotate(
+                label,
+                (x_coord, y_coord),
+                textcoords="offset points",
+                xytext=(10, 0),
+                bbox=dict(
+                    boxstyle="round,pad=0.3",
+                    edgecolor="gray",
+                    facecolor="white",
+                    alpha=0.7,
+                ),
+            )
+        plt.tight_layout()
 
     ####################################################################################
     # Methods related to the help and repr
