@@ -9,7 +9,7 @@ import pandas as pd
 import pytest
 from sklearn.base import clone
 from sklearn.cluster import KMeans
-from sklearn.datasets import make_classification, make_regression
+from sklearn.datasets import make_classification, make_regression,load_breast_cancer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.metrics import (
@@ -19,6 +19,7 @@ from sklearn.metrics import (
     median_absolute_error,
     r2_score,
     rand_score,
+    get_scorer,
 )
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
@@ -1344,21 +1345,12 @@ def test_estimator_report_average_return_float(binary_classification_data):
 
 
 def test_estimator_report_metric_with_neg_metrics():
-    """Check that scikit-learn metrics with 'neg_' prefix are handled correctly.
-
-    Non-regression test for:
-    https://github.com/probabl-ai/skore/issues/1519
-    """
-    from sklearn.datasets import load_breast_cancer
-    from sklearn.linear_model import LogisticRegression
-    from sklearn.metrics import get_scorer
-    from sklearn.model_selection import train_test_split
+    """Check that scikit-learn metrics with 'neg_' prefix are handled correctly."""
 
     X_train, X_test, y_train, y_test = train_test_split(
         *load_breast_cancer(return_X_y=True), random_state=0
     )
     classifier = LogisticRegression(max_iter=10_000)
-    classifier.fit(X_train, y_train)
 
     report = EstimatorReport(
         classifier,
@@ -1369,12 +1361,15 @@ def test_estimator_report_metric_with_neg_metrics():
     )
 
     # Use scikit-learn's get_scorer to handle neg_log_loss
-    neg_log_loss_scorer = get_scorer("neg_log_loss")
-
-    result = report.metrics.report_metrics(scoring=[neg_log_loss_scorer])
+    scorer = get_scorer('neg_log_loss')
+    result = report.metrics.report_metrics(scoring=[scorer])
 
     # Check that the metric name is displayed properly (as 'log_loss')
     assert "log_loss" in result.index
 
-    # Check that the value matches the absolute value of neg_log_loss
-    assert result.loc["log_loss", classifier.__class__.__name__] > 0
+    # Get the neg_log_loss score directly - use the fitted model from the report
+    neg_log_loss_value = get_scorer('neg_log_loss')(report.estimator_, X_test, y_test)
+    
+    # Check that the reported log_loss matches the absolute value of neg_log_loss
+    log_loss_value = result.loc["log_loss", classifier.__class__.__name__]
+    assert np.isclose(log_loss_value, abs(neg_log_loss_value))
