@@ -177,13 +177,16 @@ class Project:
                     )
                 )
 
-            if not (response := response.json()):
-                raise KeyError(f"{id} is not a valid `EstimatorReport` identifier")
-
-            return dto(response)
+            return dto(response.json())
 
         def metadata() -> list[EstimatorReportMetadata]:
-            """Obtain metadata for all persisted experiments regardless of their run."""
+            """
+            Obtain metadata for all persisted experiments regardless of their run.
+
+            Notes
+            -----
+            Only scalar metrics are listed in the metadata.
+            """
 
             def dto(summary):
                 metrics = {
