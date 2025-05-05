@@ -20,7 +20,7 @@ from .pickle_item import PickleItem
 
 if TYPE_CHECKING:
     from collections.abc import Generator
-    from typing import Any, Literal, Optional, TypedDict, Union
+    from typing import Any, Literal, TypedDict, Union
 
     from skore import EstimatorReport
 
@@ -29,10 +29,11 @@ if TYPE_CHECKING:
 
     class Metric(TypedDict):  # noqa: D101
         name: str
+        verbose_name: Union[str, None]
         value: float
-        data_source: Optional[str]
-        greater_is_better: Optional[bool]
-        position: Optional[int]
+        data_source: Union[str, None]
+        greater_is_better: Union[bool, None]
+        position: Union[int, None]
 
     class Representation(TypedDict):  # noqa: D101
         key: str
@@ -124,62 +125,76 @@ class Metadata:
 
         def metric(
             name: str,
-            data_source: Optional[str] = None,
-            greater_is_better: Optional[bool] = None,
-            position: Optional[int] = None,
+            verbose_name: str,
+            data_source: str,
+            greater_is_better: bool,
+            position: Union[int | None],
             /,
         ) -> Union[Metric, None]:
-            with suppress(AttributeError, TypeError):
-                function = getattr(self.report.metrics, name)
-                value = float(function(data_source=data_source))
-                return {
-                    "name": name,
-                    "value": value,
-                    "data_source": data_source,
-                    "greater_is_better": greater_is_better,
-                    "position": position,
-                }
+            if hasattr(self.report.metrics, name):
+                value = getattr(self.report.metrics, name)(data_source=data_source)
+
+                with suppress(TypeError):
+                    return {
+                        "name": name,
+                        "verbose_name": verbose_name,
+                        "value": float(value),
+                        "data_source": data_source,
+                        "greater_is_better": greater_is_better,
+                        "position": position,
+                    }
+
             return None
 
         def timing(
             name: str,
-            data_source: Optional[str] = None,
-            position: Optional[int] = None,
+            verbose_name: str,
+            data_source: Union[str | None],
+            greater_is_better: bool,
+            position: Union[int | None],
             /,
         ) -> Union[Metric, None]:
-            with suppress(KeyError, TypeError):
+            timings = self.report.metrics.timings()
+            value = timings.get(
+                name if name != "predict_time" else f"{name}_{data_source}"
+            )
+
+            if value is not None:
                 return {
                     "name": name,
-                    "value": float(self.report.metrics.timings()[name]),
+                    "verbose_name": verbose_name,
+                    "value": float(value),
                     "data_source": data_source,
-                    "greater_is_better": False,
+                    "greater_is_better": greater_is_better,
                     "position": position,
                 }
+
             return None
 
         return list(
             filter(
                 None,
                 (
-                    metric("accuracy", "train", True, None),
-                    metric("accuracy", "test", True, None),
-                    metric("brier_score", "train", False, None),
-                    metric("brier_score", "test", False, None),
-                    metric("log_loss", "train", False, 4),
-                    metric("log_loss", "test", False, 4),
-                    metric("precision", "train", True, None),
-                    metric("precision", "test", True, None),
-                    metric("r2", "train", True, None),
-                    metric("r2", "test", True, None),
-                    metric("recall", "train", True, None),
-                    metric("recall", "test", True, None),
-                    metric("rmse", "train", False, 3),
-                    metric("rmse", "test", False, 3),
-                    metric("roc_auc", "train", True, 3),
-                    metric("roc_auc", "test", True, 3),
-                    timing("fit_time", None, 1),
-                    timing("predict_time_train", "train", 2),
-                    timing("predict_time_test", "test", 2),
+                    metric("accuracy", "Accuracy", "train", True, None),
+                    metric("accuracy", "Accuracy", "test", True, None),
+                    metric("brier_score", "Brier score", "train", False, None),
+                    metric("brier_score", "Brier score", "test", False, None),
+                    metric("log_loss", "Log loss", "train", False, 4),
+                    metric("log_loss", "Log loss", "test", False, 4),
+                    metric("precision", "Precision", "train", True, None),
+                    metric("precision", "Precision", "test", True, None),
+                    metric("r2", "R²", "train", True, None),
+                    metric("r2", "R²", "test", True, None),
+                    metric("recall", "Recall", "train", True, None),
+                    metric("recall", "Recall", "test", True, None),
+                    metric("rmse", "RMSE", "train", False, 3),
+                    metric("rmse", "RMSE", "test", False, 3),
+                    metric("roc_auc", "ROC AUC", "train", True, 3),
+                    metric("roc_auc", "ROC AUC", "test", True, 3),
+                    # timings must be calculated last
+                    timing("fit_time", "Fit time (s)", None, False, 1),
+                    timing("predict_time", "Predict time (s)", "train", False, 2),
+                    timing("predict_time", "Predict time (s)", "test", False, 2),
                 ),
             )
         )

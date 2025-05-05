@@ -85,6 +85,7 @@ class TestSkoreEstimatorReportItem:
                     "data_source": "train",
                     "greater_is_better": True,
                     "position": None,
+                    "verbose_name": "R²",
                 },
                 {
                     "name": "r2",
@@ -92,6 +93,7 @@ class TestSkoreEstimatorReportItem:
                     "data_source": "test",
                     "greater_is_better": True,
                     "position": None,
+                    "verbose_name": "R²",
                 },
                 {
                     "name": "rmse",
@@ -99,6 +101,7 @@ class TestSkoreEstimatorReportItem:
                     "data_source": "train",
                     "greater_is_better": False,
                     "position": 3,
+                    "verbose_name": "RMSE",
                 },
                 {
                     "name": "rmse",
@@ -106,6 +109,7 @@ class TestSkoreEstimatorReportItem:
                     "data_source": "test",
                     "greater_is_better": False,
                     "position": 3,
+                    "verbose_name": "RMSE",
                 },
                 {
                     "name": "fit_time",
@@ -113,20 +117,23 @@ class TestSkoreEstimatorReportItem:
                     "data_source": None,
                     "greater_is_better": False,
                     "position": 1,
+                    "verbose_name": "Fit time (s)",
                 },
                 {
-                    "name": "predict_time_train",
+                    "name": "predict_time",
                     "value": float(hash("predict_time_train")),
                     "data_source": "train",
                     "greater_is_better": False,
                     "position": 2,
+                    "verbose_name": "Predict time (s)",
                 },
                 {
-                    "name": "predict_time_test",
+                    "name": "predict_time",
                     "value": float(hash("predict_time_test")),
                     "data_source": "test",
                     "greater_is_better": False,
                     "position": 2,
+                    "verbose_name": "Predict time (s)",
                 },
             ],
         }

@@ -7,8 +7,6 @@ from typing import Any
 
 from diskcache import Cache
 
-from .abstract_storage import AbstractStorage
-
 Cache = partial(Cache, size_limit=float("inf"), cull_limit=0, eviction=None)
 
 
@@ -16,7 +14,7 @@ class DirectoryDoesNotExist(Exception):
     """Directory does not exist."""
 
 
-class DiskCacheStorage(AbstractStorage):
+class DiskCacheStorage:
     """
     Disk-based storage implementation using diskcache.
 
@@ -47,6 +45,44 @@ class DiskCacheStorage(AbstractStorage):
             raise DirectoryDoesNotExist(f"Directory {directory} does not exist.")
 
         self.directory = directory
+
+    def __contains__(self, key: str) -> bool:
+        """
+        Return True if the storage has the specified key, else False.
+
+        Parameters
+        ----------
+        key : str
+            The key to check for existence in the storage.
+
+        Returns
+        -------
+        bool
+            True if the key is in the storage, else False.
+        """
+        return key in self.keys()
+
+    def __len__(self) -> int:
+        """
+        Return the number of items in the storage.
+
+        Returns
+        -------
+        int
+            The number of items in the storage.
+        """
+        return len(list(self.keys()))
+
+    def __iter__(self) -> Iterator[str]:
+        """
+        Yield the keys in the storage.
+
+        Returns
+        -------
+        Iterator[str]
+            An iterator yielding all keys in the storage.
+        """
+        return self.keys()
 
     def __getitem__(self, key: str) -> Any:
         """
