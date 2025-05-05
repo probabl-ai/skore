@@ -20,7 +20,6 @@ if TYPE_CHECKING:
         run_id: str
         key: str
         date: str
-        note: Union[str, None]
         learner: str
         dataset: str
         ml_task: str
@@ -198,7 +197,6 @@ class Project:
                     "run_id": summary["run_id"],
                     "key": summary["key"],
                     "date": summary["created_at"],
-                    "note": summary["note"],
                     "learner": summary["estimator_class_name"],
                     "dataset": summary["dataset_fingerprint"],
                     "ml_task": summary["ml_task"],

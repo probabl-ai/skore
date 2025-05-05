@@ -50,7 +50,7 @@ class TestProject:
         respx_mock.post("projects/<tenant>/<name>/runs").mock(
             Response(200, json={"id": "<id>"})
         )
-        respx_mock.post("projects/<tenant>/<name>/items/").mock(Response(200))
+        respx_mock.post("projects/<tenant>/<name>/items").mock(Response(200))
 
         Project("<tenant>", "<name>").put("<key>", "<value>", note="<note>")
 
